@@ -67,7 +67,7 @@ def stripe_webhook_handler():
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
 		frappe.set_user(current_user)
-		raise Exception
+		raise
 
 
 def get_customer_id(form_dict):

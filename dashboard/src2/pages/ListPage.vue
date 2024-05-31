@@ -8,7 +8,10 @@
 			</Header>
 		</div>
 		<div class="p-5">
-			<AlertAddPaymentMode class="mb-5" v-if="!$team.doc.payment_mode" />
+			<AlertAddPaymentMode
+				class="mb-5"
+				v-if="!$team.doc.payment_mode && !$team.doc.parent_team"
+			/>
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -57,7 +60,7 @@ export default {
 			return {
 				...this.object.list,
 				doctype: this.object.doctype,
-				route: this.getRoute
+				route: this.object.detail ? this.getRoute : null
 			};
 		}
 	}

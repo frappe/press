@@ -5,6 +5,9 @@
 from unittest.mock import patch
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 
+from press.press.doctype.press_settings.test_press_settings import (
+	create_test_press_settings,
+)
 from press.press.doctype.self_hosted_server.self_hosted_server import SelfHostedServer
 import frappe
 import json
@@ -14,6 +17,9 @@ from frappe.tests.utils import FrappeTestCase, change_settings
 
 
 class TestSelfHostedServer(FrappeTestCase):
+	def setUp(self):
+		create_test_press_settings()
+
 	def tearDown(self):
 		frappe.db.rollback()
 

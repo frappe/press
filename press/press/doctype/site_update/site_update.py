@@ -14,6 +14,12 @@ from frappe.utils.caching import site_cache
 
 from press.agent import Agent
 from press.utils import log_error
+from press.api.client import dashboard_whitelist
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteUpdate(Document):
@@ -58,8 +64,6 @@ class SiteUpdate(Document):
 		"scheduled_time",
 		"creation",
 	]
-
-	dashboard_actions = ["start"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -127,7 +131,7 @@ class SiteUpdate(Document):
 			self.difference = difference.name
 			self.deploy_type = "Pull"
 			difference_doc = frappe.get_doc("Deploy Candidate Difference", self.difference)
-			site_doc = frappe.get_doc("Site", self.site)
+			site_doc: "Site" = frappe.get_doc("Site", self.site)
 			for site_app in site_doc.apps:
 				difference_app = find(difference_doc.apps, lambda x: x.app == site_app.app)
 				if difference_app and difference_app.deploy_type == "Migrate":
@@ -176,16 +180,10 @@ class SiteUpdate(Document):
 		if not self.scheduled_time:
 			self.start()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def start(self):
-		site = frappe.get_doc("Site", self.site)
-		if site.status in ["Updating", "Pending", "Installing"]:
-			frappe.throw("Site is under maintenance. Cannot Update")
-
-		site.status_before_update = site.status
-		site.status = "Pending"
-		site.save()
-
+		site: "Site" = frappe.get_doc("Site", self.site)
+		site.ready_for_move()
 		self.create_agent_request()
 
 	def get_before_migrate_scripts(self, rollback=False):
@@ -369,6 +367,7 @@ def schedule_updates():
 			server=server,
 			job_id=f"schedule_updates:{server}",
 			deduplicate=True,
+			queue="long",
 		)
 
 
@@ -426,24 +425,30 @@ def should_not_skip_auto_updates(site):
 
 def should_try_update(site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
-	destination = frappe.get_all(
-		"Deploy Candidate Difference",
-		fields=["destination"],
-		filters={"source": source},
-		limit=1,
-	)[0].destination
+	candidates = frappe.get_all(
+		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
+	)
 
 	source_apps = [app.app for app in frappe.get_cached_doc("Site", site.name).apps]
 	dest_apps = []
-	destination_bench = frappe.get_all(
+	destinations = frappe.get_all(
 		"Bench",
-		{"candidate": destination, "status": "Active"},
+		["name", "candidate"],
+		{
+			"candidate": ("in", candidates),
+			"status": "Active",
+			"server": site.server,
+		},
 		limit=1,
+		ignore_ifnull=True,
 		order_by="creation DESC",
 	)
-	if destination_bench:
-		destination_bench = frappe.get_cached_doc("Bench", destination_bench[0].name)
-		dest_apps = [app.app for app in destination_bench.apps]
+	# Most recent active bench is the destination bench
+	if not destinations:
+		return False
+
+	destination_bench = frappe.get_cached_doc("Bench", destinations[0].name)
+	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
 		return False
@@ -453,7 +458,7 @@ def should_try_update(site):
 		{
 			"site": site.name,
 			"source_candidate": source,
-			"destination_candidate": destination,
+			"destination_candidate": destination_bench.candidate,
 			"cause_of_failure_is_resolved": False,
 		},
 	)
@@ -505,7 +510,7 @@ def process_update_site_job_update(job):
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
-		elif updated_status == "Success":
+		elif updated_status in ("Success", "Delivery Failure"):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
@@ -521,6 +526,7 @@ def process_update_site_recover_job_update(job):
 		"Running": "Running",
 		"Success": "Recovered",
 		"Failure": "Fatal",
+		"Delivery Failure": "Fatal",
 	}[job.status]
 	site_update = frappe.get_all(
 		"Site Update",

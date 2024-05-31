@@ -2,7 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -28,4 +28,8 @@ class AgentJobStep(Document):
 		traceback: DF.Code | None
 	# end: auto-generated types
 
-	pass
+
+def on_doctype_update():
+	# We don't need modified index, it's harmful on constantly updating tables
+	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job Step`")
+	frappe.db.add_index("Agent Job Step", ["creation"])

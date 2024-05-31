@@ -15,9 +15,9 @@
   "cluster",
   "provider",
   "virtual_machine",
+  "is_server_prepared",
   "is_server_setup",
   "is_self_hosted",
-  "is_server_prepared",
   "is_server_renamed",
   "ignore_incidents",
   "billing_section",
@@ -32,6 +32,8 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "column_break_pdbx",
+  "disable_agent_job_auto_retry",
   "reverse_proxy_section",
   "proxy_server",
   "column_break_12",
@@ -39,8 +41,10 @@
   "database_section",
   "database_server",
   "self_hosted_mariadb_server",
+  "is_managed_database",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
+  "managed_database_service",
   "replication",
   "is_primary",
   "is_replication_setup",
@@ -148,6 +152,7 @@
    "label": "Database"
   },
   {
+   "depends_on": "eval:!doc.is_managed_database",
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
@@ -368,7 +373,7 @@
    "label": "SSH User"
   },
   {
-   "depends_on": "eval:doc.is_self_hosted==true",
+   "depends_on": "eval:doc.is_self_hosted==true && !doc.is_managed_database",
    "fieldname": "self_hosted_mariadb_server",
    "fieldtype": "Data",
    "label": "Self Hosted MariaDB Server IP"
@@ -379,7 +384,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.is_self_hosted==true",
+   "depends_on": "eval:doc.is_self_hosted==true && !doc.is_managed_database",
    "fieldname": "self_hosted_mariadb_root_password",
    "fieldtype": "Password",
    "label": "Self Hosted MariaDB Root Password"
@@ -462,10 +467,33 @@
    "fieldname": "ignore_incidents",
    "fieldtype": "Check",
    "label": "Ignore Incidents"
+  },
+  {
+   "fieldname": "column_break_pdbx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_agent_job_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disable Agent Job Auto Retry"
+  },
+  {
+   "default": "0",
+   "description": "If user opts DBaaS eg. RDS",
+   "fieldname": "is_managed_database",
+   "fieldtype": "Check",
+   "label": "Is Managed Database"
+  },
+  {
+   "fieldname": "managed_database_service",
+   "fieldtype": "Link",
+   "label": "Managed Database Service",
+   "options": "Managed Database Service"
   }
  ],
  "links": [],
- "modified": "2024-03-13 13:08:57.593735",
+ "modified": "2024-05-29 16:58:30.490143",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -499,5 +527,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "title",
  "track_changes": 1
 }

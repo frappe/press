@@ -12,6 +12,7 @@ from frappe.utils import get_url
 
 from press.api.billing import get_stripe
 from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
 class PressSettings(Document):
@@ -26,6 +27,7 @@ class PressSettings(Document):
 
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
+		agent_sentry_dsn: DF.Data | None
 		allow_developer_account: DF.Check
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
@@ -50,12 +52,12 @@ class PressSettings(Document):
 		data_40: DF.Data | None
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		disable_agent_job_deduplication: DF.Check
+		disable_auto_retry: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
-		docker_remote_builder_server: DF.Link | None
-		docker_remote_builder_ssh: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_google_oauth: DF.Check
@@ -105,6 +107,7 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		remote_access_key_id: DF.Data | None
+		remote_build_server: DF.Link | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
@@ -226,6 +229,10 @@ class PressSettings(Document):
 	@property
 	def telegram(self):
 		return Telegram
+
+	@property
+	def telegram_message(self):
+		return TelegramMessage
 
 	@property
 	def twilio_client(self) -> Client:

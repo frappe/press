@@ -1,9 +1,9 @@
 [
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.228754",
   "name": "Rename Upstream",
   "request_method": "POST",
@@ -30,10 +30,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.057519",
   "name": "Rename Site",
   "request_method": "POST",
@@ -90,10 +90,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.549528",
   "name": "Recover Failed Site Migration",
   "request_method": null,
@@ -120,10 +120,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.927111",
   "name": "Add Domain",
   "request_method": "POST",
@@ -150,10 +150,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.946695",
   "name": "Remove Domain",
   "request_method": "DELETE",
@@ -180,10 +180,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.762138",
   "name": "Update Site Pull",
   "request_method": "POST",
@@ -234,10 +234,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.585210",
   "name": "Update Site Migrate",
   "request_method": "POST",
@@ -318,10 +318,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.781844",
   "name": "New Site",
   "request_method": "POST",
@@ -366,10 +366,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.646447",
   "name": "Add Host to Proxy",
   "request_method": "POST",
@@ -396,10 +396,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.626647",
   "name": "Add Site to Upstream",
   "request_method": "POST",
@@ -426,10 +426,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.671517",
   "name": "Add Code Server to Upstream",
   "request_method": "POST",
@@ -456,10 +456,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.651948",
   "name": "Remove Code Server from Upstream",
   "request_method": "POST",
@@ -486,10 +486,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.724970",
   "name": "Setup Code Server",
   "request_method": "POST",
@@ -522,10 +522,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.707766",
   "name": "Start Code Server",
   "request_method": "POST",
@@ -540,10 +540,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.743617",
   "name": "Stop Code Server",
   "request_method": "POST",
@@ -558,10 +558,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.690936",
   "name": "Archive Code Server",
   "request_method": "POST",
@@ -588,10 +588,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.607088",
   "name": "Add Upstream to Proxy",
   "request_method": "POST",
@@ -618,10 +618,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.677444",
   "name": "Install App on Site",
   "request_method": "POST",
@@ -636,10 +636,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.839292",
   "name": "New Site from Backup",
   "request_method": "POST",
@@ -714,10 +714,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.690831",
   "name": "Reinstall Site",
   "request_method": "POST",
@@ -732,10 +732,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.470276",
   "name": "Restore Site",
   "request_method": "POST",
@@ -798,10 +798,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.706871",
   "name": "Update Site Status",
   "request_method": "POST",
@@ -828,10 +828,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.740351",
   "name": "Uninstall App from Site",
   "request_method": "DELETE",
@@ -846,10 +846,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.805097",
   "name": "Recover Failed Site Pull",
   "request_method": "POST",
@@ -888,10 +888,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.786058",
   "name": "Recover Failed Site Update",
   "request_method": "POST",
@@ -906,10 +906,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.625189",
   "name": "Recover Failed Site Migrate",
   "request_method": "POST",
@@ -960,10 +960,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.893005",
   "name": "Remove Host from Proxy",
   "request_method": "DELETE",
@@ -990,10 +990,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.911153",
   "name": "Migrate Site",
   "request_method": "POST",
@@ -1008,10 +1008,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.963183",
   "name": "Fetch Sites Info",
   "request_method": "POST",
@@ -1026,10 +1026,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.000340",
   "name": "Setup Redirects on Hosts",
   "request_method": "POST",
@@ -1062,10 +1062,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.979580",
   "name": "Remove Redirects on Hosts",
   "request_method": "DELETE",
@@ -1092,10 +1092,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.100535",
   "name": "Rename Site on Upstream",
   "request_method": "POST",
@@ -1134,10 +1134,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.131920",
   "name": "Add Wildcard Hosts to Proxy",
   "request_method": "POST",
@@ -1164,10 +1164,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.180358",
   "name": "Setup ERPNext",
   "request_method": "POST",
@@ -1188,10 +1188,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.157390",
   "name": "Clear Cache",
   "request_method": "DELETE",
@@ -1212,10 +1212,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.203468",
   "name": "Restore Site Tables",
   "request_method": "POST",
@@ -1236,10 +1236,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.283667",
   "name": "Add User to Proxy",
   "request_method": "POST",
@@ -1266,10 +1266,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.308026",
   "name": "Remove User from Proxy",
   "request_method": "DELETE",
@@ -1290,10 +1290,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.327716",
   "name": "Add User to ProxySQL",
   "request_method": "POST",
@@ -1308,10 +1308,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.345276",
   "name": "Remove User from ProxySQL",
   "request_method": "DELETE",
@@ -1326,10 +1326,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.362722",
   "name": "Create Minio User",
   "request_method": "POST",
@@ -1356,10 +1356,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.379874",
   "name": "Remove Minio User",
   "request_method": "POST",
@@ -1374,10 +1374,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.392780",
   "name": "Enable Minio User",
   "request_method": "POST",
@@ -1392,10 +1392,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.405690",
   "name": "Disable Minio User",
   "request_method": "POST",
@@ -1410,10 +1410,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.256524",
   "name": "Cleanup Unused Files",
   "request_method": "POST",
@@ -1440,10 +1440,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.446023",
   "name": "Add Backend to ProxySQL",
   "request_method": "POST",
@@ -1458,10 +1458,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.419313",
   "name": "Update Saas Plan",
   "request_method": "POST",
@@ -1476,10 +1476,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.502147",
   "name": "Run After Migrate Steps",
   "request_method": "POST",
@@ -1518,10 +1518,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.531987",
   "name": "Move Site to Bench",
   "request_method": "POST",
@@ -1578,10 +1578,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.556954",
   "name": "Reset Site Usage",
   "request_method": "DELETE",
@@ -1596,10 +1596,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.759939",
   "name": "Reload NGINX Job",
   "request_method": "POST",
@@ -1620,10 +1620,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.725087",
   "name": "Backup Site",
   "request_method": null,
@@ -1644,10 +1644,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.432717",
   "name": "Bench Restart",
   "request_method": "POST",
@@ -1662,10 +1662,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.568610",
   "name": "Archive Bench",
   "request_method": "POST",
@@ -1686,10 +1686,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.663533",
   "name": "Update Site Configuration",
   "request_method": "POST",
@@ -1704,10 +1704,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.023648",
   "name": "New Bench",
   "request_method": "POST",
@@ -1740,10 +1740,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.587094",
   "name": "Remove Site from Upstream",
   "request_method": "DELETE",
@@ -1770,10 +1770,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.510770",
   "name": "Archive Site",
   "request_method": null,
@@ -1800,10 +1800,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.845251",
   "name": "Force Update Bench Limits",
   "request_method": "POST",
@@ -1830,10 +1830,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.822202",
   "name": "Update Bench Configuration",
   "request_method": "POST",
@@ -1872,10 +1872,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.803361",
   "name": "Rebuild Bench Assets",
   "request_method": "POST",
@@ -1890,10 +1890,10 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.861985",
   "name": "Optimize Tables",
   "request_method": "POST",
@@ -1911,7 +1911,7 @@
   "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2024-02-22 20:01:05.606166",
   "name": "Docker Image Build",
   "request_method": "POST",
@@ -1929,7 +1929,7 @@
   "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2024-02-27 13:51:17.142316",
   "name": "Patch App",
   "request_method": "POST",
@@ -1959,7 +1959,7 @@
   "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "max_retry_count": 3,
+  "max_retry_count": 6,
   "modified": "2024-03-19 11:40:26.237476",
   "name": "Call Bench Supervisorctl",
   "request_method": "POST",
@@ -1970,6 +1970,36 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Run Supervisorctl Command"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2024-03-26 10:28:39.750285",
+  "name": "Run Remote Builder",
+  "request_method": "POST",
+  "request_path": "/builder/build",
+  "steps": [
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Build Image"
+   },
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Push Docker Image"
+   },
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Cleanup Context"
    }
   ]
  }

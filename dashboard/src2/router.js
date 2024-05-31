@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard-beta/'),
+	history: createWebHistory('/dashboard/'),
 	routes: [
 		{
 			path: '/',
@@ -127,20 +127,19 @@ let router = createRouter({
 					name: 'SettingsPermission',
 					path: 'permissions',
 					component: () =>
-						import('./components/settings/PermissionsSettings.vue'),
-					redirect: { name: 'SettingsPermissionGroupList' },
+						import('./components/settings/SettingsPermissions.vue'),
+					redirect: { name: 'SettingsPermissionRoles' },
 					children: [
 						{
-							path: 'groups',
-							name: 'SettingsPermissionGroupList',
-							component: () =>
-								import('./components/settings/PermissionGroupList.vue')
+							path: 'roles',
+							name: 'SettingsPermissionRoles',
+							component: () => import('./components/settings/RoleList.vue')
 						},
 						{
-							name: 'SettingsPermissionGroupPermissions',
-							path: 'groups/:groupId',
+							name: 'SettingsPermissionRolePermissions',
+							path: 'roles/:roleId',
 							component: () =>
-								import('./components/settings/PermissionGroupPermissions.vue'),
+								import('./components/settings/RolePermissions.vue'),
 							props: true
 						}
 					]
@@ -181,6 +180,12 @@ let router = createRouter({
 			name: 'Impersonate',
 			path: '/impersonate/:teamId',
 			component: () => import('./pages/Impersonate.vue'),
+			props: true
+		},
+		{
+			name: 'InstallApp',
+			path: '/install-app/:app',
+			component: () => import('./pages/InstallApp.vue'),
 			props: true
 		},
 		...generateRoutes(),

@@ -98,10 +98,11 @@
   }
  ],
  "links": [],
- "modified": "2021-02-15 20:09:39.409924",
+ "modified": "2024-05-08 09:43:31.634297",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -118,12 +119,14 @@
   },
   {
    "create": 1,
+   "delete": 1,
    "read": 1,
    "role": "Press Admin",
    "write": 1
   },
   {
    "create": 1,
+   "delete": 1,
    "read": 1,
    "role": "Press Member",
    "write": 1
@@ -131,6 +134,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "domain",
  "track_changes": 1
 }

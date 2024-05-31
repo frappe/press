@@ -10,7 +10,6 @@ import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
-
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -436,7 +435,7 @@ def all_apps(name):
 	marketplace_apps = frappe.get_all(
 		"Marketplace App",
 		filters={"status": "Published", "app": ("not in", installed_apps)},
-		fields=["name", "title", "image"],
+		fields=["name", "title", "image", "app"],
 	)
 
 	AppSource = frappe.qb.DocType("App Source")
@@ -454,7 +453,7 @@ def all_apps(name):
 			AppSourceVersion.version,
 		)
 		.where(
-			(AppSource.app.isin([app.name for app in marketplace_apps]))
+			(AppSource.app.isin([app.app for app in marketplace_apps]))
 			& (AppSource.enabled == 1)
 			& (AppSource.public == 1)
 		)
@@ -465,10 +464,10 @@ def all_apps(name):
 	for app in marketplace_apps:
 		app["sources"] = find_all(
 			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
-			lambda x: x.app == app.name,
+			lambda x: x.app == app.app,
 		)
-		# for fetching repo details
-		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
+		# for fetching repo details for incompatible apps
+		app_source = find(marketplace_app_sources, lambda x: x.app == app.app)
 		app["repo"] = (
 			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
 		)
@@ -685,7 +684,7 @@ def deploy(name, apps):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps)
-	candidate.deploy_to_production()
+	candidate.schedule_build_and_deploy()
 
 	return candidate.name
 

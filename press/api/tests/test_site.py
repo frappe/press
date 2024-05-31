@@ -16,7 +16,9 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
-from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
+from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
+	create_test_deploy_candidate_differences,
+)
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
@@ -32,6 +34,8 @@ class TestAPISite(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -171,7 +175,9 @@ class TestAPISite(FrappeTestCase):
 
 		self.assertNotEqual(self.bench1, self.bench2)
 		# No need to create app release differences as it'll get autofilled by geo.json
-		create_deploy_candidate_differences(self.bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			self.bench2.candidate
+		)  # for site update to be available
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_check_for_updates_shows_update_available_when_site_update_available(self):
@@ -467,6 +473,9 @@ erpnext 0.8.3	    HEAD
 		new=Mock(),
 	)
 	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
+	@patch(
+		"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
+	)
 	def test_site_change_region(self):
 		from press.api.site import change_region, change_region_options
 
@@ -582,6 +591,9 @@ erpnext 0.8.3	    HEAD
 	@patch(
 		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
 		new=Mock(),
+	)
+	@patch(
+		"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
 	)
 	def test_site_change_server(self):
 		from press.api.site import (

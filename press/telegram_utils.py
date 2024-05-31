@@ -23,11 +23,14 @@ class Telegram:
 		token, chat_id = telegram_group if telegram_group else (None, None)
 		self.token = token or settings.telegram_bot_token
 		self.chat_id = chat_id
+		self.topic = topic
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
 		)
 
-	def send(self, message, html=False):
+	def send(self, message, html=False, reraise=False):
+		if not message:
+			return
 		try:
 			text = message[: telegram.MAX_MESSAGE_LENGTH]
 			parse_mode = self._get_parse_mode(html)
@@ -38,6 +41,8 @@ class Telegram:
 				message_thread_id=self.topic_id,
 			)
 		except Exception:
+			if reraise:
+				raise
 			log_error(
 				"Telegram Bot Error",
 				message=message,
@@ -83,7 +88,8 @@ class Telegram:
 
 		command = text.replace(mention, "")
 		response = self.process(command.strip())
-		self.send(response)
+		if response:
+			self.send(response)
 
 	def process(self, command):
 		arguments = command.split(" ")

@@ -8,7 +8,6 @@ from itertools import groupby
 from frappe.utils import fmt_money
 from frappe.core.utils import find
 from press.press.doctype.team.team import (
-	handle_payment_intent_succeeded,
 	has_unsettled_invoices,
 )
 from press.utils import get_current_team
@@ -49,6 +48,12 @@ def upcoming_invoice():
 		"upcoming_invoice": upcoming_invoice,
 		"available_credits": fmt_money(team.get_balance(), 2, team.currency),
 	}
+
+
+@frappe.whitelist()
+def get_balance_credit():
+	team = get_current_team(True)
+	return team.get_balance()
 
 
 @frappe.whitelist()
@@ -209,7 +214,7 @@ def get_customer_details(team):
 def create_payment_intent_for_micro_debit(payment_method_name):
 	team = get_current_team(True)
 	stripe = get_stripe()
-	amount = 50 if team.currency == "USD" else 5000
+	amount = 100 if team.currency == "USD" else 10000
 
 	intent = stripe.PaymentIntent.create(
 		amount=amount,
@@ -230,7 +235,7 @@ def create_payment_intent_for_buying_credits(amount):
 	metadata = {"payment_for": "prepaid_credits"}
 	total_unpaid = total_unpaid_amount()
 
-	if amount < total_unpaid:
+	if amount < total_unpaid and not team.erpnext_partner:
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
 	if team.currency == "INR":
@@ -251,11 +256,6 @@ def create_payment_intent_for_buying_credits(amount):
 		"client_secret": intent["client_secret"],
 		"publishable_key": get_publishable_key(),
 	}
-
-
-@frappe.whitelist()
-def confirm_payment_intent_for_buying_credits(payment_intent_id):
-	handle_payment_intent_succeeded(payment_intent_id)
 
 
 @frappe.whitelist()
@@ -547,13 +547,6 @@ def get_latest_unpaid_invoice():
 def team_has_balance_for_invoice(prepaid_mode_invoice):
 	team = get_current_team(get_doc=True)
 	return team.get_balance() >= prepaid_mode_invoice.amount_due
-
-
-@frappe.whitelist()
-def get_partner_credits():
-	team = get_current_team(get_doc=True)
-	available_credits = team.get_available_partner_credits()
-	return fmt_money(available_credits, 2, team.currency)
 
 
 @frappe.whitelist()

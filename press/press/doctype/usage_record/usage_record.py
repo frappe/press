@@ -94,8 +94,8 @@ def link_unlinked_usage_records():
 	for usage_record in usage_records:
 		try:
 			frappe.get_doc("Usage Record", usage_record).update_usage_in_invoice()
-		except Exception as e:
-			frappe.log_error("Failed to Link UR to Invoice", data=e)
+		except Exception:
+			frappe.log_error("Failed to Link UR to Invoice")
 
 
 def on_doctype_update():

@@ -1,11 +1,14 @@
-import unittest
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock, Mock, patch
 
+from frappe.tests.utils import FrappeTestCase
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.site.backups import ScheduledBackupJob
+from press.press.doctype.site.backups import (
+	ScheduledBackupJob,
+	schedule_for_sites_with_backup_time,
+)
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
@@ -14,7 +17,7 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.site.backups.frappe.db.rollback", new=MagicMock)
 @patch.object(AgentJob, "after_insert", new=Mock())
-class TestScheduledBackupJob(unittest.TestCase):
+class TestScheduledBackupJob(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -29,7 +32,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		frappe.db.set_single_value("Press Settings", "backup_interval", 6)
 
 	def _interval_hrs_ago(self):
-		return datetime.now() - timedelta(hours=self.interval)
+		return frappe.utils.now_datetime() - timedelta(hours=self.interval)
 
 	def _create_site_requiring_backup(self, **kwargs):
 		return create_test_site(
@@ -128,3 +131,15 @@ class TestScheduledBackupJob(unittest.TestCase):
 
 		sites_for_backup = [site.name for site in sites]
 		self.assertIn(site_2.name, sites_for_backup)
+
+	@patch.object(Site, "backup")
+	def test_site_with_backup_time_taken_at_right_time(self, mock_backup):
+		self._create_site_requiring_backup(backup_time="00:00:00")
+		with self.freeze_time("2021-01-01 01:00"):
+			schedule_for_sites_with_backup_time()
+		mock_backup.assert_not_called()
+		with self.freeze_time("2021-01-01 00:00"):
+			schedule_for_sites_with_backup_time()
+		mock_backup.assert_called_once()
+		job = ScheduledBackupJob()
+		self.assertEqual(len(job.sites), 0)  # site with backup time should be skipped

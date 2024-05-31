@@ -23,7 +23,8 @@
 						$resources.changeServer.submit({
 							name: site?.name,
 							server: targetServer,
-							scheduled_datetime: datetimeInIST
+							scheduled_datetime: datetimeInIST,
+							skip_failing_patches: skipFailingPatches
 						});
 					}
 				}
@@ -38,6 +39,7 @@
 			<FormControl
 				v-else-if="$resources.changeServerOptions.data.length > 0"
 				label="Select Server"
+				variant="outline"
 				type="select"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
@@ -49,40 +51,36 @@
 						})
 				"
 			/>
-			<FormControl
-				class="mt-4"
-				v-if="$resources.isServerAddedInGroup.data"
-				label="Schedule Site Migration"
-				type="datetime-local"
-				:min="new Date().toISOString().slice(0, 16)"
-				v-model="targetDateTime"
-			/>
-			<p class="mt-4 text-sm text-gray-700">
+			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
+				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
+				<FormControl
+					label="Skip failing patches if any"
+					type="checkbox"
+					v-model="skipFailingPatches"
+				/>
+			</div>
+			<p v-if="message && !errorMessage" class="mt-4 text-sm text-gray-700">
 				{{ message }}
 			</p>
-			<ErrorMessage
-				class="mt-4"
-				:message="
-					$resources.changeServer.error ||
-					$resources.isServerAddedInGroup.error ||
-					$resources.addServerToReleaseGroup.error
-				"
-			/>
+			<ErrorMessage class="mt-4" :message="errorMessage" />
 		</template>
 	</Dialog>
 </template>
 
 <script>
 import { notify } from '@/utils/toast';
+import DateTimeControl from '../../../src2/components/DateTimeControl.vue';
 
 export default {
 	name: 'SiteChangeServerDialog',
 	props: ['site', 'modelValue'],
 	emits: ['update:modelValue'],
+	components: { DateTimeControl },
 	data() {
 		return {
 			targetServer: '',
-			targetDateTime: null
+			targetDateTime: null,
+			skipFailingPatches: false
 		};
 	},
 	computed: {
@@ -108,6 +106,14 @@ export default {
 			) {
 				return 'The chosen server is already added to the bench. You can now migrate the site to the server.';
 			} else return '';
+		},
+		errorMessage() {
+			return (
+				this.$resources.addServerToReleaseGroup.error ||
+				this.$resources.isServerAddedInGroup.error ||
+				this.$resources.changeServerOptions.error ||
+				this.$resources.changeServer.error
+			);
 		},
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;

@@ -1,0 +1,8 @@
+---
+- name: Setup Agent Sentry
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: agent_sentry

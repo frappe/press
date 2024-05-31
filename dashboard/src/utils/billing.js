@@ -26,7 +26,7 @@ export const indianStates = [
 	'Nagaland',
 	'Odisha',
 	'Other Territory',
-	'Pondicherry',
+	'Puducherry',
 	'Punjab',
 	'Rajasthan',
 	'Sikkim',

@@ -45,7 +45,7 @@ def callback(code=None, state=None):
 	except Exception as e:
 		log_error("Google Login failed", data=e)
 		frappe.local.response.type = "redirect"
-		frappe.local.response.location = "/dashboard-beta/login"
+		frappe.local.response.location = "/dashboard/login"
 
 	# authenticated
 	frappe.cache().delete_value(cached_key)
@@ -85,9 +85,9 @@ def callback(code=None, state=None):
 		frappe.local.login_manager.login_as(email)
 		frappe.local.response.type = "redirect"
 		if saas_product:
-			frappe.local.response.location = f"/dashboard-beta/app-trial/{saas_product.name}"
+			frappe.local.response.location = f"/dashboard/app-trial/{saas_product.name}"
 		else:
-			frappe.local.response.location = "/dashboard-beta"
+			frappe.local.response.location = "/dashboard"
 	elif team_name and not team_enabled:
 		# cannot move forward because account is disabled
 		frappe.throw(_("Account {0} has been deactivated").format(email))

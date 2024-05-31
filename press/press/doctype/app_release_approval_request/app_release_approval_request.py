@@ -120,12 +120,6 @@ class AppReleaseApprovalRequest(Document):
 		release.save(ignore_permissions=True)
 		frappe.db.commit()
 
-		if status_updated:
-			self.publish_status_change(release.source)
-
-	def publish_status_change(self, source):
-		frappe.publish_realtime(event="request_status_changed", message={"source": source})
-
 	def notify_publisher(self):
 		marketplace_app = frappe.get_doc("Marketplace App", self.marketplace_app)
 		app_release: AppRelease = frappe.get_doc("App Release", self.app_release)

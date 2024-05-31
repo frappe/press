@@ -10,6 +10,7 @@ import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideRocket from '~icons/lucide/rocket';
+import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
 
@@ -33,14 +34,39 @@ export default {
 		generateCertificate: 'generate_certificate',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
-		redeploy: 'redeploy'
+		redeploy: 'redeploy',
+		initialDeploy: 'initial_deploy'
 	},
 	list: {
 		route: '/benches',
 		title: 'Benches',
 		fields: [{ apps: ['app'] }],
+		searchField: 'title',
+		filterControls() {
+			return [
+				{
+					type: 'link',
+					label: 'Version',
+					fieldname: 'version',
+					options: {
+						doctype: 'Frappe Version'
+					}
+				},
+				{
+					type: 'link',
+					label: 'Tag',
+					fieldname: 'tags.tag',
+					options: {
+						doctype: 'Press Tag',
+						filters: {
+							doctype_name: 'Release Group'
+						}
+					}
+				}
+			];
+		},
 		columns: [
-			{ label: 'Title', fieldname: 'title' },
+			{ label: 'Title', fieldname: 'title', class: 'font-medium' },
 			{
 				label: 'Status',
 				fieldname: 'active_benches',
@@ -54,13 +80,11 @@ export default {
 			{
 				label: 'Version',
 				fieldname: 'version',
-				class: 'text-gray-700',
 				width: 0.5
 			},
 			{
 				label: 'Apps',
 				fieldname: 'app',
-				class: 'text-gray-700',
 				format: (value, row) => {
 					return (row.apps || []).map(d => d.app).join(', ');
 				},
@@ -91,6 +115,25 @@ export default {
 		statusBadge({ documentResource: releaseGroup }) {
 			return { label: releaseGroup.doc.status };
 		},
+		breadcrumbs({ items, documentResource: releaseGroup }) {
+			if (!releaseGroup.doc.server_team) return items;
+
+			let breadcrumbs = [];
+			let $team = getTeam();
+
+			if (releaseGroup.doc.server_team == $team.doc.name) {
+				breadcrumbs.push(
+					{
+						label: releaseGroup.doc?.server_title || releaseGroup.doc?.server,
+						route: `/servers/${releaseGroup.doc?.server}`
+					},
+					items[1]
+				);
+			} else {
+				breadcrumbs.push(...items);
+			}
+			return breadcrumbs;
+		},
 		route: '/benches/:name',
 		tabs: [
 			{
@@ -118,6 +161,7 @@ export default {
 							parent: releaseGroup.doc.name
 						};
 					},
+					pageLength: 99999,
 					columns: [
 						{
 							label: 'App',
@@ -160,7 +204,7 @@ export default {
 										h(
 											'a',
 											{
-												href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
+												href: 'https://frappecloud.com/docs/faq/app-installation-issue',
 												target: '_blank'
 											},
 											[h(icon('help-circle', 'w-3 h-3'), {})]
@@ -350,6 +394,25 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: [{ apps: ['app'] }],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Draft',
+									'Scheduled',
+									'Pending',
+									'Preparing',
+									'Running',
+									'Success',
+									'Failure'
+								]
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Deploy',
@@ -469,8 +532,37 @@ export default {
 							params: { id: row.name }
 						};
 					},
+					searchField: 'job_type',
 					fields: ['end'],
 					orderBy: 'creation desc',
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Undelivered',
+									'Pending',
+									'Running',
+									'Success',
+									'Failure',
+									'Delivery Failure'
+								]
+							},
+							{
+								type: 'link',
+								label: 'Type',
+								fieldname: 'job_type',
+								options: {
+									doctype: 'Agent Job Type',
+									orderBy: 'name asc',
+									pageLength: 100
+								}
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Job Type',
@@ -481,24 +573,21 @@ export default {
 							label: 'Status',
 							fieldname: 'status',
 							type: 'Badge',
-							width: '7rem'
+							width: '8rem'
 						},
 						{
 							label: 'Site',
-							fieldname: 'site',
-							class: 'text-gray-600'
+							fieldname: 'site'
 						},
 						{
 							label: 'Job ID',
 							fieldname: 'job_id',
-							class: 'text-gray-600',
 							width: '7rem'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
-							width: '4rem',
+							width: '5rem',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -513,6 +602,7 @@ export default {
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
+							width: '8rem',
 							align: 'right'
 						}
 					]
@@ -887,9 +977,13 @@ export default {
 
 			return [
 				{
-					label: 'Update Available',
+					label: bench.doc?.deploy_information?.last_deploy
+						? 'Update Available'
+						: 'Deploy Now',
 					slots: {
-						prefix: icon('alert-circle')
+						prefix: bench.doc?.deploy_information?.last_deploy
+							? icon(LucideHardDriveDownload)
+							: icon(LucideRocket)
 					},
 					variant: 'solid',
 					condition: () =>
@@ -897,18 +991,39 @@ export default {
 						bench.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
-						let UpdateBenchDialog = defineAsyncComponent(() =>
-							import('../components/bench/UpdateBenchDialog.vue')
-						);
-						renderDialog(
-							h(UpdateBenchDialog, {
-								bench: bench.name,
-								onSuccess(candidate) {
-									bench.doc.deploy_information.deploy_in_progress = true;
-									bench.doc.deploy_information.last_deploy.name = candidate;
+						if (bench.doc?.deploy_information?.last_deploy) {
+							let UpdateBenchDialog = defineAsyncComponent(() =>
+								import('../components/bench/UpdateBenchDialog.vue')
+							);
+							renderDialog(
+								h(UpdateBenchDialog, {
+									bench: bench.name,
+									onSuccess(candidate) {
+										bench.doc.deploy_information.deploy_in_progress = true;
+										bench.doc.deploy_information.last_deploy.name = candidate;
+									}
+								})
+							);
+						} else {
+							confirmDialog({
+								title: 'Deploy Bench',
+								message: "Let's deploy this bench now?",
+								onSuccess() {
+									toast.promise(
+										bench.initialDeploy.submit(null, {
+											onSuccess: () => {
+												bench.reload();
+											}
+										}),
+										{
+											success: 'Bench deployed successfully',
+											error: 'Failed to deploy bench',
+											loading: 'Deploying bench...'
+										}
+									);
 								}
-							})
-						);
+							});
+						}
 					}
 				},
 				{
@@ -925,12 +1040,6 @@ export default {
 				},
 				{
 					label: 'Options',
-					button: {
-						label: 'Options',
-						slots: {
-							icon: icon('more-horizontal')
-						}
-					},
 					options: [
 						{
 							label: 'View in Desk',
@@ -995,12 +1104,12 @@ export default {
 	routes: [
 		{
 			name: 'Bench Deploy',
-			path: 'deploy/:id',
+			path: 'deploys/:id',
 			component: () => import('../pages/BenchDeploy.vue')
 		},
 		{
 			name: 'Bench Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		}
 	]

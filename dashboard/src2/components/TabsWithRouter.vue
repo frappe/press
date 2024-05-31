@@ -1,5 +1,5 @@
 <template>
-	<FTabs v-if="tabs?.length" v-model="currentTab" :tabs="tabs">
+	<FTabs v-if="visibleTabs?.length" v-model="currentTab" :tabs="visibleTabs">
 		<template #default="{ tab }">
 			<slot name="tab-content" :tab="tab">
 				<router-view :tab="tab" />
@@ -17,21 +17,24 @@ export default {
 		FTabs: Tabs
 	},
 	computed: {
+		visibleTabs() {
+			return this.tabs.filter(tab => (tab.condition ? tab.condition() : true));
+		},
 		currentTab: {
 			get() {
-				for (let tab of this.tabs) {
+				for (let tab of this.visibleTabs) {
 					let tabRouteName = tab.routeName || tab.route.name;
 					if (
 						this.$route.name === tabRouteName ||
 						tab.childrenRoutes?.includes(this.$route.name)
 					) {
-						return this.tabs.indexOf(tab);
+						return this.visibleTabs.indexOf(tab);
 					}
 				}
 				return 0;
 			},
 			set(val) {
-				let tab = this.tabs[val];
+				let tab = this.visibleTabs[val];
 				let tabRouteName = tab.routeName || tab.route.name;
 				this.$router.replace({ name: tabRouteName });
 			}

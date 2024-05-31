@@ -1,8 +1,12 @@
 <template>
-	<div class="space-y-12">
+	<div v-if="availableApps.length" class="space-y-12">
 		<div v-if="publicApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
-				Select Marketplace Apps
+				{{
+					!siteOnPublicBench && privateApps
+						? 'Select Marketplace Apps'
+						: 'Select Apps'
+				}}
 			</h2>
 			<div class="mt-2 w-full space-y-2">
 				<ObjectList :options="publicApps" />
@@ -13,11 +17,24 @@
 				:app="selectedApp"
 				@plan-select="
 					plan => {
-						apps = [...apps, { app: selectedApp.app, plan }];
+						apps = [...apps, { ...selectedApp, plan }];
 						showAppPlanSelectorDialog = false;
 					}
 				"
 			/>
+
+			<div
+				v-if="siteOnPublicBench"
+				class="mt-4 rounded-md border p-4 text-base text-gray-600"
+			>
+				<div class="font-medium text-gray-700">Version Compatibility</div>
+				<template v-for="(apps, version) in versionAppsMap">
+					<div class="mt-2">
+						<span class="text-gray-700">{{ version }}</span> -
+						{{ $format.commaAnd(apps) }}
+					</div>
+				</template>
+			</div>
 		</div>
 		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -60,6 +77,23 @@ export default {
 				this.$emit('update:modelValue', newApps);
 			}
 		},
+		versionAppsMap() {
+			let problemAppVersions = {
+				'Version 15': ['Frappe'],
+				'Version 14': ['Frappe'],
+				Nightly: ['Frappe']
+			};
+			if (this.siteOnPublicBench)
+				for (let app of this.apps) {
+					let appVersions = app.sources.map(s => s.version);
+					for (let version of appVersions) {
+						if (problemAppVersions[version]) {
+							problemAppVersions[version].push(app.app_title);
+						}
+					}
+				}
+			return problemAppVersions;
+		},
 		publicApps() {
 			if (!this.availableApps) return;
 			let publicApps = this.availableApps.filter(
@@ -74,7 +108,6 @@ export default {
 					{
 						label: 'App',
 						fieldname: 'app_title',
-						width: 0.5,
 						type: 'Component',
 						component: ({ row }) => {
 							return h(
@@ -89,7 +122,14 @@ export default {
 										class: 'h-6 w-6',
 										src: row.image
 									}),
-									h('span', { class: 'ml-2' }, row.app_title)
+									h('span', { class: 'ml-2' }, row.app_title),
+									row.subscription_type !== 'Free'
+										? h(Badge, {
+												class: 'ml-2',
+												theme: 'gray',
+												label: 'Paid'
+										  })
+										: ''
 								]
 							);
 						}
@@ -109,22 +149,10 @@ export default {
 										class: 'h-3 w-3'
 									}),
 									h('span', { class: 'ml-0.5 leading-3' }, [
-										this.$format.numberK(row.total_installs || '')
+										this.$format.numberK(row.total_installs || '0')
 									])
 								]
 							);
-						}
-					},
-					{
-						label: 'Subscription',
-						width: 0.2,
-						type: 'Component',
-						component: ({ row }) => {
-							if (row.subscription_type !== 'Free')
-								return h(Badge, {
-									theme: 'gray',
-									label: 'Paid'
-								});
 						}
 					},
 					{
@@ -133,19 +161,12 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let formatPlan = plan => {
-								let price = plan.price_usd;
-								return price > 0 ? `$${price}` : 'Free';
-							};
-
-							let plan = this.apps.find(a => a.app === app.app)?.plan;
-							let title = plan ? formatPlan(plan) : 'Free';
 							let isAppAdded = this.apps.map(a => a.app).includes(app.app);
 
 							return {
-								label: isAppAdded ? title : 'Add',
+								label: isAppAdded ? 'check' : 'plus',
 								slots: {
-									prefix: isAppAdded ? icon('check') : icon('plus')
+									icon: isAppAdded ? icon('check') : icon('plus')
 								},
 								variant: isAppAdded ? 'outline' : 'subtle',
 								onClick: event => {
@@ -179,22 +200,15 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
+							let isAppAdded = this.apps
+								.map(a => a.app)
+								.includes(app.app || app.app_title);
 							return {
-								label: this.apps
-									.map(a => a.app)
-									.includes(app.app || app.app_title)
-									? 'Added'
-									: 'Add',
+								label: 'Add',
 								slots: {
-									prefix: this.apps
-										.map(a => a.app)
-										.includes(app.app || app.app_title)
-										? icon('check')
-										: icon('plus')
+									icon: isAppAdded ? icon('check') : icon('plus')
 								},
-								variant: this.apps.map(a => a.app).includes(app.app)
-									? 'outline'
-									: 'subtle',
+								variant: isAppAdded ? 'outline' : 'subtle',
 								onClick: event => {
 									this.toggleApp(app);
 									event.stopPropagation();

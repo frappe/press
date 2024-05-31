@@ -10,6 +10,7 @@
 					variant: 'solid',
 					onClick: () =>
 						$resources.changeGroup.submit({
+							skip_failing_patches: skipFailingPatches,
 							group: targetGroup,
 							name: site?.name
 						})
@@ -30,26 +31,33 @@
 				class="mx-auto h-4 w-4"
 				v-if="$resources.changeGroupOptions.loading"
 			/>
-			<FormControl
+			<div
 				v-else-if="$resources.changeGroupOptions.data.length > 0"
-				label="Select Bench"
-				type="select"
-				:options="
-					$resources.changeGroupOptions.data.map(group => ({
-						label: group.title,
-						value: group.name
-					}))
-				"
-				v-model="targetGroup"
-			/>
-			<p v-else class="text-md text-base text-gray-800">
+				class="space-y-4"
+			>
+				<FormControl
+					variant="outline"
+					label="Select Bench"
+					type="select"
+					:options="
+						$resources.changeGroupOptions.data.map(group => ({
+							label: group.title,
+							value: group.name
+						}))
+					"
+					v-model="targetGroup"
+				/>
+				<FormControl
+					label="Skip failing patches if any"
+					type="checkbox"
+					v-model="skipFailingPatches"
+				/>
+			</div>
+			<p v-else-if="!errorMessage" class="text-md text-base text-gray-800">
 				There are no other benches that you own for this site to move to. You
 				can clone this bench to move the site.
 			</p>
-			<ErrorMessage
-				class="mt-3"
-				:message="$resources.changeGroup.error || $resources.cloneGroup.error"
-			/>
+			<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
 	<Dialog
@@ -88,6 +96,7 @@ export default {
 		return {
 			targetGroup: null,
 			newGroupTitle: '',
+			skipFailingPatches: false,
 			showCloneBenchDialog: false
 		};
 	},
@@ -99,15 +108,19 @@ export default {
 			set(value) {
 				this.$emit('update:modelValue', value);
 			}
+		},
+		errorMessage() {
+			return (
+				this.$resources.changeGroupOptions.error ||
+				this.$resources.changeGroup.error ||
+				this.$resources.cloneGroup.error
+			);
 		}
 	},
 	resources: {
 		changeGroup() {
 			return {
 				url: 'press.api.site.change_group',
-				params: {
-					name: this.site?.name
-				},
 				onSuccess() {
 					const destinationGroupTitle =
 						this.$resources.changeGroupOptions.data.find(

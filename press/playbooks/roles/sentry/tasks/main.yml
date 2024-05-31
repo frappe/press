@@ -1,16 +1,18 @@
 ---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
 - name: Install Docker Compose
-  get_url:
-    url: https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64
-    checksum: sha256:ed79398562f3a80a5d8c068fde14b0b12101e80b494aabb2b3533eaa10599e0f
-    dest: /usr/local/bin/docker-compose
-    mode: 0777
+  apt:
+    name: docker-compose-plugin
+    state: latest
 
 - name: Download Sentry Self Hosting Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/getsentry/self-hosted/archive/refs/tags/22.6.0.tar.gz
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.5.0.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -18,7 +20,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: /tmp/self-hosted-22.6.0/
+    src: /tmp/self-hosted-24.5.0/
     dest: /home/frappe/sentry
     remote_src: yes
 
@@ -41,14 +43,22 @@
   become: yes
   become_user: frappe
   template:
-    src: sentry.config.yml
+    src: sentry.yml.jinja2
     dest: /home/frappe/sentry/sentry/config.yml
+
+- name: Fix Kafka/Zookeeper volume permissions
+  become: yes
+  become_user: frappe
+  replace:
+    path: /home/frappe/sentry/docker-compose.yml
+    regexp: '^((\s+)image: "confluentinc/cp-(zookeeper|kafka):.*")$'
+    replace: '\1\n\2user: "0:0"'  # \1 matches the whole line. \2 matches the indentation.
 
 - name: Install Sentry
   become: yes
   become_user: frappe
-  command: bash install.sh --skip-user-prompt
-  args:
+  shell:
+    cmd: echo "no" | bash install.sh --no-report-self-hosted-issues --skip-user-prompt
     chdir: /home/frappe/sentry
 
 - name: Create Sentry Python Config File
@@ -78,4 +88,3 @@
   command: /home/frappe/agent/env/bin/agent setup trace
   args:
     chdir: /home/frappe/agent
-  

@@ -233,6 +233,7 @@ export default {
 			return [
 				{
 					label: 'Visit Server',
+					condition: () => this.$account.user.user_type === 'System User',
 					onClick: () => {
 						window.open(`https://${server.route.params.serverName}`, '_blank');
 					}

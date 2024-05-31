@@ -1,10 +1,7 @@
-import HelpIcon from '~icons/lucide/help-circle';
 import { defineAsyncComponent, h } from 'vue';
-import { Button } from 'frappe-ui';
 import ServerActions from '../components/server/ServerActions.vue';
-import { userCurrency, bytes, pricePerDay, planTitle } from '../utils/format';
+import { planTitle, duration } from '../utils/format';
 import { icon } from '../utils/components';
-import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
 import router from '../router';
@@ -37,6 +34,7 @@ export default {
 				label: 'Server',
 				fieldname: 'name',
 				width: 1.5,
+				class: 'font-medium',
 				format(value, row) {
 					return row.title || value;
 				}
@@ -92,6 +90,18 @@ export default {
 				label: server.doc.status
 			};
 		},
+		breadcrumbs({ documentResource: server }) {
+			return [
+				{
+					label: 'Servers',
+					route: '/servers'
+				},
+				{
+					label: server.doc.title || server.doc.name,
+					route: `/servers/${server.doc.name}`
+				}
+			];
+		},
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
@@ -123,7 +133,8 @@ export default {
 						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
-							condition: () => server.doc.status === 'Active',
+							condition: () =>
+								server.doc.status === 'Active' && $team.doc.is_desk_user,
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
 							}
@@ -155,8 +166,7 @@ export default {
 				),
 				props: server => {
 					return {
-						serverName: server.doc.name,
-						dbServerName: server.doc.database_server
+						serverName: server.doc.name
 					};
 				}
 			},
@@ -186,7 +196,6 @@ export default {
 						{
 							label: 'Version',
 							fieldname: 'version',
-							class: 'text-gray-600',
 							width: 0.5
 						},
 						{
@@ -200,7 +209,6 @@ export default {
 						{
 							label: 'Sites',
 							fieldname: 'site_count',
-							class: 'text-gray-600',
 							width: 0.25
 						}
 					],
@@ -258,13 +266,11 @@ export default {
 						},
 						{
 							label: 'Job ID',
-							fieldname: 'job_id',
-							class: 'text-gray-600'
+							fieldname: 'job_id'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -291,9 +297,30 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Ansible Play',
+					filterControls({ documentResource: server }) {
+						return [
+							{
+								type: 'select',
+								label: 'Server',
+								fieldname: 'server',
+								options: [
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							}
+						];
+					},
 					filters: server => {
 						return {
-							server: ['in', [server.doc.name, server.doc.database_server]]
+							server: [
+								'in',
+								[
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							]
 						};
 					},
 					route(row) {
@@ -325,7 +352,6 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							width: 0.5,
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -356,12 +382,12 @@ export default {
 	routes: [
 		{
 			name: 'Server Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{
 			name: 'Server Play',
-			path: 'play/:id',
+			path: 'plays/:id',
 			component: () => import('../pages/PlayPage.vue')
 		}
 	]

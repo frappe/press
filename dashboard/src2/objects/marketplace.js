@@ -1,5 +1,5 @@
 import { defineAsyncComponent, h } from 'vue';
-import { icon, renderDialog } from '../utils/components';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import NewAppDialog from '../components/NewAppDialog.vue';
@@ -17,7 +17,8 @@ export default {
 		siteInstalls: 'site_installs',
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
-		updateListing: 'update_listing'
+		updateListing: 'update_listing',
+		markAppReadyForReview: 'mark_app_ready_for_review'
 	},
 	list: {
 		route: '/apps',
@@ -27,6 +28,7 @@ export default {
 			{
 				label: 'App',
 				fieldname: 'title',
+				class: 'font-medium',
 				width: 0.3,
 				prefix(row) {
 					return row.image
@@ -54,7 +56,6 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				class: 'text-gray-700',
 				width: 1.0
 			}
 		],
@@ -142,7 +143,11 @@ export default {
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					fields: ['name', 'version', 'source'],
+					fields: [
+						'source.repository_owner as repository_owner',
+						'source.repository as repository',
+						'source.branch as branch'
+					],
 					columns: [
 						{
 							label: 'Version',
@@ -156,10 +161,9 @@ export default {
 						},
 						{
 							label: 'Repository',
-							fieldname: 'repository_owner',
 							width: 0.5,
 							format: (value, row) => {
-								return `${value}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`;
 							}
 						},
 						{
@@ -181,7 +185,7 @@ export default {
 										GenericDialog,
 										{
 											options: {
-												title: `Add version support for ${app.doc.name}`,
+												title: `Add version support for ${app.doc.title}`,
 												size: '2xl'
 											}
 										},
@@ -294,6 +298,7 @@ export default {
 																source: row.source
 															},
 															fields: ['message', 'tag', 'author', 'status'],
+															orderBy: 'creation desc',
 															columns: [
 																{
 																	label: 'Commit Message',
@@ -510,6 +515,17 @@ export default {
 						};
 					},
 					fields: ['site', 'enabled', 'team'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								class: 'w-24',
+								fieldname: 'enabled',
+								options: ['', 'Active', 'Disabled']
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Site',
@@ -545,9 +561,7 @@ export default {
 				}
 			}
 		],
-		actions(context) {
-			let { documentResource: app } = context;
-
+		actions({ documentResource: app }) {
 			return [
 				{
 					label: 'View in Marketplace',
@@ -570,73 +584,49 @@ export default {
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
-						renderDialog(
-							h(
-								GenericDialog,
-								{
-									options: {
-										title: 'Steps to complete before the app can be published',
-										size: '2xl',
-										message:
-											'Please complete the following steps before publishing the app. Once all steps are completed, the app will be reviewed and published.'
-									}
-								},
-								{
-									default: () =>
-										h(ObjectList, {
-											options: {
-												label: 'Steps',
-												fieldname: 'steps',
-												fieldtype: 'ListSelection',
-												hideControls: true,
-												columns: [
-													{
-														label: 'Step',
-														fieldname: 'step',
-														width: 0.8
-													},
-													{
-														label: 'Completed',
-														fieldname: 'completed',
-														type: 'Icon',
-														width: 0.3,
-														Icon(value) {
-															return value ? 'check' : '';
-														}
-													},
-													{
-														label: 'Update Now',
-														type: 'Button',
-														width: 0.2,
-														Button({ row }) {
-															let route = `/apps/${app.doc.name}/`;
-															route += row.step.includes('Publish')
-																? 'versions'
-																: 'listing';
+						let AppListingStepsDialog = defineAsyncComponent(() =>
+							import('../components/marketplace/AppListingStepsDialog.vue')
+						);
 
-															return {
-																label: 'View',
-																variant: 'ghost',
-																route
-															};
-														}
-													}
-												],
-												resource() {
-													return {
-														url: 'press.api.marketplace.review_steps',
-														params: {
-															name: app.doc.name
-														},
-														auto: true
-													};
-												}
-											}
-										})
-								}
-							)
+						renderDialog(
+							h(AppListingStepsDialog, {
+								app: app.doc.name
+							})
 						);
 					}
+				},
+				,
+				{
+					label: 'Options',
+					condition: () => app.doc.status === 'Draft',
+					options: [
+						{
+							label: 'Delete',
+							icon: icon('trash-2'),
+							condition: () => app.doc.status === 'Draft',
+							onClick() {
+								confirmDialog({
+									title: `Delete App ${app.doc.title}`,
+									message: 'Are you sure you want to delete this app?',
+									onSuccess({ hide }) {
+										toast.promise(app.delete.submit(), {
+											loading: 'Deleting app...',
+											success: () => {
+												hide();
+												router.push({ name: 'Marketplace App List' });
+												return 'App deleted successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
+										});
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}

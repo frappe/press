@@ -6,6 +6,7 @@ import functools
 import json
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from urllib.parse import urljoin
 
 import frappe
@@ -35,16 +36,30 @@ def log_error(title, **kwargs):
 		del kwargs["reference_doctype"]
 		del kwargs["reference_name"]
 
+	if doc := kwargs.get("doc"):
+		reference_doctype = doc.doctype
+		reference_name = doc.name
+		del kwargs["doc"]
+
+	try:
+		kwargs["user"] = frappe.session.user
+		kwargs["team"] = frappe.local.team()
+	except Exception:
+		pass
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 
-	frappe.log_error(
-		title=title,
-		message=message,
-		reference_doctype=reference_doctype,
-		reference_name=reference_name,
-	)
+	try:
+		frappe.log_error(
+			title=title,
+			message=message,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+	except Exception:
+		pass
 
 
 def get_current_team(get_doc=False):
@@ -119,6 +134,15 @@ def _get_current_team():
 def _system_user():
 	return (
 		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	)
+
+
+def has_role(role, user=None):
+	if not user:
+		user = frappe.session.user
+
+	return frappe.db.exists(
+		"Has Role", {"parenttype": "User", "parent": user, "role": role}
 	)
 
 
@@ -409,8 +433,8 @@ def developer_mode_only():
 
 
 def human_readable(num: int) -> str:
-	"""Assumes int data to describe size is in MiB"""
-	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+	"""Assumes int data to describe size is in Bytes"""
+	for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
 		if abs(num) < 1024:
 			return f"{num:3.1f}{unit}B"
 		num /= 1024
@@ -557,3 +581,38 @@ def reconnect_on_failure():
 			return wrapped(*args, **kwargs)
 
 	return wrapper
+
+
+def get_filepath(root: str, filename: str, max_depth: int = 1):
+	"""
+	Returns the absolute path of a `filename` under `root`. If
+	it is not found, returns None.
+
+	Example: get_filepath("apps/hrms", "hooks.py", 2)
+
+	Depth of search under file tree can be set using `max_depth`.
+	"""
+	path = _get_filepath(
+		Path(root),
+		filename,
+		max_depth,
+	)
+
+	if path is None:
+		return path
+
+	return path.absolute().as_posix()
+
+
+def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
+	if root.name == filename:
+		return root
+	if max_depth == 0 or not root.is_dir():
+		return None
+	for new_root in root.iterdir():
+		if possible_path := _get_filepath(
+			new_root,
+			filename,
+			max_depth - 1,
+		):
+			return possible_path

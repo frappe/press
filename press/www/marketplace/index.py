@@ -5,9 +5,28 @@ import frappe
 
 
 def get_context(context):
-	# TODO: Caching, Pagination, Filtering, Sorting
 	context.no_cache = 1
-	all_published_apps = frappe.db.sql(
+	context.apps = {}
+
+	featured = frappe.get_all(
+		"Featured App",
+		filters={"parent": "Marketplace Settings", "parentfield": "featured_apps"},
+		pluck="app",
+		order_by="idx",
+	)
+	context.apps["Featured Apps"] = sorted(
+		filter(
+			lambda x: x.name in featured,
+			frappe.get_all(
+				"Marketplace App",
+				{"name": ("in", featured), "status": "Published"},
+				["name", "title", "description", "image", "route"],
+			),
+		),
+		key=lambda y: featured.index(y.name),
+	)
+
+	context.apps["Most Installed"] = frappe.db.sql(
 		"""
 		SELECT
 			marketplace.name,
@@ -28,37 +47,65 @@ def get_context(context):
 			marketplace.name
 		ORDER BY
 			total_installs DESC
+		LIMIT 6
 	""",
 		as_dict=True,
 	)
 
-	context.apps = all_published_apps
-	for app in all_published_apps:
-		app["categories"] = frappe.db.get_all(
-			"Marketplace App Categories", {"parent": app["name"]}, pluck="category"
-		)
+	context.apps["Recently Added"] = frappe.get_all(
+		"Marketplace App",
+		{"status": "Published"},
+		["name", "title", "description", "image", "route"],
+		order_by="creation DESC",
+		limit=6,
+	)
 
 	context.categories = sorted(
 		frappe.db.get_all("Marketplace App Categories", pluck="category", distinct=True)
 	)
-	if "Featured" in context.categories:
-		context.categories.remove("Featured")
-		context.categories.insert(0, "Featured")
-
-	featured_apps = frappe.get_all(
-		"Featured App",
-		filters={"parent": "Marketplace Settings"},
-		pluck="app",
-		order_by="idx",
-	)
-
-	context.featured_apps = sorted(
-		filter(lambda x: x.name in featured_apps, all_published_apps),
-		key=lambda y: featured_apps.index(y.name),
-	)
-
 	context.metatags = {
 		"title": "Frappe Cloud Marketplace",
 		"description": "One Click Apps for your Frappe Sites",
 		"og:type": "website",
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def search(query, offset=0, limit=20):
+	return frappe.qb.get_query(
+		"Marketplace App",
+		filters={
+			"status": "Published",
+			"title": ("like", f"%{query}%"),
+		},
+		fields=["name", "image", "title", "description", "image", "route"],
+		offset=offset,
+		limit=limit,
+	).run(as_dict=1)
+
+
+@frappe.whitelist(allow_guest=True)
+def filter_by_category(category):
+	return frappe.db.sql(
+		"""
+		SELECT
+			marketplace.name,
+			marketplace.title,
+			marketplace.image,
+			marketplace.route,
+			marketplace.description
+		FROM
+			`tabMarketplace App` marketplace
+		LEFT JOIN
+			`tabMarketplace App Categories` category
+		ON
+			category.parent = marketplace.name
+		WHERE
+			marketplace.status = "Published"
+		AND
+			category.category = %s
+		ORDER BY marketplace.frappe_approved DESC
+	""",
+		category,
+		as_dict=True,
+	)

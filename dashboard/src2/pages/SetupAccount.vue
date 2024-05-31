@@ -9,15 +9,17 @@
 			class="order-1 hidden sm:block"
 		/>
 		<div class="w-full overflow-auto">
-			<LoginBox
-				:title="
-					!isInvitation
-						? 'Set up your account'
-						: `Invitation to join team: ${invitationToTeam}`
-				"
-			>
+			<LoginBox>
+				<div
+					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+				>
+					{{ invitedBy ? 'Invitation to join' : 'Set up your account' }}
+				</div>
+				<div class="mt-2 text-center text-sm text-gray-600" v-if="invitedBy">
+					Invitation by {{ invitedBy }}
+				</div>
 				<form
-					class="flex flex-col"
+					class="mt-6 flex flex-col"
 					@submit.prevent="$resources.setupAccount.submit()"
 				>
 					<div class="space-y-4">
@@ -28,7 +30,7 @@
 							:modelValue="email"
 							disabled
 						/>
-						<template v-if="oauthSignup == 0">
+						<template v-if="oauthSignup == 0 && !userExists">
 							<FormControl
 								label="First Name"
 								type="text"
@@ -46,6 +48,7 @@
 								required
 							/>
 							<FormControl
+								v-if="!oauthDomain"
 								label="Password"
 								type="password"
 								v-model="password"
@@ -138,8 +141,10 @@ export default {
 			invitationToTeam: null,
 			isInvitation: null,
 			oauthSignup: 0,
+			oauthDomain: false,
 			country: null,
 			termsAccepted: false,
+			invitedBy: null,
 			invitedByParentTeam: false,
 			countries: [],
 			saasProduct: null,
@@ -165,9 +170,11 @@ export default {
 						this.country = res.country;
 						this.userExists = res.user_exists;
 						this.invitationToTeam = res.team;
+						this.invitedBy = res.invited_by;
 						this.isInvitation = res.is_invitation;
 						this.invitedByParentTeam = res.invited_by_parent_team;
 						this.oauthSignup = res.oauth_signup;
+						this.oauthDomain = res.oauth_domain;
 						this.countries = res.countries;
 						this.saasProduct = res.saas_product;
 					}
@@ -188,24 +195,17 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
+					oauth_domain: this.oauthDomain,
 					signup_values: this.signupValues
 				},
 				onSuccess() {
-					let path = '/dashboard-beta';
+					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard-beta/app-trial/${this.saasProduct.name}`;
+						path = `/dashboard/app-trial/${this.saasProduct.name}`;
 					}
 					window.location.href = path;
 				}
 			};
-		}
-	},
-	methods: {
-		showFormFields() {
-			let show = true;
-			show = !this.userExists;
-			show = this.oauthSignup == 0;
-			return show;
 		}
 	},
 	computed: {

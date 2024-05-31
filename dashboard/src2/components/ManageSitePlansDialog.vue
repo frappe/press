@@ -15,7 +15,11 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<SitePlansCards v-model="plan" />
+			<SitePlansCards
+				v-model="plan"
+				:isPrivateBenchSite="!$site.doc.group_public"
+				:isDedicatedServerSite="$site.doc.is_dedicated_server"
+			/>
 			<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 		</template>
 	</Dialog>

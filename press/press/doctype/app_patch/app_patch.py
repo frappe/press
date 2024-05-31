@@ -9,6 +9,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 
 PatchConfig = TypedDict(
 	"PatchConfig",
@@ -69,7 +70,6 @@ class AppPatch(Document):
 		"url",
 		"status",
 	]
-	dashboard_actions = ["apply_patch", "revert_patch", "delete"]
 
 	def validate(self):
 		self.validate_bench()
@@ -94,17 +94,20 @@ class AppPatch(Document):
 	def after_insert(self):
 		self.apply_patch()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()
+
+	@dashboard_whitelist()
 	def apply_patch(self):
 		self.patch_app(revert=False)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def revert_patch(self):
 		self.patch_app(revert=True)
 
 	@frappe.whitelist()
 	def delete_patch(self):
-		print("delete patch called")
 		if self.status != "Not Applied":
 			frappe.throw(
 				f"Cannot delete patch if status is not 'Not Applied'. Current status is '{self.status}'"
@@ -120,7 +123,7 @@ class AppPatch(Document):
 			build_assets=self.build_assets,
 			revert=revert,
 		)
-		Agent(server).patch_app(self.bench, self.app, data)
+		Agent(server).patch_app(self, data)
 		self.status = "In Process"
 		self.save()
 

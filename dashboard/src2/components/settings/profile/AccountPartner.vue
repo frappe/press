@@ -49,13 +49,18 @@
 					v-model="code"
 					@input="referralCodeChange"
 				/>
-				<ErrorMessage class="mt-2" :message="errorMessage" />
+				<div class="mt-1">
+					<div v-if="partnerExists" class="text-sm text-green-600" role="alert">
+						Referral Code {{ code }} belongs to {{ partner }}
+					</div>
+					<ErrorMessage class="mt-2" :message="errorMessage" />
+				</div>
 			</template>
 		</Dialog>
 	</Card>
 </template>
 <script>
-import { Card, FormControl } from 'frappe-ui';
+import { Card, FormControl, frappeRequest } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AccountPartner',
@@ -75,7 +80,7 @@ export default {
 	resources: {
 		addPartnerCode() {
 			return {
-				url: 'press.api.account.add_partner',
+				url: 'press.api.partner.add_partner',
 				params: {
 					referral_code: this.code
 				},
@@ -91,7 +96,7 @@ export default {
 		},
 		partnerName() {
 			return {
-				url: 'press.api.account.get_partner_name',
+				url: 'press.api.partner.get_partner_name',
 				auto: true,
 				params: {
 					partner_email: this.$team.doc.partner_email
@@ -104,11 +109,13 @@ export default {
 			let code = e.target.value;
 			this.partnerExists = false;
 
-			let result = await this.$call('press.api.account.validate_partner_code', {
-				code: code
+			let result = await frappeRequest({
+				url: 'press.api.partner.validate_partner_code',
+				params: { code: code }
 			});
 
-			let [isValidCode, partnerName] = result;
+			let isValidCode = result[0];
+			let partnerName = result[1];
 
 			if (isValidCode) {
 				this.partnerExists = true;

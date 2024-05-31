@@ -3,7 +3,7 @@
 		:is="column.link ? 'a' : 'div'"
 		:href="column.link ? column.link(value, row) : undefined"
 		:target="column.link ? '_blank' : undefined"
-		class="flex items-center text-gray-900"
+		class="flex items-center"
 		:class="{
 			'text-gray-900 outline-gray-400 hover:text-gray-700': column.link,
 			'justify-end': column.align === 'right',
@@ -44,6 +44,9 @@
 					{{ value ? $dayjs(value).fromNow() : '' }}
 				</Tooltip>
 			</div>
+		</div>
+		<div class="text-base" v-else-if="column.type == 'Date'">
+			{{ formattedDate }}
 		</div>
 		<div v-else-if="column.type == 'Actions'">
 			<Dropdown v-if="showDropdown" :options="actions">
@@ -96,6 +99,13 @@ export default {
 			return typeof formattedValue === 'object'
 				? formattedValue
 				: String(formattedValue);
+		},
+		formattedDate() {
+			if (!this.value) return '';
+			if (this.value.includes(' ')) {
+				return this.$format.date(this.value, 'lll');
+			}
+			return this.$format.date(this.value, 'll');
 		},
 		icon() {
 			return this.column.type === 'Icon' && this.column.Icon(this.value);

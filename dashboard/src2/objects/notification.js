@@ -1,17 +1,104 @@
+import { h } from 'vue';
+import router from '../router';
+import { getDocResource } from '../utils/resource';
+import { Tooltip } from 'frappe-ui';
+import { icon } from '../utils/components';
+import { getTeam } from '../data/team';
+
 export default {
 	doctype: 'Press Notification',
 	whitelistedMethods: {},
 	list: {
+		resource() {
+			let $team = getTeam();
+			return {
+				type: 'list',
+				doctype: 'Press Notification',
+				url: 'press.api.notifications.get_notifications',
+				auto: true,
+				filters: {
+					team: $team.name
+				},
+				cache: ['Notifications']
+			};
+		},
 		route: '/notifications',
 		title: 'Notifications',
-		fields: ['title'],
 		orderBy: 'creation desc',
+		filterControls() {
+			return [
+				{
+					type: 'select',
+					label: 'Read',
+					class: 'w-20',
+					fieldname: 'read',
+					options: ['', 'Read', 'Unread']
+				}
+			];
+		},
+		onRowClick(row) {
+			let notification = getDocResource({
+				doctype: 'Press Notification',
+				name: row.name,
+				whitelistedMethods: {
+					markNotificationAsRead: 'mark_as_read'
+				}
+			});
+			notification.markNotificationAsRead.submit().then(() => {
+				if (row.route) router.push(row.route);
+			});
+		},
 		columns: [
 			{
 				label: 'Title',
-				fieldname: 'title'
+				fieldname: 'title',
+				width: '20rem',
+				format(value, row) {
+					return value || row.type;
+				},
+				suffix(row) {
+					if (row.is_actionable && !row.is_addressed) {
+						let AlertIcon = icon('alert-circle');
+						return h(
+							Tooltip,
+							{
+								text: 'This notification requires your attention'
+							},
+							{
+								default: () =>
+									h(
+										'div',
+										{
+											class: 'ml-2  text-red-500'
+										},
+										h(AlertIcon)
+									)
+							}
+						);
+					}
+				}
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 }
+			{
+				label: 'Message',
+				fieldname: 'message',
+				type: 'Component',
+				width: '40rem',
+				component({ row }) {
+					return h('div', {
+						class: 'truncate text-base text-gray-600',
+						// replace all html tags except <b>
+						innerHTML: row.message
+							.replace(/<(?!\/?b\b)[^>]*>/g, '')
+							.split('\n')[0]
+					});
+				}
+			},
+			{
+				label: '',
+				fieldname: 'creation',
+				type: 'Timestamp',
+				align: 'right'
+			}
 		]
 	},
 	routes: []

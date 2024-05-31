@@ -25,12 +25,18 @@
   "start",
   "end",
   "duration",
+  "section_break_zqbm",
+  "reference_doctype",
+  "column_break_ayyq",
+  "reference_name",
   "data_19",
   "output",
   "data",
   "traceback",
   "request_data",
-  "request_files"
+  "request_files",
+  "callback_section",
+  "callback_failure_count"
  ],
  "fields": [
   {
@@ -207,11 +213,47 @@
    "fieldtype": "Datetime",
    "label": "Next Retry At",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "callback_section",
+   "fieldtype": "Section Break",
+   "label": "Callback"
+  },
+  {
+   "default": "0",
+   "fieldname": "callback_failure_count",
+   "fieldtype": "Int",
+   "label": "Callback Failure Count"
+  },
+  {
+   "fieldname": "section_break_zqbm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.reference_doctype",
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Doctype",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.reference_name",
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ayyq",
+   "fieldtype": "Column Break"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2023-12-04 17:31:38.094742",
+ "modified": "2024-05-17 11:25:24.215362",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

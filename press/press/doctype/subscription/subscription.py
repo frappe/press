@@ -50,6 +50,7 @@ class Subscription(Document):
 		price_field = (
 			Plan.price_inr if frappe.local.team().currency == "INR" else Plan.price_usd
 		)
+		filters = list_args.get("filters", {})
 
 		query = (
 			frappe.qb.from_(Subscription)
@@ -66,12 +67,17 @@ class Subscription(Document):
 			)
 			.where(
 				(Subscription.document_type == "Marketplace App")
-				& (Subscription.document_name == list_args["filters"]["document_name"])
+				& (Subscription.document_name == filters["document_name"])
 				& (Subscription.site != "")
 				& (price_field > 0)
 			)
 			.limit(list_args["limit"])
+			.offset(list_args["start"])
 		)
+
+		if filters.get("enabled"):
+			enabled = 1 if filters["enabled"] == "Active" else 0
+			query = query.where(Subscription.enabled == enabled)
 
 		return query.run(as_dict=True)
 
@@ -95,6 +101,8 @@ class Subscription(Document):
 			doc.save()
 
 	def enable(self):
+		if self.enabled:
+			return
 		try:
 			self.enabled = True
 			self.save()
@@ -102,6 +110,8 @@ class Subscription(Document):
 			frappe.log_error(title="Enable Subscription Error")
 
 	def disable(self):
+		if not self.enabled:
+			return
 		try:
 			self.enabled = False
 			self.save()
@@ -238,6 +248,7 @@ def create_usage_records():
 		pluck="name",
 		order_by=None,
 		limit=2000,
+		ignore_ifnull=True,
 	)
 	for name in subscriptions:
 		subscription = frappe.get_cached_doc("Subscription", name)
@@ -271,6 +282,7 @@ def sites_with_free_hosting():
 		"Site",
 		{"status": ("not in", ("Archived", "Suspended")), "team": ("in", free_teams)},
 		pluck="name",
+		ignore_ifnull=True,
 	)
 	return free_team_sites + frappe.get_all(
 		"Site",
@@ -280,6 +292,7 @@ def sites_with_free_hosting():
 			"team": ("not in", free_teams),
 		},
 		pluck="name",
+		ignore_ifnull=True,
 	)
 
 

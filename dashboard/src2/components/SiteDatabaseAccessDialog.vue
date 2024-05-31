@@ -171,6 +171,13 @@ export default {
 		}
 	},
 	computed: {
+		dbAccessCommand() {
+			if (this.databaseAccessInfo) {
+				const { credentials } = this.databaseAccessInfo;
+				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
+			}
+			return null;
+		},
 		databaseCredentials() {
 			return this.$site.getDatabaseCredentials.data;
 		},

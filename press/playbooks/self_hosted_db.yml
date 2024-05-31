@@ -5,6 +5,12 @@
   become_user: root
   gather_facts: yes
   roles:
+    - role: essentials
+    - role: user
     - role: mariadb
+    - role: nginx
+    - role: agent
+    - role: node_exporter
     - role: mysqld_exporter
     - role: deadlock_logger
+    - role: filebeat

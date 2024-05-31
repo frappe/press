@@ -15,6 +15,9 @@
   "author",
   "timestamp",
   "message",
+  "validation_section",
+  "invalid_release",
+  "invalidation_reason",
   "clone_section",
   "clone_directory",
   "column_break_9",
@@ -141,6 +144,25 @@
    "fieldtype": "Datetime",
    "label": "Timestamp",
    "read_only": 1
+  },
+  {
+   "fieldname": "validation_section",
+   "fieldtype": "Section Break",
+   "label": "Validation"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.invalid_release",
+   "description": "A release is invalid if it fails validations checks. For instance if it has syntax errors.",
+   "fieldname": "invalid_release",
+   "fieldtype": "Check",
+   "label": "Invalid Release"
+  },
+  {
+   "depends_on": "eval:doc.invalid_release",
+   "fieldname": "invalidation_reason",
+   "fieldtype": "Code",
+   "label": "Invalidation Reason"
   }
  ],
  "in_create": 1,
@@ -176,7 +198,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2024-01-02 12:57:26.450172",
+ "modified": "2024-05-09 11:30:20.907001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

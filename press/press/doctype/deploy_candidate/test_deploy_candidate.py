@@ -47,6 +47,7 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 	return group.create_deploy_candidate()
 
 
+@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestDeployCandidate(unittest.TestCase):
 	def setUp(self):
@@ -57,7 +58,6 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_if_new_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
@@ -75,7 +75,6 @@ class TestDeployCandidate(unittest.TestCase):
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
@@ -94,7 +93,6 @@ class TestDeployCandidate(unittest.TestCase):
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_first_deploy_creates_draft_deploy_candidate(
 		self, mock_enqueue_doc, mock_commit
@@ -109,7 +107,6 @@ class TestDeployCandidate(unittest.TestCase):
 		candidate = group.create_deploy_candidate()
 		self.assertEqual(candidate.status, "Draft")
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_empty_apps_creates_deploy_candidate_with_same_release(
 		self, mock_enqueue_doc, mock_commit
@@ -126,7 +123,6 @@ class TestDeployCandidate(unittest.TestCase):
 		second_candidate = group.create_deploy_candidate([])
 		self.assertEqual(first_candidate.apps[0].release, second_candidate.apps[0].release)
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_no_arguments_creates_deploy_candidate_with_newer_release(
 		self, mock_enqueue_doc, mock_commit
@@ -144,7 +140,6 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertNotEqual(first_candidate.apps[0].release, second_candidate.apps[0].release)
 		self.assertEqual(second_candidate.apps[0].release, release.name)
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_specific_release_creates_deploy_candidate_with_that_release(
 		self, mock_enqueue_doc, mock_commit
@@ -164,7 +159,6 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(candidate.apps[0].release, second_release.name)
 		self.assertNotEqual(candidate.apps[0].release, third_release.name)
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_new_app_creates_deploy_candidate_with_new_app(
 		self, mock_enqueue_doc, mock_commit
@@ -183,9 +177,8 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(candidate.apps[1].app, app.name)
 		self.assertEqual(candidate.apps[1].release, release.name)
 
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
 	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(
 		self, mock_enqueue_doc, mock_commit
 	):
@@ -220,6 +213,7 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(second_candidate.apps[0].release, first_candidate.apps[0].release)
 		self.assertNotEqual(second_candidate.apps[1].release, first_candidate.apps[1].release)
 
+	@unittest.skip("Docker Build broken with `duplicate cache exports [gha]`")
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
@@ -311,7 +305,7 @@ def create_cache_test_release_group(
 	for dep in release_group.dependencies:
 		if dep.dependency != "BENCH_VERSION":
 			continue
-		dep.version = "5.22.1"
+		dep.version = "5.22.6"
 
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()

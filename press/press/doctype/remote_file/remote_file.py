@@ -154,7 +154,7 @@ class RemoteFile(Document):
 
 		bucket: DF.Data | None
 		file_name: DF.Data | None
-		file_path: DF.Data | None
+		file_path: DF.Text | None
 		file_size: DF.Data | None
 		file_type: DF.Data | None
 		site: DF.Link | None
@@ -240,6 +240,21 @@ class RemoteFile(Document):
 		else:
 			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
 			return json.loads(obj["Body"].read().decode("utf-8"))
+
+	@property
+	def size(self) -> int:
+		"""
+		Get the size of file in bytes
+
+		Sets the file_size field if not already set
+		"""
+		if int(self.file_size or 0):
+			return int(self.file_size or 0)
+		else:
+			response = requests.head(self.url)
+			self.file_size = int(response.headers.get("content-length", 0))
+			self.save()
+			return int(self.file_size)
 
 
 def delete_s3_files(buckets):

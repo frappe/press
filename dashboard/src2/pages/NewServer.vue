@@ -10,7 +10,15 @@
 		</Header>
 	</div>
 
-	<div v-if="serverEnabled" class="mx-auto max-w-2xl px-5">
+	<div
+		v-if="!$team.doc.is_desk_user && !$session.hasServerCreationAccess"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<ErrorMessage message="You aren't permitted to create new servers" />
+	</div>
+
+	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -84,6 +92,60 @@
 						</div>
 					</div>
 				</div>
+				<div
+					v-if="serverRegion && options.app_premium_plans.length > 0"
+					class="flex flex-col"
+				>
+					<div class="flex items-center justify-between">
+						<h2 class="text-sm font-medium leading-6 text-gray-900">
+							Plan Type
+						</h2>
+						<div>
+							<Button
+								link="https://frappecloud.com/pricing#dedicated"
+								variant="ghost"
+							>
+								<template #prefix>
+									<i-lucide-help-circle class="h-4 w-4 text-gray-700" />
+								</template>
+								Help
+							</Button>
+						</div>
+					</div>
+					<div class="mt-2 w-full space-y-2">
+						<div class="grid grid-cols-2 gap-3">
+							<button
+								v-for="c in [
+									{
+										name: 'Standard',
+										description: 'Includes standard support and SLAs'
+									},
+									{
+										name: 'Premium',
+										description: 'Includes enterprise support and SLAs'
+									}
+								]"
+								:key="c.name"
+								@click="planType = c.name"
+								:class="[
+									planType === c.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+								]"
+							>
+								<div class="flex w-full items-center justify-between space-x-2">
+									<span class="text-sm font-medium">
+										{{ c.name }}
+									</span>
+									<Tooltip :text="c.description">
+										<i-lucide-info class="h-4 w-4 text-gray-500" />
+									</Tooltip>
+								</div>
+							</button>
+						</div>
+					</div>
+				</div>
 				<div v-if="serverRegion">
 					<div class="flex flex-col" v-if="options?.app_plans.length">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -93,7 +155,10 @@
 							<ServerPlansCards
 								v-model="appServerPlan"
 								:plans="
-									options.app_plans.filter(p => p.cluster === serverRegion)
+									(planType === 'Standard'
+										? options.app_plans
+										: options.app_premium_plans
+									).filter(p => p.cluster === serverRegion)
 								"
 							/>
 						</div>
@@ -106,9 +171,13 @@
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<ServerPlansCards
+								v-if="options.db_plans"
 								v-model="dbServerPlan"
 								:plans="
-									options.db_plans.filter(p => p.cluster === serverRegion)
+									(planType === 'Standard'
+										? options.db_plans
+										: options.db_premium_plans
+									).filter(p => p.cluster === serverRegion)
 								"
 							/>
 						</div>
@@ -279,6 +348,7 @@ export default {
 			appPrivateIP: '',
 			dbPublicIP: '',
 			dbPrivateIP: '',
+			planType: 'Standard',
 			serverEnabled: true,
 			agreedToRegionConsent: false
 		};
@@ -292,6 +362,10 @@ export default {
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
+		},
+		planType() {
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
 		}
 	},
 	resources: {
@@ -316,8 +390,10 @@ export default {
 							}
 						],
 						regions: data.regions,
-						app_plans: data.app_plans,
-						db_plans: data.db_plans
+						app_plans: data.app_plans.filter(p => p.premium == 0),
+						db_plans: data.db_plans.filter(p => p.premium == 0),
+						app_premium_plans: data.app_plans.filter(p => p.premium == 1),
+						db_premium_plans: data.db_plans.filter(p => p.premium == 1)
 					};
 				},
 				onError(error) {
@@ -349,6 +425,15 @@ export default {
 						return 'Please select an App Server Plan';
 					} else if (!server.db_plan) {
 						return 'Please select a Database Server Plan';
+					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
+						return "You don't have billing details added. Please add billing details from settings to continue.";
+					} else if (
+						(this.$team.doc.currency == 'USD' &&
+							this.$team.doc.balance <= 200) ||
+						(this.$team.doc.currency == 'INR' &&
+							this.$team.doc.balance <= 16000)
+					) {
+						return 'You need to have $200 worth of credits to create a server.';
 					}
 				},
 				onSuccess(server) {

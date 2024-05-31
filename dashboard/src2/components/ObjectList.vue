@@ -2,43 +2,45 @@
 	<div>
 		<div v-if="hideControls" class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
-				<TextInput
-					placeholder="Search"
-					class="w-[20rem]"
-					:debounce="500"
-					v-model="searchQuery"
-				>
-					<template #prefix>
-						<i-lucide-search class="h-4 w-4 text-gray-500" />
-					</template>
-					<template #suffix>
-						<span class="text-sm text-gray-500" v-if="searchQuery">
-							{{
-								filteredRows.length === 0
-									? 'No results'
-									: `${filteredRows.length} of ${rows.length}`
-							}}
-						</span>
-					</template>
-				</TextInput>
+				<div class="flex items-center space-x-2">
+					<TextInput
+						placeholder="Search"
+						class="max-w-[20rem]"
+						:debounce="500"
+						v-model="searchQuery"
+					>
+						<template #prefix>
+							<i-lucide-search class="h-4 w-4 text-gray-500" />
+						</template>
+						<template #suffix>
+							<span class="text-sm text-gray-500" v-if="searchQuery">
+								{{ searchQuerySummary }}
+							</span>
+						</template>
+					</TextInput>
+					<ObjectListFilters
+						v-if="filterControls.length"
+						:filterControls="filterControls"
+						@update:filter="onFilterControlChange"
+					/>
+				</div>
 			</slot>
 			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
 				<Tooltip
 					v-if="options.experimental"
 					text="This is an experimental feature"
-					class="rounded-md bg-purple-100 p-1.5"
 				>
-					<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+					<div class="rounded-md bg-purple-100 p-1.5">
+						<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+					</div>
 				</Tooltip>
-				<Tooltip
-					v-if="options.documentation"
-					text="View documentation"
-					class="rounded-md bg-gray-100 p-1.5"
-				>
-					<a :href="options.documentation" target="_blank">
-						<FeatherIcon class="h-4 w-4" name="help-circle" />
-					</a>
+				<Tooltip v-if="options.documentation" text="View documentation">
+					<div class="rounded-md bg-gray-100 p-1.5">
+						<a :href="options.documentation" target="_blank">
+							<FeatherIcon class="h-4 w-4" name="help-circle" />
+						</a>
+					</div>
 				</Tooltip>
 				<Tooltip text="Refresh" v-if="$list">
 					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
@@ -47,6 +49,12 @@
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton
+					v-for="button in actions"
+					v-bind="button"
+					:key="button.label"
+					:context="context"
+				/>
 				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
@@ -62,38 +70,26 @@
 						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
-						: null
+						: null,
+					rowHeight: this.options.rowHeight,
+					emptyState: {}
 				}"
 				row-key="name"
+				@update:selections="e => this.$emit('update:selections', e)"
 			>
-				<ListHeader>
-					<ListHeaderItem
-						class="whitespace-nowrap"
-						v-for="column in columns"
-						:key="column.key"
-						:item="column"
-					>
-						<template #prefix>
-							<FeatherIcon
-								v-if="column.icon"
-								:name="column.icon"
-								class="h-4 w-4"
-							/>
-						</template>
-					</ListHeaderItem>
-				</ListHeader>
-				<ListRows>
-					<ListRow v-for="(row, i) in filteredRows" :row="row" :key="row.name">
-						<template v-slot="{ column, item }">
-							<ObjectListCell
-								:row="row"
-								:column="column"
-								:idx="i"
-								:context="context"
-							/>
-						</template>
-					</ListRow>
-				</ListRows>
+				<template v-if="options.groupHeader" #group-header="{ group }">
+					<component :is="options.groupHeader({ ...context, group })" />
+				</template>
+				<template #cell="{ item, row, column }">
+					<ObjectListCell
+						:class="[
+							column == columns[0] ? ' text-gray-900' : ' text-gray-700'
+						]"
+						:row="row"
+						:column="column"
+						:context="context"
+					/>
+				</template>
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
@@ -106,7 +102,7 @@
 					<ErrorMessage :message="$list.list.error" />
 				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
-					No results found
+					{{ emptyStateMessage }}
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right" v-if="$list">
@@ -122,17 +118,14 @@
 	</div>
 </template>
 <script>
+import { reactive } from 'vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
+import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	Dropdown,
 	ListView,
 	ListHeader,
-	ListHeaderItem,
-	ListRows,
 	ListRow,
-	ListRowItem,
-	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
 	Tooltip,
@@ -144,17 +137,14 @@ let subscribed = {};
 export default {
 	name: 'ObjectList',
 	props: ['options'],
+	emits: ['update:selections'],
 	components: {
 		ActionButton,
 		ObjectListCell,
-		Dropdown,
+		ObjectListFilters,
 		ListView,
 		ListHeader,
-		ListHeaderItem,
-		ListRows,
 		ListRow,
-		ListRowItem,
-		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
 		Tooltip,
@@ -165,6 +155,32 @@ export default {
 			lastRefreshed: null,
 			searchQuery: ''
 		};
+	},
+	watch: {
+		searchQuery(value) {
+			if (this.options.searchField && this.$list?.list) {
+				if (value) {
+					this.$list.update({
+						filters: {
+							...this.$list.filters,
+							[this.options.searchField]: ['like', `%${value.toLowerCase()}%`]
+						},
+						start: 0,
+						pageLength: this.options.pageLength || 20
+					});
+				} else {
+					this.$list.update({
+						filters: {
+							...this.$list.filters,
+							[this.options.searchField]: undefined
+						},
+						start: 0,
+						pageLength: this.options.pageLength || 20
+					});
+				}
+				this.$list.reload();
+			}
+		}
 	},
 	resources: {
 		list() {
@@ -202,11 +218,21 @@ export default {
 			};
 		}
 	},
+	beforeUpdate() {
+		if (this.$list?.list) {
+			let filters = this.$list.list?.params?.filters;
+			for (let control of this.filterControls) {
+				if (control.value !== filters[control.fieldname]) {
+					control.value = filters[control.fieldname];
+				}
+			}
+		}
+	},
 	mounted() {
 		if (this.options.data) return;
 		if (this.options.list) {
 			let resource = this.$list.list || this.$list;
-			if (!resource.fetched) {
+			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
@@ -276,23 +302,69 @@ export default {
 			return this.$list.data || [];
 		},
 		filteredRows() {
-			if (!this.searchQuery) return this.rows;
+			if (this.options.searchField || !this.searchQuery) return this.rows;
 			let query = this.searchQuery.toLowerCase();
 
-			return this.rows.filter(row => {
-				let values = this.options.columns.map(column => {
-					let value = row[column.fieldname];
-					if (column.format) {
-						value = column.format(value, row);
+			return this.rows
+				.map(row => {
+					if (row.rows && row.group) {
+						// group
+						let filteredRows = row.rows.filter(row =>
+							this.filterRow(query, row)
+						);
+
+						if (filteredRows.length) {
+							return {
+								...row,
+								rows: row.rows.filter(row => this.filterRow(query, row))
+							};
+						}
 					}
-					return value;
+					if (this.filterRow(query, row)) {
+						return row;
+					}
+					return false;
+				})
+				.filter(Boolean);
+		},
+		searchQuerySummary() {
+			if (this.options.searchField) return;
+
+			let summary;
+			if (this.filteredRows.length === 0) {
+				summary = 'No results';
+			} else if (this.filteredRows[0].rows) {
+				let total = this.rows.reduce(
+					(acc, group) => acc + group.rows.length,
+					0
+				);
+				let filtered = this.filteredRows.reduce(
+					(acc, group) => acc + group.rows.length,
+					0
+				);
+				summary = `${filtered} of ${total}`;
+			} else {
+				summary = `${this.filteredRows.length} of ${this.rows.length}`;
+			}
+			return summary;
+		},
+		filterControls() {
+			if (!this.options.filterControls) return [];
+			let controls = this.options.filterControls(this.context);
+			return controls
+				.filter(control => control.fieldname)
+				.map(control => {
+					return reactive({ ...control, value: control.default || undefined });
 				});
-				for (let value of values) {
-					if (value && value.toLowerCase?.().includes(query)) {
-						return true;
-					}
+		},
+		actions() {
+			if (!this.options.actions) return [];
+			let actions = this.options.actions(this.context);
+			return actions.filter(action => {
+				if (action.condition) {
+					return action.condition(this.context);
 				}
-				return false;
+				return true;
 			});
 		},
 		primaryAction() {
@@ -319,6 +391,38 @@ export default {
 		},
 		hideControls() {
 			return !this.options.hideControls;
+		},
+		emptyStateMessage() {
+			return this.options.emptyStateMessage || 'No results found';
+		}
+	},
+	methods: {
+		filterRow(query, row) {
+			let values = this.options.columns.map(column => {
+				let value = row[column.fieldname];
+				if (column.format) {
+					value = column.format(value, row);
+				}
+				return value;
+			});
+			for (let value of values) {
+				if (value && value.toLowerCase?.().includes(query)) {
+					return true;
+				}
+			}
+			return false;
+		},
+		onFilterControlChange(control) {
+			let filters = { ...this.$list.filters };
+			for (let c of this.filterControls) {
+				filters[c.fieldname] = c.value;
+			}
+			this.$list.update({
+				filters,
+				start: 0,
+				pageLength: this.options.pageLength || 20
+			});
+			this.$list.reload();
 		}
 	}
 };

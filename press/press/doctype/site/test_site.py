@@ -42,12 +42,14 @@ def create_test_bench(
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
+	creation: datetime = None,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
 
 	API call to agent will be faked when creating the doc.
 	"""
+	creation = creation or frappe.utils.now_datetime()
 	user = user or frappe.session.user
 	if not server:
 		proxy_server = create_test_proxy_server()
@@ -74,6 +76,7 @@ def create_test_bench(
 			"server": server,
 		}
 	).insert(ignore_if_duplicate=True)
+	bench.db_set("creation", creation)
 	bench.reload()
 	return bench
 
@@ -90,6 +93,7 @@ def create_test_site(
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
+	backup_time=None,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
@@ -128,6 +132,7 @@ def create_test_site(
 	site.update(kwargs)
 	site.insert()
 	site.db_set("creation", creation)
+	site.db_set("backup_time", backup_time)
 	site.reload()
 	return site
 

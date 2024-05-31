@@ -12,14 +12,60 @@ from typing import Tuple, TypedDict
 
 CommandOutput = TypedDict(
 	"CommandOutput",
+	cwd=str,
+	image_tag=str,
 	returncode=int,
 	output=str,
 )
 
 
+def copy_file_from_docker_cache(
+	container_source: str,
+	host_dest: str = ".",
+	cache_target: str = "/home/frappe/.cache",
+):
+	"""
+	Function is used to copy files from docker cache i.e. `cache_target/container_source`
+	to the host system i.e `host_dest`.
+
+	This function is required cause cache files may be available only during docker build.
+
+	This works by:
+	- copy the file from mount cache (image) to another_folder (image)
+	- create a container from image
+	- copy file from another_folder (container) to host system (using docker cp)
+	- remove container and then image
+	"""
+	filename = Path(container_source).name
+	container_dest_dirpath = Path(cache_target).parent / "container_dest"
+	container_dest_filepath = container_dest_dirpath / filename
+	command = (
+		f"mkdir -p {container_dest_dirpath} && "
+		+ f"cp {container_source} {container_dest_filepath}"
+	)
+	output = run_command_in_docker_cache(
+		command,
+		cache_target,
+		False,
+	)
+
+	if output["returncode"] == 0:
+		container_id = create_container(output["image_tag"])
+		copy_file_from_container(
+			container_id,
+			container_dest_filepath,
+			Path(host_dest),
+		)
+		remove_container(container_id)
+
+	run_image_rm(output["image_tag"])
+	return output
+
+
 def run_command_in_docker_cache(
 	command: str = "ls -A",
 	cache_target: str = "/home/frappe/.cache",
+	remove_image: bool = True,
 ) -> CommandOutput:
 	"""
 	This function works by capturing the output of the given `command`
@@ -40,8 +86,7 @@ def run_command_in_docker_cache(
 		cache_target,
 	)
 	df_path = prep_dockerfile_path(dockerfile)
-	output = run_build_command(df_path)
-	shutil.rmtree(df_path.parent)
+	output = run_build_command(df_path, remove_image)
 	return output
 
 
@@ -61,6 +106,53 @@ def get_cache_check_dockerfile(command: str, cache_target: str) -> str:
 	return dedent(df).strip()
 
 
+def create_container(image_tag: str) -> str:
+	args = shlex.split(f"docker create --platform linux/amd64 {image_tag}")
+	return subprocess.run(
+		args,
+		env=os.environ.copy(),
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		text=True,
+	).stdout.strip()
+
+
+def copy_file_from_container(
+	container_id: str,
+	container_filepath: Path,
+	host_dest: Path,
+):
+	container_source = f"{container_id}:{container_filepath}"
+	args = ["docker", "cp", container_source, host_dest.as_posix()]
+	proc = subprocess.run(
+		args,
+		env=os.environ.copy(),
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		text=True,
+	)
+
+	if not proc.returncode:
+		print(
+			f"file copied:\n"
+			f"- from {container_source}\n"
+			f"- to   {host_dest.absolute().as_posix()}"
+		)
+	else:
+		print(proc.stdout)
+
+
+def remove_container(container_id: str) -> str:
+	args = shlex.split(f"docker rm -v {container_id}")
+	subprocess.run(
+		args,
+		env=os.environ.copy(),
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		text=True,
+	).stdout
+
+
 def prep_dockerfile_path(dockerfile: str) -> Path:
 	dir = Path("cache_check_dockerfile_dir")
 	if dir.is_dir():
@@ -74,7 +166,7 @@ def prep_dockerfile_path(dockerfile: str) -> Path:
 	return df_path
 
 
-def run_build_command(df_path: Path) -> CommandOutput:
+def run_build_command(df_path: Path, remove_image: bool) -> CommandOutput:
 	command, image_tag = get_cache_check_build_command()
 	env = os.environ.copy()
 	env["DOCKER_BUILDKIT"] = "1"
@@ -88,8 +180,14 @@ def run_build_command(df_path: Path) -> CommandOutput:
 		stderr=subprocess.STDOUT,
 		text=True,
 	)
-	remove_image(image_tag)
-	return dict(returncode=output.returncode, output=strip_build_output(output.stdout))
+	if remove_image:
+		run_image_rm(image_tag)
+	return dict(
+		cwd=df_path.parent.absolute().as_posix(),
+		image_tag=image_tag,
+		returncode=output.returncode,
+		output=strip_build_output(output.stdout),
+	)
 
 
 def get_cache_check_build_command() -> Tuple[str, str]:
@@ -109,7 +207,7 @@ def get_cache_check_build_command() -> Tuple[str, str]:
 	return command, image_tag
 
 
-def remove_image(image_tag):
+def run_image_rm(image_tag: str):
 	command = f"docker image rm {image_tag}"
 	subprocess.run(
 		shlex.split(command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL

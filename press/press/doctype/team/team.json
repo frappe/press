@@ -21,7 +21,6 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
-  "default_to_new_dashboard",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -137,7 +136,8 @@
    "fieldname": "free_account",
    "fieldtype": "Check",
    "in_standard_filter": 1,
-   "label": "Free Account"
+   "label": "Free Account",
+   "search_index": 1
   },
   {
    "fieldname": "address_html",
@@ -410,12 +410,6 @@
   {
    "fieldname": "column_break_wejg",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "default_to_new_dashboard",
-   "fieldtype": "Check",
-   "label": "Default to New Dashboard"
   }
  ],
  "links": [
@@ -470,7 +464,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-03-13 14:52:15.325393",
+ "modified": "2024-04-04 22:20:46.667608",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

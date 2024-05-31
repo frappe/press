@@ -63,9 +63,11 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.jobName);
 		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
 	},
 	unmounted() {
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.jobName);
 		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
 		this.runningJob = null;
 	},

@@ -293,10 +293,12 @@ export default {
 		installApp() {
 			return {
 				url: 'press.api.site.install_app',
-				params: {
-					name: this.siteName,
-					app: this.appToInstall?.app,
-					plan: this.selectedPlan
+				makeParams() {
+					return {
+						name: this.siteName,
+						app: this.appToInstall?.app,
+						plan: this.selectedPlan
+					};
 				},
 				validate() {
 					if (this.showPlanSelectionDialog && !this.selectedPlan) {
@@ -372,7 +374,7 @@ export default {
 
 		switchToNewPlan() {
 			if (!this.$account.hasBillingInfo) {
-				window.location = '/dashboard/billing';
+				window.location = '/dashboard-old/billing';
 			}
 			if (this.currentAppPlan !== this.newAppPlan) {
 				this.$resources.changePlan.submit({

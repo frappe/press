@@ -46,6 +46,8 @@ export default {
 	},
 	watch: {
 		async selectedPlan(value) {
+			if (!value) return;
+
 			try {
 				// custom plan validation for frappe support
 				let result = await this.$call('validate_plan_change', {
@@ -111,7 +113,7 @@ export default {
 		},
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
-				if (this.belowCurrentUsage(plan)) {
+				if (!plan.dedicated_server_plan && this.belowCurrentUsage(plan)) {
 					plan.disabled = true;
 				}
 

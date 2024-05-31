@@ -9,6 +9,7 @@
 					variant: 'solid',
 					onClick() {
 						app.version = selectedVersion.value || options.versions[0].name;
+						app.branch = selectedBranch.value;
 						$emit('app-added', app);
 						show = false;
 					}
@@ -169,15 +170,15 @@
 									<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
 								</template>
 							</FormControl>
-							<FormControl
-								v-if="showVersionSelector"
-								type="autocomplete"
-								label="Choose Version"
-								:options="options.versions.map(v => v.name)"
-								v-model="selectedVersion"
-							/>
 						</div>
 					</div>
+					<FormControl
+						v-if="showVersionSelector && selectedBranch"
+						type="autocomplete"
+						label="Choose Version"
+						:options="options.versions.map(v => v.name)"
+						v-model="selectedVersion"
+					/>
 					<div class="mt-4 space-y-2">
 						<div
 							v-if="$resources.validateApp.loading && !appValidated"
@@ -219,7 +220,7 @@ export default {
 	data() {
 		return {
 			show: true,
-			app: null,
+			app: {},
 			tabIndex: 0,
 			githubAppLink: '',
 			selectedBranch: '',
@@ -272,6 +273,14 @@ export default {
 				).default_branch;
 				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
 			} else this.selectedBranch = '';
+		},
+		selectedBranch(newSelectedBranch) {
+			this.$resources.validateApp.submit({
+				owner: this.appOwner,
+				repository: this.appName,
+				branch: newSelectedBranch.value,
+				installation: this.selectedGithubUser?.value?.id
+			});
 		}
 	},
 	resources: {
@@ -291,35 +300,29 @@ export default {
 				url: 'press.api.github.app',
 				onSuccess(data) {
 					this.appValidated = true;
-					if (data) {
-						this.app = {
-							name: data.name,
-							title: data.title,
-							repository_url:
-								this.githubAppLink ||
-								`https://github.com/${this.selectedGithubUser.label}/${data.name}`,
-							branch: this.selectedBranch.value
-						};
+					if (!data) {
+						return;
 					}
+
+					let repository_url = this.githubAppLink;
+					if (!repository_url) {
+						var repo = this.selectedGithubRepository?.label || data.name;
+						repository_url = `https://github.com/${this.selectedGithubUser.label}/${repo}`;
+					}
+
+					this.app = {
+						name: data.name,
+						title: data.title,
+						repository_url,
+						github_installation_id: this.selectedGithubUser?.value.id,
+						branch: this.selectedBranch.value
+					};
 				}
 			};
 		},
 		branches() {
 			return {
 				url: 'press.api.github.branches',
-				onSuccess(branches) {
-					if (this.githubAppLink)
-						this.selectedBranch = {
-							label: branches[0].name,
-							value: branches[0].name
-						};
-					this.$resources.validateApp.submit({
-						owner: this.appOwner,
-						repository: this.appName,
-						branch: branches[0].name,
-						installation: this.selectedGithubUser?.value?.id
-					});
-				},
 				validate() {
 					const githubUrlRegex =
 						/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9_.\-]+)\/([a-zA-Z0-9_.\-]+)(\/)?$/;

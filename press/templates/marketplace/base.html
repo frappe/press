@@ -1,31 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
+{%- extends "templates/base.html" -%}
 
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		{% include "templates/includes/meta_block.html" %}
+{%- block head -%}
+<link rel="stylesheet" href="/assets/press/css/marketplace-next.css" />
+<link rel="shortcut icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon">
+<style>
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/frappe/css/fonts/inter/Inter-Regular.woff2") format("woff2");
+}
 
-		{%- block title -%} {%- endblock -%}
-		{% if not self.title() %}
-			<title>Frappe Cloud Marketplace</title>
-		{% endif %}
+body {
+	font-family: 'Inter';
+}
+</style>
+{%- endblock -%}
 
-		<link rel="stylesheet" href="/assets/press/css/marketplace-next.css" />
-		<link rel="shortcut icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon">
-		{{ head_html or "" }}
-	</head>
+{%- block title -%} {%- endblock -%}
+{% if not self.title() %}
+	<title>Frappe Cloud Marketplace</title>
+{% endif %}
 
-	<body class="antialiased">
-		{% include "templates/marketplace/navbar.html" %}
-		<div class="container mx-auto">
-			{%- block body -%} {%- endblock -%}
-		</div>
-		{% include "templates/marketplace/footer.html" %}
-	</body>
+{%- block navbar -%}
+{% include "templates/marketplace/navbar.html" %}
+{%- endblock -%}
 
-	<script src="/assets/press/js/feather.min.js"></script>
-	<script>
-		feather.replace();
-	</script>
-</html>
+{%- block content -%}
+{%- endblock -%}
+
+{%- block footer -%}
+{% include "templates/marketplace/footer.html" %}
+{%- endblock -%}
+
+{%- block script -%}
+{{ super() }}
+
+<script src="/assets/press/js/feather.min.js"></script>
+<script>
+	feather.replace();
+</script>
+{%- endblock -%}

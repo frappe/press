@@ -9,18 +9,28 @@
 
 		<div class="mt-3">
 			<div>
-				<div class="flex items-center space-x-2">
+				<div class="flex items-center">
 					<h2 class="text-lg font-medium text-gray-900">{{ play.play }}</h2>
-					<Badge :label="play.status" />
-					<Button
-						class="!ml-auto"
-						@click="$resources.play.reload()"
-						:loading="$resources.play.loading"
-					>
-						<template #icon>
-							<i-lucide-refresh-ccw class="h-4 w-4" />
-						</template>
-					</Button>
+					<Badge class="ml-2" :label="play.status" />
+					<div class="ml-auto space-x-2">
+						<Button
+							@click="$resources.play.reload()"
+							:loading="$resources.play.loading"
+						>
+							<template #icon>
+								<i-lucide-refresh-ccw class="h-4 w-4" />
+							</template>
+						</Button>
+						<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+							<template v-slot="{ open }">
+								<Button>
+									<template #icon>
+										<i-lucide-more-horizontal class="h-4 w-4" />
+									</template>
+								</Button>
+							</template>
+						</Dropdown>
+					</div>
 				</div>
 				<div>
 					<div class="mt-4 grid grid-cols-5 gap-4">
@@ -100,9 +110,25 @@ export default {
 		},
 		play() {
 			return this.$resources.play.doc;
+		},
+		dropdownOptions() {
+			return [
+				{
+					label: 'View in Desk',
+					icon: 'external-link',
+					condition: () => this.$team.doc.is_desk_user,
+					onClick: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/ansible-play/${this.id}`,
+							'_blank'
+						);
+					}
+				}
+			].filter(option => option.condition?.() ?? true);
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Ansible Play', this.id);
 		this.$socket.on('ansible_play_update', data => {
 			if (data.id === this.id) {
 				this.reload();
@@ -114,6 +140,7 @@ export default {
 		}, 1000 * 60);
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Ansible Play', this.id);
 		this.$socket.off('ansible_play_update');
 		clearInterval(this.reloadInterval);
 	},

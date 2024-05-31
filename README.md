@@ -4,13 +4,11 @@
 [![unittests](https://github.com/frappe/press/actions/workflows/main.yaml/badge.svg)](https://github.com/frappe/press/actions/workflows/main.yaml)
 
 
-This is `press`, a Frappe custom app that runs Frappe Cloud. This app manages infrastructure, subscription, marketplace, SaaS and much more.
-
-> press: "I have a brother, without which I cannot live, agent"
+This is `press`, a Frappe custom app that runs [Frappe Cloud](https://frappecloud.com). This app manages infrastructure, subscription, marketplace, SaaS and much more.
 
 The other half of the Frappe Cloud infrastructure is [agent](https://github.com/frappe/agent). Which is a flask application that runs on every server in a typical cluster and carries out tasks on HTTP requests. Creating a new site, installing an app, updating a site, creating a bench and everything in between is just a request (`Agent Job`) away.
 
-> Note that, this README is in a very early WIP state and only covers a tiny bit of FC. More to come!
+For updates, join our Telegram group: [@frappecloud](https://t.me/frappecloud)
 
 ## Typical FC Cluster
 

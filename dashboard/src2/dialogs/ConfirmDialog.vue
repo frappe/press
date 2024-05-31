@@ -1,15 +1,21 @@
 <template>
-	<Dialog v-model="show" :options="{ title }">
+	<Dialog v-model="showDialog" :options="{ title }">
 		<template #body-content>
 			<div class="space-y-4">
 				<p class="text-p-base text-gray-800" v-if="message" v-html="message" />
 				<div class="space-y-4">
-					<FormControl
-						v-for="field in fields"
-						v-bind="field"
-						v-model="values[field.fieldname]"
-						:key="field.fieldname"
-					/>
+					<template v-for="field in fields" :key="field.fieldname">
+						<LinkControl
+							v-if="field.type == 'link'"
+							v-bind="field"
+							v-model="values[field.fieldname]"
+						/>
+						<FormControl
+							v-else
+							v-bind="field"
+							v-model="values[field.fieldname]"
+						/>
+					</template>
 				</div>
 			</div>
 			<ErrorMessage class="mt-2" :message="error" />
@@ -21,23 +27,29 @@
 </template>
 <script>
 import { ErrorMessage, FormControl } from 'frappe-ui';
+import LinkControl from '../components/LinkControl.vue';
 
 export default {
 	name: 'ConfirmDialog',
 	props: ['title', 'message', 'fields', 'primaryAction', 'onSuccess'],
+	expose: ['show', 'hide'],
 	data() {
 		return {
-			show: true,
+			showDialog: true,
 			error: null,
 			isLoading: false,
-			values: {}
+			values:
+				// set default values for fields
+				this.fields.reduce((acc, field) => {
+					acc[field.fieldname] = field.default || null;
+					return acc;
+				}, {})
 		};
 	},
-	components: { FormControl, ErrorMessage },
+	components: { FormControl, ErrorMessage, LinkControl },
 	methods: {
 		onConfirm() {
 			this.error = null;
-			this.isLoading = true;
 			try {
 				let primaryActionHandler =
 					this.primaryAction?.onClick || this.onSuccess;
@@ -46,6 +58,7 @@ export default {
 					values: this.values
 				});
 				if (result?.then) {
+					this.isLoading = true;
 					result
 						.then(() => (this.isLoading = false))
 						.catch(error => {
@@ -58,8 +71,11 @@ export default {
 				this.isLoading = false;
 			}
 		},
+		show() {
+			this.showDialog = true;
+		},
 		hide() {
-			this.show = false;
+			this.showDialog = false;
 		}
 	},
 	computed: {

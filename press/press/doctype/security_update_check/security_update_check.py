@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -70,5 +70,4 @@ Security Update Check for *{self.server}* failed.
 
 [Security Update Check]({domain}{self.get_url()})
 """
-		telegram = Telegram()
-		telegram.send(message)
+		TelegramMessage.enqueue(message=message)

@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_guest_to_view": 1,
  "allow_rename": 1,
  "autoname": "field:app",
  "creation": "2022-06-09 10:00:09.583228",
@@ -78,7 +79,7 @@
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 16:29:55.293281",
+ "modified": "2024-03-28 21:38:55.941020",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Setup Account Generator",

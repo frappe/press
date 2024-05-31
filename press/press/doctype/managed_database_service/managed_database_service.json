@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:database_host",
+ "creation": "2024-05-17 16:35:50.107617",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "database_section",
+  "service_provider",
+  "database_host",
+  "database_root_user",
+  "column_break_dboe",
+  "root_user_password",
+  "port",
+  "team_section",
+  "team"
+ ],
+ "fields": [
+  {
+   "fieldname": "service_provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Service Provider",
+   "options": "AWS RDS",
+   "reqd": 1
+  },
+  {
+   "fieldname": "database_host",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Database Host",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_dboe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "3306",
+   "fieldname": "port",
+   "fieldtype": "Data",
+   "label": "Port"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database "
+  },
+  {
+   "fieldname": "team_section",
+   "fieldtype": "Section Break",
+   "label": "Team"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "database_root_user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Database Root User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "root_user_password",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Root User Password",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-05-29 19:11:14.644480",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Managed Database Service",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

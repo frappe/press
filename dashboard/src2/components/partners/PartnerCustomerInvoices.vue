@@ -49,7 +49,7 @@ export default {
 					team: this.team,
 					due_date: [
 						'>=',
-						dayjs().subtract(1, 'month').endOf('month').format('YYYY-MM-DD')
+						dayjs().subtract(5, 'month').endOf('month').format('YYYY-MM-DD')
 					],
 					partner_customer: true
 				}

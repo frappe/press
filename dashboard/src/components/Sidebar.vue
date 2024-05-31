@@ -102,7 +102,6 @@
 				</router-link>
 			</div>
 		</div>
-		<TryNewDashboardButton />
 
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
@@ -114,15 +113,13 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
-import TryNewDashboardButton from './TryNewDashboardButton.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
 		SwitchTeamDialog,
-		CommandPalette,
-		TryNewDashboardButton
+		CommandPalette
 	},
 	data() {
 		return {
@@ -158,6 +155,7 @@ export default {
 			}
 		});
 
+		this.$socket.emit('doctype_subscribe', 'Press Notification');
 		this.$socket.on('press_notification', data => {
 			if (data.team === this.$account.team.name) {
 				unreadNotificationsCount.setData(data => data + 1);
@@ -165,6 +163,10 @@ export default {
 		});
 
 		unreadNotificationsCount.fetch();
+	},
+	beforeUnmount() {
+		this.$socket.emit('doctype_unsubscribe', 'Press Notification');
+		this.$socket.off('press_notification');
 	},
 	computed: {
 		unreadNotificationsCount() {
