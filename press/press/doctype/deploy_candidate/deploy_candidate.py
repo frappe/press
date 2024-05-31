@@ -1868,3 +1868,46 @@ def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 	seconds_elapsed = (end_time - start_time).total_seconds()
 	value = rounded(seconds_elapsed, 3)
 	return float(value)
+
+
+def correct_false_positives(last_n_days=0, last_n_hours=1):
+	result = frappe.db.sql(
+		"""
+	with dc as (
+		select dc.name as name, dc.status as status
+		from  `tabDeploy Candidate` as dc
+		where  dc.modified between now() - interval %s day - interval %s hour and now()
+		and    dc.status != "Failure"
+	)
+	select dc.name
+	from   dc join `tabDeploy Candidate Build Step` as dcb
+	on     dc.name = dcb.parent
+	where  dcb.status = "Failure"
+	""",
+		(
+			last_n_days,
+			last_n_hours,
+		),
+	)
+
+	for (name,) in result:
+		correct_status(name)
+
+
+def correct_status(dc_name: str):
+	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
+	found_failed = False
+	for bs in dc.build_steps:
+		if bs.status == "Failure":
+			found_failed = True
+			continue
+
+		if not found_failed:
+			continue
+
+		bs.status = "Pending"
+
+	if found_failed:
+		dc.status = "Failure"
+
+	dc.save(ignore_permissions=True)
