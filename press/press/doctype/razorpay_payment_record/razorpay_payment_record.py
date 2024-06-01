@@ -98,9 +98,9 @@ class RazorpayPaymentRecord(Document):
 			log_error(title="Failed to sync Razorpay Payment Record", order_id=self.order_id)
 
 
-def fetch_pending_payment_orders():
+def fetch_pending_payment_orders(hours=12):
 
-	past_12hrs_ago = datetime.now() - timedelta(hours=12)
+	past_12hrs_ago = datetime.now() - timedelta(hours=hours)
 	pending_orders = frappe.get_all(
 		"Razorpay Payment Record",
 		dict(status="Pending", creation=(">=", past_12hrs_ago)),
