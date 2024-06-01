@@ -398,7 +398,7 @@ class Invoice(Document):
 
 	def validate_duplicate(self):
 		if self.type == "Prepaid Credits":
-			if frappe.db.exists(
+			if self.stripe_payment_intent_id and frappe.db.exists(
 				"Invoice",
 				{
 					"stripe_payment_intent_id": self.stripe_payment_intent_id,
