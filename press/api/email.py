@@ -168,6 +168,12 @@ def event_log():
 	if not event_data:
 		return
 
+	if "user-variables" not in event_data:
+		# We don't know where to send this event
+		# TOOD: Investigate why this is happening
+		# Hint: Likely from other emails not sent via the email delivery app
+		return
+
 	secret_key = event_data["user-variables"]["sk_mail"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
