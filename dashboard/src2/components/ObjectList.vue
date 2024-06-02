@@ -391,7 +391,10 @@ export default {
 			return this.$list.list?.loading || this.$list.loading;
 		},
 		showControls() {
-			return this.filteredRows.length > 5 && !this.options.hideControls;
+			return (
+				(this.filteredRows.length > 5 || this.filterControls.length) &&
+				!this.options.hideControls
+			);
 		},
 		emptyStateMessage() {
 			return this.options.emptyStateMessage || 'No results found';
