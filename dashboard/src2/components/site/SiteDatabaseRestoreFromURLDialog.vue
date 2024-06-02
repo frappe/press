@@ -6,6 +6,7 @@
 				{
 					label: 'Restore',
 					variant: 'solid',
+					theme: 'red',
 					loading: $resources.restoreBackup.loading,
 					disabled: !$resources.getBackupLinks.data,
 					onClick: () => $resources.restoreBackup.submit()
@@ -15,6 +16,15 @@
 		v-model="showRestoreDialog"
 	>
 		<template #body-content>
+			<div
+				class="mb-6 flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+			>
+				<i-lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+				<div>
+					This operation will replace the current <b>data</b> & <b>apps</b> in
+					your site with those from the backup
+				</div>
+			</div>
 			<div class="space-y-4">
 				<FormControl label="Site URL" v-model="siteURL" />
 				<FormControl label="Email" v-model="email" />

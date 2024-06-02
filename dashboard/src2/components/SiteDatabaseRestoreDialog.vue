@@ -6,6 +6,7 @@
 				{
 					label: 'Restore',
 					variant: 'solid',
+					theme: 'red',
 					loading: $resources.restoreBackup.loading,
 					onClick: () => {
 						$resources.restoreBackup.submit();
