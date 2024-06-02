@@ -6,7 +6,7 @@
 		<div
 			v-for="group in actions"
 			:key="group.group"
-			class="divide-y sm:rounded sm:border sm:p-5"
+			class="divide-y rounded border p-5"
 			:class="
 				group.group === 'Dangerous Actions'
 					? 'border-red-500 '
