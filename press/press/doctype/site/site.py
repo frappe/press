@@ -174,11 +174,8 @@ class Site(Document, TagHelpers):
 		from press.press.doctype.site_update.site_update import benches_with_available_update
 
 		benches_with_available_update = benches_with_available_update()
+
 		Site = frappe.qb.DocType("Site")
-
-		if filters.get("status") == "Update Available":
-			query = query.where(Site.bench.isin(benches_with_available_update))
-
 		sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
 
 		for site in sites:
