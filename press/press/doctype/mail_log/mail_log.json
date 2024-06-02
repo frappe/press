@@ -89,7 +89,7 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Data",
+   "fieldtype": "Code",
    "label": "Message",
    "read_only": 1
   },
