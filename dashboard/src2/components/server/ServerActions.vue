@@ -1,49 +1,34 @@
 <template>
 	<div
-		class="max-w-3xl divide-y sm:rounded sm:border sm:p-5"
+		class="mx-auto max-w-3xl space-y-4"
 		v-if="$appServer?.doc?.actions && $dbServer?.doc?.actions"
 	>
 		<div
-			class="py-3 first:pt-0 last:pb-0"
-			v-for="row in $appServer.doc.actions"
-			:key="row.action"
+			v-for="group in actions"
+			:key="group.group"
+			class="divide-y rounded border p-5"
+			:class="
+				group.group === 'Dangerous Actions'
+					? 'border-red-500 '
+					: 'border-gray-200'
+			"
 		>
-			<ServerActionCell
-				:serverName="$appServer.doc.name"
-				serverType="Server"
-				:actionLabel="row.action"
-				:method="row.doc_method"
-				:description="row.description"
-				:buttonLabel="row.button_label"
-			/>
-		</div>
-		<div
-			class="py-3 first:pt-0 last:pb-0"
-			v-for="row in $dbServer.doc.actions"
-			:key="row.action"
-		>
-			<ServerActionCell
-				:serverName="$dbServer.doc.name"
-				serverType="Database Server"
-				:actionLabel="row.action"
-				:method="row.doc_method"
-				:description="row.description"
-				:buttonLabel="row.button_label"
-			/>
-		</div>
-		<div
-			class="py-3 first:pt-0 last:pb-0"
-			v-for="row in $dbReplicaServer?.doc?.actions || []"
-			:key="row.action"
-		>
-			<ServerActionCell
-				:serverName="$dbReplicaServer.doc.name"
-				serverType="Database Server"
-				:actionLabel="row.action"
-				:method="row.doc_method"
-				:description="row.description"
-				:buttonLabel="row.button_label"
-			/>
+			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
+			<div
+				class="py-3 first:pt-0 last:pb-0"
+				v-for="row in group.actions"
+				:key="row.action"
+			>
+				<ServerActionCell
+					:group="group.group"
+					:serverName="row.server_name"
+					:serverType="row.server_doctype"
+					:actionLabel="row.action"
+					:method="row.doc_method"
+					:description="row.description"
+					:buttonLabel="row.button_label"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
@@ -57,6 +42,40 @@ export default {
 	props: ['server'],
 	components: { ServerActionCell },
 	computed: {
+		actions() {
+			const totalActions = [
+				...this.$appServer.doc.actions,
+				...this.$dbServer.doc.actions,
+				...(this.$dbReplicaServer?.doc?.actions || [])
+			];
+
+			const groupedActions = totalActions.reduce((acc, action) => {
+				const group = action.group || `${action.server_doctype} Actions`;
+				if (!acc[group]) {
+					acc[group] = [];
+				}
+				acc[group].push(action);
+				return acc;
+			}, {});
+
+			let groups = Object.keys(groupedActions).map(group => {
+				return {
+					group,
+					actions: groupedActions[group]
+				};
+			});
+
+			// move dangerous actions to the bottom
+			const dangerousActions = groups.find(
+				group => group.group === 'Dangerous Actions'
+			);
+			if (dangerousActions) {
+				groups = groups.filter(group => group.group !== 'Dangerous Actions');
+				groups.push(dangerousActions);
+			}
+
+			return groups;
+		},
 		$appServer() {
 			return getCachedDocumentResource('Server', this.server);
 		},

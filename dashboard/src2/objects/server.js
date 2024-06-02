@@ -368,7 +368,7 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('activity'),
+				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,

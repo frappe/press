@@ -1,5 +1,5 @@
 <template>
-	<div class="mx-auto max-w-3xl space-y-4" v-if="$site?.doc?.actions">
+	<div class="mx-auto max-w-3xl space-y-4" v-if="$releaseGroup?.doc?.actions">
 		<div
 			v-for="group in actions"
 			:key="group.group"
@@ -16,8 +16,8 @@
 				v-for="row in group.actions"
 				:key="row.action"
 			>
-				<SiteActionCell
-					:siteName="site"
+				<BenchActionCell
+					:benchName="releaseGroup"
 					:group="group.group"
 					:actionLabel="row.action"
 					:method="row.doc_method"
@@ -30,25 +30,27 @@
 </template>
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import SiteActionCell from './SiteActionCell.vue';
+import BenchActionCell from './BenchActionCell.vue';
 
 export default {
-	name: 'SiteActions',
-	props: ['site'],
-	components: { SiteActionCell },
+	props: ['releaseGroup'],
+	components: { BenchActionCell },
 	computed: {
-		$site() {
-			return getCachedDocumentResource('Site', this.site);
+		$releaseGroup() {
+			return getCachedDocumentResource('Release Group', this.releaseGroup);
 		},
 		actions() {
-			const groupedActions = this.$site.doc.actions.reduce((acc, action) => {
-				const group = action.group || 'General Actions';
-				if (!acc[group]) {
-					acc[group] = [];
-				}
-				acc[group].push(action);
-				return acc;
-			}, {});
+			const groupedActions = this.$releaseGroup.doc.actions.reduce(
+				(acc, action) => {
+					const group = action.group || 'General Actions';
+					if (!acc[group]) {
+						acc[group] = [];
+					}
+					acc[group].push(action);
+					return acc;
+				},
+				{}
+			);
 
 			return Object.keys(groupedActions).map(group => ({
 				group,

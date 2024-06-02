@@ -2057,54 +2057,11 @@ class Site(Document, TagHelpers):
 
 		actions = [
 			{
-				"action": "Deactivate site",
-				"description": "Deactivated site is not accessible on the internet",
-				"button_label": "Deactivate",
-				"condition": self.status == "Active",
-				"doc_method": "deactivate",
-			},
-			{
 				"action": "Activate site",
 				"description": "Activate site to make it accessible on the internet",
 				"button_label": "Activate",
 				"condition": self.status in ["Inactive", "Broken"],
 				"doc_method": "activate",
-			},
-			{
-				"action": "Restore from backup",
-				"description": "Restore your database from database, public and private files",
-				"button_label": "Restore",
-				"doc_method": "restore_site_from_files",
-			},
-			{
-				"action": "Restore from an existing site",
-				"description": "Restore your database with database, public and private files from another site",
-				"button_label": "Restore",
-				"doc_method": "restore_site_from_files",
-			},
-			{
-				"action": "Migrate site",
-				"description": "Run bench migrate command on your site",
-				"button_label": "Migrate",
-				"doc_method": "migrate",
-			},
-			{
-				"action": "Reset site",
-				"description": "Reset your site database to a clean state",
-				"button_label": "Reset",
-				"doc_method": "reinstall",
-			},
-			{
-				"action": "Access site database",
-				"description": "Enable read/write access to your site database",
-				"button_label": "Enable Access",
-				"doc_method": "enable_database_access",
-			},
-			{
-				"action": "Drop site",
-				"description": "When you drop your site, all site data is deleted forever",
-				"button_label": "Drop",
-				"doc_method": "archive",
 			},
 			{
 				"action": "Transfer site",
@@ -2143,10 +2100,60 @@ class Site(Document, TagHelpers):
 			{
 				"action": "Clear cache",
 				"description": "Clear cache on your site",
-				"button_label": "Clear cache",
+				"button_label": "Clear",
 				"doc_method": "clear_site_cache",
 			},
+			{
+				"action": "Access site database",
+				"description": "Enable read/write access to your site database",
+				"button_label": "Enable",
+				"doc_method": "enable_database_access",
+			},
+			{
+				"action": "Deactivate site",
+				"description": "Deactivated site is not accessible on the internet",
+				"button_label": "Deactivate",
+				"condition": self.status == "Active",
+				"doc_method": "deactivate",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Migrate site",
+				"description": "Run bench migrate command on your site",
+				"button_label": "Migrate",
+				"doc_method": "migrate",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Restore from backup",
+				"description": "Restore your database from database, public and private files",
+				"button_label": "Restore",
+				"doc_method": "restore_site_from_files",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Restore from an existing site",
+				"description": "Restore your database with database, public and private files from another site",
+				"button_label": "Restore",
+				"doc_method": "restore_site_from_files",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Reset site",
+				"description": "Reset your site database to a clean state",
+				"button_label": "Reset",
+				"doc_method": "reinstall",
+				"group": "Dangerous Actions",
+			},
+			{
+				"action": "Drop site",
+				"description": "When you drop your site, all site data is deleted forever",
+				"button_label": "Drop",
+				"doc_method": "archive",
+				"group": "Dangerous Actions",
+			},
 		]
+
 		return [d for d in actions if d.get("condition", True)]
 
 	@property
