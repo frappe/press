@@ -174,31 +174,35 @@ def event_log():
 		# Hint: Likely from other emails not sent via the email delivery app
 		return
 
-	secret_key = event_data["user-variables"]["sk_mail"]
-	headers = event_data["message"]["headers"]
-	message_id = headers["message-id"]
-	site = (
-		frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
-		or message_id.split("@")[1]
-	)
-	status = event_data["event"]
+	try:
+		secret_key = event_data["user-variables"]["sk_mail"]
+		headers = event_data["message"]["headers"]
+		message_id = headers["message-id"]
+		site = (
+			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
+			or message_id.split("@")[1]
+		)
+		status = event_data["event"]
 
-	frappe.get_doc(
-		{
-			"doctype": "Mail Log",
-			"unique_token": secrets.token_hex(25),
-			"message_id": message_id,
-			"sender": headers["from"],
-			"recipient": event_data.get("recipient") or headers.get("to"),
-			"site": site,
-			"status": event_data["event"],
-			"subscription_key": secret_key,
-			"message": event_data["delivery-status"]["message"]
-			or event_data["delivery-status"]["description"],
-			"log": json.dumps(data),
-		}
-	).insert(ignore_permissions=True)
-	frappe.db.commit()
+		frappe.get_doc(
+			{
+				"doctype": "Mail Log",
+				"unique_token": secrets.token_hex(25),
+				"message_id": message_id,
+				"sender": headers["from"],
+				"recipient": event_data.get("recipient") or headers.get("to"),
+				"site": site,
+				"status": event_data["event"],
+				"subscription_key": secret_key,
+				"message": event_data["delivery-status"]["message"]
+				or event_data["delivery-status"]["description"],
+				"log": json.dumps(data),
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		log_error("Mail App: Event log error", data=data)
+		raise
 
 	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
 
