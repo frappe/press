@@ -115,7 +115,10 @@ function onDropBench() {
 					{
 						loading: 'Dropping bench...',
 						success: 'Bench dropped successfully',
-						error: 'Failed to drop bench'
+						error: error =>
+							error.messages.length
+								? error.messages.join('\n')
+								: 'Failed to drop bench'
 					}
 				);
 			}

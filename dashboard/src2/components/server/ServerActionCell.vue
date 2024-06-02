@@ -147,7 +147,10 @@ function onDropServer() {
 					router.push({ name: 'Server List' });
 					return 'Server dropped';
 				},
-				error: 'Failed to drop server'
+				error: error =>
+					error.messages.length
+						? error.messages.join('\n')
+						: 'Failed to drop servers'
 			});
 		}
 	});
