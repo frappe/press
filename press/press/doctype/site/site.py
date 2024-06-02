@@ -170,10 +170,22 @@ class Site(Document, TagHelpers):
 	]
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters=None, **list_args):
+		from press.press.doctype.site_update.site_update import benches_with_available_update
+
+		benches_with_available_update = benches_with_available_update()
 		Site = frappe.qb.DocType("Site")
-		query = query.where(Site.status != "Archived")
-		return query
+
+		if filters.get("status") == "Update Available":
+			query = query.where(Site.bench.isin(benches_with_available_update))
+
+		sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
+
+		for site in sites:
+			if site.bench in benches_with_available_update:
+				site.status = "Update Available"
+
+		return sites
 
 	@staticmethod
 	def on_not_found(name):
