@@ -753,7 +753,117 @@ export default {
 				}
 			},
 			{
-				label: 'Environment Variable',
+				label: 'Regions',
+				icon: icon('globe'),
+				route: 'regions',
+				type: 'list',
+				list: {
+					doctype: 'Cluster',
+					filters: releaseGroup => {
+						return { group: releaseGroup.name };
+					},
+					columns: [
+						{
+							label: 'Region',
+							fieldname: 'title'
+						},
+						{
+							label: 'Country',
+							fieldname: 'image',
+							format(value, row) {
+								return '';
+							},
+							prefix(row) {
+								return h('img', {
+									src: row.image,
+									class: 'w-4 h-4',
+									alt: row.title
+								});
+							}
+						}
+					],
+					primaryAction({
+						listResource: clusters,
+						documentResource: releaseGroup
+					}) {
+						return {
+							label: 'Add Region',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let AddRegionDialog = defineAsyncComponent(() =>
+									import('../components/bench/AddRegionDialog.vue')
+								);
+								renderDialog(
+									h(AddRegionDialog, {
+										group: releaseGroup.doc.name,
+										onSuccess() {
+											clusters.reload();
+										}
+									})
+								);
+							}
+						};
+					}
+				}
+			},
+			patches,
+			{
+				label: 'Dependencies',
+				icon: icon('box'),
+				route: 'bench-dependencies',
+				type: 'list',
+				list: {
+					doctype: 'Release Group Dependency',
+					filters: releaseGroup => {
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
+					},
+					columns: [
+						{
+							label: 'Dependency',
+							fieldname: 'dependency',
+							format(value, row) {
+								return row.title;
+							}
+						},
+						{
+							label: 'Version',
+							fieldname: 'version'
+						}
+					],
+					rowActions({
+						row,
+						listResource: dependencies,
+						documentResource: releaseGroup
+					}) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let DependencyEditorDialog = defineAsyncComponent(() =>
+										import('../components/bench/DependencyEditorDialog.vue')
+									);
+									renderDialog(
+										h(DependencyEditorDialog, {
+											group: releaseGroup.doc,
+											dependency: row,
+											onSuccess() {
+												dependencies.reload();
+											}
+										})
+									);
+								}
+							}
+						];
+					}
+				}
+			},
+			{
+				label: 'Env',
 				icon: icon('tool'),
 				route: 'bench-environment-variable',
 				type: 'list',
@@ -862,117 +972,7 @@ export default {
 					}
 				}
 			},
-			{
-				label: 'Dependencies',
-				icon: icon('box'),
-				route: 'bench-dependencies',
-				type: 'list',
-				list: {
-					doctype: 'Release Group Dependency',
-					filters: releaseGroup => {
-						return {
-							parenttype: 'Release Group',
-							parent: releaseGroup.name
-						};
-					},
-					columns: [
-						{
-							label: 'Dependency',
-							fieldname: 'dependency',
-							format(value, row) {
-								return row.title;
-							}
-						},
-						{
-							label: 'Version',
-							fieldname: 'version'
-						}
-					],
-					rowActions({
-						row,
-						listResource: dependencies,
-						documentResource: releaseGroup
-					}) {
-						return [
-							{
-								label: 'Edit',
-								onClick() {
-									let DependencyEditorDialog = defineAsyncComponent(() =>
-										import('../components/bench/DependencyEditorDialog.vue')
-									);
-									renderDialog(
-										h(DependencyEditorDialog, {
-											group: releaseGroup.doc,
-											dependency: row,
-											onSuccess() {
-												dependencies.reload();
-											}
-										})
-									);
-								}
-							}
-						];
-					}
-				}
-			},
-			{
-				label: 'Regions',
-				icon: icon('globe'),
-				route: 'regions',
-				type: 'list',
-				list: {
-					doctype: 'Cluster',
-					filters: releaseGroup => {
-						return { group: releaseGroup.name };
-					},
-					columns: [
-						{
-							label: 'Region',
-							fieldname: 'title'
-						},
-						{
-							label: 'Country',
-							fieldname: 'image',
-							format(value, row) {
-								return '';
-							},
-							prefix(row) {
-								return h('img', {
-									src: row.image,
-									class: 'w-4 h-4',
-									alt: row.title
-								});
-							}
-						}
-					],
-					primaryAction({
-						listResource: clusters,
-						documentResource: releaseGroup
-					}) {
-						return {
-							label: 'Add Region',
-							slots: {
-								prefix: icon('plus')
-							},
-							onClick() {
-								let AddRegionDialog = defineAsyncComponent(() =>
-									import('../components/bench/AddRegionDialog.vue')
-								);
-								renderDialog(
-									h(AddRegionDialog, {
-										group: releaseGroup.doc.name,
-										onSuccess() {
-											clusters.reload();
-										}
-									})
-								);
-							}
-						};
-					}
-				}
-			},
-			tagTab(),
-			patches
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
