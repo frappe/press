@@ -218,15 +218,16 @@ export default {
 			};
 
 			if (
-				site.doc.server_team == $team.doc.name &&
-				site.doc.group_team == $team.doc.name
+				(site.doc.server_team == $team.doc.name &&
+					site.doc.group_team == $team.doc.name) ||
+				$team.doc.is_desk_user
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc.name) {
+			if (site.doc.group_team == $team.doc.name || $team.doc.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -1594,16 +1595,6 @@ export default {
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
 									'_blank'
 								);
-							}
-						},
-						{
-							label: 'Manage Bench',
-							icon: 'tool',
-							condition: () =>
-								site.doc?.group &&
-								(site.doc?.group_team === $team.name || $team.doc.is_desk_user),
-							onClick: () => {
-								router.push(`/benches/${site.doc?.group}`);
 							}
 						},
 						{

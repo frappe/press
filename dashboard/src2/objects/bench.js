@@ -121,7 +121,10 @@ export default {
 			let breadcrumbs = [];
 			let $team = getTeam();
 
-			if (releaseGroup.doc.server_team == $team.doc.name) {
+			if (
+				releaseGroup.doc.server_team == $team.doc.name ||
+				$team.doc.is_desk_user
+			) {
 				breadcrumbs.push(
 					{
 						label: releaseGroup.doc?.server_title || releaseGroup.doc?.server,
