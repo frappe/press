@@ -42,8 +42,7 @@ export default {
 							return h(
 								'span',
 								{
-									class:
-										'!ml-auto rounded bg-gray-400 px-1.5 py-0.5 text-xs text-white'
+									class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600'
 								},
 								unreadNotificationsCount.data > 99
 									? '99+'
