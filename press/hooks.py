@@ -169,6 +169,9 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+	"weekly_long": [
+		"press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"
+	],
 	"daily": [
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
