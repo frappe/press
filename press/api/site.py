@@ -1385,6 +1385,8 @@ def check_domain_allows_letsencrypt_certs(domain):
 				return True
 	except dns.resolver.NoAnswer:
 		pass  # no CAA record. Anything goes
+	except dns.exception.DNSException:
+		pass  # We have other probems
 	else:
 		frappe.throw(
 			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same."
