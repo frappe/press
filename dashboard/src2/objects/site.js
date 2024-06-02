@@ -265,212 +265,6 @@ export default {
 				}
 			},
 			{
-				label: 'Updates',
-				icon: icon('arrow-up-circle'),
-				route: 'updates',
-				type: 'list',
-				list: {
-					doctype: 'Site Update',
-					filters: site => {
-						return { site: site.doc.name };
-					},
-					orderBy: 'creation',
-					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
-					columns: [
-						{
-							label: 'Type',
-							fieldname: 'deploy_type',
-							width: 0.3
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							width: 0.5
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner'
-						},
-						{
-							label: 'Scheduled At',
-							fieldname: 'scheduled_time',
-							format(value) {
-								return date(value, 'lll');
-							}
-						},
-						{
-							label: 'Updated On',
-							fieldname: 'updated_on',
-							format(value) {
-								return date(value, 'lll');
-							}
-						}
-					],
-					rowActions({ row, documentResource: site }) {
-						return [
-							{
-								label: 'View Job',
-								onClick() {
-									router.push({
-										name: 'Site Job',
-										params: { name: site.name, id: row.update_job }
-									});
-								}
-							},
-							{
-								label: 'Update Now',
-								condition: () => row.status === 'Scheduled',
-								onClick() {
-									let siteUpdate = getDocResource({
-										doctype: 'Site Update',
-										name: row.name,
-										whitelistedMethods: {
-											updateNow: 'start'
-										}
-									});
-
-									toast.promise(siteUpdate.updateNow.submit(), {
-										loading: 'Updating site...',
-										success: () => {
-											router.push({
-												name: 'Site Detail Jobs',
-												params: { name: site.name }
-											});
-
-											return 'Site update started';
-										},
-										error: 'Failed to update site'
-									});
-								}
-							},
-							{
-								label: 'View App Changes',
-								onClick() {
-									createListResource({
-										doctype: 'Deploy Candidate Difference App',
-										fields: [
-											'difference.github_diff_url as diff_url',
-											'difference.source_hash as source_hash',
-											'difference.destination_hash as destination_hash',
-											'app.title as app'
-										],
-										filters: {
-											parenttype: 'Deploy Candidate Difference',
-											parent: row.difference
-										},
-										auto: true,
-										pageLength: 99,
-										onSuccess(data) {
-											if (data?.length) {
-												renderDialog(
-													h(
-														GenericDialog,
-														{
-															options: {
-																title: 'App Changes',
-																size: '2xl'
-															}
-														},
-														{
-															default: () =>
-																h(ObjectList, {
-																	options: {
-																		data: () => data,
-																		columns: [
-																			{
-																				label: 'App',
-																				fieldname: 'app'
-																			},
-																			{
-																				label: 'From',
-																				fieldname: 'source_hash',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label:
-																							row.source_tag ||
-																							row.source_hash.slice(0, 7),
-																						variant: 'ghost',
-																						class: 'font-mono',
-																						link: `${
-																							row.diff_url.split('/compare')[0]
-																						}/commit/${row.source_hash}`
-																					};
-																				}
-																			},
-																			{
-																				label: 'To',
-																				fieldname: 'destination_hash',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label:
-																							row.destination_tag ||
-																							row.destination_hash.slice(0, 7),
-																						variant: 'ghost',
-																						class: 'font-mono',
-																						link: `${
-																							row.diff_url.split('/compare')[0]
-																						}/commit/${row.destination_hash}`
-																					};
-																				}
-																			},
-																			{
-																				label: 'App Changes',
-																				fieldname: 'diff_url',
-																				align: 'right',
-																				type: 'Button',
-																				Button({ row }) {
-																					return {
-																						label: 'View',
-																						variant: 'ghost',
-																						slots: {
-																							prefix: icon('external-link')
-																						},
-																						link: row.diff_url
-																					};
-																				}
-																			}
-																		]
-																	}
-																})
-														}
-													)
-												);
-											} else toast.error('No app changes found');
-										}
-									});
-								}
-							}
-						];
-					},
-					actions({ documentResource: site }) {
-						if (site.doc.group_public) return [];
-
-						return [
-							{
-								label: 'Configure',
-								slots: {
-									prefix: icon('settings')
-								},
-								onClick() {
-									let ConfigureAutoUpdateDialog = defineAsyncComponent(() =>
-										import('../components/site/ConfigureAutoUpdateDialog.vue')
-									);
-
-									renderDialog(
-										h(ConfigureAutoUpdateDialog, {
-											site: site.doc.name
-										})
-									);
-								}
-							}
-						];
-					}
-				}
-			},
-			{
 				label: 'Apps',
 				icon: icon('grid'),
 				route: 'apps',
@@ -1322,12 +1116,218 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('activity'),
+				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
 				component: SiteActions,
 				props: site => {
 					return { site: site.doc.name };
+				}
+			},
+			{
+				label: 'Updates',
+				icon: icon('arrow-up-circle'),
+				route: 'updates',
+				type: 'list',
+				list: {
+					doctype: 'Site Update',
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					orderBy: 'creation',
+					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
+					columns: [
+						{
+							label: 'Type',
+							fieldname: 'deploy_type',
+							width: 0.3
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner'
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							}
+						},
+						{
+							label: 'Updated On',
+							fieldname: 'updated_on',
+							format(value) {
+								return date(value, 'lll');
+							}
+						}
+					],
+					rowActions({ row, documentResource: site }) {
+						return [
+							{
+								label: 'View Job',
+								onClick() {
+									router.push({
+										name: 'Site Job',
+										params: { name: site.name, id: row.update_job }
+									});
+								}
+							},
+							{
+								label: 'Update Now',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let siteUpdate = getDocResource({
+										doctype: 'Site Update',
+										name: row.name,
+										whitelistedMethods: {
+											updateNow: 'start'
+										}
+									});
+
+									toast.promise(siteUpdate.updateNow.submit(), {
+										loading: 'Updating site...',
+										success: () => {
+											router.push({
+												name: 'Site Detail Jobs',
+												params: { name: site.name }
+											});
+
+											return 'Site update started';
+										},
+										error: 'Failed to update site'
+									});
+								}
+							},
+							{
+								label: 'View App Changes',
+								onClick() {
+									createListResource({
+										doctype: 'Deploy Candidate Difference App',
+										fields: [
+											'difference.github_diff_url as diff_url',
+											'difference.source_hash as source_hash',
+											'difference.destination_hash as destination_hash',
+											'app.title as app'
+										],
+										filters: {
+											parenttype: 'Deploy Candidate Difference',
+											parent: row.difference
+										},
+										auto: true,
+										pageLength: 99,
+										onSuccess(data) {
+											if (data?.length) {
+												renderDialog(
+													h(
+														GenericDialog,
+														{
+															options: {
+																title: 'App Changes',
+																size: '2xl'
+															}
+														},
+														{
+															default: () =>
+																h(ObjectList, {
+																	options: {
+																		data: () => data,
+																		columns: [
+																			{
+																				label: 'App',
+																				fieldname: 'app'
+																			},
+																			{
+																				label: 'From',
+																				fieldname: 'source_hash',
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label:
+																							row.source_tag ||
+																							row.source_hash.slice(0, 7),
+																						variant: 'ghost',
+																						class: 'font-mono',
+																						link: `${
+																							row.diff_url.split('/compare')[0]
+																						}/commit/${row.source_hash}`
+																					};
+																				}
+																			},
+																			{
+																				label: 'To',
+																				fieldname: 'destination_hash',
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label:
+																							row.destination_tag ||
+																							row.destination_hash.slice(0, 7),
+																						variant: 'ghost',
+																						class: 'font-mono',
+																						link: `${
+																							row.diff_url.split('/compare')[0]
+																						}/commit/${row.destination_hash}`
+																					};
+																				}
+																			},
+																			{
+																				label: 'App Changes',
+																				fieldname: 'diff_url',
+																				align: 'right',
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label: 'View',
+																						variant: 'ghost',
+																						slots: {
+																							prefix: icon('external-link')
+																						},
+																						link: row.diff_url
+																					};
+																				}
+																			}
+																		]
+																	}
+																})
+														}
+													)
+												);
+											} else toast.error('No app changes found');
+										}
+									});
+								}
+							}
+						];
+					},
+					actions({ documentResource: site }) {
+						if (site.doc.group_public) return [];
+
+						return [
+							{
+								label: 'Configure',
+								slots: {
+									prefix: icon('settings')
+								},
+								onClick() {
+									let ConfigureAutoUpdateDialog = defineAsyncComponent(() =>
+										import('../components/site/ConfigureAutoUpdateDialog.vue')
+									);
+
+									renderDialog(
+										h(ConfigureAutoUpdateDialog, {
+											site: site.doc.name
+										})
+									);
+								}
+							}
+						];
+					}
 				}
 			},
 			{
@@ -1416,6 +1416,7 @@ export default {
 					]
 				}
 			},
+			logsTab(),
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1508,7 +1509,6 @@ export default {
 					}
 				}
 			},
-			logsTab(),
 			tagTab()
 		],
 		actions(context) {
