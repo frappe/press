@@ -351,6 +351,8 @@ export default {
 										doctype: 'Deploy Candidate Difference App',
 										fields: [
 											'difference.github_diff_url as diff_url',
+											'difference.source_hash as source_hash',
+											'difference.destination_hash as destination_hash',
 											'app.title as app'
 										],
 										filters: {
@@ -366,7 +368,8 @@ export default {
 														GenericDialog,
 														{
 															options: {
-																title: 'Site update app changes'
+																title: 'App Changes',
+																size: '2xl'
 															}
 														},
 														{
@@ -377,19 +380,53 @@ export default {
 																		columns: [
 																			{
 																				label: 'App',
-																				fieldname: 'app',
-																				width: 0.5
+																				fieldname: 'app'
+																			},
+																			{
+																				label: 'From',
+																				fieldname: 'source_hash',
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label:
+																							row.source_tag ||
+																							row.source_hash.slice(0, 7),
+																						variant: 'ghost',
+																						class: 'font-mono',
+																						link: `${
+																							row.diff_url.split('/compare')[0]
+																						}/commit/${row.source_hash}`
+																					};
+																				}
+																			},
+																			{
+																				label: 'To',
+																				fieldname: 'destination_hash',
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label:
+																							row.destination_tag ||
+																							row.destination_hash.slice(0, 7),
+																						variant: 'ghost',
+																						class: 'font-mono',
+																						link: `${
+																							row.diff_url.split('/compare')[0]
+																						}/commit/${row.destination_hash}`
+																					};
+																				}
 																			},
 																			{
 																				label: 'App Changes',
 																				fieldname: 'diff_url',
-																				width: 0.5,
+																				align: 'right',
 																				type: 'Button',
 																				Button({ row }) {
 																					return {
-																						label: 'View App Changes',
+																						label: 'View',
+																						variant: 'ghost',
 																						slots: {
-																							prefix: icon('github')
+																							prefix: icon('external-link')
 																						},
 																						link: row.diff_url
 																					};
