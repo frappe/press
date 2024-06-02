@@ -99,18 +99,20 @@ class BaseServer(Document, TagHelpers):
 
 		actions = [
 			{
-				"action": "Reboot server",
-				"description": f"Reboot the {server_type}",
-				"button_label": "Reboot",
-				"condition": self.status == "Active",
-				"doc_method": "reboot",
-			},
-			{
 				"action": "Rename server",
 				"description": f"Rename the {server_type}",
 				"button_label": "Rename",
 				"condition": self.status == "Active",
 				"doc_method": "rename",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Reboot server",
+				"description": f"Reboot the {server_type}",
+				"button_label": "Reboot",
+				"condition": self.status == "Active",
+				"doc_method": "reboot",
+				"group": f"{server_type.title()} Actions",
 			},
 			{
 				"action": "Drop server",
@@ -118,8 +120,14 @@ class BaseServer(Document, TagHelpers):
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
+				"group": "Dangerous Actions",
 			},
 		]
+
+		for action in actions:
+			action["server_doctype"] = self.doctype
+			action["server_name"] = self.name
+
 		return [action for action in actions if action.get("condition", True)]
 
 	@dashboard_whitelist()

@@ -753,6 +753,18 @@ export default {
 				}
 			},
 			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../components/bench/BenchActions.vue')
+				),
+				props: releaseGroup => {
+					return { releaseGroup: releaseGroup.name };
+				}
+			},
+			{
 				label: 'Regions',
 				icon: icon('globe'),
 				route: 'regions',
@@ -1043,6 +1055,7 @@ export default {
 				},
 				{
 					label: 'Options',
+					condition: () => team.doc.is_desk_user,
 					options: [
 						{
 							label: 'View in Desk',
@@ -1063,40 +1076,6 @@ export default {
 							condition: () => window.is_system_user,
 							onClick() {
 								switchToTeam(bench.doc.team);
-							}
-						},
-						{
-							label: 'Drop Bench',
-							icon: icon('trash-2'),
-							onClick() {
-								confirmDialog({
-									title: 'Drop Bench',
-									message: `Are you sure you want to drop this bench <b>${bench.doc.title}</b>? All the sites on this bench should be dropped manually before dropping the bench. This action cannot be undone.`,
-									fields: [
-										{
-											label:
-												'Please type the exact bench name below to confirm',
-											fieldname: 'confirmBenchName',
-											autocomplete: 'off'
-										}
-									],
-									primaryAction: {
-										label: 'Drop Bench',
-										theme: 'red'
-									},
-									onSuccess({ hide, values }) {
-										if (bench.archive.loading) return;
-										if (values.confirmBenchName !== bench.doc.title) {
-											throw new Error('Bench name does not match');
-										}
-										return bench.archive.submit(null, {
-											onSuccess: () => {
-												hide();
-												router.push({ name: 'Release Group List' });
-											}
-										});
-									}
-								});
 							}
 						}
 					]

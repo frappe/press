@@ -7,9 +7,16 @@
 		<Button
 			v-if="server?.doc"
 			class="whitespace-nowrap"
-			:label="props.buttonLabel"
 			@click="getServerActionHandler(props.actionLabel)"
-		/>
+		>
+			<p
+				:class="
+					group === 'Dangerous Actions' ? 'text-red-600' : 'text-gray-800'
+				"
+			>
+				{{ props.buttonLabel }}
+			</p>
+		</Button>
 	</div>
 </template>
 
@@ -25,7 +32,8 @@ const props = defineProps({
 	actionLabel: { type: String, required: true },
 	method: { type: String, required: true },
 	description: { type: String, required: true },
-	buttonLabel: { type: String, required: true }
+	buttonLabel: { type: String, required: true },
+	group: { type: String, required: false }
 });
 
 const server = getCachedDocumentResource(props.serverType, props.serverName);

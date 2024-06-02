@@ -160,6 +160,7 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_doc(self, doc):
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
+		doc.actions = self.get_actions()
 		if len(self.servers) == 1:
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
@@ -167,6 +168,23 @@ class ReleaseGroup(Document, TagHelpers):
 			doc.server = self.servers[0].server
 			doc.server_title = server.title
 			doc.server_team = server.team
+
+	def get_actions(self):
+		return [
+			{
+				"action": "Rename Bench",
+				"description": "Rename the bench",
+				"button_label": "Rename",
+				"doc_method": "rename",
+			},
+			{
+				"action": "Drop Bench",
+				"description": "Drop the bench",
+				"button_label": "Drop",
+				"doc_method": "drop",
+				"group": "Dangerous Actions",
+			},
+		]
 
 	def validate(self):
 		self.validate_title()
