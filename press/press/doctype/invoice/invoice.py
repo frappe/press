@@ -356,6 +356,7 @@ class Invoice(Document):
 		amount = int(self.amount_due * 100)
 		invoice = stripe.Invoice.create(
 			customer=customer_id,
+			pending_invoice_items_behavior="exclude",
 			collection_method="charge_automatically",
 			auto_advance=True,
 			idempotency_key=f"invoice:{self.name}:{amount}",
