@@ -45,6 +45,7 @@ export default {
 					filters: this.options.filters,
 					query: this.query
 				},
+				cache: this.label,
 				auto: true,
 				transform: data => {
 					return data.map(option => ({
