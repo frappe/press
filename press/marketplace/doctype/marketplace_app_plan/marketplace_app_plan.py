@@ -1,9 +1,11 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from typing import List
+
+import frappe
+from frappe import cint
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -17,6 +19,18 @@ class MarketplaceAppPlan(Plan):
 			plan["features"] = get_app_plan_features(plan.name)
 
 		return plans
+
+	def on_update(self):
+		self.update_marketplace_app_subscription_type()
+
+	def update_marketplace_app_subscription_type(self):
+		if cint(self.price_inr) > 0 or cint(self.price_usd) > 0:
+			frappe.db.set_value(
+				"Marketplace App",
+				self.app,
+				"subscription_type",
+				"Paid",
+			)
 
 	@staticmethod
 	def create_marketplace_app_subscription(
