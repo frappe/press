@@ -359,7 +359,7 @@ class Invoice(Document):
 			pending_invoice_items_behavior="exclude",
 			collection_method="charge_automatically",
 			auto_advance=True,
-			idempotency_key=f"invoice:{self.name}:{amount}",
+			idempotency_key=f"invoice:{self.name}:amount:{amount}",
 		)
 		stripe.InvoiceItem.create(
 			customer=customer_id,
@@ -367,7 +367,7 @@ class Invoice(Document):
 			description=self.get_stripe_invoice_item_description(),
 			amount=amount,
 			currency=self.currency.lower(),
-			idempotency_key=f"invoiceitem:{self.name}:{amount}",
+			idempotency_key=f"invoiceitem:{self.name}:amount:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
