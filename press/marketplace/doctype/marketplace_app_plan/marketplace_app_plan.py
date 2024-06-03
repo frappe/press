@@ -20,6 +20,9 @@ class MarketplaceAppPlan(Plan):
 
 		return plans
 
+	def after_insert(self):
+		self.update_marketplace_app_subscription_type()
+
 	def on_update(self):
 		self.update_marketplace_app_subscription_type()
 
