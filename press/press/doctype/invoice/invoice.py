@@ -354,19 +354,18 @@ class Invoice(Document):
 
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 		amount = int(self.amount_due * 100)
+		stripe.InvoiceItem.create(
+			customer=customer_id,
+			description=self.get_stripe_invoice_item_description(),
+			amount=amount,
+			currency=self.currency.lower(),
+			idempotency_key=f"invoiceitem:{self.name}:{amount}",
+		)
 		invoice = stripe.Invoice.create(
 			customer=customer_id,
 			collection_method="charge_automatically",
 			auto_advance=True,
 			idempotency_key=f"invoice:{self.name}:{amount}",
-		)
-		stripe.InvoiceItem.create(
-			customer=customer_id,
-			invoice=invoice["id"],
-			description=self.get_stripe_invoice_item_description(),
-			amount=amount,
-			currency=self.currency.lower(),
-			idempotency_key=f"invoiceitem:{self.name}:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
