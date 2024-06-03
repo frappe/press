@@ -61,12 +61,12 @@ def get_analytics(**data):
 	"""
 	send data for a specific month
 	"""
-	month = data["month"]
+	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data["status"]
-	site = data["site"]
-	subscription_key = data["key"]
+	status = data.get("status")
+	site = data.get("site")
+	subscription_key = data.get("key")
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
