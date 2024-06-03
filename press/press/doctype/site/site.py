@@ -1497,6 +1497,9 @@ class Site(Document, TagHelpers):
 			plan_config["app_include_js"] = []
 
 		self._update_configuration(plan_config)
+		# not sure if max_storage_usage is present here
+		self._update_configuration({"max_storage_usage": plan_config.max_storage_usage})
+
 		frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
