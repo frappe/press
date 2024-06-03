@@ -2115,7 +2115,6 @@ class Site(Document, TagHelpers):
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",
-				"group": "Dangerous Actions",
 			},
 			{
 				"action": "Migrate site",
