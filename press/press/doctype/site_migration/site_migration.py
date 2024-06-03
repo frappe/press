@@ -90,7 +90,13 @@ class SiteMigration(Document):
 		try:
 			backup: SiteBackup = frappe.get_last_doc(  # approximation with last backup
 				"Site Backup",
-				{"site": self.site, "with_files": True, "offsite": True, "status": "Success"},
+				{
+					"site": self.site,
+					"with_files": True,
+					"offsite": True,
+					"status": "Success",
+					"files_availability": "Available",
+				},
 			)
 		except frappe.DoesNotExistError:
 			pass
