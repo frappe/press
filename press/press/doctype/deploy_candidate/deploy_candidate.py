@@ -385,7 +385,9 @@ class DeployCandidate(Document):
 
 		return self.status == "Success"
 
-	def handle_build_failure(self, exc: Exception | None = None) -> None:
+	def handle_build_failure(
+		self, exc: Exception | None = None, job: "Optional[AgentJob]" = None
+	) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc)
@@ -408,7 +410,9 @@ class DeployCandidate(Document):
 		if exc:
 			raise
 
-	def should_build_retry(self, exc: Exception | None) -> bool:
+	def should_build_retry(
+		self, exc: Exception | None, job: "Optional[AgentJob]" = None
+	) -> bool:
 		if self.status != "Failure":
 			return False
 
@@ -422,6 +426,10 @@ class DeployCandidate(Document):
 
 		# Failed to upload build context (Mostly 502)
 		if exc and len(exc.args) > 0 and "Failed to upload build context" in exc.args[0]:
+			return True
+
+		# Failed to upload docker image
+		if job and job.traceback and "TimeoutError: timed out" in job.traceback:
 			return True
 
 		return False
@@ -606,7 +614,7 @@ class DeployCandidate(Document):
 			self.upload_step_updater.process(output)
 
 		if self.has_remote_build_failed(job, job_data):
-			self.handle_build_failure()
+			self.handle_build_failure(exc=None, job=job)
 		else:
 			self._update_status_from_remote_build_job(job, job_data)
 
