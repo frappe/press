@@ -98,7 +98,9 @@ export default {
 		},
 		listOptions() {
 			return {
-				data: this.updatableApps,
+				data: this.updatableApps.filter(
+					app => app.current_hash !== app.next_hash
+				),
 				columns: [
 					{
 						label: 'App',
