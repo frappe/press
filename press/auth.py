@@ -23,6 +23,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.realtime.has_permission",
 	"/api/method/frappe.www.login.login_via_frappe",
 	"/api/method/frappe.integrations.oauth2.authorize",
+	"/api/method/frappe.integrations.oauth2.approve",
 	"/api/method/frappe.integrations.oauth2.get_token",
 	"/api/method/frappe.integrations.oauth2.openid_profile",
 	"/api/method/frappe.integrations.oauth2_logins.login_via_frappe",
