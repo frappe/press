@@ -334,7 +334,7 @@ export default {
 				},
 				onSuccess(data) {
 					if (this.tabIndex === 0)
-						this.selectedGithubRepository = {
+						this.selectedBranch = {
 							label: data[0].name,
 							value: data[0].name
 						};
