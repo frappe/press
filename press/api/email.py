@@ -168,7 +168,7 @@ def event_log():
 	if not event_data:
 		return
 
-	if "user-variables" not in event_data:
+	if event_data.get("user-variables", {}).get("sk_mail") is None:
 		# We don't know where to send this event
 		# TOOD: Investigate why this is happening
 		# Hint: Likely from other emails not sent via the email delivery app
