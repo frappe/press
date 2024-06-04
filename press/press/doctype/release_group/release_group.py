@@ -1192,7 +1192,8 @@ class ReleaseGroup(Document, TagHelpers):
 		if isinstance(app, str):
 			app = json.loads(app)
 
-		name = app["name"]
+		if not (name := app.get("name")):
+			return
 
 		if frappe.db.exists("App", name):
 			app_doc = frappe.get_doc("App", name)
