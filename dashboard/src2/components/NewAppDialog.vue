@@ -331,6 +331,13 @@ export default {
 					if (this.tabIndex === 0 && !isValidUrl) {
 						return 'Please enter a valid github link';
 					}
+				},
+				onSuccess(data) {
+					if (this.tabIndex === 0)
+						this.selectedGithubRepository = {
+							label: data[0].name,
+							value: data[0].name
+						};
 				}
 			};
 		},
