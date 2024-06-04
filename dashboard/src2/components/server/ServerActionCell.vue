@@ -63,7 +63,6 @@ function onRebootServer() {
 			label: 'Reboot Server'
 		},
 		onSuccess({ hide, values }) {
-			console.log(server, values.confirmServerName);
 			if (server.reboot.loading) return;
 			if (values.confirmServerName !== server.doc.name) {
 				throw new Error('Server name does not match');
