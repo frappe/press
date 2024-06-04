@@ -14,6 +14,7 @@ from frappe.model.document import Document
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.billing import get_frappe_io_connection, convert_stripe_money
+from press.api.client import dashboard_whitelist
 
 
 DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
@@ -144,7 +145,7 @@ class Invoice(Document):
 	def get_doc(self, doc):
 		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def stripe_payment_url(self):
 		if not self.stripe_invoice_id:
 			return
