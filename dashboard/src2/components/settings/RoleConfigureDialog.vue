@@ -3,7 +3,6 @@
 		v-if="role.doc"
 		:options="{ title: `${role.doc.title}` }"
 		v-model="show"
-		@after-leave="() => (this.memberEmail = '')"
 	>
 		<template v-slot:body-content>
 			<Tabs
