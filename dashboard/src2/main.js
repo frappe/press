@@ -63,12 +63,19 @@ getInitialData().then(() => {
 				const ignoreErrors = [
 					/api\/method\/press.api.client/,
 					/dynamically imported module/,
-					/NetworkError when attempting to fetch resource/
+					/NetworkError when attempting to fetch resource/,
+					/Load failed/,
+					/Importing a module script failed./
+				];
+				const ignoreErrorTypes = [
+					'ValidationError',
+					'PermissionError',
+					'AuthenticationError'
 				];
 				const error = hint.originalException;
 
 				if (
-					error?.response?.status === 417 ||
+					ignoreErrorTypes.includes(error?.exc_type) ||
 					(error?.message && ignoreErrors.some(re => re.test(error.message)))
 				)
 					return null;
