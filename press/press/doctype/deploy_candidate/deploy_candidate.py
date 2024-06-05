@@ -386,11 +386,13 @@ class DeployCandidate(Document):
 		return self.status == "Success"
 
 	def handle_build_failure(
-		self, exc: Exception | None = None, job: "Optional[AgentJob]" = None
+		self,
+		exc: Exception | None = None,
+		job: "AgentJob" | None = None,
 	) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
-		should_retry = self.should_build_retry(exc=exc)
+		should_retry = self.should_build_retry(exc=exc, job=job)
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
@@ -411,7 +413,9 @@ class DeployCandidate(Document):
 			raise
 
 	def should_build_retry(
-		self, exc: Exception | None, job: "Optional[AgentJob]" = None
+		self,
+		exc: Exception | None,
+		job: "AgentJob" | None,
 	) -> bool:
 		if self.status != "Failure":
 			return False
@@ -424,17 +428,10 @@ class DeployCandidate(Document):
 		if "Could not get lock /var/cache/apt/archives/lock" in self.build_output:
 			return True
 
-		# Failed to upload build context (Mostly 502)
-		if (
-			exc
-			and len(exc.args) > 0
-			and isinstance(exc.args[0], str)
-			and "Failed to upload build context" in exc.args[0]
-		):
+		if exc and should_build_retry_exc(exc):
 			return True
 
-		# Failed to upload docker image
-		if job and job.traceback and "TimeoutError: timed out" in job.traceback:
+		if job and should_build_retry_job(job):
 			return True
 
 		return False
@@ -1929,3 +1926,31 @@ def correct_status(dc_name: str):
 
 	dc.status = "Failure"
 	dc.save(ignore_permissions=True)
+
+
+def should_build_retry_exc(exc: Exception):
+	if len(exc.args) == 0:
+		return False
+
+	args = "\n".join(exc.args)
+
+	# Failed to upload build context (Mostly 502)
+	if "Failed to upload build context" in args:
+		return True
+
+	# Redis refused connection (press side)
+	if "redis.exceptions.ConnectionError: Error 111" in args:
+		return True
+
+	return False
+
+
+def should_build_retry_job(job: "AgentJob"):
+	if not job.traceback:
+		return False
+
+	# Failed to upload docker image
+	if "TimeoutError: timed out" in job.traceback:
+		return True
+
+	return False
