@@ -39,6 +39,7 @@ class Invoice(Document):
 
 		amended_from: DF.Link | None
 		amount_due: DF.Currency
+		amount_due_with_tax: DF.Currency
 		amount_paid: DF.Currency
 		applied_credits: DF.Currency
 		credit_allocations: DF.Table[InvoiceCreditAllocation]
@@ -192,9 +193,6 @@ class Invoice(Document):
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
 
-		if self.partner_email and team.erpnext_partner:
-			self.apply_partner_discount()
-
 		if self.stripe_invoice_id:
 			# if stripe invoice is already created and paid,
 			# then update status and return early
@@ -210,9 +208,13 @@ class Invoice(Document):
 		# set as unpaid by default
 		self.status = "Unpaid"
 
+		if self.partner_email and team.erpnext_partner:
+			self.apply_partner_discount()
+
 		self.amount_due = self.total
 
 		self.apply_credit_balance()
+		self.apply_taxes_if_applicable()
 
 		if self.amount_due > 0 and self.amount_due < 0.1:
 			self.write_off_amount = self.amount_due
@@ -228,12 +230,9 @@ class Invoice(Document):
 
 		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
 			self.payment_attempt_count += 1
-			self.save()
-			frappe.db.commit()
-
-			frappe.throw(
-				"Not enough credits for this invoice. Change payment mode to Card to"
-				" pay using Stripe."
+			self.add_comment(
+				"Comment",
+				"Not enough credits for this invoice. Change payment mode to Card to pay using Stripe.",
 			)
 
 		try:
@@ -286,7 +285,14 @@ class Invoice(Document):
 		total = 0
 		for item in self.items:
 			total += item.amount
-		return total
+		self.total = total
+
+	def apply_taxes_if_applicable(self):
+		self.amount_due_with_tax = self.amount_due
+		if self.currency == "INR" and self.type == "Subscription":
+			gst_rate = frappe.db.get_single_value("Press Settings", "gst_percentage")
+			self.gst = self.amount_due * gst_rate
+			self.amount_due_with_tax = self.amount_due + self.gst
 
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
@@ -341,7 +347,7 @@ class Invoice(Document):
 		if self.stripe_invoice_id:
 			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			stripe_invoice_total = convert_stripe_money(invoice.total)
-			if self.amount_due == stripe_invoice_total:
+			if self.amount_due_with_tax == stripe_invoice_total:
 				# return if an invoice with the same amount is already created
 				return
 			else:
@@ -360,7 +366,7 @@ class Invoice(Document):
 			return
 
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
-		amount = int(self.amount_due * 100)
+		amount = int(self.amount_due_with_tax * 100)
 		invoice = stripe.Invoice.create(
 			customer=customer_id,
 			pending_invoice_items_behavior="exclude",
@@ -584,9 +590,7 @@ class Invoice(Document):
 		if self.docstatus == 1:
 			return
 
-		total = self.calculate_total()
-		self.total_before_discount = total
-		self.total = total
+		self.calculate_total()
 		self.set_total_and_discount()
 
 	def compute_free_credits(self):
@@ -636,6 +640,8 @@ class Invoice(Document):
 		self.reload()
 
 	def set_total_and_discount(self):
+		self.total_before_discount = self.total
+
 		if not self.discounts:
 			return
 		total_discount_amount = 0
@@ -990,6 +996,11 @@ class Invoice(Document):
 
 		# Also send back the updated payment link
 		return self.stripe_invoice_url
+
+	def get_stripe_invoice(self):
+		if self.stripe_invoice_id:
+			stripe = get_stripe()
+			return stripe.Invoice.retrieve(self.stripe_invoice_id)
 
 
 def finalize_draft_invoices():
