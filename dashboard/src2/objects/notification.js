@@ -1,9 +1,21 @@
 import { h } from 'vue';
 import router from '../router';
 import { getDocResource } from '../utils/resource';
-import { Tooltip } from 'frappe-ui';
+import { Tooltip, frappeRequest } from 'frappe-ui';
 import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
+import { unreadNotificationsCount } from '../data/notifications';
+import { toast } from 'vue-sonner';
+
+const getNotification = name => {
+	return getDocResource({
+		doctype: 'Press Notification',
+		name: name,
+		whitelistedMethods: {
+			markNotificationAsRead: 'mark_as_read'
+		}
+	});
+};
 
 export default {
 	doctype: 'Press Notification',
@@ -17,7 +29,8 @@ export default {
 				url: 'press.api.notifications.get_notifications',
 				auto: true,
 				filters: {
-					team: $team.name
+					team: $team.name,
+					read: 'Unread'
 				},
 				cache: ['Notifications']
 			};
@@ -28,25 +41,49 @@ export default {
 		filterControls() {
 			return [
 				{
-					type: 'select',
+					type: 'tab',
 					label: 'Read',
-					class: 'w-20',
 					fieldname: 'read',
-					options: ['', 'Read', 'Unread']
+					options: ['All', 'Unread'],
+					default: 'Unread'
 				}
 			];
 		},
 		onRowClick(row) {
-			let notification = getDocResource({
-				doctype: 'Press Notification',
-				name: row.name,
-				whitelistedMethods: {
-					markNotificationAsRead: 'mark_as_read'
-				}
-			});
+			const notification = getNotification(row.name);
+
 			notification.markNotificationAsRead.submit().then(() => {
 				if (row.route) router.push(row.route);
 			});
+		},
+		actions({ listResource: notifications }) {
+			return [
+				{
+					label: 'Mark all as read',
+					slots: {
+						prefix: icon('check-circle')
+					},
+					async onClick() {
+						toast.promise(
+							frappeRequest({
+								url: '/api/method/press.api.notifications.mark_all_notifications_as_read'
+							}),
+							{
+								success: () => {
+									notifications.reload();
+									unreadNotificationsCount.reload();
+									return 'All notifications marked as read';
+								},
+								loading: 'Marking all notifications as read...',
+								error: error =>
+									error.messages?.length
+										? error.messages.join('\n')
+										: error.message
+							}
+						);
+					}
+				}
+			];
 		},
 		columns: [
 			{

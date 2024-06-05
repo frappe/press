@@ -8,8 +8,8 @@ def get_notifications(
 ):
 	if not filters:
 		filters = {}
-	if filters.get("read") == "Unread":
-		filters["read"] = False
+	if filters.get("read") == "All":
+		del filters["read"]
 	elif filters.get("read") == "Read":
 		filters["read"] = True
 	notifications = frappe.get_all(
@@ -52,6 +52,13 @@ def get_notifications(
 @frappe.whitelist()
 def mark_notification_as_read(name):
 	frappe.db.set_value("Press Notification", name, "read", True)
+
+
+@frappe.whitelist()
+def mark_all_notifications_as_read():
+	frappe.db.set_value(
+		"Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False
+	)
 
 
 @frappe.whitelist()
