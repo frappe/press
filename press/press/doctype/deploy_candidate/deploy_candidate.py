@@ -1929,17 +1929,21 @@ def correct_status(dc_name: str):
 
 
 def should_build_retry_exc(exc: Exception):
-	if len(exc.args) == 0:
+	error = frappe.get_traceback(False)
+	if not error and len(exc.args) == 0:
 		return False
 
-	args = "\n".join(str(a) for a in exc.args)
+	error = error or "\n".join(str(a) for a in exc.args)
 
 	# Failed to upload build context (Mostly 502)
-	if "Failed to upload build context" in args:
+	if "Failed to upload build context" in error:
 		return True
 
 	# Redis refused connection (press side)
-	if "redis.exceptions.ConnectionError: Error 111" in args:
+	if "redis.exceptions.ConnectionError: Error 111" in error:
+		return True
+
+	if "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error:
 		return True
 
 	return False
