@@ -306,9 +306,12 @@ class DeployCandidate(Document):
 				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
 			)
 		self.manually_failed = True
-		self.stop_build_jobs()
-		self._set_status_failure()
+		self._stop_and_fail()
 		return dict(error=False, message="Failed successfully")
+
+	def _stop_and_fail(self, commit=True):
+		self.stop_build_jobs()
+		self._set_status_failure(commit)
 
 	@frappe.whitelist()
 	def redeploy(self):
@@ -716,22 +719,24 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	@reconnect_on_failure()
-	def _set_status_failure(self):
+	def _set_status_failure(self, commit=True):
 		self.status = "Failure"
 		self._fail_last_running_step()
 		self._set_build_duration()
 		self.save(ignore_permissions=True)
 		self._update_bench_status()
-		frappe.db.commit()
+		if commit:
+			frappe.db.commit()
 
 	@reconnect_on_failure()
-	def _set_status_success(self):
+	def _set_status_success(self, commit=True):
 		self.status = "Success"
 		self.build_error = None
 		self._set_build_duration()
 		self.save(ignore_permissions=True)
 		self._update_bench_status()
-		frappe.db.commit()
+		if commit:
+			frappe.db.commit()
 
 	def _update_bench_status(self):
 		if self.status == "Failure":
@@ -1884,7 +1889,63 @@ def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 	return float(value)
 
 
+def check_builds_status():
+	fail_or_retry_stuck_builds()
+	correct_false_positives()
+
+
+def fail_or_retry_stuck_builds(
+	last_n_days=0,
+	last_n_hours=1,
+	stuck_threshold_in_hours=2,
+):
+	# Fails or retries builds builds from the `last_n_days` and `last_n_hours` that
+	# have not been updated for longer than `stuck_threshold_in_hours`.
+	result = frappe.db.sql(
+		"""
+	select dc.name as name
+	from  `tabDeploy Candidate` as dc
+	where  dc.modified between now() - interval %s day - interval %s hour and now()
+	and    dc.modified < now() - interval %s hour
+	and    dc.status not in ('Draft', 'Failure', 'Success')
+	""",
+		(
+			last_n_days,
+			last_n_hours,
+			stuck_threshold_in_hours,
+		),
+	)
+
+	for (name,) in result:
+		dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", name)
+		dc.manually_failed = True
+		dc._stop_and_fail(False)
+		if can_retry_build(dc.name, dc.group, dc.build_start):
+			dc.schedule_build_retry()
+
+
+def can_retry_build(name: str, group: str, build_start: datetime):
+	# Can retry only if build was started today and
+	# if no builds were started after the current build.
+	if build_start.date().isoformat() != frappe.utils.today():
+		return False
+
+	result = frappe.db.count(
+		"Deploy Candidate",
+		filters={
+			"group": group,
+			"build_start": [">", build_start],
+			"name": ["!=", name],  # sanity filter
+		},
+	)
+
+	if isinstance(result, int):
+		return result == 0
+	return False
+
+
 def correct_false_positives(last_n_days=0, last_n_hours=1):
+	# Fails jobs non Failed jobs that have steps with Failure status
 	result = frappe.db.sql(
 		"""
 	with dc as (
@@ -1924,8 +1985,7 @@ def correct_status(dc_name: str):
 	if not found_failed:
 		return
 
-	dc.status = "Failure"
-	dc.save(ignore_permissions=True)
+	dc._stop_and_fail(False)
 
 
 def should_build_retry_exc(exc: Exception):
