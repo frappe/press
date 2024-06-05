@@ -547,6 +547,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"dependencies": dependencies,
 				"packages": packages,
 				"environment_variables": environment_variables,
+				"mirror_server": self.mirror_server,
 			}
 		).insert()
 
