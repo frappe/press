@@ -1932,7 +1932,7 @@ def should_build_retry_exc(exc: Exception):
 	if len(exc.args) == 0:
 		return False
 
-	args = "\n".join(exc.args)
+	args = "\n".join(str(a) for a in exc.args)
 
 	# Failed to upload build context (Mostly 502)
 	if "Failed to upload build context" in args:
