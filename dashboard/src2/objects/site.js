@@ -400,7 +400,7 @@ export default {
 																										return 'App will be installed shortly';
 																									},
 																									error: e => {
-																										return e.messages.length
+																										return e.messages?.length
 																											? e.messages.join('\n')
 																											: e.message;
 																									}
@@ -421,7 +421,7 @@ export default {
 																							return 'App will be installed shortly';
 																						},
 																						error: e => {
-																							return e.messages.length
+																							return e.messages?.length
 																								? e.messages.join('\n')
 																								: e.message;
 																						}
@@ -507,7 +507,7 @@ export default {
 													loading: 'Uninstalling app...',
 													success: () => 'App uninstalled successfully',
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
@@ -596,7 +596,7 @@ export default {
 														return 'Domain removed';
 													},
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
@@ -626,7 +626,7 @@ export default {
 														return 'Primary domain set';
 													},
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
@@ -656,7 +656,7 @@ export default {
 														return 'Domain redirected';
 													},
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
@@ -686,7 +686,7 @@ export default {
 														return 'Redirect removed';
 													},
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
@@ -884,7 +884,7 @@ export default {
 																return 'Backup restore scheduled successfully.';
 															},
 															error: e => {
-																return e.messages.length
+																return e.messages?.length
 																	? e.messages.join('\n')
 																	: e.message;
 															}
@@ -927,7 +927,7 @@ export default {
 																	return 'Backup restore scheduled successfully.';
 																},
 																error: e => {
-																	return e.messages.length
+																	return e.messages?.length
 																		? e.messages.join('\n')
 																		: e.message;
 																}
@@ -970,7 +970,7 @@ export default {
 													});
 												},
 												error: e => {
-													return e.messages.length
+													return e.messages?.length
 														? e.messages.join('\n')
 														: e.message;
 												}
@@ -1101,7 +1101,7 @@ export default {
 													loading: 'Deleting config...',
 													success: () => `Config ${row.key} removed`,
 													error: e => {
-														return e.messages.length
+														return e.messages?.length
 															? e.messages.join('\n')
 															: e.message;
 													}
