@@ -129,10 +129,6 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_required_app_not_found_prebuild,
 		),
 		(
-			"note: This error originates from a subprocess, and is likely not a problem with pip.",
-			update_with_error_on_pip_install,
-		),
-		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
 		),
@@ -155,6 +151,19 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"vite: not found",
 			update_with_vite_not_found,
+		),
+		# Below two are catch all fallback handlers for
+		# `yarn build` and `pip install` errors originating due
+		# to issues in an app.
+		#
+		# They should always be at the end.
+		(
+			"subprocess.CalledProcessError: Command 'bench build --app",
+			update_with_yarn_build_failed,
+		),
+		(
+			"note: This error originates from a subprocess, and is likely not a problem with pip.",
+			update_with_error_on_pip_install,
 		),
 	]
 
@@ -723,6 +732,41 @@ def update_with_vite_not_found(
 	details["message"] = fmt(message)
 	details["traceback"] = None
 	details["assistance_url"] = DOC_URLS["vite-not-found"]
+	return True
+
+
+def update_with_yarn_build_failed(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	details["title"] = "App frontend build failed"
+	failed_step = get_failed_step(dc)
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> assets have failed to build.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+
+		<p>This may be due to issues with the app being installed
+		and not Frappe Cloud.</p>
+		"""
+
+	else:
+		message = """
+		<p>App assets have failed to build.</p>
+
+		<p>Please view the failing step output to debug and fix the error
+		before retrying build.</p>
+
+		<p>This may be due to issues with the app being installed
+		and not Frappe Cloud.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
 	return True
 
 
