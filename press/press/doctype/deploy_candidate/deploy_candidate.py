@@ -391,7 +391,7 @@ class DeployCandidate(Document):
 	def handle_build_failure(
 		self,
 		exc: Exception | None = None,
-		job: "AgentJob" | None = None,
+		job: "Optional[AgentJob]" = None,
 	) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
@@ -418,7 +418,7 @@ class DeployCandidate(Document):
 	def should_build_retry(
 		self,
 		exc: Exception | None,
-		job: "AgentJob" | None,
+		job: "Optional[AgentJob]",
 	) -> bool:
 		if self.status != "Failure":
 			return False
