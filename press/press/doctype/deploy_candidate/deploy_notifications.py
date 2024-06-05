@@ -199,7 +199,7 @@ def create_build_failed_notification(
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	tb = frappe.get_traceback(with_context=False)
 	default_title = get_default_title(dc)
-	default_message = (get_default_message(dc),)
+	default_message = get_default_message(dc)
 
 	details: "Details" = dict(
 		title=default_title,
