@@ -110,7 +110,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		),
 		(
 			"Incompatible Node version found",
-			update_with_incompatible_app_prebuild,
+			update_with_incompatible_node,
 		),
 		(
 			"Incompatible Python version found",
