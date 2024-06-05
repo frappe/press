@@ -32,9 +32,10 @@
 <script>
 import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
-import { userCurrency } from '../utils/format';
+import { userCurrency, date } from '../utils/format';
 import { icon } from '../utils/components';
 import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
+import { dayjsLocal } from '../utils/dayjs';
 
 export default {
 	name: 'BillingInvoices',
@@ -56,9 +57,24 @@ export default {
 		options() {
 			return {
 				doctype: 'Invoice',
-				fields: ['type', 'invoice_pdf', 'payment_mode', 'stripe_invoice_url'],
+				fields: [
+					'type',
+					'invoice_pdf',
+					'payment_mode',
+					'stripe_invoice_url',
+					'due_date',
+					'period_start',
+					'period_end'
+				],
 				filterControls() {
 					return [
+						{
+							type: 'select',
+							label: 'Type',
+							class: 'w-36',
+							fieldname: 'type',
+							options: ['', 'Subscription', 'Prepaid Credits']
+						},
 						{
 							type: 'select',
 							label: 'Status',
@@ -79,30 +95,58 @@ export default {
 					];
 				},
 				columns: [
-					{ label: 'Invoice', fieldname: 'name' },
-					{ label: 'Status', fieldname: 'status', type: 'Badge' },
+					{
+						label: 'Invoice',
+						fieldname: 'name',
+						class: 'font-medium',
+						format(value, row) {
+							if (row.type == 'Subscription') {
+								let end = dayjsLocal(row.period_end);
+								return end.format('MMMM YYYY');
+							}
+							return 'Prepaid Credits';
+						}
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: '150px'
+					},
 					{
 						label: 'Date',
 						fieldname: 'due_date',
-						format(value) {
-							return Intl.DateTimeFormat('en-US', {
-								year: 'numeric',
-								month: 'short',
-								day: 'numeric'
-							}).format(new Date(value));
+						format(value, row) {
+							if (row.type == 'Subscription') {
+								let start = dayjsLocal(row.period_start);
+								let end = dayjsLocal(row.period_end);
+								let sameYear = start.year() === end.year();
+								let formattedStart = sameYear
+									? start.format('MMM D')
+									: start.format('ll');
+								return `${formattedStart} - ${end.format('ll')}`;
+							}
+							return date(value, 'll');
 						}
 					},
-					{ label: 'Total', fieldname: 'total', format: this.formatCurrency },
+					{
+						label: 'Total',
+						fieldname: 'total',
+						format: this.formatCurrency,
+						align: 'right'
+					},
 					{
 						label: 'Amount Paid',
 						fieldname: 'amount_paid',
 						format: this.formatCurrency,
+						align: 'right',
 						width: 0.7
 					},
 					{
 						label: 'Amount Due',
 						fieldname: 'amount_due',
 						format: this.formatCurrency,
+						align: 'right',
 						width: 0.7
 					},
 					{
@@ -142,7 +186,7 @@ export default {
 						}
 					}
 				],
-				orderBy: 'due_date desc',
+				orderBy: 'due_date desc, creation desc',
 				onRowClick: row => {
 					this.showInvoice = row;
 					this.invoiceDialog = true;
