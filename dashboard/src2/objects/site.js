@@ -140,11 +140,11 @@ export default {
 					return value || row.name;
 				}
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.6 },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 0.75,
+				width: 0.85,
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
