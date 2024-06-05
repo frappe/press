@@ -577,6 +577,19 @@ export default {
 					}
 				},
 				{
+					label: 'Guidelines',
+					slots: {
+						icon: icon('help-circle')
+					},
+					condition: () => app.doc.status === 'Draft',
+					onClick() {
+						window.open(
+							'https://frappecloud.com/docs/marketplace/marketpace-guidelines',
+							'_blank'
+						);
+					}
+				},
+				{
 					label: 'Complete Listing',
 					variant: 'solid',
 					slots: {
