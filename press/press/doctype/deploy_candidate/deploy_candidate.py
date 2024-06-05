@@ -425,7 +425,12 @@ class DeployCandidate(Document):
 			return True
 
 		# Failed to upload build context (Mostly 502)
-		if exc and len(exc.args) > 0 and "Failed to upload build context" in exc.args[0]:
+		if (
+			exc
+			and len(exc.args) > 0
+			and isinstance(exc.args[0], str)
+			and "Failed to upload build context" in exc.args[0]
+		):
 			return True
 
 		# Failed to upload docker image
