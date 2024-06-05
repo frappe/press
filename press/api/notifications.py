@@ -55,6 +55,13 @@ def mark_notification_as_read(name):
 
 
 @frappe.whitelist()
+def mark_all_notifications_as_read():
+	frappe.db.set_value(
+		"Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False
+	)
+
+
+@frappe.whitelist()
 def get_unread_count():
 	return frappe.db.count(
 		"Press Notification", {"read": False, "team": get_current_team()}

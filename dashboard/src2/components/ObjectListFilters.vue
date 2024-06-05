@@ -29,6 +29,7 @@
 						:class="control.class"
 						:type="control.type"
 						:options="control.options"
+						:buttons="control.buttons"
 						:placeholder="
 							!$isMobile ? control.placeholder || control.label : null
 						"
