@@ -427,8 +427,8 @@ class DeployCandidate(Document):
 		if self.retry_count >= 2:
 			return False
 
-		# Build failed cause APT could not get lock.
-		if "Could not get lock /var/cache/apt/archives/lock" in self.build_output:
+		bo = self.build_output
+		if isinstance(bo, str) and should_build_retry_build_output(bo):
 			return True
 
 		if exc and should_build_retry_exc(exc):
@@ -1986,6 +1986,18 @@ def correct_status(dc_name: str):
 		return
 
 	dc._stop_and_fail(False)
+
+
+def should_build_retry_build_output(build_output: str):
+	# Build failed cause APT could not get lock.
+	if "Could not get lock /var/cache/apt/archives/lock" in build_output:
+		return True
+
+	# Build failed cause Docker could not find a mounted file/folder
+	if "failed to compute cache key: failed to calculate checksum of ref" in build_output:
+		return True
+
+	return False
 
 
 def should_build_retry_exc(exc: Exception):
