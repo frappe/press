@@ -188,6 +188,20 @@ let router = createRouter({
 			component: () => import('./pages/InstallApp.vue'),
 			props: true
 		},
+		{
+			path: '/user-review/:marketplaceApp',
+			name: 'ReviewMarketplaceApp',
+			component: () =>
+				import('./components/marketplace/ReviewMarketplaceApp.vue'),
+			props: true
+		},
+		{
+			path: '/developer-reply/:marketplaceApp/:reviewId',
+			name: 'ReplyMarketplaceApp',
+			component: () =>
+				import('./components/marketplace/ReplyMarketplaceApp.vue'),
+			props: true
+		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',

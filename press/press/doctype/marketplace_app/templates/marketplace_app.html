@@ -138,7 +138,7 @@ five_star_rating, approved_badge -%}
 		<div>
 			<div class="flex flex-row justify-between border-t pt-8" style="margin-bottom: 0.8rem;">
 				<h2 class="text-2xl text-gray-900 font-bold">User Reviews</h2>
-				{{ button('Write a review', link='/dashboard/user-review/' + app.name + '?title=' + app.title) }}
+				{{ button('Write a review', link='/dashboard/user-review/' + app.name) }}
 			</div>
 
 			{%- if (user_reviews | length) > 0 -%}
@@ -186,7 +186,7 @@ five_star_rating, approved_badge -%}
 					</p>
 					<div class="text-base text-gray-600">
 						{{ review.user_name }} &bull; {{ frappe.utils.pretty_date(review.creation) }}
-						&bull; {{ link('Reply', url='/dashboard/developer-reply/' + app.name + '/' + review.name + '?title=' + app.title) }}
+						&bull; {{ link('Reply', url='/dashboard/developer-reply/' + app.name + '/' + review.name) }}
 						<div class="flex flex-col mt-4">
 							{% for reply in review.developer_reply %}
 							<div class="flex flex-row text-gray-900 mb-2">
