@@ -44,7 +44,7 @@ export default {
 					type: 'tab',
 					label: 'Read',
 					fieldname: 'read',
-					buttons: [{ label: 'Unread' }, { label: 'Read' }],
+					buttons: [{ label: 'All' }, { label: 'Unread' }],
 					default: 'Unread'
 				}
 			];

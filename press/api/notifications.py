@@ -8,8 +8,8 @@ def get_notifications(
 ):
 	if not filters:
 		filters = {}
-	if filters.get("read") == "Unread":
-		filters["read"] = False
+	if filters.get("read") == "All":
+		del filters["read"]
 	elif filters.get("read") == "Read":
 		filters["read"] = True
 	notifications = frappe.get_all(
