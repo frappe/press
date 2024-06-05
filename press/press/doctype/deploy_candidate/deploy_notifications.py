@@ -90,11 +90,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 	return [
 		(
 			"App installation token could not be fetched",
-			update_with_installation_token_not_fetchable,
+			update_with_app_not_fetchable,
 		),
 		(
 			"Repository could not be fetched",
-			update_with_repository_not_fetchable,
+			update_with_app_not_fetchable,
 		),
 		(
 			"App has invalid pyproject.toml file",
@@ -495,53 +495,37 @@ def update_with_invalid_package_json_error(
 	return True
 
 
-def update_with_installation_token_not_fetchable(
+def update_with_app_not_fetchable(
 	details: "Details",
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-	return _update_with_github_token_error(details, dc, exc, False)
 
+	failed_step = get_failed_step(dc)
 
-def update_with_repository_not_fetchable(
-	details: "Details",
-	dc: "DeployCandidate",
-	exc: BaseException,
-):
-	return _update_with_github_token_error(details, dc, exc, True)
+	details["title"] = "App could not be fetched"
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> could not be fetched from GitHub.</p>
 
+		<p>This may have been due to an invalid installation id or due
+		to an invalid repository URL.</p>
 
-def _update_with_github_token_error(
-	details: "Details",
-	dc: "DeployCandidate",
-	exc: BaseException,
-	is_repo_not_found: bool = False,
-):
-	if len(exc.args) > 1:
-		app = exc.args[1]
-	elif (failed_step := dc.get_first_step("status", "Failure")) is not None:
-		app = failed_step.step_slug
+		<p>For a possible solutions, please follow the steps mentioned
+		in <i>Help</i>.</p>
+		"""
+	else:
+		message = """
+		<p>App could not be fetched from GitHub.</p>
 
-	if not app:
-		return False
+		<p>This may have been due to an invalid installation id or due
+		to an invalid repository URL.</p>
 
-	# Ensure that installation token is None
-	if is_repo_not_found and not is_installation_token_none(dc, app):
-		return False
+		<p>For a possible solutions, please follow the steps mentioned
+		in <i>Help</i>.</p>
+		"""
 
-	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
-	if not build_step:
-		return False
-
-	details["title"] = "App access token could not be fetched"
-
-	app_name = build_step.step
-	message = f"""
-	<p>{details['message']}</p>
-
-	<p><b>{app_name}</b> installation access token could not be fetched from GitHub.
-	To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
-	"""
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["app-installation-issue"]
 	return True
@@ -801,24 +785,6 @@ def get_app_from_incompatible_build_output_line(line: str):
 		return ""
 
 	return splits[idx][:-1].split("@")[0]
-
-
-def is_installation_token_none(dc: "DeployCandidate", app: str) -> bool:
-	from press.api.github import get_access_token
-
-	dc_app = get_ct_row(dc, app, "apps", "app")
-	if dc_app is None:
-		return False
-
-	installation_id = frappe.get_value(
-		"App Source", dc_app.source, "github_installation_id"
-	)
-
-	try:
-		return get_access_token(installation_id) is None
-	except Exception:
-		# Error is not actionable
-		return False
 
 
 def get_default_title(dc: "DeployCandidate") -> str:
