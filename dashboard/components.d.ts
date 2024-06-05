@@ -11,6 +11,7 @@ declare module 'vue' {
     Alert: typeof import('./src/components/global/Alert.vue')['default']
     AlertBenchUpdate: typeof import('./src/components/AlertBenchUpdate.vue')['default']
     AlertBillingInformation: typeof import('./src/components/AlertBillingInformation.vue')['default']
+    AlertCardExpiry: typeof import('./src/components/AlertCardExpiry.vue')['default']
     AlertSiteActivation: typeof import('./src/components/AlertSiteActivation.vue')['default']
     AlertSiteUpdate: typeof import('./src/components/AlertSiteUpdate.vue')['default']
     AlertUpdate: typeof import('./src/components/AlertUpdate.vue')['default']
