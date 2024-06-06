@@ -16,7 +16,10 @@
 					>
 						Nothing to show
 					</div>
-					<PartnerCustomerInvoices :customerTeam="showInvoice.name" />
+					<PartnerCustomerInvoices
+						:customerTeam="showInvoice.name"
+						:customerCurrency="showInvoice.currency"
+					/>
 				</template>
 			</template>
 		</Dialog>
