@@ -86,6 +86,7 @@ def create_test_site(
 	new: bool = False,
 	creation: datetime = None,
 	bench: str = None,
+	server: str = None,
 	team: str = None,
 	standby_for: Optional[str] = None,
 	apps: Optional[list[str]] = None,
@@ -104,7 +105,7 @@ def create_test_site(
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
-		bench = create_test_bench()
+		bench = create_test_bench(server=server)
 	else:
 		bench = frappe.get_doc("Bench", bench)
 	group = frappe.get_doc("Release Group", bench.group)
