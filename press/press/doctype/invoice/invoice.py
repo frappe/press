@@ -360,6 +360,7 @@ class Invoice(Document):
 			pending_invoice_items_behavior="exclude",
 			collection_method="charge_automatically",
 			auto_advance=True,
+			currency=self.currency.lower(),
 			idempotency_key=f"invoice:{self.name}:amount:{amount}",
 		)
 		stripe.InvoiceItem.create(
