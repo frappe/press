@@ -172,8 +172,8 @@ export default {
 	},
 	computed: {
 		dbAccessCommand() {
-			if (this.databaseAccessInfo) {
-				const { credentials } = this.databaseAccessInfo;
+			if (this.databaseCredentials) {
+				const credentials = this.databaseCredentials;
 				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
 			}
 			return null;
