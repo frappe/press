@@ -153,7 +153,7 @@ export default {
 							}
 							let $team = getTeam();
 							if (row.price_usd > 0) {
-								let india = $team.doc.country == 'India';
+								let india = $team?.doc.country == 'India';
 								let formattedValue = userCurrency(
 									india ? row.price_inr : row.price_usd,
 									0
@@ -273,7 +273,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					condition: () => this.$team.doc.is_desk_user,
+					condition: () => this.$team?.doc.is_desk_user,
 					onClick: () =>
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${bench.name}`,
