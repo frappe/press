@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 import json
@@ -10,6 +8,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, TypedDict
 
 import frappe
+from frappe.query_builder.functions import Count
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
@@ -1303,6 +1302,60 @@ def get_status(name):
 		)
 		else "Awaiting Deploy"
 	)
+
+
+def prune_servers_without_sites():
+	rg_servers = frappe.qb.DocType("Release Group Server")
+	rg = frappe.qb.DocType("Release Group")
+	groups_with_multiple_servers = (
+		frappe.qb.from_(rg_servers)
+		.inner_join(rg)
+		.on(rg.name == rg_servers.parent)
+		.where(rg.enabled == 1)
+		.where(rg.public == 0)
+		.where(rg.central_bench == 0)
+		.where(rg.team != "team@erpnext.com")
+		.where(
+			rg.modified < frappe.utils.add_to_date(None, days=-7)
+		)  # use this timestamp to assume server added time
+		.groupby(rg_servers.parent)
+		.having(Count("*") > 1)
+		.select(rg_servers.parent)
+		.run(as_dict=False)
+	)
+	groups_with_multiple_servers = [x[0] for x in groups_with_multiple_servers]
+	groups_with_multiple_servers = frappe.get_all(
+		"Release Group Server",
+		filters={"parent": ("in", groups_with_multiple_servers)},
+		fields=["parent", "server"],
+		order_by="parent",
+		as_list=True,
+	)
+
+	from press.press.doctype.bench.bench import (
+		get_scheduled_version_upgrades,
+		get_unfinished_site_migrations,
+	)
+
+	for group, server in groups_with_multiple_servers:
+		sites = frappe.get_all(
+			"Site",
+			{"status": ("!=", "Archived"), "group": group, "server": server},
+			["name"],
+		)
+		if not sites:
+			benches = frappe.get_all(
+				"Bench",
+				{"group": group, "server": server, "status": "Active"},
+				["name", "server", "group"],
+			)
+			for bench in benches:
+				if get_unfinished_site_migrations(bench.name) or get_scheduled_version_upgrades(
+					bench
+				):
+					continue
+			frappe.db.delete("Release Group Server", {"parent": group, "server": server})
+			frappe.db.commit()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
