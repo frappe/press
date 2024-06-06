@@ -254,6 +254,7 @@ class Site(Document, TagHelpers):
 	def validate(self):
 		if self.has_value_changed("subdomain"):
 			self.validate_site_name()
+		self.validate_bench()
 		self.set_site_admin_password()
 		self.validate_installed_apps()
 		self.validate_host_name()
@@ -285,6 +286,22 @@ class Site(Document, TagHelpers):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
+
+	def validate_bench(self):
+		if frappe.db.get_value("Bench", self.bench, "status") != "Active":
+			frappe.throw(f"Bench {self.bench} is not active.")
+
+		bench_group = frappe.db.get_value("Bench", self.bench, "group")
+		if bench_group != self.group:
+			frappe.throw(
+				f"Bench release group {bench_group} is not the same as site release group {self.group}."
+			)
+
+		bench_server = frappe.db.get_value("Bench", self.bench, "server")
+		if bench_server != self.server:
+			frappe.throw(
+				f"Bench server {bench_server} is not the same as site server {self.server}."
+			)
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
