@@ -43,6 +43,7 @@ const releaseGroup = getCachedDocumentResource(
 function getBenchActionHandler(action) {
 	const actionHandlers = {
 		'Rename Bench': onRenameBench,
+		'Transfer Bench': onTransferBench,
 		'Drop Bench': onDropBench
 	};
 	if (actionHandlers[action]) {
@@ -80,6 +81,42 @@ function onRenameBench() {
 				);
 			} else {
 				toast.error('Please enter a valid bench name');
+			}
+		}
+	});
+}
+
+function onTransferBench() {
+	confirmDialog({
+		title: 'Transfer Bench Ownership',
+		fields: [
+			{
+				label:
+					'Enter email address of the team for transfer of bench ownership',
+				fieldname: 'email'
+			},
+			{
+				label: 'Reason for transfer',
+				fieldname: 'reason',
+				type: 'textarea'
+			}
+		],
+		primaryAction: {
+			label: 'Transfer',
+			variant: 'solid',
+			onClick: ({ hide, values }) => {
+				if (!values.email) {
+					throw new Error('Please enter a valid email address');
+				}
+
+				return releaseGroup.sendTransferRequest
+					.submit({ team_mail_id: values.email, reason: values.reason || '' })
+					.then(() => {
+						hide();
+						toast.success(
+							`Transfer request sent to ${values.email} successfully.`
+						);
+					});
 			}
 		}
 	});

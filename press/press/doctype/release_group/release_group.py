@@ -15,7 +15,7 @@ from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cstr, flt, sbool
+from frappe.utils import cstr, flt, sbool, get_url
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -175,6 +175,12 @@ class ReleaseGroup(Document, TagHelpers):
 				"description": "Rename the bench",
 				"button_label": "Rename",
 				"doc_method": "rename",
+			},
+			{
+				"action": "Transfer Bench",
+				"description": "Transfer ownership of this bench to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
 			},
 			{
 				"action": "Drop Bench",
@@ -752,6 +758,64 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 		return apps
+
+	@dashboard_whitelist()
+	def send_change_team_request(self, team_mail_id: str, reason: str):
+		"""Send email to team to accept bench transfer request"""
+
+		if self.team != get_current_team():
+			frappe.throw(
+				"You should belong to the team owning the bench to initiate a bench ownership transfer."
+			)
+
+		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
+			frappe.throw("No Active Team record found.")
+
+		old_team = frappe.db.get_value("Team", self.team, "user")
+
+		if old_team == team_mail_id:
+			frappe.throw(f"Bench is already owned by the team {team_mail_id}")
+
+		team_change = frappe.get_doc(
+			{
+				"doctype": "Team Change",
+				"document_type": "Release Group",
+				"document_name": self.name,
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"from_team": self.team,
+				"reason": reason or "",
+			}
+		).insert()
+
+		key = frappe.generate_hash("Release Group Transfer Link", 20)
+		minutes = 20
+		frappe.cache.set_value(
+			f"bench_transfer_data:{key}",
+			(
+				self.name,
+				team_change.name,
+			),
+			expires_in_sec=minutes * 60,
+		)
+
+		link = get_url(f"/api/method/press.api.bench.confirm_bench_transfer?key={key}")
+
+		if frappe.conf.developer_mode:
+			print(f"Bench transfer link for {team_mail_id}\n{link}\n")
+
+		frappe.sendmail(
+			recipients=team_mail_id,
+			subject="Transfer Bench Ownership Confirmation",
+			template="transfer_team_confirmation",
+			args={
+				"name": self.title or self.name,
+				"type": "bench",
+				"old_team": old_team,
+				"new_team": team_mail_id,
+				"transfer_url": link,
+				"minutes": minutes,
+			},
+		)
 
 	@dashboard_whitelist()
 	def generate_certificate(self):
