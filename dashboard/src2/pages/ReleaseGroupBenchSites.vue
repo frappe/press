@@ -92,18 +92,18 @@ export default {
 		listOptions() {
 			return {
 				list: this.$resources.sites,
-				groupHeader: ({ group }) => {
-					let options = this.benchOptions(group);
+				groupHeader: ({ group: bench }) => {
+					let options = this.benchOptions(bench);
 					let IconHash = icon('hash', 'w-3 h-3');
 					return (
 						<div class="flex items-center">
 							<div class="text-base font-medium leading-6 text-gray-900">
-								{group.group}
+								{bench.group}
 							</div>
-							{group.status != 'Active' ? (
-								<Badge class="ml-4" label={group.status} />
+							{bench.status != 'Active' ? (
+								<Badge class="ml-4" label={bench.status} />
 							) : null}
-							{group.has_app_patch_applied && (
+							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this deploy have been patched">
 									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
 										<IconHash />
@@ -422,6 +422,34 @@ export default {
 							}
 						});
 					}
+				},
+				{
+					label: 'Archive Bench',
+					onClick: () => {
+						confirmDialog({
+							title: 'Archive Bench',
+							message: `Are you sure you want to archive the bench <b>${bench.name}</b>?`,
+							primaryAction: {
+								label: 'Archive',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									toast.promise(this.$bench(bench.name).archive.submit(), {
+										loading: 'Scheduling bench archival...',
+										success: () => {
+											hide();
+											return 'Bench is scheduled for archiving';
+										},
+										error: e => {
+											return e.messages.length
+												? e.messages.join('\n')
+												: e.message || 'Failed to archive bench';
+										}
+									});
+								}
+							}
+						});
+					}
 				}
 			];
 		},
@@ -432,6 +460,7 @@ export default {
 				whitelistedMethods: {
 					restart: 'restart',
 					rebuild: 'rebuild',
+					archive: 'archive',
 					updateAllSites: 'update_all_sites'
 				},
 				auto: false

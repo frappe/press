@@ -305,7 +305,7 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def archive(self):
 		unarchived_sites = frappe.db.exists(
 			"Site", {"bench": self.name, "status": ("!=", "Archived")}
