@@ -354,6 +354,7 @@ def publish_update(job):
 				"name": message["site"],
 				"status": message["status"],
 				"id": message["id"],
+				"site": message["site"],
 			},
 		)
 
