@@ -57,31 +57,31 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "allow_billing",
    "fieldtype": "Check",
    "label": "Allow Billing"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "allow_apps",
    "fieldtype": "Check",
    "label": "Allow Apps"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "allow_site_creation",
    "fieldtype": "Check",
    "label": "Allow Site Creation"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "allow_bench_creation",
    "fieldtype": "Check",
    "label": "Allow Bench Creation"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
    "label": "Allow Server Creation"
@@ -89,7 +89,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-28 10:42:19.303119",
+ "modified": "2024-06-06 11:42:59.029333",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
