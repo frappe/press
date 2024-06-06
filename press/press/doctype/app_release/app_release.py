@@ -125,8 +125,7 @@ class AppRelease(Document):
 				"App Release Command Exception",
 				command=command,
 				output=e.output.decode(),
-				reference_doctype="App Release",
-				reference_name=self.name,
+				doc=self,
 			)
 			raise e
 
@@ -162,7 +161,11 @@ class AppRelease(Document):
 			self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		except subprocess.CalledProcessError as e:
 			stdout = e.stdout.decode("utf-8")
-			if "Repository not found." not in stdout:
+
+			if not (
+				"fatal: could not read Username for 'https://github.com'" in stdout
+				or "Repository not found." in stdout
+			):
 				raise e
 
 			"""

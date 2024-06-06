@@ -234,6 +234,7 @@ RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=10
 {% if app.pullable_release %}
 RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/context/app_updates/{{ app.app }} \
   cd /home/frappe/frappe-bench/apps/{{ app.app }} \
+  && git reset --hard \
   && git remote add -f app_update /home/frappe/context/app_updates/{{ app.app }} \
   && git fetch --depth 1 app_update {{ app.pullable_hash }} \
   && git checkout {{ app.pullable_hash }} \
