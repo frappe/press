@@ -435,10 +435,10 @@ export default {
 								theme: 'red',
 								onClick: ({ hide }) => {
 									toast.promise(this.$bench(bench.name).archive.submit(), {
-										loading: 'Scheduling bench archival...',
+										loading: 'Scheduling bench for archival...',
 										success: () => {
 											hide();
-											return 'Bench is scheduled for archiving';
+											return 'Bench is scheduled for archival';
 										},
 										error: e => {
 											return e.messages.length
