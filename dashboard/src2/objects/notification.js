@@ -4,7 +4,6 @@ import { getDocResource } from '../utils/resource';
 import { Tooltip, frappeRequest } from 'frappe-ui';
 import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
-import { unreadNotificationsCount } from '../data/notifications';
 import { toast } from 'vue-sonner';
 
 const getNotification = name => {
@@ -71,7 +70,6 @@ export default {
 							{
 								success: () => {
 									notifications.reload();
-									unreadNotificationsCount.reload();
 									return 'All notifications marked as read';
 								},
 								loading: 'Marking all notifications as read...',
