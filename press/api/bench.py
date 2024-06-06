@@ -971,3 +971,30 @@ def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 		app,
 		patch_config,
 	)
+
+
+@frappe.whitelist(allow_guest=True)
+def confirm_bench_transfer(key):
+	cache = frappe.cache.get_value(f"bench_transfer_data:{key}")
+
+	if cache:
+		bench, team_change = cache
+
+		team_change = frappe.get_doc("Team Change", team_change)
+		team_change.transfer_completed = True
+		team_change.save()
+		frappe.db.commit()
+
+		frappe.cache.delete_value(f"bench_transfer_data:{key}")
+
+		frappe.response.type = "redirect"
+		frappe.response.location = f"/dashboard/benches/{bench}"
+	else:
+		from frappe import _
+
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)

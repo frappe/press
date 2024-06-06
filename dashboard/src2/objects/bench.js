@@ -32,6 +32,7 @@ export default {
 		archive: 'archive',
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
+		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
 		redeploy: 'redeploy',
