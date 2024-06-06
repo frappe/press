@@ -142,6 +142,7 @@ press/www/dashboard-old.html
 press/public/css/email.css
 press/public/css/saas-next.css
 dashboard/tailwind.theme.json
+dashboard/components.d.ts
 
 # Backbone artefacts
 backbone/packer/builds/
