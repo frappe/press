@@ -236,7 +236,7 @@ function onTransferSite() {
 			variant: 'solid',
 			onClick: ({ hide, values }) => {
 				return site.sendTransferRequest
-					.submit({ team_mail_id: values.email, reason: values.reason })
+					.submit({ team_mail_id: values.email, reason: values.reason || '' })
 					.then(() => {
 						hide();
 						toast.success(
