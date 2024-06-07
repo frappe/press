@@ -15,30 +15,37 @@ class SaasSitePool:
 	def __init__(self, app):
 		self.app = app
 		self.site_count = frappe.db.count(
-			"Site", filters={"is_standby": True, "status": "Active", "standby_for": self.app}
+			"Site",
+			filters={
+				"is_standby": True,
+				"status": "Active",
+				"standby_for": self.app,
+				"hybrid_saas_pool": ("is", "not set"),
+			},
 		)
 		self.saas_settings = frappe.get_doc("Saas Settings", app)
 
 	def create(self):
-		if (
-			self.saas_settings.enable_pooling
-			and self.site_count < self.saas_settings.standby_pool_size
-		):
-			sites_created = 0
-			while sites_created < self.saas_settings.standby_queue_size:
-				self.create_one()
-				frappe.db.commit()
-				sites_created += 1
+		if self.saas_settings.enable_pooling:
+			if self.site_count < self.saas_settings.standby_pool_size:
+				sites_created = 0
+				while sites_created < self.saas_settings.standby_queue_size:
+					self.create_one()
+					frappe.db.commit()
+					sites_created += 1
 
-	def create_one(self):
-		bench, apps, subdomain, domain = None, None, None, None
-		try:
 			if frappe.db.get_value("Saas Settings", self.app, "enable_hybrid_pools"):
 				self.create_hybrid_pool_sites()
+
+	def create_one(self, pool_name: str = ""):
+		bench, apps, subdomain, domain, pool_apps = None, None, None, None, None
+		try:
+			if pool_name:
+				pool_apps = get_pool_apps(pool_name)
 			domain = get_saas_domain(self.app)
 			bench = get_saas_bench(self.app)
 			subdomain = self.get_subdomain()
-			apps = get_saas_apps(self.app)
+			apps = pool_apps if pool_name else get_saas_apps(self.app)
 			site = frappe.get_doc(
 				{
 					"doctype": "Site",
@@ -46,6 +53,7 @@ class SaasSitePool:
 					"domain": domain,
 					"is_standby": True,
 					"standby_for": self.app,
+					"hybrid_saas_pool": pool_name,
 					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 					"bench": bench,
 					"apps": [{"app": app} for app in apps],
@@ -68,28 +76,18 @@ class SaasSitePool:
 		# create a Site according to Site Rules child table in each Hybrid Saas Pool
 		for pool_name in frappe.get_all("Hybrid Saas Pool", {"app": self.app}, pluck="name"):
 			# only has app rules for now, will add site config and other rules later
-			pool_apps = get_pool_apps(pool_name)
-			domain = get_saas_domain(self.app)
-			bench = get_saas_bench(self.app)
-			subdomain = self.get_subdomain()
-			apps = get_saas_apps(self.app)
-			apps.extend(pool_apps)
-			site = frappe.get_doc(
-				{
-					"doctype": "Site",
-					"subdomain": subdomain,
-					"domain": domain,
-					"is_standby": True,
-					"hybrid_saas_pool": pool_name,
-					"standby_for": self.app,
-					"team": "Administrator",
-					"bench": bench,
-					"apps": [{"app": app} for app in apps],
-				}
+			hybrid_standby_count = frappe.db.count(
+				"Site", {"is_standby": 1, "standby_for": "erpnext", "hybrid_saas_pool": pool_name}
 			)
-			subscription_docs = create_app_subscriptions(site, self.app)
-			site.insert()
-			set_site_in_subscription_docs(subscription_docs, site.name)
+
+			if hybrid_standby_count > self.saas_settings.standby_pool_size:
+				return
+
+			sites_created = 0
+			while sites_created < self.saas_settings.standby_queue_size:
+				self.create_one(pool_name)
+				frappe.db.commit()
+				sites_created += 1
 
 	def get_subdomain(self):
 		return make_autoname("standby-.########")
