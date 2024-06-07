@@ -504,7 +504,7 @@ class Site(Document, TagHelpers):
 				"domain": self.name,
 				"status": "Active",
 				"retry_count": 0,
-				"dns_type": "A",
+				"dns_type": "CNAME",
 			}
 		).insert(ignore_if_duplicate=True)
 
@@ -825,7 +825,8 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
-		if check_dns(self.name, domain)["matched"]:
+		response = check_dns(self.name, domain)
+		if response["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
@@ -833,7 +834,7 @@ class Site(Document, TagHelpers):
 					"status": "Pending",
 					"site": self.name,
 					"domain": domain,
-					"dns_type": "CNAME",
+					"dns_type": response["type"],
 					"ssl": False,
 				}
 			).insert()

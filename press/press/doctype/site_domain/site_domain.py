@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.api.site import check_dns
 
 
 class SiteDomain(Document):
@@ -186,6 +187,18 @@ def process_new_host_job_update(job):
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
+
+
+def update_dns_type():
+	domains = frappe.get_all(
+		"Site Domain",
+		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
+		fields=["domain", "dns_type", "site"],
+	)
+	for domain in domains:
+		response = check_dns(domain.site, domain.domain)
+		if response["matched"] and response["type"] != domain.dns_type:
+			frappe.db.set_value("Site Domain", domain.name, "dns_type", response["type"])
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
