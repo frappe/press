@@ -185,10 +185,11 @@ def renew_tls_certificates():
 	)
 	pending = frappe.get_all(
 		"TLS Certificate",
-		fields=["name", "domain", "wildcard"],
+		fields=["name", "domain", "wildcard", "rety_count"],
 		filters={
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
+			"retry_count": ("<", 5),
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
@@ -207,19 +208,39 @@ def renew_tls_certificates():
 			else:
 				if not site:
 					continue
-				site_status = frappe.db.get_value("Site", site, "status")
-				if (
-					site_status == "Active" and check_dns_cname_a(site, certificate.domain)["matched"]
-				):
+				if frappe.db.get_value("Site", site, "status") != "Active":
+					continue
+				dns_response = check_dns_cname_a(site, certificate.domain)
+				if dns_response["matched"]:
 					should_renew = True
+				else:
+					frappe.db.set_value(
+						"TLS Certificate",
+						certificate.name,
+						{
+							"status": "Failure",
+							"error": f"DNS check failed. {dns_response.get('answer')}",
+							"retry_count": certificate.retry_count + 1,
+						},
+					)
 			if should_renew:
 				renewals_attempted += 1
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
 				frappe.db.commit()
-		except Exception:
+		except Exception as e:
 			frappe.db.rollback()
+			frappe.db.set_value(
+				"TLS Certificate",
+				certificate.name,
+				{
+					"status": "Failure",
+					"error": repr(e),
+					"retry_count": certificate.retry_count + 1,
+				},
+			)
 			log_error("TLS Renewal Exception", certificate=certificate, site=site)
+			frappe.db.commit()
 
 
 def update_server_tls_certifcate(server, certificate):
