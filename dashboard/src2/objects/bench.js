@@ -192,6 +192,15 @@ export default {
 							}
 						},
 						{
+							label: 'Version',
+							type: 'Badge',
+							fieldname: 'tag',
+							width: 1,
+							format(value, row) {
+								return value || row.hash?.slice(0, 7);
+							}
+						},
+						{
 							label: 'Status',
 							type: 'Badge',
 							suffix(row) {

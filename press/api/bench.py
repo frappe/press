@@ -391,12 +391,35 @@ def apps(name):
 	deployed_apps = unique(deployed_apps)
 	updates = deploy_information(name)
 
+	latest_bench = frappe.get_all(
+		"Bench",
+		filters={"group": group.name, "status": "Active"},
+		order_by="creation desc",
+		limit=1,
+		pluck="name",
+	)
+	if latest_bench:
+		latest_bench = latest_bench[0]
+	else:
+		latest_bench = None
+
+	latest_deployed_apps = frappe.get_all(
+		"Bench",
+		filters={"name": latest_bench},
+		fields=["`tabBench App`.app", "`tabBench App`.hash"],
+	)
+
 	for app in group.apps:
 		source = frappe.get_doc("App Source", app.source)
 		app = frappe.get_doc("App", app.app)
 		update_available = updates["update_available"] and find(
 			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
 		)
+
+		latest_deployed_app = find(latest_deployed_apps, lambda x: x.app == app.name)
+		hash = latest_deployed_app.hash if latest_deployed_app else None
+		tag = get_app_tag(source.repository, source.repository_owner, hash)
+
 		apps.append(
 			{
 				"name": app.name,
@@ -406,6 +429,8 @@ def apps(name):
 				"repository_url": source.repository_url,
 				"repository": source.repository,
 				"repository_owner": source.repository_owner,
+				"tag": tag,
+				"hash": hash,
 				"deployed": app.name in deployed_apps,
 				"update_available": bool(update_available),
 				"last_github_poll_failed": source.last_github_poll_failed,
