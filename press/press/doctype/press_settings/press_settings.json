@@ -167,6 +167,7 @@
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
+  "tls_renewal_queue_size",
   "ssh_section",
   "ssh_certificate_authority",
   "monitoring_section",
@@ -1181,11 +1182,17 @@
    "fieldtype": "Link",
    "label": "Remote Build Server",
    "options": "Server"
+  },
+  {
+   "default": "10",
+   "fieldname": "tls_renewal_queue_size",
+   "fieldtype": "Int",
+   "label": "TLS Renewal Queue Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-05-23 13:52:31.570272",
+ "modified": "2024-06-07 20:52:57.744375",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

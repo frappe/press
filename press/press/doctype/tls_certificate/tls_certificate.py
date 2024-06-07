@@ -176,6 +176,9 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 
 
 def renew_tls_certificates():
+	tls_renewal_queue_size = frappe.db.get_single_value(
+		"Press Settings", "tls_renewal_queue_size"
+	)
 	pending = frappe.get_all(
 		"TLS Certificate",
 		fields=["name", "domain", "wildcard"],
@@ -185,7 +188,10 @@ def renew_tls_certificates():
 		},
 		ignore_ifnull=True,
 	)
+	renewals_attempted = 0
 	for certificate in pending:
+		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
+			break
 		site = frappe.db.get_value(
 			"Site Domain", {"tls_certificate": certificate.name, "status": "Active"}, "site"
 		)
@@ -202,6 +208,7 @@ def renew_tls_certificates():
 				):
 					should_renew = True
 			if should_renew:
+				renewals_attempted += 1
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
 				frappe.db.commit()

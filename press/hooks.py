@@ -173,7 +173,6 @@ scheduler_events = {
 		"press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"
 	],
 	"daily": [
-		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 	],
@@ -195,6 +194,7 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
+		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",

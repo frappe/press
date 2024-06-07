@@ -132,6 +132,7 @@ class PressSettings(Document):
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
 		threshold: DF.Float
+		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
 		twilio_account_sid: DF.Data | None
 		twilio_api_key_secret: DF.Password | None
