@@ -179,7 +179,11 @@ def renew_tls_certificates():
 	pending = frappe.get_all(
 		"TLS Certificate",
 		fields=["name", "domain", "wildcard"],
-		filters={"status": "Active", "expires_on": ("<", frappe.utils.add_days(None, 25))},
+		filters={
+			"status": ("in", ("Active", "Failure")),
+			"expires_on": ("<", frappe.utils.add_days(None, 25)),
+		},
+		ignore_ifnull=True,
 	)
 	for certificate in pending:
 		site = frappe.db.get_value(
