@@ -187,6 +187,7 @@ def renew_tls_certificates():
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
 		},
 		ignore_ifnull=True,
+		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
 	)
 	renewals_attempted = 0
 	for certificate in pending:
