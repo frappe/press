@@ -31,11 +31,13 @@ class TLSCertificate(Document):
 		certificate: DF.Code | None
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
+		error: DF.Code | None
 		expires_on: DF.Datetime | None
 		full_chain: DF.Code | None
 		intermediate_chain: DF.Code | None
 		issued_on: DF.Datetime | None
 		private_key: DF.Code | None
+		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
 		team: DF.Link | None
@@ -87,18 +89,20 @@ class TLSCertificate(Document):
 			)
 			self._extract_certificate_details()
 			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
 		except Exception as e:
 			# If certbot is already running, retry after 5 seconds
 			# TODO: Move this to a queue
-			if (
-				hasattr(e, "output")
-				and e.output
-				and ("Another instance of Certbot is already running" in e.output.decode())
-			):
-				time.sleep(5)
-				frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
-				return
-
+			if hasattr(e, "output") and e.output:
+				if "Another instance of Certbot is already running" in e.output.decode():
+					time.sleep(5)
+					frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
+					return
+				self.error = e.output.decode()
+			else:
+				self.error = repr(e)
+			self.retry_count += 1
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
