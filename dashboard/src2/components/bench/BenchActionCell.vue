@@ -65,7 +65,7 @@ function onRenameBench() {
 				toast.promise(
 					releaseGroup.setValue.submit(
 						{
-							title: newBenchName
+							title: values.newBenchName
 						},
 						{
 							onSuccess() {
