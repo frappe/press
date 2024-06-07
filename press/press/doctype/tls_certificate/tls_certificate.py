@@ -199,7 +199,7 @@ def renew_tls_certificates():
 		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
 			break
 		site = frappe.db.get_value(
-			"Site Domain", {"tls_certificate": certificate.name, "status": "Active"}, "site"
+			"Site Domain", {"tls_certificate": certificate.name}, "site"
 		)
 		try:
 			should_renew = False
