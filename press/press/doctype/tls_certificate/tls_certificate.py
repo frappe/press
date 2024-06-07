@@ -190,18 +190,23 @@ def renew_tls_certificates():
 			"Site Domain", {"tls_certificate": certificate.name, "status": "Active"}, "site"
 		)
 		try:
-			if site:
+			should_renew = False
+			if certificate.wildcard:
+				should_renew = True
+			else:
+				if not site:
+					continue
 				site_status = frappe.db.get_value("Site", site, "status")
 				if (
 					site_status == "Active" and check_dns_cname_a(site, certificate.domain)["matched"]
 				):
-					certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
-					certificate_doc._obtain_certificate()
-					frappe.db.commit()
-			if certificate.wildcard:
+					should_renew = True
+			if should_renew:
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
+				frappe.db.commit()
 		except Exception:
+			frappe.db.rollback()
 			log_error("TLS Renewal Exception", certificate=certificate, site=site)
 
 
