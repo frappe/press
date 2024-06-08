@@ -77,7 +77,13 @@ class SaasSitePool:
 		for pool_name in frappe.get_all("Hybrid Saas Pool", {"app": self.app}, pluck="name"):
 			# only has app rules for now, will add site config and other rules later
 			hybrid_standby_count = frappe.db.count(
-				"Site", {"is_standby": 1, "standby_for": "erpnext", "hybrid_saas_pool": pool_name}
+				"Site",
+				{
+					"is_standby": 1,
+					"standby_for": "erpnext",
+					"hybrid_saas_pool": pool_name,
+					"status": "Active",
+				},
 			)
 
 			if hybrid_standby_count > self.saas_settings.standby_pool_size:
