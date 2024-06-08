@@ -38,14 +38,14 @@ class SaasSitePool:
 				self.create_hybrid_pool_sites()
 
 	def create_one(self, pool_name: str = ""):
-		bench, apps, subdomain, domain, pool_apps = None, None, None, None, None
+		bench, apps, subdomain, domain = None, None, None, None
 		try:
-			if pool_name:
-				pool_apps = get_pool_apps(pool_name)
 			domain = get_saas_domain(self.app)
 			bench = get_saas_bench(self.app)
 			subdomain = self.get_subdomain()
-			apps = pool_apps if pool_name else get_saas_apps(self.app)
+			apps = get_saas_apps(self.app)
+			if pool_name:
+				apps.extend(get_pool_apps(pool_name))
 			site = frappe.get_doc(
 				{
 					"doctype": "Site",
