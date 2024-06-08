@@ -37,7 +37,6 @@ class AccountRequest(Document):
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
-		password: DF.Password | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		referral_source: DF.Data | None
