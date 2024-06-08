@@ -20,7 +20,7 @@ class SaasSitePool:
 				"is_standby": True,
 				"status": "Active",
 				"standby_for": self.app,
-				"hybrid_saas_pool": ("is", "not set"),
+				"hybrid_saas_pool": "",
 			},
 		)
 		self.saas_settings = frappe.get_doc("Saas Settings", app)
@@ -81,7 +81,7 @@ class SaasSitePool:
 			)
 
 			if hybrid_standby_count > self.saas_settings.standby_pool_size:
-				return
+				break
 
 			sites_created = 0
 			while sites_created < self.saas_settings.standby_queue_size:
