@@ -8,7 +8,6 @@
   "request_key",
   "team",
   "email",
-  "password",
   "oauth_signup",
   "column_break_4",
   "role",
@@ -198,12 +197,6 @@
    "label": "Saas Sign Up"
   },
   {
-   "fieldname": "password",
-   "fieldtype": "Password",
-   "label": "Password",
-   "read_only": 1
-  },
-  {
    "collapsible": 1,
    "fieldname": "section_break_31",
    "fieldtype": "Section Break"
@@ -269,7 +262,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 23:05:20.520049",
+ "modified": "2024-06-08 11:31:48.221685",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

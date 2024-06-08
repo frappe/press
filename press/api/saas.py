@@ -1,8 +1,6 @@
 import frappe
 import json
 from frappe.core.utils import find
-from frappe.core.doctype.user.user import test_password_strength
-from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.utils import get_current_team, group_children_in_result, log_error
@@ -26,7 +24,6 @@ from press.utils.telemetry import capture, identify
 def account_request(
 	subdomain,
 	email,
-	password,
 	first_name,
 	last_name,
 	country,
@@ -41,10 +38,6 @@ def account_request(
 
 	if not check_subdomain_availability(subdomain, app):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
-
-	password_validation = validate_password(password, first_name, last_name, email)
-	if not password_validation.get("validation_passed"):
-		frappe.throw(password_validation.get("suggestion")[0])
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
@@ -67,7 +60,6 @@ def account_request(
 				"erpnext": False,
 				"subdomain": subdomain,
 				"email": email,
-				"password": password,
 				"role": "Press Admin",
 				"first_name": first_name,
 				"last_name": last_name,
@@ -176,24 +168,6 @@ def get_hybrid_saas_pool(account_request):
 			return hybrid_pool
 
 	return hybrid_pool
-
-
-@frappe.whitelist(allow_guest=True)
-def validate_password(password, first_name, last_name, email):
-	passed = True
-	suggestion = None
-
-	user_data = (first_name, last_name, email)
-	result = test_password_strength(password, "", None, user_data)
-	feedback = result.get("feedback", None)
-
-	if feedback and not feedback.get("password_policy_validation_passed", False):
-		passed = False
-		suggestion = feedback.get("suggestions") or [
-			"Your password is too weak, please pick a stronger password by adding more words."
-		]
-
-	return {"validation_passed": passed, "suggestion": suggestion}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -363,7 +337,6 @@ def create_team(account_request, get_stripe_id=False):
 			account_request,
 			account_request.first_name,
 			account_request.last_name,
-			password=get_decrypted_password("Account Request", account_request.name, "password"),
 			country=account_request.country,
 			is_us_eu=account_request.is_us_eu,
 			via_erpnext=True,
