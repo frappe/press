@@ -5,7 +5,7 @@
 import random
 import typing
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, skip
 
 import frappe
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -59,6 +59,7 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.set_user("Administrator")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	@patch.object(DeployCandidate, "_build", new=Mock())
 	def test_if_new_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if new press admin team user can pre build
@@ -76,6 +77,7 @@ class TestDeployCandidate(unittest.TestCase):
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	@patch.object(DeployCandidate, "_build", new=Mock())
 	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if old style press admin team can pre build
@@ -213,7 +215,7 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(second_candidate.apps[0].release, first_candidate.apps[0].release)
 		self.assertNotEqual(second_candidate.apps[1].release, first_candidate.apps[1].release)
 
-	@unittest.skip("Docker Build broken with `duplicate cache exports [gha]`")
+	@skip("Docker Build broken with `duplicate cache exports [gha]`")
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,

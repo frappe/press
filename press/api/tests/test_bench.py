@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, skip
 
 import docker
 import frappe
@@ -78,6 +78,7 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(get_res["status"], "Awaiting Deploy")
 		self.assertEqual(get_res["public"], False)
 
+	@skip("Local builds deprecated. Builds need to be set for GHA.")
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
