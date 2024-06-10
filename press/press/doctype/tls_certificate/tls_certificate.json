@@ -137,19 +137,21 @@
   {
    "fieldname": "error",
    "fieldtype": "Code",
-   "label": "Error"
+   "label": "Error",
+   "read_only": 1
   },
   {
    "default": "0",
    "depends_on": "eval: doc.retry_count",
    "fieldname": "retry_count",
    "fieldtype": "Int",
-   "label": "Retry Count"
+   "label": "Retry Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-07 21:38:43.159317",
+ "modified": "2024-06-10 10:43:33.881463",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
