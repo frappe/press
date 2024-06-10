@@ -245,6 +245,7 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc = frappe.get_doc("App Source", existing_source)
 			try:
 				source_doc.append("versions", {"version": version})
+				source_doc.public = 1
 				source_doc.save()
 			except Exception:
 				pass
