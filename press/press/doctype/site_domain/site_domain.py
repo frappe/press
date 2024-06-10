@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.api.site import check_dns
 
 
 class SiteDomain(Document):
@@ -94,16 +95,22 @@ class SiteDomain(Document):
 		self.save()
 
 	def process_tls_certificate_update(self):
-		certificate_status = frappe.db.get_value(
-			"TLS Certificate", self.tls_certificate, "status"
+		certificate = frappe.db.get_value(
+			"TLS Certificate", self.tls_certificate, ["status", "creation"], as_dict=True
 		)
-		if certificate_status == "Active":
-			self.create_agent_request()
-		elif certificate_status == "Failure":
+		if certificate.status == "Active":
+			if frappe.utils.add_days(None, -1) > certificate.creation:
+				# This is an old (older than 1 day) certificate, we are renewing it.
+				# NGINX likely has a valid certificate, no need to reload.
+				skip_reload = True
+			else:
+				skip_reload = False
+			self.create_agent_request(skip_reload=skip_reload)
+		elif certificate.status == "Failure":
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self):
+	def create_agent_request(self, skip_reload=False):
 		server = frappe.db.get_value("Site", self.site, "server")
 		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
 		if is_standalone:
@@ -111,7 +118,7 @@ class SiteDomain(Document):
 		else:
 			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_host(self)
+		agent.new_host(self, skip_reload=skip_reload)
 
 	def create_remove_host_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
@@ -180,6 +187,18 @@ def process_new_host_job_update(job):
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
+
+
+def update_dns_type():
+	domains = frappe.get_all(
+		"Site Domain",
+		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
+		fields=["domain", "dns_type", "site"],
+	)
+	for domain in domains:
+		response = check_dns(domain.site, domain.domain)
+		if response["matched"] and response["type"] != domain.dns_type:
+			frappe.db.set_value("Site Domain", domain.name, "dns_type", response["type"])
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

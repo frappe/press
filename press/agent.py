@@ -468,7 +468,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain):
+	def new_host(self, domain, skip_reload=False):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -478,6 +478,7 @@ class Agent:
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
+			"skip_reload": skip_reload,
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
