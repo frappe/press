@@ -46,7 +46,8 @@
    "fieldname": "build_server",
    "fieldtype": "Link",
    "label": "Build Server",
-   "options": "Server"
+   "options": "Server",
+   "reqd": 1
   },
   {
    "fieldname": "output_section",
@@ -94,7 +95,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-18 12:20:57.277931",
+ "modified": "2024-06-10 16:08:52.871165",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Build Cache Shell",
