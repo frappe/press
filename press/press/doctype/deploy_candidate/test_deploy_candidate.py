@@ -218,7 +218,6 @@ class TestDeployCandidate(unittest.TestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
 	def test_app_cache_usage_on_subsequent_build(self):
 		"""
 		Tests if app cache is being used by a subsequent build,
