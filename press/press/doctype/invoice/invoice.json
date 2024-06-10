@@ -40,6 +40,7 @@
   "free_credits",
   "amount_due",
   "amount_paid",
+  "write_off_amount",
   "section_break_15",
   "credit_allocations",
   "stripe_billing_section",
@@ -430,6 +431,11 @@
    "fieldtype": "Currency",
    "label": "Total Before Tax",
    "options": "currency"
+  },
+  {
+   "fieldname": "write_off_amount",
+   "fieldtype": "Float",
+   "label": "Write-Off Amount"
   }
  ],
  "is_submittable": 1,
@@ -455,7 +461,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-03-12 15:24:29.792253",
+ "modified": "2024-06-10 13:09:14.134635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
