@@ -106,7 +106,6 @@ class TestAPIBench(FrappeTestCase):
 
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
-		patch_dc_command_for_ci()
 		deploy(group, [{"app": self.app.name}])
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
@@ -636,14 +635,3 @@ def set_press_settings_for_docker_build() -> None:
 	press_settings.db_set("build_directory", build_dir)
 	press_settings.db_set("clone_directory", clone_dir)
 	press_settings.db_set("docker_registry_url", "registry.local.frappe.dev")
-
-
-def patch_dc_command_for_ci():
-	DeployCandidate.base_build_command = " ".join(
-		[
-			DeployCandidate.base_build_command,
-			"--cache-from type=gha",
-			"--cache-to type=gha,mode=max,ignore-error=true",
-			"--load",
-		]
-	)

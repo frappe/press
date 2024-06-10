@@ -231,7 +231,6 @@ class TestDeployCandidate(unittest.TestCase):
 		raven should be fetched from app cache.
 		"""
 		from press.api.tests.test_bench import (
-			patch_dc_command_for_ci,
 			set_press_settings_for_docker_build,
 		)
 		from press.press.doctype.bench_get_app_cache.bench_get_app_cache import (
@@ -242,7 +241,6 @@ class TestDeployCandidate(unittest.TestCase):
 		apps = create_cache_test_apps(team)
 
 		set_press_settings_for_docker_build()
-		patch_dc_command_for_ci()
 		BenchGetAppCache.clear_app_cache()
 
 		app_info_lists = [
