@@ -282,6 +282,12 @@ class Site(Document, TagHelpers):
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 
+		if frappe.db.exists(
+			"Site",
+			{"subdomain": self.subdomain, "domain": self.domain, "status": ("!=", "Archived")},
+		):
+			frappe.throw("Site with same subdomain already exists")
+
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
