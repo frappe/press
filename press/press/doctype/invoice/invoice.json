@@ -39,6 +39,7 @@
   "applied_credits",
   "free_credits",
   "amount_due",
+  "amount_due_with_tax",
   "amount_paid",
   "write_off_amount",
   "section_break_15",
@@ -435,7 +436,15 @@
   {
    "fieldname": "write_off_amount",
    "fieldtype": "Float",
-   "label": "Write-Off Amount"
+   "label": "Write-Off Amount",
+   "precision": "9"
+  },
+  {
+   "fieldname": "amount_due_with_tax",
+   "fieldtype": "Currency",
+   "label": "Amount Due (Including Tax)",
+   "no_copy": 1,
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
@@ -461,7 +470,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-06-10 13:09:14.134635",
+ "modified": "2024-06-10 14:18:32.550157",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
