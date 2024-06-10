@@ -432,9 +432,9 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			# finalize invoice
-			with self.assertRaises(frappe.ValidationError) as err:
-				invoice.finalize_invoice()
-			self.assertTrue("Not enough credits for this invoice" in str(err.exception))
+			invoice.finalize_invoice()
+			self.assertTrue(invoice.status == "Unpaid")
+			self.assertTrue(invoice.amount_due > 0)
 
 		finally:
 			frappe.db.delete("Team", team.name)
@@ -517,6 +517,67 @@ class TestInvoice(unittest.TestCase):
 			self.assertEqual(settling_transaction.unallocated_amount, 100)
 
 		finally:
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_without_credits(self):
+		try:
+			team = create_test_team("tax_without_credits@example.com")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.amount_due, 10)
+			self.assertEquals(invoice.amount_due_with_tax, 11.8)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_with_credits(self):
+		try:
+			team = create_test_team("tax_with_credits@example.com")
+			team.allocate_credit_amount(5, source="Prepaid Credits")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.total, 10)
+			self.assertEquals(invoice.applied_credits, 5)
+			self.assertEquals(invoice.amount_due, 5)
+			self.assertEquals(invoice.amount_due_with_tax, 5.9)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_for_usd_accounts(self):
+		try:
+			team = create_test_team("tax_for_usd_accounts@example.com", "United States")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.total, 10)
+			self.assertEquals(invoice.amount_due, 10)
+			self.assertEquals(invoice.amount_due_with_tax, 10)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
 			frappe.db.delete("Team", team.name)
 			frappe.db.delete("Balance Transaction", {"team": team.name})
 			frappe.db.commit()
