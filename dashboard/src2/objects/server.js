@@ -28,6 +28,34 @@ export default {
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title'
 		],
+		filterControls() {
+			return [
+				{
+					type: 'select',
+					label: 'Status',
+					fieldname: 'status',
+					options: ['', 'Active', 'Pending']
+				},
+				{
+					type: 'select',
+					label: 'Region',
+					fieldname: 'cluster',
+					options: [
+						'',
+						'Bahrain',
+						'Cape Town',
+						'Frankfurt',
+						'KSA',
+						'London',
+						'Mumbai',
+						'Singapore',
+						'UAE',
+						'Virginia',
+						'Zurich'
+					]
+				}
+			];
+		},
 		orderBy: 'creation desc',
 		columns: [
 			{
