@@ -392,7 +392,9 @@ export default {
 		},
 		showControls() {
 			return (
-				(this.filteredRows.length > 5 || this.filterControls.length) &&
+				(this.searchQuery ||
+					this.rows.length > 5 ||
+					this.filterControls.length) &&
 				!this.options.hideControls
 			);
 		},
