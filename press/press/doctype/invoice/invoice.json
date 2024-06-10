@@ -434,17 +434,17 @@
    "options": "currency"
   },
   {
-<<<<<<< HEAD
    "fieldname": "write_off_amount",
    "fieldtype": "Float",
-   "label": "Write-Off Amount"
-=======
+   "label": "Write-Off Amount",
+   "precision": "9"
+  },
+  {
    "fieldname": "amount_due_with_tax",
    "fieldtype": "Currency",
    "label": "Amount Due (Including Tax)",
    "no_copy": 1,
    "options": "currency"
->>>>>>> 2cc098bc7 (fix: apply tax on amount due and not total)
   }
  ],
  "is_submittable": 1,
@@ -470,11 +470,7 @@
    "link_fieldname": "invoice"
   }
  ],
-<<<<<<< HEAD
- "modified": "2024-06-10 13:09:14.134635",
-=======
- "modified": "2024-06-05 19:29:21.544318",
->>>>>>> 2cc098bc7 (fix: apply tax on amount due and not total)
+ "modified": "2024-06-10 14:18:32.550157",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
