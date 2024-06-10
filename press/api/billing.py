@@ -214,10 +214,14 @@ def get_customer_details(team):
 def create_payment_intent_for_micro_debit(payment_method_name):
 	team = get_current_team(True)
 	stripe = get_stripe()
-	amount = 100 if team.currency == "USD" else 10000
+
+	micro_debit_charge_field = (
+		"micro_debit_charge_usd" if team.currency == "USD" else "micro_debit_charge_inr"
+	)
+	amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
 
 	intent = stripe.PaymentIntent.create(
-		amount=amount,
+		amount=int(amount * 100),
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Micro-Debit Card Test Charge",

@@ -842,8 +842,14 @@ class Team(Document):
 		)
 
 	def billing_info(self):
+		micro_debit_charge_field = (
+			"micro_debit_charge_usd" if self.currency == "USD" else "micro_debit_charge_inr"
+		)
+		amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
+
 		return {
 			"gst_percentage": frappe.db.get_single_value("Press Settings", "gst_percentage"),
+			"micro_debit_charge_amount": amount,
 			"balance": self.get_balance(),
 			"verified_micro_charge": bool(
 				frappe.db.exists(

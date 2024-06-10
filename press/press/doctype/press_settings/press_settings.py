@@ -89,6 +89,8 @@ class PressSettings(Document):
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
+		micro_debit_charge_inr: DF.Currency
+		micro_debit_charge_usd: DF.Currency
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None

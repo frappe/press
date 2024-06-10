@@ -30,6 +30,8 @@
   "free_credits_inr",
   "free_credits_usd",
   "ngrok_auth_token",
+  "micro_debit_charge_inr",
+  "micro_debit_charge_usd",
   "razorpay_settings_section",
   "razorpay_key_id",
   "razorpay_webhook_secret",
@@ -1188,11 +1190,25 @@
    "fieldname": "tls_renewal_queue_size",
    "fieldtype": "Int",
    "label": "TLS Renewal Queue Size"
-  }
+  },
+  {
+    "default": "80",
+    "fieldname": "micro_debit_charge_inr",
+    "fieldtype": "Currency",
+    "label": "Micro Debit Charge (INR)",
+    "precision": "0"
+   },
+   {
+    "default": "1",
+    "fieldname": "micro_debit_charge_usd",
+    "fieldtype": "Currency",
+    "label": "Micro Debit Charge (USD)",
+    "precision": "0"
+   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-07 20:52:57.744375",
+ "modified": "2024-06-10 15:02:03.977436",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
