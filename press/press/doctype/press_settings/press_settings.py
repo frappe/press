@@ -41,6 +41,7 @@ class PressSettings(Document):
 		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
 		bench_configuration: DF.Code
 		build_directory: DF.Data | None
+		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
 		clone_directory: DF.Data | None
@@ -109,7 +110,6 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		remote_access_key_id: DF.Data | None
-		remote_build_server: DF.Link | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
@@ -134,7 +134,6 @@ class PressSettings(Document):
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
 		threshold: DF.Float
-		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
 		twilio_account_sid: DF.Data | None
 		twilio_api_key_secret: DF.Password | None

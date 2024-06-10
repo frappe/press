@@ -74,7 +74,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "remote_build_server",
+  "build_server",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -169,7 +169,6 @@
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
-  "tls_renewal_queue_size",
   "ssh_section",
   "ssh_certificate_authority",
   "monitoring_section",
@@ -1180,9 +1179,9 @@
    "label": "Agent Sentry DSN"
   },
   {
-   "fieldname": "remote_build_server",
+   "fieldname": "build_server",
    "fieldtype": "Link",
-   "label": "Remote Build Server",
+   "label": "Build Server",
    "options": "Server"
   },
   {
@@ -1208,7 +1207,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-10 15:02:03.977436",
+ "modified": "2024-06-10 16:04:00.044223",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

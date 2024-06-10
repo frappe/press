@@ -58,9 +58,6 @@ if typing.TYPE_CHECKING:
 
 
 class DeployCandidate(Document):
-	# This is altered in CI
-	base_build_command: str = "docker buildx build --platform linux/amd64"
-
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -90,6 +87,7 @@ class DeployCandidate(Document):
 		build_end: DF.Datetime | None
 		build_error: DF.Code | None
 		build_output: DF.Code | None
+		build_server: DF.Link | None
 		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		compress_app_cache: DF.Check
@@ -110,7 +108,6 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
-		remote_build_server: DF.Link | None
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
@@ -230,7 +227,7 @@ class DeployCandidate(Document):
 			return
 
 		self._set_status_pending()
-		self.set_remote_build_server()
+		self.set_build_server()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -254,11 +251,11 @@ class DeployCandidate(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def set_remote_build_server(self):
-		if not self.remote_build_server:
-			self.remote_build_server = self._get_remote_build_server()
+	def set_build_server(self):
+		if not self.build_server:
+			self.build_server = self._get_build_server()
 
-		if not self.remote_build_server:
+		if not self.build_server:
 			self.throw_no_build_server()
 
 	def validate_status(self):
@@ -471,7 +468,7 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		deploy_after_build: bool = False,
 	):
-		if not self.remote_build_server:
+		if not self.build_server:
 			self.throw_no_build_server()
 
 		self._update_docker_image_metadata()
@@ -496,7 +493,7 @@ class DeployCandidate(Document):
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
-		Agent(self.remote_build_server).run_remote_builder(
+		Agent(self.build_server).run_remote_builder(
 			{
 				"filename": context_filename,
 				"image_repository": self.docker_image_repository,
@@ -521,7 +518,7 @@ class DeployCandidate(Document):
 		context_filepath = self._package_build_context()
 		context_filename = self._upload_build_context(
 			context_filepath,
-			self.remote_build_server,
+			self.build_server,
 		)
 		os.remove(context_filepath)
 		return context_filename
@@ -540,12 +537,12 @@ class DeployCandidate(Document):
 		step.duration = get_duration(start_time)
 		return tmp_file_path
 
-	def _upload_build_context(self, context_filepath: str, remote_build_server: str):
+	def _upload_build_context(self, context_filepath: str, build_server: str):
 		step = self.get_step("upload", "context") or frappe._dict()
 		step.status = "Running"
 		start_time = now()
 
-		agent = Agent(remote_build_server)
+		agent = Agent(build_server)
 		with open(context_filepath, "rb") as file:
 			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
 
@@ -1475,10 +1472,10 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def _get_remote_build_server(self):
-		server = frappe.get_value("Release Group", self.group, "remote_build_server")
+	def _get_build_server(self):
+		server = frappe.get_value("Release Group", self.group, "build_server")
 		if not server:
-			server = frappe.get_value("Press Settings", None, "remote_build_server")
+			server = frappe.get_value("Press Settings", None, "build_server")
 		return server
 
 	def get_first_step(
@@ -1548,7 +1545,7 @@ class DeployCandidate(Document):
 	def throw_no_build_server():
 		frappe.throw(
 			"Server not found to run builds. "
-			"Please set <b>Remote Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
+			"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
 		)
 
 

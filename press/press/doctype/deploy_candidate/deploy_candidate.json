@@ -28,7 +28,7 @@
   "section_break_11",
   "docker_image",
   "docker_image_id",
-  "remote_build_server",
+  "build_server",
   "column_break_13",
   "docker_image_repository",
   "docker_image_tag",
@@ -303,7 +303,7 @@
    "label": "Compress App Cache"
   },
   {
-   "description": "Used when parsing a remote builds output.",
+   "description": "Used when parsing build output.",
    "fieldname": "last_updated",
    "fieldtype": "Datetime",
    "hidden": 1,
@@ -383,20 +383,20 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.remote_build_server",
-   "fieldname": "remote_build_server",
-   "fieldtype": "Link",
-   "label": "Remote Build Server",
-   "options": "Server",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "depends_on": "eval: doc.retry_count",
    "description": "Under certain failure conditions, a build will be retried.",
    "fieldname": "retry_count",
    "fieldtype": "Int",
    "label": "Retry Count",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.build_server",
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server",
    "read_only": 1
   }
  ],
@@ -414,7 +414,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-10 15:34:55.101823",
+ "modified": "2024-06-10 16:05:16.559742",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
