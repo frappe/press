@@ -391,7 +391,20 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Another site already exists in {self.bench} with name: {site_name}")
 		self.archive(site_name=site_name, reason="Retry Archive")
 
+	def check_duplicate_site(self):
+		if frappe.db.exists(
+			"Site",
+			{
+				"subdomain": self.subdomain,
+				"domain": self.domain,
+				"status": ("!=", "Archived"),
+				"name": ("!=", self.name),
+			},
+		):
+			frappe.throw("Site with same subdomain already exists")
+
 	def rename(self, new_name: str):
+		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		if self.standby_for_product:
