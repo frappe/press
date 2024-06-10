@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "is_remote_builder_used",
   "column_break_2",
   "group",
   "team",
@@ -384,13 +383,6 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_remote_builder_used",
-   "fieldtype": "Check",
-   "label": "Is Remote Builder Used",
-   "read_only": 1
-  },
-  {
    "depends_on": "eval:doc.remote_build_server",
    "fieldname": "remote_build_server",
    "fieldtype": "Link",
@@ -422,7 +414,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-24 11:50:55.127138",
+ "modified": "2024-06-10 15:34:55.101823",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

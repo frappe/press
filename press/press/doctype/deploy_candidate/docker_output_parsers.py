@@ -47,7 +47,6 @@ class DockerBuildOutputParser:
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_remote_builder_used
 		self.last_updated = now_datetime()
 
 		# Used to generate output and track parser state
@@ -73,19 +72,6 @@ class DockerBuildOutputParser:
 
 	def _parse_line_handle_exc(self, raw_line: str):
 		self._parse_line(raw_line)
-		self._update_dc_build_output()
-
-	def _update_dc_build_output(self):
-		# Output saved at the end of parsing all lines
-		if self.is_remote:
-			return
-
-		sec_since_last_update = (now_datetime() - self.last_updated).total_seconds()
-		if sec_since_last_update <= 1:
-			return
-
-		self.flush_output()
-		self.last_update = now_datetime()
 
 	def flush_output(self, commit: bool = True):
 		self.dc.build_output = "".join(self.lines)
@@ -149,9 +135,7 @@ class DockerBuildOutputParser:
 			self.error_lines.append(escaped_line)
 
 	def _end_parsing(self):
-		if self.is_remote:
-			self.dc.last_updated = now_datetime()
-
+		self.dc.last_updated = now_datetime()
 		self.flush_output(True)
 
 	def _set_docker_image_id(self, line: str):
@@ -262,7 +246,6 @@ class UploadStepUpdater:
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_remote_builder_used
 		self.output: list[dict] = []
 
 		# Used only if not remote
@@ -291,15 +274,9 @@ class UploadStepUpdater:
 			return
 
 		for line in output:
-			self._process_single_line(line)
+			self._update_output(line)
 
-		# If remote, duration is accumulated
-		last_update = self.start_time
-
-		# If not remote, duration is calculated once
-		if self.is_remote:
-			last_update = self.dc.last_updated
-
+		last_update = self.dc.last_updated
 		duration = (now_datetime() - last_update).total_seconds()
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
@@ -311,19 +288,6 @@ class UploadStepUpdater:
 		# Used only if the build is running locally
 		self.upload_step.status = status
 		self.flush_output()
-
-	def _process_single_line(self, line: dict):
-		self._update_output(line)
-		if self.is_remote:
-			return
-
-		# If not remote, upload step output is updated every 1 second
-		now = now_datetime()
-		if (now - self.last_updated).total_seconds() <= 1:
-			return
-
-		self.flush_output()
-		self.last_updated = now
 
 	def _update_output(self, line: dict):
 		if error := line.get("error"):
