@@ -394,7 +394,12 @@ class Site(Document, TagHelpers):
 	def check_duplicate_site(self):
 		if frappe.db.exists(
 			"Site",
-			{"subdomain": self.subdomain, "domain": self.domain, "status": ("!=", "Archived")},
+			{
+				"subdomain": self.subdomain,
+				"domain": self.domain,
+				"status": ("!=", "Archived"),
+				"name": ("!=", self.name),
+			},
 		):
 			frappe.throw("Site with same subdomain already exists")
 
