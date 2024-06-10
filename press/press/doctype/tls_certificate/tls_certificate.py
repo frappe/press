@@ -400,12 +400,13 @@ class LetsEncrypt(BaseCA):
 			subprocess.check_output(
 				shlex.split(command), stderr=subprocess.STDOUT, env=environment
 			)
+		except subprocess.CalledProcessError as e:
+			output = (e.output or b"").decode()
+			if "Another instance of Certbot is already running" not in output:
+				log_error("Certbot Exception", command=command, output=output)
+			raise e
 		except Exception as e:
-			if hasattr(e, "output") and e.output:
-				if "Another instance of Certbot is already running" not in e.output.decode():
-					log_error("Certbot Exception", command=command, output=e.output.decode())
-			else:
-				log_error("Certbot Exception", command=command, exception=e)
+			log_error("Certbot Exception", command=command, exception=e)
 			raise e
 
 	@property
