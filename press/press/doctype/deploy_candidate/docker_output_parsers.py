@@ -36,11 +36,8 @@ class DockerBuildOutputParser:
 	"""
 	Parses `docker build` raw output and updates Deploy Candidate.
 
-	Output can be generated from a remote builder (agent) or from a build running
-	on press itself.
-
-	In case of a remote build, due to the way agent updates are propagated, all
-	lines are updated when agent is polled, and so output is looped N! times.
+	Due to the way agent updates are propagated, all lines are updated
+	when agent is polled, and so output is looped N! times.
 	"""
 
 	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"

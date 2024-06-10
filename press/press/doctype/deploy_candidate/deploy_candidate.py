@@ -226,8 +226,8 @@ class DeployCandidate(Document):
 		if not self.validate_status():
 			return
 
-		self._set_status_pending()
 		self.set_build_server()
+		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -256,7 +256,7 @@ class DeployCandidate(Document):
 			self.build_server = self._get_build_server()
 
 		if not self.build_server:
-			self.throw_no_build_server()
+			throw_no_build_server()
 
 	def validate_status(self):
 		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -469,14 +469,14 @@ class DeployCandidate(Document):
 		deploy_after_build: bool = False,
 	):
 		if not self.build_server:
-			self.throw_no_build_server()
+			throw_no_build_server()
 
 		self._update_docker_image_metadata()
 		if no_build:
 			self._set_status_success()
 			return
 
-		# Build runs on remote server
+		# Build runs on build server
 		self._run_remote_builder(
 			deploy_after_build,
 			no_cache,
@@ -1542,12 +1542,6 @@ class DeployCandidate(Document):
 				continue
 			stop_background_job(job)
 
-	def throw_no_build_server():
-		frappe.throw(
-			"Server not found to run builds. "
-			"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
-		)
-
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1950,3 +1944,10 @@ def should_build_retry_job(job: "AgentJob"):
 		return True
 
 	return False
+
+
+def throw_no_build_server():
+	frappe.throw(
+		"Server not found to run builds. "
+		"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
+	)
