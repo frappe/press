@@ -232,7 +232,7 @@ class DeployCandidate(Document):
 			return
 
 		self._set_status_pending()
-		self.set_remote_build_flags()
+		self.set_remote_build_server()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -256,12 +256,15 @@ class DeployCandidate(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def set_remote_build_flags(self):
+	def set_remote_build_server(self):
 		if not self.remote_build_server:
 			self.remote_build_server = self._get_remote_build_server()
 
 		if not self.remote_build_server:
-			return
+			frappe.throw(
+				"Server not found to run builds. "
+				"Please set remote build server under <b>Press Settings > Docker > Docker Build</b>."
+			)
 
 		self.is_remote_builder_used = True
 
