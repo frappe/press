@@ -282,12 +282,6 @@ class Site(Document, TagHelpers):
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 
-		if frappe.db.exists(
-			"Site",
-			{"subdomain": self.subdomain, "domain": self.domain, "status": ("!=", "Archived")},
-		):
-			frappe.throw("Site with same subdomain already exists")
-
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
@@ -397,7 +391,15 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Another site already exists in {self.bench} with name: {site_name}")
 		self.archive(site_name=site_name, reason="Retry Archive")
 
+	def check_duplicate_site(self):
+		if frappe.db.exists(
+			"Site",
+			{"subdomain": self.subdomain, "domain": self.domain, "status": ("!=", "Archived")},
+		):
+			frappe.throw("Site with same subdomain already exists")
+
 	def rename(self, new_name: str):
+		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		if self.standby_for_product:
