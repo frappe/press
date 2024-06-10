@@ -95,6 +95,7 @@ class Invoice(Document):
 		transaction_fee_details: DF.Table[InvoiceTransactionFee]
 		transaction_net: DF.Currency
 		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+		write_off_amount: DF.Float
 	# end: auto-generated types
 
 	dashboard_fields = [
@@ -212,6 +213,11 @@ class Invoice(Document):
 		self.amount_due = self.total
 
 		self.apply_credit_balance()
+
+		if self.amount_due > 0 and self.amount_due < 0.1:
+			self.write_off_amount = self.amount_due
+			self.amount_due = 0
+
 		if self.amount_due == 0:
 			self.status = "Paid"
 			if self.payment_mode == "Prepaid Credits" and self.stripe_invoice_id:
