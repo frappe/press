@@ -30,18 +30,18 @@
   "payment_attempt_count",
   "payment_attempt_date",
   "payment_mode",
+  "write_off_amount",
+  "column_break_15",
   "total_before_discount",
   "total_discount_amount",
-  "column_break_15",
   "total",
   "total_before_tax",
-  "gst",
   "applied_credits",
   "free_credits",
   "amount_due",
+  "gst",
   "amount_due_with_tax",
   "amount_paid",
-  "write_off_amount",
   "section_break_15",
   "credit_allocations",
   "stripe_billing_section",
@@ -430,6 +430,7 @@
   {
    "fieldname": "total_before_tax",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Total Before Tax",
    "options": "currency"
   },
@@ -470,7 +471,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-06-10 14:18:32.550157",
+ "modified": "2024-06-11 15:33:05.928569",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
