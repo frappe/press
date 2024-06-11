@@ -97,16 +97,8 @@ class SaaSProduct(Document):
 	def create_standby_sites(self, cluster):
 		if not self.enable_pooling:
 			return
-		standby_site_count = frappe.db.count(
-			"Site",
-			{
-				"cluster": cluster,
-				"is_standby": 1,
-				"standby_for_product": self.name,
-				"status": "Active",
-			},
-		)
-		sites_to_create = self.standby_pool_size - standby_site_count
+
+		sites_to_create = self.standby_pool_size - self.get_standby_sites_count(cluster)
 		if sites_to_create <= 0:
 			return
 		if sites_to_create > self.standby_queue_size:
@@ -130,6 +122,29 @@ class SaaSProduct(Document):
 			apps=[{"app": d.app} for d in self.apps],
 		)
 		site.insert()
+
+	def get_standby_sites_count(self, cluster):
+		active_standby_sites = frappe.db.count(
+			"Site",
+			{
+				"cluster": cluster,
+				"is_standby": 1,
+				"standby_for_product": self.name,
+				"status": "Active",
+			},
+		)
+		# sites that are in pending state created in the last hour
+		recent_pending_standby_sites = frappe.db.count(
+			"Site",
+			{
+				"cluster": cluster,
+				"is_standby": 1,
+				"standby_for_product": self.name,
+				"status": ("in", ["Pending", "Installing"]),
+				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
+			},
+		)
+		return active_standby_sites + recent_pending_standby_sites
 
 	def get_unique_site_name(self):
 		subdomain = generate_random_name()
