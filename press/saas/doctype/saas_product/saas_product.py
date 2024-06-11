@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.model.naming import make_autoname
 from frappe.model.document import Document
 from press.utils import log_error
+from press.utils.unique_name_generator import generate as generate_random_name
 
 
 class SaaSProduct(Document):
@@ -120,7 +120,7 @@ class SaaSProduct(Document):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		site = frappe.get_doc(
 			doctype="Site",
-			subdomain=make_autoname("standby-.########"),
+			subdomain=self.get_unique_site_name(),
 			domain=self.domain,
 			group=self.release_group,
 			cluster=cluster,
@@ -130,6 +130,17 @@ class SaaSProduct(Document):
 			apps=[{"app": d.app} for d in self.apps],
 		)
 		site.insert()
+
+	def get_unique_site_name(self):
+		subdomain = generate_random_name()
+		filters = {
+			"subdomain": subdomain,
+			"domain": self.domain,
+			"status": ("!=", "Archived"),
+		}
+		while frappe.db.exists("Site", filters):
+			subdomain = generate_random_name()
+		return subdomain
 
 
 def replenish_standby_sites():
