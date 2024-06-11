@@ -73,7 +73,7 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
 		try:
-			deploy_candidate.pre_build(method="_build")
+			deploy_candidate.pre_build(method="_build", no_build=True)
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
 
@@ -92,7 +92,7 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
 		try:
-			deploy_candidate.pre_build(method="_build")
+			deploy_candidate.pre_build(method="_build", no_build=True)
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
 

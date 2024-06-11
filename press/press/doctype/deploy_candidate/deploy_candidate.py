@@ -224,7 +224,8 @@ class DeployCandidate(Document):
 		if not self.validate_status():
 			return
 
-		self.set_build_server()
+		no_build = kwargs.get("no_build", False)
+		self.set_build_server(no_build)
 		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
@@ -249,12 +250,14 @@ class DeployCandidate(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def set_build_server(self):
+	def set_build_server(self, no_build: bool):
 		if not self.build_server:
 			self.build_server = self._get_build_server()
 
-		if not self.build_server:
-			throw_no_build_server()
+		if self.build_server or no_build:
+			return
+
+		throw_no_build_server()
 
 	def validate_status(self):
 		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -470,13 +473,13 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		deploy_after_build: bool = False,
 	):
-		if not self.build_server:
-			throw_no_build_server()
-
 		self._update_docker_image_metadata()
 		if no_build:
 			self._set_status_success()
 			return
+
+		if not self.build_server:
+			throw_no_build_server()
 
 		# Build runs on build server
 		self._run_build_agent_jobs(
