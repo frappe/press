@@ -122,8 +122,6 @@ class DeployCandidate(Document):
 		user_public_key: DF.Code | None
 		# end: auto-generated types
 
-		# Used for local builds, for remote builds instances
-		# are created when handling job update
 		build_output_parser: Optional[DockerBuildOutputParser]
 		upload_step_updater: Optional[UploadStepUpdater]
 
@@ -362,7 +360,7 @@ class DeployCandidate(Document):
 		no_cache: bool = False,
 		no_push: bool = False,
 		no_build: bool = False,
-		# Used for docker remote build
+		# Used for processing build agent job
 		deploy_after_build: bool = False,
 	):
 		self._set_status_preparing()
@@ -477,13 +475,13 @@ class DeployCandidate(Document):
 			return
 
 		# Build runs on build server
-		self._run_remote_builder(
+		self._run_build_agent_jobs(
 			deploy_after_build,
 			no_cache,
 			no_push,
 		)
 
-	def _run_remote_builder(
+	def _run_build_agent_jobs(
 		self,
 		deploy_after_build: bool,
 		no_cache: bool,
@@ -493,7 +491,7 @@ class DeployCandidate(Document):
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
-		Agent(self.build_server).run_remote_builder(
+		Agent(self.build_server).run_build(
 			{
 				"filename": context_filename,
 				"image_repository": self.docker_image_repository,
@@ -560,14 +558,15 @@ class DeployCandidate(Document):
 		return upload_filename
 
 	@staticmethod
-	def process_run_remote_builder(job: "AgentJob", response_data: "Optional[dict]"):
+	def process_run_build(job: "AgentJob", response_data: "Optional[dict]"):
 		request_data = json.loads(job.request_data)
-		frappe.get_doc(
+		dc: "DeployCandidate" = frappe.get_doc(
 			"Deploy Candidate",
 			request_data["deploy_candidate"],
-		)._process_run_remote_builder(job, request_data, response_data)
+		)
+		dc._process_run_build(job, request_data, response_data)
 
-	def _process_run_remote_builder(
+	def _process_run_build(
 		self,
 		job: "AgentJob",
 		request_data: dict,
@@ -804,7 +803,7 @@ class DeployCandidate(Document):
 			[
 				# Pre-build validation slug
 				("validate", "pre-build"),
-				# Remote builder slugs
+				# Build slugs
 				("package", "context"),
 				("upload", "context"),
 			]

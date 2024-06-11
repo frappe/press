@@ -61,7 +61,6 @@ class DockerBuildOutputParser:
 			}
 		return self._steps_by_step_slug
 
-	# `output` can be from local or remote build
 	def parse_and_update(self, output: "BuildOutput"):
 		for raw_line in output:
 			self._parse_line_handle_exc(raw_line)

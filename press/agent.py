@@ -1008,10 +1008,10 @@ class Agent:
 
 		return None
 
-	def run_remote_builder(self, data: dict):
+	def run_build(self, data: dict):
 		reference_name = data.get("deploy_candidate")
 		return self.create_agent_job(
-			"Run Remote Builder",
+			"Run Build",
 			"builder/build",
 			data=data,
 			reference_doctype="Deploy Candidate",

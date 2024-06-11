@@ -4,6 +4,7 @@
 
 import json
 import random
+from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -27,11 +28,10 @@ from press.press.doctype.press_notification.press_notification import (
 )
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
-	process_site_migration_job_update,
 	job_matches_site_migration,
+	process_site_migration_job_update,
 )
-from press.utils import log_error, has_role
-from typing import Optional
+from press.utils import has_role, log_error
 
 
 class AgentJob(Document):
@@ -957,8 +957,8 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			process_move_site_to_bench_job_update(job)
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
-		elif job.job_type == "Run Remote Builder":
-			DeployCandidate.process_run_remote_builder(job, response_data)
+		elif job.job_type == "Run Build":
+			DeployCandidate.process_run_build(job, response_data)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1
