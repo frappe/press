@@ -82,6 +82,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		apps: DF.Table[ReleaseGroupApp]
 		bench_config: DF.Code | None
+		build_server: DF.Link | None
 		central_bench: DF.Check
 		common_site_config: DF.Code | None
 		common_site_config_table: DF.Table[CommonSiteConfig]
@@ -104,7 +105,6 @@ class ReleaseGroup(Document, TagHelpers):
 		mounts: DF.Table[ReleaseGroupMount]
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
-		remote_build_server: DF.Link | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]

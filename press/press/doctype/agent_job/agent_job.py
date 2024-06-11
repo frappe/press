@@ -958,7 +958,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
-			DeployCandidate.process_run_remote_builder(job, response_data)
+			DeployCandidate.process_run_build(job, response_data)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

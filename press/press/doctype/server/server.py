@@ -399,7 +399,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def is_build_server(self) -> bool:
-		name = frappe.db.get_single_value("Press Settings", "remote_build_server")
+		name = frappe.db.get_single_value("Press Settings", "build_server")
 		if name == self.name:
 			return True
 
@@ -407,7 +407,7 @@ class BaseServer(Document, TagHelpers):
 			"Release Group",
 			{
 				"enabled": True,
-				"remote_build_server": self.name,
+				"build_server": self.name,
 			},
 		)
 		if isinstance(count, (int, float)):

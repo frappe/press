@@ -47,9 +47,18 @@ def log_error(title, **kwargs):
 	except Exception:
 		pass
 
-	traceback = frappe.get_traceback(with_context=True)
-	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
-	message = f"Data:\n{serialized}\nException:\n{traceback}"
+	message = ""
+	if serialized := json.dumps(
+		kwargs,
+		indent=4,
+		sort_keys=True,
+		default=str,
+		skipkeys=True,
+	):
+		message += f"Data:\n{serialized}\n"
+
+	if traceback := frappe.get_traceback(with_context=True):
+		message += f"Exception:\n{traceback}\n"
 
 	try:
 		frappe.log_error(

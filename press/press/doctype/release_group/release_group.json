@@ -18,7 +18,7 @@
   "section_break_7",
   "servers",
   "section_break_keov",
-  "remote_build_server",
+  "build_server",
   "apps_tab",
   "apps",
   "config_tab",
@@ -363,14 +363,14 @@
    "label": "Use Delta Builds"
   },
   {
-   "fieldname": "remote_build_server",
+   "fieldname": "build_server",
    "fieldtype": "Link",
-   "label": "Remote Build Server",
+   "label": "Build Server",
    "options": "Server"
   }
  ],
  "links": [],
- "modified": "2024-05-23 13:53:01.038192",
+ "modified": "2024-06-10 16:04:25.806757",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
