@@ -668,8 +668,8 @@ class Invoice(Document):
 			doc.submit()
 
 	def apply_credit_balance(self):
-		# cancel applied credits to re-apply available credits
-		self.cancel_applied_credits()
+		# previously we used to cancel and re-apply credits, but it messed up the balance transaction history
+		# so now we only do append-only operation while applying credits
 
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
 		if balance <= 0:
@@ -690,7 +690,7 @@ class Invoice(Document):
 		unallocated_balances.reverse()
 
 		total_allocated = 0
-		due = self.total
+		due = self.amount_due
 		for balance in unallocated_balances:
 			if due == 0:
 				break
@@ -722,7 +722,7 @@ class Invoice(Document):
 		).insert()
 		balance_transaction.submit()
 
-		self.applied_credits = total_allocated
+		self.applied_credits = sum(row.amount for row in self.credit_allocations)
 		self.amount_due = self.total - self.applied_credits
 
 	def cancel_applied_credits(self):
