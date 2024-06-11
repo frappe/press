@@ -1228,10 +1228,11 @@ def handle_payment_intent_succeeded(payment_intent):
 		return
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
-	amount = payment_intent["amount"] / 100
+	amount_with_tax = payment_intent["amount"] / 100
 	gst = float(metadata.get("gst", 0))
+	amount = amount_with_tax - gst
 	balance_transaction = team.allocate_credit_amount(
-		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
+		amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
 
 	# Telemetry: Added prepaid credits
@@ -1243,10 +1244,11 @@ def handle_payment_intent_succeeded(payment_intent):
 		type="Prepaid Credits",
 		status="Paid",
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
-		amount_paid=amount,
-		gst=gst or 0,
-		total_before_tax=amount - gst,
+		total=amount,
 		amount_due=amount,
+		gst=gst or 0,
+		amount_due_with_tax=amount_with_tax,
+		amount_paid=amount_with_tax,
 		stripe_payment_intent_id=payment_intent["id"],
 	)
 	invoice.append(

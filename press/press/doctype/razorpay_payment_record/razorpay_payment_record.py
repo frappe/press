@@ -36,10 +36,11 @@ class RazorpayPaymentRecord(Document):
 
 		client = get_razorpay_client()
 		payment = client.payment.fetch(self.payment_id)
-		amount = payment["amount"] / 100
+		amount_with_tax = payment["amount"] / 100
 		gst = float(payment["notes"].get("gst", 0))
+		amount = amount_with_tax - gst
 		balance_transaction = team.allocate_credit_amount(
-			amount - gst if gst else amount,
+			amount,
 			source="Prepaid Credits",
 			remark=f"Razorpay: {self.payment_id}",
 		)
@@ -51,10 +52,11 @@ class RazorpayPaymentRecord(Document):
 			type="Prepaid Credits",
 			status="Paid",
 			due_date=datetime.fromtimestamp(payment["created_at"]),
-			amount_paid=amount,
-			gst=gst or 0,
-			total_before_tax=amount - gst,
+			total=amount,
 			amount_due=amount,
+			gst=gst or 0,
+			amount_due_with_tax=amount_with_tax,
+			amount_paid=amount_with_tax,
 			razorpay_order_id=self.order_id,
 			razorpay_payment_record=self.name,
 			razorpay_payment_method=payment["method"],

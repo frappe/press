@@ -79,7 +79,7 @@
 							Total (Without Tax)
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.total_before_tax) }}
+							{{ formatCurrency(doc.total) }}
 						</td>
 					</tr>
 					<tr v-if="doc.gst > 0">
