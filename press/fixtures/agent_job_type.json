@@ -2002,35 +2002,5 @@
     "step_name": "Cleanup Context"
    }
   ]
- },
- {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
-  "modified": "2024-06-11 10:34:15.730051",
-  "name": "Run Build",
-  "request_method": "POST",
-  "request_path": "/builder/build",
-  "steps": [
-   {
-    "parent": "Run Build",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Build Image"
-   },
-   {
-    "parent": "Run Build",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Push Docker Image"
-   },
-   {
-    "parent": "Run Build",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Cleanup Context"
-   }
-  ]
  }
 ]

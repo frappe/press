@@ -398,7 +398,7 @@ class DeployCandidate(Document):
 		# Log and raise error if build failure is not actionable
 		log_error(
 			"Deploy Candidate Build Exception",
-			note="No Exception is thrown. This error is logged when the build fails in the `Run Build` Agent Job.",
+			note="No Exception is thrown. This error is logged when the build fails in the `Run Remote Builder` Agent Job.",
 			doc=self,
 		)
 
