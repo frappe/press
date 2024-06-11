@@ -201,6 +201,7 @@ import { Breadcrumbs, TextInput } from 'frappe-ui';
 import { getDocResource } from '../utils/resource';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'InstallApp',
@@ -260,7 +261,7 @@ export default {
 					};
 				},
 				validate() {
-					return validateSubdomain(this.subdomain);
+					throw new DashboardError(validateSubdomain(this.subdomain));
 				},
 				transform(data) {
 					return !Boolean(data);
@@ -296,13 +297,15 @@ export default {
 				},
 				validate() {
 					if (!this.selectedPlan && this.plans.length > 0) {
-						return 'Please select a plan';
+						throw new DashboardError('Please select a plan');
 					}
 					if (!this.subdomain) {
-						return 'Please enter a subdomain';
+						throw new DashboardError('Please enter a subdomain');
 					}
 					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create site';
+						throw new DashboardError(
+							'Please agree to the above consent to create site'
+						);
 					}
 				},
 				onSuccess: site => {

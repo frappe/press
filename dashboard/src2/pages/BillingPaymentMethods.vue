@@ -99,7 +99,10 @@ export default {
 											{
 												loading: 'Removing card...',
 												success: 'Card removed',
-												error: 'Could not remove card'
+												error: error =>
+													error.messages?.length
+														? error.messages.join('\n')
+														: error.message || 'Could not remove card'
 											}
 										);
 									}

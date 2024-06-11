@@ -30,6 +30,7 @@
 <script>
 import { getTeam } from '../../data/team';
 import { getDocResource } from '../../utils/resource';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	props: {
@@ -59,11 +60,13 @@ export default {
 			url: 'press.api.marketplace.submit_developer_reply',
 			validate() {
 				if (!this.reply.reply) {
-					return 'Reply cannot be empty';
+					throw new DashboardError('Reply cannot be empty');
 				}
 				const team = getTeam();
 				if (!team.doc.is_developer) {
-					return 'You must be a developer to reply to reviews';
+					throw new DashboardError(
+						'You must be a developer to reply to reviews'
+					);
 				}
 			},
 			onSuccess() {

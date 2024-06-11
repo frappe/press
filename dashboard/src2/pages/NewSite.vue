@@ -207,6 +207,7 @@ import router from '../router';
 import { plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewSite',
@@ -286,7 +287,7 @@ export default {
 					};
 				},
 				validate() {
-					return validateSubdomain(this.subdomain);
+					throw new DashboardError(validateSubdomain(this.subdomain));
 				},
 				transform(data) {
 					return !Boolean(data);
@@ -329,11 +330,13 @@ export default {
 				},
 				validate() {
 					if (!this.subdomain) {
-						return 'Please enter a subdomain';
+						throw new DashboardError('Please enter a subdomain');
 					}
 
 					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create site';
+						throw new DashboardError(
+							'Please agree to the above consent to create site'
+						);
 					}
 				},
 				onSuccess: site => {

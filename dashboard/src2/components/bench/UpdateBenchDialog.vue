@@ -95,6 +95,7 @@ import CommitChooser from '@/components/utils/CommitChooser.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
 import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'UpdateBenchDialog',
@@ -339,7 +340,9 @@ export default {
 						this.selectedApps.length === 0 &&
 						this.deployInformation.removed_apps.length === 0
 					) {
-						return 'You must select atleast 1 app to proceed with update.';
+						throw new DashboardError(
+							'You must select atleast 1 app to proceed with update.'
+						);
 					}
 				},
 				onSuccess(candidate) {

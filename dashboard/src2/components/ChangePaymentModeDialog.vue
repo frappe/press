@@ -49,6 +49,7 @@
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'ChangePaymentModeDialog',
@@ -112,7 +113,9 @@ export default {
 						this.paymentMode == 'Paid By Partner' &&
 						!this.$team.doc.partner_email
 					) {
-						return 'Please add a partner first from Partner section';
+						throw new DashboardError(
+							'Please add a partner first from Partner section'
+						);
 					}
 				}
 			};

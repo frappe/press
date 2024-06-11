@@ -233,6 +233,7 @@ import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { getPlans } from '../data/plans';
 import { trialDays } from '../utils/site';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewAppTrial',
@@ -293,9 +294,9 @@ export default {
 						},
 						validate() {
 							if (!this.plan) {
-								return 'Please select a plan';
+								throw new DashboardError('Please select a plan');
 							}
-							return validateSubdomain(this.subdomain);
+							throw new DashboardError(validateSubdomain(this.subdomain));
 						},
 						onSuccess() {
 							this.siteRequest.getProgress.reload();

@@ -59,6 +59,7 @@
 </template>
 <script>
 import { date } from '../../utils/format';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -93,13 +94,13 @@ export default {
 				},
 				validate() {
 					if (!this.siteURL) {
-						return 'Site URL is required';
+						throw new DashboardError('Site URL is required');
 					}
 					if (!this.email) {
-						return 'Email is required';
+						throw new DashboardError('Email is required');
 					}
 					if (!this.password) {
-						return 'Password is required';
+						throw new DashboardError('Password is required');
 					}
 				},
 				onSuccess(remoteFiles) {
@@ -119,7 +120,9 @@ export default {
 				},
 				validate() {
 					if (!this.selectedFiles.database) {
-						return 'Something went wrong while fetching the backups from the site';
+						throw new DashboardError(
+							'Something went wrong while fetching the backups from the site'
+						);
 					}
 				},
 				onSuccess() {
