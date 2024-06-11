@@ -396,7 +396,11 @@ class DeployCandidate(Document):
 			return
 
 		# Log and raise error if build failure is not actionable
-		log_error("Deploy Candidate Build Exception", doc=self)
+		log_error(
+			"Deploy Candidate Build Exception",
+			note="No Exception is thrown. This error is logged when the build fails in the `Run Build` Agent Job.",
+			doc=self,
+		)
 
 		if should_retry:
 			self.schedule_build_retry()
