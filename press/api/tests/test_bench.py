@@ -1,7 +1,8 @@
 import json
 import os
 import time
-from unittest.mock import Mock, patch, skip
+from unittest.mock import Mock, patch
+from unittest import skip
 
 import docker
 import frappe
