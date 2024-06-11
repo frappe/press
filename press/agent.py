@@ -200,6 +200,21 @@ class Agent:
 			site=site.name,
 		)
 
+	def create_user(self, site, email, first_name, last_name, password=None):
+		data = {
+			"email": email,
+			"first_name": first_name,
+			"last_name": last_name,
+			"password": password,
+		}
+		return self.create_agent_job(
+			"Create User",
+			f"benches/{site.bench}/sites/{site.name}/create-user",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def optimize_tables(self, site):
 		return self.create_agent_job(
 			"Optimize Tables",

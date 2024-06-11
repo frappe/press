@@ -1121,6 +1121,10 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
+	def create_user(self, email, first_name, last_name, password=None):
+		agent = Agent(self.server)
+		return agent.create_user(self, email, first_name, last_name, password)
+
 	def get_connection_as_admin(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		conn = FrappeClient(f"https://{self.name}", "Administrator", password)

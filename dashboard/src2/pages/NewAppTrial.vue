@@ -24,7 +24,7 @@
 							: ''
 					"
 				>
-					<div v-if="completedSites">
+					<div v-if="completedSites.length">
 						<div>
 							<div class="text-base text-gray-900">
 								{{
@@ -52,7 +52,6 @@
 								</li>
 							</ul>
 						</div>
-						<!-- {{ completedSites }} -->
 					</div>
 					<div v-if="siteRequest?.doc">
 						<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
@@ -79,7 +78,7 @@
 									}}
 								</div>
 							</div>
-							<FormControl
+							<!-- <FormControl
 								class="subdomain mt-2"
 								label="Site Name"
 								v-model="subdomain"
@@ -94,7 +93,7 @@
 										.{{ saasProduct.domain || 'frappe.cloud' }}
 									</div>
 								</template>
-							</FormControl>
+							</FormControl> -->
 							<ErrorMessage :message="siteRequest.createSite.error" />
 							<Button
 								class="w-full"
@@ -290,13 +289,13 @@ export default {
 						method: 'create_site',
 						makeParams(params) {
 							let cluster = params?.cluster;
-							return { subdomain: this.subdomain, plan: this.plan, cluster };
+							return { plan: this.plan, cluster };
 						},
 						validate() {
 							if (!this.plan) {
 								throw new DashboardError('Please select a plan');
 							}
-							throw new DashboardError(validateSubdomain(this.subdomain));
+							// throw new DashboardError(validateSubdomain(this.subdomain));
 						},
 						onSuccess() {
 							this.siteRequest.getProgress.reload();

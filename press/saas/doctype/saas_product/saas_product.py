@@ -16,13 +16,12 @@ class SaaSProduct(Document):
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
-	def setup_trial_site(self, subdomain, team, cluster=None):
+	def setup_trial_site(self, team, cluster=None):
 		standby_site = self.get_standby_site(cluster)
 		if not standby_site:
 			frappe.throw("There was an error setting up the trial site")
 
 		site = frappe.get_doc("Site", standby_site)
-		site.subdomain = subdomain
 		site.is_standby = False
 		site.team = team
 		site.save(ignore_permissions=True)

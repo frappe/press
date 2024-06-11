@@ -2002,5 +2002,23 @@
     "step_name": "Cleanup Context"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-06-11 19:43:45.877056",
+  "name": "Create User",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/create-user",
+  "steps": [
+   {
+    "parent": "Create User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create User"
+   }
+  ]
  }
 ]
