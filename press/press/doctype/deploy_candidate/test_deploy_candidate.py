@@ -5,7 +5,8 @@
 import random
 import typing
 import unittest
-from unittest.mock import Mock, patch, skip
+from unittest.mock import Mock, patch
+from unittest import skip
 
 import frappe
 from press.press.doctype.agent_job.agent_job import AgentJob
