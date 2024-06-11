@@ -75,6 +75,7 @@ getInitialData().then(() => {
 				const error = hint.originalException;
 
 				if (
+					error?.name === 'DashboardError' ||
 					ignoreErrorTypes.includes(error?.exc_type) ||
 					(error?.message && ignoreErrors.some(re => re.test(error.message)))
 				)

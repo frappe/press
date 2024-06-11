@@ -48,6 +48,8 @@
 	</Dialog>
 </template>
 <script>
+import { DashboardError } from '../utils/error';
+
 export default {
 	name: 'SiteDatabaseRestoreDialog',
 	props: {
@@ -79,7 +81,9 @@ export default {
 				},
 				validate() {
 					if (!this.filesUploaded) {
-						return 'Please upload database, public and private files to restore.';
+						throw new DashboardError(
+							'Please upload database, public and private files to restore.'
+						);
 					}
 				},
 				onSuccess() {

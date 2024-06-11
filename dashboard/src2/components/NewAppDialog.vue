@@ -203,6 +203,7 @@
 
 <script>
 import { FormControl, Tabs } from 'frappe-ui';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewAppDialog',
@@ -329,7 +330,7 @@ export default {
 					const isValidUrl = githubUrlRegex.test(this.githubAppLink);
 
 					if (this.tabIndex === 0 && !isValidUrl) {
-						return 'Please enter a valid github link';
+						throw new DashboardError('Please enter a valid github link');
 					}
 				},
 				onSuccess(data) {

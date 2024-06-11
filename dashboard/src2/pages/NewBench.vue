@@ -155,6 +155,7 @@
 <script>
 import Summary from '../components/Summary.vue';
 import Header from '../components/Header.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewBench',
@@ -187,13 +188,15 @@ export default {
 				url: 'press.api.bench.new',
 				validate() {
 					if (!this.benchTitle) {
-						return 'Bench Title cannot be blank';
+						throw new DashboardError('Bench Title cannot be blank');
 					}
 					if (!this.benchVersion) {
-						return 'Select a version to create bench';
+						throw new DashboardError('Select a version to create bench');
 					}
 					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create bench';
+						throw new DashboardError(
+							'Please agree to the above consent to create bench'
+						);
 					}
 				},
 				onSuccess(groupName) {

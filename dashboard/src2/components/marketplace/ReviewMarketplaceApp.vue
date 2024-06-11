@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 import { createResource } from 'frappe-ui';
 import StarRatingInput from '@/components/StarRatingInput.vue';
 import { getDocResource } from '../../utils/resource';
+import { DashboardError } from '../../utils/error';
 
 const props = defineProps({
 	marketplaceApp: String
@@ -24,11 +25,11 @@ const submitReview = createResource({
 	url: 'press.api.marketplace.submit_user_review',
 	validate() {
 		if (!review.title) {
-			return 'Please add a title to your review';
+			throw new DashboardError('Please add a title to your review');
 		}
 
 		if (!review.review) {
-			return 'Review cannot be empty';
+			throw new DashboardError('Review cannot be empty');
 		}
 	},
 	onSuccess() {

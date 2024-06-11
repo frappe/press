@@ -37,6 +37,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'ChangeAppBranchDialog',
@@ -69,7 +70,7 @@ export default {
 				},
 				validate() {
 					if (this.selectedBranch == this.app.branch) {
-						return 'Please select a different branch';
+						throw new DashboardError('Please select a different branch');
 					}
 				}
 			};

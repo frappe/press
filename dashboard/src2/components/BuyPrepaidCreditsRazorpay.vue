@@ -23,6 +23,7 @@
 </template>
 <script>
 import { toast } from 'vue-sonner';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'BuyPrepaidCreditsRazorpay',
@@ -55,7 +56,9 @@ export default {
 				},
 				validate() {
 					if (this.amount < this.minimumAmount) {
-						return 'Amount less than minimum amount required';
+						throw new DashboardError(
+							'Amount less than minimum amount required'
+						);
 					}
 				}
 			};
