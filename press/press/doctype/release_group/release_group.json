@@ -15,6 +15,8 @@
   "default",
   "public",
   "central_bench",
+  "use_local_mirror",
+  "mirror_server",
   "section_break_7",
   "servers",
   "section_break_keov",
@@ -367,10 +369,24 @@
    "fieldtype": "Link",
    "label": "Remote Build Server",
    "options": "Server"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, it will download Ubuntu packages from the local mirror",
+   "fieldname": "use_local_mirror",
+   "fieldtype": "Check",
+   "label": "Use Local Mirror"
+  },
+  {
+   "depends_on": "eval:doc.use_local_mirror",
+   "fieldname": "mirror_server",
+   "fieldtype": "Link",
+   "label": "Mirror Server",
+   "options": "Mirror Server"
   }
  ],
  "links": [],
- "modified": "2024-05-23 13:53:01.038192",
+ "modified": "2024-04-26 11:31:23.254144",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

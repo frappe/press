@@ -1,0 +1,29 @@
+############# config ##################
+#
+set base_path    /home/frappe/ubuntu
+#
+set mirror_path  $base_path/mirror
+set skel_path    $base_path/skel
+set var_path     $base_path/var
+set cleanscript $var_path/clean.sh
+# set defaultarch  <running host architecture>
+# set postmirror_script $var_path/postmirror.sh
+# set run_postmirror 0
+set nthreads     20
+set _tilde 0
+#
+############# end config ##############
+
+deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-proposed main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
+
+# deb-src http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu focal-security main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu focal-proposed main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
+
+clean http://archive.ubuntu.com/ubuntu

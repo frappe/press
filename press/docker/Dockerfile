@@ -7,6 +7,12 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
 
+#replace archive.ubuntu.com by mirror server in source.list
+{% if doc.mirror_server %}
+RUN sed -i -e  "s/archive.ubuntu.com/{{doc.mirror_server}}/" /etc/apt/sources.list
+RUN sed -i -e  "s/security.ubuntu.com/{{doc.mirror_server}}/" /etc/apt/sources.list
+{% endif %}
+
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \

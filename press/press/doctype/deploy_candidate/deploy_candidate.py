@@ -108,6 +108,7 @@ class DeployCandidate(Document):
 		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
+		mirror_server: DF.Link | None
 		packages: DF.Table[DeployCandidatePackage]
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
