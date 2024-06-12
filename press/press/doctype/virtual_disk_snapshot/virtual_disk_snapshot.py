@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 import boto3
+from botocore.exceptions import ClientError
 import pytz
 from oci.core import BlockstorageClient
 from press.utils import log_error
@@ -91,7 +92,13 @@ class VirtualDiskSnapshot(Document):
 			return
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
-			self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+			try:
+				self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+			except ClientError as e:
+				if e.response["Error"]["Code"] == "InvalidSnapshot.InUse":
+					frappe.msgprint("Snapshot is in use", alert=True)
+				else:
+					raise e
 		elif cluster.cloud_provider == "OCI":
 			if ".bootvolumebackup." in self.snapshot_id:
 				self.client.delete_boot_volume_backup(self.snapshot_id)
