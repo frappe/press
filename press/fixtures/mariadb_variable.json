@@ -286,5 +286,17 @@
   "name": "max_statement_time",
   "set_on_new_servers": 1,
   "skippable": 0
+ },
+ {
+  "datatype": "Int",
+  "default_value": "32",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-06-12 10:30:47.403256",
+  "name": "max_heap_table_size",
+  "set_on_new_servers": 0,
+  "skippable": 0
  }
 ]
