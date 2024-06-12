@@ -756,6 +756,7 @@ class Agent:
 				)
 		except Exception as exc:
 			self.handle_exception(agent_job, exc)
+			self.log_request_failure(exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -765,6 +766,29 @@ class Agent:
 				headers=headers,
 				doc=agent_job,
 			)
+
+	def log_request_failure(self, exc):
+		filters = {
+			"server": self.server,
+		}
+		failure = frappe.db.get_value(
+			"Agent Request Failure", filters, ["name", "failure_count"], as_dict=True
+		)
+		if failure:
+			frappe.db.set_value(
+				"Agent Request Failure", failure.name, "failure_count", failure.failure_count + 1
+			)
+		else:
+			fields = filters
+			fields.update(
+				{
+					"server_type": self.server_type,
+					"traceback": frappe.get_traceback(with_context=True),
+					"error": repr(exc),
+					"failure_count": 1,
+				}
+			)
+			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
