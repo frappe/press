@@ -29,6 +29,7 @@ export default {
 					{
 						label: 'Card',
 						fieldname: 'last_4',
+						width: 1.5,
 						format(value) {
 							return `•••• ${value}`;
 						},
@@ -36,39 +37,32 @@ export default {
 							return this.cardBrandIcon(row.brand);
 						},
 						suffix(row) {
-							let suffixes = [];
 							if (row.is_default) {
-								suffixes.push(
-									h(
-										Badge,
-										{
-											theme: 'green'
-										},
-										() => 'Default'
-									)
-								);
-
-								if (row.stripe_payment_method) {
-									suffixes.push(
+								return h(
+									Tooltip,
+									{
+										text: row.stripe_payment_method
+											? 'The last payment failed on this card. Please use a different card.'
+											: 'Default card'
+									},
+									() =>
 										h(
-											Tooltip,
+											Badge,
 											{
-												text: 'The last payment failed on this card. Please use a different card.'
+												theme: row.stripe_payment_method ? 'red' : 'green'
 											},
-											() => h(icon('alert-circle', 'h-4 w-4 text-red-600'))
+											() =>
+												row.stripe_payment_method
+													? 'Attention Required'
+													: 'Default'
 										)
-									);
-								}
+								);
 							}
-							return h(
-								'div',
-								{ class: 'flex space-x-2 items-center' },
-								suffixes
-							);
 						}
 					},
 					{
 						label: 'Expiry',
+						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
 						}
