@@ -146,7 +146,8 @@ const deleteSSHKey = createResource({
 const sshKeyListOptions = computed(() => ({
 	doctype: 'User SSH Key',
 	filters: {
-		user: $team.doc.user_info.name
+		user: $team.doc.user_info.name,
+		is_removed: 0
 	},
 	fields: ['name', 'ssh_fingerprint', 'creation', 'is_default'],
 	orderBy: 'creation desc',

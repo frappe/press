@@ -29,12 +29,13 @@ class UserSSHKey(Document):
 		from frappe.types import DF
 
 		is_default: DF.Check
+		is_removed: DF.Check
 		ssh_fingerprint: DF.Data | None
 		ssh_public_key: DF.Code
 		user: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["ssh_fingerprint", "is_default", "user"]
+	dashboard_fields = ["ssh_fingerprint", "is_default", "user", "is_removed"]
 
 	valid_key_types = [
 		"ssh-rsa",
@@ -83,7 +84,13 @@ class UserSSHKey(Document):
 	def delete(self):
 		if self.is_default:
 			frappe.throw("Cannot delete default key")
-		super().delete()
+
+		elif frappe.db.exists("SSH Certificate", {"user_ssh_key": self.name}):
+			self.is_removed = 1
+			self.save()
+
+		else:
+			super().delete()
 
 	def make_other_keys_non_default(self):
 		frappe.db.set_value(
