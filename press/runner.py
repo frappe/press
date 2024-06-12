@@ -11,7 +11,6 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
 from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
-from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from pymysql.err import InterfaceError
 
@@ -163,7 +162,6 @@ class Ansible:
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
-			verbosity=3,
 		)
 
 		self.loader = DataLoader()
@@ -174,8 +172,6 @@ class Ansible:
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self.callback = AnsibleCallback()
-		self.display = Display()
-		self.display.verbosity = 3
 		self.create_ansible_play()
 
 	def patch(self):
