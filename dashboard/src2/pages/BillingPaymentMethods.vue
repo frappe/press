@@ -6,7 +6,7 @@
 <script>
 import { defineAsyncComponent, h } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
-import { Badge } from 'frappe-ui';
+import { Badge, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
 
@@ -35,16 +35,36 @@ export default {
 						prefix: row => {
 							return this.cardBrandIcon(row.brand);
 						},
-						suffix: row => {
-							return row.is_default
-								? h(
+						suffix(row) {
+							let suffixes = [];
+							if (row.is_default) {
+								suffixes.push(
+									h(
 										Badge,
 										{
 											theme: 'green'
 										},
 										() => 'Default'
-								  )
-								: null;
+									)
+								);
+
+								if (row.stripe_payment_method) {
+									suffixes.push(
+										h(
+											Tooltip,
+											{
+												text: 'The last payment failed on this card. Please use a different card.'
+											},
+											() => h(icon('alert-circle', 'h-4 w-4 text-red-600'))
+										)
+									);
+								}
+							}
+							return h(
+								'div',
+								{ class: 'flex space-x-2 items-center' },
+								suffixes
+							);
 						}
 					},
 					{

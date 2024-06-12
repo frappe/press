@@ -125,24 +125,47 @@ class Invoice(Document):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		StripeWebhookLog = frappe.qb.DocType("Stripe Webhook Log")
+		Invoice = frappe.qb.DocType("Invoice")
+
 		partner_customer = filters.get("partner_customer")
 		if partner_customer:
 			team_name = filters.get("team")
 			due_date = filters.get("due_date")
 			filters.pop("partner_customer")
-			invoice = frappe.qb.DocType("Invoice")
 			query = (
-				frappe.qb.from_(invoice)
+				frappe.qb.from_(Invoice)
 				.select(
-					invoice.name, invoice.total, invoice.amount_due, invoice.status, invoice.due_date
+					Invoice.name, Invoice.total, Invoice.amount_due, Invoice.status, Invoice.due_date
 				)
 				.where(
-					(invoice.team == team_name)
-					& (invoice.due_date >= due_date[1])
-					& (invoice.type == "Subscription")
+					(Invoice.team == team_name)
+					& (Invoice.due_date >= due_date[1])
+					& (Invoice.type == "Subscription")
 				)
 			)
-		return query
+
+		invoices = (
+			query.select(StripeWebhookLog.name.as_("stripe_payment_failed"))
+			.left_join(StripeWebhookLog)
+			.on(
+				(Invoice.name == StripeWebhookLog.invoice)
+				& (StripeWebhookLog.event_type == "payment_intent.payment_failed")
+			)
+		).run(as_dict=True)
+
+		for invoice in invoices:
+			if stripe_log := invoice.stripe_payment_failed:
+				payload = frappe.db.get_value("Stripe Webhook Log", stripe_log, "payload")
+				payload = frappe.parse_json(payload)
+				invoice.stripe_payment_error = (
+					payload.get("data", {})
+					.get("object", {})
+					.get("last_payment_error", {})
+					.get("message")
+				)
+
+		return invoices
 
 	def get_doc(self, doc):
 		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
