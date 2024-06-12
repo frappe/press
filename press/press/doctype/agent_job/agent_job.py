@@ -17,7 +17,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-from press.agent import Agent, AgentCallbackException
+from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
@@ -160,6 +160,11 @@ class AgentJob(Document):
 	def create_http_request(self):
 		try:
 			agent = Agent(self.server, server_type=self.server_type)
+			if agent.should_skip_requests():
+				self.retry_count = 0
+				self.set_status_and_next_retry_at()
+				return
+
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
@@ -169,6 +174,9 @@ class AgentJob(Document):
 
 			self.status = "Pending"
 			self.save()
+		except AgentRequestSkippedException:
+			self.retry_count = 0
+			self.set_status_and_next_retry_at()
 
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
@@ -393,6 +401,10 @@ def poll_pending_jobs_server(server):
 	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
 		return
 
+	agent = Agent(server.server, server_type=server.server_type)
+	if agent.should_skip_requests():
+		return
+
 	pending_jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_id", "status", "callback_failure_count"],
@@ -408,8 +420,6 @@ def poll_pending_jobs_server(server):
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
 		return
-
-	agent = Agent(server.server, server_type=server.server_type)
 
 	pending_ids = [j.job_id for j in pending_jobs]
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))

@@ -702,6 +702,7 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.raise_if_past_requests_have_failed()
 		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
@@ -756,6 +757,7 @@ class Agent:
 				)
 		except Exception as exc:
 			self.handle_exception(agent_job, exc)
+			self.log_request_failure(exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -765,6 +767,52 @@ class Agent:
 				headers=headers,
 				doc=agent_job,
 			)
+
+	def raise_if_past_requests_have_failed(self):
+		failures = frappe.db.get_value(
+			"Agent Request Failure", {"server": self.server}, "failure_count"
+		)
+		if failures:
+			raise AgentRequestSkippedException(
+				f"Previous {failures} requests have failed. Try again later."
+			)
+
+	def log_request_failure(self, exc):
+		filters = {
+			"server": self.server,
+		}
+		failure = frappe.db.get_value(
+			"Agent Request Failure", filters, ["name", "failure_count"], as_dict=True
+		)
+		if failure:
+			frappe.db.set_value(
+				"Agent Request Failure", failure.name, "failure_count", failure.failure_count + 1
+			)
+		else:
+			fields = filters
+			fields.update(
+				{
+					"server_type": self.server_type,
+					"traceback": frappe.get_traceback(with_context=True),
+					"error": repr(exc),
+					"failure_count": 1,
+				}
+			)
+			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
+
+	def raw_request(self, method, path, data=None, raises=True, timeout=None):
+		url = f"https://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		timeout = timeout or (10, 30)
+		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
+		json_response = response.json()
+		if raises:
+			response.raise_for_status()
+		return json_response
+
+	def should_skip_requests(self):
+		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
@@ -1066,4 +1114,8 @@ class Agent:
 
 
 class AgentCallbackException(Exception):
+	pass
+
+
+class AgentRequestSkippedException(Exception):
 	pass
