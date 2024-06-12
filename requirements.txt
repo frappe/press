@@ -1,4 +1,4 @@
-ansible==2.10.7
+ansible==3.4.0
 beautifulsoup4
 Click
 coverage
