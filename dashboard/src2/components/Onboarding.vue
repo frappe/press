@@ -55,7 +55,7 @@
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
 							<span class="text-base font-medium">
-								Your trial site is ready: {{ trialSite.name }}
+								Your trial site is ready
 							</span>
 						</div>
 						<div
@@ -65,6 +65,18 @@
 						</div>
 					</div>
 					<div class="pl-7">
+						<div class="mt-2">
+							<a
+								class="flex items-center text-base font-medium underline"
+								:href="`https://${trialSite.name}`"
+								target="_blank"
+							>
+								https://{{ trialSite.name }}
+								<i-lucide-external-link
+									class="ml-1 h-3.5 w-3.5 text-gray-800"
+								/>
+							</a>
+						</div>
 						<p class="mt-2 text-p-base text-gray-800">
 							Your trial will expire on
 							<span class="font-medium">
