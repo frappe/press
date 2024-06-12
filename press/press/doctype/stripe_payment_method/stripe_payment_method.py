@@ -57,6 +57,7 @@ class StripePaymentMethod(Document):
 				(StripeWebhookLog.stripe_payment_method == StripePaymentMethod.name)
 				& (StripeWebhookLog.event_type == "payment_intent.payment_failed")
 			)
+			.distinct()
 		)
 
 		return query
