@@ -39,3 +39,4 @@ class DeployCandidateBuildStep(Document):
 def on_doctype_update():
 	frappe.db.add_index("Deploy Candidate Build Step", ["stage_slug", "step_slug"])
 	frappe.db.add_index("Deploy Candidate Build Step", ["creation"])
+	frappe.db.add_index("Deploy Candidate Build Step", ["cached"])
