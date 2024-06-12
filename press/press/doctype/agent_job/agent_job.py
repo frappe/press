@@ -17,7 +17,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-from press.agent import Agent, AgentCallbackException
+from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
@@ -174,6 +174,9 @@ class AgentJob(Document):
 
 			self.status = "Pending"
 			self.save()
+		except AgentRequestSkippedException:
+			self.retry_count = 0
+			self.set_status_and_next_retry_at()
 
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
