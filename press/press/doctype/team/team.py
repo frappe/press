@@ -899,7 +899,7 @@ class Team(Document):
 		else:
 			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
-	def get_billing_setup(self):
+	def is_payment_mode_set(self):
 		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
 			return True
 		elif (
@@ -910,47 +910,19 @@ class Team(Document):
 			return False
 
 	def get_onboarding(self):
-		billing_setup = self.get_billing_setup()
-		if not billing_setup and self.parent_team:
-			parent_team = frappe.get_cached_doc("Team", self.parent_team)
-			billing_setup = parent_team.get_billing_setup()
-
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
-
-		if self.via_erpnext:
-			erpnext_domain = frappe.db.get_single_value("Press Settings", "erpnext_domain")
-			erpnext_site = frappe.db.get_value(
-				"Site",
-				{"domain": erpnext_domain, "team": self.name, "status": ("!=", "Archived")},
-				["name", "plan"],
-				as_dict=1,
-			)
-
-			if erpnext_site is None:
-				# Case: They have archived their ERPNext trial site
-				# and created a frappe.cloud site now
-				erpnext_site_plan_set = True
-			else:
-				erpnext_site_plan_set = erpnext_site.plan != "ERPNext Trial"
-		else:
-			erpnext_site = None
-			erpnext_site_plan_set = True
-
 		saas_site_request = self.get_pending_saas_site_request()
+
 		complete = False
-		if frappe.local.system_user():
+		if self.is_payment_mode_set():
+			complete = True
+		elif frappe.db.get_value("User", self.user, "user_type") == "System User":
 			complete = True
 		elif saas_site_request:
 			complete = False
-		elif billing_setup:
-			complete = True
 
 		return frappe._dict(
 			{
-				"account_created": True,
-				"billing_setup": billing_setup,
-				"erpnext_site": erpnext_site,
-				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
 				"saas_site_request": saas_site_request,
 				"complete": complete,
