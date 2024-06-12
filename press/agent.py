@@ -702,6 +702,7 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.raise_if_past_requests_have_failed()
 		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
@@ -765,6 +766,15 @@ class Agent:
 				files=files,
 				headers=headers,
 				doc=agent_job,
+			)
+
+	def raise_if_past_requests_have_failed(self):
+		failures = frappe.db.get_value(
+			"Agent Request Failure", {"server": self.server}, "failure_count"
+		)
+		if failures:
+			raise AgentRequestSkippedException(
+				f"Previous {failures} requests have failed. Try again later."
 			)
 
 	def log_request_failure(self, exc):
@@ -1090,4 +1100,8 @@ class Agent:
 
 
 class AgentCallbackException(Exception):
+	pass
+
+
+class AgentRequestSkippedException(Exception):
 	pass

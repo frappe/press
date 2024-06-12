@@ -7,7 +7,7 @@ import responses
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.agent import Agent
+from press.agent import Agent, AgentRequestSkippedException
 from press.press.doctype.server.test_server import create_test_server
 
 
@@ -52,3 +52,17 @@ class TestAgent(FrappeTestCase):
 		self.assertEqual(failure.server, server.name)
 		self.assertEqual(failure.server_type, server.doctype)
 		self.assertEqual(failure.failure_count, 1)
+
+	@responses.activate
+	def test_request_skips_after_past_failure(self):
+		server = create_test_server()
+
+		responses.add(
+			responses.GET,
+			f"https://{server.name}:443/agent/ping",
+			body=requests.ConnectTimeout(),
+		)
+
+		agent = Agent(server.name, server.doctype)
+		self.assertRaises(requests.ConnectTimeout, agent.request, "GET", "ping")
+		self.assertRaises(AgentRequestSkippedException, agent.request, "GET", "ping")
