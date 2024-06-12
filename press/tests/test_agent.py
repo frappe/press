@@ -35,6 +35,9 @@ class TestAgent(FrappeTestCase):
 		frappe.db.rollback()
 		frappe.db.truncate("Agent Request Failure")
 
+	def setUp(self):
+		frappe.db.truncate("Agent Request Failure")
+
 	@responses.activate
 	def test_ping_request(self):
 		server = create_test_server()
