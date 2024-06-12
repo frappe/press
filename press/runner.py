@@ -163,7 +163,7 @@ class Ansible:
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
-			verbosity=3,
+			verbosity=1,
 		)
 
 		self.loader = DataLoader()
@@ -175,7 +175,7 @@ class Ansible:
 
 		self.callback = AnsibleCallback()
 		self.display = Display()
-		self.display.verbosity = 3
+		self.display.verbosity = 1
 		self.create_ansible_play()
 
 	def patch(self):
