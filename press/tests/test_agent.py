@@ -9,6 +9,9 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent, AgentRequestSkippedException
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.agent_request_failure.agent_request_failure import (
+	remove_old_failures,
+)
 
 
 def create_test_agent_request_failure(
@@ -91,3 +94,37 @@ class TestAgent(FrappeTestCase):
 
 		create_test_agent_request_failure(server)
 		self.assertEqual(agent.should_skip_requests(), True)
+
+	@responses.activate
+	def test_request_succeeds_after_removing_failure_record(self):
+		server = create_test_server()
+
+		create_test_agent_request_failure(server)
+		agent = Agent(server.name, server.doctype)
+		self.assertRaises(AgentRequestSkippedException, agent.request, "GET", "ping")
+
+		responses.add(
+			responses.GET,
+			f"https://{server.name}:443/agent/ping",
+			status=200,
+			json={"message": "pong"},
+		)
+		frappe.db.delete("Agent Request Failure", {"server": server.name})
+		self.assertEqual(agent.request("GET", "ping"), {"message": "pong"})
+
+	@responses.activate
+	def test_remove_function_removes_failure_if_ping_succeeds(self):
+		server = create_test_server()
+
+		create_test_agent_request_failure(server)
+		responses.add(
+			responses.GET,
+			f"https://{server.name}:443/agent/ping",
+			status=200,
+			json={"message": "pong"},
+		)
+
+		remove_old_failures()
+
+		responses.assert_call_count(f"https://{server.name}:443/agent/ping", 1)
+		self.assertEqual(frappe.db.count("Agent Request Failure", {"server": server.name}), 0)

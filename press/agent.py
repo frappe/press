@@ -800,6 +800,17 @@ class Agent:
 			)
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
+	def raw_request(self, method, path, data=None, raises=True, timeout=None):
+		url = f"https://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		timeout = timeout or (10, 30)
+		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
+		json_response = response.json()
+		if raises:
+			response.raise_for_status()
+		return json_response
+
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
