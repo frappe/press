@@ -27,6 +27,11 @@ class AgentRequestFailure(Document):
 
 	pass
 
+	def before_insert(self):
+		# TODO: Remove once tests pass
+		if frappe.flags.in_test:
+			print(frappe.get_traceback(with_context=True))
+
 
 def remove_old_failures():
 	failures = frappe.get_all(
