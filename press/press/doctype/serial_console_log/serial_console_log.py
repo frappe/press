@@ -41,8 +41,8 @@ class SerialConsoleLog(Document):
 			"nice-all-RT-tasks",
 			"replay-kernel-logs",
 		]
-		command: DF.Data
-		message: DF.Data
+		command: DF.Data | None
+		message: DF.Data | None
 		output: DF.Code | None
 		server: DF.DynamicLink
 		server_type: DF.Link

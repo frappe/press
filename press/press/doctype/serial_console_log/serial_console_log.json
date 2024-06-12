@@ -80,20 +80,18 @@
    "fieldname": "command",
    "fieldtype": "Data",
    "label": "Command",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "message",
    "fieldtype": "Data",
    "label": "Message",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-12 19:58:19.830764",
+ "modified": "2024-06-12 20:07:15.077206",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Serial Console Log",
