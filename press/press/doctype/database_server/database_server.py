@@ -817,6 +817,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def get_stalks(self):
+		if self.agent.should_skip_requests():
+			return []
 		result = self.agent.get("database/stalks", raises=False)
 		if (not result) or ("error" in result):
 			return []

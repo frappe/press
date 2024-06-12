@@ -800,6 +800,9 @@ class Agent:
 			)
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
+	def should_skip_requests(self):
+		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
+
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
 			return

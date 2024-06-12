@@ -11,6 +11,22 @@ from press.agent import Agent, AgentRequestSkippedException
 from press.press.doctype.server.test_server import create_test_server
 
 
+def create_test_agent_request_failure(
+	server, traceback="Traceback", error="Error", failure_count=1
+):
+	fields = {
+		"server_type": server.doctype,
+		"server": server.name,
+		"traceback": traceback,
+		"error": error,
+		"failure_count": failure_count,
+	}
+
+	return frappe.new_doc("Agent Request Failure", **fields).insert(
+		ignore_permissions=True
+	)
+
+
 class TestAgent(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -66,3 +82,12 @@ class TestAgent(FrappeTestCase):
 		agent = Agent(server.name, server.doctype)
 		self.assertRaises(requests.ConnectTimeout, agent.request, "GET", "ping")
 		self.assertRaises(AgentRequestSkippedException, agent.request, "GET", "ping")
+
+	def test_failure_record_asks_to_skip_requests(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+		self.assertEqual(agent.should_skip_requests(), False)
+
+		create_test_agent_request_failure(server)
+		self.assertEqual(agent.should_skip_requests(), True)
