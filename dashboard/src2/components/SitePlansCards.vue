@@ -24,11 +24,14 @@ export default {
 		},
 		plans() {
 			let plans = getPlans();
-			if (this.isPrivateBenchSite)
+			if (this.isPrivateBenchSite) {
 				plans = plans.filter(plan => plan.private_benches);
-			if (this.isDedicatedServerSite)
+			}
+			if (this.isDedicatedServerSite) {
 				plans = plans.filter(plan => plan.dedicated_server_plan);
-			else plans = plans.filter(plan => !plan.dedicated_server_plan);
+			} else {
+				plans = plans.filter(plan => !plan.dedicated_server_plan);
+			}
 
 			return plans.map(plan => {
 				return {
