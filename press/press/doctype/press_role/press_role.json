@@ -11,6 +11,7 @@
   "section_break_yvqq",
   "allow_billing",
   "allow_apps",
+  "allow_partner",
   "column_break_todb",
   "allow_site_creation",
   "allow_bench_creation",
@@ -85,11 +86,17 @@
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
    "label": "Allow Server Creation"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_partner",
+   "fieldtype": "Check",
+   "label": "Allow Partner"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-06 11:42:59.029333",
+ "modified": "2024-06-13 14:15:20.587705",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
