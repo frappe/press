@@ -152,6 +152,7 @@ class Invoice(Document):
 				(Invoice.name == StripeWebhookLog.invoice)
 				& (StripeWebhookLog.event_type == "payment_intent.payment_failed")
 			)
+			.groupby(Invoice.name)
 		).run(as_dict=True)
 
 		for invoice in invoices:
