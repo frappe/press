@@ -211,7 +211,7 @@ class Invoice(Document):
 		if self.partner_email and team.erpnext_partner:
 			self.apply_partner_discount()
 
-		self.amount_due = self.total
+		self.amount_due = self.total - self.applied_credits
 
 		self.apply_credit_balance()
 		self.apply_taxes_if_applicable()
@@ -288,6 +288,9 @@ class Invoice(Document):
 		self.total = total
 
 	def apply_taxes_if_applicable(self):
+		if self.payment_mode == "Prepaid Credits":
+			return
+
 		self.amount_due_with_tax = self.amount_due
 		if self.currency == "INR" and self.type == "Subscription":
 			gst_rate = frappe.db.get_single_value("Press Settings", "gst_percentage")
