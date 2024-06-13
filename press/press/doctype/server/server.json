@@ -20,6 +20,7 @@
   "is_self_hosted",
   "is_server_renamed",
   "ignore_incidents",
+  "public",
   "billing_section",
   "team",
   "column_break_11",
@@ -490,10 +491,16 @@
    "fieldtype": "Link",
    "label": "Managed Database Service",
    "options": "Managed Database Service"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
   }
  ],
  "links": [],
- "modified": "2024-05-29 16:58:30.490143",
+ "modified": "2024-06-12 15:46:26.286323",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

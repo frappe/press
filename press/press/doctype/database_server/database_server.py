@@ -57,6 +57,7 @@ class DatabaseServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		self_hosted_mariadb_server: DF.Data | None

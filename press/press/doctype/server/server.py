@@ -899,6 +899,7 @@ class Server(BaseServer):
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		proxy_server: DF.Link | None
+		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		self_hosted_mariadb_root_password: DF.Password | None
@@ -1486,5 +1487,5 @@ def get_hostname_abbreviation(hostname):
 def is_dedicated_server(server_name):
 	if not isinstance(server_name, str):
 		frappe.throw("Invalid argument")
-	team = frappe.db.get_value("Server", server_name, "team") or ""
-	return "@erpnext.com" not in team
+	is_public = frappe.db.get_value("Server", server_name, "public")
+	return not is_public
