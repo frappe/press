@@ -403,7 +403,7 @@ def get_saas_product_info(product=None):
 	site_request = frappe.db.get_value(
 		"Product Trial Request",
 		filters={
-			"saas_product": product,
+			"product_trial": product,
 			"team": team,
 			"status": ("in", ["Pending", "Wait for Site"]),
 		},
@@ -411,13 +411,13 @@ def get_saas_product_info(product=None):
 		as_dict=1,
 	)
 	if site_request:
-		saas_product = frappe.db.get_value(
+		product_trial = frappe.db.get_value(
 			"Product Trial", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
 		)
 		return {
-			"title": saas_product.title,
-			"logo": saas_product.logo,
-			"domain": saas_product.domain,
+			"title": product_trial.title,
+			"logo": product_trial.logo,
+			"domain": product_trial.domain,
 			"site_request": site_request,
 		}
 

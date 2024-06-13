@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from press.saas.doctype.product_trial.product_trial import SaaSProduct
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 from press.press.doctype.site.site import Site
 from press.api.client import dashboard_whitelist
 
@@ -19,17 +19,17 @@ class ProductTrialRequest(Document):
 
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
-		saas_product: DF.Link | None
+		product_trial: DF.Link | None
 		site: DF.Link | None
 		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Error", "Expired"]
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["site", "status", "saas_product"]
+	dashboard_fields = ["site", "status", "product_trial"]
 
 	@dashboard_whitelist()
 	def create_site(self, plan, cluster=None):
-		product: SaaSProduct = frappe.get_doc("Product Trial", self.saas_product)
+		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 		site: Site = product.setup_trial_site(self.team, cluster)
 		user = self.get_user_details()
 		agent_job = site.create_user(user.email, user.first_name, user.last_name)
@@ -37,7 +37,7 @@ class ProductTrialRequest(Document):
 		site.create_subscription(plan)
 		site.reload()
 		trial_days = (
-			frappe.db.get_value("Product Trial", self.saas_product, "trial_days") or 14
+			frappe.db.get_value("Product Trial", self.product_trial, "trial_days") or 14
 		)
 		site.trial_end_date = frappe.utils.add_days(None, trial_days)
 		# update_config implicitly calles site.save

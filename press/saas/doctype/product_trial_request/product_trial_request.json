@@ -7,7 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "saas_product",
+  "product_trial",
   "team",
   "account_request",
   "agent_job",
@@ -16,13 +16,6 @@
   "site"
  ],
  "fields": [
-  {
-   "fieldname": "saas_product",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "SaaS Product",
-   "options": "Product Trial"
-  },
   {
    "fieldname": "team",
    "fieldtype": "Link",
@@ -60,11 +53,18 @@
    "fieldtype": "Link",
    "label": "Agent Job",
    "options": "Agent Job"
+  },
+  {
+   "fieldname": "product_trial",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product Trial",
+   "options": "Product Trial"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 16:36:51.917566",
+ "modified": "2024-06-13 17:29:05.620825",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",
@@ -109,6 +109,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "saas_product",
+ "title_field": "product_trial",
  "track_changes": 1
 }

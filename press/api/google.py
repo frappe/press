@@ -35,7 +35,7 @@ def callback(code=None, state=None):
 		return invalid_login()
 
 	product = payload.get("product")
-	saas_product = (
+	product_trial = (
 		frappe.db.get_value("Product Trial", product, ["name"], as_dict=1)
 		if product
 		else None
@@ -86,8 +86,8 @@ def callback(code=None, state=None):
 		# login to existing account
 		frappe.local.login_manager.login_as(email)
 		frappe.local.response.type = "redirect"
-		if saas_product:
-			frappe.local.response.location = f"/dashboard/app-trial/{saas_product.name}"
+		if product_trial:
+			frappe.local.response.location = f"/dashboard/app-trial/{product_trial.name}"
 		else:
 			frappe.local.response.location = "/dashboard"
 	elif team_name and not team_enabled:
@@ -102,8 +102,8 @@ def callback(code=None, state=None):
 			phone_number=phone_number,
 			new_signup_flow=1,
 		)
-		if saas_product:
-			account_request.saas_product = saas_product.name
+		if product_trial:
+			account_request.product_trial = product_trial.name
 
 		account_request.insert(ignore_permissions=True)
 		frappe.db.commit()

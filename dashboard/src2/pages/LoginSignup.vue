@@ -274,7 +274,7 @@ export default {
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.signupSettings.data?.saas_product;
+			return this.$resources.signupSettings.data?.product_trial;
 		},
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;

@@ -39,13 +39,13 @@ class AccountRequest(Document):
 		oauth_signup: DF.Check
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		product_trial: DF.Link | None
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
-		saas_product: DF.Link | None
 		saas_signup_values: DF.SmallText | None
 		send_email: DF.Check
 		state: DF.Data | None
@@ -111,7 +111,7 @@ class AccountRequest(Document):
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
-		if self.saas_product or custom_template:
+		if self.product_trial or custom_template:
 			template = "saas_verify_account"
 		else:
 			template = "verify_account"

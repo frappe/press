@@ -153,7 +153,7 @@ export default {
 						this.invitedByParentTeam = res.invited_by_parent_team;
 						this.oauthSignup = res.oauth_signup;
 						this.countries = res.countries;
-						this.saasProduct = res.saas_product;
+						this.saasProduct = res.product_trial;
 					}
 				}
 			};

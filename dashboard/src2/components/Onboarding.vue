@@ -44,7 +44,7 @@
 						</p>
 						<Button
 							class="mt-2"
-							:route="`/app-trial/${pendingSiteRequest.saas_product}`"
+							:route="`/app-trial/${pendingSiteRequest.product_trial}`"
 						>
 							Continue
 						</Button>
