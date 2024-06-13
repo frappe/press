@@ -7,6 +7,7 @@ from typing import Dict
 
 import dns.exception
 import frappe
+import requests
 import wrapt
 from boto3 import client
 from botocore.exceptions import ClientError
@@ -1658,7 +1659,10 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 
 @frappe.whitelist()
 def get_backup_links(url, email, password):
-	files = get_frappe_backups(url, email, password)
+	try:
+		files = get_frappe_backups(url, email, password)
+	except requests.RequestException as e:
+		frappe.throw(f"Could not fetch backups from {url}. Error: {e}")
 	remote_files = []
 	for file_type, file_url in files.items():
 		file_name = file_url.split("backups/")[1].split("?sid=")[0]

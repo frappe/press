@@ -328,7 +328,7 @@ class RemoteFrappeSite:
 
 	def _validate_frappe_site(self):
 		"""Validates if Frappe Site and sets RemoteBackupRetrieval.site"""
-		res = requests.get(f"{self.user_site}/api/method/frappe.ping")
+		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
 			frappe.throw("Invalid Frappe Site")
@@ -342,6 +342,7 @@ class RemoteFrappeSite:
 		response = requests.post(
 			f"{self.site}/api/method/login",
 			data={"usr": self.user_login, "pwd": self.password_login},
+			timeout=(5, 10),
 		)
 		if not response.ok:
 			if response.status_code == 401:
@@ -380,6 +381,7 @@ class RemoteFrappeSite:
 		res = requests.get(
 			f"{self.site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
 			headers=headers,
+			timeout=(5, 10),
 		)
 		if not res.ok:
 			self._handle_backups_retrieval_failure(res)
