@@ -329,6 +329,10 @@ class Invoice(Document):
 
 	def calculate_amount_due(self):
 		self.amount_due = self.total - self.applied_credits
+		if self.amount_due < 0 and self.amount_due > -0.1:
+			self.write_off_amount = self.amount_due
+			self.amount_due = 0
+
 		if self.amount_due > 0 and self.amount_due < 0.1:
 			self.write_off_amount = self.amount_due
 			self.amount_due = 0
