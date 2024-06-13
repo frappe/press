@@ -19,6 +19,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "public",
   "billing_section",
   "team",
   "column_break_11",
@@ -480,11 +481,17 @@
    "fieldname": "stalk_sleep",
    "fieldtype": "Int",
    "label": "Stalk Sleep"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-08 13:37:28.064067",
+ "modified": "2024-06-12 15:47:41.811606",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
