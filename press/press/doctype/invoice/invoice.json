@@ -1,513 +1,513 @@
 {
-	"actions": [],
-	"autoname": "format:INV-{YYYY}-{#####}",
-	"creation": "2020-07-17 18:05:24.317258",
-	"doctype": "DocType",
-	"editable_grid": 1,
-	"engine": "InnoDB",
-	"field_order": [
-		"team",
-		"customer_name",
-		"customer_email",
-		"currency",
-		"partner_email",
-		"frappe_partnership_date",
-		"customer_partnership_date",
-		"column_break_4",
-		"status",
-		"marketplace",
-		"type",
-		"period_start",
-		"period_end",
-		"due_date",
-		"amended_from",
-		"section_break_8",
-		"items",
-		"discounts_section",
-		"discount_note",
-		"column_break_mqqa",
-		"total_before_discount",
-		"total_discount_amount",
-		"section_break_10",
-		"payment_date",
-		"payment_attempt_count",
-		"payment_attempt_date",
-		"payment_mode",
-		"write_off_amount",
-		"column_break_15",
-		"total",
-		"total_before_tax",
-		"applied_credits",
-		"free_credits",
-		"amount_due",
-		"gst",
-		"amount_due_with_tax",
-		"amount_paid",
-		"section_break_15",
-		"credit_allocations",
-		"stripe_billing_section",
-		"stripe_invoice_id",
-		"stripe_payment_intent_id",
-		"stripe_invoice_url",
-		"frappe_invoice",
-		"invoice_pdf",
-		"frappe_partner_order",
-		"column_break_32",
-		"transaction_amount",
-		"transaction_net",
-		"transaction_fee",
-		"exchange_rate",
-		"transaction_fee_details",
-		"razorpay_billing_section",
-		"razorpay_order_id",
-		"razorpay_payment_record",
-		"column_break_44",
-		"razorpay_payment_id",
-		"razorpay_payment_method",
-		"section_break_47",
-		"discounts"
-	],
-	"fields": [
-		{
-			"fieldname": "team",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Team",
-			"options": "Team",
-			"reqd": 1,
-			"search_index": 1
-		},
-		{
-			"fieldname": "customer_name",
-			"fieldtype": "Data",
-			"label": "Customer Name"
-		},
-		{
-			"fetch_from": "team.user",
-			"fieldname": "customer_email",
-			"fieldtype": "Data",
-			"label": "Customer Email",
-			"options": "Email"
-		},
-		{
-			"fieldname": "due_date",
-			"fieldtype": "Date",
-			"label": "Due Date"
-		},
-		{
-			"fieldname": "items",
-			"fieldtype": "Table",
-			"label": "Items",
-			"options": "Invoice Item"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "status",
-			"fieldtype": "Select",
-			"label": "Status",
-			"no_copy": 1,
-			"options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded\nUncollectible\nCollected\nEmpty"
-		},
-		{
-			"fieldname": "total",
-			"fieldtype": "Currency",
-			"in_list_view": 1,
-			"label": "Total",
-			"no_copy": 1,
-			"options": "currency"
-		},
-		{
-			"fieldname": "amount_due",
-			"fieldtype": "Currency",
-			"label": "Amount Due",
-			"no_copy": 1,
-			"options": "currency"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "amount_paid",
-			"fieldtype": "Currency",
-			"label": "Amount Paid",
-			"no_copy": 1,
-			"options": "currency"
-		},
-		{
-			"fieldname": "amended_from",
-			"fieldtype": "Link",
-			"label": "Amended From",
-			"no_copy": 1,
-			"options": "Invoice",
-			"print_hide": 1,
-			"read_only": 1
-		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "section_break_10",
-			"fieldtype": "Section Break",
-			"hide_border": 1
-		},
-		{
-			"fieldname": "section_break_15",
-			"fieldtype": "Section Break",
-			"hide_border": 1
-		},
-		{
-			"fieldname": "stripe_billing_section",
-			"fieldtype": "Section Break",
-			"label": "Stripe Billing"
-		},
-		{
-			"fieldname": "stripe_invoice_id",
-			"fieldtype": "Data",
-			"label": "Stripe Invoice ID",
-			"no_copy": 1
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "stripe_invoice_url",
-			"fieldtype": "Text",
-			"label": "Stripe Invoice URL",
-			"no_copy": 1,
-			"read_only": 1
-		},
-		{
-			"fetch_from": "team.currency",
-			"fieldname": "currency",
-			"fieldtype": "Link",
-			"in_standard_filter": 1,
-			"label": "Currency",
-			"options": "Currency"
-		},
-		{
-			"fieldname": "column_break_15",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "period_start",
-			"fieldtype": "Date",
-			"label": "Period Start"
-		},
-		{
-			"fieldname": "period_end",
-			"fieldtype": "Date",
-			"label": "Period End"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "payment_date",
-			"fieldtype": "Date",
-			"label": "Payment Date",
-			"no_copy": 1
-		},
-		{
-			"allow_on_submit": 1,
-			"default": "0",
-			"fieldname": "payment_attempt_count",
-			"fieldtype": "Int",
-			"label": "Payment Attempt Count",
-			"no_copy": 1
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "payment_attempt_date",
-			"fieldtype": "Date",
-			"label": "Payment Attempt Date",
-			"no_copy": 1
-		},
-		{
-			"default": "0",
-			"fieldname": "applied_credits",
-			"fieldtype": "Currency",
-			"label": "Applied Credits",
-			"no_copy": 1,
-			"options": "currency"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "frappe_invoice",
-			"fieldtype": "Data",
-			"label": "Frappe Invoice",
-			"no_copy": 1
-		},
-		{
-			"fieldname": "credit_allocations",
-			"fieldtype": "Table",
-			"label": "Credit Allocations",
-			"no_copy": 1,
-			"options": "Invoice Credit Allocation"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "invoice_pdf",
-			"fieldtype": "Attach",
-			"label": "Invoice PDF",
-			"no_copy": 1
-		},
-		{
-			"fieldname": "column_break_32",
-			"fieldtype": "Column Break"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "transaction_amount",
-			"fieldtype": "Currency",
-			"label": "Transaction Amount",
-			"no_copy": 1,
-			"options": "INR"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "transaction_net",
-			"fieldtype": "Currency",
-			"label": "Transaction Net",
-			"no_copy": 1,
-			"options": "INR"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "transaction_fee",
-			"fieldtype": "Currency",
-			"label": "Transaction Fee",
-			"no_copy": 1,
-			"options": "INR"
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "exchange_rate",
-			"fieldtype": "Float",
-			"label": "Exchange Rate",
-			"no_copy": 1
-		},
-		{
-			"allow_on_submit": 1,
-			"fieldname": "transaction_fee_details",
-			"fieldtype": "Table",
-			"label": "Transaction Fee Details",
-			"no_copy": 1,
-			"options": "Invoice Transaction Fee"
-		},
-		{
-			"default": "Subscription",
-			"fieldname": "type",
-			"fieldtype": "Select",
-			"label": "Type",
-			"options": "Subscription\nPrepaid Credits\nService\nSummary"
-		},
-		{
-			"depends_on": "eval:doc.type == 'Prepaid Credits'",
-			"fieldname": "stripe_payment_intent_id",
-			"fieldtype": "Data",
-			"label": "Stripe Payment Intent ID",
-			"no_copy": 1
-		},
-		{
-			"fieldname": "free_credits",
-			"fieldtype": "Currency",
-			"label": "Free Credits",
-			"options": "currency"
-		},
-		{
-			"fieldname": "payment_mode",
-			"fieldtype": "Select",
-			"label": "Payment Mode",
-			"options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner"
-		},
-		{
-			"fieldname": "frappe_partner_order",
-			"fieldtype": "Data",
-			"label": "Frappe Partner Order"
-		},
-		{
-			"fieldname": "razorpay_billing_section",
-			"fieldtype": "Section Break",
-			"label": "Razorpay Billing"
-		},
-		{
-			"fieldname": "razorpay_order_id",
-			"fieldtype": "Data",
-			"label": "Razorpay Order ID"
-		},
-		{
-			"fieldname": "column_break_44",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "razorpay_payment_record",
-			"fieldtype": "Link",
-			"label": "Razorpay Payment Record",
-			"options": "Razorpay Payment Record"
-		},
-		{
-			"fieldname": "razorpay_payment_method",
-			"fieldtype": "Data",
-			"label": "Razorpay Payment Method",
-			"read_only": 1
-		},
-		{
-			"collapsible": 1,
-			"fieldname": "section_break_47",
-			"fieldtype": "Section Break",
-			"label": "Discounts"
-		},
-		{
-			"fieldname": "discounts",
-			"fieldtype": "Table",
-			"label": "Discounts",
-			"options": "Invoice Discount"
-		},
-		{
-			"fieldname": "total_before_discount",
-			"fieldtype": "Currency",
-			"label": "Total Before Discount",
-			"options": "currency"
-		},
-		{
-			"fieldname": "total_discount_amount",
-			"fieldtype": "Currency",
-			"label": "Total Discount Amount",
-			"options": "currency",
-			"read_only": 1
-		},
-		{
-			"fetch_from": "team.partner_email",
-			"fieldname": "partner_email",
-			"fieldtype": "Data",
-			"label": "Partner Email",
-			"read_only": 1
-		},
-		{
-			"fetch_from": "razorpay_payment_record.payment_id",
-			"fieldname": "razorpay_payment_id",
-			"fieldtype": "Data",
-			"label": "Razorpay Payment ID"
-		},
-		{
-			"default": "0",
-			"fieldname": "marketplace",
-			"fieldtype": "Check",
-			"label": "Marketplace"
-		},
-		{
-			"fetch_from": "team.partnership_date",
-			"fieldname": "customer_partnership_date",
-			"fieldtype": "Date",
-			"label": "Customer Partnership Date",
-			"read_only": 1
-		},
-		{
-			"fetch_from": "team.frappe_partnership_date",
-			"fieldname": "frappe_partnership_date",
-			"fieldtype": "Date",
-			"label": "Frappe Partnership Date",
-			"read_only": 1
-		},
-		{
-			"fieldname": "gst",
-			"fieldtype": "Currency",
-			"label": "GST",
-			"options": "currency"
-		},
-		{
-			"fieldname": "total_before_tax",
-			"fieldtype": "Currency",
-			"hidden": 1,
-			"label": "Total Before Tax",
-			"options": "currency"
-		},
-		{
-			"fieldname": "write_off_amount",
-			"fieldtype": "Float",
-			"label": "Write-Off Amount",
-			"precision": "9"
-		},
-		{
-			"fieldname": "amount_due_with_tax",
-			"fieldtype": "Currency",
-			"label": "Amount Due (Including Tax)",
-			"no_copy": 1,
-			"options": "currency"
-		},
-		{
-			"fieldname": "discounts_section",
-			"fieldtype": "Section Break",
-			"label": "Discounts"
-		},
-		{
-			"fieldname": "discount_note",
-			"fieldtype": "Data",
-			"label": "Discount Note"
-		},
-		{
-			"fieldname": "column_break_mqqa",
-			"fieldtype": "Column Break"
-		}
-	],
-	"is_submittable": 1,
-	"links": [
-		{
-			"group": "Documents",
-			"link_doctype": "Usage Record",
-			"link_fieldname": "invoice"
-		},
-		{
-			"group": "Documents",
-			"link_doctype": "Balance Transaction",
-			"link_fieldname": "invoice"
-		},
-		{
-			"group": "Documents",
-			"link_doctype": "Stripe Payment Event",
-			"link_fieldname": "invoice"
-		},
-		{
-			"group": "Webhook Logs",
-			"link_doctype": "Stripe Webhook Log",
-			"link_fieldname": "invoice"
-		}
-	],
-	"modified": "2024-06-13 11:10:41.150174",
-	"modified_by": "Administrator",
-	"module": "Press",
-	"name": "Invoice",
-	"naming_rule": "Expression",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"amend": 1,
-			"cancel": 1,
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "System Manager",
-			"share": 1,
-			"submit": 1,
-			"write": 1
-		},
-		{
-			"amend": 1,
-			"cancel": 1,
-			"create": 1,
-			"print": 1,
-			"read": 1,
-			"role": "Press Admin",
-			"submit": 1,
-			"write": 1
-		}
-	],
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": [],
-	"track_changes": 1
+ "actions": [],
+ "autoname": "format:INV-{YYYY}-{#####}",
+ "creation": "2020-07-17 18:05:24.317258",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "customer_name",
+  "customer_email",
+  "currency",
+  "partner_email",
+  "frappe_partnership_date",
+  "customer_partnership_date",
+  "column_break_4",
+  "status",
+  "marketplace",
+  "type",
+  "period_start",
+  "period_end",
+  "due_date",
+  "amended_from",
+  "section_break_8",
+  "items",
+  "discounts_section",
+  "discount_note",
+  "column_break_mqqa",
+  "total_before_discount",
+  "total_discount_amount",
+  "section_break_10",
+  "payment_date",
+  "payment_attempt_count",
+  "payment_attempt_date",
+  "payment_mode",
+  "write_off_amount",
+  "column_break_15",
+  "total",
+  "total_before_tax",
+  "applied_credits",
+  "free_credits",
+  "amount_due",
+  "gst",
+  "amount_due_with_tax",
+  "amount_paid",
+  "section_break_15",
+  "credit_allocations",
+  "stripe_billing_section",
+  "stripe_invoice_id",
+  "stripe_payment_intent_id",
+  "stripe_invoice_url",
+  "frappe_invoice",
+  "invoice_pdf",
+  "frappe_partner_order",
+  "column_break_32",
+  "transaction_amount",
+  "transaction_net",
+  "transaction_fee",
+  "exchange_rate",
+  "transaction_fee_details",
+  "razorpay_billing_section",
+  "razorpay_order_id",
+  "razorpay_payment_record",
+  "column_break_44",
+  "razorpay_payment_id",
+  "razorpay_payment_method",
+  "section_break_47",
+  "discounts"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name"
+  },
+  {
+   "fetch_from": "team.user",
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Customer Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Invoice Item"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded\nUncollectible\nCollected\nEmpty"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "amount_due",
+   "fieldtype": "Currency",
+   "label": "Amount Due",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "amount_paid",
+   "fieldtype": "Currency",
+   "label": "Amount Paid",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Invoice",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "stripe_billing_section",
+   "fieldtype": "Section Break",
+   "label": "Stripe Billing"
+  },
+  {
+   "fieldname": "stripe_invoice_id",
+   "fieldtype": "Data",
+   "label": "Stripe Invoice ID",
+   "no_copy": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "stripe_invoice_url",
+   "fieldtype": "Text",
+   "label": "Stripe Invoice URL",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "team.currency",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start"
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "payment_date",
+   "fieldtype": "Date",
+   "label": "Payment Date",
+   "no_copy": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "payment_attempt_count",
+   "fieldtype": "Int",
+   "label": "Payment Attempt Count",
+   "no_copy": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "payment_attempt_date",
+   "fieldtype": "Date",
+   "label": "Payment Attempt Date",
+   "no_copy": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "applied_credits",
+   "fieldtype": "Currency",
+   "label": "Applied Credits",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "frappe_invoice",
+   "fieldtype": "Data",
+   "label": "Frappe Invoice",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "credit_allocations",
+   "fieldtype": "Table",
+   "label": "Credit Allocations",
+   "no_copy": 1,
+   "options": "Invoice Credit Allocation"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "invoice_pdf",
+   "fieldtype": "Attach",
+   "label": "Invoice PDF",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_amount",
+   "fieldtype": "Currency",
+   "label": "Transaction Amount",
+   "no_copy": 1,
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_net",
+   "fieldtype": "Currency",
+   "label": "Transaction Net",
+   "no_copy": 1,
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee",
+   "fieldtype": "Currency",
+   "label": "Transaction Fee",
+   "no_copy": 1,
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate",
+   "no_copy": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee_details",
+   "fieldtype": "Table",
+   "label": "Transaction Fee Details",
+   "no_copy": 1,
+   "options": "Invoice Transaction Fee"
+  },
+  {
+   "default": "Subscription",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Subscription\nPrepaid Credits\nService\nSummary"
+  },
+  {
+   "depends_on": "eval:doc.type == 'Prepaid Credits'",
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "free_credits",
+   "fieldtype": "Currency",
+   "label": "Free Credits",
+   "options": "currency"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner"
+  },
+  {
+   "fieldname": "frappe_partner_order",
+   "fieldtype": "Data",
+   "label": "Frappe Partner Order"
+  },
+  {
+   "fieldname": "razorpay_billing_section",
+   "fieldtype": "Section Break",
+   "label": "Razorpay Billing"
+  },
+  {
+   "fieldname": "razorpay_order_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Order ID"
+  },
+  {
+   "fieldname": "column_break_44",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "razorpay_payment_record",
+   "fieldtype": "Link",
+   "label": "Razorpay Payment Record",
+   "options": "Razorpay Payment Record"
+  },
+  {
+   "fieldname": "razorpay_payment_method",
+   "fieldtype": "Data",
+   "label": "Razorpay Payment Method",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_47",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discounts",
+   "fieldtype": "Table",
+   "label": "Discounts",
+   "options": "Invoice Discount"
+  },
+  {
+   "fieldname": "total_before_discount",
+   "fieldtype": "Currency",
+   "label": "Total Before Discount",
+   "options": "currency"
+  },
+  {
+   "fieldname": "total_discount_amount",
+   "fieldtype": "Currency",
+   "label": "Total Discount Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "team.partner_email",
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "razorpay_payment_record.payment_id",
+   "fieldname": "razorpay_payment_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Payment ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "marketplace",
+   "fieldtype": "Check",
+   "label": "Marketplace"
+  },
+  {
+   "fetch_from": "team.partnership_date",
+   "fieldname": "customer_partnership_date",
+   "fieldtype": "Date",
+   "label": "Customer Partnership Date",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "team.frappe_partnership_date",
+   "fieldname": "frappe_partnership_date",
+   "fieldtype": "Date",
+   "label": "Frappe Partnership Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gst",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "options": "currency"
+  },
+  {
+   "fieldname": "total_before_tax",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Total Before Tax",
+   "options": "currency"
+  },
+  {
+   "fieldname": "write_off_amount",
+   "fieldtype": "Float",
+   "label": "Write-Off Amount",
+   "precision": "9"
+  },
+  {
+   "fieldname": "amount_due_with_tax",
+   "fieldtype": "Currency",
+   "label": "Amount Due (Including Tax)",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "discounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discount_note",
+   "fieldtype": "Data",
+   "label": "Discount Note"
+  },
+  {
+   "fieldname": "column_break_mqqa",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Documents",
+   "link_doctype": "Usage Record",
+   "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Balance Transaction",
+   "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Stripe Payment Event",
+   "link_fieldname": "invoice"
+  },
+  {
+   "group": "Webhook Logs",
+   "link_doctype": "Stripe Webhook Log",
+   "link_fieldname": "invoice"
+  }
+ ],
+ "modified": "2024-06-13 12:28:05.568819",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Invoice",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

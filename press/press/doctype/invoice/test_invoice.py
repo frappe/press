@@ -309,8 +309,7 @@ class TestInvoice(unittest.TestCase):
 		# balance should 755.64 after buying prepaid credits with gst applied
 		self.assertEqual(self.team.get_balance(), 755.64)
 
-	def test_multiple_discounts_flat_on_total(self):
-
+	def test_discount_amount(self):
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -318,35 +317,16 @@ class TestInvoice(unittest.TestCase):
 			period_end=add_days(today(), 10),
 		).insert()
 
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount": 10})
 		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
 		invoice.save()
-
-		# Apply 10% discount
-		invoice.append(
-			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
-		)
-
-		# Apply another 10%
-		invoice.append(
-			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
-		)
-
-		invoice.save()
-
-		# After discount
 		invoice.reload()
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 200)
-		self.assertEqual(invoice.total, 800)
 
-	def test_discount_borrowed_from_team(self):
+		self.assertEqual(invoice.total_before_discount, 2000)
+		self.assertEqual(invoice.total_discount_amount, 10)
+		self.assertEqual(invoice.total, 2000 - 10)
 
-		# Give 30% to team
-		self.team.append(
-			"discounts", {"amount": 300, "discount_type": "Flat On Total", "based_on": "Amount"}
-		)
-		self.team.save()
-
+	def test_discount_percentage(self):
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -354,15 +334,16 @@ class TestInvoice(unittest.TestCase):
 			period_end=add_days(today(), 10),
 		).insert()
 
-		# Add line items
+		invoice.append(
+			"items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount_percentage": 10}
+		)
 		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
 		invoice.save()
 		invoice.reload()
-
-		# After discount
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 300)
-		self.assertEqual(invoice.total, 700)
+		self.assertEqual(invoice.items[0].discount, 100)
+		self.assertEqual(invoice.total_before_discount, 2000)
+		self.assertEqual(invoice.total_discount_amount, 100)
+		self.assertEqual(invoice.total, 2000 - 100)
 
 	def test_finalize_invoice_with_total_zero(self):
 		invoice = frappe.get_doc(

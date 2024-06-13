@@ -80,6 +80,7 @@
    "label": "Has Marketplace Payout Completed?"
   },
   {
+   "default": "0",
    "fieldname": "discount",
    "fieldtype": "Currency",
    "label": "Discount",
@@ -94,7 +95,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-06-12 18:00:52.874174",
+ "modified": "2024-06-13 12:30:12.031886",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice Item",
