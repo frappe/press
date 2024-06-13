@@ -157,13 +157,18 @@ class Invoice(Document):
 
 		for invoice in invoices:
 			if stripe_log := invoice.stripe_payment_failed:
-				payload = frappe.db.get_value("Stripe Webhook Log", stripe_log, "payload")
+				payload, failed_payment_method = frappe.db.get_value(
+					"Stripe Webhook Log", stripe_log, ["payload", "stripe_payment_method"]
+				)
 				payload = frappe.parse_json(payload)
 				invoice.stripe_payment_error = (
 					payload.get("data", {})
 					.get("object", {})
 					.get("last_payment_error", {})
 					.get("message")
+				)
+				invoice.stripe_payment_failed_card = frappe.db.get_value(
+					"Stripe Payment Method", failed_payment_method, "last_4"
 				)
 
 		return invoices

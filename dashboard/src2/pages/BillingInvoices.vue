@@ -35,7 +35,7 @@ import { Button } from 'frappe-ui';
 import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import { userCurrency, date } from '../utils/format';
-import { icon, renderInDialog } from '../utils/components';
+import { confirmDialog, icon, renderInDialog } from '../utils/components';
 import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
 import { dayjsLocal } from '../utils/dayjs';
 import router from '../router';
@@ -196,46 +196,20 @@ export default {
 									icon: 'alert-circle',
 									onClick(e) {
 										e.stopPropagation();
-										renderInDialog(
-											h('div', { class: 'space-y-4' }, [
-												h(
-													'p',
-													{
-														class: 'text-base'
-													},
-													'Your payment failed for this invoice due to the following reason:'
-												),
-												h(
-													'div',
-													{
-														class:
-															'text-sm font-mono text-gray-600 rounded p-2 bg-gray-100'
-													},
-													row.stripe_payment_error
-												),
-												h(
-													'p',
-													{
-														class: 'text-base'
-													},
-													'Please use a different payment method to pay this invoice.'
-												)
-											]),
-											{
-												title: 'Payment Failed',
-												actions: [
-													{
-														label: 'Change Payment Method',
-														variant: 'solid',
-														onClick() {
-															router.push({
-																name: 'BillingPaymentMethods'
-															});
-														}
-													}
-												]
+										confirmDialog({
+											title: 'Payment Failed',
+											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:.</p><div class="text-sm font-mono text-gray-600 rounded p-2 bg-gray-100">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
+											primaryAction: {
+												label: 'Change Payment Method',
+												variant: 'solid',
+												onClick: ({ hide }) => {
+													hide();
+													router.push({
+														name: 'BillingPaymentMethods'
+													});
+												}
 											}
-										);
+										});
 									}
 								});
 							}
