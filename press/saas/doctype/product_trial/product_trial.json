@@ -55,7 +55,7 @@
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "SaaS Product App",
+   "options": "Product Trial App",
    "reqd": 1
   },
   {
@@ -122,7 +122,7 @@
    "fieldname": "signup_fields",
    "fieldtype": "Table",
    "label": "Signup Fields",
-   "options": "SaaS Product Signup Field"
+   "options": "Product Trial Signup Field"
   },
   {
    "fieldname": "description",
@@ -153,10 +153,10 @@
    "link_fieldname": "saas_product"
   }
  ],
- "modified": "2024-03-14 12:55:40.311385",
+ "modified": "2024-06-13 16:42:41.906936",
  "modified_by": "Administrator",
  "module": "SaaS",
- "name": "SaaS Product",
+ "name": "Product Trial",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [

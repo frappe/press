@@ -260,7 +260,7 @@ scheduler_events = {
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
+			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [

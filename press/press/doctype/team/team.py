@@ -952,7 +952,7 @@ class Team(Document):
 
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
-			"SaaS Product Site Request",
+			"Product Trial Request",
 			{"team": self.name, "status": ("in", ["Pending", "Wait for Site", "Error"])},
 			["name", "saas_product", "saas_product.title", "status"],
 			order_by="creation desc",

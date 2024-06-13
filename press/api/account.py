@@ -138,7 +138,7 @@ def setup_account(
 
 		if account_request.saas_product:
 			frappe.new_doc(
-				"SaaS Product Site Request",
+				"Product Trial Request",
 				saas_product=account_request.saas_product,
 				account_request=account_request.name,
 				team=team_doc.name,
@@ -279,12 +279,12 @@ def validate_request_key(key, timezone=None):
 		data = get_country_info()
 		possible_country = data.get("country") or get_country_from_timezone(timezone)
 		saas_product = frappe.db.get_value(
-			"SaaS Product",
+			"Product Trial",
 			{"name": account_request.saas_product},
 			pluck="name",
 		)
 		saas_product_doc = (
-			frappe.get_doc("SaaS Product", saas_product) if saas_product else None
+			frappe.get_doc("Product Trial", saas_product) if saas_product else None
 		)
 		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
@@ -467,7 +467,7 @@ def signup_settings(product=None):
 	saas_product = None
 	if product:
 		saas_product = frappe.db.get_value(
-			"SaaS Product",
+			"Product Trial",
 			{"name": product, "published": 1},
 			["title", "description", "logo"],
 			as_dict=1,
@@ -794,7 +794,7 @@ def user_prompts():
 def get_site_request(product):
 	team = frappe.local.team()
 	requests = frappe.qb.get_query(
-		"SaaS Product Site Request",
+		"Product Trial Request",
 		filters={
 			"team": team.name,
 			"saas_product": product,
@@ -804,7 +804,7 @@ def get_site_request(product):
 	).run(as_dict=1)
 	if not requests:
 		site_request = frappe.new_doc(
-			"SaaS Product Site Request",
+			"Product Trial Request",
 			saas_product=product,
 			team=team.name,
 		).insert(ignore_permissions=True)

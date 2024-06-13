@@ -401,7 +401,7 @@ def get_saas_product_info(product=None):
 	team = get_current_team()
 	product = frappe.utils.cstr(product)
 	site_request = frappe.db.get_value(
-		"SaaS Product Site Request",
+		"Product Trial Request",
 		filters={
 			"saas_product": product,
 			"team": team,
@@ -412,7 +412,7 @@ def get_saas_product_info(product=None):
 	)
 	if site_request:
 		saas_product = frappe.db.get_value(
-			"SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
+			"Product Trial", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
 		)
 		return {
 			"title": saas_product.title,
@@ -424,13 +424,13 @@ def get_saas_product_info(product=None):
 
 @frappe.whitelist()
 def create_site(subdomain, site_request):
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return site_request_doc.create_site(subdomain)
 
 
 @frappe.whitelist()
 def get_site_progress(site_request):
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return site_request_doc.get_progress()
 
 
@@ -438,7 +438,7 @@ def get_site_progress(site_request):
 def login_to_site(site_request):
 	from press.api.site import login
 
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return login(site_request_doc.site)
 
 

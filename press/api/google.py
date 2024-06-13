@@ -36,7 +36,9 @@ def callback(code=None, state=None):
 
 	product = payload.get("product")
 	saas_product = (
-		frappe.db.get_value("SaaS Product", product, ["name"], as_dict=1) if product else None
+		frappe.db.get_value("Product Trial", product, ["name"], as_dict=1)
+		if product
+		else None
 	)
 
 	try:

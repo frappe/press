@@ -21,7 +21,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "SaaS Product",
-   "options": "SaaS Product"
+   "options": "Product Trial"
   },
   {
    "fieldname": "team",
@@ -64,10 +64,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-06 01:55:59.420257",
+ "modified": "2024-06-13 16:36:51.917566",
  "modified_by": "Administrator",
  "module": "SaaS",
- "name": "SaaS Product Site Request",
+ "name": "Product Trial Request",
  "owner": "Administrator",
  "permissions": [
   {
