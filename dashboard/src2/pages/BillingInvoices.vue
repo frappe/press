@@ -198,7 +198,7 @@ export default {
 										e.stopPropagation();
 										confirmDialog({
 											title: 'Payment Failed',
-											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:.</p><div class="text-sm font-mono text-gray-600 rounded p-2 bg-gray-100">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
+											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:</p><div class="text-sm font-mono text-gray-600 rounded p-2 bg-gray-100">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
 											primaryAction: {
 												label: 'Change Payment Method',
 												variant: 'solid',
