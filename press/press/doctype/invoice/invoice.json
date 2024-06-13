@@ -236,6 +236,7 @@
    "no_copy": 1
   },
   {
+   "default": "0",
    "fieldname": "applied_credits",
    "fieldtype": "Currency",
    "label": "Applied Credits",
@@ -471,7 +472,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-06-11 15:33:05.928569",
+ "modified": "2024-06-13 11:10:41.150174",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
