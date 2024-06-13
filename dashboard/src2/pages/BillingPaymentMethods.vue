@@ -6,7 +6,7 @@
 <script>
 import { defineAsyncComponent, h } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
-import { Badge, Tooltip } from 'frappe-ui';
+import { Badge, FeatherIcon, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
 
@@ -39,23 +39,11 @@ export default {
 						suffix(row) {
 							if (row.is_default) {
 								return h(
-									Tooltip,
+									Badge,
 									{
-										text: row.stripe_payment_method
-											? 'The last payment failed on this card. Please use a different card.'
-											: 'Default card'
+										theme: 'green'
 									},
-									() =>
-										h(
-											Badge,
-											{
-												theme: row.stripe_payment_method ? 'red' : 'green'
-											},
-											() =>
-												row.stripe_payment_method
-													? 'Attention Required'
-													: 'Default'
-										)
+									() => 'Default'
 								);
 							}
 						}
@@ -65,6 +53,26 @@ export default {
 						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
+						}
+					},
+					{
+						label: '',
+						type: 'Component',
+						align: 'right',
+						component({ row }) {
+							if (row.is_default && row.stripe_payment_method) {
+								return h(
+									Tooltip,
+									{
+										text: 'The last payment failed on this card. Please use a different card.'
+									},
+									() =>
+										h(FeatherIcon, {
+											name: 'alert-circle',
+											class: 'h-4 w-4 text-red-600'
+										})
+								);
+							}
 						}
 					},
 					{
