@@ -30,12 +30,15 @@
 	</div>
 </template>
 <script>
+import { h } from 'vue';
+import { Button } from 'frappe-ui';
 import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import { userCurrency, date } from '../utils/format';
-import { icon } from '../utils/components';
+import { icon, renderInDialog } from '../utils/components';
 import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
 import { dayjsLocal } from '../utils/dayjs';
+import router from '../router';
 
 export default {
 	name: 'BillingInvoices',
@@ -105,7 +108,8 @@ export default {
 								return end.format('MMMM YYYY');
 							}
 							return 'Prepaid Credits';
-						}
+						},
+						width: 0.5
 					},
 					{
 						label: 'Status',
@@ -182,6 +186,58 @@ export default {
 										}
 									}
 								};
+							}
+						},
+						prefix(row) {
+							if (row.stripe_payment_failed && row.status !== 'Paid') {
+								return h(Button, {
+									variant: 'ghost',
+									theme: 'red',
+									icon: 'alert-circle',
+									onClick(e) {
+										e.stopPropagation();
+										renderInDialog(
+											h('div', { class: 'space-y-4' }, [
+												h(
+													'p',
+													{
+														class: 'text-base'
+													},
+													'Your payment failed for this invoice due to the following reason:'
+												),
+												h(
+													'div',
+													{
+														class:
+															'text-sm font-mono text-gray-600 rounded p-2 bg-gray-100'
+													},
+													row.stripe_payment_error
+												),
+												h(
+													'p',
+													{
+														class: 'text-base'
+													},
+													'Please use a different payment method to pay this invoice.'
+												)
+											]),
+											{
+												title: 'Payment Failed',
+												actions: [
+													{
+														label: 'Change Payment Method',
+														variant: 'solid',
+														onClick() {
+															router.push({
+																name: 'BillingPaymentMethods'
+															});
+														}
+													}
+												]
+											}
+										);
+									}
+								});
 							}
 						}
 					}

@@ -6,7 +6,7 @@
 <script>
 import { defineAsyncComponent, h } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
-import { Badge } from 'frappe-ui';
+import { Badge, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
 
@@ -29,26 +29,40 @@ export default {
 					{
 						label: 'Card',
 						fieldname: 'last_4',
+						width: 1.5,
 						format(value) {
 							return `•••• ${value}`;
 						},
 						prefix: row => {
 							return this.cardBrandIcon(row.brand);
 						},
-						suffix: row => {
-							return row.is_default
-								? h(
-										Badge,
-										{
-											theme: 'green'
-										},
-										() => 'Default'
-								  )
-								: null;
+						suffix(row) {
+							if (row.is_default) {
+								return h(
+									Tooltip,
+									{
+										text: row.stripe_payment_method
+											? 'The last payment failed on this card. Please use a different card.'
+											: 'Default card'
+									},
+									() =>
+										h(
+											Badge,
+											{
+												theme: row.stripe_payment_method ? 'red' : 'green'
+											},
+											() =>
+												row.stripe_payment_method
+													? 'Attention Required'
+													: 'Default'
+										)
+								);
+							}
 						}
 					},
 					{
 						label: 'Expiry',
+						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
 						}

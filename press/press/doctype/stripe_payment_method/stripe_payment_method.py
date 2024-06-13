@@ -45,6 +45,23 @@ class StripePaymentMethod(Document):
 	def onload(self):
 		load_address_and_contact(self)
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		StripeWebhookLog = frappe.qb.DocType("Stripe Webhook Log")
+		StripePaymentMethod = frappe.qb.DocType("Stripe Payment Method")
+
+		query = (
+			query.select(StripeWebhookLog.stripe_payment_method)
+			.left_join(StripeWebhookLog)
+			.on(
+				(StripeWebhookLog.stripe_payment_method == StripePaymentMethod.name)
+				& (StripeWebhookLog.event_type == "payment_intent.payment_failed")
+			)
+			.distinct()
+		)
+
+		return query
+
 	@dashboard_whitelist()
 	def delete(self):
 		super().delete()
