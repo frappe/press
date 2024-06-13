@@ -170,6 +170,23 @@ class Invoice(Document):
 
 	def get_doc(self, doc):
 		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
+		currency = frappe.get_value("Team", self.team, "currency")
+		price_field = "price_inr" if currency == "INR" else "price_usd"
+		currency_symbol = "₹" if currency == "INR" else "$"
+
+		for item in doc["items"]:
+			if item.document_type in ("Server", "Database Server"):
+				item.document_name = frappe.get_value(
+					item.document_type, item.document_name, "title"
+				)
+				item.plan = (
+					f"{currency_symbol}{frappe.get_value('Server Plan', item.plan, price_field)}"
+				)
+			elif item.document_type == "Marketplace App":
+				item.document_name = frappe.get_value(
+					item.document_type, item.document_name, "title"
+				)
+				item.plan = f"{currency_symbol}{frappe.get_value('Marketplace App Plan', item.plan, price_field)}"
 
 	@dashboard_whitelist()
 	def stripe_payment_url(self):
