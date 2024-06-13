@@ -205,10 +205,10 @@ class Invoice(Document):
 
 	@frappe.whitelist()
 	def finalize_invoice(self):
-		self.calculate_values()
-
 		if self.type == "Prepaid Credits":
 			return
+
+		self.calculate_values()
 
 		if self.total == 0:
 			self.status = "Empty"
@@ -218,6 +218,7 @@ class Invoice(Document):
 		team = frappe.get_doc("Team", self.team)
 		if not team.enabled:
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
+			self.save()
 			return
 
 		if self.stripe_invoice_id:
@@ -234,9 +235,7 @@ class Invoice(Document):
 
 		# set as unpaid by default
 		self.status = "Unpaid"
-
-		# if self.partner_email and team.erpnext_partner:
-		# 	self.apply_partner_discount()
+		self.update_item_descriptions()
 
 		self.apply_credit_balance()
 
@@ -253,36 +252,16 @@ class Invoice(Document):
 					)
 				)
 
-		self.update_item_descriptions()
-
-		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
-			self.add_comment(
-				"Comment",
-				"Not enough credits for this invoice. Change payment mode to Card to pay using Stripe.",
-			)
-
-		try:
-			self.create_stripe_invoice()
-		except Exception:
-			frappe.db.rollback()
-			self.reload()
-
-			# log the traceback as comment
-			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
-			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
-
-			if not self.stripe_invoice_id:
-				# if stripe invoice was created, find it and set it
-				# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
-				stripe_invoice_id = self.find_stripe_invoice()
-				if stripe_invoice_id:
-					self.stripe_invoice_id = stripe_invoice_id
-					self.status = "Invoice Created"
-					self.save()
-
-			frappe.db.commit()
-
-			raise
+		if self.amount_due > 0:
+			if self.payment_mode == "Prepaid Credits":
+				self.add_comment(
+					"Comment",
+					"Not enough credits for this invoice. Change payment mode to Card to pay using Stripe.",
+				)
+			# we shouldn't depend on payment_mode to decide whether to create stripe invoice or not
+			# there should be a separate field in team to decide whether to create automatic invoices or not
+			if self.payment_mode == "Card":
+				self.create_stripe_invoice()
 
 		self.save()
 
@@ -314,10 +293,11 @@ class Invoice(Document):
 		self.total = total
 
 	def apply_taxes_if_applicable(self):
+		self.amount_due_with_tax = self.amount_due
+
 		if self.payment_mode == "Prepaid Credits":
 			return
 
-		self.amount_due_with_tax = self.amount_due
 		if self.currency == "INR" and self.type == "Subscription":
 			gst_rate = frappe.db.get_single_value("Press Settings", "gst_percentage")
 			self.gst = self.amount_due * gst_rate
@@ -359,11 +339,6 @@ class Invoice(Document):
 			)
 
 	def create_stripe_invoice(self):
-		# we shouldn't depend on payment_mode to decide whether to create stripe invoice or not
-		# there should be a separate field in team to decide whether to create automatic invoices or not
-		if self.payment_mode != "Card" or self.type == "Prepaid Credits":
-			return
-
 		if self.stripe_invoice_id:
 			invoice = self.get_stripe_invoice()
 			stripe_invoice_total = convert_stripe_money(invoice.total)
@@ -385,30 +360,52 @@ class Invoice(Document):
 		if self.amount_due_with_tax <= 0:
 			return
 
-		stripe = get_stripe()
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 		amount = int(self.amount_due_with_tax * 100)
-		invoice = stripe.Invoice.create(
-			customer=customer_id,
-			pending_invoice_items_behavior="exclude",
-			collection_method="charge_automatically",
-			auto_advance=True,
-			currency=self.currency.lower(),
-			idempotency_key=f"invoice:{self.name}:amount:{amount}",
-		)
-		stripe.InvoiceItem.create(
-			customer=customer_id,
-			invoice=invoice["id"],
-			description=self.get_stripe_invoice_item_description(),
-			amount=amount,
-			currency=self.currency.lower(),
-			idempotency_key=f"invoiceitem:{self.name}:amount:{amount}",
-		)
-		self.stripe_invoice_id = invoice["id"]
-		self.status = "Invoice Created"
-		self.save()
+		self._make_stripe_invoice(customer_id, amount)
 
-	def find_stripe_invoice(self):
+	def _make_stripe_invoice(self, customer_id, amount):
+		try:
+			stripe = get_stripe()
+			invoice = stripe.Invoice.create(
+				customer=customer_id,
+				pending_invoice_items_behavior="exclude",
+				collection_method="charge_automatically",
+				auto_advance=True,
+				currency=self.currency.lower(),
+				idempotency_key=f"invoice:{self.name}:amount:{amount}",
+			)
+			stripe.InvoiceItem.create(
+				customer=customer_id,
+				invoice=invoice["id"],
+				description=self.get_stripe_invoice_item_description(),
+				amount=amount,
+				currency=self.currency.lower(),
+				idempotency_key=f"invoiceitem:{self.name}:amount:{amount}",
+			)
+			self.db_set(
+				{
+					"stripe_invoice_id": invoice["id"],
+					"status": "Invoice Created",
+				},
+				commit=True,
+			)
+			self.reload()
+			return invoice
+		except Exception:
+			frappe.db.rollback()
+			self.reload()
+
+			# log the traceback as comment
+			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
+			frappe.db.commit()
+
+	def find_stripe_invoice_if_not_set(self):
+		if self.stripe_invoice_id:
+			return
+		# if stripe invoice was created, find it and set it
+		# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
 		stripe = get_stripe()
 		invoices = stripe.Invoice.list(
 			customer=frappe.db.get_value("Team", self.team, "stripe_customer_id")
@@ -419,7 +416,9 @@ class Invoice(Document):
 			if (
 				line_items and line_items[0].description == description and invoice.status != "void"
 			):
-				return invoice["id"]
+				self.stripe_invoice_id = invoice["id"]
+				self.status = "Invoice Created"
+				self.save()
 
 	def get_stripe_invoice_item_description(self):
 		start = getdate(self.period_start)
