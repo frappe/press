@@ -937,6 +937,13 @@ class Server(BaseServer):
 				bench.managed_database_service = self.managed_database_service
 				bench.save()
 
+		if self.database_server:
+			database_server_public = frappe.db.get_value(
+				"Database Server", self.database_server, "public"
+			)
+			if database_server_public != self.public:
+				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
+
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
