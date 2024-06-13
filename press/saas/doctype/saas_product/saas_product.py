@@ -19,7 +19,7 @@ class SaaSProduct(Document):
 	def setup_trial_site(self, team, cluster=None):
 		standby_site = self.get_standby_site(cluster)
 		if not standby_site:
-			frappe.throw("There was an error setting up the trial site")
+			frappe.throw("Cannot set up trial site. Please try after some time.")
 
 		site = frappe.get_doc("Site", standby_site)
 		site.is_standby = False
