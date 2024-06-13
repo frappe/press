@@ -19,6 +19,7 @@ class PressRole(Document):
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
+		allow_partner: DF.Check
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		team: DF.Link
@@ -31,6 +32,7 @@ class PressRole(Document):
 		"users",
 		"allow_billing",
 		"allow_apps",
+		"allow_partner",
 		"allow_site_creation",
 		"allow_bench_creation",
 		"allow_server_creation",

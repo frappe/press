@@ -36,6 +36,11 @@ export let session = reactive({
 			? session.roles.data.some(role => role.allow_apps)
 			: true
 	),
+	hasPartnerAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_partner)
+			: true
+	),
 	hasSiteCreationAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some(role => role.allow_site_creation)

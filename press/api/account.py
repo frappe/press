@@ -1090,6 +1090,7 @@ def get_permission_roles():
 			PressRole.name,
 			PressRole.allow_billing,
 			PressRole.allow_apps,
+			PressRole.allow_partner,
 			PressRole.allow_site_creation,
 			PressRole.allow_bench_creation,
 			PressRole.allow_server_creation,

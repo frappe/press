@@ -105,8 +105,9 @@ export default {
 					name: 'Partners',
 					icon: () => h(Globe),
 					route: '/partners',
-					isActive: routeName.startsWith('Partners'),
-					condition: Boolean(this.$team.doc.erpnext_partner),
+					isActive: routeName.startsWith('Partner'),
+					condition:
+						this.$team.doc.erpnext_partner && this.$session.hasPartnersAccess,
 					disabled
 				},
 				{
