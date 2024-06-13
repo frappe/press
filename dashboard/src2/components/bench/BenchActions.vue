@@ -3,12 +3,7 @@
 		<div
 			v-for="group in actions"
 			:key="group.group"
-			class="divide-y rounded border p-5"
-			:class="
-				group.group === 'Dangerous Actions'
-					? 'border-red-500 '
-					: 'border-gray-200'
-			"
+			class="divide-y rounded border border-gray-200 p-5"
 		>
 			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
 			<div
