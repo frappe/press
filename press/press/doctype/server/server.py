@@ -754,9 +754,10 @@ class BaseServer(Document, TagHelpers):
 			console.server_type = self.doctype
 			console.server = self.name
 			console.virtual_machine = self.virtual_machine
+			console.action = "reboot"
 			console.save()
 			console.reload()
-			console.run_reboot()
+			console.run_sysrq()
 
 	@dashboard_whitelist()
 	def reboot(self):

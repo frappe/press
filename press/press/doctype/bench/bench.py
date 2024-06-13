@@ -346,6 +346,8 @@ class Bench(Document):
 			last_synced_time = None
 
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_info(self, since=last_synced_time)
 		if data:
 			for site, info in data.items():
@@ -367,6 +369,8 @@ class Bench(Document):
 	@frappe.whitelist()
 	def sync_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_analytics(self)
 		if not data:
 			return

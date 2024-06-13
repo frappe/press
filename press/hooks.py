@@ -257,6 +257,7 @@ scheduler_events = {
 		],
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
+			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 		],
 		"*/10 * * * *": [
 			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",

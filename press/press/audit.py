@@ -123,9 +123,17 @@ class BenchFieldCheck(Audit):
 
 		return {"bench_field_updates": bench_field_updates()}
 
+	def is_site_updating_or_moving(self, site):
+		"""
+		During SiteUpdate or SiteMigration, the status of the site is changed to Updating or Pending
+		"""
+		return frappe.db.get_value("Site", site, "status", for_update=True).endswith("ing")
+
 	def apply_potential_fixes(self):
 		fixes = self.get_potential_fixes()
 		for site, benches in fixes["bench_field_updates"].items():
+			if self.is_site_updating_or_moving(site):
+				continue
 			frappe.db.set_value("Site", site, "bench", benches[1])
 		frappe.db.commit()
 

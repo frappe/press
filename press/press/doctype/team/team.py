@@ -912,9 +912,13 @@ class Team(Document):
 	def get_onboarding(self):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		saas_site_request = self.get_pending_saas_site_request()
+		is_payment_mode_set = self.is_payment_mode_set()
+		if not is_payment_mode_set and self.parent_team:
+			parent_team = frappe.get_cached_doc("Team", self.parent_team)
+			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if self.is_payment_mode_set():
+		if is_payment_mode_set:
 			complete = True
 		elif frappe.db.get_value("User", self.user, "user_type") == "System User":
 			complete = True

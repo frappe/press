@@ -1,10 +1,10 @@
 {
  "actions": [
   {
-   "action": "press.press.doctype.serial_console_log.serial_console_log.run_reboot",
+   "action": "press.press.doctype.serial_console_log.serial_console_log.run_sysrq",
    "action_type": "Server Action",
    "group": "Actions",
-   "label": "Run Reboot Sequence"
+   "label": "Run SysRQ Command"
   }
  ],
  "allow_rename": 1,
@@ -14,8 +14,11 @@
  "field_order": [
   "server_type",
   "server",
-  "column_break_oypq",
   "virtual_machine",
+  "column_break_oypq",
+  "action",
+  "command",
+  "message",
   "section_break_vvrg",
   "output"
  ],
@@ -62,11 +65,33 @@
    "fieldtype": "Code",
    "label": "Output",
    "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Action",
+   "options": "help\nreboot\ncrash\nsync\nshow-all-timers\nunmount\nshow-all-locks\nshow-backtrace-all-active-cpus\nshow-registers\nshow-task-states\nshow-blocked-tasks\ndump-ftrace-buffer\nshow-memory-usage\nterminate-all-tasks\nmemory-full-oom-kill\nthaw-filesystems\nkill-all-tasks\nnice-all-RT-tasks\nreplay-kernel-logs",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "command",
+   "fieldtype": "Data",
+   "label": "Command",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Data",
+   "label": "Message",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-29 14:36:46.095832",
+ "modified": "2024-06-12 20:07:15.077206",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Serial Console Log",
