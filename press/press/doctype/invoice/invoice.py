@@ -242,7 +242,8 @@ class Invoice(Document):
 		self.status = "Unpaid"
 		self.update_item_descriptions()
 
-		self.apply_credit_balance()
+		if self.amount_due > 0:
+			self.apply_credit_balance()
 
 		if self.amount_due == 0:
 			self.status = "Paid"
