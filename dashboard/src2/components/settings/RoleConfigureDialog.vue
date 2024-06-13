@@ -1,5 +1,9 @@
 <template>
-	<Dialog v-if="role" :options="{ title: `${role.title}` }" v-model="show">
+	<Dialog
+		v-if="role"
+		:options="{ title: `${role.title}`, size: 'xl' }"
+		v-model="show"
+	>
 		<template v-slot:body-content>
 			<FTabs
 				class="[&>div]:pl-0"
@@ -62,38 +66,42 @@
 					</div>
 				</div>
 				<div v-else-if="tab.value === 'settings'" class="mt-4 text-base">
-					<div class="flex flex-col space-y-3">
-						<Switch
-							v-model="allowBilling"
-							label="Allow Billing Access"
-							description="Grant users belonging to this role access to billing page"
-						/>
-						<Switch
-							v-model="allowApps"
-							label="Allow Apps Access"
-							description="Grant users belonging to this role access to apps page"
-						/>
-						<Switch
-							v-if="$team.doc.erpnext_partner"
-							v-model="allowPartner"
-							label="Allow Partner Access"
-							description="Grant users belonging to this role access to partner page"
-						/>
-						<Switch
-							v-model="allowSiteCreation"
-							label="Allow Site Creation"
-							description="Newly created sites will be given access to users of this role"
-						/>
-						<Switch
-							v-model="allowBenchCreation"
-							label="Allow Bench Creation"
-							description="Newly created benches will be given access to users of this role"
-						/>
-						<Switch
-							v-model="allowServerCreation"
-							label="Allow Server Creation"
-							description="Newly created servers will be given access to users of this role"
-						/>
+					<div class="space-y-3">
+						<div class="space-y-3 rounded border p-4">
+							<Switch
+								v-model="allowBilling"
+								label="Allow Billing Access"
+								description="Grant users belonging to this role access to billing page"
+							/>
+							<Switch
+								v-model="allowApps"
+								label="Allow Apps Access"
+								description="Grant users belonging to this role access to apps page"
+							/>
+							<Switch
+								v-if="$team.doc.erpnext_partner"
+								v-model="allowPartner"
+								label="Allow Partner Access"
+								description="Grant users belonging to this role access to partner page"
+							/>
+						</div>
+						<div class="space-y-3 rounded border p-4">
+							<Switch
+								v-model="allowSiteCreation"
+								label="Allow Site Creation"
+								description="Newly created sites will be given access to users of this role"
+							/>
+							<Switch
+								v-model="allowBenchCreation"
+								label="Allow Bench Creation"
+								description="Newly created benches will be given access to users of this role"
+							/>
+							<Switch
+								v-model="allowServerCreation"
+								label="Allow Server Creation"
+								description="Newly created servers will be given access to users of this role"
+							/>
+						</div>
 					</div>
 				</div>
 			</FTabs>
