@@ -366,15 +366,58 @@ class ProxyServer(BaseServer):
 			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
 		)
 
+	def stop_primary(self):
+		primary = frappe.get_doc("Proxy Server", self.primary)
+		try:
+			ansible = Ansible(
+				playbook="failover_prepare_primary_proxy.yml",
+				server=primary,
+			)
+			ansible.run()
+		except Exception:
+			pass  # may be unreachable
+
+	def forward_jobs_to_secondary(self):
+		frappe.db.set_value(
+			"Server",
+			{"server": self.primary, "status": "Undelivered"},
+			"proxy_server",
+			self.name,
+		)
+
+	def move_wildcard_domains_from_primary(self):
+		frappe.db.set_value(
+			"Proxy Server Domain",
+			{"parent": self.primary},
+			"parent",
+			self.name,
+		)
+
+	def remove_primarys_access(self):
+		ansible = Ansible(
+			playbook="failover_remove_primary_access.yml",
+			server=self,
+			variables={
+				"primary_public_key": frappe.db.get_value(
+					"Proxy Server", self.primary, "frappe_public_key"
+				)
+			},
+		)
+		ansible.run()
+
 	def _trigger_failover(self):
 		try:
 			self.update_dns_record()
+			self.stop_primary()
+			self.remove_primarys_access()
+			self.forward_jobs_to_secondary()
 			self.reload_nginx()
 			self.update_app_servers()
+			self.move_wildcard_domains_from_primary()
 			self.switch_primary()
 		except Exception:
 			self.status = "Broken"
-			log_error("Proxy Server Failover Exception", server=self.as_dict())
+			log_error("Proxy Server Failover Exception", doc=self)
 		self.save()
 
 	def update_dns_record(self):
@@ -422,10 +465,10 @@ class ProxyServer(BaseServer):
 		)
 
 	def switch_primary(self):
-		primary = frappe.get_doc("Proxy Server", self.primary)
+		frappe.db.set_value("Proxy Server", self.primary, "is_primary", False)
 		self.is_primary = True
-		primary.is_primary = False
-		primary.save()
+		self.is_replication_setup = False
+		self.primary = None
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):
