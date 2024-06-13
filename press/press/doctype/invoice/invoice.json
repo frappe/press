@@ -23,17 +23,18 @@
   "amended_from",
   "section_break_8",
   "items",
+  "discounts_section",
+  "discount_note",
+  "column_break_mqqa",
+  "total_before_discount",
+  "total_discount_amount",
   "section_break_10",
-  "starting_balance",
-  "ending_balance",
   "payment_date",
   "payment_attempt_count",
   "payment_attempt_date",
   "payment_mode",
   "write_off_amount",
   "column_break_15",
-  "total_before_discount",
-  "total_discount_amount",
   "total",
   "total_before_tax",
   "applied_credits",
@@ -184,20 +185,6 @@
    "in_standard_filter": 1,
    "label": "Currency",
    "options": "Currency"
-  },
-  {
-   "fieldname": "starting_balance",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Starting Balance",
-   "options": "currency"
-  },
-  {
-   "fieldname": "ending_balance",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Ending Balance",
-   "options": "currency"
   },
   {
    "fieldname": "column_break_15",
@@ -447,6 +434,20 @@
    "label": "Amount Due (Including Tax)",
    "no_copy": 1,
    "options": "currency"
+  },
+  {
+   "fieldname": "discounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discount_note",
+   "fieldtype": "Data",
+   "label": "Discount Note"
+  },
+  {
+   "fieldname": "column_break_mqqa",
+   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
@@ -472,7 +473,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-06-13 11:10:41.150174",
+ "modified": "2024-06-13 12:28:05.568819",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
