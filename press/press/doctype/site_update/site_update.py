@@ -405,7 +405,10 @@ def schedule_updates_server(server):
 
 		if frappe.db.exists(
 			"Site Update",
-			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
+			{
+				"site": site.name,
+				"status": ("in", ("Pending", "Running", "Failure", "Scheduled")),
+			},
 		):
 			continue
 		try:
