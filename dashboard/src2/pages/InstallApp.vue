@@ -261,7 +261,10 @@ export default {
 					};
 				},
 				validate() {
-					throw new DashboardError(validateSubdomain(this.subdomain));
+					let error = validateSubdomain(this.subdomain);
+					if (error) {
+						throw new DashboardError(error);
+					}
 				},
 				transform(data) {
 					return !Boolean(data);
