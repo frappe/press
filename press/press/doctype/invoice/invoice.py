@@ -6,7 +6,6 @@ import frappe
 
 from frappe import _
 from press.utils import log_error
-from frappe.core.utils import find_all
 from frappe.utils import getdate, cint
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
@@ -294,6 +293,7 @@ class Invoice(Document):
 
 	def apply_taxes_if_applicable(self):
 		self.amount_due_with_tax = self.amount_due
+		self.gst = 0
 
 		if self.payment_mode == "Prepaid Credits":
 			return
@@ -479,27 +479,6 @@ class Invoice(Document):
 			frappe.throw(
 				f"Cannot create Invoice because Currency is not set in Team {self.team}"
 			)
-
-		# To prevent copying of team level discounts again
-		self.remove_previous_team_discounts()
-
-		for invoice_discount in team.discounts:
-			self.append(
-				"discounts",
-				{
-					"discount_type": invoice_discount.discount_type,
-					"based_on": invoice_discount.based_on,
-					"percent": invoice_discount.percent,
-					"amount": invoice_discount.amount,
-					"via_team": True,
-				},
-			)
-
-	def remove_previous_team_discounts(self):
-		team_discounts = find_all(self.discounts, lambda x: x.via_team)
-
-		for discount in team_discounts:
-			self.remove(discount)
 
 	def validate_dates(self):
 		if not self.period_start:
@@ -707,28 +686,6 @@ class Invoice(Document):
 		self.applied_credits = sum(row.amount for row in self.credit_allocations)
 		self.calculate_values()
 
-	def cancel_applied_credits(self):
-		for row in self.credit_allocations:
-			doc = frappe.get_doc(
-				doctype="Balance Transaction",
-				type="Adjustment",
-				source=row.source,
-				team=self.team,
-				amount=row.amount,
-				description=(
-					f"Reverse amount {row.get_formatted('amount')} of {row.transaction}"
-					f" from invoice {self.name}"
-				),
-			).insert()
-			doc.submit()
-			self.applied_credits -= row.amount
-
-		self.clear_credit_allocation_table()
-		self.save()
-
-	def clear_credit_allocation_table(self):
-		self.set("credit_allocations", [])
-
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
 		next_start = frappe.utils.add_days(self.period_end, 1)
@@ -925,39 +882,6 @@ class Invoice(Document):
 		self.status = "Refunded"
 		self.save()
 		self.add_comment(text=f"Refund reason: {reason}")
-
-	def consume_credits_and_mark_as_paid(self, reason=None):
-		if self.amount_due <= 0:
-			frappe.throw("Amount due is less than or equal to 0")
-
-		team = frappe.get_doc("Team", self.team)
-		available_credits = team.get_balance()
-		if available_credits < self.amount_due:
-			available = frappe.utils.fmt_money(available_credits, 2, self.currency)
-			frappe.throw(
-				f"Available credits ({available}) is less than amount due"
-				f" ({self.get_formatted('amount_due')})"
-			)
-
-		remark = "Manually consuming credits and marking the unpaid invoice as paid."
-		if reason:
-			remark += f" Reason: {reason}"
-
-		self.change_stripe_invoice_status("Paid")
-
-		# negative value to reduce balance by amount
-		amount = self.amount_due * -1
-		balance_transaction = team.allocate_credit_amount(
-			amount, source="", remark=f"{remark}, Ref: Invoice {self.name}"
-		)
-
-		self.add_comment(
-			text=(
-				"Manually consuming credits and marking the unpaid invoice as paid."
-				f" {frappe.utils.get_link_to_form('Balance Transaction', balance_transaction.name)}"
-			)
-		)
-		self.db_set("status", "Paid")
 
 	@frappe.whitelist()
 	def change_stripe_invoice_status(self, status):
