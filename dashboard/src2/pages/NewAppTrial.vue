@@ -37,7 +37,7 @@
 								<li
 									v-for="site in completedSites"
 									:key="site"
-									class="whitespace-nowrap rounded p-2.5 text-base focus-within:ring focus-within:ring-gray-200 hover:bg-gray-100"
+									class="whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
 								>
 									<a
 										:href="`https://${site.site}`"
