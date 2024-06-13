@@ -242,7 +242,8 @@ class Invoice(Document):
 		self.status = "Unpaid"
 		self.update_item_descriptions()
 
-		self.apply_credit_balance()
+		if self.amount_due > 0:
+			self.apply_credit_balance()
 
 		if self.amount_due == 0:
 			self.status = "Paid"
@@ -637,9 +638,6 @@ class Invoice(Document):
 	def apply_credit_balance(self):
 		# previously we used to cancel and re-apply credits, but it messed up the balance transaction history
 		# so now we only do append-only operation while applying credits
-
-		if self.amount_due > 0:
-			return
 
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
 		if balance <= 0:
