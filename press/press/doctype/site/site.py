@@ -2173,15 +2173,15 @@ class Site(Document, TagHelpers):
 				"group": "Dangerous Actions",
 			},
 			{
-				"action": "Restore from backup",
-				"description": "Restore your database from database, public and private files",
+				"action": "Restore with files",
+				"description": "Restore with database, public and private files",
 				"button_label": "Restore",
 				"doc_method": "restore_site_from_files",
 				"group": "Dangerous Actions",
 			},
 			{
 				"action": "Restore from an existing site",
-				"description": "Restore your database with database, public and private files from another site",
+				"description": "Restore with database, public and private files from another site",
 				"button_label": "Restore",
 				"doc_method": "restore_site_from_files",
 				"group": "Dangerous Actions",
