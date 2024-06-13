@@ -25,12 +25,15 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900" v-if="currentPlan">
-									{{ $format.planTitle(currentPlan) }}
-									<span v-if="currentPlan.price_inr">/ month</span>
-								</span>
-								<span class="text-base text-gray-900" v-else>
-									No plan set
+								<span class="text-base text-gray-900">
+									<template v-if="$site.doc.trial_end_date">
+										{{ trialDays($site.doc.trial_end_date) }}
+									</template>
+									<template v-else-if="currentPlan">
+										{{ $format.planTitle(currentPlan) }}
+										<span v-if="currentPlan.price_inr">/ month</span>
+									</template>
+									<template v-else> No plan set </template>
 								</span>
 							</div>
 							<div
@@ -164,6 +167,7 @@ import InfoIcon from '~icons/lucide/info';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
+import { trialDays } from '../utils/site';
 
 export default {
 	name: 'SiteOverview',
@@ -193,7 +197,8 @@ export default {
 		},
 		loginAsAdmin() {
 			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
-		}
+		},
+		trialDays
 	},
 	computed: {
 		siteInformation() {
