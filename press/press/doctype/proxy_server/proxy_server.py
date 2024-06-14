@@ -403,6 +403,10 @@ class ProxyServer(BaseServer):
 		)
 		ansible.run()
 
+	def up_secondary(self):
+		ansible = Ansible(playbook="failover_up_secondary_proxy.yml", server=self)
+		ansible.run()
+
 	def update_dns_records_for_all_sites(self):
 		from itertools import groupby
 
@@ -423,7 +427,7 @@ class ProxyServer(BaseServer):
 			self.stop_primary()
 			self.remove_primarys_access()
 			self.forward_jobs_to_secondary()
-			self.reload_nginx()
+			self.up_secondary()
 			self.update_app_servers()
 			self.move_wildcard_domains_from_primary()
 			self.switch_primary()
@@ -431,10 +435,6 @@ class ProxyServer(BaseServer):
 			self.status = "Broken"
 			log_error("Proxy Server Failover Exception", doc=self)
 		self.save()
-
-	def reload_nginx(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		agent.reload_nginx()
 
 	def update_app_servers(self):
 		frappe.db.set_value(
