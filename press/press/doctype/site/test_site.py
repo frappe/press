@@ -82,6 +82,7 @@ def create_test_bench(
 	return bench
 
 
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,

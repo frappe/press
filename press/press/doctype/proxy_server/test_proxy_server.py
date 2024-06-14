@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
-from moto import mock_s3
+from moto import mock_aws
 
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.press_settings.test_press_settings import (
@@ -49,16 +49,25 @@ def create_test_proxy_server(
 	"press.press.doctype.proxy_server.proxy_server.frappe.enqueue_doc",
 	foreground_enqueue_doc,
 )
-@mock_s3
 @patch("press.press.doctype.proxy_server.proxy_server.Ansible", new=Mock())
 class TestProxyServer(FrappeTestCase):
 	@fake_agent_job("Reload NGINX Job")
+	@mock_aws
 	def test_sites_dns_updated_on_failover(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_site
+
 		proxy1 = create_test_proxy_server()
 		proxy2 = create_test_proxy_server()
+
+		server = create_test_server(proxy1.name)
+		create_test_site(server=server.name)
+
 		proxy1.db_set("is_primary", 1)
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
+		proxy2.reload()
+		proxy1.reload()
 		self.assertTrue(proxy2.is_primary)
 		self.assertFalse(proxy1.is_primary)
