@@ -54,7 +54,13 @@ def create_test_proxy_server(
 class TestProxyServer(FrappeTestCase):
 	@fake_agent_job("Reload NGINX Job")
 	@mock_aws
-	def test_sites_dns_updated_on_failover(self):
+	@patch.object(
+		RootDomain,
+		"update_dns_records_for_sites",
+		wraps=RootDomain.update_dns_records_for_sites,
+		autospec=True,
+	)
+	def test_sites_dns_updated_on_failover(self, update_dns_records_for_sites):
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.site.test_site import create_test_site
 
@@ -69,12 +75,16 @@ class TestProxyServer(FrappeTestCase):
 		)
 
 		server = create_test_server(proxy1.name)
-		create_test_site(server=server.name)
+		site1 = create_test_site(server=server.name)
+		create_test_site()  # another proxy; unrelated
 
 		proxy1.db_set("is_primary", 1)
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
+		update_dns_records_for_sites.assert_called_once_with(
+			root_domain, [site1.name], proxy2.name
+		)
 		proxy2.reload()
 		proxy1.reload()
 		self.assertTrue(proxy2.is_primary)
