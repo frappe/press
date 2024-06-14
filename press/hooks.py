@@ -215,6 +215,7 @@ scheduler_events = {
 	"all": [
 		"press.auth.flush",
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
+		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 	],
 	"cron": {
 		"1-59/2 * * * *": [
