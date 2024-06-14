@@ -142,6 +142,13 @@ frappe.ui.form.on('Site', {
 				'fetch_bench_from_agent',
 				frm.doc.status !== 'Archived',
 			],
+			[
+				__('Set status based on Ping'),
+				'set_status_based_on_ping',
+				!['Active', 'Archived', 'Inactive', 'Suspended'].includes(
+					frm.doc.status,
+				),
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

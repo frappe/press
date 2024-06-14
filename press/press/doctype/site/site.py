@@ -1312,6 +1312,19 @@ class Site(Document, TagHelpers):
 		self.save()
 		return setup_complete
 
+	@frappe.whitelist()
+	def set_status_based_on_ping(self):
+		if self.status in ("Active", "Archived", "Inactive", "Suspended"):
+			return
+		try:
+			response = self.ping()
+		except Exception:
+			return
+		else:
+			if response.status_code == requests.codes.ok:
+				self.status = "Active"
+				self.save()
+
 	def ping(self):
 		return requests.get(f"https://{self.name}/api/method/ping")
 
