@@ -502,7 +502,7 @@ def fix_args(method, args):
 	# pass duplicates of the passed kwargs in the `args` arg.
 	#
 	# This causes "got multiple values for argument 'method'"
-	if not isinstance(dict, args):
+	if not isinstance(args, dict):
 		return args
 
 	# Even if it doesn't match it'll probably throw
