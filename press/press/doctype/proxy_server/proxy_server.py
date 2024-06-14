@@ -446,6 +446,7 @@ class ProxyServer(BaseServer):
 		self.is_primary = True
 		self.is_replication_setup = False
 		self.primary = None
+		self.status = "Active"
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):

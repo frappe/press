@@ -89,3 +89,5 @@ class TestProxyServer(FrappeTestCase):
 		proxy1.reload()
 		self.assertTrue(proxy2.is_primary)
 		self.assertFalse(proxy1.is_primary)
+		self.assertEqual(proxy2.status, "Active")
+		self.assertEqual(proxy1.status, "Active")
