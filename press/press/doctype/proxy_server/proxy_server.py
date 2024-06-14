@@ -4,6 +4,7 @@
 
 
 import frappe
+from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.agent import Agent
@@ -413,8 +414,8 @@ class ProxyServer(BaseServer):
 			order_by="domain",
 		)
 		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
-			domain = frappe.get_doc("Root Domain", domain_name)
-			domain.update_dns_records_for_sites(sites, self.name)
+			domain: RootDomain = frappe.get_doc("Root Domain", domain_name)
+			domain.update_dns_records_for_sites([site.name for site in sites], self.name)
 
 	def _trigger_failover(self):
 		try:

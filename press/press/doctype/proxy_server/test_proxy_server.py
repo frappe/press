@@ -15,6 +15,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.utils.test import foreground_enqueue_doc
 
@@ -59,6 +60,13 @@ class TestProxyServer(FrappeTestCase):
 
 		proxy1 = create_test_proxy_server()
 		proxy2 = create_test_proxy_server()
+
+		root_domain: RootDomain = frappe.get_doc("Root Domain", proxy1.domain)
+		root_domain.boto3_client.create_hosted_zone(
+			Name=proxy1.domain,
+			CallerReference="1",
+			HostedZoneConfig={"Comment": "Test", "PrivateZone": False},
+		)
 
 		server = create_test_server(proxy1.name)
 		create_test_site(server=server.name)
