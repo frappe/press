@@ -10,3 +10,8 @@
     name: reload_nginx
     minute: '*/5'
     job: 'sudo systemctl reload nginx'
+
+- name: Ensure agent is up and running # Might be stopped during previous failover
+  supervisorctl:
+    name: 'agent:'
+    state: started
