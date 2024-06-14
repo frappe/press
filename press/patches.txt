@@ -118,3 +118,4 @@ press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs #2024-0
 press.press.doctype.press_role.patches.migrate_permissions
 press.press.doctype.press_role.patches.change_fields_from_enable_to_allow
 press.press.doctype.stripe_webhook_log.patches.add_payment_method_for_failed_events
+press.patches.v0_7_0.add_team_field_for_site_related_doctypes

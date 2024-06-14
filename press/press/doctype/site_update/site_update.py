@@ -50,6 +50,7 @@ class SiteUpdate(Document):
 		status: DF.Literal[
 			"Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"
 		]
+		team: DF.Link | None
 		update_job: DF.Link | None
 	# end: auto-generated types
 

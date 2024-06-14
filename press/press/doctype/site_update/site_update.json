@@ -10,6 +10,7 @@
   "source_bench",
   "source_candidate",
   "group",
+  "team",
   "column_break_4",
   "status",
   "destination_bench",
@@ -207,11 +208,18 @@
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time"
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-20 18:17:50.936473",
+ "modified": "2024-05-15 12:50:17.323203",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
