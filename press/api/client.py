@@ -267,7 +267,12 @@ def run_doc_method(dt, dn, method, args=None):
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
-	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
+	_run_doc_method(
+		dt=dt,
+		dn=dn,
+		method=method,
+		args=fix_args(method, args),
+	)
 	frappe.response.docs = [get(dt, dn)]
 
 
@@ -490,3 +495,20 @@ def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
 		return decorated_func
 
 	return wrapper
+
+
+def fix_args(method, args):
+	# This is a fixer function. Certain callers of `run_doc_method`
+	# pass duplicates of the passed kwargs in the `args` arg.
+	#
+	# This causes "got multiple values for argument 'method'"
+	if not isinstance(dict, args):
+		return args
+
+	# Even if it doesn't match it'll probably throw
+	# down the call stack, but in that case it's unexpected
+	# behavior and so it's better to error-out.
+	if args.get("method") == method:
+		del args["method"]
+
+	return args
