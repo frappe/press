@@ -83,9 +83,16 @@ class UserSSHKey(Document):
 	@dashboard_whitelist()
 	def delete(self):
 		if self.is_default:
-			frappe.throw("Cannot delete default key")
+			other_key = frappe.get_all(
+				"User SSH Key",
+				filters={"user": self.user, "name": ("!=", self.name)},
+				fields=["name"],
+				limit=1,
+			)
+			if other_key:
+				frappe.db.set_value("User SSH Key", other_key[0].name, "is_default", True)
 
-		elif frappe.db.exists("SSH Certificate", {"user_ssh_key": self.name}):
+		if frappe.db.exists("SSH Certificate", {"user_ssh_key": self.name}):
 			self.is_removed = 1
 			self.save()
 
