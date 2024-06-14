@@ -9,9 +9,6 @@ from press.runner import Ansible
 from press.agent import Agent
 from press.utils import log_error
 from frappe.utils import unique
-from frappe.core.utils import find
-
-import boto3
 
 
 class ProxyServer(BaseServer):
@@ -363,7 +360,7 @@ class ProxyServer(BaseServer):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
+			self.doctype, self.name, "_trigger_failover", queue="long", timeout=2600
 		)
 
 	def stop_primary(self):
@@ -379,9 +376,9 @@ class ProxyServer(BaseServer):
 
 	def forward_jobs_to_secondary(self):
 		frappe.db.set_value(
-			"Server",
+			"Agent Job",
 			{"server": self.primary, "status": "Undelivered"},
-			"proxy_server",
+			"server",
 			self.name,
 		)
 
@@ -405,9 +402,23 @@ class ProxyServer(BaseServer):
 		)
 		ansible.run()
 
+	def update_dns_records_for_all_sites(self):
+		from itertools import groupby
+
+		servers = frappe.get_all("Server", {"proxy_server": self.primary}, pluck="name")
+		sites_domains = frappe.get_all(
+			"Site",
+			{"status": ("!=", "Archived"), "server": ("in", servers)},
+			["name", "domain"],
+			order_by="domain",
+		)
+		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
+			domain = frappe.get_doc("Root Domain", domain_name)
+			domain.update_dns_records_for_sites(sites, self.name)
+
 	def _trigger_failover(self):
 		try:
-			self.update_dns_record()
+			self.update_dns_records_for_all_sites()
 			self.stop_primary()
 			self.remove_primarys_access()
 			self.forward_jobs_to_secondary()
@@ -420,44 +431,9 @@ class ProxyServer(BaseServer):
 			log_error("Proxy Server Failover Exception", doc=self)
 		self.save()
 
-	def update_dns_record(self):
-		try:
-			domain = frappe.get_doc("Root Domain", self.domain)
-			client = boto3.client(
-				"route53",
-				aws_access_key_id=domain.aws_access_key_id,
-				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-			)
-			zones = client.list_hosted_zones_by_name()["HostedZones"]
-			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
-			# i.e. x.example.com comes after example.com
-			# Name field has a trailing dot
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
-			client.change_resource_record_sets(
-				ChangeBatch={
-					"Changes": [
-						{
-							"Action": "UPSERT",
-							"ResourceRecordSet": {
-								"Name": self.primary,
-								"Type": "CNAME",
-								"TTL": 3600,
-								"ResourceRecords": [{"Value": self.name}],
-							},
-						}
-					]
-				},
-				HostedZoneId=hosted_zone,
-			)
-		except Exception:
-			self.status = "Broken"
-			log_error("Route 53 Record Update Error", domain=domain.name, server=self.name)
-
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type="Proxy Server")
-		agent.restart_nginx()
+		agent.reload_nginx()
 
 	def update_app_servers(self):
 		frappe.db.set_value(
