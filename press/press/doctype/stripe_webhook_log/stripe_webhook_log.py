@@ -48,19 +48,20 @@ class StripeWebhookLog(Document):
 				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
 			)
 
-		if payment_method := (
-			payload.get("data", {})
-			.get("object", {})
-			.get("last_payment_error", {})
-			.get("payment_method")
-		):
-			payment_method_id = payment_method.get("id")
+		if self.event_type == "payment_intent.payment_failed":
+			if payment_method := (
+				payload.get("data", {})
+				.get("object", {})
+				.get("last_payment_error", {})
+				.get("payment_method")
+			):
+				payment_method_id = payment_method.get("id")
 
-			self.stripe_payment_method = frappe.db.get_value(
-				"Stripe Payment Method",
-				{"stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id},
-				"name",
-			)
+				self.stripe_payment_method = frappe.db.get_value(
+					"Stripe Payment Method",
+					{"stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id},
+					"name",
+				)
 
 
 @frappe.whitelist(allow_guest=True)
