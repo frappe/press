@@ -601,7 +601,11 @@ class SiteMigration(Document):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site: "Site" = frappe.get_doc("Site", self.site)
 		dest_server: Server = frappe.get_doc("Server", self.destination_server)
-		if not dest_server.is_shared and site.team == dest_server.team:
+		if (
+			not dest_server.is_shared
+			and site.team == dest_server.team
+			and not site.is_on_dedicated_plan
+		):
 			try:
 				site.change_plan(
 					"Unlimited",

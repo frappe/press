@@ -2235,6 +2235,10 @@ class Site(Document, TagHelpers):
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
+	@property
+	def is_on_dedicated_plan(self):
+		return bool(frappe.db.get_value("Site Plan", self.plan, "dedicated_server_plan"))
+
 	@frappe.whitelist()
 	def forcefully_remove_site(self, bench):
 		"""Bypass all agent/press callbacks and just remove this site from the target bench/server"""
