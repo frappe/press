@@ -173,7 +173,9 @@ def new(server):
 	)
 
 	proxy_server = frappe.get_all(
-		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
+		"Proxy Server",
+		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		limit=1,
 	)[0]
 
 	# to be used by app server
