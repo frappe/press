@@ -99,6 +99,7 @@ def callback(code=None, state=None):
 			last_name=id_info.get("family_name"),
 			phone_number=phone_number,
 			new_signup_flow=1,
+			role="Press Admin"
 		)
 		if saas_product:
 			account_request.saas_product = saas_product.name
