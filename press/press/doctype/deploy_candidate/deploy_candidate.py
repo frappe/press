@@ -1957,6 +1957,10 @@ def should_build_retry_job(job: "AgentJob"):
 	if "ConnectionResetError: [Errno 104] Connection reset by peer" in job.traceback:
 		return True
 
+	# Redis connection refused
+	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
+		return True
+
 	return False
 
 
