@@ -11,6 +11,11 @@ from press.agent import Agent
 from press.utils import log_error
 from frappe.utils import unique
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
+
 
 class ProxyServer(BaseServer):
 	# begin: auto-generated types
@@ -361,7 +366,7 @@ class ProxyServer(BaseServer):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_trigger_failover", queue="long", timeout=2600
+			self.doctype, self.name, "_trigger_failover", queue="long", timeout=3600
 		)
 
 	def stop_primary(self):
@@ -431,10 +436,27 @@ class ProxyServer(BaseServer):
 			self.update_app_servers()
 			self.move_wildcard_domains_from_primary()
 			self.switch_primary()
+			self.add_ssh_users_for_existing_benches()
 		except Exception:
 			self.status = "Broken"
 			log_error("Proxy Server Failover Exception", doc=self)
 		self.save()
+
+	def add_ssh_users_for_existing_benches(self):
+		benches = frappe.qb.DocType("Bench")
+		servers = frappe.qb.DocType("Server")
+		active_benches = (
+			frappe.qb.from_(benches)
+			.join(servers)
+			.on(servers.name == benches.server)
+			.select(benches.name)
+			.where(servers.proxy_server == self.primary)
+			.where(benches.status == "Active")
+			.run(as_dict=True)
+		)
+		for bench_name in active_benches:
+			bench: "Bench" = frappe.get_doc("Bench", bench_name)
+			bench.add_ssh_user()
 
 	def update_app_servers(self):
 		frappe.db.set_value(
