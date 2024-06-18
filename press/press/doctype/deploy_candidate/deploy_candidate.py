@@ -1917,6 +1917,10 @@ def should_build_retry_build_output(build_output: str):
 	if "failed to compute cache key: failed to calculate checksum of ref" in build_output:
 		return True
 
+	# Failed to pull package from pypi
+	if "Connection to pypi.org timed out" in build_output:
+		return True
+
 	return False
 
 
@@ -1947,6 +1951,14 @@ def should_build_retry_job(job: "AgentJob"):
 
 	# Failed to upload docker image
 	if "TimeoutError: timed out" in job.traceback:
+		return True
+
+	# Redis connection reset
+	if "ConnectionResetError: [Errno 104] Connection reset by peer" in job.traceback:
+		return True
+
+	# Redis connection refused
+	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
 		return True
 
 	return False
