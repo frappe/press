@@ -152,6 +152,10 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"vite: not found",
 			update_with_vite_not_found,
 		),
+		(
+			"FileNotFoundError: [Errno 2] No such file or directory",
+			update_with_file_not_found,
+		),
 		# Below two are catch all fallback handlers for
 		# `yarn build` and `pip install` errors originating due
 		# to issues in an app.
@@ -748,6 +752,47 @@ def update_with_yarn_build_failed(
 		<p>This may be due to issues with the app being installed
 		and not Frappe Cloud.</p>
 		"""
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
+	return True
+
+
+def update_with_file_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	details["title"] = "File not found in app"
+
+	if not (failed_step := get_failed_step(dc)):
+		return False
+
+	if failed_step.stage_slug != "apps":
+		return False
+
+	app_name = failed_step.step
+
+	# Non exact check for whether file not found originates in the
+	# app being installed. If file not found is not in the app then
+	# this is an unknown and not a user error.
+	for line in dc.build_output.split("\n"):
+		if "FileNotFoundError: [Errno 2] No such file or directory" not in line:
+			continue
+		if app_name in line:
+			break
+	else:
+		return False
+
+	message = f"""
+	<p><b>{app_name}</b> has a missing file.</p>
+
+	<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+	output to find and add the missing file before retrying the build.</p>
+
+	<p>This may be due to issues with the app being installed
+	and not Frappe Cloud.</p>
+	"""
 
 	details["message"] = fmt(message)
 	details["traceback"] = None
