@@ -232,7 +232,7 @@ let router = createRouter({
 router.beforeEach(async (to, from, next) => {
 	let isLoggedIn =
 		document.cookie.includes('user_id') &&
-		!document.cookie.includes('user_id=Guest;');
+		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
 	if (isLoggedIn) {
