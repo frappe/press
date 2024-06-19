@@ -343,14 +343,7 @@ class DeployCandidate(Document):
 		self.build_and_deploy()
 
 	def build_and_deploy(self):
-		self.pre_build(method="_build_and_deploy")
-
-	def _build_and_deploy(self):
-		# Returns True if build successful
-		if not self._build(deploy_after_build=True):
-			return
-
-		self._deploy()
+		self.pre_build(method="_build", deploy_after_build=True)
 
 	def _deploy(self):
 		try:
@@ -378,9 +371,6 @@ class DeployCandidate(Document):
 			)
 		except Exception as exc:
 			self.handle_build_failure(exc)
-			return False
-
-		return self.status == "Success"
 
 	def handle_build_failure(
 		self,
@@ -511,7 +501,7 @@ class DeployCandidate(Document):
 				"no_cache": no_cache,
 				"no_push": no_push,
 				# Next few values are not used by agent but are
-				# read in `process_run_remote_builder`
+				# read in `process_run_build`
 				"deploy_candidate": self.name,
 				"deploy_after_build": deploy_after_build,
 			}

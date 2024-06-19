@@ -66,6 +66,12 @@ from press.utils import (
 )
 from press.utils.dns import _change_dns_record, create_dns_record
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -1906,7 +1912,7 @@ class Site(Document, TagHelpers):
 		if not out.update_available:
 			return out
 
-		bench = frappe.get_doc("Bench", self.bench)
+		bench: "Bench" = frappe.get_doc("Bench", self.bench)
 		source = bench.candidate
 		destinations = frappe.get_all(
 			"Deploy Candidate Difference",
@@ -1920,12 +1926,15 @@ class Site(Document, TagHelpers):
 
 		destination = destinations[0]
 
-		destination_candidate = frappe.get_doc("Deploy Candidate", destination)
+		destination_candidate: "DeployCandidate" = frappe.get_doc(
+			"Deploy Candidate", destination
+		)
+
+		current_apps = bench.apps
+		next_apps = destination_candidate.apps
+		out.apps = get_updates_between_current_and_next_apps(current_apps, next_apps)
 
 		out.installed_apps = self.apps
-		out.apps = get_updates_between_current_and_next_apps(
-			bench.apps, destination_candidate.apps
-		)
 		out.update_available = any([app["update_available"] for app in out.apps])
 		return out
 
