@@ -144,6 +144,7 @@ class Team(Document):
 				"expiry_month",
 				"expiry_year",
 				"brand",
+				"stripe_mandate_id",
 			],
 			as_dict=True,
 		)

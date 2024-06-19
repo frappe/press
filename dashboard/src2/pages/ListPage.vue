@@ -26,6 +26,10 @@
 				:title="`<b>${banner.title}:</b> ${banner.message}`"
 				:type="banner.type.toLowerCase()"
 			/>
+			<AlertMandateInfo
+				class="mb-5"
+				v-if="isMandateNotSet && $team.doc.currency === 'INR'"
+			/>
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -57,6 +61,9 @@ export default {
 		),
 		AlertAddressDetails: defineAsyncComponent(() =>
 			import('../components/AlertAddressDetails.vue')
+		),
+		AlertMandateInfo: defineAsyncComponent(() =>
+			import('../components/AlertMandateInfo.vue')
 		)
 	},
 	props: {
@@ -100,6 +107,9 @@ export default {
 		},
 		banner() {
 			return this.$resources.banner.doc;
+		},
+		isMandateNotSet() {
+			return !this.$team.doc.stripe_mandate_id ? true : false;
 		}
 	},
 	resources: {
