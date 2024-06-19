@@ -166,6 +166,8 @@ class PressSettings(Document):
 				"invoice.payment_succeeded",
 				"invoice.payment_failed",
 				"invoice.finalized",
+				"mandate.updated",
+				"setup_intent.succeeded",
 			],
 		)
 		self.stripe_webhook_endpoint_id = webhook["id"]

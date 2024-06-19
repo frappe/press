@@ -29,7 +29,9 @@ class StripePaymentMethod(Document):
 		last_4: DF.Data | None
 		name_on_card: DF.Data | None
 		stripe_customer_id: DF.Data | None
+		stripe_mandate_id: DF.Data | None
 		stripe_payment_method_id: DF.Data | None
+		stripe_setup_intent_id: DF.Data | None
 		team: DF.Link
 	# end: auto-generated types
 

@@ -653,7 +653,7 @@ class Team(Document):
 			},
 		)
 
-	def create_payment_method(self, payment_method_id, set_default=False):
+	def create_payment_method(self, payment_method_id, setup_intent_id, set_default=False):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
@@ -667,6 +667,7 @@ class Team(Document):
 				"expiry_year": payment_method["card"]["exp_year"],
 				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
+				"stripe_setup_intent_id": setup_intent_id,
 			}
 		)
 		doc.insert()

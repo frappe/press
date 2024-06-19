@@ -393,6 +393,7 @@ class Invoice(Document):
 		self._make_stripe_invoice(customer_id, amount)
 
 	def _make_stripe_invoice(self, customer_id, amount):
+		mandate_id = self.get_mandate_id(customer_id)
 		try:
 			stripe = get_stripe()
 			invoice = stripe.Invoice.create(
@@ -401,6 +402,7 @@ class Invoice(Document):
 				collection_method="charge_automatically",
 				auto_advance=True,
 				currency=self.currency.lower(),
+				payment_settings={"default_mandate": mandate_id},
 				idempotency_key=f"invoice:{self.name}:amount:{amount}",
 			)
 			stripe.InvoiceItem.create(
@@ -428,6 +430,14 @@ class Invoice(Document):
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
 			frappe.db.commit()
+
+	def get_mandate_id(self, customer_id):
+		mandate_id = frappe.get_value(
+			"Stripe Payment Method", {"team": self.team, "is_default": 1}, "stripe_mandate_id"
+		)
+		if not mandate_id:
+			return ""
+		return mandate_id
 
 	def find_stripe_invoice_if_not_set(self):
 		if self.stripe_invoice_id:
