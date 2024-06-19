@@ -5,6 +5,7 @@ import re
 import typing
 from textwrap import dedent
 from typing import Callable, Optional, TypedDict
+from press.press.doctype.deploy_candidate.utils import get_error_key
 
 import frappe
 import frappe.utils
@@ -166,7 +167,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_yarn_build_failed,
 		),
 		(
-			"note: This error originates from a subprocess, and is likely not a problem with pip.",
+			"This error originates from a subprocess, and is likely not a problem with pip",
 			update_with_error_on_pip_install,
 		),
 	]
@@ -234,6 +235,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 
 		if handler(details, dc, exc):
 			details["is_actionable"] = True
+			dc.error_key = get_error_key(strs)
 			break
 		else:
 			details["title"] = default_title

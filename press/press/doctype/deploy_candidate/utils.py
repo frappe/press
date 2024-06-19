@@ -1,5 +1,5 @@
 import json
-
+import re
 from pathlib import Path
 from typing import Any, Optional, TypedDict
 
@@ -96,3 +96,20 @@ def load_package_json(app: str, package_json_path: str):
 			raise Exception(
 				"App has invalid package.json file", app, package_json_path
 			) from None
+
+
+def get_error_key(error_substring: str | list[str]) -> str:
+	if isinstance(error_substring, list):
+		error_substring = " ".join(error_substring)
+	"""
+	Converts `MatchStrings` into error keys, these are set on
+	DeployCandidates on UA Failures for two reasons:
+	1. To check if a subsequent deploy will fail for the same reasons.
+	2. To track the kind of UA errors the users are facing.
+	"""
+
+	return re.sub(
+		r"[\"'\[\],:]|\.$",
+		"",
+		error_substring.lower(),
+	)

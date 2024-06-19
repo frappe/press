@@ -15,6 +15,7 @@
   "retry_count",
   "column_break_rpow",
   "manually_failed",
+  "error_key",
   "section_break_6",
   "build_start",
   "build_duration",
@@ -398,6 +399,12 @@
    "label": "Build Server",
    "options": "Server",
    "read_only": 1
+  },
+  {
+   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
+   "fieldname": "error_key",
+   "fieldtype": "Data",
+   "label": "Error Key"
   }
  ],
  "links": [
@@ -414,7 +421,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-10 16:26:36.178303",
+ "modified": "2024-06-19 13:33:26.093590",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
