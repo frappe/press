@@ -711,12 +711,16 @@ def process_archive_bench_job_update(job):
 
 def process_add_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", True)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", True, update_modified=False
+		)
 
 
 def process_remove_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", False, update_modified=False
+		)
 
 
 def get_archive_jobs(bench: str):
