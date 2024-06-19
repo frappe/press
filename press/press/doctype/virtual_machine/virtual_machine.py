@@ -900,34 +900,20 @@ class VirtualMachine(Document):
 		):
 			# Pick a random machine
 			# TODO: This probably should be a method on the Cluster
-			machine = frappe.get_doc(
-				"Virtual Machine",
-				{
-					"status": ("not in", ("Terminated", "Draft")),
-					"cloud_provider": "AWS EC2",
-					"cluster": cluster,
-				},
-			)
+			machines = cls._get_active_aws_machines(cluster)
 			frappe.enqueue_doc(
-				machine.doctype,
-				machine.name,
+				"Virtual Machine",
+				machines[0].name,
 				method="bulk_sync_aws_cluster",
 				queue="sync",
-				job_id=f"bulk_sync_aws:{machine.cluster}",
+				job_id=f"bulk_sync_aws:{cluster}",
 				deduplicate=True,
 			)
 
 	def bulk_sync_aws_cluster(self):
 		client = self.client()
-		instance_ids = frappe.get_all(
-			"Virtual Machine",
-			filters={
-				"status": ("not in", ("Terminated", "Draft")),
-				"cloud_provider": "AWS EC2",
-				"cluster": self.cluster,
-			},
-			pluck="instance_id",
-		)
+		machines = self.__class__._get_active_aws_machines(self.cluster)
+		instance_ids = [machine.instance_id for machine in machines]
 		response = client.describe_instances(
 			Filters=[{"Name": "instance-id", "Values": instance_ids}]
 		)
@@ -940,6 +926,19 @@ class VirtualMachine(Document):
 				except Exception:
 					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 					frappe.db.rollback()
+
+	@classmethod
+	def _get_active_aws_machines(cls, cluster):
+		return frappe.get_all(
+			"Virtual Machine",
+			fields=["name", "instance_id"],
+			filters=[
+				["status", "not in", ("Terminated", "Draft")],
+				["cloud_provider", "=", "AWS EC2"],
+				["cluster", "=", cluster],
+				["instance_id", "is", "set"],
+			],
+		)
 
 	@classmethod
 	def bulk_sync_oci(cls):
