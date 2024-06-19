@@ -358,5 +358,29 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-06-18 16:03:25.166898",
+  "name": "Increase Swap",
+  "steps": [
+   {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.increase_swap(4)",
+    "step_name": "Add swap on server",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Increase Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "step_name": "Wait for swap to be added",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]
