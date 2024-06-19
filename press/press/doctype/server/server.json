@@ -474,7 +474,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "disable_agent_job_auto_retry",
    "fieldtype": "Check",
    "label": "Disable Agent Job Auto Retry"
@@ -500,7 +500,7 @@
   }
  ],
  "links": [],
- "modified": "2024-06-12 15:46:26.286323",
+ "modified": "2024-06-19 15:46:26.286323",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
