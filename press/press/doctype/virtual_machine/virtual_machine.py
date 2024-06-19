@@ -893,26 +893,43 @@ class VirtualMachine(Document):
 	def bulk_sync_aws(cls):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
-			["cluster"],
+			["cluster", "max(`index`) as max_index"],
 			{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "AWS EC2"},
 			group_by="cluster",
-			pluck="cluster",
 		):
-			# Pick a random machine
-			# TODO: This probably should be a method on the Cluster
-			machines = cls._get_active_aws_machines(cluster)
-			frappe.enqueue_doc(
-				"Virtual Machine",
-				machines[0].name,
-				method="bulk_sync_aws_cluster",
-				queue="sync",
-				job_id=f"bulk_sync_aws:{cluster}",
-				deduplicate=True,
-			)
+			CHUNK_SIZE = 25  # Each call will pick up ~50 machines (2 x CHUNK_SIZE)
+			# Generate closed bounds for 25 indexes at a time
+			# (1, 25), (26, 50), (51, 75), ...
+			# We might have uneven chunks because of missing indexes
+			chunks = [
+				(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)
+			]
+			for start, end in chunks:
+				# Pick a random machine
+				# TODO: This probably should be a method on the Cluster
+				machines = cls._get_active_aws_machines_within_chunk_range(
+					cluster.cluster, start, end
+				)
+				if not machines:
+					# There might not be any running machines in the chunk range
+					continue
 
-	def bulk_sync_aws_cluster(self):
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					machines[0].name,
+					method="bulk_sync_aws_cluster",
+					start=start,
+					end=end,
+					queue="sync",
+					job_id=f"bulk_sync_aws:{cluster.cluster}:{start}-{end}",
+					deduplicate=True,
+				)
+
+	def bulk_sync_aws_cluster(self, start, end):
 		client = self.client()
-		machines = self.__class__._get_active_aws_machines(self.cluster)
+		machines = self.__class__._get_active_aws_machines_within_chunk_range(
+			self.cluster, start, end
+		)
 		instance_ids = [machine.instance_id for machine in machines]
 		response = client.describe_instances(
 			Filters=[{"Name": "instance-id", "Values": instance_ids}]
@@ -928,7 +945,7 @@ class VirtualMachine(Document):
 					frappe.db.rollback()
 
 	@classmethod
-	def _get_active_aws_machines(cls, cluster):
+	def _get_active_aws_machines_within_chunk_range(cls, cluster, start, end):
 		return frappe.get_all(
 			"Virtual Machine",
 			fields=["name", "instance_id"],
@@ -937,6 +954,8 @@ class VirtualMachine(Document):
 				["cloud_provider", "=", "AWS EC2"],
 				["cluster", "=", cluster],
 				["instance_id", "is", "set"],
+				["index", ">=", start],
+				["index", "<=", end],
 			],
 		)
 
