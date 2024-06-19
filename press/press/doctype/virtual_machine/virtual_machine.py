@@ -928,7 +928,9 @@ class VirtualMachine(Document):
 			},
 			pluck="instance_id",
 		)
-		response = client.describe_instances(InstanceIds=instance_ids)
+		response = client.describe_instances(
+			Filters=[{"Name": "instance-id", "Values": instance_ids}]
+		)
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
 				machine = frappe.get_doc("Virtual Machine", {"instance_id": instance["InstanceId"]})
