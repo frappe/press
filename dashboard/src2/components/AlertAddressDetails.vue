@@ -1,18 +1,34 @@
 <template>
-	<AlertBanner
-		title="Please add your billing address details to complete your Frappe Cloud profile."
-		type="warning"
-	>
-		<Button class="ml-auto" route="/billing" variant="outline">
-			Update Address
-		</Button>
-	</AlertBanner>
+	<div>
+		<AlertBanner
+			title="Please add your billing address to complete your Frappe Cloud profile."
+			type="warning"
+		>
+			<Button
+				class="ml-auto"
+				@click="showBillingDetailsDialog = true"
+				variant="outline"
+			>
+				Update Address
+			</Button>
+		</AlertBanner>
+		<UpdateBillingDetails
+			v-model="showBillingDetailsDialog"
+			@updated="showBillingDetailsDialog = false"
+		/>
+	</div>
 </template>
 <script>
 import AlertBanner from './AlertBanner.vue';
+import UpdateBillingDetails from '@/components/UpdateBillingDetails.vue';
 
 export default {
 	name: 'AlertAddressDetails',
-	components: { AlertBanner }
+	components: { AlertBanner },
+	data() {
+		return {
+			showBillingDetailsDialog: false
+		};
+	}
 };
 </script>

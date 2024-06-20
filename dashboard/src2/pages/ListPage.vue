@@ -18,7 +18,7 @@
 			/>
 			<AlertAddressDetails
 				class="mb-5"
-				v-if="!$team.doc.billing_details.name"
+				v-if="!$team.doc.billing_details?.name"
 			/>
 			<ObjectList :options="listOptions" />
 		</div>
