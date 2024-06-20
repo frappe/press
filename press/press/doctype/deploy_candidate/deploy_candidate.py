@@ -1572,7 +1572,7 @@ def pull_update_file_filter(file_path: str) -> bool:
 		if not file_path.endswith(ext):
 			continue
 
-		if "/public/" in file_path or "/www/" in file_path:
+		if "/www/" in file_path:
 			return True
 
 		# Probably requires build
