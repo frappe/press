@@ -27,6 +27,7 @@ def create_test_proxy_server(
 	domain: str = "fc.dev",
 	domains: List[Dict[str, str]] = [{"domain": "fc.dev"}],
 	cluster: str = "Default",
+	is_primary: bool = True,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
 	create_test_press_settings()
@@ -40,6 +41,7 @@ def create_test_proxy_server(
 			"cluster": cluster,
 			"domain": domain,
 			"domains": domains,
+			"is_primary": is_primary,
 		}
 	).insert(ignore_if_duplicate=True)
 	server.reload()
@@ -65,7 +67,7 @@ class TestProxyServer(FrappeTestCase):
 		from press.press.doctype.site.test_site import create_test_site
 
 		proxy1 = create_test_proxy_server()
-		proxy2 = create_test_proxy_server()
+		proxy2 = create_test_proxy_server(is_primary=False)
 
 		root_domain: RootDomain = frappe.get_doc("Root Domain", proxy1.domain)
 		root_domain.boto3_client.create_hosted_zone(
@@ -78,7 +80,6 @@ class TestProxyServer(FrappeTestCase):
 		site1 = create_test_site(server=server.name)
 		create_test_site()  # another proxy; unrelated
 
-		proxy1.db_set("is_primary", 1)
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
