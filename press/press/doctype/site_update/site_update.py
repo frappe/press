@@ -515,7 +515,7 @@ def process_update_site_job_update(job):
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
-			frappe.get_doc("Site", job.site).reset_previous_status(activate_broken=True)
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		elif updated_status == "Delivery Failure":
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
