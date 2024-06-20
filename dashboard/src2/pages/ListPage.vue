@@ -16,6 +16,10 @@
 				class="mb-5"
 				v-if="isCardExpired && $team.doc.payment_mode == 'Card'"
 			/>
+			<AlertAddressDetails
+				class="mb-5"
+				v-if="!$team.doc.billing_details?.name"
+			/>
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -42,6 +46,9 @@ export default {
 		),
 		AlertCardExpired: defineAsyncComponent(() =>
 			import('../components/AlertCardExpired.vue')
+		),
+		AlertAddressDetails: defineAsyncComponent(() =>
+			import('../components/AlertAddressDetails.vue')
 		)
 	},
 	props: {
