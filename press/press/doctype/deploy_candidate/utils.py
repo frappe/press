@@ -113,3 +113,11 @@ def get_error_key(error_substring: str | list[str]) -> str:
 		"",
 		error_substring.lower(),
 	)
+
+
+def get_will_fail_checker(error_key: str):
+	from press.press.doctype.deploy_candidate.deploy_notifications import handlers
+
+	for error_substring, _, will_fail_checker in handlers():
+		if get_error_key(error_substring) == error_key:
+			return will_fail_checker

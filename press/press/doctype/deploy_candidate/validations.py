@@ -7,11 +7,13 @@ import semantic_version as sv
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	PackageManagers,
+	get_will_fail_checker,
 )
 from press.utils import get_filepath, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class PreBuildValidations:
@@ -205,3 +207,16 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 		return [v.value for v in assign.value.elts]
 
 	return []
+
+
+def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
+	if not (old_dc := rg.get_last_deploy_candidate()):
+		return
+
+	if not old_dc.error_key:
+		return
+
+	if not (checker := get_will_fail_checker(old_dc.error_key)):
+		return
+
+	checker(old_dc, new_dc)

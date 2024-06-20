@@ -4,7 +4,7 @@
 import re
 import typing
 from textwrap import dedent
-from typing import Callable, Optional, TypedDict
+from typing import Optional, TypedDict, Protocol
 from press.press.doctype.deploy_candidate.utils import get_error_key
 
 import frappe
@@ -42,17 +42,23 @@ if typing.TYPE_CHECKING:
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
-	UserAddressableHandler = Callable[
-		[
-			Details,
-			DeployCandidate,
-			BaseException,
-		],
-		bool,  # Return True if is_actionable
-	]
+	class UserAddressableHandler(Protocol):
+		def __call__(
+			self,
+			details: "Details",
+			dc: "DeployCandidate",
+			exc: BaseException,
+		) -> bool:  # Return True if is_actionable
+			...
+
+	class WillFailChecker(Protocol):
+		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+			...
+
 	UserAddressableHandlerTuple = tuple[
 		MatchStrings,
 		UserAddressableHandler,
+		WillFailChecker | None,
 	]
 
 
@@ -87,75 +93,101 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 	tuple will be checked.
 
 	Due to this order of the tuples matter.
+
+	The third value is the `WillFailChecker` which is called
+	when a new Deploy Candidate is to be made and the previous
+	Deploy Candidate suffered a User Addressable Failure.
+
+	The `WillFailChecker` is placed in proximity with
+	notification handlers because that's where the error is
+	evaluated and it's key stored on a Deploy Candidate
+	as `error_key`.
 	"""
 	return [
 		(
 			"App installation token could not be fetched",
 			update_with_app_not_fetchable,
+			None,
 		),
 		(
 			"Repository could not be fetched",
 			update_with_app_not_fetchable,
+			None,
 		),
 		(
 			"App has invalid pyproject.toml file",
 			update_with_invalid_pyproject_error,
+			None,
 		),
 		(
 			"App has invalid package.json file",
 			update_with_invalid_package_json_error,
+			None,
 		),
 		(
 			'engine "node" is incompatible with this module',
 			update_with_incompatible_node,
+			None,
 		),
 		(
 			"Incompatible Node version found",
 			update_with_incompatible_node,
+			None,
 		),
 		(
 			"Incompatible Python version found",
 			update_with_incompatible_python_prebuild,
+			None,
 		),
 		(
 			"Incompatible app version found",
 			update_with_incompatible_app_prebuild,
+			None,
 		),
 		(
 			"Invalid release found",
 			update_with_invalid_release_prebuild,
+			None,
 		),
 		(
 			"Required app not found",
 			update_with_required_app_not_found_prebuild,
+			None,
 		),
 		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
+			None,
 		),
 		(
 			"ImportError: cannot import name",
 			update_with_import_error,
+			None,
 		),
 		(
 			"No matching distribution found for",
 			update_with_dependency_not_found,
+			None,
 		),
 		(
 			"[ERROR] [plugin vue]",
 			update_with_vue_build_failed,
+			None,
 		),
 		(
 			"[ERROR] [plugin frappe-vue-style]",
 			update_with_vue_build_failed,
+			None,
 		),
 		(
 			"vite: not found",
 			update_with_vite_not_found,
+			None,
 		),
 		(
 			"FileNotFoundError: [Errno 2] No such file or directory",
 			update_with_file_not_found,
+			None,
 		),
 		# Below two are catch all fallback handlers for
 		# `yarn build` and `pip install` errors originating due
@@ -165,10 +197,12 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"subprocess.CalledProcessError: Command 'bench build --app",
 			update_with_yarn_build_failed,
+			None,
 		),
 		(
 			"This error originates from a subprocess, and is likely not a problem with pip",
 			update_with_error_on_pip_install,
+			None,
 		),
 	]
 
@@ -223,7 +257,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 		assistance_url=None,
 	)
 
-	for strs, handler in handlers():
+	for strs, handler, _ in handlers():
 		if isinstance(strs, str):
 			strs = [strs]
 

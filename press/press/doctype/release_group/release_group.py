@@ -515,7 +515,11 @@ class ReleaseGroup(Document, TagHelpers):
 		dc.schedule_build_and_deploy()
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_update=None) -> "Optional[DeployCandidate]":
+	def create_deploy_candidate(
+		self,
+		apps_to_update=None,
+		run_will_fail_check=False,
+	) -> "Optional[DeployCandidate]":
 		if not self.enabled:
 			return
 
@@ -542,7 +546,7 @@ class ReleaseGroup(Document, TagHelpers):
 		]
 
 		# Create and deploy the DC
-		candidate = frappe.get_doc(
+		new_dc: "DeployCandidate" = frappe.get_doc(
 			{
 				"doctype": "Deploy Candidate",
 				"group": self.name,
@@ -551,9 +555,17 @@ class ReleaseGroup(Document, TagHelpers):
 				"packages": packages,
 				"environment_variables": environment_variables,
 			}
-		).insert()
+		)
 
-		return candidate
+		if run_will_fail_check:
+			from press.press.doctype.deploy_candidate.validations import (
+				check_if_update_will_fail,
+			)
+
+			check_if_update_will_fail(self, new_dc)
+
+		new_dc.insert()
+		return new_dc
 
 	def validate_dc_apps_against_rg(self, dc_apps) -> None:
 		app_map = {app["app"]: app for app in dc_apps}
@@ -1223,6 +1235,19 @@ class ReleaseGroup(Document, TagHelpers):
 		return frappe.get_last_doc(
 			"Deploy Candidate", {"status": "Success", "group": self.name}
 		)
+
+	def get_last_deploy_candidate(self):
+		try:
+			dc: "DeployCandidate" = frappe.get_last_doc(
+				"Deploy Candidate",
+				{
+					"status": ["!=", "Draft"],
+					"group": self.name,
+				},
+			)
+			return dc
+		except frappe.DoesNotExistError:
+			return None
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
