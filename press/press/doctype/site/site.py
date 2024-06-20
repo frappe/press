@@ -817,10 +817,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
-	def reset_previous_status(self):
+	def reset_previous_status(self, fix_broken=False):
 		self.status = self.status_before_update
 		self.status_before_update = None
-		if not self.status:
+		if not self.status or (self.status == "Broken" and fix_broken):
 			status_map = {402: "Suspended", 503: "Inactive"}
 			try:
 				response = requests.get(f"https://{self.name}")
@@ -2525,9 +2525,9 @@ def process_migrate_site_job_update(job):
 	}[job.status]
 
 	if updated_status == "Active":
-		site = frappe.get_doc("Site", job.site)
+		site: Site = frappe.get_doc("Site", job.site)
 		if site.status_before_update:
-			site.reset_previous_status()
+			site.reset_previous_status(fix_broken=True)
 			return
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
@@ -2625,7 +2625,7 @@ def process_move_site_to_bench_job_update(job):
 		return
 	if job.status == "Success":
 		site = frappe.get_doc("Site", job.site)
-		site.reset_previous_status()
+		site.reset_previous_status(fix_broken=True)
 
 
 def update_records_for_rename(job):
@@ -2656,7 +2656,7 @@ def process_restore_tables_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).reset_previous_status()
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 
