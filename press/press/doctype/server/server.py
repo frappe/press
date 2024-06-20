@@ -858,6 +858,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	def reload_nginx(self):
+		agent = Agent(self.name, server_type=self.doctype)
+		agent.reload_nginx()
+
 
 class Server(BaseServer):
 	# begin: auto-generated types

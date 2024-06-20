@@ -1,0 +1,25 @@
+---
+- name: Up secondary proxy to serve requests
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Ensure nginx is enabled and running
+      service:
+        name: nginx
+        enabled: yes
+        state: started
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Remove cron to reload nginx every 5 mins
+      become: yes
+      become_user: frappe
+      cron:
+        name: reload_nginx
+        state: absent
