@@ -1759,6 +1759,15 @@
     "@sentry/types" "8.10.0"
     "@sentry/utils" "8.10.0"
 
+"@sentry-internal/tracing@7.114.0":
+  version "7.114.0"
+  resolved "https://registry.yarnpkg.com/@sentry-internal/tracing/-/tracing-7.114.0.tgz#bdcd364f511e2de45db6e3004faf5685ca2e0f86"
+  integrity sha512-dOuvfJN7G+3YqLlUY4HIjyWHaRP8vbOgF+OsE5w2l7ZEn1rMAaUbPntAR8AF9GBA6j2zWNoSo8e7GjbJxVofSg==
+  dependencies:
+    "@sentry/core" "7.114.0"
+    "@sentry/types" "7.114.0"
+    "@sentry/utils" "7.114.0"
+
 "@sentry/browser@8.10.0":
   version "8.10.0"
   resolved "https://registry.yarnpkg.com/@sentry/browser/-/browser-8.10.0.tgz#ccf42a70d72edb58cc7d1030fd4d4bcc7b2bf999"
@@ -1772,14 +1781,13 @@
     "@sentry/types" "8.10.0"
     "@sentry/utils" "8.10.0"
 
-"@sentry/core@7.42.0":
-  version "7.42.0"
-  resolved "https://registry.npmjs.org/@sentry/core/-/core-7.42.0.tgz"
-  integrity sha512-vNcTyoQz5kUXo5vMGDyc5BJMO0UugPvMfYMQVxqt/BuDNR30LVhY+DL2tW1DFZDvRvyn5At+H7kSTj6GFrANXQ==
+"@sentry/core@7.114.0":
+  version "7.114.0"
+  resolved "https://registry.yarnpkg.com/@sentry/core/-/core-7.114.0.tgz#3efe86b92a5379c44dfd0fd4685266b1a30fa898"
+  integrity sha512-YnanVlmulkjgZiVZ9BfY9k6I082n+C+LbZo52MTvx3FY6RE5iyiPMpaOh67oXEZRWcYQEGm+bKruRxLVP6RlbA==
   dependencies:
-    "@sentry/types" "7.42.0"
-    "@sentry/utils" "7.42.0"
-    tslib "^1.9.3"
+    "@sentry/types" "7.114.0"
+    "@sentry/utils" "7.114.0"
 
 "@sentry/core@8.10.0":
   version "8.10.0"
@@ -1789,33 +1797,29 @@
     "@sentry/types" "8.10.0"
     "@sentry/utils" "8.10.0"
 
-"@sentry/tracing@^7.15.0":
-  version "7.42.0"
-  resolved "https://registry.npmjs.org/@sentry/tracing/-/tracing-7.42.0.tgz"
-  integrity sha512-0veGu3Ntweuj1pwWrJIFHmVdow4yufCreGIhsNDyrclwOjaTY3uI8iA6N62+hhtxOvqv+xueB98K1DvT5liPCQ==
+"@sentry/tracing@^7.114.0":
+  version "7.114.0"
+  resolved "https://registry.yarnpkg.com/@sentry/tracing/-/tracing-7.114.0.tgz#32a3438b0f2d02fb7b7359fe7712c5a349a2a329"
+  integrity sha512-eldEYGADReZ4jWdN5u35yxLUSTOvjsiZAYd4KBEpf+Ii65n7g/kYOKAjNl7tHbrEG1EsMW4nDPWStUMk1w+tfg==
   dependencies:
-    "@sentry/core" "7.42.0"
-    "@sentry/types" "7.42.0"
-    "@sentry/utils" "7.42.0"
-    tslib "^1.9.3"
+    "@sentry-internal/tracing" "7.114.0"
 
-"@sentry/types@7.42.0":
-  version "7.42.0"
-  resolved "https://registry.npmjs.org/@sentry/types/-/types-7.42.0.tgz"
-  integrity sha512-Ga0xaBIR/peuXQ88hI9a5TNY3GLNoH8jpsgPaAjAtRHkLsTx0y3AR+PrD7pUysza9QjvG+Qux01DRvLgaNKOHA==
+"@sentry/types@7.114.0":
+  version "7.114.0"
+  resolved "https://registry.yarnpkg.com/@sentry/types/-/types-7.114.0.tgz#ab8009d5f6df23b7342121083bed34ee2452e856"
+  integrity sha512-tsqkkyL3eJtptmPtT0m9W/bPLkU7ILY7nvwpi1hahA5jrM7ppoU0IMaQWAgTD+U3rzFH40IdXNBFb8Gnqcva4w==
 
 "@sentry/types@8.10.0":
   version "8.10.0"
   resolved "https://registry.yarnpkg.com/@sentry/types/-/types-8.10.0.tgz#47119cb121cba38cc3654e7b79ac9014235132a9"
   integrity sha512-6kgh6NqgQHcnnD7dOe3THcVkzv2nor/f94x3odmPShN2AWBfPRprHZZsLTjh/3aC7l76V2nfuQ4wgRvwsddTWw==
 
-"@sentry/utils@7.42.0":
-  version "7.42.0"
-  resolved "https://registry.npmjs.org/@sentry/utils/-/utils-7.42.0.tgz"
-  integrity sha512-cBiDZVipC+is+IVgsTQLJyZWUZQxlLZ9GarNT+XZOZ5BFh0acFtz88hO6+S7vGmhcx2aCvsdC9yb2Yf+BphK6Q==
+"@sentry/utils@7.114.0":
+  version "7.114.0"
+  resolved "https://registry.yarnpkg.com/@sentry/utils/-/utils-7.114.0.tgz#59d30a79f4acff3c9268de0b345f0bcbc6335112"
+  integrity sha512-319N90McVpupQ6vws4+tfCy/03AdtsU0MurIE4+W5cubHME08HtiEWlfacvAxX+yuKFhvdsO4K4BB/dj54ideg==
   dependencies:
-    "@sentry/types" "7.42.0"
-    tslib "^1.9.3"
+    "@sentry/types" "7.114.0"
 
 "@sentry/utils@8.10.0":
   version "8.10.0"
@@ -6915,7 +6919,7 @@ tslib@2.3.0:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.3.0.tgz#803b8cdab3e12ba581a4ca41c8839bbb0dacb09e"
   integrity sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==
 
-tslib@^1.9.0, tslib@^1.9.3:
+tslib@^1.9.0:
   version "1.14.1"
   resolved "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz"
   integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
