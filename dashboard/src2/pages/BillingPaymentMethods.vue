@@ -82,7 +82,7 @@ export default {
 						align: 'right'
 					}
 				],
-				rowActions({ listResource, row }) {
+				rowActions: ({ listResource, row }) => {
 					return [
 						{
 							label: 'Set as default',
@@ -104,7 +104,7 @@ export default {
 						{
 							label: 'Remove',
 							onClick: () => {
-								if (row.is_default) {
+								if (row.is_default && this.$team.doc.payment_mode === 'Card') {
 									toast.error('Cannot remove default card');
 									return;
 								}
