@@ -12,7 +12,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.5.0.tar.gz
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.6.0.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -20,7 +20,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: /tmp/self-hosted-24.5.0/
+    src: /tmp/self-hosted-24.6.0/
     dest: /home/frappe/sentry
     remote_src: yes
 
