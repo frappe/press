@@ -39,7 +39,7 @@ export let session = reactive({
 	hasPartnerAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some(role => role.allow_partner)
-			: true
+			: false
 	),
 	hasSiteCreationAccess: computed(() =>
 		session.roles.data.length
