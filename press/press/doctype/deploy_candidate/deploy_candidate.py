@@ -225,8 +225,9 @@ class DeployCandidate(Document):
 		if not self.validate_status():
 			return
 
-		if not self.no_cache:
-			self.no_cache = kwargs.get("no_cache", False)
+		if (no_cache := kwargs.get("no_cache")) is not None:
+			self.no_cache = no_cache
+			del kwargs["no_cache"]
 
 		no_build = kwargs.get("no_build", False)
 		self.set_build_server(no_build)
