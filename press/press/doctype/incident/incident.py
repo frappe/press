@@ -107,7 +107,9 @@ class Incident(WebsiteGenerator):
 		"""
 		Ignore incidents on server (Don't call)
 		"""
-		frappe.db.set_value("Server", self.server, "ignore_incidents", 1)
+		frappe.db.set_value(
+			"Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime()
+		)
 
 	def call_humans(self):
 		enqueue_doc(
@@ -187,7 +189,9 @@ Likely due to insufficient balance or incorrect credentials""",
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
-		if frappe.db.get_value("Server", self.server, "ignore_incidents"):
+		if (
+			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
+		) is not None and ignore_since < frappe.utils.now_datetime():
 			return
 		for human in self.get_humans():
 			if not (call := self.call_human(human)):
@@ -435,6 +439,27 @@ def resolve_incidents():
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()
+
+
+def notify_ignored_servers():
+	servers = frappe.qb.DocType("Server")
+	if not (
+		ignored_servers := frappe.qb.from_(servers)
+		.select(servers.name, servers.ignore_incidents_since)
+		.where(servers.status == "Active")
+		.where(servers.ignore_incidents_since.isnotnull())
+		.run(as_dict=True)
+	):
+		return
+
+	message = "The following servers are being ignored for incidents:\n\n"
+	for server in ignored_servers:
+		message += (
+			f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
+		)
+	message += "\n@adityahase @balamurali27 @saurabh6790\n"
+	telegram = Telegram()
+	telegram.send(message)
 
 
 def on_doctype_update():

@@ -15,11 +15,11 @@
   "cluster",
   "provider",
   "virtual_machine",
+  "ignore_incidents_since",
   "is_server_prepared",
   "is_server_setup",
   "is_self_hosted",
   "is_server_renamed",
-  "ignore_incidents",
   "public",
   "billing_section",
   "team",
@@ -464,12 +464,6 @@
    "label": "Skip Scheduled Backups"
   },
   {
-   "default": "0",
-   "fieldname": "ignore_incidents",
-   "fieldtype": "Check",
-   "label": "Ignore Incidents"
-  },
-  {
    "fieldname": "column_break_pdbx",
    "fieldtype": "Column Break"
   },
@@ -497,10 +491,15 @@
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
+  },
+  {
+   "fieldname": "ignore_incidents_since",
+   "fieldtype": "Datetime",
+   "label": "Ignore Incidents Since"
   }
  ],
  "links": [],
- "modified": "2024-06-12 15:46:26.286323",
+ "modified": "2024-06-21 15:02:47.978300",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -882,7 +882,7 @@ class Server(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
-		ignore_incidents: DF.Check
+		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
 		is_managed_database: DF.Check
 		is_primary: DF.Check
