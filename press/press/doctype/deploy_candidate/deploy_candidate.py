@@ -97,6 +97,7 @@ class DeployCandidate(Document):
 		docker_image_repository: DF.Data | None
 		docker_image_tag: DF.Data | None
 		environment_variables: DF.Table[DeployCandidateVariable]
+		error_key: DF.Data | None
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
 		is_redisearch_enabled: DF.Check
@@ -104,6 +105,7 @@ class DeployCandidate(Document):
 		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
+		no_cache: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
@@ -224,6 +226,9 @@ class DeployCandidate(Document):
 		if not self.validate_status():
 			return
 
+		if not self.no_cache:
+			self.no_cache = kwargs.get("no_cache", False)
+
 		no_build = kwargs.get("no_build", False)
 		self.set_build_server(no_build)
 		self._set_status_pending()
@@ -319,16 +324,18 @@ class DeployCandidate(Document):
 	def schedule_build_and_deploy(
 		self,
 		run_now: bool = True,
+		no_cache: bool = True,
 		scheduled_time: Optional[datetime] = None,
 	):
 		if self.status == "Scheduled":
 			return
 
 		if run_now and not is_suspended():
-			self.build_and_deploy()
+			self.build_and_deploy(no_cache=no_cache)
 			return
 
 		self.status = "Scheduled"
+		self.no_cache = no_cache
 		self.scheduled_time = scheduled_time or now()
 		self.save()
 		frappe.db.commit()
@@ -342,8 +349,12 @@ class DeployCandidate(Document):
 			return
 		self.build_and_deploy()
 
-	def build_and_deploy(self):
-		self.pre_build(method="_build", deploy_after_build=True)
+	def build_and_deploy(self, no_cache: bool = False):
+		self.pre_build(
+			method="_build",
+			deploy_after_build=True,
+			no_cache=no_cache,
+		)
 
 	def _deploy(self):
 		try:
@@ -353,7 +364,6 @@ class DeployCandidate(Document):
 
 	def _build(
 		self,
-		no_cache: bool = False,
 		no_push: bool = False,
 		no_build: bool = False,
 		# Used for processing build agent job
@@ -362,9 +372,8 @@ class DeployCandidate(Document):
 		self._set_status_preparing()
 		self._set_output_parsers()
 		try:
-			self._prepare_build(no_cache, no_push)
+			self._prepare_build(no_push)
 			self._start_build(
-				no_cache,
 				no_push,
 				no_build,
 				deploy_after_build,
@@ -446,11 +455,11 @@ class DeployCandidate(Document):
 		if self.upload_step_updater:
 			self.upload_step_updater.flush_output(commit)
 
-	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
-		if not no_cache:
+	def _prepare_build(self, no_push: bool = False):
+		if not self.no_cache:
 			self._update_app_releases()
 
-		if not no_cache:
+		if not self.no_cache:
 			self._set_app_cached_flags()
 
 		self._prepare_build_directory()
@@ -458,7 +467,6 @@ class DeployCandidate(Document):
 
 	def _start_build(
 		self,
-		no_cache: bool = False,
 		no_push: bool = False,
 		no_build: bool = False,
 		deploy_after_build: bool = False,
@@ -474,14 +482,12 @@ class DeployCandidate(Document):
 		# Build runs on build server
 		self._run_build_agent_jobs(
 			deploy_after_build,
-			no_cache,
 			no_push,
 		)
 
 	def _run_build_agent_jobs(
 		self,
 		deploy_after_build: bool,
-		no_cache: bool,
 		no_push: bool,
 	) -> None:
 
@@ -498,7 +504,7 @@ class DeployCandidate(Document):
 					"username": settings.docker_registry_username,
 					"password": settings.docker_registry_password,
 				},
-				"no_cache": no_cache,
+				"no_cache": self.no_cache,
 				"no_push": no_push,
 				# Next few values are not used by agent but are
 				# read in `process_run_build`
