@@ -275,20 +275,18 @@ class DeployCandidate(Document):
 		return False
 
 	@frappe.whitelist()
-	def generate_build_context(self):
-		self.pre_build(method="_build", no_build=True)
-
-	@frappe.whitelist()
-	def build(self):
-		self.pre_build(method="_build")
-
-	@frappe.whitelist()
-	def build_without_cache(self):
-		self.pre_build(method="_build", no_cache=True)
-
-	@frappe.whitelist()
-	def build_without_push(self):
-		self.pre_build(method="_build", no_push=True)
+	def build(
+		self,
+		no_push: bool = False,
+		no_build: bool = False,
+		no_cache: bool = False,
+	):
+		self.pre_build(
+			method="_build",
+			no_push=no_push,
+			no_build=no_build,
+			no_cache=no_cache,
+		)
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
@@ -313,29 +311,27 @@ class DeployCandidate(Document):
 		self._set_status_failure(commit)
 
 	@frappe.whitelist()
-	def redeploy(self):
+	def redeploy(self, no_cache: bool = False):
 		if not (dc := self.get_duplicate_dc()):
 			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
-		dc.build_and_deploy()
+		dc.build_and_deploy(no_cache=no_cache)
 		return dict(error=False, message=dc.name)
 
 	@frappe.whitelist()
 	def schedule_build_and_deploy(
 		self,
 		run_now: bool = True,
-		no_cache: bool = True,
 		scheduled_time: Optional[datetime] = None,
 	):
 		if self.status == "Scheduled":
 			return
 
 		if run_now and not is_suspended():
-			self.build_and_deploy(no_cache=no_cache)
+			self.build_and_deploy()
 			return
 
 		self.status = "Scheduled"
-		self.no_cache = no_cache
 		self.scheduled_time = scheduled_time or now()
 		self.save()
 		frappe.db.commit()
