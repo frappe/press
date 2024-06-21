@@ -39,6 +39,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	get_package_manager_files,
 	load_pyproject,
+	is_suspended,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
@@ -1745,10 +1746,6 @@ def get_build_stage_and_step(
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)
-
-
-def is_suspended() -> bool:
-	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
 
 
 def get_remote_step_output(

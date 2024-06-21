@@ -27,6 +27,14 @@
 		</div>
 	</Header>
 	<div>
+		<AlertBanner
+			v-if="canShowBuildsSuspendedBanner && showBuildsSuspendedBanner"
+			class="m-4"
+			title="<b>Builds Suspended</b>: Bench updates will be scheduled to run when builds resume."
+			type="warning"
+		></AlertBanner>
+	</div>
+	<div>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
 			:tabs="object.detail.tabs"
@@ -57,6 +65,7 @@ import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 let subscribed = {};
 
@@ -77,9 +86,23 @@ export default {
 		Header,
 		ActionButton,
 		TabsWithRouter,
-		FBreadcrumbs: Breadcrumbs
+		FBreadcrumbs: Breadcrumbs,
+		AlertBanner
+	},
+	data() {
+		return {
+			showBuildsSuspendedBanner: false
+		};
 	},
 	resources: {
+		areBuildsSuspended() {
+			return {
+				url: 'press.api.bench.are_builds_suspended',
+				onSuccess(value) {
+					this.showBuildsSuspendedBanner = value;
+				}
+			};
+		},
 		document() {
 			return {
 				type: 'document',
@@ -168,6 +191,14 @@ export default {
 				}
 			}
 			return items;
+		},
+		canShowBuildsSuspendedBanner() {
+			if (!this.name.startsWith('bench-')) {
+				return false;
+			}
+
+			this.$resources?.areBuildsSuspended.submit();
+			return true;
 		}
 	}
 };
