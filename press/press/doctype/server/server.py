@@ -443,9 +443,16 @@ class BaseServer(Document, TagHelpers):
 	def extend_ec2_volume(self):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
+		restart_mariadb = (
+			self.doctype == "Database Server" and self.is_disk_full()
+		)  # check before breaking glass to ensure state of mariadb
 		self.break_glass()
 		try:
-			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
+			ansible = Ansible(
+				playbook="extend_ec2_volume.yml",
+				server=self,
+				variables={"restart_mariadb": restart_mariadb},
+			)
 			ansible.run()
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
@@ -787,6 +794,24 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
+
+	@property
+	def free_space(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			60,
+			60,
+		)["datasets"]
+		if response:
+			return response[0]["values"][-1]
+		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
+
+	def is_disk_full(self) -> bool:
+		return self.free_space == 0
 
 	@property
 	def space_available_in_6_hours(self):
