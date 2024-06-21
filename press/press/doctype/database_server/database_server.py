@@ -4,6 +4,7 @@
 
 
 from typing import Any
+import json
 import frappe
 from frappe.core.doctype.version.version import get_diff
 
@@ -48,6 +49,8 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
+		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
+		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
@@ -920,6 +923,46 @@ class DatabaseServer(BaseServer):
 			log_error(
 				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
 			)
+
+	@frappe.whitelist()
+	def update_memory_allocator(self, memory_allocator):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_update_memory_allocator",
+			memory_allocator=memory_allocator,
+			enqueue_after_commit=True,
+		)
+
+	def _update_memory_allocator(self, memory_allocator):
+		ansible = Ansible(
+			playbook="mariadb_memory_allocator.yml",
+			server=self,
+			variables={
+				"server": self.name,
+				"allocator": memory_allocator.lower(),
+				"mariadb_root_password": self.get_password("mariadb_root_password"),
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Memory Allocator Setup Error", server=self.name)
+		elif play.status == "Success":
+			result = json.loads(
+				frappe.get_all(
+					"Ansible Task",
+					filters={"play": play.name, "task": "Show Memory Allocator"},
+					pluck="result",
+					order_by="creation DESC",
+					limit=1,
+				)[0]
+			)
+			query_result = result.get("query_result")
+			if query_result:
+				self.reload()
+				self.memory_allocator = memory_allocator
+				self.memory_allocator_version = query_result[0][0]["Value"]
+				self.save()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
