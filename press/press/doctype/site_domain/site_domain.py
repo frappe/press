@@ -195,7 +195,7 @@ def update_dns_type():
 	domains = frappe.get_all(
 		"Site Domain",
 		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
-		fields=["domain", "dns_type", "site"],
+		fields=["name", "domain", "dns_type", "site"],
 	)
 	for domain in domains:
 		try:
