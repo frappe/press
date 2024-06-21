@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 
 import frappe
 from frappe.model.document import Document
@@ -198,7 +199,13 @@ def update_dns_type():
 	for domain in domains:
 		response = check_dns(domain.site, domain.domain)
 		if response["matched"] and response["type"] != domain.dns_type:
-			frappe.db.set_value("Site Domain", domain.name, "dns_type", response["type"])
+			frappe.db.set_value(
+				"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
+			)
+		pretty_response = json.dumps(response, indent=4, default=str)
+		frappe.db.set_value(
+			"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
+		)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

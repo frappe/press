@@ -18,7 +18,8 @@
   "tls_certificate",
   "retry_count",
   "dns_section",
-  "dns_type"
+  "dns_type",
+  "dns_response"
  ],
  "fields": [
   {
@@ -111,10 +112,16 @@
    "fieldname": "dns_section",
    "fieldtype": "Section Break",
    "label": "DNS"
+  },
+  {
+   "fieldname": "dns_response",
+   "fieldtype": "Code",
+   "label": "DNS Response",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-06-21 15:05:56.816493",
+ "modified": "2024-06-21 15:06:55.709546",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
