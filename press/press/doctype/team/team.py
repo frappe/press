@@ -654,7 +654,9 @@ class Team(Document):
 			},
 		)
 
-	def create_payment_method(self, payment_method_id, setup_intent_id, set_default=False):
+	def create_payment_method(
+		self, payment_method_id, setup_intent_id, mandate_id, set_default=False
+	):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
@@ -669,6 +671,7 @@ class Team(Document):
 				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
 				"stripe_setup_intent_id": setup_intent_id,
+				"stripe_mandate_id": mandate_id if mandate_id else None,
 			}
 		)
 		doc.insert()

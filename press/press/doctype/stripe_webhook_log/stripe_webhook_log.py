@@ -8,7 +8,6 @@ import press.utils
 from press.api.billing import get_stripe
 from frappe.model.document import Document
 import re
-import json
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -63,32 +62,6 @@ class StripeWebhookLog(Document):
 					{"stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id},
 					"name",
 				)
-
-	def after_insert(self):
-		if self.event_type == "setup_intent.succeeded":
-			payload_object = json.loads(self.payload)["data"]["object"]
-			mandate_id = payload_object["mandate"]
-
-			stripe_pm = frappe.db.exists(
-				"Stripe Payment Method",
-				{
-					"stripe_payment_method_id": payload_object["payment_method"],
-					"stripe_setup_intent_id": payload_object["id"],
-				},
-			)
-			if stripe_pm and mandate_id:
-				frappe.db.set_value(
-					"Stripe Payment Method",
-					{
-						"stripe_payment_method_id": payload_object["payment_method"],
-						"stripe_setup_intent_id": payload_object["id"],
-					},
-					"stripe_mandate_id",
-					mandate_id,
-				)
-			else:
-				print("mandate_id or stripe payment method not found")
-				print(payload_object)
 
 
 @frappe.whitelist(allow_guest=True)

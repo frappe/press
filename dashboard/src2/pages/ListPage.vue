@@ -28,7 +28,11 @@
 			/>
 			<AlertMandateInfo
 				class="mb-5"
-				v-if="isMandateNotSet && $team.doc.currency === 'INR'"
+				v-if="
+					isMandateNotSet &&
+					$team.doc.currency === 'INR' &&
+					$team.doc.payment_mode == 'Card'
+				"
 			/>
 			<ObjectList :options="listOptions" />
 		</div>
@@ -109,7 +113,7 @@ export default {
 			return this.$resources.banner.doc;
 		},
 		isMandateNotSet() {
-			return !this.$team.doc.stripe_mandate_id ? true : false;
+			return !this.$team.doc.payment_method?.stripe_mandate_id ? true : false;
 		}
 	},
 	resources: {
