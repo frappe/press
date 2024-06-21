@@ -5,7 +5,7 @@
 				:items="[{ label: 'Partners', route: { name: 'Partners' } }]"
 			/>
 		</Header>
-		<TabsWithRouter v-if="$session.hasPartnerAccess" :tabs="tabs" />
+		<TabsWithRouter v-if="Boolean(this.$team.doc.erpnext_partner) || $session.hasPartnerAccess" :tabs="tabs" />
 		<div
 			v-else
 			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
