@@ -1,8 +1,17 @@
 ---
 - name: Add Primary Proxy Server Public Key to Authorized Keys
-  become: yes
-  become_user: frappe
   authorized_key:
     user: frappe
-    key: "{{ primary_public_key }}"
+    key: '{{ primary_public_key }}'
     state: present
+
+- name: Add cron to reload nginx every 5 mins
+  cron:
+    name: reload_nginx
+    minute: '*/5'
+    job: 'sudo systemctl reload nginx'
+
+- name: Ensure agent is up and running # Might be stopped during previous failover
+  supervisorctl:
+    name: 'agent:'
+    state: started

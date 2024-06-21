@@ -26,8 +26,8 @@ if typing.TYPE_CHECKING:
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(
-	proxy_server=None,
-	database_server=None,
+	proxy_server: str = None,
+	database_server: str = None,
 	cluster: str = "Default",
 	team: str = None,
 ) -> "Server":

@@ -44,7 +44,6 @@ class TestDatabaseServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.database_server.database_server.Ansible",
-		wraps=Ansible,
 	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
@@ -68,7 +67,6 @@ class TestDatabaseServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.database_server.database_server.Ansible",
-		wraps=Ansible,
 	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
@@ -100,7 +98,6 @@ class TestDatabaseServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.database_server.database_server.Ansible",
-		wraps=Ansible,
 	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
@@ -123,7 +120,6 @@ class TestDatabaseServer(FrappeTestCase):
 
 	@patch(
 		"press.press.doctype.database_server.database_server.Ansible",
-		wraps=Ansible,
 	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",

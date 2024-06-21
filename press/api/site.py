@@ -36,6 +36,19 @@ from press.utils import (
 	unique,
 )
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+
+	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.bench_app.bench_app import BenchApp
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+		DeployCandidateApp,
+	)
+	from frappe.types import DF
+
+
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
@@ -993,7 +1006,7 @@ def check_for_updates(name):
 	if not out.update_available:
 		return out
 
-	bench = frappe.get_doc("Bench", site.bench)
+	bench: "Bench" = frappe.get_doc("Bench", site.bench)
 	source = bench.candidate
 	destinations = frappe.get_all(
 		"Deploy Candidate Difference",
@@ -1007,17 +1020,26 @@ def check_for_updates(name):
 
 	destination = destinations[0]
 
-	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
+	destination_candidate: "DeployCandidate" = frappe.get_doc(
+		"Deploy Candidate", destination
+	)
 
 	out.installed_apps = site.apps
+
+	current_apps = bench.apps
+	next_apps = destination_candidate.apps
 	out.apps = get_updates_between_current_and_next_apps(
-		bench.apps, destination_candidate.apps
+		current_apps,
+		next_apps,
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
 
 
-def get_updates_between_current_and_next_apps(current_apps, next_apps):
+def get_updates_between_current_and_next_apps(
+	current_apps: "DF.Table[BenchApp]",
+	next_apps: "DF.Table[DeployCandidateApp]",
+):
 	from press.utils import get_app_tag
 
 	apps = []
@@ -1038,7 +1060,7 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 			if current_hash
 			else None
 		)
-		next_hash = app.hash
+		next_hash = app.pullable_hash or app.hash
 		apps.append(
 			{
 				"title": app.title,

@@ -126,6 +126,18 @@ class PrometheusAlertRule(Document):
 
 		if arguments is None:
 			arguments = {}
+
+		if existing_jobs := frappe.get_all(
+			"Press Job",
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"server_type": server_type,
+				"server": server_name,
+			},
+			pluck="name",
+		):
+			return frappe.get_doc("Press Job", existing_jobs[0])
+
 		return frappe.get_doc(
 			{
 				"doctype": "Press Job",

@@ -27,6 +27,7 @@
   "pending_duration",
   "pending_end",
   "build_server",
+  "no_cache",
   "section_break_11",
   "docker_image",
   "docker_image_id",
@@ -401,10 +402,19 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.user_addressable_failure",
    "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
    "fieldname": "error_key",
    "fieldtype": "Data",
    "label": "Error Key"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.no_cache",
+   "description": "Set if the Docker build was run with the <code>--no-cache</code> flag.",
+   "fieldname": "no_cache",
+   "fieldtype": "Check",
+   "label": "No Cache"
   }
  ],
  "links": [
@@ -421,7 +431,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-19 13:33:26.093590",
+ "modified": "2024-06-21 14:12:47.335402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
