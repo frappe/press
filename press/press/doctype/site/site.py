@@ -844,7 +844,6 @@ class Site(Document, TagHelpers):
 					"domain": domain,
 					"dns_type": response["type"],
 					"dns_response": json.dumps(response, indent=4, default=str),
-					"ssl": False,
 				}
 			).insert()
 

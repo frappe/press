@@ -10,13 +10,11 @@
   "status",
   "site",
   "team",
-  "column_break_ucjz",
   "domain",
-  "redirect_to_primary",
   "column_break_faqy",
-  "ssl",
   "tls_certificate",
   "retry_count",
+  "redirect_to_primary",
   "dns_section",
   "dns_type",
   "dns_response"
@@ -41,14 +39,6 @@
    "read_only": 1,
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "ssl",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "SSL",
-   "read_only": 1
   },
   {
    "default": "CNAME",
@@ -101,10 +91,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_ucjz",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "column_break_faqy",
    "fieldtype": "Column Break"
   },
@@ -121,7 +107,7 @@
   }
  ],
  "links": [],
- "modified": "2024-06-21 15:06:55.709546",
+ "modified": "2024-06-21 15:19:41.758948",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",

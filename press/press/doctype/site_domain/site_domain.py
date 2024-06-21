@@ -22,12 +22,12 @@ class SiteDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		dns_response: DF.Code | None
 		dns_type: DF.Literal["A", "NS", "CNAME"]
 		domain: DF.Data
 		redirect_to_primary: DF.Check
 		retry_count: DF.Int
 		site: DF.Link
-		ssl: DF.Check
 		status: DF.Literal["Pending", "In Progress", "Active", "Broken"]
 		team: DF.Link
 		tls_certificate: DF.Link | None
