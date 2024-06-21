@@ -10,12 +10,15 @@
   "status",
   "site",
   "team",
+  "column_break_ucjz",
   "domain",
+  "redirect_to_primary",
+  "column_break_faqy",
   "ssl",
-  "dns_type",
   "tls_certificate",
   "retry_count",
-  "redirect_to_primary"
+  "dns_section",
+  "dns_type"
  ],
  "fields": [
   {
@@ -95,10 +98,23 @@
    "options": "Team",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ucjz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_faqy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dns_section",
+   "fieldtype": "Section Break",
+   "label": "DNS"
   }
  ],
  "links": [],
- "modified": "2024-05-08 09:43:31.634297",
+ "modified": "2024-06-21 15:05:56.816493",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
