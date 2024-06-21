@@ -11,6 +11,7 @@ from press.agent import Agent
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.api.site import check_dns
+from press.utils import log_error
 
 
 class SiteDomain(Document):
@@ -197,15 +198,20 @@ def update_dns_type():
 		fields=["domain", "dns_type", "site"],
 	)
 	for domain in domains:
-		response = check_dns(domain.site, domain.domain)
-		if response["matched"] and response["type"] != domain.dns_type:
+		try:
+			response = check_dns(domain.site, domain.domain)
+			if response["matched"] and response["type"] != domain.dns_type:
+				frappe.db.set_value(
+					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
+				)
+			pretty_response = json.dumps(response, indent=4, default=str)
 			frappe.db.set_value(
-				"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
+				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
 			)
-		pretty_response = json.dumps(response, indent=4, default=str)
-		frappe.db.set_value(
-			"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
-		)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error("DNS Check Failed", domain=domain)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
