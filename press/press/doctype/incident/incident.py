@@ -191,7 +191,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			return
 		if (
 			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
-		) is not None and ignore_since < frappe.utils.now_datetime():
+		) and ignore_since < frappe.utils.now_datetime():
 			return
 		for human in self.get_humans():
 			if not (call := self.call_human(human)):
