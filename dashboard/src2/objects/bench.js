@@ -1033,17 +1033,18 @@ export default {
 							confirmDialog({
 								title: 'Deploy Bench',
 								message: "Let's deploy this bench now?",
-								onSuccess() {
+								onSuccess({ hide }) {
 									toast.promise(
 										bench.initialDeploy.submit(null, {
 											onSuccess: () => {
 												bench.reload();
+												hide();
 											}
 										}),
 										{
-											success: 'Bench deployed successfully',
-											error: 'Failed to deploy bench',
-											loading: 'Deploying bench...'
+											success: 'Bench deploy scheduled successfully',
+											error: 'Failed to schedule a bench deploy',
+											loading: 'Scheduling a bench deploy...'
 										}
 									);
 								}
