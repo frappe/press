@@ -134,7 +134,7 @@
 							your account and use it to create sites.
 						</p>
 						<div class="mt-2 flex items-center space-x-2">
-							<Button @click="showBuyCreditsDialog = true">
+							<Button @click="checkBillingAddressIsSet">
 								Add money to your account
 							</Button>
 						</div>
@@ -205,6 +205,11 @@
 			:minimumAmount="minimumAmount"
 			@success="onBuyCreditsSuccess"
 		/>
+		<UpdateBillingDetails
+			v-model="showAddBillingDetailsDialog"
+			@updated="onAddresUpdateSuccess"
+			message="Please add your billing address before adding credits to your account."
+		/>
 	</div>
 </template>
 <script>
@@ -220,12 +225,16 @@ export default {
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('../components/BuyPrepaidCreditsDialog.vue')
 		),
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		),
 		TextInsideCircle
 	},
 	data() {
 		return {
 			showAddCardDialog: false,
-			showBuyCreditsDialog: false
+			showBuyCreditsDialog: false,
+			showAddBillingDetailsDialog: false
 		};
 	},
 	methods: {
@@ -236,6 +245,18 @@ export default {
 		onAddCardSuccess() {
 			this.$team.reload();
 			this.showAddCardDialog = false;
+		},
+		onAddresUpdateSuccess() {
+			this.$team.reload();
+			this.showAddBillingDetailsDialog = false;
+			this.showBuyCreditsDialog = true;
+		},
+		checkBillingAddressIsSet() {
+			if (!this.$team.doc.billing_details?.name) {
+				this.showAddBillingDetailsDialog = true;
+			} else {
+				this.showBuyCreditsDialog = true;
+			}
 		}
 	},
 	computed: {
