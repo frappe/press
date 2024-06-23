@@ -346,6 +346,11 @@ export default {
 														label: 'App',
 														fieldname: 'app',
 														fieldtype: 'ListSelection',
+														emptyStateMessage:
+															'No apps found' +
+															(!site.doc?.group_public
+																? '. Please add them from your bench.'
+																: ''),
 														columns: [
 															{
 																label: 'Title',
