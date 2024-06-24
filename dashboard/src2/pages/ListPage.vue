@@ -20,6 +20,12 @@
 				class="mb-5"
 				v-if="!$team.doc.billing_details?.name"
 			/>
+			<AlertBanner
+				v-if="banner?.enabled"
+				class="mb-5"
+				:title="`<b>${banner.title}</b>: ${banner.message}`"
+				:type="banner.type.toLowerCase()"
+			/>
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -32,6 +38,7 @@ import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
 import { getObject } from '../objects';
 import { defineAsyncComponent } from 'vue';
 import dayjs from '../utils/dayjs';
+import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	components: {
@@ -41,6 +48,7 @@ export default {
 		Button,
 		Dropdown,
 		TextInput,
+		AlertBanner,
 		AlertAddPaymentMode: defineAsyncComponent(() =>
 			import('../components/AlertAddPaymentMode.vue')
 		),
@@ -89,6 +97,18 @@ export default {
 			} else {
 				return false;
 			}
+		},
+		banner() {
+			return this.$resources.banner.doc;
+		}
+	},
+	resources: {
+		banner() {
+			return {
+				type: 'document',
+				doctype: 'Dashboard Banner',
+				name: 'Dashboard Banner'
+			};
 		}
 	}
 };
