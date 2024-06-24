@@ -394,20 +394,13 @@ class DeployCandidate(Document):
 			frappe.db.commit()
 			return
 
-		# Log and raise error if build failure is not actionable
-		log_error(
-			"Deploy Candidate Build Exception",
-			note="No Exception is thrown. This error is logged when the build fails in the `Run Remote Builder` Agent Job.",
-			doc=self,
-		)
-
 		if should_retry:
 			self.schedule_build_retry()
 			return
 
-		# Raise if in except and cannot retry or is not user addressable
 		if exc:
-			raise
+			# Log and raise error if build failure is not actionable or no retry
+			log_error("Deploy Candidate Build Exception", doc=self)
 
 	def should_build_retry(
 		self,
