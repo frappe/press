@@ -1446,6 +1446,17 @@ def check_dns_cname_a(name, domain):
 			result["answer"] = answer.rrset.to_text()
 			if domain_ip == site_ip:
 				result["matched"] = True
+			elif site_ip:
+				# We can issue certificates even if the domain points to the secondary proxies
+				server = frappe.db.get_value("Site", name, "server")
+				proxy = frappe.db.get_value("Server", server, "proxy_server")
+				secondary_ips = frappe.get_all(
+					"Proxy Server",
+					{"status": "Active", "primary": proxy, "is_replication_setup": True},
+					pluck="ip",
+				)
+				if site_ip in secondary_ips:
+					result["matched"] = True
 		except dns.exception.DNSException as e:
 			result["answer"] = str(e)
 		except Exception as e:
