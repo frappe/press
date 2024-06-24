@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
@@ -425,6 +425,21 @@ export default {
 								]
 							}
 						];
+					},
+					banner() {
+						let areBuildsSuspended = frappeRequest({
+							url: 'press.api.bench.are_builds_suspended'
+						});
+
+						if (areBuildsSuspended) {
+							return {
+								title:
+									'<b>Builds Suspended</b>: Bench updates will be scheduled to run when builds resume.',
+								type: 'warning'
+							};
+						} else {
+							return null;
+						}
 					},
 					columns: [
 						{
