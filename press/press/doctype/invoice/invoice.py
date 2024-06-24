@@ -754,6 +754,9 @@ class Invoice(Document):
 			address = (
 				frappe.get_doc("Address", team.billing_address) if team.billing_address else None
 			)
+			if not address:
+				# don't create invoice if address is not set
+				return
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
