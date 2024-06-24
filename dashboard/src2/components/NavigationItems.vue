@@ -107,8 +107,8 @@ export default {
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),
 					condition:
-						Boolean(this.$team.doc.erpnext_partner) ||
-						this.$session.hasPartnerAccess,
+						// this.$session.hasPartnerAccess &&
+						Boolean(this.$team.doc.erpnext_partner),
 					disabled
 				},
 				{
