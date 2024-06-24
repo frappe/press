@@ -433,7 +433,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def validate_app_versions(self):
 		# App Source should be compatible with Release Group's version
-		with suppress(AttributeError):
+		with suppress(AttributeError, RuntimeError):
 			if (
 				not frappe.flags.in_test
 				and frappe.request.path == "/api/method/press.api.bench.change_branch"
