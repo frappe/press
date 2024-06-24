@@ -177,6 +177,10 @@ def event_log():
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
 		headers = event_data["message"]["headers"]
+		if "message-id" not in headers:
+			# We can't log this event without a message-id
+			# TOOD: Investigate why this is happening
+			return
 		message_id = headers["message-id"]
 		site = (
 			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
