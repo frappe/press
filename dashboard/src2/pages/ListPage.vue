@@ -23,7 +23,7 @@
 			<AlertBanner
 				v-if="banner?.enabled"
 				class="mb-5"
-				:title="`<b>${banner.title}</b>: ${banner.message}`"
+				:title="`<b>${banner.title}:</b> ${banner.message}`"
 				:type="banner.type.toLowerCase()"
 			/>
 			<ObjectList :options="listOptions" />

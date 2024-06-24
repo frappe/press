@@ -430,7 +430,7 @@ export default {
 						if (releaseGroup.doc.are_builds_suspended) {
 							return {
 								title:
-									'<b>Builds Suspended</b>: Bench updates will be scheduled to run when builds resume.',
+									'<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume.',
 								type: 'warning'
 							};
 						} else {
