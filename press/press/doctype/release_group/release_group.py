@@ -162,7 +162,7 @@ class ReleaseGroup(Document, TagHelpers):
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
 		doc.actions = self.get_actions()
-		doc.are_builds_suspended = self.are_builds_suspended()
+		doc.are_builds_suspended = are_builds_suspended()
 		if len(self.servers) == 1:
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
@@ -170,10 +170,6 @@ class ReleaseGroup(Document, TagHelpers):
 			doc.server = self.servers[0].server
 			doc.server_title = server.title
 			doc.server_team = server.team
-
-	@redis_cache(ttl=60)
-	def are_builds_suspended(self) -> bool:
-		return is_suspended()
 
 	def get_actions(self):
 		return [
@@ -1333,6 +1329,11 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		self.use_delta_builds = 1
+
+
+@redis_cache(ttl=60)
+def are_builds_suspended() -> bool:
+	return is_suspended()
 
 
 def new_release_group(
