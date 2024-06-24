@@ -42,6 +42,7 @@ class StripePaymentMethod(Document):
 		"brand",
 		"name_on_card",
 		"last_4",
+		"stripe_mandate_id",
 	]
 
 	def onload(self):
