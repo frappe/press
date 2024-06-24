@@ -1794,6 +1794,7 @@ def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 def check_builds_status():
 	fail_or_retry_stuck_builds()
 	correct_false_positives()
+	frappe.db.commit()
 
 
 def fail_or_retry_stuck_builds(
