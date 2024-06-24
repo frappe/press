@@ -10,14 +10,12 @@ import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
-from frappe.utils.caching import redis_cache
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.cluster.cluster import Cluster
-from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
@@ -1025,9 +1023,3 @@ def confirm_bench_transfer(key):
 			http_status_code=403,
 			indicator_color="red",
 		)
-
-
-@frappe.whitelist()
-@redis_cache(ttl=60)
-def are_builds_suspended() -> bool:
-	return is_suspended()

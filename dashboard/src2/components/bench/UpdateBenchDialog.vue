@@ -7,6 +7,12 @@
 		}"
 	>
 		<template #body-content>
+			<AlertBanner
+				v-if="benchDocResource.doc.are_builds_suspended"
+				class="mb-4"
+				title="<b>Builds Suspended</b>: Bench updates will be scheduled to run when builds resume."
+				type="warning"
+			/>
 			<div class="space-y-4">
 				<div v-if="step === 'select-apps'">
 					<div class="mb-4 text-lg font-medium">Select apps to update</div>
@@ -96,11 +102,12 @@ import CommitTag from '@/components/utils/CommitTag.vue';
 import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
+import AlertBanner from '../AlertBanner.vue';
 
 export default {
 	name: 'UpdateBenchDialog',
 	props: ['bench'],
-	components: { GenericList, CommitChooser, CommitTag },
+	components: { GenericList, CommitChooser, CommitTag, AlertBanner },
 	data() {
 		return {
 			show: true,

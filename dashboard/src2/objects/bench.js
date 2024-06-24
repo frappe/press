@@ -426,12 +426,8 @@ export default {
 							}
 						];
 					},
-					banner() {
-						let areBuildsSuspended = frappeRequest({
-							url: 'press.api.bench.are_builds_suspended'
-						});
-
-						if (areBuildsSuspended) {
+					banner({ documentResource: releaseGroup }) {
+						if (releaseGroup.doc.are_builds_suspended) {
 							return {
 								title:
 									'<b>Builds Suspended</b>: Bench updates will be scheduled to run when builds resume.',
