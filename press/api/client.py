@@ -66,6 +66,7 @@ ALLOWED_DOCTYPES = [
 	"Press Notification",
 	"User SSH Key",
 	"Frappe Version",
+	"Dashboard Banner",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
