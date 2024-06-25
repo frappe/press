@@ -5,13 +5,20 @@
 				:items="[{ label: 'Partners', route: { name: 'Partners' } }]"
 			/>
 		</Header>
-		<TabsWithRouter v-if="$session.hasPartnerAccess" :tabs="tabs" />
+		<TabsWithRouter
+			v-if="
+				Boolean(this.$team.doc.erpnext_partner) && $session.hasPartnerAccess
+			"
+			:tabs="tabs"
+		/>
 		<div
 			v-else
 			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 		>
 			<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-			<ErrorMessage message="You aren't permitted to view the partner page" />
+			<ErrorMessage
+				message="You aren't permitted to view the partner page. Please ask the team owner to provide permission for your role."
+			/>
 		</div>
 	</div>
 </template>

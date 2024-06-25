@@ -21,3 +21,9 @@
 
 - name: Show Modified Volumes
   command: df -h
+
+- name: Restart MariaDB
+  service:
+    name: mysql
+    state: restarted
+  when: restart_mariadb is defined and restart_mariadb

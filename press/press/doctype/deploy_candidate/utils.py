@@ -1,3 +1,4 @@
+import frappe
 import json
 import re
 from pathlib import Path
@@ -121,3 +122,7 @@ def get_will_fail_checker(error_key: str):
 	for error_substring, _, will_fail_checker in handlers():
 		if get_error_key(error_substring) == error_key:
 			return will_fail_checker
+
+
+def is_suspended() -> bool:
+	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))

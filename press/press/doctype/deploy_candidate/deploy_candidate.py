@@ -39,6 +39,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	get_package_manager_files,
 	load_pyproject,
+	is_suspended,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
@@ -394,20 +395,13 @@ class DeployCandidate(Document):
 			frappe.db.commit()
 			return
 
-		# Log and raise error if build failure is not actionable
-		log_error(
-			"Deploy Candidate Build Exception",
-			note="No Exception is thrown. This error is logged when the build fails in the `Run Remote Builder` Agent Job.",
-			doc=self,
-		)
-
 		if should_retry:
 			self.schedule_build_retry()
 			return
 
-		# Raise if in except and cannot retry or is not user addressable
 		if exc:
-			raise
+			# Log and raise error if build failure is not actionable or no retry
+			log_error("Deploy Candidate Build Exception", doc=self)
 
 	def should_build_retry(
 		self,
@@ -1748,10 +1742,6 @@ def get_build_stage_and_step(
 	return (stage, step)
 
 
-def is_suspended() -> bool:
-	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
-
-
 def get_remote_step_output(
 	step_name: Literal["build", "push"],
 	output_data: dict,
@@ -1805,6 +1795,7 @@ def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 def check_builds_status():
 	fail_or_retry_stuck_builds()
 	correct_false_positives()
+	frappe.db.commit()
 
 
 def fail_or_retry_stuck_builds(

@@ -7,7 +7,7 @@
 		>
 			<div class="flex items-center space-x-2">
 				<FeatherIcon
-					:name="open ? 'chevron-down' : 'chevron-right'"
+					:name="open || status == 'Running' ? 'chevron-down' : 'chevron-right'"
 					class="h-3 w-3 text-gray-600"
 					:stroke-width="3"
 				/>

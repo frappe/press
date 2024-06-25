@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
@@ -425,6 +425,17 @@ export default {
 								]
 							}
 						];
+					},
+					banner({ documentResource: releaseGroup }) {
+						if (releaseGroup.doc.are_builds_suspended) {
+							return {
+								title:
+									'<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume.',
+								type: 'warning'
+							};
+						} else {
+							return null;
+						}
 					},
 					columns: [
 						{
@@ -1033,17 +1044,18 @@ export default {
 							confirmDialog({
 								title: 'Deploy Bench',
 								message: "Let's deploy this bench now?",
-								onSuccess() {
+								onSuccess({ hide }) {
 									toast.promise(
 										bench.initialDeploy.submit(null, {
 											onSuccess: () => {
 												bench.reload();
+												hide();
 											}
 										}),
 										{
-											success: 'Bench deployed successfully',
-											error: 'Failed to deploy bench',
-											loading: 'Deploying bench...'
+											success: 'Bench deploy scheduled successfully',
+											error: 'Failed to schedule a bench deploy',
+											loading: 'Scheduling a bench deploy...'
 										}
 									);
 								}

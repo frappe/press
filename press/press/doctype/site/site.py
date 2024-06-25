@@ -27,7 +27,6 @@ from frappe.utils import (
 	time_diff_in_hours,
 	sbool,
 )
-from press.api.server import prometheus_query
 
 from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -71,6 +70,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 class Site(Document, TagHelpers):
@@ -587,23 +588,11 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def fetch_free_space(self, server: str) -> int:
-		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{server}", job="node", mountpoint="/"}}""",
-			lambda x: x["mountpoint"],
-			"Asia/Kolkata",
-			120,
-			120,
-		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
-		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
-
 	def check_enough_space_on_server(self):
-		app_server_free_space = self.fetch_free_space(self.server)
-		db_server_free_space = self.fetch_free_space(
-			frappe.db.get_value("Server", self.server, "database_server")
-		)
+		app: "Server" = frappe.get_doc("Server", self.server)
+		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+		app_server_free_space = app.free_space
+		db_server_free_space = db.free_space
 		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
 			frappe.throw(
 				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
@@ -854,7 +843,7 @@ class Site(Document, TagHelpers):
 					"site": self.name,
 					"domain": domain,
 					"dns_type": response["type"],
-					"ssl": False,
+					"dns_response": json.dumps(response, indent=4, default=str),
 				}
 			).insert()
 
@@ -1159,6 +1148,8 @@ class Site(Document, TagHelpers):
 
 	def fetch_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		return agent.get_site_analytics(self)
 
 	def get_disk_usages(self):

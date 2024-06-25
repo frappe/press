@@ -346,6 +346,11 @@ export default {
 														label: 'App',
 														fieldname: 'app',
 														fieldtype: 'ListSelection',
+														emptyStateMessage:
+															'No apps found' +
+															(!site.doc?.group_public
+																? '. Please add them from your bench.'
+																: ''),
 														columns: [
 															{
 																label: 'Title',
@@ -965,7 +970,7 @@ export default {
 													hide();
 													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Jobs',
+														name: 'Site Job',
 														params: { name: site.name }
 													});
 												},

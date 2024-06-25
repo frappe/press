@@ -356,6 +356,9 @@ class Bench(Document):
 				try:
 					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
+				except frappe.DoesNotExistError:
+					# Ignore: Site got renamed or deleted
+					pass
 				except Exception:
 					log_error(
 						"Site Sync Error",

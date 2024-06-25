@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 
 import frappe
 from frappe.model.document import Document
@@ -10,6 +11,7 @@ from press.agent import Agent
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.api.site import check_dns
+from press.utils import log_error
 
 
 class SiteDomain(Document):
@@ -21,12 +23,12 @@ class SiteDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		dns_response: DF.Code | None
 		dns_type: DF.Literal["A", "NS", "CNAME"]
 		domain: DF.Data
 		redirect_to_primary: DF.Check
 		retry_count: DF.Int
 		site: DF.Link
-		ssl: DF.Check
 		status: DF.Literal["Pending", "In Progress", "Active", "Broken"]
 		team: DF.Link
 		tls_certificate: DF.Link | None
@@ -193,12 +195,23 @@ def update_dns_type():
 	domains = frappe.get_all(
 		"Site Domain",
 		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
-		fields=["domain", "dns_type", "site"],
+		fields=["name", "domain", "dns_type", "site"],
 	)
 	for domain in domains:
-		response = check_dns(domain.site, domain.domain)
-		if response["matched"] and response["type"] != domain.dns_type:
-			frappe.db.set_value("Site Domain", domain.name, "dns_type", response["type"])
+		try:
+			response = check_dns(domain.site, domain.domain)
+			if response["matched"] and response["type"] != domain.dns_type:
+				frappe.db.set_value(
+					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
+				)
+			pretty_response = json.dumps(response, indent=4, default=str)
+			frappe.db.set_value(
+				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error("DNS Check Failed", domain=domain)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

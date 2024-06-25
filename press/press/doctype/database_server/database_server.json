@@ -55,10 +55,11 @@
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
-  "column_break_eiyu",
   "memory_max",
-  "column_break_wbbi",
   "memory_swap_max",
+  "column_break_eiyu",
+  "memory_allocator",
+  "memory_allocator_version",
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables",
@@ -344,7 +345,7 @@
   {
    "fieldname": "memory_limits_section",
    "fieldtype": "Section Break",
-   "label": "Memory Limits"
+   "label": "Memory"
   },
   {
    "fieldname": "memory_high",
@@ -395,10 +396,6 @@
   },
   {
    "fieldname": "column_break_apox",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_wbbi",
    "fieldtype": "Column Break"
   },
   {
@@ -487,11 +484,25 @@
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
+  },
+  {
+   "default": "System",
+   "fieldname": "memory_allocator",
+   "fieldtype": "Select",
+   "label": "Memory Allocator",
+   "options": "System\njemalloc\nTCMalloc",
+   "read_only": 1
+  },
+  {
+   "fieldname": "memory_allocator_version",
+   "fieldtype": "Data",
+   "label": "Memory Allocator Version",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-12 15:47:41.811606",
+ "modified": "2024-06-21 14:42:36.139217",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

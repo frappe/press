@@ -174,6 +174,7 @@
 					</div>
 					<FormControl
 						v-if="showVersionSelector && selectedBranch"
+						class="mt-4"
 						type="autocomplete"
 						label="Choose Version"
 						:options="options.versions.map(v => v.name)"

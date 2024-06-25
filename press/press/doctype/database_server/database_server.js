@@ -239,6 +239,40 @@ frappe.ui.form.on('Database Server', {
 				},
 				__('Actions'),
 			);
+			frm.add_custom_button(
+				__('Update Memory Allocator'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Update Memory Allocator'),
+						fields: [
+							{
+								fieldtype: 'Select',
+								label: __('Memory Allocator'),
+								options: ['System', 'jemalloc', 'TCMalloc']
+									.filter((option) => option !== frm.doc.memory_allocator)
+									.join('\n'),
+								fieldname: 'memory_allocator',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Update'), (args) => {
+						frm.call({
+							method: 'update_memory_allocator',
+							doc: frm.doc,
+							args: args,
+							freeze: true,
+							callback: () => {
+								dialog.hide();
+								frm.refresh();
+							},
+						});
+					});
+					dialog.show();
+				},
+				__('Dangerous Actions'),
+			);
 		}
 	},
 

@@ -16,10 +16,12 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cstr, flt, sbool, get_url
+from frappe.utils.caching import redis_cache
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
+from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -160,6 +162,7 @@ class ReleaseGroup(Document, TagHelpers):
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
 		doc.actions = self.get_actions()
+		doc.are_builds_suspended = are_builds_suspended()
 		if len(self.servers) == 1:
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
@@ -430,7 +433,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def validate_app_versions(self):
 		# App Source should be compatible with Release Group's version
-		with suppress(AttributeError):
+		with suppress(AttributeError, RuntimeError):
 			if (
 				not frappe.flags.in_test
 				and frappe.request.path == "/api/method/press.api.bench.change_branch"
@@ -1351,6 +1354,11 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		self.use_delta_builds = 1
+
+
+@redis_cache(ttl=60)
+def are_builds_suspended() -> bool:
+	return is_suspended()
 
 
 def new_release_group(
