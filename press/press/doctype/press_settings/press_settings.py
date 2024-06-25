@@ -28,7 +28,6 @@ class PressSettings(Document):
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
-		allow_developer_account: DF.Check
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
 		aws_access_key_id: DF.Data | None
@@ -134,6 +133,7 @@ class PressSettings(Document):
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
 		threshold: DF.Float
+		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
 		twilio_account_sid: DF.Data | None
 		twilio_api_key_secret: DF.Password | None
