@@ -15,7 +15,7 @@
 					>
 						<div
 							v-if="d.type === 'header'"
-							class="flex items-center justify-between"
+							class="m-2 flex items-center justify-between"
 						>
 							<div
 								v-if="d.type === 'header'"
@@ -38,6 +38,7 @@
 							<div class="flex items-center space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
 								<Button v-if="d.action" v-bind="d.action" />
+								<div v-else class="h-8" />
 							</div>
 							<div class="mt-2">
 								<Progress size="md" :value="d.progress_value || 0" />
