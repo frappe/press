@@ -91,7 +91,7 @@ export default {
 					isActive: routeName.startsWith('Marketplace'),
 					condition:
 						this.$team.doc.is_desk_user ||
-						($team.doc.is_developer && this.$session.hasAppsAccess),
+						(this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled
 				},
 				{
