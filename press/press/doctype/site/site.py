@@ -41,7 +41,7 @@ except ImportError:
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.agent import Agent
+from press.agent import Agent, AgentRequestSkippedException
 from press.api.site import check_dns, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -1136,8 +1136,13 @@ class Site(Document, TagHelpers):
 			)
 			sid = response.cookies.get("sid")
 		if not sid:
-			agent = Agent(self.server)
-			sid = agent.get_site_sid(self, user)
+			try:
+				agent = Agent(self.server)
+				sid = agent.get_site_sid(self, user)
+			except AgentRequestSkippedException:
+				frappe.throw(
+					"Server is unresponsive. Please try again in some time.", frappe.ValidationError
+				)
 		if not sid or sid == "Guest":
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
 		return sid
