@@ -1267,6 +1267,9 @@ class Site(Document, TagHelpers):
 		if not data:
 			data = self.fetch_info()
 
+		if not data:
+			return
+
 		fetched_usage = data["usage"]
 		fetched_config = data["config"]
 		fetched_timezone = data["timezone"]
