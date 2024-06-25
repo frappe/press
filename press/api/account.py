@@ -52,7 +52,7 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
-				"saas_product": product,
+				"product_trial": product,
 				"send_email": True,
 				"new_signup_flow": new_signup_flow,
 			}
@@ -136,10 +136,10 @@ def setup_account(
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
 
-		if account_request.saas_product:
+		if account_request.product_trial:
 			frappe.new_doc(
-				"SaaS Product Site Request",
-				saas_product=account_request.saas_product,
+				"Product Trial Request",
+				product_trial=account_request.product_trial,
 				account_request=account_request.name,
 				team=team_doc.name,
 			).insert(ignore_permissions=True)
@@ -278,13 +278,13 @@ def validate_request_key(key, timezone=None):
 	if account_request:
 		data = get_country_info()
 		possible_country = data.get("country") or get_country_from_timezone(timezone)
-		saas_product = frappe.db.get_value(
-			"SaaS Product",
-			{"name": account_request.saas_product},
+		product_trial = frappe.db.get_value(
+			"Product Trial",
+			{"name": account_request.product_trial},
 			pluck="name",
 		)
-		saas_product_doc = (
-			frappe.get_doc("SaaS Product", saas_product) if saas_product else None
+		product_trial_doc = (
+			frappe.get_doc("Product Trial", product_trial) if product_trial else None
 		)
 		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
@@ -302,14 +302,14 @@ def validate_request_key(key, timezone=None):
 			"oauth_domain": frappe.db.exists(
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
-			"saas_product": {
-				"name": saas_product_doc.name,
-				"title": saas_product_doc.title,
-				"logo": saas_product_doc.logo,
-				"signup_fields": saas_product_doc.signup_fields,
-				"description": saas_product_doc.description,
+			"product_trial": {
+				"name": product_trial_doc.name,
+				"title": product_trial_doc.title,
+				"logo": product_trial_doc.logo,
+				"signup_fields": product_trial_doc.signup_fields,
+				"description": product_trial_doc.description,
 			}
-			if saas_product_doc
+			if product_trial_doc
 			else None,
 		}
 
@@ -464,10 +464,10 @@ def signup_settings(product=None):
 	settings = frappe.get_single("Press Settings")
 
 	product = frappe.utils.cstr(product)
-	saas_product = None
+	product_trial = None
 	if product:
-		saas_product = frappe.db.get_value(
-			"SaaS Product",
+		product_trial = frappe.db.get_value(
+			"Product Trial",
 			{"name": product, "published": 1},
 			["title", "description", "logo"],
 			as_dict=1,
@@ -475,7 +475,7 @@ def signup_settings(product=None):
 
 	return {
 		"enable_google_oauth": settings.enable_google_oauth,
-		"saas_product": saas_product,
+		"product_trial": product_trial,
 		"oauth_domains": frappe.get_all(
 			"OAuth Domain Mapping", ["email_domain", "social_login_key", "provider_name"]
 		),
@@ -794,18 +794,18 @@ def user_prompts():
 def get_site_request(product):
 	team = frappe.local.team()
 	requests = frappe.qb.get_query(
-		"SaaS Product Site Request",
+		"Product Trial Request",
 		filters={
 			"team": team.name,
-			"saas_product": product,
+			"product_trial": product,
 		},
 		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
 		order_by="creation desc",
 	).run(as_dict=1)
 	if not requests:
 		site_request = frappe.new_doc(
-			"SaaS Product Site Request",
-			saas_product=product,
+			"Product Trial Request",
+			product_trial=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
 		return {"pending": site_request.name}
