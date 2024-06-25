@@ -35,15 +35,21 @@
 							/>
 						</div>
 						<div v-else-if="d.type === 'progress'">
-							<div class="text-base text-gray-700">{{ d.label }}</div>
+							<div class="flex items-center space-x-2">
+								<div class="text-base text-gray-700">{{ d.label }}</div>
+								<Button v-if="d.action" v-bind="d.action" />
+							</div>
 							<div class="mt-2">
-								<Progress size="md" :value="d.progress_value" />
-								<div>
+								<Progress size="md" :value="d.progress_value || 0" />
+								<div class="flex space-x-2">
 									<div class="mt-2 flex justify-between">
 										<div class="text-sm text-gray-600">
 											{{ d.value }}
 										</div>
 									</div>
+									<Tooltip v-if="d.help" :text="d.help">
+										<i-lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+									</Tooltip>
 								</div>
 							</div>
 						</div>
@@ -73,9 +79,10 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
-import { renderDialog } from '../../utils/components';
+import { confirmDialog, renderDialog } from '../../utils/components';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';
@@ -113,7 +120,7 @@ export default {
 					: serverType === 'Database Server'
 					? this.$dbServer.doc
 					: serverType === 'Replication Server'
-					? this.$dbReplicaServer
+					? this.$dbReplicaServer?.doc
 					: null;
 
 			if (!doc) return [];
@@ -181,7 +188,61 @@ export default {
 						? `${currentUsage.disk || 0} GB of ${
 								diskSize ? diskSize : currentPlan.disk
 						  } GB`
-						: 'GB'
+						: 'GB',
+					help:
+						diskSize - currentPlan.disk > 0
+							? `Add-on storage: ${diskSize - currentPlan.disk} GB`
+							: '',
+					action: {
+						label: 'Increase Storage',
+						icon: 'plus',
+						variant: 'ghost',
+						onClick: () => {
+							confirmDialog({
+								title: 'Increase Storage',
+								message: `Enter the disk size you want to increase to the server <b>${
+									doc.title || doc.name
+								}</b>`,
+								fields: [
+									{
+										fieldname: 'storage',
+										type: 'number',
+										step: 50,
+										min: 50,
+										default: 50,
+										label: 'Storage (GB)'
+									}
+								],
+								onSuccess: ({ hide, values }) => {
+									toast.promise(
+										this.$appServer.increaseDiskSize.submit(
+											{
+												server: doc.name,
+												increment: values.storage
+											},
+											{
+												onSuccess() {
+													hide();
+													this.$router.push({
+														name: 'Server Detail Plays',
+														params: { name: doc.name }
+													});
+												},
+												onError(e) {
+													console.error(e);
+												}
+											}
+										),
+										{
+											loading: 'Increasing disk size...',
+											success: 'Disk size is scheduled to increase',
+											error: 'Failed to increase disk size'
+										}
+									);
+								}
+							});
+						}
+					}
 				}
 			];
 		}

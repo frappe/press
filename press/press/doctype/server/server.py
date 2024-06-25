@@ -77,6 +77,13 @@ class BaseServer(Document, TagHelpers):
 
 		return doc
 
+	@dashboard_whitelist()
+	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
+		if server == self.name:
+			self.increase_disk_size(increment)
+		else:
+			frappe.get_doc("Database Server", server).increase_disk_size(increment)
+
 	@staticmethod
 	def on_not_found(name):
 		# If name is of a db server then redirect to the app server

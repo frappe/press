@@ -9,6 +9,7 @@ import router from '../router';
 export default {
 	doctype: 'Server',
 	whitelistedMethods: {
+		increaseDiskSize: 'increase_disk_size_for_server',
 		changePlan: 'change_plan',
 		reboot: 'reboot',
 		rename: 'rename',
