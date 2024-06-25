@@ -42,10 +42,10 @@
 			<ListItem
 				title="Become Marketplace Developer"
 				subtitle="Become a marketplace app publisher"
-				v-if="showBecomePublisherButton"
+				v-if="!$team.doc.is_developer"
 			>
 				<template #actions>
-					<Button @click="confirmPublisherAccount()">
+					<Button @click="confirmPublisherAccount">
 						<span>Become a Publisher</span>
 					</Button>
 				</template>
@@ -163,11 +163,10 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
 import FileUploader from '@/components/FileUploader.vue';
-import { notify } from '@/utils/toast';
-import { getSessionUser } from '../../../data/session';
-import { getTeam } from '../../../data/team';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
+import { confirmDialog } from '../../../utils/components';
 
 export default {
 	name: 'AccountProfile',
@@ -180,16 +179,15 @@ export default {
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
-			showBecomePublisherButton: false,
 			showFinalizeInvoicesDialog: false
 		};
 	},
 	computed: {
 		teamEnabled() {
-			return getTeam().doc.enabled;
+			return this.$team.doc.enabled;
 		},
 		user() {
-			return this.$team.doc.user_info;
+			return this.$team?.doc?.user_info;
 		}
 	},
 	resources: {
@@ -216,12 +214,7 @@ export default {
 				if (data === 'Unpaid Invoices') {
 					this.showFinalizeInvoicesDialog = true;
 				} else {
-					notify({
-						title: 'Account disabled',
-						message: 'Your account was disabled successfully',
-						icon: 'check',
-						color: 'green'
-					});
+					toast.success('Your account was disabled successfully');
 					this.reloadAccount();
 				}
 			}
@@ -229,26 +222,10 @@ export default {
 		enableAccount: {
 			url: 'press.api.account.enable_account',
 			onSuccess() {
-				notify({
-					title: 'Account enabled',
-					message: 'Your account was enabled successfully',
-					icon: 'check',
-					color: 'green'
-				});
+				toast.success('Your account was enabled successfully');
 				this.reloadAccount();
 				this.showEnableAccountDialog = false;
 			}
-		},
-		isDeveloperAccountAllowed() {
-			return {
-				url: 'press.api.marketplace.developer_toggle_allowed',
-				auto: true,
-				onSuccess(data) {
-					if (data) {
-						this.showBecomePublisherButton = true;
-					}
-				}
-			};
 		},
 		becomePublisher() {
 			return {
@@ -261,7 +238,7 @@ export default {
 	},
 	methods: {
 		reloadAccount() {
-			getTeam().reload();
+			this.$team.doc.reload();
 			this.$resources.user.reload();
 		},
 		onProfilePhotoChange() {
@@ -269,21 +246,32 @@ export default {
 			this.notifySuccess();
 		},
 		notifySuccess() {
-			notify({
-				title: 'Updated profile information',
-				icon: 'check',
-				color: 'green'
-			});
+			toast.success('Your profile was updated successfully');
 		},
 		confirmPublisherAccount() {
-			this.$confirm({
+			confirmDialog({
 				title: 'Become a marketplace app developer?',
 				message:
 					'You will be able to publish apps to our Marketplace upon confirmation.',
-				actionLabel: 'Yes',
-				action: closeDialog => {
-					this.$resources.becomePublisher.submit();
-					closeDialog();
+				onSuccess: ({ hide }) => {
+					toast.promise(
+						this.$team.setValue.submit(
+							{
+								is_developer: 1
+							},
+							{
+								onSuccess: hide,
+								onError(e) {
+									console.error(e);
+								}
+							}
+						),
+						{
+							success: 'You can now publish apps to our Marketplace',
+							error: 'Failed to mark you as a developer',
+							loading: 'Making you a developer...'
+						}
+					);
 				}
 			});
 		}
