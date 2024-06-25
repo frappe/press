@@ -1485,7 +1485,14 @@ def scale_workers():
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
 	for server in servers:
 		try:
-			frappe.get_doc("Server", server.name).auto_scale_workers()
+			frappe.enqueue_doc(
+				"Server",
+				server.name,
+				method="auto_scale_workers",
+				job_id=f"auto_scale_workers:{server.name}",
+				deduplicate=True,
+				enqueue_after_commit=True,
+			)
 			frappe.db.commit()
 		except Exception:
 			log_error("Auto Scale Worker Error", server=server)
