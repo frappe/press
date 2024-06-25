@@ -1148,6 +1148,8 @@ class Site(Document, TagHelpers):
 
 	def fetch_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		return agent.get_site_analytics(self)
 
 	def get_disk_usages(self):
