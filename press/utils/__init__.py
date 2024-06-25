@@ -306,8 +306,8 @@ class RemoteFrappeSite:
 			# http will be redirected to https in requests
 			url = f"http://{url}"
 
-		self.user_site = url
-		self.user_login = usr
+		self.user_site = url.strip()
+		self.user_login = usr.strip()
 		self.password_login = pwd
 		self._remote_backup_links = {}
 
