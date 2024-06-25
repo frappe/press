@@ -35,7 +35,7 @@
 							/>
 						</div>
 						<div v-else-if="d.type === 'progress'">
-							<div class="flex items-center space-x-2">
+							<div class="flex items-center justify-between space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
 								<Button v-if="d.action" v-bind="d.action" />
 								<div v-else class="h-8" />
