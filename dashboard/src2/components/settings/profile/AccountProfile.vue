@@ -226,14 +226,6 @@ export default {
 				this.reloadAccount();
 				this.showEnableAccountDialog = false;
 			}
-		},
-		becomePublisher() {
-			return {
-				url: 'press.api.marketplace.become_publisher',
-				onSuccess() {
-					this.$router.push('/marketplace');
-				}
-			};
 		}
 	},
 	methods: {
@@ -260,7 +252,12 @@ export default {
 								is_developer: 1
 							},
 							{
-								onSuccess: hide,
+								onSuccess: () => {
+									hide();
+									this.$router.push({
+										name: 'Marketplace App List'
+									});
+								},
 								onError(e) {
 									console.error(e);
 								}
