@@ -174,6 +174,9 @@ def event_log():
 		# Hint: Likely from other emails not sent via the email delivery app
 		return
 
+	if "delivery-status" not in event_data:
+		return
+
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
 		headers = event_data["message"]["headers"]
