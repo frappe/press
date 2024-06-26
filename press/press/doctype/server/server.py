@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from datetime import timedelta
 import json
 import shlex
 import typing
@@ -21,10 +22,12 @@ from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
+from press.telegram_utils import Telegram
 from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class BaseServer(Document, TagHelpers):
@@ -525,16 +528,37 @@ class BaseServer(Document, TagHelpers):
 	def enqueue_extend_ec2_volume(self):
 		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
 
+	@cached_property
+	def time_to_wait_before_updating_volume(self) -> int:
+		if self.provider != "AWS EC2":
+			return 0
+		if not (
+			last_updated_at := frappe.get_value(
+				"Virtual Machine Volume",
+				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
+				"last_updated_at",
+			)
+		):
+			return 0
+		diff = frappe.utils.now_datetime() - last_updated_at
+		return diff if diff < timedelta(hours=6) else 0
+
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50):
+	def increase_disk_size(self, increment=50) -> bool:
+		"""
+		Return true if disk resized
+		"""
 		if self.provider not in ("AWS EC2", "OCI"):
-			return
-		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			return False
+		virtual_machine: "VirtualMachine" = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine
+		)
 		virtual_machine.increase_disk_size(increment)
 		if self.provider == "AWS EC2":
 			self.enqueue_extend_ec2_volume()
 		elif self.provider == "OCI":
 			self.reboot()
+		return True
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -929,7 +953,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	@property
+	@cached_property
 	def free_space(self):
 		from press.api.server import prometheus_query
 
@@ -995,9 +1019,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			)
 		)
 
-	def calculated_increase_disk_size(self):
-		self.increase_disk_size_for_server(
-			self.name, self.size_to_increase_by_for_20_percent_available
+	def calculated_increase_disk_size(self, additional: int = 0):
+		telegram = Telegram("Information")
+		telegram.send(
+			f"Increasing disk on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
+		)
+		return bool(
+			self.time_to_wait_before_updating_volume
+		) or self.increase_disk_size_for_server(
+			self.name, self.size_to_increase_by_for_20_percent_available + additional
 		)
 
 	def prune_docker_system(self):

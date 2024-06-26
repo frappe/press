@@ -341,6 +341,7 @@ class VirtualMachine(Document):
 		volume = self.volumes[0]
 		volume.size += int(increment or 50)
 		self.disk_size = volume.size
+		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
 		elif self.cloud_provider == "OCI":

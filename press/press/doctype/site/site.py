@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List
+from babel.dates import format_timedelta
 
 import dateutil.parser
 import frappe
@@ -609,17 +610,21 @@ class Site(Document, TagHelpers):
 	def check_enough_space_on_server(self):
 		app: "Server" = frappe.get_doc("Server", self.server)
 		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-		app_server_free_space = app.free_space
-		db_server_free_space = db.free_space
-		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
+		locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
+
+		if (
+			diff := app.free_space - self.space_required_on_app_server
+		) <= 0 and not app.calculated_increase_disk_size(diff / 1024 / 1024 / 1024):
 			frappe.throw(
-				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
+				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app.free_space)} (Need {human_readable(abs(diff))}). Please wait {format_timedelta(app.time_to_wait_before_updating_volume, locale = locale)} before trying again.",
 				InsufficientSpaceOnServer,
 			)
 
-		if (diff := db_server_free_space - self.space_required_on_db_server) <= 0:
+		if (
+			diff := db.free_space - self.space_required_on_db_server
+		) <= 0 and not db.calculated_increase_disk_size(diff / 1024 / 1024 / 1024):
 			frappe.throw(
-				f"Insufficient estimated space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db_server_free_space)} (Need {human_readable(abs(diff))})",
+				f"Insufficient estimated space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db.free_space)} (Need {human_readable(abs(diff))}). Please wait {format_timedelta(db.time_to_wait_before_updating_volume, locale=locale)} before trying again.",
 				InsufficientSpaceOnServer,
 			)
 
