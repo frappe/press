@@ -16,7 +16,6 @@ from press.api.marketplace import (
 	change_app_plan,
 	create_app_plan,
 	create_approval_request,
-	developer_toggle_allowed,
 	get_apps,
 	get_app,
 	get_latest_approval_request,
@@ -234,12 +233,6 @@ class TestAPIMarketplace(unittest.TestCase):
 		become_publisher()
 		self.team.reload()
 		self.assertTrue(self.team.is_developer)
-
-	def test_developer_toggle_allowed(self):
-		is_developer = self.team.is_developer
-
-		allowed = developer_toggle_allowed()
-		self.assertEqual(not allowed, is_developer == 0)
 
 	def test_get_apps(self):
 		frappe.set_user(self.team.user)
