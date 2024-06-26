@@ -295,7 +295,7 @@ class Site(Document, TagHelpers):
 			self.admin_password = frappe.generate_hash(length=16)
 
 	def validate_bench(self):
-		if frappe.db.get_value("Bench", self.bench, "status") != "Active":
+		if frappe.db.get_value("Bench", self.bench, "status", for_update=True) != "Active":
 			frappe.throw(f"Bench {self.bench} is not active.")
 
 		bench_group = frappe.db.get_value("Bench", self.bench, "group")

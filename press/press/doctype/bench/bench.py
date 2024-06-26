@@ -313,6 +313,8 @@ class Bench(Document):
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
 		self.check_ongoing_job()
+		self.status = "Pending"
+		self.save()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
