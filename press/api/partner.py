@@ -47,7 +47,20 @@ def update_partnership_date(team, partnership_date):
 
 @frappe.whitelist()
 def get_partner_details(partner_email):
-	from press.utils.billing import get_frappe_io_connection
+	from press.utils.billing import get_frappe_io_connection, disabled_frappeio_auth
+
+	if disabled_frappeio_auth():
+		return frappe._dict(
+			{
+				"email": "",
+				"partner_type": "",
+				"company_name": "",
+				"custom_ongoing_period_fc_invoice_contribution": "",
+				"custom_ongoing_period_enterprise_invoice_contribution": "",
+				"partner_name": "",
+				"custom_number_of_certified_members": "",
+			}
+		)
 
 	client = get_frappe_io_connection()
 	data = client.get_doc(
