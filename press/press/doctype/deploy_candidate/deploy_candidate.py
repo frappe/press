@@ -1791,15 +1791,26 @@ def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 	return float(value)
 
 
-def check_builds_status():
-	fail_or_retry_stuck_builds()
-	correct_false_positives()
+def check_builds_status(
+	last_n_days=0,
+	last_n_hours=4,
+	stuck_threshold_in_hours=2,
+):
+	fail_or_retry_stuck_builds(
+		last_n_days=last_n_days,
+		last_n_hours=last_n_hours,
+		stuck_threshold_in_hours=stuck_threshold_in_hours,
+	)
+	correct_false_positives(
+		last_n_days=last_n_days,
+		last_n_hours=last_n_hours,
+	)
 	frappe.db.commit()
 
 
 def fail_or_retry_stuck_builds(
 	last_n_days=0,
-	last_n_hours=1,
+	last_n_hours=4,
 	stuck_threshold_in_hours=2,
 ):
 	# Fails or retries builds builds from the `last_n_days` and `last_n_hours` that
