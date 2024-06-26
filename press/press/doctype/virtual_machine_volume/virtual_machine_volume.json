@@ -10,7 +10,8 @@
   "volume_type",
   "size",
   "iops",
-  "throughput"
+  "throughput",
+  "last_updated_at"
  ],
  "fields": [
   {
@@ -48,12 +49,17 @@
    "in_list_view": 1,
    "label": "Volume ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "last_updated_at",
+   "fieldtype": "Datetime",
+   "label": "Last updated at"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-12-11 18:25:03.230288",
+ "modified": "2024-06-21 17:04:27.353105",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",
