@@ -48,6 +48,7 @@
   "erpnext_api_secret",
   "column_break_38",
   "frappeio_authentication_section",
+  "disable_frappe_auth",
   "frappe_url",
   "frappeio_api_key",
   "column_break_39",
@@ -1376,6 +1377,12 @@
    "fieldname": "max_concurrent_physical_restorations",
    "fieldtype": "Int",
    "label": "Max Concurrent Physical Restorations"
+  },
+  {
+    "default": "0",
+    "fieldname": "disable_frappe_auth",
+    "fieldtype": "Check",
+    "label": "Disable Frappe Auth"
   }
  ],
  "issingle": 1,
