@@ -207,11 +207,15 @@ export default {
 								fields: [
 									{
 										fieldname: 'storage',
-										type: 'number',
-										step: 50,
-										min: 50,
+										type: 'select',
 										default: 50,
-										label: 'Storage (GB)'
+										label: 'Storage (GB)',
+										variant: 'outline',
+										// options from 5 GB to 500 GB in steps of 5 GB
+										options: Array.from({ length: 100 }, (_, i) => ({
+											label: `${(i + 1) * 5} GB`,
+											value: (i + 1) * 5
+										}))
 									}
 								],
 								onSuccess: ({ hide, values }) => {
@@ -222,11 +226,11 @@ export default {
 												increment: values.storage
 											},
 											{
-												onSuccess() {
+												onSuccess: () => {
 													hide();
 													this.$router.push({
 														name: 'Server Detail Plays',
-														params: { name: doc.name }
+														params: { name: this.$appServer.name }
 													});
 												},
 												onError(e) {
