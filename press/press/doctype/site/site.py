@@ -296,7 +296,9 @@ class Site(Document, TagHelpers):
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.bench, "status", for_update=True) != "Active":
-			frappe.throw(f"Bench {self.bench} is not active.")
+			frappe.throw(
+				f"Bench {self.bench} is not active. Please try again if you've deployed a new bench."
+			)
 
 		bench_group = frappe.db.get_value("Bench", self.bench, "group")
 		if bench_group != self.group:
