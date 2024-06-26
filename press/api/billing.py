@@ -489,8 +489,13 @@ def setup_intent_success(setup_intent, address=None):
 
 	team = get_current_team(True)
 	clear_setup_intent()
+	mandate_reference = setup_intent.payment_method_options.card.mandate_options.reference
 	payment_method = team.create_payment_method(
-		setup_intent.payment_method, setup_intent.id, setup_intent.mandate, set_default=True
+		setup_intent.payment_method,
+		setup_intent.id,
+		setup_intent.mandate,
+		mandate_reference,
+		set_default=True,
 	)
 	if address:
 		address = frappe._dict(address)
