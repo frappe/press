@@ -25,7 +25,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, unique
-from press.utils.billing import get_frappe_io_connection
+from press.utils.billing import get_frappe_io_connection, disabled_frappeio_auth
 
 
 @frappe.whitelist()
@@ -995,6 +995,9 @@ def get_discount_percent(plan, discount=0.0):
 		"Silver": 40.0,
 		"Bronze": 30.0,
 	}
+
+	if disabled_frappeio_auth():
+		return discount
 
 	if team.erpnext_partner and frappe.get_value(
 		"Marketplace App Plan", plan, "partner_discount"
