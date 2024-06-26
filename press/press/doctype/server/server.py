@@ -81,8 +81,11 @@ class BaseServer(Document, TagHelpers):
 	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
 		if server == self.name:
 			self.increase_disk_size(increment)
+			self.create_subscription_for_storage(increment)
 		else:
-			frappe.get_doc("Database Server", server).increase_disk_size(increment)
+			server_doc = frappe.get_doc("Database Server", server)
+			server_doc.increase_disk_size(increment)
+			server_doc.create_subscription_for_storage(increment)
 
 	@staticmethod
 	def on_not_found(name):
@@ -504,9 +507,62 @@ class BaseServer(Document, TagHelpers):
 	def subscription(self):
 		name = frappe.db.get_value(
 			"Subscription",
-			{"document_type": self.doctype, "document_name": self.name, "team": self.team},
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"team": self.team,
+				"plan_type": "Server Plan",
+			},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
+
+	@property
+	def add_on_storage_subscription(self):
+		name = frappe.db.get_value(
+			"Subscription",
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"team": self.team,
+				"plan_type": "Server Storage Plan",
+			},
+		)
+		return frappe.get_doc("Subscription", name) if name else None
+
+	def create_subscription_for_storage(self, increment: int):
+		plan_type = "Server Storage Plan"
+		plan = frappe.get_value(plan_type, {"enabled": 1}, "name")
+
+		if existing_subscription := frappe.db.get_value(
+			"Subscription",
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"team": self.team,
+				"plan_type": plan_type,
+				"plan": plan,
+			},
+			["name", "additional_storage"],
+			as_dict=True,
+		):
+			frappe.db.set_value(
+				"Subscription",
+				existing_subscription.name,
+				"additional_storage",
+				increment + int(existing_subscription.additional_storage),
+			)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan_type": plan_type,
+					"plan": plan,
+					"additional_storage": increment,
+				}
+			).insert()
 
 	@frappe.whitelist()
 	def rename_server(self):
@@ -554,6 +610,11 @@ class BaseServer(Document, TagHelpers):
 		subscription = self.subscription
 		if subscription:
 			subscription.disable()
+
+		# disable add-on storage subscription
+		add_on_storage_subscription = self.add_on_storage_subscription
+		if add_on_storage_subscription:
+			add_on_storage_subscription.disable()
 
 	def can_change_plan(self, ignore_card_setup):
 		if is_system_user(frappe.session.user):
@@ -993,8 +1054,20 @@ class Server(BaseServer):
 		add_permission_for_newly_created_doc(self)
 
 	def update_subscription(self):
-		if self.subscription and self.subscription.team != self.team:
-			self.subscription.disable()
+		if subscription := frappe.db.get_value(
+			"Subscription",
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"plan_type": "Server Plan",
+				"plan": self.plan,
+				"enabled": 1,
+			},
+		):
+			subscription = frappe.get_doc("Subscription", subscription) if subscription else None
+
+		if subscription and subscription.team != self.team:
+			subscription.disable()
 
 			if subscription := frappe.db.get_value(
 				"Subscription",
@@ -1002,6 +1075,7 @@ class Server(BaseServer):
 					"document_type": self.doctype,
 					"document_name": self.name,
 					"team": self.team,
+					"plan_type": "Server Plan",
 					"plan": self.plan,
 				},
 			):
@@ -1015,11 +1089,61 @@ class Server(BaseServer):
 							"document_type": self.doctype,
 							"document_name": self.name,
 							"team": self.team,
+							"plan_type": "Server Plan",
 							"plan": self.plan,
 						}
 					).insert()
 				except Exception:
 					frappe.log_error("Server Subscription Creation Error")
+
+		if add_on_storage_subscription := frappe.db.get_value(
+			"Subscription",
+			{
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"plan_type": "Server Storage Plan",
+				"enabled": 1,
+			},
+		):
+			add_on_storage_subscription = (
+				frappe.get_doc("Subscription", add_on_storage_subscription)
+				if add_on_storage_subscription
+				else None
+			)
+
+		if add_on_storage_subscription and add_on_storage_subscription.team != self.team:
+			add_on_storage_subscription.disable()
+
+			if existing_add_on_storage_subscription := frappe.db.get_value(
+				"Subscription",
+				filters={
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan_type": "Server Storage Plan",
+				},
+			):
+				frappe.db.set_value(
+					"Subscription",
+					existing_add_on_storage_subscription,
+					"enabled",
+					1,
+				)
+			else:
+				try:
+					# create new subscription
+					frappe.get_doc(
+						{
+							"doctype": "Subscription",
+							"document_type": self.doctype,
+							"document_name": self.name,
+							"team": self.team,
+							"plan_type": "Server Storage Plan",
+							"plan": add_on_storage_subscription.plan,
+						}
+					).insert()
+				except Exception:
+					frappe.log_error("Server Storage Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
