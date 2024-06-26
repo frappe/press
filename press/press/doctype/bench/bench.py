@@ -307,14 +307,14 @@ class Bench(Document):
 
 	@dashboard_whitelist()
 	def archive(self):
+		self.status = "Pending"
+		self.save()
 		unarchived_sites = frappe.db.exists(
 			"Site", {"bench": self.name, "status": ("!=", "Archived")}
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
 		self.check_ongoing_job()
-		self.status = "Pending"
-		self.save()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
