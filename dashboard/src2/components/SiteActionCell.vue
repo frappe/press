@@ -17,12 +17,16 @@
 				{{ props.buttonLabel }}
 			</p>
 		</Button>
+		<FeedbackDialog
+			v-model="showFeedbackDialog"
+			@updated="showFeedbackDialog = false"
+		/>
 	</div>
 </template>
 
 <script setup>
 import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
+import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
@@ -118,6 +122,12 @@ function onActivateSite() {
 	});
 }
 
+const FeedbackDialog = defineAsyncComponent(() =>
+	import('./ChurnFeedbackDialog.vue')
+);
+
+const showFeedbackDialog = ref(false);
+
 function onDropSite() {
 	return confirmDialog({
 		title: 'Drop Site',
@@ -150,6 +160,7 @@ function onDropSite() {
 				return site.archive.submit({ force: values.force }).then(() => {
 					hide();
 					router.replace({ name: 'Site List' });
+					showFeedbackDialog.value = true;
 				});
 			}
 		}
