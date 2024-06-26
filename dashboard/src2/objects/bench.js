@@ -186,7 +186,7 @@ export default {
 							label: 'Branch',
 							fieldname: 'branch',
 							type: 'Badge',
-							width: 1,
+							width: 0.5,
 							link(value, row) {
 								return `${row.repository_url}/tree/${value}`;
 							}
@@ -195,7 +195,7 @@ export default {
 							label: 'Version',
 							type: 'Badge',
 							fieldname: 'tag',
-							width: 1,
+							width: 0.5,
 							format(value, row) {
 								return value || row.hash?.slice(0, 7);
 							}
@@ -237,7 +237,7 @@ export default {
 									? 'Update Available'
 									: 'Latest Version';
 							},
-							width: 1
+							width: 0.8
 						}
 					],
 					rowActions({
