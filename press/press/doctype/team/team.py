@@ -144,6 +144,7 @@ class Team(Document):
 				"expiry_month",
 				"expiry_year",
 				"brand",
+				"stripe_mandate_id",
 			],
 			as_dict=True,
 		)
@@ -653,7 +654,14 @@ class Team(Document):
 			},
 		)
 
-	def create_payment_method(self, payment_method_id, set_default=False):
+	def create_payment_method(
+		self,
+		payment_method_id,
+		setup_intent_id,
+		mandate_id,
+		mandate_reference,
+		set_default=False,
+	):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
@@ -667,6 +675,9 @@ class Team(Document):
 				"expiry_year": payment_method["card"]["exp_year"],
 				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
+				"stripe_setup_intent_id": setup_intent_id,
+				"stripe_mandate_id": mandate_id if mandate_id else None,
+				"stripe_mandate_reference": mandate_reference if mandate_reference else None,
 			}
 		)
 		doc.insert()

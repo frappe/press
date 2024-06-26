@@ -20,7 +20,14 @@ export default {
 		options() {
 			return {
 				doctype: 'Stripe Payment Method',
-				fields: ['name', 'is_default', 'expiry_month', 'expiry_year', 'brand'],
+				fields: [
+					'name',
+					'is_default',
+					'expiry_month',
+					'expiry_year',
+					'brand',
+					'stripe_mandate_id'
+				],
 				columns: [
 					{
 						label: 'Name on Card',
@@ -53,6 +60,20 @@ export default {
 						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
+						}
+					},
+					{
+						label: 'Mandated',
+						type: 'Component',
+						width: 1,
+						align: 'center',
+						component({ row }) {
+							if (row.stripe_mandate_id) {
+								return h(FeatherIcon, {
+									name: 'check-circle',
+									class: 'h-4 w-4 text-green-600'
+								});
+							}
 						}
 					},
 					{
