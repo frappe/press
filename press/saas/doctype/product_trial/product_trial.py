@@ -7,7 +7,7 @@ from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
-class SaaSProduct(Document):
+class ProductTrial(Document):
 	dashboard_fields = ["title", "logo", "description", "domain", "trial_days"]
 
 	def get_doc(self, doc):
@@ -159,9 +159,9 @@ class SaaSProduct(Document):
 
 def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
-	products = frappe.get_all("SaaS Product", {"enable_pooling": 1}, pluck="name")
+	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
 	for product in products:
-		product = frappe.get_doc("SaaS Product", product)
+		product = frappe.get_doc("Product Trial", product)
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()

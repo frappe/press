@@ -22,9 +22,9 @@
 				<strong>Add Partner Code</strong> to link with your Partner team.
 			</span>
 			<ListItem
+				v-else
 				:title="partner_billing_name"
 				:subtitle="$team.doc.partner_email"
-				v-else="$team.doc.partner_email"
 			/>
 		</div>
 		<Dialog
@@ -41,7 +41,7 @@
 			v-model="showAddPartnerCodeDialog"
 		>
 			<template v-slot:body-content>
-				<p class="text-p-base pb-3">
+				<p class="pb-3 text-p-base">
 					Enter partner code provided by your Partner
 				</p>
 				<FormControl

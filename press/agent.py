@@ -943,13 +943,17 @@ class Agent:
 		return result and result.get("sid")
 
 	def get_site_info(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+		if result:
+			return result["data"]
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_site_analytics(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/analytics")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
+		if result:
+			return result["data"]
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")

@@ -176,7 +176,7 @@ export default {
 						this.oauthSignup = res.oauth_signup;
 						this.oauthDomain = res.oauth_domain;
 						this.countries = res.countries;
-						this.saasProduct = res.saas_product;
+						this.saasProduct = res.product_trial;
 					}
 				}
 			};

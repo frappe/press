@@ -89,7 +89,9 @@ export default {
 					icon: () => h(App),
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
-					condition: this.$team.doc.is_desk_user || this.$session.hasAppsAccess,
+					condition:
+						this.$team.doc.is_desk_user ||
+						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled
 				},
 				{

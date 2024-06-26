@@ -39,7 +39,7 @@ ALLOWED_DOCTYPES = [
 	"Press Role",
 	"Press Role Permission",
 	"Team",
-	"SaaS Product Site Request",
+	"Product Trial Request",
 	"Deploy Candidate",
 	"Deploy Candidate Difference",
 	"Deploy Candidate Difference App",
@@ -62,7 +62,7 @@ ALLOWED_DOCTYPES = [
 	"App Release",
 	"Payout Order",
 	"App Patch",
-	"SaaS Product",
+	"Product Trial",
 	"Press Notification",
 	"User SSH Key",
 	"Frappe Version",
@@ -248,7 +248,10 @@ def set_value(doctype, name, fieldname, value=None):
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
 		is_allowed_field(doctype, field)
 
-	return _set_value(doctype, name, fieldname, value)
+	_set_value(doctype, name, fieldname, value)
+
+	# frappe set_value returns just the doc and not press's overriden `get_doc`
+	return get(doctype, name)
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])

@@ -226,17 +226,6 @@ def become_publisher():
 
 
 @frappe.whitelist()
-def developer_toggle_allowed():
-	"""Feature flag to allow display of developer account toggle"""
-	# Already a developer
-	current_team = get_current_team(get_doc=True)
-	if current_team.is_developer:
-		return False
-
-	return frappe.db.get_value("Press Settings", None, "allow_developer_account") == "1"
-
-
-@frappe.whitelist()
 def frappe_versions():
 	"""Return a list of Frappe Version names"""
 	return frappe.get_all("Frappe Version", pluck="name", order_by="name desc")
