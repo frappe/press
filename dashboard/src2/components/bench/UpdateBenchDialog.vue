@@ -55,18 +55,26 @@
 					v-else-if="step === 'restrict-build' && restrictMessage"
 					class="flex flex-col gap-4"
 				>
-					<div class="flex items-baseline gap-2">
+					<div class="flex items-center gap-2">
 						<h2 class="text-lg font-medium">Build might fail</h2>
-						<i-lucide-alert-triangle :class="`h-4 w-4 text-yellow-600`" />
+						<a
+							href="https://frappecloud.com/docs/common-issues/build-might-fail"
+							target="_blank"
+							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
+						>
+							<i-lucide-help-circle :class="`h-4 w-4 text-red-600`" />
+						</a>
 					</div>
 					<p class="text-base font-medium text-gray-800">
 						{{ restrictMessage }}
 					</p>
-					<FormControl
-						label="I understand, run deploy anyway"
-						type="checkbox"
-						v-model="ignoreWillFailCheck"
-					/>
+					<div class="mt-4">
+						<FormControl
+							label="I understand, run deploy anyway"
+							type="checkbox"
+							v-model="ignoreWillFailCheck"
+						/>
+					</div>
 				</div>
 
 				<ErrorMessage :message="errorMessage" />
@@ -91,7 +99,7 @@
 
 <script>
 import { h } from 'vue';
-import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
+import { Checkbox, Tooltip, getCachedDocumentResource } from 'frappe-ui';
 import CommitChooser from '@/components/utils/CommitChooser.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
 import GenericList from '../../components/GenericList.vue';
@@ -116,7 +124,7 @@ export default {
 			step: '',
 			errorMessage: '',
 			ignoreWillFailCheck: false,
-			restrictMessage: '',
+			restrictMessage: 'Node version not updated since previous build.',
 			selectedApps: [],
 			selectedSites: []
 		};
@@ -130,6 +138,8 @@ export default {
 		} else {
 			this.step = 'select-sites';
 		}
+
+		this.step = 'restrict-build';
 	},
 	computed: {
 		updatableAppOptions() {
@@ -486,7 +496,7 @@ export default {
 		skipAndDeploy() {
 			if (this.restrictMessage && !this.ignoreWillFailCheck) {
 				this.errorMessage =
-					'Please check the <b>I understand</b> box to deploy';
+					'Please check the <b>I understand</b> box to proceed';
 				return;
 			}
 
