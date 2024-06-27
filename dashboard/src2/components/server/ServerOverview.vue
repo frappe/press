@@ -22,10 +22,13 @@
 								class="mt-2 flex flex-col space-y-2"
 							>
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div>
+								<div class="flex items-center space-x-2">
 									<div class="text-base text-gray-900">
 										{{ d.value }}
 									</div>
+									<Tooltip v-if="d.help" :text="d.help">
+										<i-lucide-info class="h-4 w-4 text-gray-500" />
+									</Tooltip>
 								</div>
 							</div>
 							<Button
@@ -129,16 +132,20 @@ export default {
 			let currentPlan = doc.current_plan;
 			let currentUsage = doc.usage;
 			let diskSize = doc.disk_size;
+			let additionalStorage = diskSize - currentPlan.disk;
+			let price = 0;
+			let priceField =
+				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
+			let currencySymbol = this.$team.doc.currency === 'INR' ? '₹' : '$';
 
 			let planDescription = '';
 			if (!currentPlan) {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
-				if (this.$team.doc.currency === 'INR') {
-					planDescription = `₹${currentPlan.price_inr} /month`;
-				} else {
-					planDescription = `$${currentPlan.price_usd} /month`;
-				}
+				price = currentPlan[priceField];
+				if (additionalStorage > 0)
+					price += doc.storage_plan[priceField] * additionalStorage;
+				planDescription = `${currencySymbol}${price}/mo`;
 			} else {
 				planDescription = currentPlan.plan_title;
 			}
@@ -152,7 +159,15 @@ export default {
 							? 'Database Server Plan'
 							: 'Replication Server Plan',
 					value: planDescription,
-					type: 'header'
+					type: 'header',
+					help:
+						currentPlan[priceField] < price
+							? `Server Plan: ${currencySymbol}${
+									currentPlan[priceField]
+							  }/mo & Add-on Storage Plan: ${currencySymbol}${
+									doc.storage_plan[priceField] * additionalStorage
+							  }/mo`
+							: ''
 				},
 				{
 					label: 'CPU',

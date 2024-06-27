@@ -64,6 +64,12 @@ class BaseServer(Document, TagHelpers):
 		from press.api.server import usage
 
 		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
+		doc.storage_plan = frappe.db.get_value(
+			"Server Storage Plan",
+			{"enabled": 1},
+			["price_inr", "price_usd"],
+			as_dict=True,
+		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
 		doc.disk_size = frappe.db.get_value(
