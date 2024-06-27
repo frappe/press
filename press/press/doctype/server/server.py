@@ -157,7 +157,6 @@ class BaseServer(Document, TagHelpers):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
-		self._set_server_for_new_benches_and_site()
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
@@ -210,23 +209,43 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
-	def _set_server_for_new_benches_and_site(self):
-		if self.is_new():
-			server = frappe.db.get_value(
-				"Server",
-				{
-					"name": ("!=", self.name),
-					"is_primary": True,
-					"status": "Active",
-					"use_for_new_benches": True,
-					"use_for_new_sites": True,
-				},
-				pluck="name",
+	@frappe.whitelist()
+	def enable_server_for_new_benches_and_site(self):
+		if not self.public:
+			frappe.throw("Action only allowed for public servers")
+
+		server = self.get_server_enabled_for_new_benches_and_sites()
+
+		if server:
+			frappe.msgprint(
+				_("Server {0} is already enabled for new benches and sites").format(server)
 			)
 
-			if not server:
-				self.use_for_new_benches = True
-				self.use_for_new_sites = True
+		else:
+			self.use_for_new_benches = True
+			self.use_for_new_sites = True
+			self.save()
+
+	def get_server_enabled_for_new_benches_and_sites(self):
+		return frappe.db.get_value(
+			"Server",
+			{
+				"name": ("!=", self.name),
+				"is_primary": True,
+				"status": "Active",
+				"use_for_new_benches": True,
+				"use_for_new_sites": True,
+				"public": True,
+				"cluster": self.cluster,
+			},
+			pluck="name",
+		)
+
+	@frappe.whitelist()
+	def disable_server_for_new_benches_and_site(self):
+		self.use_for_new_benches = False
+		self.use_for_new_sites = False
+		self.save()
 
 	def validate_cluster(self):
 		if not self.cluster:
