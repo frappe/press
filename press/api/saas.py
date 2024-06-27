@@ -209,15 +209,18 @@ def validate_account_request(key):
 		frappe.throw("Request Key not provided")
 
 	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
-	headless, route = frappe.db.get_value(
+	app_info = frappe.db.get_value(
 		"Saas Setup Account Generator", app, ["headless", "route"]
 	)
 
-	if headless:
+	if not app_info:
+		frappe.throw("App configurations are missing! Please contact support")
+
+	if app_info.headless:
 		headless_setup_account(key)
 	else:
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = f"/{route}?key={key}"
+		frappe.local.response["location"] = f"/{app_info.route}?key={key}"
 
 
 @frappe.whitelist(allow_guest=True)
