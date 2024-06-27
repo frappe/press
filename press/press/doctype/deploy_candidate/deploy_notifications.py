@@ -4,11 +4,14 @@
 import re
 import typing
 from textwrap import dedent
-from typing import Optional, TypedDict, Protocol
-from press.press.doctype.deploy_candidate.utils import get_error_key
+from typing import Optional, Protocol, TypedDict
 
 import frappe
 import frappe.utils
+from press.press.doctype.deploy_candidate.utils import (
+	BuildValidationError,
+	get_error_key,
+)
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -127,12 +130,12 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			'engine "node" is incompatible with this module',
 			update_with_incompatible_node,
-			None,
+			check_incompatible_node,
 		),
 		(
 			"Incompatible Node version found",
 			update_with_incompatible_node,
-			None,
+			check_incompatible_node,
 		),
 		(
 			"Incompatible Python version found",
@@ -597,6 +600,21 @@ def update_with_incompatible_node(
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
 	return True
+
+
+def check_incompatible_node(
+	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
+) -> None:
+	old_node = old_dc.get_dependency_version("node")
+	new_node = new_dc.get_dependency_version("node")
+
+	if old_node != new_node:
+		return
+
+	frappe.throw(
+		"Node version not updated since previous build.",
+		BuildValidationError,
+	)
 
 
 def update_with_incompatible_node_prebuild(

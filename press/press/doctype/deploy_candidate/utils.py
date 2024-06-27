@@ -126,3 +126,7 @@ def get_will_fail_checker(error_key: str):
 
 def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
+
+
+class BuildValidationError(frappe.ValidationError):
+	...

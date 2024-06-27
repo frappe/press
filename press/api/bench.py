@@ -4,7 +4,7 @@
 
 import re
 from collections import OrderedDict
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
@@ -30,7 +30,6 @@ from press.utils import (
 	get_current_team,
 	unique,
 )
-
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
@@ -720,7 +719,7 @@ def deploy(name, apps):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps, sites=None, run_will_fail_check=False):
+def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
 	if sites is None:
 		sites = []
 
