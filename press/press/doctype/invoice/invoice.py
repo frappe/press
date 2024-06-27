@@ -179,9 +179,10 @@ class Invoice(Document):
 				item.document_name = frappe.get_value(
 					item.document_type, item.document_name, "title"
 				)
-				item.plan = (
-					f"{currency_symbol}{frappe.get_value('Server Plan', item.plan, price_field)}"
-				)
+				if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
+					item.plan = f"{currency_symbol}{server_plan}"
+				elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
+					item.plan = f"{currency_symbol}{server_plan}"
 			elif item.document_type == "Marketplace App":
 				item.document_name = frappe.get_value(
 					item.document_type, item.document_name, "title"
