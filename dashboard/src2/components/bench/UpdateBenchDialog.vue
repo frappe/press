@@ -124,13 +124,12 @@ export default {
 			step: '',
 			errorMessage: '',
 			ignoreWillFailCheck: false,
-			restrictMessage: 'Node version not updated since previous build.',
+			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: []
 		};
 	},
 	mounted() {
-		window.ubd = this;
 		if (this.hasUpdateAvailable) {
 			this.step = 'select-apps';
 		} else if (this.hasRemovedApps) {
@@ -138,8 +137,6 @@ export default {
 		} else {
 			this.step = 'select-sites';
 		}
-
-		this.step = 'restrict-build';
 	},
 	computed: {
 		updatableAppOptions() {
