@@ -1110,7 +1110,7 @@ class Server(BaseServer):
 				"plan_type": "Server Storage Plan",
 				"enabled": 1,
 			},
-			["name", "team"],
+			["name", "team", "additional_storage"],
 			as_dict=True,
 		)
 		if add_on_storage_subscription and add_on_storage_subscription.team != self.team:
@@ -1128,8 +1128,10 @@ class Server(BaseServer):
 				frappe.db.set_value(
 					"Subscription",
 					existing_add_on_storage_subscription,
-					"enabled",
-					1,
+					{
+						"enabled": 1,
+						"additional_storage": add_on_storage_subscription.additional_storage,
+					},
 				)
 			else:
 				try:
