@@ -20,7 +20,14 @@ export default {
 		options() {
 			return {
 				doctype: 'Stripe Payment Method',
-				fields: ['name', 'is_default', 'expiry_month', 'expiry_year', 'brand'],
+				fields: [
+					'name',
+					'is_default',
+					'expiry_month',
+					'expiry_year',
+					'brand',
+					'stripe_mandate_id'
+				],
 				columns: [
 					{
 						label: 'Name on Card',
@@ -56,6 +63,20 @@ export default {
 						}
 					},
 					{
+						label: 'Mandated',
+						type: 'Component',
+						width: 1,
+						align: 'center',
+						component({ row }) {
+							if (row.stripe_mandate_id) {
+								return h(FeatherIcon, {
+									name: 'check-circle',
+									class: 'h-4 w-4 text-green-600'
+								});
+							}
+						}
+					},
+					{
 						label: '',
 						type: 'Component',
 						align: 'right',
@@ -82,7 +103,7 @@ export default {
 						align: 'right'
 					}
 				],
-				rowActions({ listResource, row }) {
+				rowActions: ({ listResource, row }) => {
 					return [
 						{
 							label: 'Set as default',
@@ -104,7 +125,7 @@ export default {
 						{
 							label: 'Remove',
 							onClick: () => {
-								if (row.is_default) {
+								if (row.is_default && this.$team.doc.payment_mode === 'Card') {
 									toast.error('Cannot remove default card');
 									return;
 								}

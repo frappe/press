@@ -27,7 +27,6 @@ from frappe.utils import (
 	time_diff_in_hours,
 	sbool,
 )
-from press.api.server import prometheus_query
 
 from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -42,7 +41,7 @@ except ImportError:
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.agent import Agent
+from press.agent import Agent, AgentRequestSkippedException
 from press.api.site import check_dns, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -65,6 +64,14 @@ from press.utils import (
 	unique,
 )
 from press.utils.dns import _change_dns_record, create_dns_record
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 class Site(Document, TagHelpers):
@@ -288,8 +295,13 @@ class Site(Document, TagHelpers):
 			self.admin_password = frappe.generate_hash(length=16)
 
 	def validate_bench(self):
-		if frappe.db.get_value("Bench", self.bench, "status") != "Active":
-			frappe.throw(f"Bench {self.bench} is not active.")
+		if (
+			self.status not in ("Broken", "Archived")
+			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) != "Active"
+		):
+			frappe.throw(
+				f"Bench {self.bench} is not active. Please try again if you've deployed a new bench."
+			)
 
 		bench_group = frappe.db.get_value("Bench", self.bench, "group")
 		if bench_group != self.group:
@@ -581,23 +593,11 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def fetch_free_space(self, server: str) -> int:
-		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{server}", job="node", mountpoint="/"}}""",
-			lambda x: x["mountpoint"],
-			"Asia/Kolkata",
-			120,
-			120,
-		)["datasets"]
-		if response:
-			return response[0]["values"][-1]
-		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
-
 	def check_enough_space_on_server(self):
-		app_server_free_space = self.fetch_free_space(self.server)
-		db_server_free_space = self.fetch_free_space(
-			frappe.db.get_value("Server", self.server, "database_server")
-		)
+		app: "Server" = frappe.get_doc("Server", self.server)
+		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+		app_server_free_space = app.free_space
+		db_server_free_space = db.free_space
 		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
 			frappe.throw(
 				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
@@ -811,10 +811,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
-	def reset_previous_status(self):
+	def reset_previous_status(self, fix_broken=False):
 		self.status = self.status_before_update
 		self.status_before_update = None
-		if not self.status:
+		if not self.status or (self.status == "Broken" and fix_broken):
 			status_map = {402: "Suspended", 503: "Inactive"}
 			try:
 				response = requests.get(f"https://{self.name}")
@@ -848,7 +848,7 @@ class Site(Document, TagHelpers):
 					"site": self.name,
 					"domain": domain,
 					"dns_type": response["type"],
-					"ssl": False,
+					"dns_response": json.dumps(response, indent=4, default=str),
 				}
 			).insert()
 
@@ -1141,8 +1141,13 @@ class Site(Document, TagHelpers):
 			)
 			sid = response.cookies.get("sid")
 		if not sid:
-			agent = Agent(self.server)
-			sid = agent.get_site_sid(self, user)
+			try:
+				agent = Agent(self.server)
+				sid = agent.get_site_sid(self, user)
+			except AgentRequestSkippedException:
+				frappe.throw(
+					"Server is unresponsive. Please try again in some time.", frappe.ValidationError
+				)
 		if not sid or sid == "Guest":
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
 		return sid
@@ -1153,6 +1158,8 @@ class Site(Document, TagHelpers):
 
 	def fetch_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		return agent.get_site_analytics(self)
 
 	def get_disk_usages(self):
@@ -1264,6 +1271,9 @@ class Site(Document, TagHelpers):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
 			data = self.fetch_info()
+
+		if not data:
+			return
 
 		fetched_usage = data["usage"]
 		fetched_config = data["config"]
@@ -1906,7 +1916,7 @@ class Site(Document, TagHelpers):
 		if not out.update_available:
 			return out
 
-		bench = frappe.get_doc("Bench", self.bench)
+		bench: "Bench" = frappe.get_doc("Bench", self.bench)
 		source = bench.candidate
 		destinations = frappe.get_all(
 			"Deploy Candidate Difference",
@@ -1920,12 +1930,15 @@ class Site(Document, TagHelpers):
 
 		destination = destinations[0]
 
-		destination_candidate = frappe.get_doc("Deploy Candidate", destination)
+		destination_candidate: "DeployCandidate" = frappe.get_doc(
+			"Deploy Candidate", destination
+		)
+
+		current_apps = bench.apps
+		next_apps = destination_candidate.apps
+		out.apps = get_updates_between_current_and_next_apps(current_apps, next_apps)
 
 		out.installed_apps = self.apps
-		out.apps = get_updates_between_current_and_next_apps(
-			bench.apps, destination_candidate.apps
-		)
 		out.update_available = any([app["update_available"] for app in out.apps])
 		return out
 
@@ -2516,9 +2529,9 @@ def process_migrate_site_job_update(job):
 	}[job.status]
 
 	if updated_status == "Active":
-		site = frappe.get_doc("Site", job.site)
+		site: Site = frappe.get_doc("Site", job.site)
 		if site.status_before_update:
-			site.reset_previous_status()
+			site.reset_previous_status(fix_broken=True)
 			return
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
@@ -2616,7 +2629,7 @@ def process_move_site_to_bench_job_update(job):
 		return
 	if job.status == "Success":
 		site = frappe.get_doc("Site", job.site)
-		site.reset_previous_status()
+		site.reset_previous_status(fix_broken=True)
 
 
 def update_records_for_rename(job):
@@ -2647,7 +2660,7 @@ def process_restore_tables_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).reset_previous_status()
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 

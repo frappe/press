@@ -16,7 +16,6 @@
 <script setup>
 import Header from '../components/Header.vue';
 import { Breadcrumbs } from 'frappe-ui';
-import { provide, ref } from 'vue';
 import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import { getTeam } from '../data/team';

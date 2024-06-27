@@ -1,5 +1,5 @@
 <template>
-	<Card title="Email Notifications">
+	<Card v-if="$team.doc.user === $session.user" title="Email Notifications">
 		<template #actions>
 			<Button icon-left="edit" @click="showEmailsEditDialog = true">
 				Edit

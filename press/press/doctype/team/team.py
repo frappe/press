@@ -144,6 +144,7 @@ class Team(Document):
 				"expiry_month",
 				"expiry_year",
 				"brand",
+				"stripe_mandate_id",
 			],
 			as_dict=True,
 		)
@@ -270,7 +271,7 @@ class Team(Document):
 		else:
 			team.parent_team = account_request.invited_by
 
-		if account_request.saas_product:
+		if account_request.product_trial:
 			team.is_saas_user = 1
 
 		team.save(ignore_permissions=True)
@@ -580,7 +581,7 @@ class Team(Document):
 				"address_line1": billing_details.address,
 				"city": billing_details.city,
 				"state": billing_details.state,
-				"pincode": billing_details.postal_code,
+				"pincode": (billing_details.postal_code).strip().replace(" ", ""),
 				"country": billing_details.country,
 				"gstin": billing_details.gstin,
 			}
@@ -653,7 +654,14 @@ class Team(Document):
 			},
 		)
 
-	def create_payment_method(self, payment_method_id, set_default=False):
+	def create_payment_method(
+		self,
+		payment_method_id,
+		setup_intent_id,
+		mandate_id,
+		mandate_reference,
+		set_default=False,
+	):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
@@ -667,6 +675,9 @@ class Team(Document):
 				"expiry_year": payment_method["card"]["exp_year"],
 				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
+				"stripe_setup_intent_id": setup_intent_id,
+				"stripe_mandate_id": mandate_id if mandate_id else None,
+				"stripe_mandate_reference": mandate_reference if mandate_reference else None,
 			}
 		)
 		doc.insert()
@@ -940,21 +951,21 @@ class Team(Document):
 		if self.is_saas_user:
 			pending_site_request = self.get_pending_saas_site_request()
 			if pending_site_request:
-				saas_product = pending_site_request.saas_product
+				product_trial = pending_site_request.product_trial
 			else:
-				saas_product = frappe.db.get_value(
-					"Account Request", self.account_request, "saas_product"
+				product_trial = frappe.db.get_value(
+					"Account Request", self.account_request, "product_trial"
 				)
-			if saas_product:
-				return f"/app-trial/{saas_product}"
+			if product_trial:
+				return f"/app-trial/{product_trial}"
 
 		return "/welcome"
 
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
-			"SaaS Product Site Request",
+			"Product Trial Request",
 			{"team": self.name, "status": ("in", ["Pending", "Wait for Site", "Error"])},
-			["name", "saas_product", "saas_product.title", "status"],
+			["name", "product_trial", "product_trial.title", "status"],
 			order_by="creation desc",
 			as_dict=True,
 		)

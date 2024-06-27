@@ -1,6 +1,6 @@
 <template>
-	<div class="space-y-5 p-5">
-		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
+	<div class="p-5">
+		<div class="space-y-5">
 			<AccountProfile />
 			<AccountEmails />
 			<AccountReferral />

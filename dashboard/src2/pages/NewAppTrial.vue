@@ -268,7 +268,7 @@ export default {
 		saasProduct() {
 			return {
 				type: 'document',
-				doctype: 'SaaS Product',
+				doctype: 'Product Trial',
 				name: this.productId
 			};
 		},
@@ -276,7 +276,7 @@ export default {
 			if (!this.pendingSiteRequest || this.completedSites.length) return;
 			return {
 				type: 'document',
-				doctype: 'SaaS Product Site Request',
+				doctype: 'Product Trial Request',
 				name: this.pendingSiteRequest,
 				realtime: true,
 				onSuccess(doc) {

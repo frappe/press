@@ -131,11 +131,13 @@ export default {
 					{
 						label: 'Status',
 						fieldname: 'status',
-						type: 'Badge'
+						type: 'Badge',
+						width: 0.5
 					},
 					{
 						label: 'Region',
 						fieldname: 'cluster_title',
+						width: 0.5,
 						prefix(row) {
 							if (row.cluster_title)
 								return h('img', {
@@ -147,6 +149,7 @@ export default {
 					},
 					{
 						label: 'Plan',
+						width: 0.5,
 						format(value, row) {
 							if (row.trial_end_date) {
 								return trialDays(row.trial_end_date);

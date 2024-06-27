@@ -1,5 +1,11 @@
 <template>
 	<div>
+		<AlertBanner
+			v-if="banner"
+			:title="banner.title"
+			:type="banner.type"
+			class="mb-4"
+		/>
 		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">
@@ -120,6 +126,7 @@
 </template>
 <script>
 import { reactive } from 'vue';
+import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
@@ -140,6 +147,7 @@ export default {
 	props: ['options'],
 	emits: ['update:selections'],
 	components: {
+		AlertBanner,
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
@@ -400,6 +408,11 @@ export default {
 		},
 		emptyStateMessage() {
 			return this.options.emptyStateMessage || 'No results found';
+		},
+		banner() {
+			if (this.options.banner) {
+				return this.options.banner(this.context);
+			}
 		}
 	},
 	methods: {

@@ -1,0 +1,53 @@
+---
+- name: Update NGINX Repository Key
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+
+- name: Install Memory Allocators
+  apt:
+    pkg:
+      - libjemalloc2
+      - google-perftools
+    state: present
+    update_cache: yes
+  when: allocator != "system"
+
+- name: Find Memory Allocator Library
+  find:
+    paths: /usr/lib
+    recurse: true
+    file_type: file
+    patterns: "lib{{ allocator }}.so.*"
+  register: libraries
+  when: allocator != "system"
+
+- name: Set Memory Allocator
+  template:
+    src: allocator.conf
+    dest: /etc/systemd/system/mariadb.service.d/allocator.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: allocator != "system"
+
+- name: Remove Memory Allocator
+  file:
+    path: /etc/systemd/system/mariadb.service.d/allocator.conf
+    state: absent
+  when: allocator == "system"
+
+- name: Restart MariaDB
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    enabled: yes
+    state: restarted
+
+- name: Show Memory Allocator
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_db: mysql
+    query:
+      - "SHOW VARIABLES LIKE 'version_malloc_library'"

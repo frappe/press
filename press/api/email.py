@@ -61,12 +61,12 @@ def get_analytics(**data):
 	"""
 	send data for a specific month
 	"""
-	month = data["month"]
+	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data["status"]
-	site = data["site"]
-	subscription_key = data["key"]
+	status = data.get("status")
+	site = data.get("site")
+	subscription_key = data.get("key")
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
@@ -174,9 +174,16 @@ def event_log():
 		# Hint: Likely from other emails not sent via the email delivery app
 		return
 
+	if "delivery-status" not in event_data:
+		return
+
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
 		headers = event_data["message"]["headers"]
+		if "message-id" not in headers:
+			# We can't log this event without a message-id
+			# TOOD: Investigate why this is happening
+			return
 		message_id = headers["message-id"]
 		site = (
 			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")

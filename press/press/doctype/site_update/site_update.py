@@ -262,7 +262,14 @@ class SiteUpdate(Document):
 			and workload_diff
 			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
-			server.auto_scale_workers(commit=False)
+			frappe.enqueue_doc(
+				"Server",
+				server.name,
+				method="auto_scale_workers",
+				job_id=f"auto_scale_workers:{server.name}",
+				deduplicate=True,
+				enqueue_after_commit=True,
+			)
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):
@@ -514,7 +521,9 @@ def process_update_site_job_update(job):
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
-		elif updated_status in ("Success", "Delivery Failure"):
+		elif updated_status == "Success":
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+		elif updated_status == "Delivery Failure":
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")

@@ -57,6 +57,7 @@ import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 let subscribed = {};
 

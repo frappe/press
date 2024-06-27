@@ -11,7 +11,6 @@ import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
-import { BrowserTracing } from '@sentry/tracing';
 import { session } from './data/session.js';
 
 let request = options => {
@@ -53,12 +52,7 @@ getInitialData().then(() => {
 		Sentry.init({
 			app,
 			dsn: window.press_dashboard_sentry_dsn,
-			integrations: [
-				new BrowserTracing({
-					routingInstrumentation: Sentry.vueRouterInstrumentation(router),
-					tracingOrigins: ['localhost', /^\//]
-				})
-			],
+			integrations: [Sentry.browserTracingIntegration({ router })],
 			beforeSend(event, hint) {
 				const ignoreErrors = [
 					/api\/method\/press.api.client/,

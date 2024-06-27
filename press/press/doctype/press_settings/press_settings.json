@@ -147,7 +147,6 @@
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
-  "allow_developer_account",
   "threshold",
   "commission",
   "usd_rate",
@@ -190,7 +189,8 @@
   "spaces_domain",
   "hybrid_server_tab",
   "hybrid_cluster",
-  "hybrid_domain"
+  "hybrid_domain",
+  "tls_renewal_queue_size"
  ],
  "fields": [
   {
@@ -830,12 +830,6 @@
    "non_negative": 1
   },
   {
-   "default": "0",
-   "fieldname": "allow_developer_account",
-   "fieldtype": "Check",
-   "label": "Allow Developer Account from Dashboard"
-  },
-  {
    "fieldname": "infrastructure_tab",
    "fieldtype": "Tab Break",
    "label": "Infrastructure"
@@ -1191,23 +1185,23 @@
    "label": "TLS Renewal Queue Size"
   },
   {
-    "default": "80",
-    "fieldname": "micro_debit_charge_inr",
-    "fieldtype": "Currency",
-    "label": "Micro Debit Charge (INR)",
-    "precision": "0"
-   },
-   {
-    "default": "1",
-    "fieldname": "micro_debit_charge_usd",
-    "fieldtype": "Currency",
-    "label": "Micro Debit Charge (USD)",
-    "precision": "0"
-   }
+   "default": "80",
+   "fieldname": "micro_debit_charge_inr",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (INR)",
+   "precision": "0"
+  },
+  {
+   "default": "1",
+   "fieldname": "micro_debit_charge_usd",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (USD)",
+   "precision": "0"
+  }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-10 16:04:00.044223",
+ "modified": "2024-06-25 16:39:20.923646",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

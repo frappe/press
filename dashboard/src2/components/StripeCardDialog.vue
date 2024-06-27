@@ -1,6 +1,9 @@
 <template>
 	<Dialog v-model="show" :options="{ title: 'Add new card' }">
 		<template #body-content>
+			<p class="text-sm mb-5 text-gray-700" v-if="message">
+				{{ message }}
+			</p>
 			<StripeCard2 @complete="show = false" />
 		</template>
 	</Dialog>
@@ -9,7 +12,7 @@
 import StripeCard from './StripeCard.vue';
 export default {
 	name: 'StripeCardDialog',
-	props: ['modelValue'],
+	props: ['modelValue', 'message'],
 	emits: ['update:modelValue'],
 	components: {
 		StripeCard2: StripeCard

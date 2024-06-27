@@ -307,8 +307,13 @@ class Bench(Document):
 
 	@dashboard_whitelist()
 	def archive(self):
-		unarchived_sites = frappe.db.exists(
-			"Site", {"bench": self.name, "status": ("!=", "Archived")}
+		self.status = "Pending"
+		self.save()  # lock 1
+		unarchived_sites = frappe.db.get_value(
+			"Site",
+			{"bench": self.name, "status": ("!=", "Archived")},
+			"name",
+			for_update=True,  # lock 2
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
@@ -356,6 +361,9 @@ class Bench(Document):
 				try:
 					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
+				except frappe.DoesNotExistError:
+					# Ignore: Site got renamed or deleted
+					pass
 				except Exception:
 					log_error(
 						"Site Sync Error",

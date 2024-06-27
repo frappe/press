@@ -71,7 +71,7 @@ export default {
 						h(NewAppDialog, {
 							showVersionSelector: true,
 							onAppAdded(app) {
-								toast.promise(apps.insert.submit(app), apps.reload(), {
+								toast.promise(apps.insert.submit(app), {
 									loading: 'Adding new app...',
 									success: () => {
 										router.push({

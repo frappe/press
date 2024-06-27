@@ -17,11 +17,9 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
-from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 from press.press.doctype.remote_file.remote_file import RemoteFile
@@ -49,6 +47,9 @@ def create_test_bench(
 
 	API call to agent will be faked when creating the doc.
 	"""
+	from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+	from press.press.doctype.server.test_server import create_test_server
+
 	creation = creation or frappe.utils.now_datetime()
 	user = user or frappe.session.user
 	if not server:
@@ -81,6 +82,7 @@ def create_test_bench(
 	return bench
 
 
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,

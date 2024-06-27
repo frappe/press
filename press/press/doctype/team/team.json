@@ -462,9 +462,14 @@
    "group": "Marketplace",
    "link_doctype": "Marketplace Publisher Profile",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Stripe Payment Method",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2024-04-04 22:20:46.667608",
+ "modified": "2024-06-21 19:58:16.088797",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

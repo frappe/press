@@ -56,6 +56,18 @@ def razorpay_webhook_handler():
 			"Razorpay Payment Record",
 			{"order_id": razorpay_order_id},
 		):
+			# TODO: Remove this after properly handling all the orders
+			notes = form_dict["payload"]["payment"]["entity"]["notes"]
+			if notes and not notes.get("description"):
+				# Don't log error if its not FrappeCloud order
+				# Example of valid notes
+				# "notes": {
+				# 	"Description": "Order for Frappe Cloud Prepaid Credits",
+				# 	"Team (Frappe Cloud ID)": "test@example.com",
+				# 	"gst": 245
+				# },
+				return
+
 			log_error(
 				"Razorpay payment record for given order does not exist", order_id=razorpay_order_id
 			)

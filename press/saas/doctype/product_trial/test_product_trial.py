@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestSaaSProductSiteRequest(FrappeTestCase):
+class TestProductTrial(FrappeTestCase):
 	pass

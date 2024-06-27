@@ -15,7 +15,7 @@
 		@update:modelValue="$emit('update:show', $event)"
 	>
 		<template v-slot:body-content>
-			<p class="text-base" v-if="message">
+			<p class="mb-5 text-sm text-gray-700" v-if="message">
 				{{ message }}
 			</p>
 			<FormControl

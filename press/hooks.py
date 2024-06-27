@@ -175,6 +175,7 @@ scheduler_events = {
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.incident.incident.notify_ignored_servers",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -261,7 +262,7 @@ scheduler_events = {
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
+			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [

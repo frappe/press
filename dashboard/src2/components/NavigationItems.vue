@@ -89,7 +89,9 @@ export default {
 					icon: () => h(App),
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
-					condition: this.$team.doc.is_desk_user || this.$session.hasAppsAccess,
+					condition:
+						this.$team.doc.is_desk_user ||
+						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled
 				},
 				{
@@ -107,7 +109,8 @@ export default {
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),
 					condition:
-						this.$team.doc.erpnext_partner && this.$session.hasPartnersAccess,
+						// this.$session.hasPartnerAccess &&
+						Boolean(this.$team.doc.erpnext_partner),
 					disabled
 				},
 				{

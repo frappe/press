@@ -1,3 +1,4 @@
+import frappe
 import json
 
 from pathlib import Path
@@ -96,3 +97,7 @@ def load_package_json(app: str, package_json_path: str):
 			raise Exception(
 				"App has invalid package.json file", app, package_json_path
 			) from None
+
+
+def is_suspended() -> bool:
+	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
