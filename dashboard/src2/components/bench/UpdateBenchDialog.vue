@@ -99,7 +99,7 @@
 
 <script>
 import { h } from 'vue';
-import { Checkbox, Tooltip, getCachedDocumentResource } from 'frappe-ui';
+import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
 import CommitChooser from '@/components/utils/CommitChooser.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
 import GenericList from '../../components/GenericList.vue';

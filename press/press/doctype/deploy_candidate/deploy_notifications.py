@@ -581,9 +581,12 @@ def update_with_incompatible_node(
 ) -> None:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
-	line = get_build_output_line(dc, '"node" is incompatible with this module')
-	app = get_app_from_incompatible_build_output_line(line)
-	version = get_version_from_incompatible_build_output_line(line)
+	if line := get_build_output_line(dc, '"node" is incompatible with this module'):
+		app = get_app_from_incompatible_build_output_line(line)
+		version = ""
+	elif len(exc.args) == 5:
+		app = exc.args[1]
+		version = f'Expected "{exc.args[3]}", found "{exc.args[2]}". '
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
@@ -862,16 +865,8 @@ def fmt(message: str) -> str:
 def get_build_output_line(dc: "DeployCandidate", needle: str):
 	for line in dc.build_output.split("\n"):
 		if needle in line:
-			return line
+			return line.strip()
 	return ""
-
-
-def get_version_from_incompatible_build_output_line(line: str):
-	if "Expected" not in line:
-		return ""
-
-	idx = line.index("Expected")
-	return line[idx:] + "."
 
 
 def get_app_from_incompatible_build_output_line(line: str):
