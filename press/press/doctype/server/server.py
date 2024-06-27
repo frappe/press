@@ -1060,7 +1060,7 @@ class Server(BaseServer):
 		add_permission_for_newly_created_doc(self)
 
 	def update_subscription(self):
-		if subscription := frappe.db.get_value(
+		subscription = frappe.db.get_value(
 			"Subscription",
 			{
 				"document_type": self.doctype,
@@ -1069,11 +1069,11 @@ class Server(BaseServer):
 				"plan": self.plan,
 				"enabled": 1,
 			},
-		):
-			subscription = frappe.get_doc("Subscription", subscription) if subscription else None
-
+			["name", "team"],
+			as_dict=True,
+		)
 		if subscription and subscription.team != self.team:
-			subscription.disable()
+			frappe.get_doc("Subscription", subscription).disable()
 
 			if subscription := frappe.db.get_value(
 				"Subscription",
@@ -1102,7 +1102,7 @@ class Server(BaseServer):
 				except Exception:
 					frappe.log_error("Server Subscription Creation Error")
 
-		if add_on_storage_subscription := frappe.db.get_value(
+		add_on_storage_subscription = frappe.db.get_value(
 			"Subscription",
 			{
 				"document_type": self.doctype,
@@ -1110,15 +1110,11 @@ class Server(BaseServer):
 				"plan_type": "Server Storage Plan",
 				"enabled": 1,
 			},
-		):
-			add_on_storage_subscription = (
-				frappe.get_doc("Subscription", add_on_storage_subscription)
-				if add_on_storage_subscription
-				else None
-			)
-
+			["name", "team"],
+			as_dict=True,
+		)
 		if add_on_storage_subscription and add_on_storage_subscription.team != self.team:
-			add_on_storage_subscription.disable()
+			frappe.get_doc("Subscription", add_on_storage_subscription).disable()
 
 			if existing_add_on_storage_subscription := frappe.db.get_value(
 				"Subscription",
