@@ -142,13 +142,13 @@ frappe.ui.form.on('Server', {
 			],
 			[
 				__('Enable Public Bench and Site Creation'),
-				'_set_server_for_new_benches_and_site',
+				'enable_server_for_new_benches_and_site',
 				true,
 				frm.doc.virtual_machine,
 			],
 			[
 				__('Disable Public Bench and Site Creation'),
-				'_set_server_for_new_benches_and_site',
+				'disable_server_for_new_benches_and_site',
 				true,
 				frm.doc.virtual_machine,
 			],
