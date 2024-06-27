@@ -302,6 +302,7 @@ fixtures = [
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
+	"Server Storage Plan",
 ]
 # Testing
 # -------
