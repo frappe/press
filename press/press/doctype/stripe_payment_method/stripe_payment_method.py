@@ -68,6 +68,18 @@ class StripePaymentMethod(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
+		if webhook_logs := frappe.get_all(
+			"Stripe Webhook Log",
+			filters={"stripe_payment_method": self.name},
+			pluck="name",
+		):
+			frappe.db.set_value(
+				"Stripe Webhook Log",
+				{"name": ("in", webhook_logs)},
+				"stripe_payment_method",
+				None,
+			)
+
 		super().delete()
 
 	@dashboard_whitelist()
