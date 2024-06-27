@@ -23,6 +23,7 @@ class Subscription(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		additional_storage: DF.Data | None
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
@@ -85,6 +86,9 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
+		if self.plan_type == "Server Storage Plan":
+			return
+
 		doc = self.get_subscribed_document()
 		plan_field = doc.meta.get_field("plan")
 		if not (
@@ -140,6 +144,9 @@ class Subscription(Document):
 
 		plan = frappe.get_cached_doc(self.plan_type, self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
+
+		if self.additional_storage:
+			amount = amount * int(self.additional_storage)
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -203,6 +210,7 @@ class Subscription(Document):
 			"team": self.team,
 			"document_type": self.document_type,
 			"document_name": self.document_name,
+			"plan_type": self.plan_type,
 		}
 		if self.document_type == "Marketplace App":
 			filters.update({"marketplace_app_subscription": self.marketplace_app_subscription})

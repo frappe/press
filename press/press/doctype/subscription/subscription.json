@@ -14,7 +14,8 @@
   "plan",
   "interval",
   "site",
-  "marketplace_app_subscription"
+  "marketplace_app_subscription",
+  "additional_storage"
  ],
  "fields": [
   {
@@ -53,8 +54,8 @@
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "search_index": 1,
-   "label": "Enabled"
+   "label": "Enabled",
+   "search_index": 1
   },
   {
    "fieldname": "plan",
@@ -82,6 +83,12 @@
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "depends_on": "eval:doc.plan_type === \"Server Storage Plan\"",
+   "fieldname": "additional_storage",
+   "fieldtype": "Data",
+   "label": "Additional Storage"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -91,7 +98,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-02-19 19:49:40.819033",
+ "modified": "2024-06-26 18:32:18.087251",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
