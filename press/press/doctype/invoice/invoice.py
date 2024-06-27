@@ -182,7 +182,7 @@ class Invoice(Document):
 				if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
 					item.plan = f"{currency_symbol}{server_plan}"
 				elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
-					item.plan = f"{currency_symbol}{server_plan}"
+					item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
 			elif item.document_type == "Marketplace App":
 				item.document_name = frappe.get_value(
 					item.document_type, item.document_name, "title"
