@@ -723,6 +723,7 @@ class BaseServer(Document, TagHelpers):
 		if hasattr(self, "is_self_hosted") and self.is_self_hosted:
 			if self.domain != self.self_hosted_server_domain:
 				filters["domain"] = self.name
+				del filters["wildcard"]
 
 		certificate = frappe.get_last_doc("TLS Certificate", filters)
 
