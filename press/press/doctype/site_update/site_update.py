@@ -361,8 +361,10 @@ def sites_with_available_update(server=None):
 		filters={
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
+			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
+			"skip_auto_updates": False,
 		},
-		fields=["name", "timezone", "bench", "server", "status", "skip_auto_updates"],
+		fields=["name", "timezone", "bench", "server", "status"],
 	)
 	return sites
 
@@ -394,7 +396,6 @@ def schedule_updates_server(server):
 		return
 
 	sites = sites_with_available_update(server)
-	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
 
 	# If a site can't be updated for some reason, then we shouldn't get stuck
@@ -428,10 +429,6 @@ def schedule_updates_server(server):
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
-
-
-def should_not_skip_auto_updates(site):
-	return not site.skip_auto_updates
 
 
 def should_try_update(site):
