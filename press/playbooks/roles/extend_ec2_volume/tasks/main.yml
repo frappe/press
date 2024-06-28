@@ -26,4 +26,4 @@
   service:
     name: mysql
     state: restarted
-  when: restart_mariadb is defined and restart_mariadb
+  when: restart_mariadb | default(false) | bool
