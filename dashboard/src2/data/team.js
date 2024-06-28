@@ -54,4 +54,13 @@ export async function switchToTeam(team) {
 	}
 }
 
+export async function isLastSite(team) {
+	let count = 0;
+	count = await frappeRequest({
+		url: '/api/method/press.api.account.get_site_count',
+		params: { team }
+	});
+	return Boolean(count === 1);
+}
+
 window.switchToTeam = switchToTeam;

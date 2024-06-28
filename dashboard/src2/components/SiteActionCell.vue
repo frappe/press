@@ -22,10 +22,11 @@
 
 <script setup>
 import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
+import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
+import { isLastSite } from '../data/team';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -118,6 +119,12 @@ function onActivateSite() {
 	});
 }
 
+const FeedbackDialog = defineAsyncComponent(() =>
+	import('./ChurnFeedbackDialog.vue')
+);
+
+const showFeedbackDialog = ref(false);
+
 function onDropSite() {
 	return confirmDialog({
 		title: 'Drop Site',
@@ -141,15 +148,29 @@ function onDropSite() {
 			label: 'Drop Site',
 			variant: 'solid',
 			theme: 'red',
-			onClick: ({ hide, values }) => {
+			onClick: async ({ hide, values }) => {
 				if (
 					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
 				) {
 					throw new Error('Site name does not match.');
 				}
+
+				let val = await isLastSite(site.doc.team);
 				return site.archive.submit({ force: values.force }).then(() => {
 					hide();
-					router.replace({ name: 'Site List' });
+					if (val) {
+						renderDialog(
+							h(FeedbackDialog, {
+								team: site.doc.team,
+								onUpdated() {
+									router.replace({ name: 'Site List' });
+									toast.success('Site dropped successfully');
+								}
+							})
+						);
+					} else {
+						router.replace({ name: 'Site List' });
+					}
 				});
 			}
 		}

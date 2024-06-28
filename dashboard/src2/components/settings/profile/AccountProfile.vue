@@ -166,13 +166,16 @@
 import { toast } from 'vue-sonner';
 import FileUploader from '@/components/FileUploader.vue';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
-import { confirmDialog } from '../../../utils/components';
+import { confirmDialog, renderDialog } from '../../../utils/components';
+import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
+import { h } from 'vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
 		FileUploader,
-		FinalizeInvoicesDialog
+		FinalizeInvoicesDialog,
+		ChurnFeedbackDialog
 	},
 	data() {
 		return {
@@ -214,6 +217,14 @@ export default {
 				if (data === 'Unpaid Invoices') {
 					this.showFinalizeInvoicesDialog = true;
 				} else {
+					renderDialog(
+						h(ChurnFeedbackDialog, {
+							team: this.$team.doc.name,
+							onUpdated: () => {
+								toast.success('Your feedback was submitted successfully');
+							}
+						})
+					);
 					toast.success('Your account was disabled successfully');
 					this.reloadAccount();
 				}

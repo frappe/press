@@ -753,13 +753,18 @@ def update_billing_information(billing_details):
 
 
 @frappe.whitelist()
-def feedback(message, route=None):
-	team = get_current_team()
-	feedback = frappe.new_doc("Feedback")
+def feedback(team, message, note, route=None):
+	feedback = frappe.new_doc("Press Feedback")
 	feedback.team = team
 	feedback.message = message
+	feedback.note = note
 	feedback.route = route
 	feedback.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_site_count(team):
+	return frappe.db.count("Site", {"team": team, "status": ("=", "Active")})
 
 
 @frappe.whitelist()
