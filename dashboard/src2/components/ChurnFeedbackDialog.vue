@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Your feedback matters!',
+			title: 'Tell us why you are leaving',
 			actions: [
 				{
 					label: 'Submit',
@@ -15,8 +15,7 @@
 				}
 			]
 		}"
-		:modelValue="show"
-		@update:modelValue="$emit('update:show', $event)"
+		v-model="show"
 	>
 		<template v-slot:body-content>
 			<p class="mb-5 text-sm text-gray-800">
@@ -29,12 +28,13 @@
 				variant="outline"
 				placeholder="Select a reason"
 				v-model="feedback"
+				required
 			/>
 			<FormControl
 				class="mt-4"
 				type="textarea"
 				variant="outline"
-				placeholder="Add a note (optional)"
+				placeholder="I am leaving Frappe Cloud because..."
 				size="md"
 				v-model="note"
 			/>
@@ -44,18 +44,18 @@
 </template>
 
 <script>
-import { notify } from '@/utils/toast';
 import FormControl from 'frappe-ui/src/components/FormControl.vue';
 
 export default {
 	name: 'ChurnFeedbackDialog',
-	props: ['show'],
-	emits: ['update:show', 'updated'],
+	emits: ['updated'],
+	props: ['team'],
 	data() {
 		return {
 			feedback: '',
 			route: '',
-			note: ''
+			note: '',
+			show: true
 		};
 	},
 	resources: {
@@ -64,15 +64,19 @@ export default {
 				url: 'press.api.account.feedback',
 				makeParams() {
 					return {
+						team: this.team,
 						message: this.feedback,
-						route: this.$route?.name
+						route: this.$route?.name,
+						note: this.note
 					};
 				},
+				validate() {
+					if (this.feedback === 'My reason is not listed here' && !this.note) {
+						return 'Please provide a reason';
+					}
+				},
 				onSuccess() {
-					this.$emit('update:show', false);
-					notify({
-						title: 'Feedback submitted'
-					});
+					this.show = false;
 					this.$emit('updated');
 				}
 			};
@@ -84,7 +88,9 @@ export default {
 				'I am not satisfied with the service',
 				'I am moving to a different service',
 				'I am not using the service anymore',
-				'Other'
+				'Frappe Cloud is too expensive for me',
+				'I was just exploring the platform',
+				'My reason is not listed here'
 			];
 		}
 	}

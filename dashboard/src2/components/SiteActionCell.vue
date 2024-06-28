@@ -17,10 +17,6 @@
 				{{ props.buttonLabel }}
 			</p>
 		</Button>
-		<FeedbackDialog
-			v-model="showFeedbackDialog"
-			@updated="showFeedbackDialog = false"
-		/>
 	</div>
 </template>
 
@@ -30,6 +26,7 @@ import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
+import { isLastSite } from '../data/team';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -151,16 +148,29 @@ function onDropSite() {
 			label: 'Drop Site',
 			variant: 'solid',
 			theme: 'red',
-			onClick: ({ hide, values }) => {
+			onClick: async ({ hide, values }) => {
 				if (
 					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
 				) {
 					throw new Error('Site name does not match.');
 				}
+
+				let val = await isLastSite(site.doc.team);
 				return site.archive.submit({ force: values.force }).then(() => {
 					hide();
-					router.replace({ name: 'Site List' });
-					showFeedbackDialog.value = true;
+					if (val) {
+						renderDialog(
+							h(FeedbackDialog, {
+								team: site.doc.team,
+								onUpdated() {
+									router.replace({ name: 'Site List' });
+									toast.success('Site dropped successfully');
+								}
+							})
+						);
+					} else {
+						router.replace({ name: 'Site List' });
+					}
 				});
 			}
 		}
