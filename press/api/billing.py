@@ -643,3 +643,22 @@ def total_unpaid_amount():
 		)[0]
 		or 0
 	) + negative_balance
+
+
+@frappe.whitelist()
+def fetch_invoice_items(invoice):
+	return frappe.get_all(
+		"Invoice Item",
+		{"parent": invoice, "parenttype": "Invoice"},
+		[
+			"document_type",
+			"document_name",
+			"rate",
+			"quantity",
+			"amount",
+			"plan",
+			"description",
+			"discount",
+			"site",
+		],
+	)

@@ -1,5 +1,14 @@
 <template>
 	<div>
+		<div class="flex justify-end">
+			<Button
+				icon-left="download"
+				class="shrink-0"
+				@click="$resources.downloadInvoice.submit"
+			>
+				<span class="text-sm">Download as CSV</span>
+			</Button>
+		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
 				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
@@ -132,6 +141,7 @@
 </template>
 <script>
 import { getPlans } from '../data/plans';
+import { downloadAsCSV } from '../../src/utils';
 
 export default {
 	name: 'InvoiceTable',
@@ -142,6 +152,20 @@ export default {
 				type: 'document',
 				doctype: 'Invoice',
 				name: this.invoiceId
+			};
+		},
+		downloadInvoice() {
+			return {
+				url: 'press.api.billing.fetch_invoice_items',
+				makeParams() {
+					return {
+						invoice: this.invoiceId
+					};
+				},
+				onSuccess(data) {
+					let filename = `${this.invoiceId}.csv`;
+					downloadAsCSV(data, filename);
+				}
 			};
 		}
 	},
