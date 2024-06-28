@@ -65,9 +65,10 @@
 							<i-lucide-help-circle :class="`h-4 w-4 text-red-600`" />
 						</a>
 					</div>
-					<p class="text-base font-medium text-gray-800">
-						{{ restrictMessage }}
-					</p>
+					<p
+						class="text-base font-medium text-gray-800"
+						v-html="restrictMessage"
+					></p>
 					<div class="mt-4">
 						<FormControl
 							label="I understand, run deploy anyway"

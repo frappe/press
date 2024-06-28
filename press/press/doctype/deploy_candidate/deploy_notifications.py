@@ -42,6 +42,9 @@ MatchStrings = str | list[str]
 if typing.TYPE_CHECKING:
 	from frappe import Document
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+		DeployCandidateApp,
+	)
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -160,37 +163,37 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"ImportError: cannot import name",
 			update_with_import_error,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"No matching distribution found for",
 			update_with_dependency_not_found,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"[ERROR] [plugin vue]",
 			update_with_vue_build_failed,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"[ERROR] [plugin frappe-vue-style]",
 			update_with_vue_build_failed,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"vite: not found",
 			update_with_vite_not_found,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"FileNotFoundError: [Errno 2] No such file or directory",
 			update_with_file_not_found,
-			None,
+			check_if_app_updated,
 		),
 		# Below two are catch all fallback handlers for
 		# `yarn build` and `pip install` errors originating due
@@ -200,12 +203,12 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"subprocess.CalledProcessError: Command 'bench build --app",
 			update_with_yarn_build_failed,
-			None,
+			check_if_app_updated,
 		),
 		(
 			"This error originates from a subprocess, and is likely not a problem with pip",
 			update_with_error_on_pip_install,
-			None,
+			check_if_app_updated,
 		),
 	]
 
@@ -615,7 +618,7 @@ def check_incompatible_node(
 		return
 
 	frappe.throw(
-		"Node version not updated since previous build.",
+		"Node version not updated since previous failing build.",
 		BuildValidationError,
 	)
 
@@ -854,6 +857,39 @@ def update_with_file_not_found(
 	details["message"] = fmt(message)
 	details["traceback"] = None
 	return True
+
+
+def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+	if not (failed_step := old_dc.get_first_step("status", "Failure")):
+		return
+
+	if failed_step.stage_slug != "apps":
+		return
+
+	app_name = failed_step.step_slug
+	old_app = get_dc_app(old_dc, app_name)
+	new_app = get_dc_app(new_dc, app_name)
+
+	if new_app is None or old_app is None:
+		return
+
+	old_hash = old_app.hash or old_app.pullable_hash
+	new_hash = new_app.hash or new_app.pullable_hash
+
+	if old_hash != new_hash:
+		return
+
+	title = new_app.title or old_app.title
+	frappe.throw(
+		f"App <b>{title}</b> has not been updated since previous failing build. Release hash is <b>{new_hash[:10]}</b>.",
+		BuildValidationError,
+	)
+
+
+def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":
+	for app in dc.apps:
+		if app.app == app_name:
+			return app
 
 
 def fmt(message: str) -> str:
