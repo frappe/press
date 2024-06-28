@@ -93,7 +93,6 @@ class Site(Document, TagHelpers):
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
 		auto_update_last_triggered_on: DF.Datetime | None
-		auto_updates_scheduled: DF.Check
 		backup_time: DF.Time | None
 		bench: DF.Link
 		cluster: DF.Link
@@ -117,6 +116,7 @@ class Site(Document, TagHelpers):
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
 		notify_email: DF.Data | None
+		only_update_at_specified_time: DF.Check
 		plan: DF.Link | None
 		remote_config_file: DF.Link | None
 		remote_database_file: DF.Link | None
