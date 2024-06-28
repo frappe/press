@@ -120,19 +120,6 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def ongoing_reaction_exists(self, instance):
-		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
-			"Prometheus Alert Reaction",
-			{
-				"alert": self.alert,
-				"instance": instance,
-				"status": ("in", ["Pending", "Running"]),
-			},
-			"status",
-			for_update=True,
-		)
-		return bool(ongoing_incident_status)
-
 	def react_for_instance(self, instance) -> "PressJob":
 		instance_type = self.guess_doctype(instance)
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
@@ -143,7 +130,7 @@ class AlertmanagerWebhookLog(Document):
 			self.append("reaction_jobs", self.react_for_instance(instance))
 		self.save()
 
-	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
+	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
 		instances = []
 		payload = json.loads(payload)
 		instances.extend(
@@ -268,7 +255,7 @@ class AlertmanagerWebhookLog(Document):
 		return parsed
 
 	def ongoing_incident_exists(self) -> bool:
-		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+		ongoing_incident_status = frappe.db.get_value(
 			"Incident",
 			{
 				"alert": self.alert,
