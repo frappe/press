@@ -463,4 +463,4 @@ def notify_ignored_servers():
 
 
 def on_doctype_update():
-	frappe.db.add_index("Incident", ["server", "status"])
+	frappe.db.add_index("Incident", ["alert", "server", "status"])
