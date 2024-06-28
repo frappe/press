@@ -123,7 +123,13 @@ five_star_rating, approved_badge -%}
 		{%- for image in app.screenshots -%}
 		<div class="flex-shrink-0 overflow-hidden border rounded-md h-60 w-80">
 			<a href="{{ image.image }}">
+				{%- if image.image.endswith("mp4") -%}
+				<video class="object-cover w-full h-full">
+					<source src="{{ image.image }}" type="video/mp4" />
+				</video>
+				{%- else -%}
 				<img class="object-cover w-full h-full" src="{{ image.image }}" alt="{{ image.caption or '' }}" />
+				{%- endif -%}
 			</a>
 		</div>
 		{%- endfor -%}
