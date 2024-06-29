@@ -33,6 +33,8 @@ def account_request(
 	"""
 	return: Stripe setup intent and AR key if stripe flow, else None
 	"""
+	from frappe.utils import sanitize_html
+
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -61,8 +63,8 @@ def account_request(
 				"subdomain": subdomain,
 				"email": email,
 				"role": "Press Admin",
-				"first_name": first_name,
-				"last_name": last_name,
+				"first_name": sanitize_html(first_name),
+				"last_name": sanitize_html(last_name),
 				"country": country,
 				"url_args": url_args or json.dumps({}),
 				"send_email": True,
