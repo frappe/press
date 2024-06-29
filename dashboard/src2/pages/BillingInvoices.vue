@@ -109,7 +109,7 @@ export default {
 							}
 							return 'Prepaid Credits';
 						},
-						width: 0.5
+						width: 0.8
 					},
 					{
 						label: 'Status',
@@ -137,21 +137,22 @@ export default {
 						label: 'Total',
 						fieldname: 'total',
 						format: this.formatCurrency,
-						align: 'right'
+						align: 'right',
+						width: 0.6
 					},
 					{
 						label: 'Amount Paid',
 						fieldname: 'amount_paid',
 						format: this.formatCurrency,
 						align: 'right',
-						width: 0.7
+						width: 0.6
 					},
 					{
 						label: 'Amount Due',
 						fieldname: 'amount_due',
 						format: this.formatCurrency,
 						align: 'right',
-						width: 0.7
+						width: 0.6
 					},
 					{
 						label: '',
