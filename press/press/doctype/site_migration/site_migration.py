@@ -124,13 +124,13 @@ class SiteMigration(Document):
 			)
 
 	def start(self):
+		self.status = "Pending"
+		self.save()
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
 		site.ready_for_move()
-		self.status = "Pending"
-		self.save()
 		frappe.db.commit()
 		self.run_next_step()
 
