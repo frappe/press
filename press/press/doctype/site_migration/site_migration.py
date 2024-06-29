@@ -285,13 +285,10 @@ class SiteMigration(Document):
 		self.save()
 
 	@property
-	def archived_site_on_source(self) -> bool:
-		return (
-			find(
-				self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
-			).status
-			== "Success"
-		)
+	def possibly_archived_site_on_source(self) -> bool:
+		return find(
+			self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
+		).status in ["Success", "Failure"]
 
 	def set_pending_steps_to_skipped(self):
 		for step in self.steps:
@@ -309,7 +306,9 @@ class SiteMigration(Document):
 	def fail(self, cleanup=True, reason=None, activate=False):
 		self.set_pending_steps_to_skipped()
 		if (
-			cleanup and not self.archived_site_on_source and self.restore_on_destination_happened
+			cleanup
+			and not self.possibly_archived_site_on_source
+			and self.restore_on_destination_happened
 		):
 			self.append(
 				"steps",
