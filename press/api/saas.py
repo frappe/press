@@ -212,7 +212,7 @@ def validate_account_request(key):
 
 	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
 	app_info = frappe.db.get_value(
-		"Saas Setup Account Generator", app, ["headless", "route"]
+		"Saas Setup Account Generator", app, ["headless", "route"], as_dict=True
 	)
 
 	if not app_info:
