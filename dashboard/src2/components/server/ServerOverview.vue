@@ -218,7 +218,9 @@ export default {
 								title: 'Increase Storage',
 								message: `Enter the disk size you want to increase to the server <b>${
 									doc.title || doc.name
-								}</b>`,
+								}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${currencySymbol}${
+									doc.storage_plan[priceField]
+								}/mo</b> for each additional GB of storage.</div>`,
 								fields: [
 									{
 										fieldname: 'storage',
