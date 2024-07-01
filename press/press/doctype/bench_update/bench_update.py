@@ -46,9 +46,9 @@ class BenchUpdate(Document):
 			):
 				frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
-	def deploy(self):
+	def deploy(self, run_will_fail_check=False):
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(self.apps)
+		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		candidate.schedule_build_and_deploy()
 
 		self.status = "Running"

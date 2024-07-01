@@ -98,6 +98,7 @@ class DeployCandidate(Document):
 		docker_image_repository: DF.Data | None
 		docker_image_tag: DF.Data | None
 		environment_variables: DF.Table[DeployCandidateVariable]
+		error_key: DF.Data | None
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
 		is_redisearch_enabled: DF.Check

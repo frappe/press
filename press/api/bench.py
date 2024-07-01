@@ -4,7 +4,7 @@
 
 import re
 from collections import OrderedDict
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
@@ -30,6 +30,9 @@ from press.utils import (
 	get_current_team,
 	unique,
 )
+
+if TYPE_CHECKING:
+	from press.press.doctype.bench_update.bench_update import BenchUpdate
 
 
 @frappe.whitelist()
@@ -716,7 +719,7 @@ def deploy(name, apps):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps, sites=None):
+def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
 	if sites is None:
 		sites = []
 
@@ -727,7 +730,7 @@ def deploy_and_update(name, apps, sites=None):
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
-	bench_update = frappe.get_doc(
+	bench_update: "BenchUpdate" = frappe.get_doc(
 		{
 			"doctype": "Bench Update",
 			"group": name,
@@ -745,7 +748,7 @@ def deploy_and_update(name, apps, sites=None):
 			"status": "Pending",
 		}
 	).insert(ignore_permissions=True)
-	return bench_update.deploy()
+	return bench_update.deploy(run_will_fail_check)
 
 
 @frappe.whitelist()

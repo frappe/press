@@ -4,10 +4,14 @@
 import re
 import typing
 from textwrap import dedent
-from typing import Callable, Optional, TypedDict
+from typing import Optional, Protocol, TypedDict
 
 import frappe
 import frappe.utils
+from press.press.doctype.deploy_candidate.utils import (
+	BuildValidationError,
+	get_error_key,
+)
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -38,20 +42,29 @@ MatchStrings = str | list[str]
 if typing.TYPE_CHECKING:
 	from frappe import Document
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+		DeployCandidateApp,
+	)
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
-	UserAddressableHandler = Callable[
-		[
-			Details,
-			DeployCandidate,
-			BaseException,
-		],
-		bool,  # Return True if is_actionable
-	]
+	class UserAddressableHandler(Protocol):
+		def __call__(
+			self,
+			details: "Details",
+			dc: "DeployCandidate",
+			exc: BaseException,
+		) -> bool:  # Return True if is_actionable
+			...
+
+	class WillFailChecker(Protocol):
+		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+			...
+
 	UserAddressableHandlerTuple = tuple[
 		MatchStrings,
 		UserAddressableHandler,
+		WillFailChecker | None,
 	]
 
 
@@ -86,75 +99,101 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 	tuple will be checked.
 
 	Due to this order of the tuples matter.
+
+	The third value is the `WillFailChecker` which is called
+	when a new Deploy Candidate is to be made and the previous
+	Deploy Candidate suffered a User Addressable Failure.
+
+	The `WillFailChecker` is placed in proximity with
+	notification handlers because that's where the error is
+	evaluated and it's key stored on a Deploy Candidate
+	as `error_key`.
 	"""
 	return [
 		(
 			"App installation token could not be fetched",
 			update_with_app_not_fetchable,
+			None,
 		),
 		(
 			"Repository could not be fetched",
 			update_with_app_not_fetchable,
+			None,
 		),
 		(
 			"App has invalid pyproject.toml file",
 			update_with_invalid_pyproject_error,
+			None,
 		),
 		(
 			"App has invalid package.json file",
 			update_with_invalid_package_json_error,
+			None,
 		),
 		(
 			'engine "node" is incompatible with this module',
 			update_with_incompatible_node,
+			check_incompatible_node,
 		),
 		(
 			"Incompatible Node version found",
 			update_with_incompatible_node,
+			check_incompatible_node,
 		),
 		(
 			"Incompatible Python version found",
 			update_with_incompatible_python_prebuild,
+			None,
 		),
 		(
 			"Incompatible app version found",
 			update_with_incompatible_app_prebuild,
+			None,
 		),
 		(
 			"Invalid release found",
 			update_with_invalid_release_prebuild,
+			None,
 		),
 		(
 			"Required app not found",
 			update_with_required_app_not_found_prebuild,
+			None,
 		),
 		(
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
+			check_if_app_updated,
 		),
 		(
 			"ImportError: cannot import name",
 			update_with_import_error,
+			check_if_app_updated,
 		),
 		(
 			"No matching distribution found for",
 			update_with_dependency_not_found,
+			check_if_app_updated,
 		),
 		(
 			"[ERROR] [plugin vue]",
 			update_with_vue_build_failed,
+			check_if_app_updated,
 		),
 		(
 			"[ERROR] [plugin frappe-vue-style]",
 			update_with_vue_build_failed,
+			check_if_app_updated,
 		),
 		(
 			"vite: not found",
 			update_with_vite_not_found,
+			check_if_app_updated,
 		),
 		(
 			"FileNotFoundError: [Errno 2] No such file or directory",
 			update_with_file_not_found,
+			check_if_app_updated,
 		),
 		# Below two are catch all fallback handlers for
 		# `yarn build` and `pip install` errors originating due
@@ -164,10 +203,12 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"subprocess.CalledProcessError: Command 'bench build --app",
 			update_with_yarn_build_failed,
+			check_if_app_updated,
 		),
 		(
-			"note: This error originates from a subprocess, and is likely not a problem with pip.",
+			"This error originates from a subprocess, and is likely not a problem with pip",
 			update_with_error_on_pip_install,
+			check_if_app_updated,
 		),
 	]
 
@@ -222,7 +263,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 		assistance_url=None,
 	)
 
-	for strs, handler in handlers():
+	for strs, handler, _ in handlers():
 		if isinstance(strs, str):
 			strs = [strs]
 
@@ -234,6 +275,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 
 		if handler(details, dc, exc):
 			details["is_actionable"] = True
+			dc.error_key = get_error_key(strs)
 			break
 		else:
 			details["title"] = default_title
@@ -542,9 +584,12 @@ def update_with_incompatible_node(
 ) -> None:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
-	line = get_build_output_line(dc, '"node" is incompatible with this module')
-	app = get_app_from_incompatible_build_output_line(line)
-	version = get_version_from_incompatible_build_output_line(line)
+	if line := get_build_output_line(dc, '"node" is incompatible with this module'):
+		app = get_app_from_incompatible_build_output_line(line)
+		version = ""
+	elif len(exc.args) == 5:
+		app = exc.args[1]
+		version = f'Expected "{exc.args[3]}", found "{exc.args[2]}". '
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
@@ -561,6 +606,21 @@ def update_with_incompatible_node(
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
 	return True
+
+
+def check_incompatible_node(
+	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
+) -> None:
+	old_node = old_dc.get_dependency_version("node")
+	new_node = new_dc.get_dependency_version("node")
+
+	if old_node != new_node:
+		return
+
+	frappe.throw(
+		"Node version not updated since previous failing build.",
+		BuildValidationError,
+	)
 
 
 def update_with_incompatible_node_prebuild(
@@ -799,6 +859,39 @@ def update_with_file_not_found(
 	return True
 
 
+def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+	if not (failed_step := old_dc.get_first_step("status", "Failure")):
+		return
+
+	if failed_step.stage_slug != "apps":
+		return
+
+	app_name = failed_step.step_slug
+	old_app = get_dc_app(old_dc, app_name)
+	new_app = get_dc_app(new_dc, app_name)
+
+	if new_app is None or old_app is None:
+		return
+
+	old_hash = old_app.hash or old_app.pullable_hash
+	new_hash = new_app.hash or new_app.pullable_hash
+
+	if old_hash != new_hash:
+		return
+
+	title = new_app.title or old_app.title
+	frappe.throw(
+		f"App <b>{title}</b> has not been updated since previous failing build. Release hash is <b>{new_hash[:10]}</b>.",
+		BuildValidationError,
+	)
+
+
+def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":
+	for app in dc.apps:
+		if app.app == app_name:
+			return app
+
+
 def fmt(message: str) -> str:
 	message = message.strip()
 	message = dedent(message)
@@ -808,16 +901,8 @@ def fmt(message: str) -> str:
 def get_build_output_line(dc: "DeployCandidate", needle: str):
 	for line in dc.build_output.split("\n"):
 		if needle in line:
-			return line
+			return line.strip()
 	return ""
-
-
-def get_version_from_incompatible_build_output_line(line: str):
-	if "Expected" not in line:
-		return ""
-
-	idx = line.index("Expected")
-	return line[idx:] + "."
 
 
 def get_app_from_incompatible_build_output_line(line: str):

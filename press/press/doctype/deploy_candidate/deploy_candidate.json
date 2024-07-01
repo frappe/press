@@ -15,6 +15,7 @@
   "retry_count",
   "column_break_rpow",
   "manually_failed",
+  "error_key",
   "section_break_6",
   "build_start",
   "build_duration",
@@ -401,6 +402,13 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.user_addressable_failure",
+   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
+   "fieldname": "error_key",
+   "fieldtype": "Data",
+   "label": "Error Key"
+  },
+  {
    "default": "0",
    "depends_on": "eval: doc.no_cache",
    "description": "Set if the Docker build was run with the <code>--no-cache</code> flag.",
@@ -423,7 +431,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-21 11:26:58.268393",
+ "modified": "2024-06-21 14:12:47.335402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

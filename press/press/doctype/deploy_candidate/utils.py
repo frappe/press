@@ -1,6 +1,6 @@
 import frappe
 import json
-
+import re
 from pathlib import Path
 from typing import Any, Optional, TypedDict
 
@@ -99,5 +99,34 @@ def load_package_json(app: str, package_json_path: str):
 			) from None
 
 
+def get_error_key(error_substring: str | list[str]) -> str:
+	if isinstance(error_substring, list):
+		error_substring = " ".join(error_substring)
+	"""
+	Converts `MatchStrings` into error keys, these are set on
+	DeployCandidates on UA Failures for two reasons:
+	1. To check if a subsequent deploy will fail for the same reasons.
+	2. To track the kind of UA errors the users are facing.
+	"""
+
+	return re.sub(
+		r"[\"'\[\],:]|\.$",
+		"",
+		error_substring.lower(),
+	)
+
+
+def get_will_fail_checker(error_key: str):
+	from press.press.doctype.deploy_candidate.deploy_notifications import handlers
+
+	for error_substring, _, will_fail_checker in handlers():
+		if get_error_key(error_substring) == error_key:
+			return will_fail_checker
+
+
 def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
+
+
+class BuildValidationError(frappe.ValidationError):
+	...

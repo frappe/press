@@ -13,81 +13,85 @@
 				title="<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
+			<!-- Update Steps -->
 			<div class="space-y-4">
+				<!-- Select Apps Step -->
 				<div v-if="step === 'select-apps'">
-					<div class="mb-4 text-lg font-medium">Select apps to update</div>
+					<h2 class="mb-4 text-lg font-medium">Select apps to update</h2>
 					<GenericList
 						v-if="benchDocResource.doc.deploy_information.update_available"
 						:options="updatableAppOptions"
 						@update:selections="handleAppSelection"
 					/>
-					<div v-else class="text-center text-base text-gray-600">
+					<p v-else class="text-center text-base text-gray-600">
 						No apps to update
-					</div>
+					</p>
 				</div>
+
+				<!-- Remove Apps Step -->
 				<div v-else-if="step === 'removed-apps'">
-					<div class="mb-4 text-lg font-medium">These apps will be removed</div>
+					<h2 class="mb-4 text-lg font-medium">These apps will be removed</h2>
 					<GenericList :options="removedAppOptions" />
 				</div>
+
+				<!-- Select Site Step -->
 				<div v-else-if="step === 'select-sites'">
-					<div class="mb-4 text-lg font-medium">Select sites to update</div>
+					<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
 					<GenericList
 						v-if="benchDocResource.doc.deploy_information.sites.length"
 						:options="siteOptions"
 						@update:selections="handleSiteSelection"
 					/>
-					<div
+					<p
 						class="text-center text-base font-medium text-gray-600"
 						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
 					>
 						No active sites to update
+					</p>
+				</div>
+
+				<!-- Restrict Build Step -->
+				<div
+					v-else-if="step === 'restrict-build' && restrictMessage"
+					class="flex flex-col gap-4"
+				>
+					<div class="flex items-center gap-2">
+						<h2 class="text-lg font-medium">Build might fail</h2>
+						<a
+							href="https://frappecloud.com/docs/common-issues/build-might-fail"
+							target="_blank"
+							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
+						>
+							<i-lucide-help-circle :class="`h-4 w-4 text-red-600`" />
+						</a>
+					</div>
+					<p
+						class="text-base font-medium text-gray-800"
+						v-html="restrictMessage"
+					></p>
+					<div class="mt-4">
+						<FormControl
+							label="I understand, run deploy anyway"
+							type="checkbox"
+							v-model="ignoreWillFailCheck"
+						/>
 					</div>
 				</div>
-				<ErrorMessage :message="$resources.deploy.error" />
+
+				<ErrorMessage :message="errorMessage" />
 			</div>
 		</template>
 		<template #actions>
 			<div class="flex items-center justify-between space-y-2">
-				<div v-if="step === 'select-apps'"></div>
+				<div v-if="!canShowBack"><!-- Spacer div --></div>
+				<Button v-if="canShowBack" label="Back" @click="back" />
+				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
 				<Button
-					v-if="
-						step !== 'select-apps' &&
-						!(
-							step === 'removed-apps' &&
-							!benchDocResource.doc.deploy_information.apps.some(
-								app => app.update_available === true
-							)
-						)
-					"
-					label="Back"
-					@click="
-						benchDocResource.doc.deploy_information.removed_apps.length &&
-						step === 'select-sites'
-							? (step = 'removed-apps')
-							: (step = 'select-apps');
-						selectedApps = new Set();
-					"
-				/>
-				<Button
-					v-if="step === 'select-apps' || step === 'removed-apps'"
+					v-if="canShowSkipAndDeploy"
 					variant="solid"
-					label="Next"
-					@click="next"
-				/>
-				<Button
-					v-if="step === 'select-sites'"
-					variant="solid"
-					:label="
-						selectedSites.length > 0
-							? `Deploy and update ${selectedSites.length} ${$format.plural(
-									selectedSites.length,
-									'site',
-									'sites'
-							  )}`
-							: 'Skip and deploy'
-					"
+					:label="deployLabel"
 					:loading="$resources.deploy.loading"
-					@click="$resources.deploy.submit()"
+					@click="skipAndDeploy"
 				/>
 			</div>
 		</template>
@@ -103,25 +107,37 @@ import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
+import FormControl from 'frappe-ui/src/components/FormControl.vue';
 
 export default {
 	name: 'UpdateBenchDialog',
 	props: ['bench'],
-	components: { GenericList, CommitChooser, CommitTag, AlertBanner },
+	components: {
+		GenericList,
+		CommitChooser,
+		CommitTag,
+		AlertBanner,
+		FormControl
+	},
 	data() {
 		return {
 			show: true,
 			step: '',
+			errorMessage: '',
+			ignoreWillFailCheck: false,
+			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: []
 		};
 	},
 	mounted() {
-		this.step = this.benchDocResource.doc.deploy_information.apps.some(
-			app => app.update_available === true
-		)
-			? 'select-apps'
-			: 'removed-apps';
+		if (this.hasUpdateAvailable) {
+			this.step = 'select-apps';
+		} else if (this.hasRemovedApps) {
+			this.step = 'removed-apps';
+		} else {
+			this.step = 'select-sites';
+		}
 	},
 	computed: {
 		updatableAppOptions() {
@@ -329,8 +345,45 @@ export default {
 		benchDocResource() {
 			return getCachedDocumentResource('Release Group', this.bench);
 		},
+		hasUpdateAvailable() {
+			return this.benchDocResource.doc.deploy_information.apps.some(
+				app => app.update_available === true
+			);
+		},
+		hasRemovedApps() {
+			return !!this.benchDocResource.doc.deploy_information.removed_apps.length;
+		},
 		deployInformation() {
 			return this.benchDocResource?.doc.deploy_information;
+		},
+		canShowBack() {
+			if (this.step === 'select-apps') {
+				return false;
+			}
+
+			return this.hasUpdateAvailable || this.step === 'restrict-build';
+		},
+		canShowNext() {
+			if (this.step === 'restrict-build') {
+				return false;
+			}
+
+			if (this.step === 'select-sites' && !this.restrictMessage) {
+				return false;
+			}
+
+			return true;
+		},
+		canShowSkipAndDeploy() {
+			return !this.canShowNext;
+		},
+		deployLabel() {
+			if (this.selectedSites?.length > 0) {
+				const site = $format.plural(selectedSites.length, 'site', 'sites');
+				return `Deploy and update ${selectedSites.length} ${site}`;
+			}
+
+			return 'Skip and deploy';
 		}
 	},
 	resources: {
@@ -340,16 +393,15 @@ export default {
 				params: {
 					name: this.bench,
 					apps: this.selectedApps,
-					sites: this.selectedSites
+					sites: this.selectedSites,
+					run_will_fail_check: !this.ignoreWillFailCheck
 				},
 				validate() {
 					if (
 						this.selectedApps.length === 0 &&
 						this.deployInformation.removed_apps.length === 0
 					) {
-						throw new DashboardError(
-							'You must select atleast 1 app to proceed with update.'
-						);
+						throw new DashboardError('Please select an app to proceed');
 					}
 				},
 				onSuccess(candidate) {
@@ -359,24 +411,48 @@ export default {
 							id: candidate
 						}
 					});
+					this.restrictMessage = '';
 					this.show = false;
 					this.$emit('success', candidate);
-				}
+				},
+				onError: this.setErrorMessage.bind(this)
 			};
 		}
 	},
 	methods: {
-		next() {
-			if (this.step === 'select-apps' && this.selectedApps.length === 0) {
+		back() {
+			if (this.step === 'select-apps') {
 				return;
-			}
-			if (
-				this.benchDocResource.doc.deploy_information.removed_apps.length &&
-				this.step === 'select-apps'
-			) {
+			} else if (this.step === 'removed-apps') {
+				this.step = 'select-apps';
+			} else if (this.step === 'select-sites' && this.hasRemovedApps) {
 				this.step = 'removed-apps';
-			} else {
+			} else if (this.step === 'select-sites' && !this.hasRemovedApps) {
+				this.step = 'select-apps';
+			} else if (this.step === 'restrict-build') {
 				this.step = 'select-sites';
+			}
+
+			if (this.step === 'select-apps') {
+				this.selectedApps = [];
+			}
+		},
+		next() {
+			if (this.errorMessage) {
+				this.errorMessage = '';
+			}
+
+			if (this.step === 'select-apps' && this.selectedApps.length === 0) {
+				this.errorMessage = 'Please select an app to proceed';
+				return;
+			} else if (this.step === 'select-apps' && this.hasRemovedApps) {
+				this.step = 'removed-apps';
+			} else if (this.step === 'select-apps' && !this.hasRemovedApps) {
+				this.step = 'select-sites';
+			} else if (this.step === 'removed-apps') {
+				this.step = 'select-sites';
+			} else if (this.step === 'select-sites' && this.restrictMessage) {
+				this.step = 'restrict-build';
 			}
 		},
 		handleAppSelection(apps) {
@@ -414,6 +490,30 @@ export default {
 			return this.benchDocResource.doc.deploy_information.apps.find(
 				a => a.app === app.app
 			).next_release;
+		},
+		skipAndDeploy() {
+			if (this.restrictMessage && !this.ignoreWillFailCheck) {
+				this.errorMessage =
+					'Please check the <b>I understand</b> box to proceed';
+				return;
+			}
+
+			this.errorMessage = '';
+			this.$resources.deploy.submit();
+		},
+		setErrorMessage(error) {
+			this.ignoreWillFailCheck = false;
+			if (error?.exc_type === 'BuildValidationError') {
+				this.restrictMessage = error?.messages?.[0] ?? '';
+			}
+
+			if (this.restrictMessage) {
+				this.step = 'restrict-build';
+				return;
+			}
+
+			this.errorMessage =
+				'Internal Server Error: Deploy could not be initiated';
 		}
 	}
 };
