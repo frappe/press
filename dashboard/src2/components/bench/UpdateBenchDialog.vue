@@ -379,7 +379,7 @@ export default {
 		},
 		deployLabel() {
 			if (this.selectedSites?.length > 0) {
-				const site = $format.plural(selectedSites.length, 'site', 'sites');
+				const site = this.$format.plural(selectedSites.length, 'site', 'sites');
 				return `Deploy and update ${selectedSites.length} ${site}`;
 			}
 
