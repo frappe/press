@@ -84,8 +84,8 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
-	def increase_disk_size_for_server(self, server: str | None, increment: int) -> None:
-		if server is None or server == self.name:
+	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
+		if server == self.name:
 			self.increase_disk_size(increment)
 			self.create_subscription_for_storage()
 		else:
@@ -985,7 +985,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		)
 
 	def calculated_increase_disk_size(self):
-		self.increase_disk_size_for_server(self.size_to_increase_by_for_20_percent_available)
+		self.increase_disk_size_for_server(
+			self.name, self.size_to_increase_by_for_20_percent_available
+		)
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
