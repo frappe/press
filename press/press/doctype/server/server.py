@@ -836,7 +836,7 @@ class BaseServer(Document, TagHelpers):
 			update_server_tls_certifcate,
 		)
 
-		filters = {"wildcard": True, "status": "Active", "domain": self.domian}
+		filters = {"wildcard": True, "status": "Active", "domain": self.domain}
 
 		if hasattr(self, "is_self_hosted") and self.is_self_hosted:
 			if self.domain != self.self_hosted_server_domain:
