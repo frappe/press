@@ -39,13 +39,9 @@ def execute():
 	)
 
 	for server in tqdm(servers):
-		additional_storage = int(server.disk_size) - int(server.disk)
-		frappe.get_doc("Server", server.name).create_subscription_for_storage(
-			additional_storage
-		)
+		frappe.get_doc("Server", server.name).create_subscription_for_storage()
 
 	for database_server in tqdm(database_servers):
-		additional_storage = int(database_server.disk_size) - int(database_server.disk)
 		frappe.get_doc(
 			"Database Server", database_server.name
-		).create_subscription_for_storage(additional_storage)
+		).create_subscription_for_storage()
