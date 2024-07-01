@@ -379,8 +379,12 @@ export default {
 		},
 		deployLabel() {
 			if (this.selectedSites?.length > 0) {
-				const site = this.$format.plural(selectedSites.length, 'site', 'sites');
-				return `Deploy and update ${selectedSites.length} ${site}`;
+				const site = this.$format.plural(
+					this.selectedSites.length,
+					'site',
+					'sites'
+				);
+				return `Deploy and update ${this.selectedSites.length} ${site}`;
 			}
 
 			return 'Skip and deploy';
