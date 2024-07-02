@@ -104,7 +104,12 @@
 							}}
 						</td>
 					</tr>
-					<template v-if="doc.total !== doc.amount_due && doc.docstatus == 1">
+					<template
+						v-if="
+							doc.total !== doc.amount_due &&
+							['Paid', 'Unpaid'].includes(doc.status)
+						"
+					>
 						<tr>
 							<td></td>
 							<td></td>
