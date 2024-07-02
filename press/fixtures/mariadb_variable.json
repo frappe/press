@@ -298,5 +298,17 @@
   "name": "max_heap_table_size",
   "set_on_new_servers": 0,
   "skippable": 0
+ },
+ {
+  "datatype": "Bool",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-07-02 19:20:23.150723",
+  "name": "innodb_print_all_deadlocks",
+  "set_on_new_servers": 0,
+  "skippable": 0
  }
 ]
