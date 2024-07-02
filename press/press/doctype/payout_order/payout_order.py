@@ -83,6 +83,10 @@ class PayoutOrder(Document):
 
 			invoice_item = get_invoice_item_for_po_item(invoice_name, row)
 
+			# check to avoid app revenue ledger item's calculation
+			if not invoice_item:
+				return
+
 			row.tax = row.tax or 0.0
 			row.total_amount = invoice_item.amount
 			row.site = invoice_item.site
@@ -138,17 +142,21 @@ class PayoutOrder(Document):
 
 def get_invoice_item_for_po_item(
 	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem:
-	return frappe.get_doc(
-		"Invoice Item",
-		{
-			"parent": invoice_name,
-			"document_name": payout_order_item.document_name,
-			"document_type": payout_order_item.document_type,
-			"plan": payout_order_item.plan,
-			"rate": payout_order_item.rate,
-		},
-	)
+) -> InvoiceItem | None:
+
+	try:
+		return frappe.get_doc(
+			"Invoice Item",
+			{
+				"parent": invoice_name,
+				"document_name": payout_order_item.document_name,
+				"document_type": payout_order_item.document_type,
+				"plan": payout_order_item.plan,
+				"rate": payout_order_item.rate,
+			},
+		)
+	except frappe.DoesNotExistError:
+		return None
 
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
