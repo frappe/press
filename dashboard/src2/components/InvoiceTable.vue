@@ -100,7 +100,7 @@
 							{{
 								doc.partner_email && doc.partner_email != $team.doc.user
 									? formatCurrency(doc.total_before_discount)
-									: formatCurrency(doc.total)
+									: formatCurrency(doc.total + doc.gst)
 							}}
 						</td>
 					</tr>
@@ -108,7 +108,7 @@
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right">Applied Balance:</td>
+							<td class="pr-2 text-right font-medium">Applied Balance</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								- {{ formatCurrency(doc.applied_credits) }}
 							</td>
@@ -116,7 +116,7 @@
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right">Amount Due:</td>
+							<td class="pr-2 text-right font-medium">Amount Due</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								{{ formatCurrency(doc.amount_due) }}
 							</td>
