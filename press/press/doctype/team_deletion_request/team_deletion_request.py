@@ -168,7 +168,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	@handle_exc
 	def delete_data_on_frappeio(self):
 		"""Anonymize data on frappe.io"""
-		from press.utils.billing import get_frappe_io_connection
+		from press.utils.billing import get_frappe_io_connection, disabled_frappeio_auth
+
+		if disabled_frappeio_auth():
+			return
 
 		client = get_frappe_io_connection()
 		response = client.session.delete(
