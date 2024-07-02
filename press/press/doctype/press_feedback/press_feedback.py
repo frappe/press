@@ -18,6 +18,7 @@ class PressFeedback(Document):
 
 		message: DF.Data
 		note: DF.SmallText | None
+		rating: DF.Rating
 		route: DF.Data | None
 		team: DF.Link
 	# end: auto-generated types

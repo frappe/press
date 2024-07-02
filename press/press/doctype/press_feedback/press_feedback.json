@@ -9,6 +9,7 @@
   "message",
   "route",
   "column_break_vcbh",
+  "rating",
   "note"
  ],
  "fields": [
@@ -40,11 +41,16 @@
    "fieldname": "note",
    "fieldtype": "Small Text",
    "label": "Note"
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Rating",
+   "label": "Rating"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-26 22:32:02.394167",
+ "modified": "2024-07-02 20:07:21.508212",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Feedback",
