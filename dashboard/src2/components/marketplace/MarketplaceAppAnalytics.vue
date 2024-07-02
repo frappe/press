@@ -1,7 +1,7 @@
 <template>
 	<div v-if="$resources.analytics.data">
 		<div class="col-span-2 mb-5 rounded-md border">
-			<div class="grid grid-cols-2 lg:grid-cols-4">
+			<div class="grid grid-cols-2 lg:grid-cols-5">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="text-base text-gray-700">Total Installs</div>
 					<div class="mt-2 flex items-start justify-between">
@@ -48,6 +48,21 @@
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
 									{{ installAnalytics.installs_last_week }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Total Earnings</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									₹{{ installAnalytics.total_payout.inr_amount || 0 }}
+									<span class="text-sm text-gray-500">+</span>
+									${{ installAnalytics.total_payout.usd_amount || 0 }}
 								</span>
 							</div>
 						</div>
