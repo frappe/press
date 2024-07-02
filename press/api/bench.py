@@ -949,8 +949,13 @@ def update_all_sites(name):
 @frappe.whitelist()
 @protected("Release Group")
 def logs(name, bench):
+	from press.agent import AgentRequestSkippedException
+
 	if frappe.db.get_value("Bench", bench, "group") == name:
-		return frappe.get_doc("Bench", bench).server_logs
+		try:
+			return frappe.get_doc("Bench", bench).server_logs
+		except AgentRequestSkippedException:
+			return []
 
 
 @frappe.whitelist()
