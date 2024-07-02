@@ -753,12 +753,13 @@ def update_billing_information(billing_details):
 
 
 @frappe.whitelist()
-def feedback(team, message, note, route=None):
+def feedback(team, message, note, rating, route=None):
 	feedback = frappe.new_doc("Press Feedback")
 	feedback.team = team
 	feedback.message = message
 	feedback.note = note
 	feedback.route = route
+	feedback.rating = rating / 5
 	feedback.insert(ignore_permissions=True)
 
 

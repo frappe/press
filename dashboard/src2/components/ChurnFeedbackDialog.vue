@@ -21,7 +21,14 @@
 			<p class="mb-5 text-sm text-gray-800">
 				Help us improve your experience by sharing your thoughts.
 			</p>
+			<div class="mt-3">
+				<span class="mb-2 block text-sm leading-4 text-gray-600">
+					Please rate your experience
+				</span>
+				<StarRatingInput v-model="rating" />
+			</div>
 			<FormControl
+				class="mt-4"
 				type="select"
 				:options="options"
 				size="md"
@@ -45,17 +52,22 @@
 
 <script>
 import FormControl from 'frappe-ui/src/components/FormControl.vue';
+import StarRatingInput from '../../src/components/StarRatingInput.vue';
 
 export default {
 	name: 'ChurnFeedbackDialog',
 	emits: ['updated'],
 	props: ['team'],
+	components: {
+		StarRatingInput
+	},
 	data() {
 		return {
 			feedback: '',
 			route: '',
 			note: '',
-			show: true
+			show: true,
+			rating: 5
 		};
 	},
 	resources: {
@@ -67,7 +79,8 @@ export default {
 						team: this.team,
 						message: this.feedback,
 						route: this.$route?.name,
-						note: this.note
+						note: this.note,
+						rating: this.rating
 					};
 				},
 				validate() {
@@ -90,6 +103,8 @@ export default {
 				'I am not using the service anymore',
 				'Frappe Cloud is too expensive for me',
 				'I was just exploring the platform',
+				'Payment issues',
+				'I prefer self-hosting my instance',
 				'My reason is not listed here'
 			];
 		}

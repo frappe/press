@@ -61,25 +61,27 @@ export default {
 		};
 	},
 	resources: {
-		currentBillingInformation: {
-			url: 'press.api.account.get_billing_information',
-			auto: true,
-			onSuccess(billingInformation) {
-				if ('country' in (billingInformation || {})) {
-					Object.assign(this.billingInformation, {
-						address: billingInformation.address_line1,
-						city: billingInformation.city,
-						state: billingInformation.state,
-						postal_code: billingInformation.pincode,
-						country: billingInformation.country,
-						gstin:
-							billingInformation.gstin == 'Not Applicable'
-								? ''
-								: billingInformation.gstin,
-						billing_name: billingInformation.billing_name
-					});
+		currentBillingInformation() {
+			return {
+				url: 'press.api.account.get_billing_information',
+				auto: true,
+				onSuccess(billingInformation) {
+					if ('country' in (billingInformation || {})) {
+						Object.assign(this.billingInformation, {
+							address: billingInformation.address_line1,
+							city: billingInformation.city,
+							state: billingInformation.state,
+							postal_code: billingInformation.pincode,
+							country: billingInformation.country,
+							gstin:
+								billingInformation.gstin == 'Not Applicable'
+									? ''
+									: billingInformation.gstin,
+							billing_name: billingInformation.billing_name
+						});
+					}
 				}
-			}
+			};
 		},
 		updateBillingInformation() {
 			return {
@@ -97,6 +99,13 @@ export default {
 					this.$emit('updated');
 				},
 				validate() {
+					var billing_name = this.billingInformation.billing_name.trim();
+					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
+					var billingNameValid = billingNameRegex.test(billing_name);
+					if (!billingNameValid) {
+						return 'Billing Name contains invalid characters';
+					}
+					this.billingInformation.billing_name = billing_name;
 					return this.$refs['address-form'].validateValues();
 				}
 			};
