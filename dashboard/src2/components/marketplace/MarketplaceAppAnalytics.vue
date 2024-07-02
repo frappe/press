@@ -60,9 +60,19 @@
 						<div>
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
-									₹{{ installAnalytics.total_payout.inr_amount || 0 }}
+									{{
+										$format.currency(
+											installAnalytics.total_payout.inr_amount || 0,
+											'INR'
+										)
+									}}
 									<span class="text-sm text-gray-500">+</span>
-									${{ installAnalytics.total_payout.usd_amount || 0 }}
+									{{
+										$format.currency(
+											installAnalytics.total_payout.usd_amount || 0,
+											'USD'
+										)
+									}}
 								</span>
 							</div>
 						</div>
