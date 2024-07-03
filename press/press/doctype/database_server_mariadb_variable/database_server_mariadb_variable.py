@@ -25,7 +25,6 @@ class DatabaseServerMariaDBVariable(Document):
 		parenttype: DF.Data
 		persist: DF.Check
 		skip: DF.Check
-		value_bool: DF.Check
 		value_float: DF.Float
 		value_int: DF.Int
 		value_str: DF.Data | None
@@ -36,11 +35,11 @@ class DatabaseServerMariaDBVariable(Document):
 		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "datatype")
 
 	@property
-	def value_fields(self):
+	def value_fields(self) -> list[str]:
 		return list(filter(lambda x: x.startswith("value_"), self.as_dict().keys()))
 
 	@property
-	def value_field(self):
+	def value_field(self) -> str:
 		"""Return the first value field that has a value"""
 		for f in self.value_fields:
 			if self.get(f):
