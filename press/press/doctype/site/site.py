@@ -205,11 +205,11 @@ class Site(Document, TagHelpers):
 		from press.api.client import get
 
 		group = frappe.db.get_value(
-			"Release Group", self.group, ["title", "public", "team"], as_dict=1
+			"Release Group", self.group, ["title", "public", "team", "central_bench"], as_dict=1
 		)
 		doc.group_title = group.title
 		doc.group_team = group.team
-		doc.group_public = group.public
+		doc.group_public = group.public or group.central_bench
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
