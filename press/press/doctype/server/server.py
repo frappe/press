@@ -1068,6 +1068,7 @@ class Server(BaseServer):
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
+		use_for_build: DF.Check
 		use_for_new_benches: DF.Check
 		use_for_new_sites: DF.Check
 		virtual_machine: DF.Link | None

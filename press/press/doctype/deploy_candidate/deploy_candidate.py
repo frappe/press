@@ -17,6 +17,7 @@ from subprocess import Popen
 from typing import Any, List, Literal, Optional, Tuple
 
 import frappe
+import frappe.utils
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -38,8 +39,9 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	get_package_manager_files,
-	load_pyproject,
 	is_suspended,
+	load_pyproject,
+	get_build_server,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
@@ -259,7 +261,7 @@ class DeployCandidate(Document):
 
 	def set_build_server(self, no_build: bool):
 		if not self.build_server:
-			self.build_server = self._get_build_server()
+			self.build_server = get_build_server(self.group)
 
 		if self.build_server or no_build:
 			return
@@ -1464,12 +1466,6 @@ class DeployCandidate(Document):
 
 			pull_update[app_name] = pair
 		return pull_update
-
-	def _get_build_server(self):
-		server = frappe.get_value("Release Group", self.group, "build_server")
-		if not server:
-			server = frappe.get_value("Press Settings", None, "build_server")
-		return server
 
 	def get_first_step(
 		self, key: str, value: str | list[str]
