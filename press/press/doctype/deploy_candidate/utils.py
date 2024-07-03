@@ -168,7 +168,7 @@ def get_build_server_with_least_active_builds() -> str | None:
 
 	# Build server might not be in build_count, or might be inactive
 	build_count_tuples = [(s, build_count[s]) for s in build_servers]
-	build_count_tuples.sort(lambda x: x[1])
+	build_count_tuples.sort(key=lambda x: x[1])
 	return build_count_tuples[0][0]
 
 
