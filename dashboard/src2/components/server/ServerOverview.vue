@@ -132,14 +132,14 @@ export default {
 			let currentPlan = doc.current_plan;
 			let currentUsage = doc.usage;
 			let diskSize = doc.disk_size;
-			let additionalStorage = diskSize - currentPlan.disk;
+			let additionalStorage = diskSize - (currentPlan?.disk || 0);
 			let price = 0;
 			let priceField =
 				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
 			let currencySymbol = this.$team.doc.currency === 'INR' ? '₹' : '$';
 
 			let planDescription = '';
-			if (!currentPlan) {
+			if (!currentPlan.name) {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
 				price = currentPlan[priceField];
@@ -179,7 +179,7 @@ export default {
 						? `${((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100}% of ${
 								currentPlan.vcpu
 						  } ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
-						: 'vCPU'
+						: '0% vCPU'
 				},
 				{
 					label: 'Memory',
@@ -191,7 +191,7 @@ export default {
 						? `${formatBytes(currentUsage.memory || 0)} of ${formatBytes(
 								currentPlan.memory
 						  )}`
-						: 'GB'
+						: formatBytes(currentUsage.memory || 0)
 				},
 				{
 					label: 'Storage',
@@ -204,10 +204,10 @@ export default {
 						? `${currentUsage.disk || 0} GB of ${
 								diskSize ? diskSize : currentPlan.disk
 						  } GB`
-						: 'GB',
+						: `${currentUsage.disk || 0} GB`,
 					help:
-						diskSize - currentPlan.disk > 0
-							? `Add-on storage: ${diskSize - currentPlan.disk} GB`
+						diskSize - (currentPlan?.disk || 0) > 0
+							? `Add-on storage: ${diskSize - (currentPlan?.disk || 0)} GB`
 							: '',
 					action: {
 						label: 'Increase Storage',
