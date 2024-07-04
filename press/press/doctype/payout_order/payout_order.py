@@ -247,6 +247,7 @@ def get_unaccounted_marketplace_invoice_items():
 		.select(
 			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
 		)
+		.distinct()
 		.run(as_dict=True)
 	)
 
