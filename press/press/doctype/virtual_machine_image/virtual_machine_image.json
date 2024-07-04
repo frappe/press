@@ -18,6 +18,7 @@
   "platform",
   "series",
   "copied_from",
+  "public",
   "credentials_section",
   "mariadb_root_password"
  ],
@@ -121,11 +122,17 @@
    "fieldtype": "Data",
    "label": "Snapshot ID",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-11 18:02:20.719052",
+ "modified": "2024-07-04 12:26:14.185070",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

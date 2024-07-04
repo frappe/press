@@ -561,6 +561,43 @@ export default {
 							type: 'Badge'
 						}
 					],
+					banner({ documentResource: site }) {
+						if (site.doc.broken_domain_error) {
+							return {
+								title:
+									'There was an error fetching an https certificate for your domain.',
+								type: 'error',
+								button: {
+									label: 'View Error',
+									variant: 'outline',
+									onClick() {
+										renderDialog(
+											h(
+												GenericDialog,
+												{
+													options: {
+														title: 'Error fetching certificate',
+														size: 'xl'
+													}
+												},
+												{
+													default: () => {
+														return h('pre', {
+															class:
+																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-gray-200 bg-gray-100',
+															innerHTML: site.doc.broken_domain_error
+														});
+													}
+												}
+											)
+										);
+									}
+								}
+							};
+						} else {
+							return null;
+						}
+					},
 					primaryAction({ listResource: domains, documentResource: site }) {
 						return {
 							label: 'Add Domain',

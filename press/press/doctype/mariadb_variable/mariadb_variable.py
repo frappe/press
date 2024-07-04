@@ -16,7 +16,7 @@ class MariaDBVariable(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		datatype: DF.Literal["Int", "Bool", "Float", "Str"]
+		datatype: DF.Literal["Int", "Float", "Str"]
 		default_value: DF.Data | None
 		doc_section: DF.Literal["server", "replication-and-binary-log", "innodb"]
 		dynamic: DF.Check
@@ -32,8 +32,6 @@ class MariaDBVariable(Document):
 				return int(value)
 			case "Float":
 				return float(value)
-			case "Bool":
-				return bool(value)
 		return value
 
 	@frappe.whitelist()

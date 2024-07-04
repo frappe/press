@@ -22,7 +22,7 @@ export default {
 	},
 	list: {
 		route: '/apps',
-		title: 'Apps',
+		title: 'Marketplace',
 		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{

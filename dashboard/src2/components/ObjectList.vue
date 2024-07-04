@@ -1,11 +1,8 @@
 <template>
 	<div>
-		<AlertBanner
-			v-if="banner"
-			:title="banner.title"
-			:type="banner.type"
-			class="mb-4"
-		/>
+		<AlertBanner v-if="banner" v-bind="banner" class="mb-4">
+			<Button v-if="banner.button" v-bind="banner.button" class="ml-auto" />
+		</AlertBanner>
 		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">

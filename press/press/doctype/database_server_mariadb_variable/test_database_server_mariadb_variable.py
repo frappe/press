@@ -41,7 +41,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			{
 				"mariadb_variable": "innodb_buffer_pool_size",
 				"value_int": 1000,
-				"value_bool": True,
+				"value_str": str(1000 * 1024),
 			},
 		)
 		with self.assertRaises(frappe.ValidationError):
@@ -63,7 +63,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"mariadb_system_variables",
 			{
 				"mariadb_variable": "innodb_buffer_pool_size",
-				"value_bool": 1000,  # seeing if only value is checked and not the field
+				"value_str": "1000",  # seeing if only value is checked and not the field
 			},
 		)
 		with self.assertRaises(frappe.ValidationError):
@@ -79,7 +79,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			server.save()
 
 	def test_only_skippable_variables_can_be_skipped(self):
-		"""Test that only bool variables can be skipped"""
+		"""Test that only skippable variables can be skipped"""
 		server = create_test_database_server()
 		server.append(
 			"mariadb_system_variables",

@@ -205,11 +205,11 @@ class Site(Document, TagHelpers):
 		from press.api.client import get
 
 		group = frappe.db.get_value(
-			"Release Group", self.group, ["title", "public", "team"], as_dict=1
+			"Release Group", self.group, ["title", "public", "team", "central_bench"], as_dict=1
 		)
 		doc.group_title = group.title
 		doc.group_team = group.team
-		doc.group_public = group.public
+		doc.group_public = group.public or group.central_bench
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
@@ -227,6 +227,14 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+
+		if broken_domain_tls_certificate := frappe.db.get_value(
+			"Site Domain", {"site": self.name, "status": "Broken"}, "tls_certificate"
+		):
+			doc.broken_domain_error = frappe.db.get_value(
+				"TLS Certificate", broken_domain_tls_certificate, "error"
+			)
+
 		return doc
 
 	def site_action(allowed_status: List[str]):

@@ -27,7 +27,7 @@ export default {
 			if (this.isPrivateBenchSite) {
 				plans = plans.filter(plan => plan.private_benches);
 			}
-			if (this.isDedicatedServerSite) {
+			if (this.isPrivateBenchSite && this.isDedicatedServerSite) {
 				plans = plans.filter(plan => plan.dedicated_server_plan);
 			} else {
 				plans = plans.filter(plan => !plan.dedicated_server_plan);
