@@ -145,6 +145,17 @@ def get_invoice_item_for_po_item(
 ) -> InvoiceItem | None:
 
 	try:
+		if payout_order_item.invoice_item:
+			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
+			if (
+				item.parent == invoice_name
+				and item.document_name == payout_order_item.document_name
+				and item.document_type == payout_order_item.document_type
+				and item.plan == payout_order_item.plan
+				and item.rate == payout_order_item.rate
+			):
+				return item
+
 		return frappe.get_doc(
 			"Invoice Item",
 			{
