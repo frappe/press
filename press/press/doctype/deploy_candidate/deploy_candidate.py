@@ -641,7 +641,7 @@ class DeployCandidate(Document):
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
-			case "Failure" | "Undelivered" | "Delivery Failure":
+			case "Failure" | "Undelivered" | "Delivery Failure" | "Error":
 				return self._set_status_failure()
 			case "Success":
 				return self._set_status_success()
