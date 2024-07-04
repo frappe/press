@@ -227,6 +227,14 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+
+		if broken_domain_tls_certificate := frappe.db.get_value(
+			"Site Domain", {"site": self.name, "status": "Broken"}, "tls_certificate"
+		):
+			doc.broken_domain_error = frappe.db.get_value(
+				"TLS Certificate", broken_domain_tls_certificate, "error"
+			)
+
 		return doc
 
 	def site_action(allowed_status: List[str]):
