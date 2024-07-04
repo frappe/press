@@ -234,13 +234,14 @@ export default {
 			tabs: [
 				{
 					label: 'Public GitHub App',
-					value: 'public-github-app'
+					value: 'public-github-app',
+					condition: () => !this.showVersionSelector
 				},
 				{
 					label: 'Your GitHub App',
 					value: 'your-github-app'
 				}
-			]
+			].filter(tab => tab.condition?.() ?? true)
 		};
 	},
 	watch: {
