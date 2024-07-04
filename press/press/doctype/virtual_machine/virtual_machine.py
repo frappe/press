@@ -539,7 +539,7 @@ class VirtualMachine(Document):
 			"Pending": "Pending",
 			"Running": "Active",
 			"Terminated": "Archived",
-			"Stopped": "Archived",
+			"Stopped": "Pending",
 		}
 		for doctype in self.server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
