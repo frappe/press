@@ -28,6 +28,7 @@ class VirtualMachineImage(Document):
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
 		platform: DF.Data | None
+		public: DF.Check
 		region: DF.Link
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
 		size: DF.Int
@@ -170,6 +171,7 @@ class VirtualMachineImage(Document):
 			frappe.qb.from_(images)
 			.select("name")
 			.where(images.status == "Available")
+			.where(images.public == 1)
 			.where(
 				images.series == series,
 			)
