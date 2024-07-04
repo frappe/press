@@ -276,6 +276,8 @@ class Invoice(Document):
 					)
 				)
 
+		self.save()
+
 		if self.amount_due > 0:
 			if self.payment_mode == "Prepaid Credits":
 				self.add_comment(
@@ -286,8 +288,6 @@ class Invoice(Document):
 			# there should be a separate field in team to decide whether to create automatic invoices or not
 			if self.payment_mode == "Card":
 				self.create_stripe_invoice()
-
-		self.save()
 
 		if self.status == "Paid":
 			self.submit()
@@ -385,6 +385,7 @@ class Invoice(Document):
 				)
 				self.stripe_invoice_id = ""
 				self.stripe_invoice_url = ""
+				self.save()
 
 		if self.amount_due_with_tax <= 0:
 			return
