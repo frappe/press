@@ -459,7 +459,7 @@ def check_python_syntax(dirpath: str) -> str:
 	- -o: optimize level, 0 is no optimization
 	"""
 
-	command = f"python -m compileall -q -o 0 {dirpath}"
+	command = f"python3 -m compileall -q -o 0 {dirpath}"
 	proc = subprocess.run(
 		shlex.split(command),
 		text=True,
