@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2023-10-16 12:03:43.481880",
+ "creation": "2024-07-05 10:54:14.431684",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -9,9 +9,11 @@
  "field_order": [
   "team",
   "document_type",
+  "reference_doctype",
   "column_break_brxc",
   "type",
   "document_name",
+  "reference_name",
   "interaction_section",
   "is_actionable",
   "read",
@@ -138,11 +140,27 @@
    "fieldtype": "Check",
    "label": "Is Addressed",
    "read_only": 1
+  },
+  {
+   "description": "For filtering notifications in the dashboard",
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "description": "For filtering notifications in the dashboard",
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "hidden": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-14 15:53:46.991772",
+ "modified": "2024-07-05 11:48:27.679491",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

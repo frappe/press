@@ -23,6 +23,8 @@ class PressNotification(Document):
 		is_addressed: DF.Check
 		message: DF.LongText | None
 		read: DF.Check
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		team: DF.Link
 		title: DF.SmallText | None
 		traceback: DF.Code | None
