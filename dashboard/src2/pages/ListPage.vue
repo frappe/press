@@ -10,15 +10,15 @@
 		<div class="p-5">
 			<AlertAddPaymentMode
 				class="mb-5"
-				v-if="!$team.doc.payment_mode && !$team.doc.parent_team"
+				v-if="$team.doc && !$team.doc.payment_mode && !$team.doc.parent_team"
 			/>
 			<AlertCardExpired
 				class="mb-5"
-				v-if="isCardExpired && $team.doc.payment_mode == 'Card'"
+				v-if="isCardExpired && $team.doc?.payment_mode == 'Card'"
 			/>
 			<AlertAddressDetails
 				class="mb-5"
-				v-if="!$team.doc.billing_details?.name"
+				v-if="!$team.doc?.billing_details?.name"
 			/>
 			<AlertBanner
 				v-if="banner?.enabled"
@@ -113,7 +113,7 @@ export default {
 			return this.$resources.banner.doc;
 		},
 		isMandateNotSet() {
-			return !this.$team.doc.payment_method?.stripe_mandate_id ? true : false;
+			return !this.$team.doc?.payment_method?.stripe_mandate_id;
 		}
 	},
 	resources: {
