@@ -123,8 +123,8 @@ export default {
 			let $team = getTeam();
 
 			if (
-				releaseGroup.doc.server_team == $team.doc.name ||
-				$team.doc.is_desk_user
+				releaseGroup.doc.server_team == $team.doc?.name ||
+				$team.doc?.is_desk_user
 			) {
 				breadcrumbs.push(
 					{
