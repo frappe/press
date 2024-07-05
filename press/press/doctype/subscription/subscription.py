@@ -274,7 +274,7 @@ def paid_plans():
 		"price_inr": (">", 0),
 		"enabled": 1,
 	}
-	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan"]
+	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan", "Server Storage Plan"]
 	for doctype in doctypes:
 		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
 

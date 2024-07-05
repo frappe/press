@@ -63,7 +63,18 @@ class BaseServer(Document, TagHelpers):
 		from press.api.client import get
 		from press.api.server import usage
 
-		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
+		if self.plan:
+			doc.current_plan = get("Server Plan", self.plan)
+		else:
+			if virtual_machine := frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, ["vcpu", "ram", "disk_size"], as_dict=True
+			):
+				doc.current_plan = {
+					"vcpu": virtual_machine.vcpu,
+					"memory": virtual_machine.ram,
+					"disk": virtual_machine.disk_size,
+				}
+
 		doc.storage_plan = frappe.db.get_value(
 			"Server Storage Plan",
 			{"enabled": 1},

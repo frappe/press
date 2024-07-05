@@ -254,11 +254,12 @@ export default {
 						Button({ row }) {
 							let url;
 							if (row.current_hash && row.next_release) {
-								url = `${row.repository_url}/compare/${row.current_hash}...${
-									row.releases.find(
-										release => release.name === row.next_release
-									).hash
-								}`;
+								let hash = row.releases.find(
+									release => release.name === row.next_release
+								)?.hash;
+
+								if (hash)
+									url = `${row.repository_url}/compare/${row.current_hash}...${hash}`;
 							} else if (row.next_release) {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
@@ -266,6 +267,8 @@ export default {
 									).hash
 								}`;
 							}
+
+							if (!url) return null;
 
 							return {
 								label: 'View',

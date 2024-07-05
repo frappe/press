@@ -241,7 +241,7 @@ export default {
 	},
 	methods: {
 		reloadAccount() {
-			this.$team.doc.reload();
+			this.$team.doc?.reload();
 			this.$resources.user.reload();
 		},
 		onProfilePhotoChange() {

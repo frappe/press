@@ -523,9 +523,15 @@ class DeployCandidate(Document):
 		step.status = "Running"
 		start_time = now()
 
+		# make sure to set ownership of build_directory and its contents to 1000:1000
+		def fix_content_permission(tarinfo):
+			tarinfo.uid = 1000
+			tarinfo.gid = 1000
+			return tarinfo
+
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
 		with tarfile.open(tmp_file_path, "w:gz") as tar:
-			tar.add(self.build_directory, arcname=".")
+			tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
 
 		step.status = "Success"
 		step.duration = get_duration(start_time)

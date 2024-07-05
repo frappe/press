@@ -38,14 +38,6 @@ const teamMembersListOptions = ref({
 		if (row.name === team.doc.user) return [];
 		return [
 			{
-				label: 'Manage Permissions',
-				onClick() {
-					router.push({
-						name: 'SettingsPermissionRoles'
-					});
-				}
-			},
-			{
 				label: 'Remove Member',
 				condition: () => row.name !== team.doc.user,
 				onClick() {
