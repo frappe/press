@@ -301,9 +301,11 @@ def get_site_info(site):
 
 
 def get_version(info, app="frappe"):
-	for app in info.get("installed_apps", {}):
-		if app.get("frappe", 0) == 1:
-			return app.get("name").lower().strip("frappe").strip().title()
+    installed_apps = info.get("installed_apps", [])
+    if app in installed_apps:
+        version = info.get("latest_frappe_version", "")
+        return version.lower().strip("frappe").strip().title()
+    return None
 
 
 def get_branch(info, app="frappe"):
@@ -342,7 +344,7 @@ def select_site():
 
 	if get_all_sites_request.ok:
 		# the following lines have data with a lot of redundancy, but there's no real reason to bother cleaning them up
-		all_sites = get_all_sites_request.json()["message"]["site_list"]
+		all_sites = get_all_sites_request.json()["message"]
 		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
 		sites_version = {x: get_version(y) for x, y in sites_info.items()}
 		available_sites = render_site_table(all_sites, sites_version)
@@ -380,16 +382,15 @@ def select_team(session):
 
 	# ask if they want to select, go ahead with if only one exists
 	if len(available_teams) == 1:
-		team = available_teams[0]
+		team = available_teams[0]["name"]
 	else:
 		render_teams_table(available_teams)
 		idx = click.prompt("Select Team", type=click.IntRange(1, len(available_teams))) - 1
-		team = available_teams[idx]
+		team = available_teams[idx]["name"]
 
 	print("Team '{}' set for current session".format(team))
 
 	return team
-
 
 def is_valid_subdomain(subdomain):
 	if len(subdomain) < 5:
@@ -641,12 +642,12 @@ def create_session():
 		)
 
 
-def frappecloud_migrator(local_site):
+def frappecloud_migrator(local_site,frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, migrator_actions, remote_site
 
-	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
-	scheme = "https"
+	remote_site = frappe_provider or "frappecloud.com"
+	scheme = "http"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
 	upload_url = "{}://{}/api/method/press.api.site.new".format(scheme, remote_site)
@@ -716,7 +717,8 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		frappe.init(site=local_site)
 		frappe.connect()
-		frappecloud_migrator(local_site)
+		frappe_provider=sys.argv[2]
+		frappecloud_migrator(local_site,frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
