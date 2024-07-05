@@ -1,4 +1,6 @@
 import frappe
+
+from press.press.doctype.press_role.press_role import check_role_permissions
 from press.utils import get_current_team
 
 
@@ -8,29 +10,49 @@ def get_notifications(
 ):
 	if not filters:
 		filters = {}
-	if filters.get("read") == "All":
-		del filters["read"]
-	elif filters.get("read") == "Read":
-		filters["read"] = True
-	notifications = frappe.get_all(
-		"Press Notification",
-		filters=filters,
-		fields=[
-			"name",
-			"type",
-			"read",
-			"title",
-			"message",
-			"creation",
-			"is_addressed",
-			"is_actionable",
-			"document_type",
-			"document_name",
-		],
-		order_by=order_by,
-		start=limit_start,
-		limit=limit_page_length,
+
+	PressNotification = frappe.qb.DocType("Press Notification")
+	query = (
+		frappe.qb.from_(PressNotification)
+		.select(
+			PressNotification.name,
+			PressNotification.type,
+			PressNotification.read,
+			PressNotification.title,
+			PressNotification.message,
+			PressNotification.creation,
+			PressNotification.is_addressed,
+			PressNotification.is_actionable,
+			PressNotification.document_type,
+			PressNotification.document_name,
+		)
+		.where(PressNotification.team == filters.get("team") or get_current_team())
+		.orderby(PressNotification.creation, order=frappe.qb.desc)
+		.limit(limit_page_length)
+		.offset(limit_start)
 	)
+
+	if roles := set(
+		check_role_permissions("Site") + check_role_permissions("Release Group")
+	):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				(
+					(PressRolePermission.site == PressNotification.reference_name)
+					| (PressRolePermission.release_group == PressNotification.reference_name)
+				)
+				& PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	if filters.get("read") == "Unread":
+		query = query.where(PressNotification.read == 0)
+
+	notifications = query.run(as_dict=True)
 
 	for notification in notifications:
 		if notification.document_type == "Deploy Candidate":
