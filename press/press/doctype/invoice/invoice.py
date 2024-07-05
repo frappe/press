@@ -876,6 +876,9 @@ class Invoice(Document):
 			return True
 
 	def update_razorpay_transaction_details(self, payment):
+		if not (payment["fee"] or payment["tax"]):
+			return
+
 		self.transaction_amount = convert_stripe_money(payment["amount"])
 		self.transaction_net = convert_stripe_money(payment["amount"] - payment["fee"])
 		self.transaction_fee = convert_stripe_money(payment["fee"])
