@@ -278,12 +278,13 @@ export default {
 			} else this.selectedBranch = '';
 		},
 		selectedBranch(newSelectedBranch) {
-			this.$resources.validateApp.submit({
-				owner: this.appOwner,
-				repository: this.appName,
-				branch: newSelectedBranch.value,
-				installation: this.selectedGithubUser?.value?.id
-			});
+			if (this.appOwner && this.appName && newSelectedBranch)
+				this.$resources.validateApp.submit({
+					owner: this.appOwner,
+					repository: this.appName,
+					branch: newSelectedBranch.value,
+					installation: this.selectedGithubUser?.value?.id
+				});
 		}
 	},
 	resources: {
