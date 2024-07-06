@@ -158,7 +158,7 @@ export default {
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
 			let rgDoc = getCachedDocumentResource(
 				'Release Group',
-				this.$resources.deploy.doc.group
+				this.$resources.deploy.doc?.group
 			);
 			this.$resources.deploy.reload();
 			rgDoc.reload();
@@ -193,7 +193,7 @@ export default {
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					condition: () => this.$team.doc.is_desk_user,
+					condition: () => this.$team.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
