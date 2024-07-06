@@ -80,14 +80,26 @@ def get_new_site_options():
 
 
 @retry(stop=stop_after_attempt(5))
-def is_subdomain_available(subdomain):
-	res = session.post(site_exists_url, {"subdomain": subdomain})
+def is_subdomain_available(subdomain, domain):
+	res = session.post(site_exists_url, {"domain": domain, "subdomain": subdomain})
 	if res.ok:
 		available = not res.json()["message"]
 		if not available:
 			print("Subdomain already exists! Try another one")
 
 		return available
+
+
+@retry(stop=stop_after_attempt(3))
+def get_site_plans():
+	res = session.post(site_plans_url)
+	if res.ok:
+		plans = res.json()["message"]
+		if len(plans) == 0:
+			print("No Site Plans available")
+		return plans
+	else:
+		print("Request to fetch Site Plans failed")
 
 
 @retry(
@@ -195,7 +207,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		{
 			"file": file_name,
 			"path": key,
-			"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
+			"type": ("application/x-gzip" if file_type == "database" else "application/x-tar"),
 			"size": os.path.getsize(file_path),
 		},
 	)
@@ -219,12 +231,12 @@ def render_actions_table():
 
 
 def render_site_table(sites_info, version_info):
-	sites_table = [["#", "Site Name", "Frappe"]]
+	sites_table = [["#", "Site Name", "Frappe Version"]]
 	available_sites = {}
 
 	for n, site_data in enumerate(sites_info):
 		name = site_data["name"]
-		frappe = version_info[name]
+		frappe = version_info[0]
 		sites_table.append([n + 1, name, frappe])
 		available_sites[name] = {
 			"frappe": frappe,
@@ -265,7 +277,7 @@ def render_group_table(versions):
 	# all rows
 	idx = 0
 	for version in versions:
-		for group in version["groups"]:
+		for group in version["group"]:
 			apps_list = ", ".join(
 				["{}:{}".format(app["app"], app["branch"]) for app in group["apps"]]
 			)
@@ -298,14 +310,6 @@ def get_site_info(site):
 	if site_info_response.ok:
 		return site_info_response.json()["message"]
 	return {}
-
-
-def get_version(info, app="frappe"):
-    installed_apps = info.get("installed_apps", [])
-    if app in installed_apps:
-        version = info.get("latest_frappe_version", "")
-        return version.lower().strip("frappe").strip().title()
-    return None
 
 
 def get_branch(info, app="frappe"):
@@ -346,7 +350,7 @@ def select_site():
 		# the following lines have data with a lot of redundancy, but there's no real reason to bother cleaning them up
 		all_sites = get_all_sites_request.json()["message"]
 		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
-		sites_version = {x: get_version(y) for x, y in sites_info.items()}
+		sites_version = [details["latest_frappe_version"] for details in sites_info.values()]
 		available_sites = render_site_table(all_sites, sites_version)
 
 		while True:
@@ -392,6 +396,7 @@ def select_team(session):
 
 	return team
 
+
 def is_valid_subdomain(subdomain):
 	if len(subdomain) < 5:
 		print("Subdomain too short. Use 5 or more characters")
@@ -428,7 +433,7 @@ def check_app_compat(available_group):
 	]
 	print("Checking availability of existing app group")
 
-	for (app, branch) in existing_group:
+	for app, branch in existing_group:
 		info = [(a["app"], a["branch"]) for a in available_group["apps"] if a["app"] == app]
 		if info:
 			app_title, available_branch = info[0]
@@ -500,7 +505,7 @@ def filter_apps(versions):
 def get_subdomain(domain):
 	while True:
 		subdomain = click.prompt("Enter subdomain").strip()
-		if is_valid_subdomain(subdomain) and is_subdomain_available(subdomain):
+		if is_valid_subdomain(subdomain) and is_subdomain_available(domain, subdomain):
 			print("Site Domain: {}.{}".format(subdomain, domain))
 			return subdomain
 
@@ -548,7 +553,8 @@ def new_site(local_site):
 
 	# set preferences from site options
 	subdomain = get_subdomain(site_options["domain"])
-	plan = choose_plan(site_options["plans"])
+	available_site_plans = get_site_plans()
+	plan = choose_plan(available_site_plans)
 
 	versions = site_options["versions"]
 	selected_group, filtered_apps = filter_apps(versions)
@@ -642,9 +648,9 @@ def create_session():
 		)
 
 
-def frappecloud_migrator(local_site,frappe_provider):
+def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
-	global session, migrator_actions, remote_site
+	global session, migrator_actions, remote_site, site_plans_url
 
 	remote_site = frappe_provider or "frappecloud.com"
 	scheme = "http"
@@ -674,7 +680,9 @@ def frappecloud_migrator(local_site,frappe_provider):
 	finish_multipart_url = "{}://{}/api/method/press.api.site.multipart_exit".format(
 		scheme, remote_site
 	)
-
+	site_plans_url = "{}://{}/api/method/press.api.site.get_site_plans".format(
+		scheme, remote_site
+	)
 	migrator_actions = [
 		{"title": "Create a new site", "fn": new_site},
 		{"title": "Restore to an existing site", "fn": restore_site},
@@ -717,8 +725,8 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		frappe.init(site=local_site)
 		frappe.connect()
-		frappe_provider=sys.argv[2]
-		frappecloud_migrator(local_site,frappe_provider)
+		frappe_provider = sys.argv[2]
+		frappecloud_migrator(local_site, frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
