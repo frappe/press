@@ -3,7 +3,7 @@ const trial_end_string =
 	trial_end > 1 ? `${trial_end} days` : `${trial_end} day`;
 
 let subscription_string = __(
-	`Your trial ends in ${trial_end_string}. Please subscribe to avoid uninterrupted services`,
+	`Your trial ends in ${trial_end_string}. Please subscribe for uninterrupted services`,
 );
 
 let $floatingBar = $(`

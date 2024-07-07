@@ -35,7 +35,7 @@
 						<template #suffix>
 							<i-lucide-chevron-down class="h-3.5 w-3.5 text-gray-700" />
 						</template>
-						{{ $team?.get.loading ? 'Loading...' : $team?.doc.user }}
+						{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 					</Button>
 				</template>
 			</Dropdown>

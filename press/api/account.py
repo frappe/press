@@ -109,6 +109,7 @@ def setup_account(
 	team = account_request.team
 	email = account_request.email
 	role = account_request.role
+	press_roles = account_request.press_roles
 
 	if signup_values:
 		account_request.saas_signup_values = json.dumps(signup_values, separators=(",", ":"))
@@ -119,7 +120,7 @@ def setup_account(
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
-		doc.create_user_for_member(first_name, last_name, email, password, role)
+		doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
 	else:
 		# Team doesn't exist, create it
 		team_doc = Team.create_new(
@@ -129,7 +130,6 @@ def setup_account(
 			password=password,
 			country=country,
 			user_exists=bool(user_exists),
-			default_to_new_dashboard=True,
 		)
 		if invited_by_parent_team:
 			doc = frappe.get_doc("Team", account_request.invited_by)
@@ -651,24 +651,6 @@ def get_user_for_reset_password_key(key):
 
 	hashed_key = sha256_hash(key)
 	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
-
-
-@frappe.whitelist()
-def add_team_member(email, new_dashboard=False):
-	frappe.utils.validate_email_address(email, True)
-
-	team = get_current_team(True)
-	frappe.get_doc(
-		{
-			"doctype": "Account Request",
-			"team": team.name,
-			"email": email,
-			"role": "Press Member",
-			"invited_by": team.user,
-			"new_signup_flow": new_dashboard,
-			"send_email": True,
-		}
-	).insert()
 
 
 @frappe.whitelist()
