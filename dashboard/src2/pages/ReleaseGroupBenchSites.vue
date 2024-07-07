@@ -93,6 +93,8 @@ export default {
 			return {
 				list: this.$resources.sites,
 				groupHeader: ({ group: bench }) => {
+					if (!bench?.status) return;
+
 					let options = this.benchOptions(bench);
 					let IconHash = icon('hash', 'w-3 h-3');
 					return (
