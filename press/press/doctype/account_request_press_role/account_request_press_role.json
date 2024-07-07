@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-06 23:39:13.802962",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "press_role"
+ ],
+ "fields": [
+  {
+   "fieldname": "press_role",
+   "fieldtype": "Link",
+   "label": "Press Role",
+   "options": "Press Role"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-07-07 11:29:10.685626",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Account Request Press Role",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

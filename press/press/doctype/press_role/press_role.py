@@ -79,7 +79,7 @@ class PressRole(Document):
 				perm_doc.delete()
 
 	@dashboard_whitelist()
-	def delete(self):
+	def delete(self) -> None:
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
 		):
@@ -87,8 +87,9 @@ class PressRole(Document):
 
 		super().delete()
 
-	def on_trash(self):
+	def on_trash(self) -> None:
 		frappe.db.delete("Press Role Permission", {"role": self.name})
+		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
 def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
