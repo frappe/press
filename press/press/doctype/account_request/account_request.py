@@ -18,6 +18,9 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.press.doctype.account_request_press_role.account_request_press_role import (
+			AccountRequestPressRole,
+		)
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
@@ -39,6 +42,7 @@ class AccountRequest(Document):
 		oauth_signup: DF.Check
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None

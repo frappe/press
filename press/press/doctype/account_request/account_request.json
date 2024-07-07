@@ -14,6 +14,7 @@
   "invited_by",
   "ip_address",
   "invited_by_parent_team",
+  "press_roles",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -258,11 +259,17 @@
    "fieldtype": "Link",
    "label": "Product Trial",
    "options": "Product Trial"
+  },
+  {
+   "fieldname": "press_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Press Roles",
+   "options": "Account Request Press Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 17:32:42.400597",
+ "modified": "2024-07-06 23:40:30.636251",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
