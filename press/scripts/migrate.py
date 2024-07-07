@@ -418,9 +418,9 @@ def create_session():
 
 def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
-	global session, migrator_actions, remote_site, site_plans_url
+	global session, remote_site, site_plans_url
 
-	remote_site = frappe_provider or "frappecloud.com"
+	remote_site = frappe_provider
 	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
@@ -484,9 +484,13 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 		local_site = input("Name of the site you want to migrate: ").strip()
 
 	try:
+		frappe_provider = sys.argv[2]
+	except Exception:
+		frappe_provider = "frappecloud.com"
+
+	try:
 		frappe.init(site=local_site)
 		frappe.connect()
-		frappe_provider = sys.argv[2]
 		frappecloud_migrator(local_site, frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
