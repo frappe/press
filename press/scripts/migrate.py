@@ -13,7 +13,7 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.utils import get_installed_apps_info, update_progress_bar
+from frappe.utils import update_progress_bar
 from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 
@@ -208,19 +208,6 @@ def render_teams_table(teams):
 	render_table(teams_table)
 
 
-def render_plan_table(plans_list):
-	plans_table = [["Site Plan", "CPU Time"]]
-	visible_headers = ["name", "cpu_time_per_day"]
-
-	for plan in plans_list:
-		plan, cpu_time = [plan[header] for header in visible_headers]
-		plans_table.append(
-			[plan, "{} hour{}/day".format(cpu_time, "" if cpu_time < 2 else "s")]
-		)
-
-	render_table(plans_table)
-
-
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
 	message = message or "Request failed with error code {}".format(request.status_code)
 	response = html2text.html2text(request.text) if traceback else ""
@@ -331,56 +318,6 @@ def is_valid_subdomain(subdomain):
 	print(
 		"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
 	)
-
-
-@add_line_after
-def check_app_compat(available_group):
-	is_compat = True
-	incompatible_apps, filtered_apps, branch_msgs = [], [], []
-	existing_group = [
-		(app["app_name"], app["branch"]) for app in get_installed_apps_info()
-	]
-	print("Checking availability of existing app group")
-
-	for app, branch in existing_group:
-		info = [(a["app"], a["branch"]) for a in available_group["apps"] if a["app"] == app]
-		if info:
-			app_title, available_branch = info[0]
-
-			if branch != available_branch:
-				print("⚠️  App {}:{} => {}".format(app, branch, available_branch))
-				branch_msgs.append([app, branch, available_branch])
-				filtered_apps.append(app_title)
-				is_compat = False
-
-			else:
-				print("✅ App {}:{}".format(app, branch))
-				filtered_apps.append(app_title)
-
-		else:
-			incompatible_apps.append(app)
-			print("❌ App {}:{}".format(app, branch))
-			is_compat = False
-
-	start_msg = "\nSelecting this group will "
-	incompatible_apps = (
-		("\n\nDrop the following apps:\n" + "\n".join(incompatible_apps))
-		if incompatible_apps
-		else ""
-	)
-	branch_change = (
-		(
-			"\n\nUpgrade the following apps:\n"
-			+ "\n".join(["{}: {} => {}".format(*x) for x in branch_msgs])
-		)
-		if branch_msgs
-		else ""
-	)
-	changes = (incompatible_apps + branch_change) or "be perfect for you :)"
-	warning_message = start_msg + changes
-	print(warning_message)
-
-	return is_compat, filtered_apps
 
 
 @add_line_after
