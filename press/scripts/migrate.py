@@ -68,40 +68,6 @@ if sys.version[0] == "2":
 	sys.setdefaultencoding("utf-8")
 
 
-@retry(stop=stop_after_attempt(5))
-def get_new_site_options():
-	site_options_sc = session.post(options_url)
-
-	if site_options_sc.ok:
-		site_options = site_options_sc.json()["message"]
-		return site_options
-	else:
-		print("Couldn't retrive New site information: {}".format(site_options_sc.status_code))
-
-
-@retry(stop=stop_after_attempt(5))
-def is_subdomain_available(subdomain, domain):
-	res = session.post(site_exists_url, {"domain": domain, "subdomain": subdomain})
-	if res.ok:
-		available = not res.json()["message"]
-		if not available:
-			print("Subdomain already exists! Try another one")
-
-		return available
-
-
-@retry(stop=stop_after_attempt(3))
-def get_site_plans():
-	res = session.post(site_plans_url)
-	if res.ok:
-		plans = res.json()["message"]
-		if len(plans) == 0:
-			print("No Site Plans available")
-		return plans
-	else:
-		print("Request to fetch Site Plans failed")
-
-
 @retry(
 	stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5)
 )
@@ -268,25 +234,6 @@ def render_plan_table(plans_list):
 	render_table(plans_table)
 
 
-def render_group_table(versions):
-	# title row
-	versions_table = [["#", "Version", "Bench", "Apps"]]
-
-	# all rows
-	idx = 0
-	for version in versions:
-		for group in version["group"]:
-			apps_list = ", ".join(
-				["{}:{}".format(app["app"], app["branch"]) for app in group["apps"]]
-			)
-			row = [idx + 1, version["name"], group["name"], apps_list]
-			versions_table.append(row)
-			idx += 1
-
-	render_table(versions_table)
-	return versions_table
-
-
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
 	message = message or "Request failed with error code {}".format(request.status_code)
 	response = html2text.html2text(request.text) if traceback else ""
@@ -408,21 +355,6 @@ def is_valid_subdomain(subdomain):
 
 
 @add_line_after
-def choose_plan(plans_list):
-	print("{} plans available".format(len(plans_list)))
-	available_plans = [plan["name"] for plan in plans_list]
-	render_plan_table(plans_list)
-
-	while True:
-		input_plan = click.prompt("Select Plan").strip()
-		if input_plan in available_plans:
-			print("{} Plan selected ✅".format(input_plan))
-			return input_plan
-		else:
-			print("Invalid Selection ❌")
-
-
-@add_line_after
 def check_app_compat(available_group):
 	is_compat = True
 	incompatible_apps, filtered_apps, branch_msgs = [], [], []
@@ -473,42 +405,6 @@ def check_app_compat(available_group):
 
 
 @add_line_after
-def filter_apps(versions):
-	rendered_group_table = render_group_table(versions)
-	while True:
-		version_index = click.prompt("Select Version Number", type=int)
-		try:
-			if version_index < 1:  # 0th row is title
-				raise IndexError
-			version, group = (
-				rendered_group_table[version_index][1],
-				rendered_group_table[version_index][2],
-			)
-			selected_version = find(versions, lambda v: v["name"] == version)
-			selected_group = find(selected_version["groups"], lambda g: g["name"] == group)
-		except IndexError:
-			print("Invalid Selection ❌")
-			continue
-
-		is_compat, filtered_apps = check_app_compat(selected_group)
-
-		if is_compat or click.confirm("Continue anyway?"):
-			print("App Group {} selected! ✅".format(selected_group["name"]))
-			break
-
-	return selected_group["name"], filtered_apps
-
-
-@add_line_after
-def get_subdomain(domain):
-	while True:
-		subdomain = click.prompt("Enter subdomain").strip()
-		if is_valid_subdomain(subdomain) and is_subdomain_available(domain, subdomain):
-			print("Site Domain: {}.{}".format(subdomain, domain))
-			return subdomain
-
-
-@add_line_after
 def upload_backup(local_site):
 	# take backup
 	files_uploaded = {}
@@ -543,48 +439,6 @@ def upload_backup(local_site):
 	print("Uploaded backup files! ✅")
 
 	return files_uploaded
-
-
-def new_site(local_site):
-	# get new site options
-	site_options = get_new_site_options()
-
-	# set preferences from site options
-	subdomain = get_subdomain(site_options["domain"])
-	available_site_plans = get_site_plans()
-	plan = choose_plan(available_site_plans)
-
-	versions = site_options["versions"]
-	selected_group, filtered_apps = filter_apps(versions)
-	files_uploaded = upload_backup(local_site)
-
-	# push to frappe_cloud
-	payload = json.dumps(
-		{
-			"site": {
-				"apps": filtered_apps,
-				"files": files_uploaded,
-				"group": selected_group,
-				"name": subdomain,
-				"plan": plan,
-			}
-		}
-	)
-
-	session.headers.update({"Content-Type": "application/json; charset=utf-8"})
-	site_creation_request = session.post(upload_url, payload)
-
-	if site_creation_request.ok:
-		site_url = site_creation_request.json()["message"]
-		print("Your site {} is being migrated ✨".format(local_site))
-		print(
-			"View your site dashboard at https://{}/dashboard/sites/{}".format(
-				remote_site, site_url
-			)
-		)
-		print("Your site URL: https://{}".format(site_url))
-	else:
-		handle_request_failure(site_creation_request)
 
 
 def restore_site(local_site):
