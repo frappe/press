@@ -13,7 +13,6 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.core.utils import find
 from frappe.utils import get_installed_apps_info, update_progress_bar
 from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
@@ -182,18 +181,6 @@ def upload_backup_file(file_type, file_name, file_path):
 	handle_request_failure(register_press)
 
 
-def render_actions_table():
-	actions_table = [["#", "Action"]]
-	actions = []
-
-	for n, action in enumerate(migrator_actions):
-		actions_table.append([n + 1, action["title"]])
-		actions.append(action["fn"])
-
-	render_table(actions_table)
-	return actions
-
-
 def render_site_table(sites_info, version_info):
 	sites_table = [["#", "Site Name", "Frappe Version"]]
 	available_sites = {}
@@ -240,14 +227,6 @@ def handle_request_failure(request=None, message=None, traceback=True, exit_code
 
 	print("{0}{1}".format(message, "\n" + response))
 	sys.exit(exit_code)
-
-
-@add_line_after
-def select_primary_action():
-	actions = render_actions_table()
-	idx = click.prompt("What do you want to do?", type=click.IntRange(1, len(actions))) - 1
-
-	return actions[idx]
 
 
 def get_site_info(site):
@@ -535,10 +514,6 @@ def frappecloud_migrator(local_site, frappe_provider):
 	site_plans_url = "{}://{}/api/method/press.api.site.get_site_plans".format(
 		scheme, remote_site
 	)
-	migrator_actions = [
-		{"title": "Create a new site", "fn": new_site},
-		{"title": "Restore to an existing site", "fn": restore_site},
-	]
 
 	# get credentials + auth user + start session
 	try:
@@ -546,10 +521,7 @@ def frappecloud_migrator(local_site, frappe_provider):
 	except RetryError:
 		raise KeyboardInterrupt
 
-	# available actions defined in migrator_actions
-	primary_action = select_primary_action()
-
-	primary_action(local_site)
+	restore_site()
 
 
 def cleanup(current_file):
