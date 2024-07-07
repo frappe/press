@@ -235,7 +235,6 @@ class Team(Document):
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
-		default_to_new_dashboard=True,
 	):
 		"""Create new team along with user (user created first)."""
 		team = frappe.get_doc(
@@ -247,7 +246,6 @@ class Team(Document):
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
 				"account_request": account_request.name,
-				"default_to_new_dashboard": default_to_new_dashboard,
 			}
 		)
 
@@ -300,7 +298,13 @@ class Team(Document):
 		return user
 
 	def create_user_for_member(
-		self, first_name=None, last_name=None, email=None, password=None, role=None
+		self,
+		first_name=None,
+		last_name=None,
+		email=None,
+		password=None,
+		role=None,
+		press_roles=None,
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
@@ -309,11 +313,28 @@ class Team(Document):
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
 
+		for role in press_roles or []:
+			frappe.get_doc("Press Role", role.press_role).add_user(user.name)
+
 	@dashboard_whitelist()
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
 			self.remove(member_to_remove)
+
+			PressRole = frappe.qb.DocType("Press Role")
+			PressRoleUser = frappe.qb.DocType("Press Role User")
+			roles = (
+				frappe.qb.from_(PressRole)
+				.join(PressRoleUser)
+				.on(PressRole.name == PressRoleUser.parent)
+				.where(PressRoleUser.user == member)
+				.select(PressRole.name)
+				.run(as_dict=True, pluck="name")
+			)
+
+			for role in roles:
+				frappe.get_doc("Press Role", role).remove_user(member)
 		else:
 			frappe.throw(f"Team member {frappe.bold(member)} does not exists")
 
@@ -789,10 +810,30 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
-	def invite_team_member(self, email, new_dashboard=False):
-		from press.api.account import add_team_member
+	def invite_team_member(self, email, roles=None):
+		frappe.utils.validate_email_address(email, True)
 
-		add_team_member(email, new_dashboard)
+		if frappe.db.exists(
+			"Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}
+		):
+			frappe.throw(_("Team member already exists"))
+
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"team": self.name,
+				"email": email,
+				"role": "Press Member",
+				"invited_by": self.user,
+				"new_signup_flow": True,
+				"send_email": True,
+			}
+		)
+
+		for role in roles:
+			account_request.append("press_roles", {"press_role": role})
+
+		account_request.insert()
 
 	@frappe.whitelist()
 	def get_balance(self):

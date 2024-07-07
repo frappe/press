@@ -213,13 +213,13 @@ export default {
 			let breadcrumbs = [];
 			let $team = getTeam();
 			let siteCrumb = {
-				label: site.doc.host_name || site.doc.name,
-				route: `/sites/${site.doc.name}`
+				label: site.doc.host_name || site.doc?.name,
+				route: `/sites/${site.doc?.name}`
 			};
 
 			if (
-				(site.doc.server_team == $team.doc.name &&
-					site.doc.group_team == $team.doc.name) ||
+				(site.doc.server_team == $team.doc?.name &&
+					site.doc.group_team == $team.doc?.name) ||
 				$team.doc.is_desk_user
 			) {
 				breadcrumbs.push({
@@ -227,7 +227,7 @@ export default {
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc.name || $team.doc.is_desk_user) {
+			if (site.doc.group_team == $team.doc?.name || $team.doc.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -250,7 +250,7 @@ export default {
 					import('../components/SiteOverview.vue')
 				),
 				props: site => {
-					return { site: site.doc.name };
+					return { site: site.doc?.name };
 				}
 			},
 			{
@@ -262,7 +262,7 @@ export default {
 					import('../../src/views/site/SiteCharts.vue')
 				),
 				props: site => {
-					return { siteName: site.doc.name };
+					return { siteName: site.doc?.name };
 				}
 			},
 			{
@@ -273,7 +273,7 @@ export default {
 				list: {
 					doctype: 'Site App',
 					filters: site => {
-						return { parenttype: 'Site', parent: site.doc.name };
+						return { parenttype: 'Site', parent: site.doc?.name };
 					},
 					columns: [
 						{
@@ -442,7 +442,7 @@ export default {
 															return {
 																url: 'press.api.site.available_apps',
 																params: {
-																	name: site.doc.name
+																	name: site.doc?.name
 																},
 																auto: true
 															};
@@ -492,7 +492,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Uninstall App`,
-										message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc.name}</b>?<br>
+										message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc?.name}</b>?<br>
 										All doctypes and modules related to this app will be removed.`,
 										onSuccess({ hide }) {
 											if (site.uninstallApp.loading) return;
@@ -535,7 +535,7 @@ export default {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
 					filters: site => {
-						return { site: site.doc.name };
+						return { site: site.doc?.name };
 					},
 					columns: [
 						{
@@ -620,11 +620,11 @@ export default {
 						return [
 							{
 								label: 'Remove',
-								condition: () => row.domain !== site.doc.name,
+								condition: () => row.domain !== site.doc?.name,
 								onClick() {
 									confirmDialog({
 										title: `Remove Domain`,
-										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc.name}</b>?`,
+										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.removeDomain.loading) return;
 											toast.promise(
@@ -654,7 +654,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Set Primary Domain`,
-										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc.name}</b>?`,
+										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.setPrimaryDomain.loading) return;
 											toast.promise(
@@ -684,7 +684,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
-										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.redirectToPrimary.loading) return;
 											toast.promise(
@@ -714,7 +714,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,
-										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc?.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.removeRedirect.loading) return;
 											toast.promise(
@@ -751,7 +751,7 @@ export default {
 					doctype: 'Site Backup',
 					filters: site => {
 						return {
-							site: site.doc.name,
+							site: site.doc?.name,
 							files_availability: 'Available',
 							status: ['in', ['Pending', 'Running', 'Success']]
 						};
@@ -1033,7 +1033,7 @@ export default {
 				list: {
 					doctype: 'Site Config',
 					filters: site => {
-						return { parent: site.doc.name, parenttype: 'Site' };
+						return { parent: site.doc?.name, parenttype: 'Site' };
 					},
 					fields: ['name'],
 					pageLength: 999,
@@ -1075,7 +1075,7 @@ export default {
 								);
 								renderDialog(
 									h(ConfigEditorDialog, {
-										site: site.doc.name,
+										site: site.doc?.name,
 										onSuccess() {
 											configs.reload();
 										}
@@ -1112,7 +1112,7 @@ export default {
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {
-											site: site.doc.name,
+											site: site.doc?.name,
 											config: row,
 											onSuccess() {
 												configs.reload();
@@ -1164,7 +1164,7 @@ export default {
 				type: 'Component',
 				component: SiteActions,
 				props: site => {
-					return { site: site.doc.name };
+					return { site: site.doc?.name };
 				}
 			},
 			{
@@ -1175,7 +1175,7 @@ export default {
 				list: {
 					doctype: 'Site Update',
 					filters: site => {
-						return { site: site.doc.name };
+						return { site: site.doc?.name };
 					},
 					orderBy: 'creation',
 					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
@@ -1364,7 +1364,7 @@ export default {
 
 									renderDialog(
 										h(ConfigureAutoUpdateDialog, {
-											site: site.doc.name
+											site: site.doc?.name
 										})
 									);
 								}
@@ -1382,7 +1382,7 @@ export default {
 				list: {
 					doctype: 'Agent Job',
 					filters: site => {
-						return { site: site.doc.name };
+						return { site: site.doc?.name };
 					},
 					route(row) {
 						return {
@@ -1468,7 +1468,7 @@ export default {
 				list: {
 					doctype: 'Site Activity',
 					filters: site => {
-						return { site: site.doc.name };
+						return { site: site.doc?.name };
 					},
 					fields: ['owner'],
 					orderBy: 'creation desc',
@@ -1557,7 +1557,7 @@ export default {
 		actions(context) {
 			let { documentResource: site } = context;
 			let $team = getTeam();
-			let runningJobs = getRunningJobs({ site: site.doc.name });
+			let runningJobs = getRunningJobs({ site: site.doc?.name });
 
 			return [
 				{
@@ -1598,7 +1598,7 @@ export default {
 						let SiteUpdateDialog = defineAsyncComponent(() =>
 							import('../components/SiteUpdateDialog.vue')
 						);
-						renderDialog(h(SiteUpdateDialog, { site: site.doc.name }));
+						renderDialog(h(SiteUpdateDialog, { site: site.doc?.name }));
 					}
 				},
 				{
@@ -1646,7 +1646,7 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Login as Administrator',
-									message: `Are you sure you want to login as administrator on the site <b>${site.doc.name}</b>?`,
+									message: `Are you sure you want to login as administrator on the site <b>${site.doc?.name}</b>?`,
 									fields:
 										$team.name !== site.doc.team
 											? [

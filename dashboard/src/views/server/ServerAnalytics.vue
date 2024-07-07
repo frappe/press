@@ -2,7 +2,7 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				class="w-56"
+				class="w-40"
 				label="Server"
 				type="select"
 				:options="serverOptions"
@@ -113,9 +113,18 @@ export default {
 	data() {
 		return {
 			duration: '1 Hour',
-			chosenServer: this.serverName,
+			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days']
 		};
+	},
+	watch: {
+		chosenServer() {
+			this.$router.push({
+				query: {
+					server: this.chosenServer
+				}
+			});
+		}
 	},
 	resources: {
 		loadavg() {
@@ -204,15 +213,15 @@ export default {
 		serverOptions() {
 			return [
 				{
-					label: this.$server.doc.name,
+					label: 'Application Server',
 					value: this.$server.doc.name
 				},
 				{
-					label: this.$server.doc.database_server,
+					label: 'Database Server',
 					value: this.$server.doc.database_server
 				},
 				{
-					label: this.$server.doc.replication_server,
+					label: 'Replication Server',
 					value: this.$server.doc.replication_server
 				}
 			].filter(v => v.value);

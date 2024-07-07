@@ -202,12 +202,12 @@ export default {
 							}
 
 							function initialDeployTo(app) {
-								let next_release = app.releases.filter(
+								const next_release = app.releases.filter(
 									release => release.name === app.next_release
 								)[0];
 								if (app.will_branch_change) {
 									return app.branch;
-								} else {
+								} else if (next_release) {
 									return next_release.tag || next_release.hash.slice(0, 7);
 								}
 							}
