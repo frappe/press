@@ -133,7 +133,6 @@ def upload_backup_file(file_type, file_name, file_path):
 
 	# retreive upload link
 	upload_ticket = session.get(remote_link_url, data={"file": file_name, "parts": parts})
-
 	if not upload_ticket.ok:
 		handle_request_failure(upload_ticket)
 
@@ -173,7 +172,6 @@ def upload_backup_file(file_type, file_name, file_path):
 				"parts": json.dumps(file_parts),
 			},
 		)
-		print()
 		if not upload_remote.ok:
 			# not needed. try the failed parts again!!!
 			handle_request_failure(upload_remote)
@@ -653,7 +651,7 @@ def frappecloud_migrator(local_site, frappe_provider):
 	global session, migrator_actions, remote_site, site_plans_url
 
 	remote_site = frappe_provider or "frappecloud.com"
-	scheme = "http"
+	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
 	upload_url = "{}://{}/api/method/press.api.site.new".format(scheme, remote_site)
