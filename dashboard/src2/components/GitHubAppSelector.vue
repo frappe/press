@@ -132,7 +132,6 @@ export default {
 			} else this.selectedBranch = '';
 		},
 		selectedBranch(newSelectedBranch) {
-			console.log('selectedBranch', newSelectedBranch);
 			if (this.appOwner && this.appName && newSelectedBranch)
 				this.$emit('validateApp', {
 					owner: this.appOwner,

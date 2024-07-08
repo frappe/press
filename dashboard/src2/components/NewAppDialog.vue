@@ -66,8 +66,18 @@
 					</div>
 					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
 						<GitHubAppSelector
-							v-model="app"
-							@validateApp="data => $resources.validateApp.submit(data)"
+							@validateApp="
+								data => {
+									selectedBranch = {
+										label: data.branch,
+										value: data.branch
+									};
+									selectedGithubRepository = data.repository;
+									selectedGithubUser = data.selectedGithubUser;
+
+									$resources.validateApp.submit(data);
+								}
+							"
 							@fieldChange="appValidated = false"
 						/>
 					</div>
@@ -164,9 +174,10 @@ export default {
 					if (!data) {
 						return;
 					}
+
 					let repository_url = this.githubAppLink;
 					if (!repository_url) {
-						const repo_owner = this.selectedGithubUser?.label || data.owner;
+						const repo_owner = this.selectedGithubUser?.label;
 						const repo = this.selectedGithubRepository?.label || data.name;
 						repository_url = `https://github.com/${repo_owner}/${repo}`;
 					}
@@ -176,7 +187,7 @@ export default {
 						title: data.title,
 						repository_url,
 						github_installation_id: this.selectedGithubUser?.value.id,
-						branch: this.selectedBranch.value || data.branch
+						branch: this.selectedBranch.value
 					};
 				}
 			};
