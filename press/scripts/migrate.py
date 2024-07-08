@@ -458,7 +458,7 @@ def frappecloud_migrator(local_site, frappe_provider):
 	except RetryError:
 		raise KeyboardInterrupt
 
-	restore_site()
+	restore_site(local_site)
 
 
 def cleanup(current_file):
