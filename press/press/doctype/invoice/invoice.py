@@ -784,9 +784,8 @@ class Invoice(Document):
 				invoice = res.get("message")
 
 				if invoice:
-					self.frappe_invoice = invoice
+					frappe.db.set_value("Invoice", self.name, "frappe_invoice", invoice)
 					self.fetch_invoice_pdf()
-					self.save()
 					return invoice
 			else:
 				from bs4 import BeautifulSoup
@@ -843,7 +842,7 @@ class Invoice(Document):
 					}
 				)
 				ret.save(ignore_permissions=True)
-				self.invoice_pdf = ret.file_url
+				frappe.db.set_value("Invoice", self.name, "invoice_pdf", ret.file_url)
 
 	def get_frappeio_connection(self):
 		if not hasattr(self, "frappeio_connection"):
@@ -876,6 +875,9 @@ class Invoice(Document):
 			return True
 
 	def update_razorpay_transaction_details(self, payment):
+		if not (payment["fee"] or payment["tax"]):
+			return
+
 		self.transaction_amount = convert_stripe_money(payment["amount"])
 		self.transaction_net = convert_stripe_money(payment["amount"] - payment["fee"])
 		self.transaction_fee = convert_stripe_money(payment["fee"])
