@@ -52,21 +52,19 @@ def razorpay_webhook_handler():
 		frappe.set_user("Administrator")
 
 		razorpay_order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
-		if not frappe.db.exists(
-			"Razorpay Payment Record",
-			{"order_id": razorpay_order_id},
-		):
-			# TODO: Remove this after properly handling all the orders
-			notes = form_dict["payload"]["payment"]["entity"]["notes"]
-			if notes and not notes.get("description"):
-				# Don't log error if its not FrappeCloud order
-				# Example of valid notes
-				# "notes": {
-				# 	"Description": "Order for Frappe Cloud Prepaid Credits",
-				# 	"Team (Frappe Cloud ID)": "test@example.com",
-				# 	"gst": 245
-				# },
-				return
+		razorpay_payment_record = frappe.db.exists(
+			"Razorpay Payment Record", {"order_id": razorpay_order_id}
+		)
+
+		notes = form_dict["payload"]["payment"]["entity"]["notes"]
+		if (notes and notes.get("description")) and not razorpay_payment_record:
+			# Don't log error if its not FrappeCloud order
+			# Example of valid notes
+			# "notes": {
+			# 	"Description": "Order for Frappe Cloud Prepaid Credits",
+			# 	"Team (Frappe Cloud ID)": "test@example.com",
+			# 	"gst": 245
+			# },
 
 			log_error(
 				"Razorpay payment record for given order does not exist", order_id=razorpay_order_id
