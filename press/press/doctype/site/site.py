@@ -32,6 +32,7 @@ from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -580,6 +581,10 @@ class Site(Document, TagHelpers):
 			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
 		)
 
+	def is_version_14_or_higher(self) -> bool:
+		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
+		return group.is_version_14_or_higher()
+
 	@property
 	def space_required_on_app_server(self):
 		db_size, public_size, private_size = (
@@ -592,7 +597,7 @@ class Site(Document, TagHelpers):
 		)
 		space_for_download = db_size + public_size + private_size
 		space_for_extracted_files = (
-			8 * db_size + public_size + private_size
+			0 if self.is_version_14_or_higher() else (8 * db_size) + public_size + private_size
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
