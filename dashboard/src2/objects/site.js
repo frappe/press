@@ -266,6 +266,18 @@ export default {
 				}
 			},
 			{
+				label: 'Performance',
+				icon: icon('zap'),
+				route: 'performance',
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../../src/views/site/SitePerformance.vue')
+				),
+				props: site => {
+					return { siteName: site.doc?.name };
+				}
+			},
+			{
 				label: 'Apps',
 				icon: icon('grid'),
 				route: 'apps',
