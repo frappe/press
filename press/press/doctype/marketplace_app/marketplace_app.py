@@ -147,9 +147,9 @@ class MarketplaceApp(WebsiteGenerator):
 		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def check_if_duplicate(self):
-		if frappe.db.exists("Marketplace App", self.app):
+		if frappe.db.exists("Marketplace App", self.name):
 			frappe.throw(
-				f"App {self.app} already exists and is owned by some other team. Please contact support"
+				f"App {self.name} already exists and is owned by some other team. Please contact support."
 			)
 
 	def create_app_and_source_if_needed(self):
