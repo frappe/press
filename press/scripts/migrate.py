@@ -420,7 +420,7 @@ def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, remote_site, site_plans_url
 
-	remote_site = frappe_provider
+	remote_site = frappe_provider or frappe.conf.frappecloud_url
 	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
