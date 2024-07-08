@@ -21,7 +21,6 @@
 </template>
 <script>
 import ObjectList from '../components/ObjectList.vue';
-import { currency } from '../utils/format';
 import PayoutTable from '../components/PayoutTable.vue';
 
 export default {
@@ -75,14 +74,18 @@ export default {
 					{ label: 'Payment Mode', fieldname: 'mode_of_payment' },
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
 					{
-						label: 'Net INR',
+						label: 'Total',
 						fieldname: 'net_total_inr',
-						format: value => currency(value, 'INR')
-					},
-					{
-						label: 'Net USD',
-						fieldname: 'net_total_usd',
-						format: value => currency(value, 'USD')
+						format: (_, row) => {
+							let total = 0;
+							if (this.$team.doc.currency === 'INR') {
+								total = row.net_total_inr + row.net_total_usd * 82;
+							} else {
+								total = row.net_total_inr / 82 + row.net_total_usd;
+							}
+
+							return this.$format.userCurrency(total);
+						}
 					}
 				],
 				onRowClick: row => {

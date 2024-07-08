@@ -60,19 +60,7 @@
 						<div>
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
-									{{
-										$format.currency(
-											installAnalytics.total_payout.inr_amount || 0,
-											'INR'
-										)
-									}}
-									<span class="text-sm text-gray-500">+</span>
-									{{
-										$format.currency(
-											installAnalytics.total_payout.usd_amount || 0,
-											'USD'
-										)
-									}}
+									{{ $format.userCurrency(totalEarnings) }}
 								</span>
 							</div>
 						</div>
@@ -203,6 +191,21 @@ export default {
 				return this.$resources.analytics.data;
 			}
 			return {};
+		},
+		totalEarnings() {
+			if (!this.installAnalytics.total_payout.inr_amount) return 0;
+
+			if (this.$team.doc.currency === 'INR') {
+				return (
+					this.installAnalytics.total_payout.inr_amount +
+					this.installAnalytics.total_payout.usd_amount * 82
+				);
+			} else {
+				return (
+					this.installAnalytics.total_payout.inr_amount / 82 +
+					this.installAnalytics.total_payout.usd_amount
+				);
+			}
 		}
 	}
 };
