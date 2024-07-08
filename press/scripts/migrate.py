@@ -13,8 +13,7 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.core.utils import find
-from frappe.utils import get_installed_apps_info, update_progress_bar
+from frappe.utils import update_progress_bar
 from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 
@@ -68,28 +67,6 @@ if sys.version[0] == "2":
 	sys.setdefaultencoding("utf-8")
 
 
-@retry(stop=stop_after_attempt(5))
-def get_new_site_options():
-	site_options_sc = session.post(options_url)
-
-	if site_options_sc.ok:
-		site_options = site_options_sc.json()["message"]
-		return site_options
-	else:
-		print("Couldn't retrive New site information: {}".format(site_options_sc.status_code))
-
-
-@retry(stop=stop_after_attempt(5))
-def is_subdomain_available(subdomain):
-	res = session.post(site_exists_url, {"subdomain": subdomain})
-	if res.ok:
-		available = not res.json()["message"]
-		if not available:
-			print("Subdomain already exists! Try another one")
-
-		return available
-
-
 @retry(
 	stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5)
 )
@@ -121,7 +98,6 @@ def upload_backup_file(file_type, file_name, file_path):
 
 	# retreive upload link
 	upload_ticket = session.get(remote_link_url, data={"file": file_name, "parts": parts})
-
 	if not upload_ticket.ok:
 		handle_request_failure(upload_ticket)
 
@@ -161,7 +137,6 @@ def upload_backup_file(file_type, file_name, file_path):
 				"parts": json.dumps(file_parts),
 			},
 		)
-		print()
 		if not upload_remote.ok:
 			# not needed. try the failed parts again!!!
 			handle_request_failure(upload_remote)
@@ -195,7 +170,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		{
 			"file": file_name,
 			"path": key,
-			"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
+			"type": ("application/x-gzip" if file_type == "database" else "application/x-tar"),
 			"size": os.path.getsize(file_path),
 		},
 	)
@@ -206,25 +181,13 @@ def upload_backup_file(file_type, file_name, file_path):
 	handle_request_failure(register_press)
 
 
-def render_actions_table():
-	actions_table = [["#", "Action"]]
-	actions = []
-
-	for n, action in enumerate(migrator_actions):
-		actions_table.append([n + 1, action["title"]])
-		actions.append(action["fn"])
-
-	render_table(actions_table)
-	return actions
-
-
 def render_site_table(sites_info, version_info):
-	sites_table = [["#", "Site Name", "Frappe"]]
+	sites_table = [["#", "Site Name", "Frappe Version"]]
 	available_sites = {}
 
 	for n, site_data in enumerate(sites_info):
 		name = site_data["name"]
-		frappe = version_info[name]
+		frappe = version_info[0]
 		sites_table.append([n + 1, name, frappe])
 		available_sites[name] = {
 			"frappe": frappe,
@@ -245,38 +208,6 @@ def render_teams_table(teams):
 	render_table(teams_table)
 
 
-def render_plan_table(plans_list):
-	plans_table = [["Site Plan", "CPU Time"]]
-	visible_headers = ["name", "cpu_time_per_day"]
-
-	for plan in plans_list:
-		plan, cpu_time = [plan[header] for header in visible_headers]
-		plans_table.append(
-			[plan, "{} hour{}/day".format(cpu_time, "" if cpu_time < 2 else "s")]
-		)
-
-	render_table(plans_table)
-
-
-def render_group_table(versions):
-	# title row
-	versions_table = [["#", "Version", "Bench", "Apps"]]
-
-	# all rows
-	idx = 0
-	for version in versions:
-		for group in version["groups"]:
-			apps_list = ", ".join(
-				["{}:{}".format(app["app"], app["branch"]) for app in group["apps"]]
-			)
-			row = [idx + 1, version["name"], group["name"], apps_list]
-			versions_table.append(row)
-			idx += 1
-
-	render_table(versions_table)
-	return versions_table
-
-
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
 	message = message or "Request failed with error code {}".format(request.status_code)
 	response = html2text.html2text(request.text) if traceback else ""
@@ -285,25 +216,11 @@ def handle_request_failure(request=None, message=None, traceback=True, exit_code
 	sys.exit(exit_code)
 
 
-@add_line_after
-def select_primary_action():
-	actions = render_actions_table()
-	idx = click.prompt("What do you want to do?", type=click.IntRange(1, len(actions))) - 1
-
-	return actions[idx]
-
-
 def get_site_info(site):
 	site_info_response = session.post(site_info_url, {"name": site})
 	if site_info_response.ok:
 		return site_info_response.json()["message"]
 	return {}
-
-
-def get_version(info, app="frappe"):
-	for app in info.get("installed_apps", {}):
-		if app.get("frappe", 0) == 1:
-			return app.get("name").lower().strip("frappe").strip().title()
 
 
 def get_branch(info, app="frappe"):
@@ -342,9 +259,9 @@ def select_site():
 
 	if get_all_sites_request.ok:
 		# the following lines have data with a lot of redundancy, but there's no real reason to bother cleaning them up
-		all_sites = get_all_sites_request.json()["message"]["site_list"]
+		all_sites = get_all_sites_request.json()["message"]
 		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
-		sites_version = {x: get_version(y) for x, y in sites_info.items()}
+		sites_version = [details["latest_frappe_version"] for details in sites_info.values()]
 		available_sites = render_site_table(all_sites, sites_version)
 
 		while True:
@@ -380,11 +297,11 @@ def select_team(session):
 
 	# ask if they want to select, go ahead with if only one exists
 	if len(available_teams) == 1:
-		team = available_teams[0]
+		team = available_teams[0]["name"]
 	else:
 		render_teams_table(available_teams)
 		idx = click.prompt("Select Team", type=click.IntRange(1, len(available_teams))) - 1
-		team = available_teams[idx]
+		team = available_teams[idx]["name"]
 
 	print("Team '{}' set for current session".format(team))
 
@@ -401,107 +318,6 @@ def is_valid_subdomain(subdomain):
 	print(
 		"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
 	)
-
-
-@add_line_after
-def choose_plan(plans_list):
-	print("{} plans available".format(len(plans_list)))
-	available_plans = [plan["name"] for plan in plans_list]
-	render_plan_table(plans_list)
-
-	while True:
-		input_plan = click.prompt("Select Plan").strip()
-		if input_plan in available_plans:
-			print("{} Plan selected ✅".format(input_plan))
-			return input_plan
-		else:
-			print("Invalid Selection ❌")
-
-
-@add_line_after
-def check_app_compat(available_group):
-	is_compat = True
-	incompatible_apps, filtered_apps, branch_msgs = [], [], []
-	existing_group = [
-		(app["app_name"], app["branch"]) for app in get_installed_apps_info()
-	]
-	print("Checking availability of existing app group")
-
-	for (app, branch) in existing_group:
-		info = [(a["app"], a["branch"]) for a in available_group["apps"] if a["app"] == app]
-		if info:
-			app_title, available_branch = info[0]
-
-			if branch != available_branch:
-				print("⚠️  App {}:{} => {}".format(app, branch, available_branch))
-				branch_msgs.append([app, branch, available_branch])
-				filtered_apps.append(app_title)
-				is_compat = False
-
-			else:
-				print("✅ App {}:{}".format(app, branch))
-				filtered_apps.append(app_title)
-
-		else:
-			incompatible_apps.append(app)
-			print("❌ App {}:{}".format(app, branch))
-			is_compat = False
-
-	start_msg = "\nSelecting this group will "
-	incompatible_apps = (
-		("\n\nDrop the following apps:\n" + "\n".join(incompatible_apps))
-		if incompatible_apps
-		else ""
-	)
-	branch_change = (
-		(
-			"\n\nUpgrade the following apps:\n"
-			+ "\n".join(["{}: {} => {}".format(*x) for x in branch_msgs])
-		)
-		if branch_msgs
-		else ""
-	)
-	changes = (incompatible_apps + branch_change) or "be perfect for you :)"
-	warning_message = start_msg + changes
-	print(warning_message)
-
-	return is_compat, filtered_apps
-
-
-@add_line_after
-def filter_apps(versions):
-	rendered_group_table = render_group_table(versions)
-	while True:
-		version_index = click.prompt("Select Version Number", type=int)
-		try:
-			if version_index < 1:  # 0th row is title
-				raise IndexError
-			version, group = (
-				rendered_group_table[version_index][1],
-				rendered_group_table[version_index][2],
-			)
-			selected_version = find(versions, lambda v: v["name"] == version)
-			selected_group = find(selected_version["groups"], lambda g: g["name"] == group)
-		except IndexError:
-			print("Invalid Selection ❌")
-			continue
-
-		is_compat, filtered_apps = check_app_compat(selected_group)
-
-		if is_compat or click.confirm("Continue anyway?"):
-			print("App Group {} selected! ✅".format(selected_group["name"]))
-			break
-
-	return selected_group["name"], filtered_apps
-
-
-@add_line_after
-def get_subdomain(domain):
-	while True:
-		subdomain = click.prompt("Enter subdomain").strip()
-		if is_valid_subdomain(subdomain) and is_subdomain_available(subdomain):
-			print("Site Domain: {}.{}".format(subdomain, domain))
-			return subdomain
 
 
 @add_line_after
@@ -539,47 +355,6 @@ def upload_backup(local_site):
 	print("Uploaded backup files! ✅")
 
 	return files_uploaded
-
-
-def new_site(local_site):
-	# get new site options
-	site_options = get_new_site_options()
-
-	# set preferences from site options
-	subdomain = get_subdomain(site_options["domain"])
-	plan = choose_plan(site_options["plans"])
-
-	versions = site_options["versions"]
-	selected_group, filtered_apps = filter_apps(versions)
-	files_uploaded = upload_backup(local_site)
-
-	# push to frappe_cloud
-	payload = json.dumps(
-		{
-			"site": {
-				"apps": filtered_apps,
-				"files": files_uploaded,
-				"group": selected_group,
-				"name": subdomain,
-				"plan": plan,
-			}
-		}
-	)
-
-	session.headers.update({"Content-Type": "application/json; charset=utf-8"})
-	site_creation_request = session.post(upload_url, payload)
-
-	if site_creation_request.ok:
-		site_url = site_creation_request.json()["message"]
-		print("Your site {} is being migrated ✨".format(local_site))
-		print(
-			"View your site dashboard at https://{}/dashboard/sites/{}".format(
-				remote_site, site_url
-			)
-		)
-		print("Your site URL: https://{}".format(site_url))
-	else:
-		handle_request_failure(site_creation_request)
 
 
 def restore_site(local_site):
@@ -641,11 +416,11 @@ def create_session():
 		)
 
 
-def frappecloud_migrator(local_site):
+def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
-	global session, migrator_actions, remote_site
+	global session, remote_site, site_plans_url
 
-	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
+	remote_site = frappe_provider or frappe.conf.frappecloud_url
 	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
@@ -673,11 +448,9 @@ def frappecloud_migrator(local_site):
 	finish_multipart_url = "{}://{}/api/method/press.api.site.multipart_exit".format(
 		scheme, remote_site
 	)
-
-	migrator_actions = [
-		{"title": "Create a new site", "fn": new_site},
-		{"title": "Restore to an existing site", "fn": restore_site},
-	]
+	site_plans_url = "{}://{}/api/method/press.api.site.get_site_plans".format(
+		scheme, remote_site
+	)
 
 	# get credentials + auth user + start session
 	try:
@@ -685,10 +458,7 @@ def frappecloud_migrator(local_site):
 	except RetryError:
 		raise KeyboardInterrupt
 
-	# available actions defined in migrator_actions
-	primary_action = select_primary_action()
-
-	primary_action(local_site)
+	restore_site(local_site)
 
 
 def cleanup(current_file):
@@ -714,9 +484,14 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 		local_site = input("Name of the site you want to migrate: ").strip()
 
 	try:
+		frappe_provider = sys.argv[2]
+	except Exception:
+		frappe_provider = "frappecloud.com"
+
+	try:
 		frappe.init(site=local_site)
 		frappe.connect()
-		frappecloud_migrator(local_site)
+		frappecloud_migrator(local_site, frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
