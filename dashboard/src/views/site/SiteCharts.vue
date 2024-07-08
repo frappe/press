@@ -1,5 +1,11 @@
 <template>
 	<div class="space-y-4">
+		<AlertBanner
+			v-if="$resources.analytics.data?.has_slow_queries"
+			title="Your site seems to have slow queries. Check Performance page to resolve.
+			"
+			type="info"
+		/>
 		<ErrorMessage :message="$resources.analytics.error" />
 		<FormControl
 			class="w-32"
@@ -144,6 +150,7 @@ import { DateTime } from 'luxon';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
+import AlertBanner from '../../../src2/components/AlertBanner.vue';
 
 export default {
 	name: 'SiteAnalytics',
@@ -151,7 +158,8 @@ export default {
 	components: {
 		BarChart,
 		LineChart,
-		SiteAnalyticsUptime
+		SiteAnalyticsUptime,
+		AlertBanner
 	},
 	data() {
 		return {

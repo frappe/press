@@ -68,6 +68,10 @@ def get(name, timezone, duration="7d"):
 	)
 	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
+	check = slow_logs_by_duration["datasets"]
+	SLOW_QUERY_DURATION_THRESHOLD = 50
+	has_slow_queries = any(max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check)
+
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
@@ -91,6 +95,7 @@ def get(name, timezone, duration="7d"):
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
+		"has_slow_queries": has_slow_queries
 	}
 
 
