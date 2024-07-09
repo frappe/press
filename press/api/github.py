@@ -203,10 +203,15 @@ def repository(owner, name, installation=None):
 @frappe.whitelist()
 def app(owner, repository, branch, installation=None):
 	headers = get_auth_headers(installation)
-	branch_info = requests.get(
+	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
 		headers=headers,
-	).json()
+	)
+
+	if not response.ok:
+		frappe.throw(f"Could not fetch branch ({branch}) info for repo {owner}/{repository}")
+
+	branch_info = response.json()
 	sha = branch_info["commit"]["commit"]["tree"]["sha"]
 	contents = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/git/trees/{sha}",
