@@ -31,7 +31,10 @@
 						selectedGithubRepository = data.repository;
 						selectedGithubUser = data.selectedGithubUser;
 
-						$resources.validateApp.submit(data);
+						$resources.validateApp.submit({
+							...data,
+							installation: data.selectedGithubUser.value.id
+						});
 					}
 				"
 				@fieldChange="appValidated = false"
