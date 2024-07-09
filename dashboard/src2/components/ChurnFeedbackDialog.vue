@@ -84,8 +84,15 @@ export default {
 					};
 				},
 				validate() {
-					if (this.feedback === 'My reason is not listed here' && !this.note) {
-						return 'Please provide a reason';
+					if (
+						[
+							'Payment issues',
+							'Features were missing',
+							'My reason is not listed here'
+						].includes(this.feedback) &&
+						!this.note
+					) {
+						return 'Please provide a brief reason';
 					}
 				},
 				onSuccess() {
@@ -98,13 +105,14 @@ export default {
 	computed: {
 		options() {
 			return [
-				'I am not satisfied with the service',
-				'I am moving to a different service',
-				'I am not using the service anymore',
-				'Frappe Cloud is too expensive for me',
-				'I was just exploring the platform',
-				'Payment issues',
+				'I am moving to a different product e.g ZOHO, Quickbooks, etc.',
+				'I was just exploring the product',
 				'I prefer self-hosting my instance',
+				'Moved site to another Frappe Cloud account',
+				'I did not like the Frappe Cloud experience',
+				'Frappe Cloud is too expensive for me',
+				'Payment issues',
+				'Features were missing',
 				'My reason is not listed here'
 			];
 		}

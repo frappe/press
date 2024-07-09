@@ -98,13 +98,11 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	versions = frappe.get_all("Frappe Version", filters={"public": True})
 
 	options = {
 		"authorized": bool(token),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
-		"versions": versions,
 	}
 	return options
 

@@ -223,7 +223,7 @@ export default {
 								options: commitChooserOptions(app),
 								modelValue: initialValue,
 								'onUpdate:modelValue': value => {
-									appData.find(app => app.name === app.name).next_release =
+									appData.find(a => a.name === app.name).next_release =
 										value.value;
 								}
 							});

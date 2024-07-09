@@ -1355,6 +1355,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.use_delta_builds = 1
 
+	def is_version_14_or_higher(self):
+		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+
 
 @redis_cache(ttl=60)
 def are_builds_suspended() -> bool:
