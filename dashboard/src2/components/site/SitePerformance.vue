@@ -1,11 +1,8 @@
 <template>
 	<div class="space-y-4">
-		<FormControl
-			class="w-32"
-			label="Duration"
-			type="select"
-			:options="durationOptions"
-			v-model="duration"
+		<AlertBanner
+			title="All metrics presented are from the last 24 hours."
+			type="info"
 		/>
 		<div>
 			<ObjectList :options="slowQueriesData" />
@@ -16,6 +13,7 @@
 <script>
 import { ListView, FormControl, Dialog } from 'frappe-ui';
 import ObjectList from '../../../src2/components/ObjectList.vue';
+import AlertBanner from '../../../src2/components/AlertBanner.vue';
 
 export default {
 	name: 'SitePerformance',
@@ -24,19 +22,11 @@ export default {
 		ListView,
 		FormControl,
 		Dialog,
-		ObjectList
+		ObjectList,
+		AlertBanner
 	},
 	data() {
-		return {
-			duration: '24h',
-			durationOptions: [
-				{ label: '1 hour', value: '1h' },
-				{ label: '6 hours', value: '6h' },
-				{ label: '24 hours', value: '24h' },
-				{ label: '7 days', value: '7d' },
-				{ label: '15 days', value: '15d' }
-			]
-		};
+		return {};
 	},
 	computed: {
 		slowQueriesData() {
@@ -46,54 +36,76 @@ export default {
 					{
 						label: 'Query',
 						fieldname: 'query',
-						width : "500px"
+						width: '500px'
 					},
 					{
 						label: 'Duration',
 						fieldname: 'duration',
 						class: 'text-gray-600',
-						width : 0.5
+						width: 0.5
 					},
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
 						class: 'text-gray-600',
-						width : 0.5
-
+						width: 0.5
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
 						class: 'text-gray-600',
-						width : 0.5
-
+						width: 0.5
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
 						class: 'text-gray-600',
-						width : 0.5
-
+						width: 0.5
 					}
 				]
 			};
 		}
 	},
+	methods: {
+		getDateTimeRange() {
+			const now = new Date();
+			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+			const formatDateTime = date => {
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				const hours = String(date.getHours()).padStart(2, '0');
+				const minutes = String(date.getMinutes()).padStart(2, '0');
+				const seconds = String(date.getSeconds()).padStart(2, '0');
+				return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+			};
+
+			const endDateTime = formatDateTime(now);
+			const startDateTimeFormatted = formatDateTime(startDateTime);
+
+			return {
+				startDateTime: startDateTimeFormatted,
+				endDateTime: endDateTime
+			};
+		}
+	},
 	resources: {
 		slowQueries() {
+			const { startDateTime, endDateTime } = this.getDateTimeRange();
 			return {
 				url: 'press.api.analytics.mariadb_slow_queries',
 				params: {
 					name: this.siteName,
-					start_datetime: '2024-07-01 10:09:51',
-					stop_datetime: '2024-07-09 10:09:51',
+					start_datetime: startDateTime,
+					stop_datetime: endDateTime,
 					max_lines: 10,
 					search_pattern: '.*',
 					normalize_queries: true,
 					analyze: false
 				},
 				auto: true,
-				initialData :{columns: [],data:[]},
+				initialData: { columns: [], data: [] }
 			};
 		}
 	}
