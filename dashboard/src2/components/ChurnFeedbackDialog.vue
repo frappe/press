@@ -84,6 +84,10 @@ export default {
 					};
 				},
 				validate() {
+					if (!this.feedback) {
+						return 'Please select a reason';
+					}
+
 					if (
 						[
 							'Payment issues',
