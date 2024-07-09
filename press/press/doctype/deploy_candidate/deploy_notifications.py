@@ -200,9 +200,14 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_incompatible_python,
 			check_incompatible_python,
 		),
-		# Below two are catch all fallback handlers for
-		# `yarn build` and `pip install` errors originating due
-		# to issues in an app.
+		(
+			"pip._vendor.packaging.version.InvalidVersion: Invalid version",
+			update_with_error_on_pip_install,
+			check_if_app_updated,
+		),
+		# Below three are catch all fallback handlers for `yarn build`,
+		# `yarn install` and `pip install` errors originating due to
+		# issues in an app.
 		#
 		# They should always be at the end.
 		(
@@ -480,7 +485,7 @@ def update_with_error_on_pip_install(
 	if failed_step.stage_slug == "apps":
 		app_name = failed_step.step
 		message = f"""
-		<p>Dependency installation using pip for <b>{app_name}</b> failed due to
+		<p>App setup for <b>{app_name}</b> using pip failed due to
 		errors originating in the app.</p>
 
 		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
@@ -488,7 +493,7 @@ def update_with_error_on_pip_install(
 		"""
 	else:
 		message = """
-		<p>Dependency installation using pip failed due to errors originating in an
+		<p>App setup using pip failed due to errors originating in an
 		app on your Bench.</p>
 
 		<p>Please view the build output to debug and fix the error before retrying
