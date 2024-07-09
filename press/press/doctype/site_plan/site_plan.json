@@ -28,10 +28,11 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
-  "release_groups_section",
+  "customization_for_bench_section",
   "release_groups",
   "thirty_seconds_http_timeout",
   "ten_minutes_scheduler_tick_interval",
+  "allowed_apps",
   "servers",
   "cluster",
   "instance_type",
@@ -214,11 +215,6 @@
    "options": "Has Role"
   },
   {
-   "fieldname": "release_groups_section",
-   "fieldtype": "Section Break",
-   "label": "Customization For Tiny Bench"
-  },
-  {
    "description": "Leave this table empty to schedule deployment on any release group",
    "fieldname": "release_groups",
    "fieldtype": "Table",
@@ -236,11 +232,23 @@
    "fieldname": "ten_minutes_scheduler_tick_interval",
    "fieldtype": "Check",
    "label": "10 Minutes Scheduler Tick Interval"
+  },
+  {
+   "fieldname": "customization_for_bench_section",
+   "fieldtype": "Section Break",
+   "label": "Customization For Bench"
+  },
+  {
+   "description": "Leave this table empty to allow any app to install for the site",
+   "fieldname": "allowed_apps",
+   "fieldtype": "Table",
+   "label": "Allowed Apps",
+   "options": "Site Plan Allowed App"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-09 16:34:25.105059",
+ "modified": "2024-07-09 23:29:04.769102",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

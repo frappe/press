@@ -377,16 +377,26 @@ class Site(Document, TagHelpers):
 			frappe.throw("Auto updates can't be disabled for sites on public benches!")
 
 	def validate_site_plan(self):
-		'''
-		If `release_groups` in site plan is empty, then site can be deployed in any release group.
-		Otherwise, site can only be deployed in the clusters mentioned in the release groups.
-		'''
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
+			'''
+			If `release_groups` in site plan is empty, then site can be deployed in any release group.
+			Otherwise, site can only be deployed in the clusters mentioned in the release groups.
+			'''
 			release_groups = frappe.db.get_all("Site Plan Release Group", pluck="release_group", filters={"parenttype": "Site Plan", "parentfield": "release_groups", "parent": self.subscription_plan})
 			clusters = frappe.db.get_all("Bench", pluck="cluster", filters={"group": ("in", release_groups)})
 			is_valid = len(clusters) == 0 or self.cluster in clusters
 			if not is_valid:
 				frappe.throw("In {0}, you can't deploy site in {1} cluster".format(self.subscription_plan, self.cluster))
+			'''
+			If `allowed_apps` in site plan is empty, then site can be deployed with any apps.
+			Otherwise, site can only be deployed with the apps mentioned in the site plan.
+			'''
+			allowed_apps = frappe.db.get_all("Site Plan Allowed App", pluck="app", filters={"parenttype": "Site Plan", "parentfield": "allowed_apps", "parent": self.subscription_plan})
+			if allowed_apps:
+				selected_apps = list(set(frappe.db.get_all("Site App", pluck="app", filters={"parenttype": "Site", "parentfield": "apps", "parent": self.name})))
+				for app in selected_apps:
+					if app not in allowed_apps:
+						frappe.throw("In {0}, you can't deploy site with {1} app".format(self.subscription_plan, app))		
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -1811,6 +1821,7 @@ class Site(Document, TagHelpers):
 			.select(
 				Bench.name,
 				Bench.server,
+				Bench.group,
 				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
 			)
 			.left_join(Server)
@@ -1836,6 +1847,8 @@ class Site(Document, TagHelpers):
 		if result:
 			self.bench = result[0].name
 			self.server = result[0].server
+			if release_group_names:
+				self.group = result[0].group
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
