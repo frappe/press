@@ -63,8 +63,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.common_site_config.common_site_config import CommonSiteConfig
-		from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
+		from press.press.doctype.common_site_config.common_site_config import (
+			CommonSiteConfig,
+		)
+		from press.press.doctype.release_group_app.release_group_app import (
+			ReleaseGroupApp,
+		)
 		from press.press.doctype.release_group_dependency.release_group_dependency import (
 			ReleaseGroupDependency,
 		)
@@ -301,7 +305,6 @@ class ReleaseGroup(Document, TagHelpers):
 		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
 		self.update_config_in_release_group(sanitized_common_site_config, ())
 
-
 	def merge_common_site_config(self, config, allow_blacklisted_keys=False):
 		"""Merges common_site_config with the given config"""
 		sanitized_common_site_config = [
@@ -347,10 +350,12 @@ class ReleaseGroup(Document, TagHelpers):
 					break
 			else:
 				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
-			
+
 		return sanitized_common_site_config
 
-	def update_config_in_release_group(self, common_site_config, bench_config, deleted_blacklisted_keys=[]):
+	def update_config_in_release_group(
+		self, common_site_config, bench_config, deleted_blacklisted_keys=[]
+	):
 		"""Updates bench_config and common_site_config in the Release Group
 
 		Args:
@@ -375,7 +380,8 @@ class ReleaseGroup(Document, TagHelpers):
 			else:
 				value = d.value
 			self.append(
-				"common_site_config_table", {"key": d.key, "value": value, "type": d.type}
+				"common_site_config_table",
+				{"key": d.key, "value": value, "type": d.type},
 			)
 
 		for d in bench_config:
@@ -402,7 +408,8 @@ class ReleaseGroup(Document, TagHelpers):
 						is_updated = True
 			if not is_updated:
 				self.append(
-					"environment_variables", {"key": key, "value": value, "internal": False}
+					"environment_variables",
+					{"key": key, "value": value, "internal": False},
 				)
 		self.save()
 
@@ -867,7 +874,9 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def get_certificate(self):
 		user_ssh_key = frappe.db.get_all(
-			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+			"User SSH Key",
+			{"user": frappe.session.user, "is_default": True},
+			pluck="name",
 		)
 		if not len(user_ssh_key):
 			return False
@@ -900,7 +909,9 @@ class ReleaseGroup(Document, TagHelpers):
 			TRANSITORY_STATES as DC_TRANSITORY,
 		)
 
-		from press.press.doctype.bench.bench import TRANSITORY_STATES as BENCH_TRANSITORY
+		from press.press.doctype.bench.bench import (
+			TRANSITORY_STATES as BENCH_TRANSITORY,
+		)
 
 		if not self.last_dc_info:
 			return False
@@ -913,7 +924,10 @@ class ReleaseGroup(Document, TagHelpers):
 	@property
 	def status(self):
 		active_benches = frappe.db.get_all(
-			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
+			"Bench",
+			{"group": self.name, "status": "Active"},
+			limit=1,
+			order_by="creation desc",
 		)
 		return "Active" if active_benches else "Awaiting Deploy"
 
@@ -1158,7 +1172,10 @@ class ReleaseGroup(Document, TagHelpers):
 
 		required_app_source = frappe.get_all(
 			"App Source",
-			filters={"repository_url": current_app_source.repository_url, "branch": to_branch},
+			filters={
+				"repository_url": current_app_source.repository_url,
+				"branch": to_branch,
+			},
 			or_filters={"team": current_app_source.team, "public": 1},
 			limit=1,
 		)
@@ -1167,7 +1184,9 @@ class ReleaseGroup(Document, TagHelpers):
 			required_app_source = required_app_source[0]
 		else:
 			versions = frappe.get_all(
-				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
+				"App Source Version",
+				filters={"parent": current_app_source.name},
+				pluck="version",
 			)
 
 			required_app_source = create_app_source(
@@ -1183,7 +1202,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_app_source(self, app: str) -> AppSource:
 		source = frappe.get_all(
-			"Release Group App", filters={"parent": self.name, "app": app}, pluck="source"
+			"Release Group App",
+			filters={"parent": self.name, "app": app},
+			pluck="source",
 		)
 
 		if source:
@@ -1407,7 +1428,10 @@ def get_status(name):
 	return (
 		"Active"
 		if frappe.get_all(
-			"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
+			"Bench",
+			{"group": name, "status": "Active"},
+			limit=1,
+			order_by="creation desc",
 		)
 		else "Awaiting Deploy"
 	)

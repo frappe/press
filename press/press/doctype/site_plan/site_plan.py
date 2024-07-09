@@ -16,8 +16,12 @@ class SitePlan(Plan):
 	if TYPE_CHECKING:
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
-		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import SitePlanAllowedApp
-		from press.press.doctype.site_plan_release_group.site_plan_release_group import SitePlanReleaseGroup
+		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import (
+			SitePlanAllowedApp,
+		)
+		from press.press.doctype.site_plan_release_group.site_plan_release_group import (
+			SitePlanReleaseGroup,
+		)
 
 		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
@@ -69,16 +73,13 @@ class SitePlan(Plan):
 			rg = frappe.get_doc("Release Group", record.release_group)
 			bench_config = []
 			if self.thirty_seconds_http_timeout:
-				bench_config = [frappe._dict({
-					"key": "http_timeout",
-					"value": 30
-				})]
-			
+				bench_config = [frappe._dict({"key": "http_timeout", "value": 30})]
+
 			deleted_blacklisted_keys = []
 			if self.ten_minutes_scheduler_tick_interval:
-				common_site_config = rg.merge_common_site_config({
-					"scheduler_tick_interval": 600
-				}, allow_blacklisted_keys=True)
+				common_site_config = rg.merge_common_site_config(
+					{"scheduler_tick_interval": 600}, allow_blacklisted_keys=True
+				)
 			else:
 				updated_common_site_config = []
 				for row in rg.common_site_config_table:
@@ -88,7 +89,11 @@ class SitePlan(Plan):
 						)
 				common_site_config = updated_common_site_config
 				deleted_blacklisted_keys.append("scheduler_tick_interval")
-			rg.update_config_in_release_group(common_site_config, bench_config, deleted_blacklisted_keys=deleted_blacklisted_keys)
+			rg.update_config_in_release_group(
+				common_site_config,
+				bench_config,
+				deleted_blacklisted_keys=deleted_blacklisted_keys,
+			)
 			rg.update_benches_config()
 
 	def get_doc(self, doc):
