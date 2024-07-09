@@ -2306,15 +2306,6 @@ class Site(Document, TagHelpers):
 		)
 		return response
 
-	def set_apps(self, apps: list[str]):
-		self.apps = []
-		bench_apps = frappe.get_doc("Bench", self.bench).apps
-		for app in apps:
-			if not find(bench_apps, lambda x: x.app == app):
-				continue
-			self.append("apps", {"app": app})
-		self.save()
-
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
@@ -2520,8 +2511,14 @@ def process_restore_job_update(job, force=False):
 	if force or updated_status != site_status:
 		if job.status == "Success":
 			apps: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site: Site = frappe.get_doc("Site", job.site)
-			site.set_apps(apps)
+			site = frappe.get_doc("Site", job.site)
+			site.apps = []
+			bench_apps = frappe.get_doc("Bench", site.bench).apps
+			for app in apps:
+				if not find(bench_apps, lambda x: x.app == app):
+					continue
+				site.append("apps", {"app": app})
+			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
@@ -2539,8 +2536,6 @@ def process_reinstall_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
-		site: Site = frappe.get_doc("Site", job.site)
-		site.set_apps(["frappe"])
 
 
 def process_migrate_site_job_update(job):
