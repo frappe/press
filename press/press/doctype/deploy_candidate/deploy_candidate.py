@@ -1918,6 +1918,10 @@ def should_build_retry_build_output(build_output: str):
 	if "Connection to pypi.org timed out" in build_output:
 		return True
 
+	# Caused when fetching Python from deadsnakes/ppa
+	if "Error: retrieving gpg key timed out" in build_output:
+		return True
+
 	return False
 
 
