@@ -303,7 +303,7 @@ class ReleaseGroup(Document, TagHelpers):
 		merged_common_site_config = self.merge_common_site_config(config)
 		# using a tuple to avoid updating bench_config
 		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
-		self.update_config_in_release_group(sanitized_common_site_config, ())
+		self.update_config_in_release_group(merged_common_site_config, ())
 
 	def merge_common_site_config(self, config, allow_blacklisted_keys=False):
 		"""Merges common_site_config with the given config"""
