@@ -30,6 +30,8 @@
   "is_frappe_plan",
   "release_groups_section",
   "release_groups",
+  "thirty_seconds_http_timeout",
+  "ten_minutes_scheduler_tick_interval",
   "servers",
   "cluster",
   "instance_type",
@@ -214,7 +216,7 @@
   {
    "fieldname": "release_groups_section",
    "fieldtype": "Section Break",
-   "label": "Release Groups"
+   "label": "Customization For Tiny Bench"
   },
   {
    "description": "Leave this table empty to schedule deployment on any release group",
@@ -222,11 +224,23 @@
    "fieldtype": "Table",
    "label": "Release Groups",
    "options": "Site Plan Release Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "thirty_seconds_http_timeout",
+   "fieldtype": "Check",
+   "label": "30 Seconds HTTP Timeout"
+  },
+  {
+   "default": "0",
+   "fieldname": "ten_minutes_scheduler_tick_interval",
+   "fieldtype": "Check",
+   "label": "10 Minutes Scheduler Tick Interval"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-09 12:44:20.999451",
+ "modified": "2024-07-09 16:34:25.105059",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

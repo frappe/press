@@ -296,6 +296,14 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def update_config(self, config):
+		merged_common_site_config = self.merge_common_site_config(config)
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(sanitized_common_site_config, ())
+
+
+	def merge_common_site_config(self, config, allow_blacklisted_keys=False):
+		"""Merges common_site_config with the given config"""
 		sanitized_common_site_config = [
 			{"key": c.key, "type": c.type, "value": c.value}
 			for c in self.common_site_config_table
@@ -304,10 +312,11 @@ class ReleaseGroup(Document, TagHelpers):
 		config = frappe.parse_json(config)
 
 		for key, value in config.items():
-			if key in get_client_blacklisted_keys():
-				frappe.throw(
-					_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated")
-				)
+			if not allow_blacklisted_keys:
+				if key in get_client_blacklisted_keys():
+					frappe.throw(
+						_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated")
+					)
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"
@@ -338,12 +347,10 @@ class ReleaseGroup(Document, TagHelpers):
 					break
 			else:
 				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
+			
+		return sanitized_common_site_config
 
-		# using a tuple to avoid updating bench_config
-		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
-		self.update_config_in_release_group(sanitized_common_site_config, ())
-
-	def update_config_in_release_group(self, common_site_config, bench_config):
+	def update_config_in_release_group(self, common_site_config, bench_config, deleted_blacklisted_keys=[]):
 		"""Updates bench_config and common_site_config in the Release Group
 
 		Args:
@@ -357,6 +364,8 @@ class ReleaseGroup(Document, TagHelpers):
 		# Maintain keys that aren't accessible to Dashboard user
 		for i, _config in enumerate(blacklisted_config):
 			_config.idx = i + 1
+			if _config.key in deleted_blacklisted_keys:
+				continue
 			self.common_site_config_table.append(_config)
 
 		for d in common_site_config:

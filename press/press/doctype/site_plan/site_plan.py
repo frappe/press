@@ -41,6 +41,8 @@ class SitePlan(Plan):
 		release_groups: DF.Table[SitePlanReleaseGroup]
 		roles: DF.Table[HasRole]
 		support_included: DF.Check
+		ten_minutes_scheduler_tick_interval: DF.Check
+		thirty_seconds_http_timeout: DF.Check
 		vcpu: DF.Int
 	# end: auto-generated types
 
@@ -58,6 +60,33 @@ class SitePlan(Plan):
 		"database_access",
 		"support_included",
 	]
+
+	def on_update(self):
+		for record in self.release_groups:
+			rg = frappe.get_doc("Release Group", record.release_group)
+			bench_config = []
+			if self.thirty_seconds_http_timeout:
+				bench_config = [frappe._dict({
+					"key": "http_timeout",
+					"value": 30
+				})]
+			
+			deleted_blacklisted_keys = []
+			if self.ten_minutes_scheduler_tick_interval:
+				common_site_config = rg.merge_common_site_config({
+					"scheduler_tick_interval": 600
+				}, allow_blacklisted_keys=True)
+			else:
+				updated_common_site_config = []
+				for row in rg.common_site_config_table:
+					if row.key != "scheduler_tick_interval":
+						updated_common_site_config.append(
+							{"key": row.key, "value": row.value, "type": row.type}
+						)
+				common_site_config = updated_common_site_config
+				deleted_blacklisted_keys.append("scheduler_tick_interval")
+			rg.update_config_in_release_group(common_site_config, bench_config, deleted_blacklisted_keys=deleted_blacklisted_keys)
+			rg.update_benches_config()
 
 	def get_doc(self, doc):
 		doc["price_per_day_inr"] = self.get_price_per_day("INR")

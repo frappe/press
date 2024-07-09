@@ -1796,6 +1796,13 @@ class Site(Document, TagHelpers):
 			pluck="name",
 		)
 
+		'''
+		For restricted plans, just choose any bench from the release groups and clusters combination
+		For others, don't allow to deploy on those specific release group benches, choose anything except that
+		'''
+		
+		release_group_names = frappe.db.get_all("Site Plan Release Group", pluck="release_group", filters={"parenttype": "Site Plan", "parentfield": "release_groups", "parent": self.plan})
+
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
 
@@ -1810,16 +1817,22 @@ class Site(Document, TagHelpers):
 			.on(Bench.server == Server.name)
 			.where(Server.proxy_server.isin(proxy_servers))
 			.where(Bench.status == "Active")
-			.where(Bench.group == self.group)
 			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
 			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 			.orderby(Bench.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
+		if release_group_names:
+			bench_query = bench_query.where(Bench.group.isin(release_group_names))
+		else:
+			bench_query = bench_query.where(Bench.group == self.group)
+			# TODO don't allow to deploy on 5 dollar release groups
 		if self.server:
 			bench_query = bench_query.where(Server.name == self.server)
 
 		result = bench_query.run(as_dict=True)
+		if len(result) == 0:
+			frappe.throw("No bench available to deploy this site")
 		if result:
 			self.bench = result[0].name
 			self.server = result[0].server
