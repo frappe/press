@@ -378,11 +378,12 @@ class Site(Document, TagHelpers):
 
 	def validate_site_plan(self):
 		'''
-		If `clusters` in site plan is empty, then site can be deployed in any cluster.
-		Otherwise, site can only be deployed in the clusters mentioned in the site plan.
+		If `release_groups` in site plan is empty, then site can be deployed in any release group.
+		Otherwise, site can only be deployed in the clusters mentioned in the release groups.
 		'''
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
-			clusters = [i.cluster for i in frappe.get_doc("Site Plan", self.subscription_plan, fields=["clusters"]).clusters]
+			release_groups = frappe.db.get_all("Site Plan Release Group", pluck="release_group", filters={"parenttype": "Site Plan", "parentfield": "release_groups", "parent": self.subscription_plan})
+			clusters = frappe.db.get_all("Bench", pluck="cluster", filters={"group": ("in", release_groups)})
 			is_valid = len(clusters) == 0 or self.cluster in clusters
 			if not is_valid:
 				frappe.throw("In {0}, you can't deploy site in {1} cluster".format(self.subscription_plan, self.cluster))

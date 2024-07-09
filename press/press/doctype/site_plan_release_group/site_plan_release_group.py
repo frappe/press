@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class SitePlanCluster(Document):
+class SitePlanReleaseGroup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,9 +14,9 @@ class SitePlanCluster(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		cluster: DF.Link
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		release_group: DF.Link
 	# end: auto-generated types
 	pass

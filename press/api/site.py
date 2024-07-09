@@ -708,7 +708,8 @@ def get_site_plans():
 
 	for plan in plans:
 		# if it's blank, allow to deploy the site on any cluster
-		plan.clusters = frappe.db.get_all("Site Plan Cluster", pluck="cluster", filters={"parenttype": "Site Plan", "parent": plan.name})
+		release_groups = frappe.db.get_all("Site Plan Release Group", pluck="release_group", filters={"parenttype": "Site Plan", "parentfield": "release_groups", "parent": plan.name})
+		plan.clusters = frappe.db.get_all("Bench", pluck="cluster", filters={"group": ("in", release_groups)})
 
 	return plans
 

@@ -28,8 +28,8 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
-  "clusters_section",
-  "clusters",
+  "release_groups_section",
+  "release_groups",
   "servers",
   "cluster",
   "instance_type",
@@ -212,21 +212,21 @@
    "options": "Has Role"
   },
   {
-   "fieldname": "clusters_section",
+   "fieldname": "release_groups_section",
    "fieldtype": "Section Break",
-   "label": "Clusters"
+   "label": "Release Groups"
   },
   {
-   "description": "Leave this table empty to allow deployment on any clusters",
-   "fieldname": "clusters",
+   "description": "Leave this table empty to schedule deployment on any release group",
+   "fieldname": "release_groups",
    "fieldtype": "Table",
-   "label": "Clusters",
-   "options": "Site Plan Cluster"
+   "label": "Release Groups",
+   "options": "Site Plan Release Group"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-08 16:12:01.074203",
+ "modified": "2024-07-09 12:44:20.999451",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",
