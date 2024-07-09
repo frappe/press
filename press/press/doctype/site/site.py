@@ -371,6 +371,10 @@ class Site(Document, TagHelpers):
 		# Validate day of month
 		if not (1 <= self.update_on_day_of_month <= 31):
 			frappe.throw("Day of the month must be between 1 and 31 (included)!")
+		# If site is on public bench, don't allow to disable auto updates
+		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
+		if self.skip_auto_updates and is_group_public:
+			frappe.throw("Auto updates can't be disabled for sites on public benches!")
 
 	def validate_site_plan(self):
 		'''
