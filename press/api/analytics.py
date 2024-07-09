@@ -699,30 +699,29 @@ def mariadb_processlist(site):
 
 @frappe.whitelist()
 @protected("Site")
-def mariadb_slow_queries(site, start, end, pattern=".*", max_lines=100):
-	from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
-		get_slow_query_logs,
-	)
-	from press.utils import convert_user_timezone_to_utc
-
-	db_name = frappe.db.get_value("Site", site, "database_name")
-	rows = get_slow_query_logs(
-		db_name,
-		convert_user_timezone_to_utc(start),
-		convert_user_timezone_to_utc(end),
-		pattern,
-		max_lines,
-	)
-
-	for row in rows:
-		row["query"] = sqlparse.format(
-			row["query"].strip(), keyword_case="upper", reindent=True
-		)
-		row["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
-			get_system_timezone(),
-		)
-	return rows
+def mariadb_slow_queries(
+    name,
+    start_datetime,
+    stop_datetime,
+    max_lines=1000,
+    search_pattern=".*",
+    normalize_queries=True,
+    analyze=False,
+):
+    meta = frappe._dict(
+        {
+            "site": name,
+            "start_datetime": start_datetime,
+            "stop_datetime": stop_datetime,
+            "max_lines": max_lines,
+            "search_pattern": search_pattern,
+            "normalize_queries": normalize_queries,
+            "analyze": analyze,
+        }
+    )
+    columns, data = execute(filters=meta)
+    ret = {"columns": columns, "data": data}
+    return ret
 
 
 @frappe.whitelist()
