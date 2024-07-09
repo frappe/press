@@ -15,6 +15,7 @@
   "column_break_5",
   "price_inr",
   "price_usd",
+  "allow_downgrading_from_other_plan",
   "features_section",
   "cpu_time_per_day",
   "max_database_usage",
@@ -244,11 +245,17 @@
    "fieldtype": "Table",
    "label": "Allowed Apps",
    "options": "Site Plan Allowed App"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_downgrading_from_other_plan",
+   "fieldtype": "Check",
+   "label": "Allow Downgrading From Other Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-09 23:29:04.769102",
+ "modified": "2024-07-10 00:19:31.746871",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

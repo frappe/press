@@ -19,6 +19,7 @@ class SitePlan(Plan):
 		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import SitePlanAllowedApp
 		from press.press.doctype.site_plan_release_group.site_plan_release_group import SitePlanReleaseGroup
 
+		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
 		cluster: DF.Link | None
 		cpu_time_per_day: DF.Int
