@@ -16,8 +16,10 @@ class SitePlan(Plan):
 	if TYPE_CHECKING:
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
+		from press.press.doctype.site_plan_cluster.site_plan_cluster import SitePlanCluster
 
 		cluster: DF.Link | None
+		clusters: DF.Table[SitePlanCluster]
 		cpu_time_per_day: DF.Int
 		database_access: DF.Check
 		dedicated_server_plan: DF.Check

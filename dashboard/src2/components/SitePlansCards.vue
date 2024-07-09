@@ -8,7 +8,7 @@ import { getPlans } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
-	props: ['modelValue', 'isPrivateBenchSite', 'isDedicatedServerSite'],
+	props: ['modelValue', 'isPrivateBenchSite', 'isDedicatedServerSite', 'selectedCluster'],
 	emits: ['update:modelValue'],
 	components: {
 		PlansCards
@@ -31,6 +31,9 @@ export default {
 				plans = plans.filter(plan => plan.dedicated_server_plan);
 			} else {
 				plans = plans.filter(plan => !plan.dedicated_server_plan);
+			}
+			if(this.selectedCluster) {
+				plans = plans.filter(plan => plan.clusters.length == 0 ? true : plan.clusters.includes(this.selectedCluster));
 			}
 
 			return plans.map(plan => {

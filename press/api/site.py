@@ -685,7 +685,7 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_site_plans():
-	return Plan.get_plans(
+	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
 			"name",
@@ -705,6 +705,12 @@ def get_site_plans():
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
+
+	for plan in plans:
+		# if it's blank, allow to deploy the site on any cluster
+		plan.clusters = frappe.db.get_all("Site Plan Cluster", pluck="cluster", filters={"parenttype": "Site Plan", "parent": plan.name})
+
+	return plans
 
 
 @frappe.whitelist()

@@ -275,6 +275,7 @@ class Site(Document, TagHelpers):
 		self.validate_host_name()
 		self.validate_site_config()
 		self.validate_auto_update_fields()
+		self.validate_site_plan()
 
 	def before_insert(self):
 		if not self.bench and self.group:
@@ -369,6 +370,13 @@ class Site(Document, TagHelpers):
 		# Validate day of month
 		if not (1 <= self.update_on_day_of_month <= 31):
 			frappe.throw("Day of the month must be between 1 and 31 (included)!")
+
+	def validate_site_plan(self):
+		if hasattr(self, "subscription_plan") and self.subscription_plan:
+			clusters = [i.cluster for i in frappe.get_doc("Site Plan", self.subscription_plan, fields=["clusters"]).clusters]
+			is_valid = True if len(clusters) == 0 else self.cluster in clusters
+			if not is_valid:
+				frappe.throw("In {0}, you can't deploy site in {1} cluster".format(self.subscription_plan, self.cluster))
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):

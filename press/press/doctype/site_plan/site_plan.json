@@ -28,6 +28,8 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
+  "clusters_section",
+  "clusters",
   "servers",
   "cluster",
   "instance_type",
@@ -208,11 +210,23 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
+  },
+  {
+   "fieldname": "clusters_section",
+   "fieldtype": "Section Break",
+   "label": "Clusters"
+  },
+  {
+   "description": "Leave this table empty to allow deployment on any clusters",
+   "fieldname": "clusters",
+   "fieldtype": "Table",
+   "label": "Clusters",
+   "options": "Site Plan Cluster"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-06 19:49:46.214758",
+ "modified": "2024-07-08 16:12:01.074203",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

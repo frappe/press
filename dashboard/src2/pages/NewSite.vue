@@ -106,6 +106,7 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:selectedCluster="cluster"
 					/>
 				</div>
 			</div>
@@ -247,6 +248,10 @@ export default {
 		},
 		async version() {
 			this.cluster = await this.getClosestCluster();
+			this.agreedToRegionConsent = false;
+		},
+		cluster() {
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		subdomain: {
@@ -557,7 +562,7 @@ export default {
 			let pingTime = 999999;
 			try {
 				let t1 = new Date().getTime();
-				let r = await fetch(`https://${server}`);
+				// let r = await fetch(`https://${server}`);
 				let t2 = new Date().getTime();
 				pingTime = t2 - t1;
 			} catch (error) {
