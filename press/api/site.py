@@ -464,11 +464,21 @@ def options_for_new(for_bench: str = None):
 			order_by="number desc",
 		)
 	available_versions = []
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
 	for version in versions:
 		filters = (
 			{"name": for_bench}
 			if for_bench
-			else {"enabled": 1, "public": 1, "version": version.name}
+			else {
+				"enabled": 1,
+				"public": 1,
+				"version": version.name,
+				"name": ("not in", restricted_release_group_names),
+			}
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
@@ -708,8 +718,18 @@ def get_site_plans():
 
 	for plan in plans:
 		# if it's blank, allow to deploy the site on any cluster
-		release_groups = frappe.db.get_all("Site Plan Release Group", pluck="release_group", filters={"parenttype": "Site Plan", "parentfield": "release_groups", "parent": plan.name})
-		plan.clusters = frappe.db.get_all("Bench", pluck="cluster", filters={"group": ("in", release_groups)})
+		release_groups = frappe.db.get_all(
+			"Site Plan Release Group",
+			pluck="release_group",
+			filters={
+				"parenttype": "Site Plan",
+				"parentfield": "release_groups",
+				"parent": plan.name,
+			},
+		)
+		plan.clusters = frappe.db.get_all(
+			"Bench", pluck="cluster", filters={"group": ("in", release_groups)}
+		)
 
 	return plans
 

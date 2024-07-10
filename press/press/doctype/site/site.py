@@ -1915,8 +1915,18 @@ class Site(Document, TagHelpers):
 		if release_group_names:
 			bench_query = bench_query.where(Bench.group.isin(release_group_names))
 		else:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+			)
+			if self.group in restricted_release_group_names:
+				frappe.throw(
+					"Site can't be deployed on this release group {} due to restrictions".format(
+						self.group
+					)
+				)
 			bench_query = bench_query.where(Bench.group == self.group)
-			# TODO don't allow to deploy on 5 dollar release groups
 		if self.server:
 			bench_query = bench_query.where(Server.name == self.server)
 
@@ -2889,6 +2899,11 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 		versions_filters,
 		order_by="number desc",
 	)
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
 	for v in versions:
 		v.label = v.name
 		v.value = v.name
@@ -2901,6 +2916,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 				"enabled": 1,
 				"public": 1,
 				"version": selected_values.version,
+				"name": ("not in", restricted_release_group_names),
 			},
 			order_by="creation desc",
 			as_dict=1,
