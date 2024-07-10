@@ -27,6 +27,10 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 	convert_user_timezone_to_utc,
 	get_files_in_timespan,
 )
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	execute,
+	analyze_queries,
+)
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone

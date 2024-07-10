@@ -6,7 +6,7 @@ This is largely based on heuristics and known good practices for indexing.
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
-
+import re
 import frappe
 from frappe.utils import cint, cstr, flt
 from sql_metadata import Parser
@@ -197,7 +197,7 @@ class DBOptimizer:
 		for explain_entry in self.explain_plan:
 			explain_entry.select_type = explain_entry.select_type.upper()
 			explain_entry.scan_type = explain_entry.scan_type.upper()
-		self.parsed_query = Parser(self.query)
+		self.parsed_query = Parser(re.sub(r'"(\S+)"', r"'\1'", self.query))
 
 	@property
 	def tables_examined(self) -> list[str]:
