@@ -19,11 +19,12 @@ from frappe.model.document import Document
 from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.telegram_utils import Telegram
-from press.utils import log_error
+from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
@@ -529,7 +530,7 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
 
 	@cached_property
-	def time_to_wait_before_updating_volume(self) -> int:
+	def time_to_wait_before_updating_volume(self) -> Union[timedelta, int]:
 		if self.provider != "AWS EC2":
 			return 0
 		if not (
@@ -545,11 +546,13 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50) -> bool:
-		"""
-		Return true if disk resized
-		"""
 		if self.provider not in ("AWS EC2", "OCI"):
-			return False
+			return
+		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
+			frappe.throw(
+				f"Please wait {fmt_timedelta(self.time_to_wait_before_updating_volume)} before resizing volume",
+				VolumeResizeLimitError,
+			)
 		virtual_machine: "VirtualMachine" = frappe.get_doc(
 			"Virtual Machine", self.virtual_machine
 		)
@@ -558,7 +561,6 @@ class BaseServer(Document, TagHelpers):
 			self.enqueue_extend_ec2_volume()
 		elif self.provider == "OCI":
 			self.reboot()
-		return True
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -1024,9 +1026,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		telegram.send(
 			f"Increasing disk on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
 		)
-		return bool(
-			self.time_to_wait_before_updating_volume
-		) or self.increase_disk_size_for_server(
+		self.increase_disk_size_for_server(
 			self.name, self.size_to_increase_by_for_20_percent_available + additional
 		)
 
@@ -1065,6 +1065,7 @@ class Server(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
+		auto_add_storage: DF.Check
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check

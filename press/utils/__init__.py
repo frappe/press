@@ -7,8 +7,10 @@ import json
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Union
 from urllib.parse import urljoin
 
+from babel.dates import format_timedelta
 import frappe
 import pytz
 import requests
@@ -627,3 +629,8 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+
+
+def fmt_timedelta(td: Union[timedelta, int]):
+	locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
+	return format_timedelta(td, locale=locale)

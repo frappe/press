@@ -8,7 +8,6 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List
-from babel.dates import format_timedelta
 
 import dateutil.parser
 import frappe
@@ -29,7 +28,11 @@ from frappe.utils import (
 	sbool,
 )
 
-from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
+from press.exceptions import (
+	CannotChangePlan,
+	InsufficientSpaceOnServer,
+	VolumeResizeLimitError,
+)
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -58,6 +61,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.api.client import dashboard_whitelist
 from press.utils import (
 	convert,
+	fmt_timedelta,
 	get_client_blacklisted_keys,
 	get_current_team,
 	guess_type,
@@ -74,6 +78,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.database_server.database_server import BaseServer
 
 
 class Site(Document, TagHelpers):
@@ -607,26 +612,29 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
+	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+		if (diff := server.free_space - space_required) <= 0:
+			msg = f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+			if server.public:
+				self.try_increasing_disk(server, diff, msg)
+			else:
+				frappe.throw(msg, InsufficientSpaceOnServer)
+
+	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
+		try:
+			server.calculated_increase_disk_size(diff / 1024 / 1024 / 1024)
+		except VolumeResizeLimitError:
+			frappe.throw(
+				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
+				InsufficientSpaceOnServer,
+			)
+
 	def check_enough_space_on_server(self):
 		app: "Server" = frappe.get_doc("Server", self.server)
 		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-		locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
 
-		if (
-			diff := app.free_space - self.space_required_on_app_server
-		) <= 0 and not app.calculated_increase_disk_size(diff / 1024 / 1024 / 1024):
-			frappe.throw(
-				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app.free_space)} (Need {human_readable(abs(diff))}). Please wait {format_timedelta(app.time_to_wait_before_updating_volume, locale = locale)} before trying again.",
-				InsufficientSpaceOnServer,
-			)
-
-		if (
-			diff := db.free_space - self.space_required_on_db_server
-		) <= 0 and not db.calculated_increase_disk_size(diff / 1024 / 1024 / 1024):
-			frappe.throw(
-				f"Insufficient estimated space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db.free_space)} (Need {human_readable(abs(diff))}). Please wait {format_timedelta(db.time_to_wait_before_updating_volume, locale=locale)} before trying again.",
-				InsufficientSpaceOnServer,
-			)
+		self.check_and_increase_disk(app, self.space_required_on_app_server)
+		self.check_and_increase_disk(db, self.space_required_on_db_server)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
