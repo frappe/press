@@ -249,6 +249,7 @@ export default {
 			this.agreedToRegionConsent = false;
 		},
 		async version() {
+			this.cluster = null;
 			this.cluster = await this.getClosestCluster();
 			this.agreedToRegionConsent = false;
 		},
@@ -567,7 +568,7 @@ export default {
 			let pingTime = 999999;
 			try {
 				let t1 = new Date().getTime();
-				// let r = await fetch(`https://${server}`);
+				// let r = await fetch(`https://${server}`); TODO: uncomment before merging
 				let t2 = new Date().getTime();
 				pingTime = t2 - t1;
 			} catch (error) {
