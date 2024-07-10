@@ -907,6 +907,8 @@ class DeployCandidate(Document):
 			app.pullable_release = release_pair["new"]["name"]
 
 	def _prepare_build_context(self, no_push: bool):
+		rg: ReleaseGroup = frappe.get_cache_doc("Release Group", self.group)
+
 		repo_path_map = self._clone_repos()
 		pmf = get_package_manager_files(repo_path_map)
 		self._run_prebuild_validations_and_update_step(pmf)
@@ -926,12 +928,13 @@ class DeployCandidate(Document):
 		dockerfile = self._generate_dockerfile()
 		self._add_build_steps(dockerfile)
 		self._add_post_build_steps(no_push)
-
 		self._copy_config_files()
+
 		self._generate_redis_cache_config()
 		self._generate_redis_queue_config()
-		self._generate_supervisor_config()
+		self._generate_supervisor_config(rg)
 		self._generate_apps_txt()
+
 		self.generate_ssh_keys()
 
 	def _clone_repos(self):
@@ -1240,12 +1243,25 @@ class DeployCandidate(Document):
 			content = frappe.render_template(redis_queue_conf_template, {"doc": self}, is_path=True)
 			f.write(content)
 
-	def _generate_supervisor_config(self):
+
+	def _generate_supervisor_config(self, rg):
 		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
 		with open(supervisor_conf, "w") as f:
 			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(supervisor_conf_template, {"doc": self}, is_path=True)
+			custom_workers_config = self._get_custom_workers(rg)
+			content = frappe.render_template(
+				supervisor_conf_template,
+				{"doc": self, "custom_workers_config": custom_workers_config},
+				is_path=True,
+			)
 			f.write(content)
+
+	def _get_custom_workers(self, rg):
+		if rg.common_site_config:
+			common_site_config = json.loads(self.common_site_config) or frappe._dict()
+
+			if "workers" in common_site_config:
+				return common_site_config["workers"]
 
 	def _generate_apps_txt(self):
 		apps_txt = os.path.join(self.build_directory, "apps.txt")
