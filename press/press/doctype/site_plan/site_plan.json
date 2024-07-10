@@ -31,8 +31,6 @@
   "is_frappe_plan",
   "customization_for_bench_section",
   "release_groups",
-  "thirty_seconds_http_timeout",
-  "ten_minutes_scheduler_tick_interval",
   "allowed_apps",
   "servers",
   "cluster",
@@ -223,18 +221,6 @@
    "options": "Site Plan Release Group"
   },
   {
-   "default": "0",
-   "fieldname": "thirty_seconds_http_timeout",
-   "fieldtype": "Check",
-   "label": "30 Seconds HTTP Timeout"
-  },
-  {
-   "default": "0",
-   "fieldname": "ten_minutes_scheduler_tick_interval",
-   "fieldtype": "Check",
-   "label": "10 Minutes Scheduler Tick Interval"
-  },
-  {
    "fieldname": "customization_for_bench_section",
    "fieldtype": "Section Break",
    "label": "Customization For Bench"
@@ -255,7 +241,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-10 00:19:31.746871",
+ "modified": "2024-07-10 08:27:25.201933",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",
