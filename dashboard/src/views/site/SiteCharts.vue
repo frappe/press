@@ -3,13 +3,15 @@
 		<AlertBanner
 			v-if="$resources.analytics.data?.has_slow_queries"
 			title="Your site seems to have slow queries. Check Performance page to resolve."
-			type="info"
-
+			type="warning"
 		>
-		<Button class="ml-auto" variant="outline" :route="`/sites/${siteName}/performance`">
-		View 
-		</Button>
-
+			<Button
+				class="ml-auto"
+				variant="outline"
+				:route="`/sites/${siteName}/performance`"
+			>
+				View
+			</Button>
 		</AlertBanner>
 		<ErrorMessage :message="$resources.analytics.error" />
 		<FormControl

@@ -10,10 +10,12 @@
 	</div>
 </template>
 
-<script>
+<script lang="jsx">
+import { defineAsyncComponent, h } from 'vue';
 import { ListView, FormControl, Dialog } from 'frappe-ui';
 import ObjectList from '../../../src2/components/ObjectList.vue';
 import AlertBanner from '../../../src2/components/AlertBanner.vue';
+import { renderDialog } from '../../utils/components';
 
 export default {
 	name: 'SitePerformance',
@@ -32,10 +34,25 @@ export default {
 		slowQueriesData() {
 			return {
 				data: () => this.$resources.slowQueries.data.data,
+				onRowClick(row) {
+					const SlowQueryDialog = defineAsyncComponent(() =>
+						import('./SiteMariaDBSlowQueryDialog.vue')
+					);
+					renderDialog(
+						h(SlowQueryDialog, {
+							query: row.query,
+							duration: row.duration,
+							count: row.count,
+							rows_examined: row.rows_examined,
+							rows_sent: row.rows_sent
+						})
+					);
+				},
 				columns: [
 					{
 						label: 'Query',
 						fieldname: 'query',
+						class: 'font-mono',
 						width: '500px'
 					},
 					{
@@ -70,7 +87,6 @@ export default {
 		getDateTimeRange() {
 			const now = new Date();
 			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
 			const formatDateTime = date => {
 				const year = date.getFullYear();
 				const month = String(date.getMonth() + 1).padStart(2, '0');
