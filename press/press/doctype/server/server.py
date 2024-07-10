@@ -1311,7 +1311,7 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		proxy_ip = self.get_proxy_ip()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 
 		try:
@@ -1349,6 +1349,14 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def get_proxy_ip(self):
+		'''In case of standalone setup proxy will not required'''
+
+		if self.is_standalone:
+			return self.ip
+
+		return frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 
 	@frappe.whitelist()
 	def setup_standalone(self):
