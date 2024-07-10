@@ -35,6 +35,7 @@ from press.utils import (
 	log_error,
 	unique,
 )
+from press.utils import is_allowed_access_to_restricted_site_plans
 
 from typing import TYPE_CHECKING
 
@@ -716,6 +717,8 @@ def get_site_plans():
 		filters={"document_type": "Site"},
 	)
 
+	filtered_plans = []
+
 	for plan in plans:
 		# if it's blank, allow to deploy the site on any cluster
 		release_groups = frappe.db.get_all(
@@ -727,6 +730,8 @@ def get_site_plans():
 				"parent": plan.name,
 			},
 		)
+		if not is_allowed_access_to_restricted_site_plans() and release_groups:
+			continue
 		plan.clusters = list(
 			set(
 				frappe.db.get_all(
@@ -743,8 +748,9 @@ def get_site_plans():
 				"parent": plan.name,
 			},
 		)
+		filtered_plans.append(plan)
 
-	return plans
+	return filtered_plans
 
 
 @frappe.whitelist()
