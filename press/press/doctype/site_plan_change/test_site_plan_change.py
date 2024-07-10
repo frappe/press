@@ -41,13 +41,9 @@ class TestSitePlanChange(unittest.TestCase):
 		self,
 	):
 		# Initially Set `Unlimited Plan` to site
-		frappe.get_doc(
-			{
-				"doctype": "Site Plan Change",
-				"site": self.site.name,
-				"to_plan": self.unlimited_plan.name,
-			}
-		).insert(ignore_permissions=True)
+		self.site._create_initial_site_plan_change(self.unlimited_plan.name)
+		self.site.reload()
+		self.assertEqual(self.site.plan, self.unlimited_plan.name)
 		# Try to downgrade to `Tiny Plan` from `Unlimited Plan`
 		with self.assertRaises(frappe.exceptions.ValidationError) as context:
 			frappe.get_doc(
@@ -65,13 +61,9 @@ class TestSitePlanChange(unittest.TestCase):
 		self,
 	):
 		# Initially Set `Unlimited Plan` to site
-		frappe.get_doc(
-			{
-				"doctype": "Site Plan Change",
-				"site": self.site.name,
-				"to_plan": self.unlimited_plan.name,
-			}
-		).insert(ignore_permissions=True)
+		self.site._create_initial_site_plan_change(self.unlimited_plan.name)
+		self.site.reload()
+		self.assertEqual(self.site.plan, self.unlimited_plan.name)
 		# Try to downgrade to `Nano Plan` from `Unlimited Plan`
 		frappe.get_doc(
 			{
