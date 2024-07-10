@@ -107,6 +107,7 @@
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
 						:selectedCluster="cluster"
+						:selectedApps="apps"
 					/>
 				</div>
 			</div>
@@ -244,6 +245,7 @@ export default {
 	watch: {
 		apps() {
 			this.version = this.autoSelectVersion();
+			this.cluster = null;
 			this.agreedToRegionConsent = false;
 		},
 		async version() {
@@ -417,6 +419,9 @@ export default {
 					return a.app_title.localeCompare(b.app_title);
 				}
 			});
+		},
+		selectedVersionAppNames() {
+			return this.selectedVersionApps.map(app => app.app);
 		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);

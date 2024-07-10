@@ -727,8 +727,21 @@ def get_site_plans():
 				"parent": plan.name,
 			},
 		)
-		plan.clusters = frappe.db.get_all(
-			"Bench", pluck="cluster", filters={"group": ("in", release_groups)}
+		plan.clusters = list(
+			set(
+				frappe.db.get_all(
+					"Bench", pluck="cluster", filters={"group": ("in", release_groups)}
+				)
+			)
+		)
+		plan.allowed_apps = frappe.db.get_all(
+			"Site Plan Allowed App",
+			pluck="app",
+			filters={
+				"parenttype": "Site Plan",
+				"parentfield": "allowed_apps",
+				"parent": plan.name,
+			},
 		)
 
 	return plans
