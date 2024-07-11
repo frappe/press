@@ -100,5 +100,29 @@ class TestServer(unittest.TestCase):
 		server.insert()
 		self.assertEqual(len(server.get_password("agent_password")), 32)
 
+	def test_subscription_creation_on_server_creation(self):
+		create_test_press_settings()
+		server = create_test_server()
+		subscription = frappe.get_doc(
+			"Subscription",
+			{"document_type": "Server", "document_name": server.name, "enabled": 1},
+		)
+		self.assertEqual(server.team, subscription.team)
+
+	def test_subscription_team_update_on_server_team_update(self):
+		create_test_press_settings()
+		server = create_test_server()
+		subscription = frappe.get_doc(
+			"Subscription",
+			{"document_type": "Server", "document_name": server.name, "enabled": 1},
+		)
+		self.assertEqual(server.team, subscription.team)
+
+		# update server team
+		team2 = create_test_team()
+		server.team = team2.name
+		server.save()
+		self.assertEqual(server.team, subscription.team)
+
 	def tearDown(self):
 		frappe.db.rollback()
