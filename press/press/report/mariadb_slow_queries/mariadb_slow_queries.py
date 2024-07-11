@@ -124,6 +124,7 @@ def get_data(filters):
 
 	# You can not analyze a query unless it has been normalized.
 	if filters.analyze:
+		rows = analyze_queries(rows, filters.site)
 
 	return rows
 
