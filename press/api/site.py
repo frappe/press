@@ -719,6 +719,8 @@ def get_site_plans():
 
 	filtered_plans = []
 
+	has_team_access_to_restricted_site_plans = is_allowed_access_to_restricted_site_plans()
+
 	for plan in plans:
 		# if it's blank, allow to deploy the site on any cluster
 		release_groups = frappe.db.get_all(
@@ -730,7 +732,7 @@ def get_site_plans():
 				"parent": plan.name,
 			},
 		)
-		if not is_allowed_access_to_restricted_site_plans() and release_groups:
+		if not has_team_access_to_restricted_site_plans and release_groups:
 			continue
 		plan.clusters = frappe.db.get_all(
 			"Bench", pluck="cluster", filters={"group": ("in", release_groups)}, distinct=True
