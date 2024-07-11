@@ -322,54 +322,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.781844",
-  "name": "New Site",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites",
-  "steps": [
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "New Site"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Install Apps"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Site Configuration"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Enable Scheduler"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.646447",
   "name": "Add Host to Proxy",
   "request_method": "POST",
@@ -389,36 +341,6 @@
    },
    {
     "parent": "Add Host to Proxy",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.626647",
-  "name": "Add Site to Upstream",
-  "request_method": "POST",
-  "request_path": "/proxy/upstreams/{upstream}/sites",
-  "steps": [
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Add Site File to Upstream Directory"
-   },
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "parent": "Add Site to Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
@@ -728,72 +650,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reinstall Site"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.470276",
-  "name": "Restore Site",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/restore",
-  "steps": [
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Download Backup Files"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Restore Site"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Delete Downloaded Backup Files"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Uninstall Unavailable Apps"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Migrate Site"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Set Administrator Password"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Enable Scheduler"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "Restore Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
    }
   ]
  },
@@ -2018,6 +1874,168 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Create User"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-07-11 12:04:37.550558",
+  "name": "Add Database Index",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/add-database-index",
+  "steps": [
+   {
+    "parent": "Add Database Index",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Database Index With Bench Command"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:19.781844",
+  "name": "New Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites",
+  "steps": [
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "New Site"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Install Apps"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.626647",
+  "name": "Add Site to Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites",
+  "steps": [
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Site File to Upstream Directory"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:19.470276",
+  "name": "Restore Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/restore",
+  "steps": [
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Download Backup Files"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Site"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Delete Downloaded Backup Files"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Uninstall Unavailable Apps"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Set Administrator Password"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
    }
   ]
  }
