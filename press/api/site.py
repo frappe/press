@@ -732,6 +732,7 @@ def get_site_plans():
 				"parent": plan.name,
 			},
 		)
+		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip it
 		if not has_team_access_to_restricted_site_plans and release_groups:
 			continue
 		plan.clusters = frappe.db.get_all(
