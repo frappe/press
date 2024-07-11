@@ -169,6 +169,7 @@ class Team(Document):
 		self.set_billing_name()
 		self.set_partner_email()
 		self.validate_disable()
+		self.validate_billing_team()
 
 	def before_insert(self):
 		if not self.notify_email:
@@ -196,6 +197,13 @@ class Team(Document):
 				frappe.throw(
 					"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
 				)
+
+	def validate_billing_team(self):
+		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
+			return
+
+		if self.payment_mode == "Paid By Partner" and not self.billing_team:
+			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
 
 	def delete(self, force=False, workflow=False):
 		if force:
