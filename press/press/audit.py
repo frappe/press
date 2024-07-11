@@ -539,19 +539,19 @@ def partner_billing_audit():
 
 
 def suspend_sites_with_disabled_team():
-	teams_with_paid_sites = get_teams_with_paid_sites()
-	disabled_teams = frappe.get_all(
-		"Team",
-		{"name": ("in", teams_with_paid_sites), "enabled": False},
-		pluck="name",
+	site = frappe.qb.DocType("Site")
+	team = frappe.qb.DocType("Team")
+
+	disabled_teams_with_active_sites = (
+		frappe.qb.from_(site)
+		.inner_join(team)
+		.on(team.name == site.team)
+		.where((site.status).isin(["Active", "Broken", "Pending"]) & (team.enabled == 0))
+		.select(site.team)
+		.distinct()
+		.run(pluck="team")
 	)
 
-	if disabled_teams:
-		for team in disabled_teams:
-			sites = frappe.get_all(
-				"Site",
-				{"team": team, "status": ("not in", ("Archived", "Suspended", "Inactive"))},
-				pluck="name",
-			)
-			for site in sites:
-				frappe.get_doc("Site", site).suspend(reason="Disabled Team")
+	if disabled_teams_with_active_sites:
+		for team in disabled_teams_with_active_sites:
+			frappe.get_doc("Team", team).suspend_sites(reason="Disabled Team")
