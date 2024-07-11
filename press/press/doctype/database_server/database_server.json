@@ -24,6 +24,7 @@
   "team",
   "column_break_11",
   "plan",
+  "auto_add_storage",
   "networking_section",
   "ip",
   "column_break_10",
@@ -498,11 +499,17 @@
    "fieldtype": "Data",
    "label": "Memory Allocator Version",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_add_storage",
+   "fieldtype": "Check",
+   "label": "Auto Add Storage"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-21 14:42:36.139217",
+ "modified": "2024-06-28 17:41:52.846347",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

@@ -25,6 +25,7 @@
   "team",
   "column_break_11",
   "plan",
+  "auto_add_storage",
   "networking_section",
   "ip",
   "column_break_3",
@@ -505,6 +506,12 @@
    "fieldtype": "Check",
    "label": "Use For Build",
    "search_index": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_add_storage",
+   "fieldtype": "Check",
+   "label": "Auto Add Storage"
   }
  ],
  "links": [],
