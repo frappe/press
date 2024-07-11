@@ -24,7 +24,7 @@
   "team",
   "column_break_11",
   "plan",
-  "auto_add_storage",
+  "auto_add_storage_step",
   "networking_section",
   "ip",
   "column_break_10",
@@ -501,15 +501,16 @@
    "read_only": 1
   },
   {
-   "default": "1",
-   "fieldname": "auto_add_storage",
-   "fieldtype": "Check",
-   "label": "Auto Add Storage"
+   "default": "50",
+   "fieldname": "auto_add_storage_step",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Step",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-28 17:41:52.846347",
+ "modified": "2024-07-11 19:13:49.257619",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

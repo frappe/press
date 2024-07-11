@@ -32,7 +32,7 @@ class DatabaseServer(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
-		auto_add_storage: DF.Check
+		auto_add_storage_step: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None

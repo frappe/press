@@ -1065,7 +1065,7 @@ class Server(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
-		auto_add_storage: DF.Check
+		auto_add_storage_step: DF.Int
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
