@@ -34,17 +34,20 @@ export default {
 		slowQueriesData() {
 			return {
 				data: () => this.$resources.slowQueries.data.data,
-				onRowClick(row) {
+				onRowClick : (row)=> {
 					const SlowQueryDialog = defineAsyncComponent(() =>
 						import('./SiteMariaDBSlowQueryDialog.vue')
 					);
 					renderDialog(
 						h(SlowQueryDialog, {
+
+							siteName : this.siteName,
 							query: row.query,
 							duration: row.duration,
 							count: row.count,
 							rows_examined: row.rows_examined,
-							rows_sent: row.rows_sent
+							rows_sent: row.rows_sent,
+							example: row.example
 						})
 					);
 				},
@@ -81,7 +84,7 @@ export default {
 					}
 				]
 			};
-		}
+		},
 	},
 	methods: {
 		getDateTimeRange() {
