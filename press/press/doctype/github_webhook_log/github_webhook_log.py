@@ -155,6 +155,7 @@ class GitHubWebhookLog(Document):
 				"branch": self.branch,
 				"repository": self.repository,
 				"repository_owner": self.repository_owner,
+				"enabled": 1,
 			},
 			["name", "app"],
 			as_dict=True,

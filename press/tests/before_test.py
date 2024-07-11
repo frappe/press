@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from press.utils import _get_current_team, _system_user
 from frappe import set_user as _set_user
+from frappe.tests.utils import FrappeTestCase
 
 
 def doc_equal(self: Document, other: Document) -> bool:
@@ -30,6 +31,8 @@ def execute():
 
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
+
+	FrappeTestCase.setUp = lambda self: frappe.db.truncate("Agent Request Failure")
 
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team

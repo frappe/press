@@ -3,7 +3,9 @@
 # See license.txt
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+
+from press.press.doctype.agent_job.agent_job import AgentJob
 
 import frappe
 from frappe.core.utils import find
@@ -22,7 +24,11 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App], user: str = None, public=False, frappe_version="Version 14"
+	apps: list[App],
+	user: str = None,
+	public=False,
+	frappe_version="Version 14",
+	servers: list[str] = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -43,6 +49,10 @@ def create_test_release_group(
 	for app in apps:
 		app_source = create_test_app_source(release_group.version, app)
 		release_group.append("apps", {"app": app.name, "source": app_source.name})
+
+	if servers:
+		for server in servers:
+			release_group.append("servers", {"server": server})
 
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()
@@ -330,3 +340,57 @@ class TestReleaseGroup(unittest.TestCase):
 		rg.delete_environment_variable("test_key")
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 0)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_creating_private_bench_should_not_pick_servers_used_in_restricted_site_plans(
+		self,
+	):
+		from press.api.bench import new
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		frappe_app = create_test_app(name="frappe")
+		new_frappe_app_source = create_test_app_source(version="Version 15", app=frappe_app)
+
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server.use_for_new_benches = True
+		f1_server.save()
+		f1_server.reload()
+
+		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name)
+		f2_server.use_for_new_benches = True
+		f2_server.save()
+		f2_server.reload()
+
+		rg = create_test_release_group([frappe_app], servers=[f2_server.name])
+		create_test_bench(group=rg)
+
+		create_test_plan("Site", allowed_apps=[], release_groups=[rg.name])
+
+		"""
+		Try to create new bench, it should always pick the server which haven't used in any restricted release group
+		"""
+		group_name = new(
+			{
+				"title": "Test Bench 55",
+				"apps": [{"name": frappe_app.name, "source": new_frappe_app_source.name}],
+				"version": "Version 15",
+				"cluster": "Default",
+				"saas_app": None,
+				"server": None,
+			}
+		)
+		new_group = frappe.get_doc("Release Group", group_name)
+		self.assertEqual(new_group.servers[0].server, f1_server.name)

@@ -216,7 +216,7 @@ function onSiteReset() {
 	return confirmDialog({
 		title: 'Reset Site',
 		message: `
-            All the <b>data</b> and <b>apps</b> from your site will be lost. Are you sure you want to reset your database?
+            All the data from your site will be lost. Are you sure you want to reset your database?
         `,
 		fields: [
 			{

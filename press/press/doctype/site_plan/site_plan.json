@@ -15,6 +15,7 @@
   "column_break_5",
   "price_inr",
   "price_usd",
+  "allow_downgrading_from_other_plan",
   "features_section",
   "cpu_time_per_day",
   "max_database_usage",
@@ -28,6 +29,9 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
+  "customization_for_bench_section",
+  "release_groups",
+  "allowed_apps",
   "servers",
   "cluster",
   "instance_type",
@@ -208,11 +212,36 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
+  },
+  {
+   "description": "Leave this table empty to schedule deployment on any release group",
+   "fieldname": "release_groups",
+   "fieldtype": "Table",
+   "label": "Release Groups",
+   "options": "Site Plan Release Group"
+  },
+  {
+   "fieldname": "customization_for_bench_section",
+   "fieldtype": "Section Break",
+   "label": "Customization For Bench"
+  },
+  {
+   "description": "Leave this table empty to allow any app to install for the site",
+   "fieldname": "allowed_apps",
+   "fieldtype": "Table",
+   "label": "Allowed Apps",
+   "options": "Site Plan Allowed App"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_downgrading_from_other_plan",
+   "fieldtype": "Check",
+   "label": "Allow Downgrading From Other Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-06 19:49:46.214758",
+ "modified": "2024-07-10 08:27:25.201933",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

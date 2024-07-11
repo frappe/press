@@ -31,7 +31,7 @@ from press.press.doctype.subscription.test_subscription import create_test_subsc
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
-from press.utils.test import foreground_enqueue
+from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -54,6 +54,9 @@ class TestStagingSite(unittest.TestCase):
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch(
+	"press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc
+)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 class TestBench(FrappeTestCase):
 	def tearDown(self):

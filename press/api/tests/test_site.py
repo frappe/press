@@ -28,6 +28,9 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 
 
 class TestAPISite(FrappeTestCase):
@@ -98,6 +101,237 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(created_site.team, self.team.name)
 		self.assertEqual(created_site.bench, bench.name)
 		self.assertEqual(created_site.status, "Pending")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_creating_new_site_with_customized_site_plan_should_allow_only_specified_apps(
+		self,
+	):
+		from press.api.site import new
+
+		frappe_app = create_test_app(name="frappe")
+		allowed_app = create_test_app(name="allowed_app")
+		disallowed_app = create_test_app(name="disallowed_app")
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+
+		group = create_test_release_group(
+			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
+		)
+		group.append(
+			"servers",
+			{
+				"server": f1_server.name,
+			},
+		)
+		group.save()
+		create_test_bench(group=group, server=f1_server.name)
+
+		plan = create_test_plan("Site", allowed_apps=[frappe_app.name, allowed_app.name])
+
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			f"you can't deploy site with {disallowed_app.name} app",
+			new,
+			{
+				"name": "testsite1",
+				"group": group.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name, allowed_app.name, disallowed_app.name],
+				"cluster": cluster.name,
+			},
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_creating_new_site_with_site_plan_having_no_specified_apps_should_allow_to_install_any_app(
+		self,
+	):
+		from press.api.site import new
+
+		frappe_app = create_test_app(name="frappe")
+		another_app = create_test_app(name="another_app")
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+
+		group = create_test_release_group(
+			[frappe_app, another_app], public=True, frappe_version="Version 15"
+		)
+		group.append(
+			"servers",
+			{
+				"server": f1_server.name,
+			},
+		)
+		group.save()
+		create_test_bench(group=group, server=f1_server.name)
+
+		plan = create_test_plan("Site", allowed_apps=[])
+
+		site = new(
+			{
+				"name": "testsite",
+				"group": group.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name, another_app.name],
+				"cluster": cluster.name,
+			}
+		)
+		self.assertEqual(site["site"], "testsite.fc.dev")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_creating_new_site_with_specified_release_groups_should_deploy_site_on_some_bench_which_is_configured_in_site_plan(
+		self,
+	):
+		from press.api.site import new
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		frappe_app = create_test_app(name="frappe")
+
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name)
+
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15"
+		)
+		rg1.append(
+			"servers",
+			{
+				"server": f1_server.name,
+			},
+		)
+		rg1.save()
+		create_test_bench(group=rg1, server=f1_server.name)
+
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15"
+		)
+		rg2.append(
+			"servers",
+			{
+				"server": f2_server.name,
+			},
+		)
+		rg2.save()
+		rg2_bench = create_test_bench(group=rg2, server=f2_server.name)
+
+		plan = create_test_plan("Site", allowed_apps=[], release_groups=[rg2.name])
+
+		"""
+		Try to deploy the site in rg1
+		But, due to restrictions on Site Plan, it should deploy on rg2
+		"""
+
+		site_name = new(
+			{
+				"name": "testsite1",
+				"group": rg1.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			}
+		)["site"]
+		site = frappe.get_doc("Site", site_name)
+
+		self.assertEqual(site.group, rg2.name)
+		self.assertEqual(site.bench, rg2_bench.name)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_creating_new_site_with_no_specified_release_group_should_deploy_site_on_some_bench_which_is_not_used_for_customized_site_plan(
+		self,
+	):
+		from press.api.site import new
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		frappe_app = create_test_app(name="frappe")
+
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name)
+
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15"
+		)
+		rg1.append(
+			"servers",
+			{
+				"server": f1_server.name,
+			},
+		)
+		rg1.save()
+		rg1_bench = create_test_bench(group=rg1, server=f1_server.name)
+
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15"
+		)
+		rg2.append(
+			"servers",
+			{
+				"server": f2_server.name,
+			},
+		)
+		rg2.save()
+		create_test_bench(group=rg2, server=f2_server.name)
+
+		plan = create_test_plan(
+			"Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan"
+		)
+		tiny_plan = create_test_plan(
+			"Site", allowed_apps=[], release_groups=[rg2.name], plan_title="Tiny Plan"
+		)
+
+		"""
+		Try to deploy the site in rg1
+		It should deploy on rg1 benches
+		"""
+
+		site_name = new(
+			{
+				"name": "testsite1",
+				"group": rg1.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			}
+		)["site"]
+		site = frappe.get_doc("Site", site_name)
+
+		self.assertEqual(site.group, rg1.name)
+		self.assertEqual(site.bench, rg1_bench.name)
+
+		"""
+		Try to deploy the site in rg2
+		It should raise error
+		"""
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			f"Site can't be deployed on this release group {rg2.name} due to restrictions",
+			new,
+			{
+				"name": "testsite2",
+				"group": rg2.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			},
+		)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_get_fn_returns_site_details(self):

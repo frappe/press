@@ -5,6 +5,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from datetime import date
 from unittest.mock import patch
+from typing import Optional
 
 import frappe
 from frappe.model.naming import make_autoname
@@ -17,6 +18,9 @@ def create_test_plan(
 	cpu_time: int = 1,
 	plan_title: str = None,
 	plan_name: str = None,
+	allow_downgrading_from_other_plan: bool = True,
+	allowed_apps: Optional[list[str]] = None,
+	release_groups: Optional[list[str]] = None,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -30,10 +34,19 @@ def create_test_plan(
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
+			"allow_downgrading_from_other_plan": allow_downgrading_from_other_plan,
 			"disk": 50,
 			"instance_type": "t2.micro",
 		}
-	).insert(ignore_if_duplicate=True)
+	)
+	if allowed_apps:
+		for app in allowed_apps:
+			plan.append("allowed_apps", {"app": app})
+	if release_groups:
+		for release_group in release_groups:
+			plan.append("release_groups", {"release_group": release_group})
+
+	plan.insert(ignore_if_duplicate=True)
 	plan.reload()
 	return plan
 

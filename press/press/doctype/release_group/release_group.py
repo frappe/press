@@ -1355,6 +1355,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		self.use_delta_builds = 1
 
+	def is_version_14_or_higher(self):
+		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+
 
 @redis_cache(ttl=60)
 def are_builds_suspended() -> bool:
@@ -1366,9 +1369,30 @@ def new_release_group(
 ):
 	if cluster:
 		if not server:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+				distinct=True,
+			)
+			restricted_server_names = frappe.db.get_all(
+				"Release Group Server",
+				pluck="server",
+				filters={
+					"parenttype": "Release Group",
+					"parentfield": "servers",
+					"parent": ("in", restricted_release_group_names),
+				},
+				distinct=True,
+			)
 			server = frappe.get_all(
 				"Server",
-				{"status": "Active", "cluster": cluster, "use_for_new_benches": True},
+				{
+					"status": "Active",
+					"cluster": cluster,
+					"use_for_new_benches": True,
+					"name": ("not in", restricted_server_names),
+				},
 				pluck="name",
 				limit=1,
 			)[0]

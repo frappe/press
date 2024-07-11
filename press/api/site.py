@@ -35,6 +35,7 @@ from press.utils import (
 	log_error,
 	unique,
 )
+from press.utils import is_allowed_access_to_restricted_site_plans
 
 from typing import TYPE_CHECKING
 
@@ -464,11 +465,21 @@ def options_for_new(for_bench: str = None):
 			order_by="number desc",
 		)
 	available_versions = []
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
 	for version in versions:
 		filters = (
 			{"name": for_bench}
 			if for_bench
-			else {"enabled": 1, "public": 1, "version": version.name}
+			else {
+				"enabled": 1,
+				"public": 1,
+				"version": version.name,
+				"name": ("not in", restricted_release_group_names),
+			}
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
@@ -685,7 +696,7 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_site_plans():
-	return Plan.get_plans(
+	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
 			"name",
@@ -705,6 +716,75 @@ def get_site_plans():
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
+
+	filtered_plans = []
+
+	has_team_access_to_restricted_site_plans = is_allowed_access_to_restricted_site_plans()
+
+	plan_names = [x.name for x in plans]
+
+	SitePlan = frappe.qb.DocType("Site Plan")
+	Bench = frappe.qb.DocType("Bench")
+	SitePlanReleaseGroup = frappe.qb.DocType("Site Plan Release Group")
+	SitePlanAllowedApp = frappe.qb.DocType("Site Plan Allowed App")
+
+	plan_details_query = (
+		frappe.qb.from_(SitePlan)
+		.select(SitePlan.name, SitePlanReleaseGroup.release_group, SitePlanAllowedApp.app)
+		.left_join(SitePlanReleaseGroup)
+		.on(SitePlanReleaseGroup.parent == SitePlan.name)
+		.left_join(SitePlanAllowedApp)
+		.on(SitePlanAllowedApp.parent == SitePlan.name)
+		.where(SitePlan.name.isin(plan_names))
+	)
+
+	plan_details_with_bench_query = (
+		frappe.qb.from_(plan_details_query)
+		.select(
+			plan_details_query.name,
+			plan_details_query.release_group,
+			plan_details_query.app,
+			Bench.cluster,
+		)
+		.left_join(Bench)
+		.on(Bench.group == plan_details_query.release_group)
+	)
+
+	plan_details = plan_details_with_bench_query.run(as_dict=True)
+	plan_details_dict = {}
+
+	for plan in plan_details:
+		if plan["name"] not in plan_details_dict:
+			plan_details_dict[plan["name"]] = {
+				"allowed_apps": [],
+				"release_groups": [],
+				"clusters": [],
+			}
+		if (
+			plan["release_group"]
+			and plan["release_group"] not in plan_details_dict[plan["name"]]["release_groups"]
+		):
+			plan_details_dict[plan["name"]]["release_groups"].append(plan["release_group"])
+		if plan["app"] and plan["app"] not in plan_details_dict[plan["name"]]["allowed_apps"]:
+			plan_details_dict[plan["name"]]["allowed_apps"].append(plan["app"])
+		if (
+			plan["cluster"]
+			and plan["cluster"] not in plan_details_dict[plan["name"]]["clusters"]
+		):
+			plan_details_dict[plan["name"]]["clusters"].append(plan["cluster"])
+
+	for plan in plans:
+		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip the plan
+		if (
+			not has_team_access_to_restricted_site_plans
+			and plan_details_dict[plan.name]["release_groups"]
+		):
+			continue
+		plan.clusters = plan_details_dict[plan.name]["clusters"]
+		plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
+		filtered_plans.append(plan)
+
+	return filtered_plans
 
 
 @frappe.whitelist()

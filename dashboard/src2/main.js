@@ -62,6 +62,7 @@ getInitialData().then(() => {
 					/Importing a module script failed./
 				];
 				const ignoreErrorTypes = [
+					'BuildValidationError',
 					'ValidationError',
 					'PermissionError',
 					'AuthenticationError'

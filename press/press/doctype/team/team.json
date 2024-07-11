@@ -21,6 +21,7 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
+  "allow_access_to_restricted_site_plans",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -410,6 +411,13 @@
   {
    "fieldname": "column_break_wejg",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If checked, team can create sites within restricted site plans that limit allowed apps and deployment on specific release groups.",
+   "fieldname": "allow_access_to_restricted_site_plans",
+   "fieldtype": "Check",
+   "label": "Allow Access To Restricted Site Plans"
   }
  ],
  "links": [
@@ -469,7 +477,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-06-21 19:58:16.088797",
+ "modified": "2024-07-10 17:22:16.718936",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
