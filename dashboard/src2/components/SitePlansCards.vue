@@ -8,7 +8,13 @@ import { getPlans } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
-	props: ['modelValue', 'isPrivateBenchSite', 'isDedicatedServerSite'],
+	props: [
+		'modelValue',
+		'isPrivateBenchSite',
+		'isDedicatedServerSite',
+		'selectedCluster',
+		'selectedApps'
+	],
 	emits: ['update:modelValue'],
 	components: {
 		PlansCards
@@ -31,6 +37,32 @@ export default {
 				plans = plans.filter(plan => plan.dedicated_server_plan);
 			} else {
 				plans = plans.filter(plan => !plan.dedicated_server_plan);
+			}
+			if (this.selectedCluster) {
+				plans = plans.map(plan => {
+					return {
+						...plan,
+						disabled:
+							plan.disabled ||
+							(plan.clusters.length == 0
+								? false
+								: !plan.clusters.includes(this.selectedCluster))
+					};
+				});
+			}
+			if (this.selectedApps) {
+				plans = plans.map(plan => {
+					return {
+						...plan,
+						disabled:
+							plan.disabled ||
+							(plan.allowed_apps.length == 0
+								? false
+								: !this.selectedApps.every(app =>
+										plan.allowed_apps.includes(app.app)
+								  ))
+					};
+				});
 			}
 
 			return plans.map(plan => {

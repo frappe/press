@@ -420,3 +420,22 @@ class TestSite(unittest.TestCase):
 			remote_config_file=config,
 			subscription_plan=plan.name,
 		)
+
+	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
+		rg = create_test_release_group([create_test_app()], public=True)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		with self.assertRaises(frappe.exceptions.ValidationError) as context:
+			site.save(ignore_permissions=True)
+		self.assertTrue(
+			"Auto updates can't be disabled for sites on public benches"
+			in str(context.exception)
+		)
+
+	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
+		rg = create_test_release_group([create_test_app()], public=False)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		site.save(ignore_permissions=True)

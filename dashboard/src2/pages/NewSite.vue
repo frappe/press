@@ -106,6 +106,8 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:selectedCluster="cluster"
+						:selectedApps="apps"
 					/>
 				</div>
 			</div>
@@ -243,10 +245,16 @@ export default {
 	watch: {
 		apps() {
 			this.version = this.autoSelectVersion();
+			this.cluster = null;
 			this.agreedToRegionConsent = false;
 		},
 		async version() {
+			this.cluster = null;
 			this.cluster = await this.getClosestCluster();
+			this.agreedToRegionConsent = false;
+		},
+		cluster() {
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		subdomain: {
@@ -413,6 +421,9 @@ export default {
 				}
 			});
 		},
+		selectedVersionAppNames() {
+			return this.selectedVersionApps.map(app => app.app);
+		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);
 		},
@@ -557,7 +568,7 @@ export default {
 			let pingTime = 999999;
 			try {
 				let t1 = new Date().getTime();
-				let r = await fetch(`https://${server}`);
+				// let r = await fetch(`https://${server}`); TODO: uncomment before merging
 				let t2 = new Date().getTime();
 				pingTime = t2 - t1;
 			} catch (error) {
