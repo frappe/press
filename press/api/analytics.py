@@ -727,6 +727,12 @@ def mariadb_slow_queries(
     ret = {"columns": columns, "data": data}
     return ret
 
+@frappe.whitelist()
+@protected("Site")
+def mariadb_analyze_query(name, rows):
+	rows = analyze_queries(data=rows, site=name)
+	return rows
+
 
 @frappe.whitelist()
 @protected("Site")
@@ -805,3 +811,14 @@ def plausible_analytics(name):
 	)
 
 	return response
+def get_doctype_name(table_name: str) -> str:
+	return table_name.removeprefix("tab")
+
+
+@frappe.whitelist()
+@protected("Site")
+def mariadb_add_suggested_index(name, table, column):
+	doctype = get_doctype_name(table)
+	site = frappe.get_cached_doc("Site", name)
+	agent = Agent(site.server)
+	agent.add_database_index(site, doctype=doctype, columns=[column])

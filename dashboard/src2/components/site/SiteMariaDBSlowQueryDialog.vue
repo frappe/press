@@ -30,23 +30,53 @@
 		</template>
 		<template v-if="$site.doc?.version === 'Version 14'" #actions>
 			<Button
-				class="w-full"
+				class="mb-4 w-full"
 				:variant="'solid'"
 				theme="gray"
 				size="sm"
 				label="Button"
+				:loading="analyze_button"
 				@click="$resources.analyzeQuery.submit()"
 			>
 				Analyze Query
 			</Button>
+			<div v-if="optimizable === true">
+				<pre
+					class="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-4 text-sm text-gray-700"
+				>
+    <span class="font-semibold">Suggested Index:</span> 
+    <span class="ml-2">Table: <span class="font-semibold">{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[0] }}</span></span>
+    <span class="ml-2">Column: <span class="font-semibold">{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1] }}</span></span>
+</pre>
+
+				<Button
+					class="mb-4 w-full"
+					:variant="'solid'"
+					theme="gray"
+					size="sm"
+					label="Button"
+					@click="$resources.applySuggested.submit()"
+				>
+					Apply Suggestion
+				</Button>
+				<div v-if="sucesfullyCreatedIndexJob === true">
+					<Dialog
+						:options="{
+							title: 'Add Database Index Job',
+							message:
+								'The job to add a database index has been sucessfully created. Check the jobs tab to keep track on progress.',
+							size: 'l'
+						}"
+						v-model="show"
+					>
+					</Dialog>
+				</div>
+			</div>
 			<div
-				v-if="optimizable"
+				v-else-if="optimizable === false"
 				class="mb-5 mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
 			>
-				<div>
-					No query index suggestions available 😕. Try adding indexes manually
-					🤷‍♂️
-				</div>
+				No query index suggestions available 😕. Try adding indexes manually 🤷‍♂️
 			</div>
 		</template>
 	</Dialog>
@@ -67,7 +97,9 @@ export default {
 	data() {
 		return {
 			show: true,
-			optimizable: false
+			analyze_button: false,
+			optimizable: null,
+			sucesfullyCreatedIndexJob: null
 		};
 	},
 	computed: {
@@ -95,6 +127,7 @@ export default {
 					};
 				},
 				onSuccess(data) {
+					this.analyze_button = false;
 					data = data[0];
 					if (!data.suggested_index) {
 						this.optimizable = false;
@@ -102,7 +135,33 @@ export default {
 						this.optimizable = true;
 					}
 				},
+				beforeSubmit(params) {
+					this.analyze_button = true;
+				},
+				onError(error) {
+					this.analyze_button = false;
+				},
 				initialData: { data: [] }
+			};
+		},
+		applySuggested() {
+			return {
+				url: 'press.api.analytics.mariadb_add_suggested_index',
+				method: 'POST',
+				makeParams() {
+					return {
+						name: this.siteName,
+						table:
+							this.$resources.analyzeQuery.data[0].suggested_index.split(
+								'.'
+							)[0],
+						column:
+							this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1]
+					};
+				},
+				onSuccess(data) {
+					this.sucesfullyCreatedIndexJob = true;
+				}
 			};
 		}
 	}
