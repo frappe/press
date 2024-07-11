@@ -192,6 +192,7 @@ class TestAPISite(FrappeTestCase):
 		self,
 	):
 		from press.api.site import new
+
 		cluster = create_test_cluster("Default", public=True)
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -222,7 +223,7 @@ class TestAPISite(FrappeTestCase):
 			"servers",
 			{
 				"server": f2_server.name,
-			}
+			},
 		)
 		rg2.save()
 		rg2_bench = create_test_bench(group=rg2, server=f2_server.name)
@@ -234,13 +235,15 @@ class TestAPISite(FrappeTestCase):
 		But, due to restrictions on Site Plan, it should deploy on rg2
 		"""
 
-		site_name = new({
-			"name": "testsite1",
-			"group": rg1.name,
-			"plan": plan.name,
-			"apps": [frappe_app.name],
-			"cluster": cluster.name,
-		})["site"]
+		site_name = new(
+			{
+				"name": "testsite1",
+				"group": rg1.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			}
+		)["site"]
 		site = frappe.get_doc("Site", site_name)
 
 		self.assertEqual(site.group, rg2.name)
@@ -248,9 +251,10 @@ class TestAPISite(FrappeTestCase):
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_creating_new_site_with_no_specified_release_group_should_deploy_site_on_some_bench_which_is_not_used_for_customized_site_plan(
-			self,
+		self,
 	):
 		from press.api.site import new
+
 		cluster = create_test_cluster("Default", public=True)
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -281,26 +285,32 @@ class TestAPISite(FrappeTestCase):
 			"servers",
 			{
 				"server": f2_server.name,
-			}
+			},
 		)
 		rg2.save()
 		create_test_bench(group=rg2, server=f2_server.name)
 
-		plan = create_test_plan("Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan")
-		tiny_plan = create_test_plan("Site", allowed_apps=[], release_groups=[rg2.name], plan_title="Tiny Plan")
+		plan = create_test_plan(
+			"Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan"
+		)
+		tiny_plan = create_test_plan(
+			"Site", allowed_apps=[], release_groups=[rg2.name], plan_title="Tiny Plan"
+		)
 
 		"""
 		Try to deploy the site in rg1
 		It should deploy on rg1 benches
 		"""
 
-		site_name = new({
-			"name": "testsite1",
-			"group": rg1.name,
-			"plan": plan.name,
-			"apps": [frappe_app.name],
-			"cluster": cluster.name,
-		})["site"]
+		site_name = new(
+			{
+				"name": "testsite1",
+				"group": rg1.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			}
+		)["site"]
 		site = frappe.get_doc("Site", site_name)
 
 		self.assertEqual(site.group, rg1.name)
@@ -310,16 +320,18 @@ class TestAPISite(FrappeTestCase):
 		Try to deploy the site in rg2
 		It should raise error
 		"""
-		self.assertRaisesRegex(frappe.exceptions.ValidationError, f"Site can't be deployed on this release group {rg2.name} due to restrictions", new, {
-			"name": "testsite2",
-			"group": rg2.name,
-			"plan": plan.name,
-			"apps": [frappe_app.name],
-			"cluster": cluster.name,
-		})
-
-
-
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			f"Site can't be deployed on this release group {rg2.name} due to restrictions",
+			new,
+			{
+				"name": "testsite2",
+				"group": rg2.name,
+				"plan": plan.name,
+				"apps": [frappe_app.name],
+				"cluster": cluster.name,
+			},
+		)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_get_fn_returns_site_details(self):
