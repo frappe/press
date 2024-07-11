@@ -732,12 +732,8 @@ def get_site_plans():
 		)
 		if not is_allowed_access_to_restricted_site_plans() and release_groups:
 			continue
-		plan.clusters = list(
-			set(
-				frappe.db.get_all(
-					"Bench", pluck="cluster", filters={"group": ("in", release_groups)}
-				)
-			)
+		plan.clusters = frappe.db.get_all(
+			"Bench", pluck="cluster", filters={"group": ("in", release_groups)}, distinct=True
 		)
 		plan.allowed_apps = frappe.db.get_all(
 			"Site Plan Allowed App",
