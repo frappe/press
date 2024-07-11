@@ -1853,14 +1853,15 @@ class Site(Document, TagHelpers):
 			)
 		)
 
-	def get_plan_config(self, plan=None):
+	def get_plan_name(self, plan=None):
 		if not plan:
 			plan = self.subscription_plan if hasattr(self, "subscription_plan") else self.plan
-		if not plan:
-			return {}
 		if plan and not isinstance(plan, str):
 			frappe.throw("Site.subscription_plan must be a string")
-		return get_plan_config(plan)
+		return plan
+
+	def get_plan_config(self, plan=None):
+		return get_plan_config(self.get_plan_name(plan))
 
 	def _set_latest_bench(self):
 		from pypika.terms import PseudoColumn
@@ -1888,7 +1889,7 @@ class Site(Document, TagHelpers):
 			filters={
 				"parenttype": "Site Plan",
 				"parentfield": "release_groups",
-				"parent": self.plan,
+				"parent": self.get_plan_name(),
 			},
 		)
 
