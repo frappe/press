@@ -1378,12 +1378,21 @@ def new_release_group(
 			restricted_server_names = frappe.db.get_all(
 				"Release Group Server",
 				pluck="server",
-				filters={"parenttype": "Release Group", "parentfield": "servers", "parent": ("in", restricted_release_group_names)},
+				filters={
+					"parenttype": "Release Group",
+					"parentfield": "servers",
+					"parent": ("in", restricted_release_group_names),
+				},
 				distinct=True,
 			)
 			server = frappe.get_all(
 				"Server",
-				{"status": "Active", "cluster": cluster, "use_for_new_benches": True, "name": ("not in", restricted_server_names)},
+				{
+					"status": "Active",
+					"cluster": cluster,
+					"use_for_new_benches": True,
+					"name": ("not in", restricted_server_names),
+				},
 				pluck="name",
 				limit=1,
 			)[0]

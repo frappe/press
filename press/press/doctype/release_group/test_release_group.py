@@ -24,7 +24,11 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App], user: str = None, public=False, frappe_version="Version 14", servers: list[str] = None
+	apps: list[App],
+	user: str = None,
+	public=False,
+	frappe_version="Version 14",
+	servers: list[str] = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -338,10 +342,14 @@ class TestReleaseGroup(unittest.TestCase):
 		self.assertEqual(len(rg.environment_variables), 0)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_creating_private_bench_should_not_pick_servers_used_in_restricted_site_plans(self):
+	def test_creating_private_bench_should_not_pick_servers_used_in_restricted_site_plans(
+		self,
+	):
 		from press.api.bench import new
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
-		from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
 		from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.site.test_site import create_test_bench
@@ -366,9 +374,7 @@ class TestReleaseGroup(unittest.TestCase):
 		f2_server.save()
 		f2_server.reload()
 
-		rg = create_test_release_group(
-			[frappe_app], servers=[f2_server.name]
-		)
+		rg = create_test_release_group([frappe_app], servers=[f2_server.name])
 		create_test_bench(group=rg)
 
 		create_test_plan("Site", allowed_apps=[], release_groups=[rg.name])
