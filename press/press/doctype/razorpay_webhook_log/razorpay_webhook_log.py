@@ -57,7 +57,7 @@ def razorpay_webhook_handler():
 		)
 
 		notes = form_dict["payload"]["payment"]["entity"]["notes"]
-		if (notes and notes.get("description")) and not razorpay_payment_record:
+		if not razorpay_payment_record:
 			# Don't log error if its not FrappeCloud order
 			# Example of valid notes
 			# "notes": {
@@ -66,9 +66,11 @@ def razorpay_webhook_handler():
 			# 	"gst": 245
 			# },
 
-			log_error(
-				"Razorpay payment record for given order does not exist", order_id=razorpay_order_id
-			)
+			if notes and notes.get("description"):
+				log_error(
+					"Razorpay payment record for given order does not exist",
+					order_id=razorpay_order_id,
+				)
 			return
 
 		frappe.get_doc(

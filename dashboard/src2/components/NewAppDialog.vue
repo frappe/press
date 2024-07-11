@@ -181,7 +181,7 @@ export default {
 					let repository_url = this.githubAppLink;
 					if (!repository_url) {
 						const repo_owner = this.selectedGithubUser?.label;
-						const repo = this.selectedGithubRepository?.label || data.name;
+						const repo = this.selectedGithubRepository || data.name;
 						repository_url = `https://github.com/${repo_owner}/${repo}`;
 					}
 

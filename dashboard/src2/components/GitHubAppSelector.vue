@@ -107,6 +107,7 @@ export default {
 		return {
 			app: {},
 			selectedBranch: '',
+			requiresReAuth: false,
 			selectedGithubUser: null,
 			selectedGithubRepository: null
 		};
@@ -190,9 +191,6 @@ export default {
 				(!this.$resources.options.data.authorized ||
 					this.$resources.options.data.installations.length === 0)
 			);
-		},
-		requiresReAuth() {
-			return this.options?.error?.message === 'Bad credentials';
 		},
 		state() {
 			let location = window.location.href;
