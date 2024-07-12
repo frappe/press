@@ -29,7 +29,6 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
-from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 
 
@@ -293,7 +292,7 @@ class TestAPISite(FrappeTestCase):
 		plan = create_test_plan(
 			"Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan"
 		)
-		tiny_plan = create_test_plan(
+		create_test_plan(
 			"Site", allowed_apps=[], release_groups=[rg2.name], plan_title="Tiny Plan"
 		)
 
