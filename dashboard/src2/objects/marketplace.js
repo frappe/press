@@ -7,6 +7,7 @@ import { toast } from 'vue-sonner';
 import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { isMobile } from '../utils/device';
 
 export default {
 	doctype: 'Marketplace App',
@@ -502,7 +503,7 @@ export default {
 							{
 								type: 'select',
 								label: 'Status',
-								class: 'w-24',
+								class: !isMobile() ? 'w-24' : '',
 								fieldname: 'enabled',
 								options: ['', 'Active', 'Disabled']
 							}
