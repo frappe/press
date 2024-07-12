@@ -195,9 +195,19 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_file_not_found,
 			check_if_app_updated,
 		),
-		# Below two are catch all fallback handlers for
-		# `yarn build` and `pip install` errors originating due
-		# to issues in an app.
+		(
+			"minimum supported Python version is",
+			update_with_incompatible_python,
+			check_incompatible_python,
+		),
+		(
+			"pip._vendor.packaging.version.InvalidVersion: Invalid version",
+			update_with_error_on_pip_install,
+			check_if_app_updated,
+		),
+		# Below three are catch all fallback handlers for `yarn build`,
+		# `yarn install` and `pip install` errors originating due to
+		# issues in an app.
 		#
 		# They should always be at the end.
 		(
@@ -208,6 +218,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 		(
 			"This error originates from a subprocess, and is likely not a problem with pip",
 			update_with_error_on_pip_install,
+			check_if_app_updated,
+		),
+		(
+			"ERROR: yarn install --check-files",
+			update_with_yarn_install_failed,
 			check_if_app_updated,
 		),
 	]
@@ -470,7 +485,7 @@ def update_with_error_on_pip_install(
 	if failed_step.stage_slug == "apps":
 		app_name = failed_step.step
 		message = f"""
-		<p>Dependency installation using pip for <b>{app_name}</b> failed due to
+		<p>App setup for <b>{app_name}</b> using pip failed due to
 		errors originating in the app.</p>
 
 		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
@@ -478,7 +493,7 @@ def update_with_error_on_pip_install(
 		"""
 	else:
 		message = """
-		<p>Dependency installation using pip failed due to errors originating in an
+		<p>App setup using pip failed due to errors originating in an
 		app on your Bench.</p>
 
 		<p>Please view the build output to debug and fix the error before retrying
@@ -619,6 +634,42 @@ def check_incompatible_node(
 
 	frappe.throw(
 		"Node version not updated since previous failing build.",
+		BuildValidationError,
+	)
+
+
+def update_with_incompatible_python(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	details["title"] = "Incompatible Python version"
+	message = """
+	<p>App installation has failed due to the Python version on your Bench
+	being incompatible. Please check build output for more details.</p>
+
+	<p>To rectify this issue, please update the Python version on your bench.</p>
+
+	<p>For reference, you can follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
+	details["assistance_url"] = DOC_URLS["incompatible-dependency-version"]
+	return True
+
+
+def check_incompatible_python(
+	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
+) -> None:
+	old_node = old_dc.get_dependency_version("python")
+	new_node = new_dc.get_dependency_version("python")
+
+	if old_node != new_node:
+		return
+
+	frappe.throw(
+		"Python version not updated since previous failing build.",
 		BuildValidationError,
 	)
 
@@ -780,6 +831,41 @@ def update_with_vite_not_found(
 	details["message"] = fmt(message)
 	details["traceback"] = None
 	details["assistance_url"] = DOC_URLS["vite-not-found"]
+	return True
+
+
+def update_with_yarn_install_failed(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	details["title"] = "App frontend dependency install failed"
+	failed_step = get_failed_step(dc)
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> dependencies could not be installed.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+
+		<p>This may be due to issues with the app being installed
+		and not Frappe Cloud.</p>
+		"""
+
+	else:
+		message = """
+		<p>App dependencies could not be installed.</p>
+
+		<p>Please view the failing step output to debug and fix the error
+		before retrying build.</p>
+
+		<p>This may be due to issues with the app being installed
+		and not Frappe Cloud.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
 	return True
 
 

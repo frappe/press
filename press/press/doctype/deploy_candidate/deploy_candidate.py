@@ -1918,6 +1918,24 @@ def should_build_retry_build_output(build_output: str):
 	if "Connection to pypi.org timed out" in build_output:
 		return True
 
+	# Caused when fetching Python from deadsnakes/ppa
+	if "Error: retrieving gpg key timed out" in build_output:
+		return True
+
+	# Yarn registry bad gateway
+	if (
+		"error https://registry.yarnpkg.com/" in build_output
+		and 'Request failed "502 Bad Gateway"' in build_output
+	):
+		return True
+
+	# NPM registry internal server error
+	if (
+		"Error: https://registry.npmjs.org/" in build_output
+		and 'Request failed "500 Internal Server Error"' in build_output
+	):
+		return True
+
 	return False
 
 
