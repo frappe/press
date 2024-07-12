@@ -123,3 +123,4 @@ press.patches.v0_7_0.add_team_field_for_site_related_doctypes
 press.patches.v0_7_0.add_team_field_for_site_backups_archived
 press.press.doctype.server_storage_plan.patches.add_subscription_for_servers_with_additional_disk
 press.press.doctype.press_notification.patches.link_reference_doctype_to_notifications
+press.press.doctype.site.patches.set_plan_limit_in_site_config
