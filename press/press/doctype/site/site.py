@@ -213,7 +213,7 @@ class Site(Document, TagHelpers):
 		group = frappe.db.get_value(
 			"Release Group",
 			self.group,
-			["title", "public", "team", "central_bench"],
+			["title", "public", "team", "central_bench", "version"],
 			as_dict=1,
 		)
 		doc.group_title = group.title
