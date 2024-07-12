@@ -83,7 +83,7 @@ def get_plan_config(name):
 		["cpu_time_per_day", "max_database_usage", "max_storage_usage"],
 		as_dict=True,
 	)
-	if limits.get("cpu_time_per_day", 0) > 0:
+	if limits and limits.get("cpu_time_per_day", 0) > 0:
 		return {
 			"rate_limit": {"limit": limits.cpu_time_per_day * 3600, "window": 86400},
 			"plan_limit": {
