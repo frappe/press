@@ -1,8 +1,9 @@
 <template>
 	<div class="space-y-4">
 		<AlertBanner
-			title="All metrics presented are from the last 24 hours."
+			title="Great!! You do not seem to have any slow queries"
 			type="info"
+			v-if="show"
 		/>
 		<div>
 			<ObjectList :options="slowQueriesData" />
@@ -10,7 +11,7 @@
 	</div>
 </template>
 
-<script lang="jsx">
+<script>
 import { defineAsyncComponent, h } from 'vue';
 import { ListView, FormControl, Dialog } from 'frappe-ui';
 import ObjectList from '../../../src2/components/ObjectList.vue';
@@ -28,20 +29,21 @@ export default {
 		AlertBanner
 	},
 	data() {
-		return {};
+		return {
+			show: null
+		};
 	},
 	computed: {
 		slowQueriesData() {
 			return {
 				data: () => this.$resources.slowQueries.data.data,
-				onRowClick : (row)=> {
+				onRowClick: (row) => {
 					const SlowQueryDialog = defineAsyncComponent(() =>
 						import('./SiteMariaDBSlowQueryDialog.vue')
 					);
 					renderDialog(
 						h(SlowQueryDialog, {
-
-							siteName : this.siteName,
+							siteName: this.siteName,
 							query: row.query,
 							duration: row.duration,
 							count: row.count,
@@ -84,7 +86,7 @@ export default {
 					}
 				]
 			};
-		},
+		}
 	},
 	methods: {
 		getDateTimeRange() {
@@ -122,6 +124,11 @@ export default {
 					search_pattern: '.*',
 					normalize_queries: true,
 					analyze: false
+				},
+				onSuccess(data) {
+					if (!data.data) {
+						this.show = true;
+					}
 				},
 				auto: true,
 				initialData: { columns: [], data: [] }

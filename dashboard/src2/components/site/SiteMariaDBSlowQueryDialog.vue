@@ -23,14 +23,11 @@
 				<span class="ml-auto pr-2"
 					>Duration: {{ duration.toFixed(2) }} seconds</span
 				>
-				<!-- <span class="pr-2">Rows Examined: {{ rows_examined}}</span>
-				<span class="pr-2">Rows Sent: {{rows_sent}}</span>
-				<span class="pr-2">Count: {{ count}}</span> -->
 			</div>
 		</template>
 		<template v-if="$site.doc?.version === 'Version 14'" #actions>
 			<Button
-				class="mb-4 w-full"
+				class="mb-6 w-full"
 				:variant="'solid'"
 				theme="gray"
 				size="sm"
@@ -50,7 +47,7 @@
 </pre>
 
 				<Button
-					class="mb-4 w-full"
+					class="mb-6 mt-6 w-full"
 					:variant="'solid'"
 					theme="gray"
 					size="sm"
@@ -60,16 +57,18 @@
 					Apply Suggestion
 				</Button>
 				<div v-if="sucesfullyCreatedIndexJob === true">
-					<Dialog
-						:options="{
-							title: 'Add Database Index Job',
-							message:
-								'The job to add a database index has been sucessfully created. Check the jobs tab to keep track on progress.',
-							size: 'l'
-						}"
-						v-model="show"
+					<AlertBanner
+						title="The job to add a database index has been sucessfully created. Check the jobs tab to keep track on progress. It might take time for large tables."
+						type="info"
 					>
-					</Dialog>
+						<Button
+							class="ml-auto"
+							variant="outline"
+							:route="`/sites/${siteName}/jobs`"
+						>
+							View
+						</Button>
+					</AlertBanner>
 				</div>
 			</div>
 			<div
@@ -84,6 +83,9 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
+import AlertBanner from '../../../src2/components/AlertBanner.vue';
+import { toast } from 'vue-sonner';
+
 export default {
 	props: [
 		'siteName',
@@ -94,6 +96,9 @@ export default {
 		'rows_sent',
 		'example'
 	],
+	components: {
+		AlertBanner
+	},
 	data() {
 		return {
 			show: true,
@@ -160,6 +165,12 @@ export default {
 					};
 				},
 				onSuccess(data) {
+					if (data == 'prexisting job') {
+						this.sucesfullyCreatedIndexJob = false;
+						toast.error('There already is an Agent Job for Add Database Index');
+						this.show = false;
+						return;
+					}
 					this.sucesfullyCreatedIndexJob = true;
 				}
 			};

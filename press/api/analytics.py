@@ -818,6 +818,16 @@ def get_doctype_name(table_name: str) -> str:
 @frappe.whitelist()
 @protected("Site")
 def mariadb_add_suggested_index(name, table, column):
+	record_exists = frappe.db.exists(
+		"Agent Job",
+		{
+			"site": name,
+			"status": ["in", ["Undelivered", "Running", "Pending"]],
+			"job_type": "Add Database Index",
+		},
+	)
+	if record_exists:
+		return "prexisting job"
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)
