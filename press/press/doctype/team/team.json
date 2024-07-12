@@ -22,6 +22,7 @@
   "free_account",
   "via_erpnext",
   "allow_access_to_restricted_site_plans",
+  "enable_performance_tuning",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -418,6 +419,12 @@
    "fieldname": "allow_access_to_restricted_site_plans",
    "fieldtype": "Check",
    "label": "Allow Access To Restricted Site Plans"
+  },
+  {
+   "default": "false",
+   "fieldname": "enable_performance_tuning",
+   "fieldtype": "Check",
+   "label": "Enable Performance Tuning"
   }
  ],
  "links": [
@@ -477,7 +484,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-07-10 17:22:16.718936",
+ "modified": "2024-07-12 15:44:01.367707",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
