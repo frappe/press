@@ -26,7 +26,7 @@ class SitePlan(Plan):
 		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
 		cluster: DF.Link | None
-		cpu_time_per_day: DF.Int
+		cpu_time_per_day: DF.Float
 		database_access: DF.Check
 		dedicated_server_plan: DF.Check
 		disk: DF.Int
