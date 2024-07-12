@@ -14,20 +14,41 @@
 				<i-lucide-info class="h-4 w-4" />
 				<div>Upcoming Feature : Analyze Query coming soon on Version-15</div>
 			</div>
+			<h2 class="font-semibold">Query</h2> 
 			<pre
-				class="rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
-			>
- {{ query }} </pre
+				class="rounded-lg mt-2 border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				>{{ query }}</pre
 			>
 			<div class="flex p-2 text-sm">
 				<span class="ml-auto pr-2"
 					>Duration: {{ duration.toFixed(2) }} seconds</span
 				>
 			</div>
+			<div v-if="optimizable === true">
+				<h2 class="font-semibold">Suggested Index</h2> 
+				<div
+					class="mt-2 space-y-1 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				><div class="flex">
+					<p class="font-semibold">Table: </p> <span >{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[0] }}</span>
+
+				</div>
+				<div class="flex">
+					<p class="font-semibold">Column: </p> <span>{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1] }}</span>
+
+				</div>
+			</div>
+			</div>
+			<div
+				v-if="optimizable === false"
+				class="mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
+			>
+				No query index suggestions available. Try adding indexes manually.
+			</div>
 		</template>
 		<template v-if="$site.doc?.version === 'Version 14'" #actions>
 			<Button
-				class="mb-6 w-full"
+				v-if="!optimizable"
+				class="w-full"
 				:variant="'solid'"
 				theme="gray"
 				size="sm"
@@ -37,46 +58,17 @@
 			>
 				Analyze Query
 			</Button>
-			<div v-if="optimizable === true">
-				<pre
-					class="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-4 text-sm text-gray-700"
-				>
-    <span class="font-semibold">Suggested Index:</span> 
-    <span class="ml-2">Table: <span class="font-semibold">{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[0] }}</span></span>
-    <span class="ml-2">Column: <span class="font-semibold">{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1] }}</span></span>
-</pre>
-
-				<Button
-					class="mb-6 mt-6 w-full"
-					:variant="'solid'"
-					theme="gray"
-					size="sm"
-					label="Button"
-					@click="$resources.applySuggested.submit()"
-				>
-					Apply Suggestion
-				</Button>
-				<div v-if="sucesfullyCreatedIndexJob === true">
-					<AlertBanner
-						title="The job to add a database index has been sucessfully created. Check the jobs tab to keep track on progress. It might take time for large tables."
-						type="info"
-					>
-						<Button
-							class="ml-auto"
-							variant="outline"
-							:route="`/sites/${siteName}/jobs`"
-						>
-							View
-						</Button>
-					</AlertBanner>
-				</div>
-			</div>
-			<div
-				v-else-if="optimizable === false"
-				class="mb-5 mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
+			<Button
+				v-if="optimizable"
+				class="w-full"
+				:variant="'solid'"
+				theme="gray"
+				size="sm"
+				label="Button"
+				@click="applySuggestion"
 			>
-				No query index suggestions available 😕. Try adding indexes manually 🤷‍♂️
-			</div>
+				Apply Suggestion
+			</Button>
 		</template>
 	</Dialog>
 </template>
@@ -85,6 +77,7 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import AlertBanner from '../../../src2/components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
+import router from '../../router';
 
 export default {
 	props: [
@@ -104,12 +97,28 @@ export default {
 			show: true,
 			analyze_button: false,
 			optimizable: null,
-			sucesfullyCreatedIndexJob: null
 		};
 	},
 	computed: {
 		$site() {
 			return getCachedDocumentResource('Site', this.siteName);
+		}
+	},
+	methods: {
+		applySuggestion() {
+			toast.promise(this.$resources.applySuggested.submit(), {
+				loading: 'Scheduling add database index job...',
+				success: s =>{
+
+					this.show = false;
+					this.$router.push(({name: 'Site Detail Jobs',params:{ name: this.siteName}}))
+					return 'The job to add a database index has been sucessfully created.';
+
+				},
+				error: e => {
+					return e.messages.length ? e.messages.join('\n') : e.message;
+				}
+			});
 		}
 	},
 	resources: {
@@ -164,15 +173,6 @@ export default {
 							this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1]
 					};
 				},
-				onSuccess(data) {
-					if (data == 'prexisting job') {
-						this.sucesfullyCreatedIndexJob = false;
-						toast.error('There already is an Agent Job for Add Database Index');
-						this.show = false;
-						return;
-					}
-					this.sucesfullyCreatedIndexJob = true;
-				}
 			};
 		}
 	}

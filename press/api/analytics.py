@@ -827,7 +827,7 @@ def mariadb_add_suggested_index(name, table, column):
 		},
 	)
 	if record_exists:
-		return "prexisting job"
+		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)
