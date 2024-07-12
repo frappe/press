@@ -77,15 +77,18 @@ class SitePlan(Plan):
 
 
 def get_plan_config(name):
-	cpu_time, max_database_usage, max_storage_usage = frappe.db.get_value(
-		"Site Plan", name, ["cpu_time_per_day", "max_database_usage", "max_storage_usage"]
+	limits = frappe.db.get_value(
+		"Site Plan",
+		name,
+		["cpu_time_per_day", "max_database_usage", "max_storage_usage"],
+		as_dict=True,
 	)
-	if cpu_time and cpu_time > 0:
+	if limits.get("cpu_time_per_day", 0) > 0:
 		return {
-			"rate_limit": {"limit": cpu_time * 3600, "window": 86400},
+			"rate_limit": {"limit": limits.cpu_time_per_day * 3600, "window": 86400},
 			"plan_limit": {
-				"max_database_usage": max_database_usage,
-				"max_storage_usage": max_storage_usage,
+				"max_database_usage": limits.max_database_usage,
+				"max_storage_usage": limits.max_storage_usage,
 			},
 		}
 	return {}
