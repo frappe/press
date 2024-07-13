@@ -77,6 +77,10 @@ def get_erpnext_com_connection():
 	)
 
 
+def disabled_frappeio_auth():
+	return frappe.db.get_single_value("Press Settings", "disable_frappe_auth", cache=True)
+
+
 def get_frappe_io_connection():
 	if hasattr(frappe.local, "press_frappeio_conn"):
 		return frappe.local.press_frappeio_conn
