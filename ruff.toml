@@ -8,6 +8,7 @@ select = [
     "F",
     "E",
     "W",
+    "I",
 ]
 ignore = [
     "E501", # line too long

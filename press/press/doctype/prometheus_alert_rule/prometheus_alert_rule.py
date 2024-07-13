@@ -1,14 +1,15 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.core.utils import find
-import yaml
 import json
-from frappe.model.document import Document
-from press.agent import Agent
-
 from typing import TYPE_CHECKING
+
+import frappe
+import yaml
+from frappe.core.utils import find
+from frappe.model.document import Document
+
+from press.agent import Agent
 
 if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
@@ -22,6 +23,7 @@ class PrometheusAlertRule(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.prometheus_alert_rule_cluster.prometheus_alert_rule_cluster import (
 			PrometheusAlertRuleCluster,
 		)

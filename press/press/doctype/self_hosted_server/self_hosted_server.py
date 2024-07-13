@@ -2,13 +2,14 @@
 # For license information, please see license.txt
 
 
+import json
+
 import frappe
 from frappe.model.document import Document
-from press.runner import Ansible
-from press.utils import log_error
 from frappe.model.naming import make_autoname
 
-import json
+from press.runner import Ansible
+from press.utils import log_error
 
 # from tldextract import extract as sdext
 
@@ -21,6 +22,7 @@ class SelfHostedServer(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.self_hosted_site_apps.self_hosted_site_apps import (
 			SelfHostedSiteApps,
 		)

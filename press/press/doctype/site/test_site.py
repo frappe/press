@@ -3,13 +3,14 @@
 # See license.txt
 
 
+import json
+import typing
 import unittest
 from datetime import datetime
 from typing import Optional
 from unittest.mock import Mock, patch
 
 import frappe
-import json
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -17,19 +18,16 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.site.site import Site, process_rename_site_job_update
-
 from press.press.doctype.remote_file.remote_file import RemoteFile
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
+from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.utils import get_current_team
-
-import typing
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench

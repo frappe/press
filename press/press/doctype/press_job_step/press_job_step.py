@@ -1,10 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import json
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
-import json
 
 
 class PressJobStep(Document):

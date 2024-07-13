@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import log_error
 
@@ -15,6 +16,7 @@ class BenchUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 

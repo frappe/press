@@ -4,6 +4,7 @@
 from typing import List
 
 import frappe
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -16,6 +17,7 @@ class SitePlan(Plan):
 	if TYPE_CHECKING:
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
+
 		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import (
 			SitePlanAllowedApp,
 		)

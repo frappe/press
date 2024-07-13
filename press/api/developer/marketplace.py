@@ -1,6 +1,7 @@
+from typing import Dict, List
+
 import frappe
 from frappe.utils import get_url
-from typing import Dict, List
 
 from press.api.developer import raise_invalid_key_error
 from press.api.site import get_plans as get_site_plans

@@ -1,10 +1,11 @@
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
 
-import frappe
 import typing
-from frappe.tests.utils import FrappeTestCase
+
+import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan

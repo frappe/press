@@ -3,19 +3,21 @@
 # For license information, please see license.txt
 
 import re
-import jwt
-import frappe
-import requests
-
-from pathlib import Path
 from base64 import b64decode
 from datetime import datetime, timedelta
-from press.utils import get_current_team, log_error
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+import frappe
+import jwt
+import requests
+
+from press.utils import get_current_team, log_error
+
 if TYPE_CHECKING:
-	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 	from typing import Optional
+
+	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)

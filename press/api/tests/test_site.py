@@ -19,17 +19,17 @@ from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
-from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 
 
 class TestAPISite(FrappeTestCase):
@@ -764,7 +764,7 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.cluster, seoul_server.cluster)
 
 	def test_site_version_upgrade(self):
-		from press.api.site import version_upgrade, get_private_groups_for_upgrade
+		from press.api.site import get_private_groups_for_upgrade, version_upgrade
 		from press.press.doctype.site_update.site_update import process_update_site_job_update
 
 		app = create_test_app()

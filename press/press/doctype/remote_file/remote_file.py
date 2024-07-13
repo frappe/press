@@ -4,10 +4,10 @@
 
 
 import json
+import pprint
 
 import frappe
 import requests
-import pprint
 from boto3 import client, resource
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
@@ -260,6 +260,7 @@ class RemoteFile(Document):
 def delete_s3_files(buckets):
 	"""Delete specified files from s3 buckets"""
 	from boto3 import resource
+
 	from press.utils import chunk
 
 	press_settings = frappe.get_single("Press Settings")

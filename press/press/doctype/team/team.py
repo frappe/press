@@ -3,27 +3,27 @@
 # For license information, please see license.txt
 
 import os
-import frappe
-
-from frappe import _
-from frappe.core.utils import find
-from typing import List
 from hashlib import blake2b
-from press.utils import log_error, get_valid_teams_for_user
-from frappe.utils import get_fullname
-from frappe.utils import get_url_to_form, random_string
-from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from frappe.model.document import Document
-from press.exceptions import FrappeioServerNotSet
+from typing import List
+
+import frappe
+from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.core.utils import find
+from frappe.model.document import Document
+from frappe.utils import get_fullname, get_url_to_form, random_string
+
+from press.api.client import dashboard_whitelist
+from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.utils import get_valid_teams_for_user, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
-from press.api.client import dashboard_whitelist
 
 
 class Team(Document):
@@ -34,6 +34,7 @@ class Team(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import (
 			CommunicationEmail,

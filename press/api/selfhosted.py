@@ -2,12 +2,12 @@ import time
 
 import frappe
 from dns.resolver import Resolver
+from frappe.utils import strip
 
 from press.api.server import plans
+from press.api.site import NAMESERVERS
 from press.runner import Ansible
 from press.utils import get_current_team
-from press.api.site import NAMESERVERS
-from frappe.utils import strip
 
 
 @frappe.whitelist()

@@ -9,8 +9,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.doctype.site.backups import FIFO, GFS
-from press.press.doctype.site.backups import cleanup_offsite
+from press.press.doctype.site.backups import FIFO, GFS, cleanup_offsite
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.utils.test import foreground_enqueue

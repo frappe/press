@@ -3,10 +3,12 @@
 # For license information, please see license.txt
 
 
-import frappe
 import json
+
+import frappe
 from frappe.model.document import Document
-from frappe.utils import random_string, get_url
+from frappe.utils import get_url, random_string
+
 from press.utils import get_country_info
 
 
@@ -18,6 +20,7 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.account_request_press_role.account_request_press_role import (
 			AccountRequestPressRole,
 		)

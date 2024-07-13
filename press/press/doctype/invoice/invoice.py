@@ -3,17 +3,16 @@
 # For license information, please see license.txt
 
 import frappe
-
 from frappe import _
-from press.utils import log_error
-from frappe.utils import getdate, cint
-from frappe.utils.data import fmt_money
-from press.api.billing import get_stripe
 from frappe.model.document import Document
+from frappe.utils import cint, getdate
+from frappe.utils.data import fmt_money
 
-from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils.billing import get_frappe_io_connection, convert_stripe_money
+from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
+from press.utils.billing import convert_stripe_money, get_frappe_io_connection
 
 
 class Invoice(Document):
@@ -24,6 +23,7 @@ class Invoice(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.invoice_credit_allocation.invoice_credit_allocation import (
 			InvoiceCreditAllocation,
 		)

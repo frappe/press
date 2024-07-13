@@ -3,11 +3,11 @@
 # See license.txt
 
 
+import typing
 import unittest
 from unittest.mock import Mock, patch
 
 import frappe
-import typing
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.database_server.test_database_server import (
@@ -18,8 +18,8 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
-from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+from press.press.doctype.team.test_team import create_test_team
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server

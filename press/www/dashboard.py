@@ -3,6 +3,7 @@
 
 
 import frappe
+
 from press.utils import get_default_team_for_user, get_valid_teams_for_user
 
 base_template_path = "templates/www/dashboard.html"

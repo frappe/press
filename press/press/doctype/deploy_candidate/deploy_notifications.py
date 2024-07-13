@@ -8,6 +8,7 @@ from typing import Optional, Protocol, TypedDict
 
 import frappe
 import frappe.utils
+
 from press.press.doctype.deploy_candidate.utils import (
 	BuildValidationError,
 	get_error_key,
@@ -41,6 +42,7 @@ MatchStrings = str | list[str]
 
 if typing.TYPE_CHECKING:
 	from frappe import Document
+
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,

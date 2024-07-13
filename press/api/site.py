@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 import json
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 import dns.exception
 import frappe
@@ -17,6 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
+
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -32,21 +33,20 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	has_role,
+	is_allowed_access_to_restricted_site_plans,
 	log_error,
 	unique,
 )
-from press.utils import is_allowed_access_to_restricted_site_plans
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+	from frappe.types import DF
+
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from frappe.types import DF
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]

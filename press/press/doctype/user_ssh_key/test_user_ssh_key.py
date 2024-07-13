@@ -5,7 +5,6 @@ import cryptography
 import frappe
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.team.test_team import create_test_press_admin_team

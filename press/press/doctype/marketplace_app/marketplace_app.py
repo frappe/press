@@ -13,6 +13,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.api.client import dashboard_whitelist
 from press.api.github import get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
@@ -22,8 +23,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import get_last_doc, get_current_team
-from press.api.client import dashboard_whitelist
+from press.utils import get_current_team, get_last_doc
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -34,6 +34,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
 			MarketplaceAppCategories,
 		)

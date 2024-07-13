@@ -1,7 +1,7 @@
 from contextlib import suppress
-from posthog import Posthog
 
 import frappe
+from posthog import Posthog
 
 from press.utils import log_error
 

@@ -1,8 +1,8 @@
 from datetime import timedelta
 from unittest.mock import MagicMock, Mock, patch
 
-from frappe.tests.utils import FrappeTestCase
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.backups import (

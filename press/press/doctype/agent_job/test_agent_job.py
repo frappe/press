@@ -4,21 +4,19 @@
 
 
 import json
-from typing import Callable, Literal
-from contextlib import contextmanager
-import frappe
 import unittest
-from unittest.mock import patch, Mock
+from contextlib import contextmanager
+from typing import Callable, Literal
+from unittest.mock import Mock, patch
 
+import frappe
+import responses
 from frappe.model.naming import make_autoname
+
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
-
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.agent import Agent
-
-import responses
-
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 

@@ -1,14 +1,15 @@
 import json
 import os
 import time
-from unittest.mock import Mock, patch
 from unittest import skip
+from unittest.mock import Mock, patch
 
 import docker
 import frappe
 import requests
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase, timeout
+
 from press.api.bench import (
 	all,
 	bench_config,

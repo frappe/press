@@ -4,12 +4,13 @@
 
 
 import frappe
-from frappe.model.document import Document
-from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.model.document import Document
+
+from press.api.billing import get_stripe
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
-from press.api.client import dashboard_whitelist
 
 
 class StripePaymentMethod(Document):

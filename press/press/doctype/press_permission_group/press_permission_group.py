@@ -19,6 +19,7 @@ class PressPermissionGroup(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_permission_group_user.press_permission_group_user import (
 			PressPermissionGroupUser,
 		)

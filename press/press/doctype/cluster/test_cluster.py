@@ -3,19 +3,17 @@
 # See license.txt
 
 
+import unittest
+from unittest.mock import MagicMock, patch
+
 import boto3
 import frappe
-import unittest
-from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
-
-from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
-
-from press.press.doctype.cluster.cluster import Cluster
-
-from unittest.mock import MagicMock, patch
 from moto import mock_aws
 
+from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,

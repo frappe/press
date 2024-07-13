@@ -5,12 +5,13 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from telegram.error import RetryAfter, TimedOut
+
 from press.press.doctype.telegram_message.telegram_message import (
 	TelegramMessage,
 	send_telegram_message,
 )
 from press.telegram_utils import Telegram
-from telegram.error import TimedOut, RetryAfter
 
 
 @patch.object(Telegram, "send")

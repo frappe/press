@@ -1,13 +1,13 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-from io import StringIO
 import time
-
-import pexpect
+from io import StringIO
 
 import frappe
+import pexpect
 from frappe.model.document import Document
+
 from press.press.doctype.deploy_candidate.deploy_candidate import ansi_escape
 
 

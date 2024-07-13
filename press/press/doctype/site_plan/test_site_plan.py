@@ -1,14 +1,13 @@
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
 
-from frappe.tests.utils import FrappeTestCase
-
 from datetime import date
-from unittest.mock import patch
 from typing import Optional
+from unittest.mock import patch
 
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 
 
 def create_test_plan(

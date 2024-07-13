@@ -3,44 +3,42 @@
 # For license information, please see license.txt
 
 
-import ipaddress
 import base64
-import time
-import re
 import hashlib
+import ipaddress
+import re
+import time
+import typing
 from textwrap import wrap
 from typing import Dict, Generator, List, Optional
 
 import boto3
-from oci.core import VirtualNetworkClient
-from oci.identity import IdentityClient
-from oci.config import validate_config
-from oci.core.models import (
-	CreateVcnDetails,
-	CreateSubnetDetails,
-	CreateInternetGatewayDetails,
-	UpdateRouteTableDetails,
-	RouteRule,
-	CreateNetworkSecurityGroupDetails,
-	AddNetworkSecurityGroupSecurityRulesDetails,
-	AddSecurityRuleDetails,
-	TcpOptions,
-	PortRange,
-)
-
 import frappe
 from frappe.model.document import Document
+from oci.config import validate_config
+from oci.core import VirtualNetworkClient
+from oci.core.models import (
+	AddNetworkSecurityGroupSecurityRulesDetails,
+	AddSecurityRuleDetails,
+	CreateInternetGatewayDetails,
+	CreateNetworkSecurityGroupDetails,
+	CreateSubnetDetails,
+	CreateVcnDetails,
+	PortRange,
+	RouteRule,
+	TcpOptions,
+	UpdateRouteTableDetails,
+)
+from oci.identity import IdentityClient
+
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
-
 from press.utils import get_current_team, unique
 
-import typing
-
 if typing.TYPE_CHECKING:
-	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 

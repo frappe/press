@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 import frappe
+from frappe.utils import cint, cstr, flt
 from sql_metadata import Parser
-from frappe.utils import flt, cint, cstr
 
 # Any index that reads more than 30% table on average is not "useful"
 INDEX_SCORE_THRESHOLD = 0.3

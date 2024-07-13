@@ -10,13 +10,13 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.server import change_plan, new, all
+from press.api.server import all, change_plan, new
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
-from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
@@ -316,12 +316,12 @@ class TestAPIServer(FrappeTestCase):
 
 class TestAPIServerList(FrappeTestCase):
 	def setUp(self):
-		from press.utils import get_current_team
-		from press.press.doctype.server.test_server import create_test_server
-		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.database_server.test_database_server import (
 			create_test_database_server,
 		)
+		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+		from press.press.doctype.server.test_server import create_test_server
+		from press.utils import get_current_team
 
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()

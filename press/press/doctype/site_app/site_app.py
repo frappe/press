@@ -6,6 +6,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr
+
 from press.api.site import get_installed_apps
 
 

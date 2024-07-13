@@ -2,12 +2,13 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
+from frappe.model.document import Document
 
 import press.utils
 from press.api.billing import get_stripe
-from frappe.model.document import Document
-import re
 
 
 class InvalidStripeWebhookEvent(Exception):

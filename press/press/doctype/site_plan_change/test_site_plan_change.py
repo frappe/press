@@ -3,10 +3,12 @@
 # See license.txt
 
 
-import frappe
 import unittest
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
+
+import frappe
+
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 
 class TestSitePlanChange(unittest.TestCase):

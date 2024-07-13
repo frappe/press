@@ -1,8 +1,9 @@
-import frappe
-from press.utils import get_current_team
-from press.api.site import protected
-
 from typing import Dict, List
+
+import frappe
+
+from press.api.site import protected
+from press.utils import get_current_team
 
 
 @frappe.whitelist()

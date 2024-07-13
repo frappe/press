@@ -2,14 +2,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from calendar import monthrange
+
+import frappe
+from frappe.utils import get_datetime, get_time, now_datetime
+
 from press.press.doctype.site.site import Site
-from press.utils import log_error
-from frappe.utils import now_datetime
-from frappe.utils import get_time, get_datetime
 from press.press.doctype.site_update.site_update import benches_with_available_update
+from press.utils import log_error
 
 
 def trigger():

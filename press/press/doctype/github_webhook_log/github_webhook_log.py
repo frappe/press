@@ -12,6 +12,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+
 from press.utils import log_error
 
 if TYPE_CHECKING:

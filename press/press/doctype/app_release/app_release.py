@@ -11,6 +11,7 @@ from typing import Optional, TypedDict
 
 import frappe
 from frappe.model.document import Document
+
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error

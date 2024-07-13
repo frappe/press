@@ -5,6 +5,7 @@ from datetime import datetime
 
 import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.deploy_candidate.cache_utils import run_command_in_docker_cache
 from press.utils import ttl_cache
 

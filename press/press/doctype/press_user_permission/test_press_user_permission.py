@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )

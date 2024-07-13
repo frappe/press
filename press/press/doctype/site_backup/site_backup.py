@@ -10,6 +10,7 @@ from typing import Dict
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
+
 from press.agent import Agent
 
 

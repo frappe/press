@@ -2,10 +2,12 @@
 # See license.txt
 
 from datetime import timedelta
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from twilio.base.exceptions import TwilioRestException
+
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	AlertmanagerWebhookLog,
@@ -24,11 +26,9 @@ from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import
 	create_test_prometheus_alert_rule,
 )
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.telegram_utils import Telegram
 from press.utils.test import foreground_enqueue_doc
-
-
-from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
 class MockTwilioCallInstance:

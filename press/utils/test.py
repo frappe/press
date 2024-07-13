@@ -1,7 +1,8 @@
 """Utility methods for writing tests"""
 
-import frappe
 from typing import Callable
+
+import frappe
 
 
 def foreground_enqueue_doc(

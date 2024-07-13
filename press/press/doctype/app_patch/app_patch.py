@@ -8,6 +8,7 @@ from typing import Optional, TypedDict
 import frappe
 import requests
 from frappe.model.document import Document
+
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
