@@ -1007,7 +1007,7 @@ export default {
 													hide();
 													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Job',
+														name: 'Site Detail Jobs',
 														params: { name: site.name }
 													});
 												},
