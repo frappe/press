@@ -20,7 +20,6 @@ def create_test_subscription(
 	document_type: str = "Site",
 	plan_type: str = "Site Plan",
 ):
-
 	subscription = frappe.get_doc(
 		{
 			"doctype": "Subscription",

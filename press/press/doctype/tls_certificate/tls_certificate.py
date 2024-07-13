@@ -62,7 +62,7 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
-		user, session_data, team, = (
+		(user, session_data, team,) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(),

@@ -101,7 +101,6 @@ class RazorpayPaymentRecord(Document):
 
 
 def fetch_pending_payment_orders(hours=12):
-
 	past_12hrs_ago = datetime.now() - timedelta(hours=hours)
 	pending_orders = frappe.get_all(
 		"Razorpay Payment Record",
@@ -114,7 +113,6 @@ def fetch_pending_payment_orders(hours=12):
 		return
 
 	for order_id in pending_orders:
-
 		try:
 			response = client.order.payments(order_id)
 			for item in response.get("items"):

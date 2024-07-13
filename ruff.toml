@@ -1,0 +1,4 @@
+indent-width = 1
+
+[format]
+indent-style = "tab"

@@ -223,7 +223,6 @@ class TestAPIServer(FrappeTestCase):
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
 	def test_change_plan_changes_plan_of_server_and_updates_subscription_doc(self):
-
 		create_test_virtual_machine_image(cluster=self.cluster, series="m")
 		create_test_virtual_machine_image(
 			cluster=self.cluster, series="f"

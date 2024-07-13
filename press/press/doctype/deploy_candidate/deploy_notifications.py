@@ -307,7 +307,6 @@ def update_with_vue_build_failed(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 	app_name = None
 
@@ -340,7 +339,6 @@ def update_with_import_error(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 	app_name = None
 
@@ -387,7 +385,6 @@ def update_with_module_not_found(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 	app_name = None
 
@@ -431,7 +428,6 @@ def update_with_dependency_not_found(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 	app_name = None
 
@@ -476,7 +472,6 @@ def update_with_error_on_pip_install(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 	app_name = None
 
@@ -561,7 +556,6 @@ def update_with_app_not_fetchable(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ):
-
 	failed_step = get_failed_step(dc)
 
 	details["title"] = "App could not be fetched"

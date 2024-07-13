@@ -844,7 +844,6 @@ class Agent:
 		reference_doctype=None,
 		reference_name=None,
 	):
-
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
 		don't add new job until its gets comleted

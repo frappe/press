@@ -769,7 +769,6 @@ class SelfHostedServer(Document):
 		try:
 			result = self._get_play(play_id)
 			if server_type == "app":
-
 				self.vendor = result["ansible_facts"]["system_vendor"]
 				self.ram = result["ansible_facts"]["memtotal_mb"]
 				self.vcpus = result["ansible_facts"]["processor_vcpus"]

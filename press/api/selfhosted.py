@@ -39,7 +39,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 				"plan": server_details.plan["name"],
 				"database_plan": server_details.plan["name"],
 				"new_server": True,
-			}
+			},
 		).insert()
 	except frappe.DuplicateEntryError as e:
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')

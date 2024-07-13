@@ -55,7 +55,6 @@ TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
 if typing.TYPE_CHECKING:
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 
@@ -238,7 +237,7 @@ class DeployCandidate(Document):
 		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
-		user, session_data, team, = (
+		(user, session_data, team,) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(True),
@@ -483,7 +482,6 @@ class DeployCandidate(Document):
 		deploy_after_build: bool,
 		no_push: bool,
 	) -> None:
-
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
@@ -1062,7 +1060,6 @@ class DeployCandidate(Document):
 		self.additional_packages = []
 		dep_versions = {d.dependency: d.version for d in self.dependencies}
 		for p in self.packages:
-
 			#  second clause cause: '/opt/certbot/bin/pip'
 			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith(
 				"/pip"

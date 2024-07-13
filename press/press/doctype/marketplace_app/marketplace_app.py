@@ -135,7 +135,6 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	def before_insert(self):
-
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -609,7 +608,6 @@ class MarketplaceApp(WebsiteGenerator):
 def get_plans_for_app(
 	app_name, frappe_version=None, include_free=True, include_disabled=False
 ):  # Unused for now, might use later
-
 	plans = []
 	filters = {"app": app_name}
 

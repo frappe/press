@@ -54,7 +54,6 @@ class DeveloperApiHandler:
 	def get_subscription(self) -> Dict:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
-
 			currency, address = frappe.db.get_value(
 				"Team", team, ["currency", "billing_address"]
 			)

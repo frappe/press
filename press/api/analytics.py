@@ -38,7 +38,6 @@ except ImportError:
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
-
 	timespan, timegrain = {
 		"1h": (60 * 60, 60),
 		"6h": (6 * 60 * 60, 5 * 60),
@@ -399,7 +398,8 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 			},
 		)
 		.exclude(
-			"wildcard", mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*"  # noqa
+			"wildcard",
+			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
 		)
 		.extra(size=0)
 	)

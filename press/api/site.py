@@ -40,7 +40,6 @@ from press.utils import is_allowed_access_to_restricted_site_plans
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate

@@ -47,7 +47,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.amount_due, 60)
 
 	def test_invoice_cancel_usage_record(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -78,7 +77,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(usage_records[0].invoice, None)
 
 	def test_invoice_with_credits_less_than_total(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -115,7 +113,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 10)
 
 	def test_invoice_with_credits_more_than_total(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -145,7 +142,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 60)
 
 	def test_invoice_credit_allocation(self):
-
 		# First Invoice
 		# Total: 600
 		# Team has 100 Free Credits and 1000 Prepaid Credits
@@ -209,7 +205,6 @@ class TestInvoice(unittest.TestCase):
 		)
 
 	def test_invoice_cancel_reverse_credit_allocation(self):
-
 		# First Invoice
 		# Total: 600
 		# Team has 100 Free Credits and 1000 Prepaid Credits
@@ -246,7 +241,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(self.team.get_balance(), 1100)
 
 	def test_intersecting_invoices(self):
-
 		invoice1 = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,

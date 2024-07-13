@@ -239,7 +239,6 @@ class DBOptimizer:
 		return self._remove_existing_indexes(possible_db_indexes)
 
 	def _convert_to_db_index(self, column: str) -> DBIndex:
-
 		column_name, table = None, None
 
 		if "." in column:

@@ -40,7 +40,9 @@ class TestScheduledBackupJob(FrappeTestCase):
 		)
 
 	@patch.object(
-		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True  # always backup hour
+		ScheduledBackupJob,
+		"is_backup_hour",
+		new=lambda self, x: True,  # always backup hour
 	)
 	@patch.object(
 		ScheduledBackupJob,
@@ -64,7 +66,9 @@ class TestScheduledBackupJob(FrappeTestCase):
 		self.assertEqual(offsite_count_after, offsite_count_before)
 
 	@patch.object(
-		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True  # always backup hour
+		ScheduledBackupJob,
+		"is_backup_hour",
+		new=lambda self, x: True,  # always backup hour
 	)
 	def test_with_files_taken_once_per_day(self):
 		site = self._create_site_requiring_backup()

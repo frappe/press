@@ -281,7 +281,6 @@ def cleanup_unused_releases():
 			order_by="creation ASC",
 		)
 		for index, release in enumerate(releases):
-
 			if deleted > 2000:
 				return
 

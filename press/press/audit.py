@@ -1,4 +1,5 @@
 """Functions for automated audit of frappe cloud systems."""
+
 import json
 from press.press.doctype.server.server import Server
 from typing import Dict, List
@@ -139,7 +140,6 @@ class BenchFieldCheck(Audit):
 
 
 class AppServerReplicaDirsCheck(Audit):
-
 	audit_type = "App Server Replica Dirs Check"
 
 	def __init__(self):

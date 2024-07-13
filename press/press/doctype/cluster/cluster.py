@@ -662,7 +662,9 @@ class Cluster(Document):
 				doctype,
 				"Test",
 			)
-			match doctype:  # for populating Server doc's fields; assume the trio is created together
+			match (
+				doctype
+			):  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
 					self.database_server = server.name
 				case "Proxy Server":

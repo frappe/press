@@ -82,7 +82,6 @@ this takes a few of seconds (mostly a minute).
 
 @ttl_cache(ttl=20)
 def get_app_cache_items():
-
 	result = run_command_in_docker_cache("ls -luAt --time-style=full-iso bench/apps")
 	if result["returncode"]:
 		return []

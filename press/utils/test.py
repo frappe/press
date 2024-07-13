@@ -1,4 +1,4 @@
-""" Utility methods for writing tests """
+"""Utility methods for writing tests"""
 
 import frappe
 from typing import Callable

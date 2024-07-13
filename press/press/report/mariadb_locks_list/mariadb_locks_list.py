@@ -25,7 +25,6 @@ def get_data(filters):
 
 
 def get_columns():
-
 	return [
 		{
 			"fieldname": "lock_id",

@@ -112,7 +112,6 @@ class TestCluster(unittest.TestCase):
 class TestPrivateCluster(TestCluster):
 	@mock_aws
 	def test_add_images_copies_VMIs_from_other_region(self):
-
 		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
@@ -219,7 +218,6 @@ class TestPublicCluster(TestCluster):
 	@mock_aws
 	@patch.object(ProxyServer, "validate", new=MagicMock())
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
-
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 		self._setup_fake_vmis(["m", "f", "n"])

@@ -114,7 +114,6 @@ class DatabaseServer(BaseServer):
 			and self.subscription
 			and self.subscription.team != self.team
 		):
-
 			self.subscription.disable()
 
 			# enable subscription if exists

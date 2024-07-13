@@ -497,7 +497,6 @@ class Bench(Document):
 
 	@frappe.whitelist()
 	def retry_bench(self):
-
 		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
 			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
 

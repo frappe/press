@@ -143,7 +143,6 @@ class PayoutOrder(Document):
 def get_invoice_item_for_po_item(
 	invoice_name: str, payout_order_item: PayoutOrderItem
 ) -> InvoiceItem | None:
-
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -181,7 +180,6 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
 		try:
-
 			item_names = [i.name for i in items]
 
 			po_exists = frappe.db.exists(

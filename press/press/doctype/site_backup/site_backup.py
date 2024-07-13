@@ -159,7 +159,6 @@ def process_backup_site_job_update(job):
 		return
 	backup = backups[0]
 	if job.status != backup.status:
-
 		status = job.status
 		if job.status == "Delivery Failure":
 			status = "Failure"
