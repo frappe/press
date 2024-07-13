@@ -30,7 +30,8 @@ def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
 	return new_before_insert
 
 
-before_insert: Callable = lambda self: None
+def before_insert(self):
+	return None
 
 
 def fake_agent_job_req(
