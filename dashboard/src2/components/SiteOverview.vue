@@ -21,30 +21,34 @@
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Current Plan</div>
-					<div class="mt-2 flex items-start justify-between">
+					<div class="flex items-center justify-between">
 						<div>
-							<div class="leading-4">
-								<span class="text-base text-gray-900">
-									<template v-if="$site.doc.trial_end_date">
-										{{ trialDays($site.doc.trial_end_date) }}
-									</template>
-									<template v-else-if="currentPlan">
-										{{ $format.planTitle(currentPlan) }}
-										<span v-if="currentPlan.price_inr">/ month</span>
-									</template>
-									<template v-else> No plan set </template>
-								</span>
-							</div>
-							<div
-								class="mt-1 text-sm leading-3 text-gray-600"
-								v-if="currentPlan"
-							>
-								{{
-									currentPlan.support_included
-										? 'Support included'
-										: 'Support not included'
-								}}
+							<div class="text-base text-gray-700">Current Plan</div>
+							<div class="mt-2 flex justify-between">
+								<div>
+									<div class="leading-4">
+										<span class="text-base text-gray-900">
+											<template v-if="$site.doc.trial_end_date">
+												{{ trialDays($site.doc.trial_end_date) }}
+											</template>
+											<template v-else-if="currentPlan">
+												{{ $format.planTitle(currentPlan) }}
+												<span v-if="currentPlan.price_inr">/ month</span>
+											</template>
+											<template v-else> No plan set </template>
+										</span>
+									</div>
+									<div
+										class="mt-1 text-sm leading-3 text-gray-600"
+										v-if="currentPlan"
+									>
+										{{
+											currentPlan.support_included
+												? 'Support included'
+												: 'Support not included'
+										}}
+									</div>
+								</div>
 							</div>
 						</div>
 						<Button @click="showPlanChangeDialog">Change</Button>
