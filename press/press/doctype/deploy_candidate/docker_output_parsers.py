@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 	from typing import Any, Generator, Optional, TypedDict
 
 	from frappe.types import DF
+
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 		DeployCandidateBuildStep,

@@ -1,13 +1,14 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from datetime import datetime, timedelta
-from press.utils import log_error
+
+import frappe
 from frappe.model.document import Document
-from press.utils.billing import get_razorpay_client
+
 from press.press.doctype.team.team import _enqueue_finalize_unpaid_invoices_for_team
+from press.utils import log_error
+from press.utils.billing import get_razorpay_client
 
 
 class RazorpayPaymentRecord(Document):
@@ -101,7 +102,6 @@ class RazorpayPaymentRecord(Document):
 
 
 def fetch_pending_payment_orders(hours=12):
-
 	past_12hrs_ago = datetime.now() - timedelta(hours=hours)
 	pending_orders = frappe.get_all(
 		"Razorpay Payment Record",
@@ -114,7 +114,6 @@ def fetch_pending_payment_orders(hours=12):
 		return
 
 	for order_id in pending_orders:
-
 		try:
 			response = client.order.payments(order_id)
 			for item in response.get("items"):

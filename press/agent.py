@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+import _io
 import json
 import os
 from datetime import date
 from typing import TYPE_CHECKING, List
 
-import _io
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
+
 from press.utils import log_error, sanitize_config
 
 if TYPE_CHECKING:
@@ -844,7 +845,6 @@ class Agent:
 		reference_doctype=None,
 		reference_name=None,
 	):
-
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
 		don't add new job until its gets comleted

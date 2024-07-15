@@ -1,17 +1,16 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+import frappe
 import requests
 import responses
-
-import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent, AgentRequestSkippedException
-from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.agent_request_failure.agent_request_failure import (
 	remove_old_failures,
 )
+from press.press.doctype.server.test_server import create_test_server
 
 
 def create_test_agent_request_failure(

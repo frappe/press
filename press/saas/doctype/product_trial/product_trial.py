@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 

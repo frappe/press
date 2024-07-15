@@ -5,6 +5,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.utils import log_error
 
 

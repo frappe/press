@@ -5,8 +5,9 @@ import traceback
 
 import frappe
 from frappe.model.document import Document
-from press.telegram_utils import Telegram
 from telegram.error import NetworkError, RetryAfter
+
+from press.telegram_utils import Telegram
 
 
 class TelegramMessage(Document):

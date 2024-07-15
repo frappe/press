@@ -2,8 +2,10 @@
 # See license.txt
 
 from unittest.mock import Mock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
@@ -12,7 +14,6 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_update.test_site_update import create_test_site_update
-
 from press.press.doctype.version_upgrade.version_upgrade import VersionUpgrade
 
 

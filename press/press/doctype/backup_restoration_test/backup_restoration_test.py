@@ -1,10 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import frappe
 from frappe.model.document import Document
+
 from press.api.site import _new
 from press.press.doctype.site.site import prepare_site
-import frappe
 
 
 class BackupRestorationTest(Document):

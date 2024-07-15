@@ -5,6 +5,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -16,6 +17,7 @@ class BalanceTransaction(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.balance_transaction_allocation.balance_transaction_allocation import (
 			BalanceTransactionAllocation,
 		)

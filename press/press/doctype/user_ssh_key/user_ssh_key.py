@@ -1,11 +1,12 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import shlex
-import subprocess
-import frappe
 import base64
+import shlex
 import struct
+import subprocess
+
+import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist

@@ -1,6 +1,6 @@
-import frappe
 from typing import Any, Generator, Optional
 
+import frappe
 from frappe.core.doctype.rq_job.rq_job import fetch_job_ids
 from frappe.utils.background_jobs import get_queues, get_redis_conn
 from redis import Redis

@@ -3,8 +3,9 @@
 # For license information, please see license.txt
 
 
-import frappe
 import typing
+
+import frappe
 from frappe.model.document import Document
 
 if typing.TYPE_CHECKING:

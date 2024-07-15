@@ -3,12 +3,12 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from press.press.doctype.team.test_team import create_test_team
 
 from press.press.doctype.press_permission_group.press_permission_group import (
 	get_all_restrictable_methods,
 	has_method_permission,
 )
+from press.press.doctype.team.test_team import create_test_team
 
 
 class TestPressPermissionGroup(FrappeTestCase):

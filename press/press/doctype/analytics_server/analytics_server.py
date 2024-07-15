@@ -1,9 +1,10 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-import os
 import base64
+import os
+
+import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible

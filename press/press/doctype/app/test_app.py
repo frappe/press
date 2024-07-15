@@ -3,11 +3,12 @@
 # See license.txt
 
 
-import frappe
 import unittest
-from press.press.doctype.team.test_team import create_test_team
-
 from typing import TYPE_CHECKING
+
+import frappe
+
+from press.press.doctype.team.test_team import create_test_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App

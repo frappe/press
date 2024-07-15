@@ -2,6 +2,7 @@
 # License: MIT. See LICENSE
 
 import json
+
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.report.mariadb_slow_queries.db_optimizer import (

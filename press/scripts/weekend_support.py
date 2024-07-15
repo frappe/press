@@ -1,7 +1,8 @@
-import frappe
 import datetime
 from datetime import timedelta
 from itertools import cycle
+
+import frappe
 
 agents = [
 	"shadrak@erpnext.com",

@@ -3,19 +3,17 @@
 # See license.txt
 
 
+import unittest
+from unittest.mock import MagicMock, patch
+
 import boto3
 import frappe
-import unittest
-from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
-
-from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
-
-from press.press.doctype.cluster.cluster import Cluster
-
-from unittest.mock import MagicMock, patch
 from moto import mock_aws
 
+from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
@@ -112,7 +110,6 @@ class TestCluster(unittest.TestCase):
 class TestPrivateCluster(TestCluster):
 	@mock_aws
 	def test_add_images_copies_VMIs_from_other_region(self):
-
 		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
@@ -219,7 +216,6 @@ class TestPublicCluster(TestCluster):
 	@mock_aws
 	@patch.object(ProxyServer, "validate", new=MagicMock())
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
-
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 		self._setup_fake_vmis(["m", "f", "n"])

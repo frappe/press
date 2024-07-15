@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.saas.doctype.saas_app_plan.saas_app_plan import get_app_plan_features
 from press.utils import get_current_team
 
@@ -63,7 +64,7 @@ def get_plans_for_app(app, site):
 
 def get_plan_prices(plan_name):
 	plan_prices = frappe.db.get_value(
-		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
+		"Site Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
 	)
 
 	return plan_prices

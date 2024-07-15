@@ -86,7 +86,7 @@ export default {
 						{
 							label: 'Disk',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_storage_usage, 0, 2)
+							value: this.$format.bytes(plan.max_storage_usage, 1, 2)
 						},
 						{
 							value: plan.support_included ? 'Support Included' : ''

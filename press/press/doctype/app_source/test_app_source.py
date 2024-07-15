@@ -2,10 +2,11 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-import frappe
 import unittest
-
 from unittest.mock import patch
+
+import frappe
+
 from press.press.doctype.app.app import App
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource

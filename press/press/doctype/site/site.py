@@ -24,8 +24,8 @@ from frappe.utils import (
 	flt,
 	get_datetime,
 	get_url,
-	time_diff_in_hours,
 	sbool,
+	time_diff_in_hours,
 )
 
 from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
@@ -41,22 +41,24 @@ except ImportError:
 		convert_utc_to_system_timezone as convert_utc_to_user_timezone,
 	)
 
+from typing import TYPE_CHECKING
+
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent, AgentRequestSkippedException
+from press.api.client import dashboard_whitelist
 from press.api.site import check_dns, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import is_dedicated_server
-from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.resource_tag.tag_helpers import TagHelpers
-from press.api.client import dashboard_whitelist
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import (
 	convert,
 	get_client_blacklisted_keys,
@@ -68,13 +70,11 @@ from press.utils import (
 )
 from press.utils.dns import _change_dns_record, create_dns_record
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.server.server import Server
-	from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 class Site(Document, TagHelpers):
@@ -85,6 +85,7 @@ class Site(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_config.site_config import SiteConfig

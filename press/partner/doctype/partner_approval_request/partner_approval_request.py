@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url
+
 from press.api.client import dashboard_whitelist
 
 

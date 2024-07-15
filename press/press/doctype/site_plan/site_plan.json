@@ -99,7 +99,7 @@
   },
   {
    "fieldname": "cpu_time_per_day",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "label": "CPU Time Per Day"
   },
@@ -241,7 +241,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-10 08:27:25.201933",
+ "modified": "2024-07-12 13:36:14.737846",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

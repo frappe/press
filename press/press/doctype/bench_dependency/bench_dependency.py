@@ -13,6 +13,7 @@ class BenchDependency(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.bench_dependency_version.bench_dependency_version import (
 			BenchDependencyVersion,
 		)

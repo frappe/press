@@ -1,10 +1,11 @@
-import frappe
 import json
 import re
-from pathlib import Path
 from collections import Counter
 from datetime import timedelta
+from pathlib import Path
 from typing import Any, Optional, TypedDict
+
+import frappe
 
 PackageManagers = TypedDict(
 	"PackageManagers",

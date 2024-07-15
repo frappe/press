@@ -10,6 +10,7 @@ from typing import Dict
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
+
 from press.agent import Agent
 
 
@@ -159,7 +160,6 @@ def process_backup_site_job_update(job):
 		return
 	backup = backups[0]
 	if job.status != backup.status:
-
 		status = job.status
 		if job.status == "Delivery Failure":
 			status = "Failure"

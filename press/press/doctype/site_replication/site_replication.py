@@ -1,11 +1,13 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import List
+
 import frappe
 from frappe.model.document import Document
-from press.press.doctype.site.site import prepare_site
+
 from press.api.site import _new
-from typing import List
+from press.press.doctype.site.site import prepare_site
 
 
 class SiteReplication(Document):

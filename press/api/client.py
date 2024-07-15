@@ -14,6 +14,7 @@ from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
+
 from press.utils import has_role
 
 ALLOWED_DOCTYPES = [

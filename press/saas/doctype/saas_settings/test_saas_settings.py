@@ -3,12 +3,13 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 
 def create_test_saas_settings(group: ReleaseGroup = None):

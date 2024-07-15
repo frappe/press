@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.api.client import dashboard_whitelist
 
 
@@ -14,6 +15,7 @@ class PressRole(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		allow_apps: DF.Check

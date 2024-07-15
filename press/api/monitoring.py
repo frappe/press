@@ -3,8 +3,10 @@
 # For license information, please see license.txt
 
 
-import frappe
 from itertools import groupby
+
+import frappe
+
 from press.utils import log_error
 
 

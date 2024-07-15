@@ -1,7 +1,7 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
-import frappe
-
 from typing import Dict, List
+
+import frappe
 
 
 def number_k_format(number: int):

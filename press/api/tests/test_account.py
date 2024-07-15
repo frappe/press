@@ -1,9 +1,10 @@
-import frappe
-
 from unittest import TestCase
 from unittest.mock import Mock, patch
-from press.press.doctype.account_request.account_request import AccountRequest
+
+import frappe
+
 from press.api.account import signup
+from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class TestAccountApi(TestCase):

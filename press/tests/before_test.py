@@ -5,10 +5,11 @@
 import os
 
 import frappe
-from frappe.model.document import Document
-from press.utils import _get_current_team, _system_user
 from frappe import set_user as _set_user
+from frappe.model.document import Document
 from frappe.tests.utils import FrappeTestCase
+
+from press.utils import _get_current_team, _system_user
 
 
 def doc_equal(self: Document, other: Document) -> bool:

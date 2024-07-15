@@ -1,7 +1,8 @@
-""" Utility methods for writing tests """
+"""Utility methods for writing tests"""
+
+from typing import Callable
 
 import frappe
-from typing import Callable
 
 
 def foreground_enqueue_doc(
