@@ -2155,3 +2155,13 @@ def change_server(name, server, scheduled_datetime=None, skip_failing_patches=Fa
 
 	if not scheduled_datetime:
 		site_migration.start()
+
+
+@frappe.whitelist()
+def get_site_config_standard_keys():
+	return frappe.get_all(
+		"Site Config Key",
+		{"internal": 0},
+		["name", "key", "title", "description", "type"],
+		order_by="title asc",
+	)

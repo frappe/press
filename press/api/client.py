@@ -24,7 +24,6 @@ ALLOWED_DOCTYPES = [
 	"Site Backup",
 	"Site Activity",
 	"Site Config",
-	"Site Config Key",
 	"Site Plan",
 	"Site Update",
 	"Invoice",
@@ -54,7 +53,6 @@ ALLOWED_DOCTYPES = [
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
-	"User",
 	"Partner Approval Request",
 	"Marketplace App",
 	"Subscription",
@@ -65,7 +63,6 @@ ALLOWED_DOCTYPES = [
 	"App Patch",
 	"Product Trial",
 	"Press Notification",
-	"User SSH Key",
 	"Frappe Version",
 	"Dashboard Banner",
 ]

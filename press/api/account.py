@@ -1091,3 +1091,13 @@ def get_permission_roles():
 		.where(PressRole.team == get_current_team())
 		.run(as_dict=True)
 	)
+
+
+@frappe.whitelist()
+def get_user_ssh_keys():
+	return frappe.db.get_list(
+		"User SSH Key",
+		{"is_removed": 0, "user": frappe.session.user},
+		["name", "ssh_fingerprint", "creation", "is_default"],
+		order_by="creation desc",
+	)
