@@ -25,13 +25,13 @@
 							>
 								<div class="text-base text-gray-700">{{ d.label }}</div>
 								<div class="space-y-1">
+									<div class="text-base text-gray-900" v-html="d.value" />
 									<div class="flex space-x-1">
-										<div class="text-base text-gray-900" v-html="d.value" />
+										<div class="text-sm text-gray-600" v-html="d.subValue" />
 										<Tooltip v-if="d.help" :text="d.help">
-											<i-lucide-info class="h-4 w-4 text-gray-500" />
+											<i-lucide-info class="h-3.5 w-3.5 text-gray-500" />
 										</Tooltip>
 									</div>
-									<div class="text-sm text-gray-600" v-html="d.subValue" />
 								</div>
 							</div>
 							<Button
