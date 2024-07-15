@@ -125,3 +125,4 @@ press.press.doctype.server_storage_plan.patches.add_subscription_for_servers_wit
 press.press.doctype.press_notification.patches.link_reference_doctype_to_notifications
 press.press.doctype.site.patches.set_plan_limit_in_site_config
 press.press.doctype.payout_order.patches.change_fields_from_recipient_to_team
+press.press.doctype.payout_order.patches.compute_total_amount

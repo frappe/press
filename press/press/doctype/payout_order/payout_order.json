@@ -175,13 +175,14 @@
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
-   "options": "recipient_currency"
+   "options": "recipient_currency",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-15 17:23:55.082583",
+ "modified": "2024-07-15 18:03:18.004496",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

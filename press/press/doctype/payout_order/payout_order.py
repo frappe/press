@@ -48,8 +48,7 @@ class PayoutOrder(Document):
 		"team",
 		"mode_of_payment",
 		"status",
-		"net_total_inr",
-		"net_total_usd",
+		"total_amount",
 		"items",
 	]
 
@@ -137,9 +136,12 @@ class PayoutOrder(Document):
 	def compute_total_amount(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
 		if self.recipient_currency == "USD":
-			self.total_amount = self.net_total_usd + self.net_total_inr * exchange_rate
+			inr_in_usd = 0
+			if self.net_total_inr > 0:
+				inr_in_usd = self.net_total_inr / exchange_rate
+			self.total_amount = self.net_total_usd + inr_in_usd
 		elif self.recipient_currency == "INR":
-			self.total_amount = self.net_total_inr + self.net_total_usd / exchange_rate
+			self.total_amount = self.net_total_inr + (self.net_total_usd * exchange_rate)
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
