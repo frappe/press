@@ -7,6 +7,12 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
+		<AlertBanner
+			v-if="alertMessage && !error"
+			:title="alertMessage"
+			type="warning"
+			class="mb-5"
+		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
@@ -18,15 +24,25 @@
 			<div class="flex w-full items-center">
 				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<Button
-					class="ml-auto"
-					@click="$resources.deploy.reload()"
-					:loading="$resources.deploy.loading"
-				>
-					<template #icon>
-						<i-lucide-refresh-ccw class="h-4 w-4" />
-					</template>
-				</Button>
+				<div class="ml-auto space-x-2">
+					<Button
+						@click="$resources.deploy.reload()"
+						:loading="$resources.deploy.loading"
+					>
+						<template #icon>
+							<i-lucide-refresh-ccw class="h-4 w-4" />
+						</template>
+					</Button>
+					<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+						<template v-slot="{ open }">
+							<Button>
+								<template #icon>
+									<i-lucide-more-horizontal class="h-4 w-4" />
+								</template>
+							</Button>
+						</template>
+					</Dropdown>
+				</div>
 			</div>
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -93,12 +109,14 @@ import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import BuildError from '../components/BuildError.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,
+		AlertBanner,
 		BuildError,
 		AlertAddressableError
 	},
@@ -122,7 +140,6 @@ export default {
 					document_type: 'Deploy Candidate',
 					document_name: this.id,
 					is_actionable: true,
-					is_addressed: false,
 					class: 'Error'
 				},
 				limit: 1
@@ -141,7 +158,7 @@ export default {
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
 			let rgDoc = getCachedDocumentResource(
 				'Release Group',
-				this.$resources.deploy.doc.group
+				this.$resources.deploy.doc?.group
 			);
 			this.$resources.deploy.reload();
 			rgDoc.reload();
@@ -160,6 +177,31 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		alertMessage() {
+			if (!this.deploy) {
+				return null;
+			}
+
+			if (this.deploy.retry_count > 0 && this.deploy.status === 'Scheduled') {
+				return 'Previous deploy failed, re-deploy will be attempted soon';
+			}
+			return null;
+		},
+		dropdownOptions() {
+			return [
+				{
+					label: 'View in Desk',
+					icon: 'external-link',
+					condition: () => this.$team.doc?.is_desk_user,
+					onClick: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
+							'_blank'
+						);
+					}
+				}
+			].filter(option => option.condition?.() ?? true);
 		}
 	},
 	methods: {

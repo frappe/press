@@ -1,13 +1,13 @@
 import { defineAsyncComponent, h } from 'vue';
-import { icon, renderDialog } from '../utils/components';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import NewAppDialog from '../components/NewAppDialog.vue';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { toast } from 'vue-sonner';
 import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { isMobile } from '../utils/device';
 
 export default {
 	doctype: 'Marketplace App',
@@ -22,7 +22,7 @@ export default {
 	},
 	list: {
 		route: '/apps',
-		title: 'Apps',
+		title: 'Marketplace',
 		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
@@ -59,7 +59,7 @@ export default {
 				width: 1.0
 			}
 		],
-		primaryAction({ listResource: apps }) {
+		primaryAction() {
 			return {
 				label: 'New App',
 				variant: 'solid',
@@ -67,28 +67,11 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					renderDialog(
-						h(NewAppDialog, {
-							showVersionSelector: true,
-							onAppAdded(app) {
-								toast.promise(apps.insert.submit(app), apps.reload(), {
-									loading: 'Adding new app...',
-									success: () => {
-										router.push({
-											name: 'Marketplace App Detail Listing',
-											params: { name: app.name }
-										});
-										return 'New app added';
-									},
-									error: e => {
-										return e.messages.length
-											? e.messages.join('\n')
-											: e.message;
-									}
-								});
-							}
-						})
+					const NewAppDialog = defineAsyncComponent(() =>
+						import('../components/marketplace/NewMarketplaceAppDialog.vue')
 					);
+
+					renderDialog(h(NewAppDialog));
 				}
 			};
 		}
@@ -143,7 +126,11 @@ export default {
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					fields: ['name', 'version', 'source'],
+					fields: [
+						'source.repository_owner as repository_owner',
+						'source.repository as repository',
+						'source.branch as branch'
+					],
 					columns: [
 						{
 							label: 'Version',
@@ -157,10 +144,9 @@ export default {
 						},
 						{
 							label: 'Repository',
-							fieldname: 'repository_owner',
 							width: 0.5,
 							format: (value, row) => {
-								return `${value}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`;
 							}
 						},
 						{
@@ -182,7 +168,7 @@ export default {
 										GenericDialog,
 										{
 											options: {
-												title: `Add version support for ${app.doc.name}`,
+												title: `Add version support for ${app.doc.title}`,
 												size: '2xl'
 											}
 										},
@@ -295,6 +281,7 @@ export default {
 																source: row.source
 															},
 															fields: ['message', 'tag', 'author', 'status'],
+															orderBy: 'creation desc',
 															columns: [
 																{
 																	label: 'Commit Message',
@@ -511,6 +498,17 @@ export default {
 						};
 					},
 					fields: ['site', 'enabled', 'team'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								class: !isMobile() ? 'w-24' : '',
+								fieldname: 'enabled',
+								options: ['', 'Active', 'Disabled']
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Site',
@@ -546,9 +544,7 @@ export default {
 				}
 			}
 		],
-		actions(context) {
-			let { documentResource: app } = context;
-
+		actions({ documentResource: app }) {
 			return [
 				{
 					label: 'View in Marketplace',
@@ -559,6 +555,19 @@ export default {
 					onClick() {
 						window.open(
 							`${window.location.origin}/marketplace/apps/${app.name}`,
+							'_blank'
+						);
+					}
+				},
+				{
+					label: 'Guidelines',
+					slots: {
+						icon: icon('help-circle')
+					},
+					condition: () => app.doc.status === 'Draft',
+					onClick() {
+						window.open(
+							'https://frappecloud.com/docs/marketplace/marketpace-guidelines',
 							'_blank'
 						);
 					}
@@ -581,6 +590,39 @@ export default {
 							})
 						);
 					}
+				},
+				,
+				{
+					label: 'Options',
+					condition: () => app.doc.status === 'Draft',
+					options: [
+						{
+							label: 'Delete',
+							icon: icon('trash-2'),
+							condition: () => app.doc.status === 'Draft',
+							onClick() {
+								confirmDialog({
+									title: `Delete App ${app.doc.title}`,
+									message: 'Are you sure you want to delete this app?',
+									onSuccess({ hide }) {
+										toast.promise(app.delete.submit(), {
+											loading: 'Deleting app...',
+											success: () => {
+												hide();
+												router.push({ name: 'Marketplace App List' });
+												return 'App deleted successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
+										});
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}

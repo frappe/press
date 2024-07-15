@@ -1,9 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 from typing import List
+
+import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.invoice.invoice import calculate_gst
 from press.utils import get_current_team
 

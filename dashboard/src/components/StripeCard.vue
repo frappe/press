@@ -268,7 +268,7 @@ export default {
 	computed: {
 		formattedMicroChargeAmount() {
 			const isINR = this.$account.team.currency === 'INR';
-			return isINR ? '₹50' : '$0.5';
+			return isINR ? '₹100' : '$1';
 		},
 		browserTimezone() {
 			if (!window.Intl) {

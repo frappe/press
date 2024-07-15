@@ -64,13 +64,6 @@
 						v-if="paymentMode === 'Card'"
 						@complete="onSuccess"
 					/>
-					<Button
-						class="w-full"
-						variant="solid"
-						v-if="paymentMode === 'Partner Credits'"
-						@click="onSuccess"
-						>Save</Button
-					>
 					<LoadingText
 						text="Updating account balance..."
 						v-if="$resources.prepaidCredits.loading"
@@ -181,15 +174,8 @@ export default {
 			if (this.paymentMode == 'Prepaid Credits') {
 				return 'You will be charged from your account balance at the end of every month';
 			}
-			if (this.paymentMode == 'Partner Credits') {
-				return 'You will be charged from your Partner Credit balance at the end of every month';
-			}
 		},
 		paymentModeOptions() {
-			if (this.$account.team.erpnext_partner) {
-				return ['', 'Card', 'Prepaid Credits', 'Partner Credits'];
-			}
-
 			return ['', 'Card', 'Prepaid Credits'];
 		}
 	}

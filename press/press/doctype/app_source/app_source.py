@@ -9,6 +9,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+
 from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
@@ -22,6 +23,7 @@ class AppSource(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.app_source_version.app_source_version import AppSourceVersion
 
 		app: DF.Link
@@ -41,6 +43,8 @@ class AppSource(Document):
 		uninstalled: DF.Check
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
+
+	dashboard_fields = ["repository_owner", "repository", "branch"]
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
@@ -99,7 +103,7 @@ class AppSource(Document):
 		if self.last_github_poll_failed and not force:
 			return
 
-		if not (response := self.poll_github_for_branch_info()):
+		if not (response := self.poll_github_for_branch_info()).ok:
 			return
 
 		try:
@@ -133,24 +137,19 @@ class AppSource(Document):
 				"timestamp": timestamp,
 				"deployable": bool(is_first_release),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
-	def poll_github_for_branch_info(self):
-		response = self.get_poll_response()
-		if not response.ok:
-			self.set_poll_failed(response.text)
-			log_error(
-				"Create Release Error",
-				response_status_code=response.status_code,
-				response_text=response.text,
-				doc=self,
-			)
-			return
+	def poll_github_for_branch_info(self) -> requests.Response:
+		if (response := self.get_poll_response()).ok:
+			self.set_poll_succeeded()
+		else:
+			self.set_poll_failed(response)
 
-		self.set_poll_succeeded()
+		# Will cause recursion of db.save is used
+		self.db_update()
 		return response
 
-	def get_poll_response(self):
+	def get_poll_response(self) -> requests.Response:
 		headers = self.get_auth_headers()
 		return requests.get(
 			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
@@ -158,27 +157,32 @@ class AppSource(Document):
 		)
 
 	def set_poll_succeeded(self):
-		frappe.db.set_value(
-			"App Source",
-			self.name,
-			{
-				"last_github_response": "",
-				"last_github_poll_failed": False,
-				"last_synced": frappe.utils.now(),
-			},
-		)
+		self.last_github_response = ""
+		self.last_github_poll_failed = False
+		self.last_synced = frappe.utils.now()
+		self.uninstalled = False
 
-	def set_poll_failed(self, response_text: str):
-		pass
-		frappe.db.set_value(
-			"App Source",
-			self.name,
-			{
-				"last_github_response": response_text or "",
-				"last_github_poll_failed": True,
-				"last_synced": frappe.utils.now(),
-			},
-		)
+	def set_poll_failed(self, response):
+		self.last_github_response = response.text or ""
+		self.last_github_poll_failed = True
+		self.last_synced = frappe.utils.now()
+
+		"""
+		If poll fails with 404 after updating the `github_installation_id` it
+		*probably* means that FC hasn't been granted access to this particular
+		app by the user.
+
+		In this case the App Source is in an uninstalled state.
+		"""
+		self.uninstalled = response.status_code == 404
+
+		if response.status_code != 404:
+			log_error(
+				"Create Release Error",
+				response_status_code=response.status_code,
+				response_text=response.text,
+				doc=self,
+			)
 
 	def get_auth_headers(self) -> dict:
 		return get_auth_headers(self.github_installation_id)

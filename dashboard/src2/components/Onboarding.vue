@@ -44,7 +44,7 @@
 						</p>
 						<Button
 							class="mt-2"
-							:route="`/app-trial/${pendingSiteRequest.saas_product}`"
+							:route="`/app-trial/${pendingSiteRequest.product_trial}`"
 						>
 							Continue
 						</Button>
@@ -55,7 +55,7 @@
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
 							<span class="text-base font-medium">
-								Your trial site is ready: {{ trialSite.name }}
+								Your trial site is ready
 							</span>
 						</div>
 						<div
@@ -65,6 +65,18 @@
 						</div>
 					</div>
 					<div class="pl-7">
+						<div class="mt-2">
+							<a
+								class="flex items-center text-base font-medium underline"
+								:href="`https://${trialSite.name}`"
+								target="_blank"
+							>
+								https://{{ trialSite.name }}
+								<i-lucide-external-link
+									class="ml-1 h-3.5 w-3.5 text-gray-800"
+								/>
+							</a>
+						</div>
 						<p class="mt-2 text-p-base text-gray-800">
 							Your trial will expire on
 							<span class="font-medium">
@@ -122,7 +134,7 @@
 							your account and use it to create sites.
 						</p>
 						<div class="mt-2 flex items-center space-x-2">
-							<Button @click="showBuyCreditsDialog = true">
+							<Button @click="checkBillingAddressIsSet">
 								Add money to your account
 							</Button>
 						</div>
@@ -193,6 +205,11 @@
 			:minimumAmount="minimumAmount"
 			@success="onBuyCreditsSuccess"
 		/>
+		<UpdateBillingDetails
+			v-model="showAddBillingDetailsDialog"
+			@updated="onAddresUpdateSuccess"
+			message="Please add your billing address before adding credits to your account."
+		/>
 	</div>
 </template>
 <script>
@@ -208,12 +225,16 @@ export default {
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('../components/BuyPrepaidCreditsDialog.vue')
 		),
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		),
 		TextInsideCircle
 	},
 	data() {
 		return {
 			showAddCardDialog: false,
-			showBuyCreditsDialog: false
+			showBuyCreditsDialog: false,
+			showAddBillingDetailsDialog: false
 		};
 	},
 	methods: {
@@ -224,6 +245,18 @@ export default {
 		onAddCardSuccess() {
 			this.$team.reload();
 			this.showAddCardDialog = false;
+		},
+		onAddresUpdateSuccess() {
+			this.$team.reload();
+			this.showAddBillingDetailsDialog = false;
+			this.showBuyCreditsDialog = true;
+		},
+		checkBillingAddressIsSet() {
+			if (!this.$team.doc.billing_details?.name) {
+				this.showAddBillingDetailsDialog = true;
+			} else {
+				this.showBuyCreditsDialog = true;
+			}
 		}
 	},
 	computed: {

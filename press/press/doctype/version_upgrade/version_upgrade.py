@@ -35,6 +35,8 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
+		if self.status == "Failure":
+			return
 		self.validate_versions()
 		self.validate_same_server()
 		self.validate_apps()

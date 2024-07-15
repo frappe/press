@@ -1,12 +1,11 @@
-import frappe
 import json
-from frappe.core.utils import find
-from frappe.core.doctype.user.user import test_password_strength
-from frappe.utils.password import get_decrypted_password
-from press.press.doctype.team.team import Team
-from press.api.account import get_account_request_from_key
-from press.utils import get_current_team, group_children_in_result, log_error
 
+import frappe
+from frappe.core.utils import find
+
+from press.api.account import get_account_request_from_key
+from press.press.doctype.site.erpnext_site import get_erpnext_domain
+from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.saas_site import (
 	SaasSite,
 	get_default_team_for_app,
@@ -14,10 +13,9 @@ from press.press.doctype.site.saas_site import (
 	get_saas_site_plan,
 	set_site_in_subscription_docs,
 )
-from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
-from press.press.doctype.site.erpnext_site import get_erpnext_domain
+from press.press.doctype.team.team import Team
+from press.utils import get_current_team, group_children_in_result, log_error
 from press.utils.telemetry import capture, identify
-
 
 # ----------------------------- SIGNUP APIs ---------------------------------
 
@@ -26,7 +24,6 @@ from press.utils.telemetry import capture, identify
 def account_request(
 	subdomain,
 	email,
-	password,
 	first_name,
 	last_name,
 	country,
@@ -36,15 +33,13 @@ def account_request(
 	"""
 	return: Stripe setup intent and AR key if stripe flow, else None
 	"""
+	from frappe.utils.html_utils import clean_html
+
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
 	if not check_subdomain_availability(subdomain, app):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
-
-	password_validation = validate_password(password, first_name, last_name, email)
-	if not password_validation.get("validation_passed"):
-		frappe.throw(password_validation.get("suggestion")[0])
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
@@ -67,10 +62,9 @@ def account_request(
 				"erpnext": False,
 				"subdomain": subdomain,
 				"email": email,
-				"password": password,
 				"role": "Press Admin",
-				"first_name": first_name,
-				"last_name": last_name,
+				"first_name": clean_html(first_name),
+				"last_name": clean_html(last_name),
 				"country": country,
 				"url_args": url_args or json.dumps({}),
 				"send_email": True,
@@ -179,24 +173,6 @@ def get_hybrid_saas_pool(account_request):
 
 
 @frappe.whitelist(allow_guest=True)
-def validate_password(password, first_name, last_name, email):
-	passed = True
-	suggestion = None
-
-	user_data = (first_name, last_name, email)
-	result = test_password_strength(password, "", None, user_data)
-	feedback = result.get("feedback", None)
-
-	if feedback and not feedback.get("password_policy_validation_passed", False):
-		passed = False
-		suggestion = feedback.get("suggestions") or [
-			"Your password is too weak, please pick a stronger password by adding more words."
-		]
-
-	return {"validation_passed": passed, "suggestion": suggestion}
-
-
-@frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain, app):
 	"""
 	Checks if subdomain is available to create a new site
@@ -235,15 +211,18 @@ def validate_account_request(key):
 		frappe.throw("Request Key not provided")
 
 	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
-	headless, route = frappe.db.get_value(
-		"Saas Setup Account Generator", app, ["headless", "route"]
+	app_info = frappe.db.get_value(
+		"Saas Setup Account Generator", app, ["headless", "route"], as_dict=True
 	)
 
-	if headless:
+	if not app_info:
+		frappe.throw("App configurations are missing! Please contact support")
+
+	if app_info.headless:
 		headless_setup_account(key)
 	else:
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = f"/{route}?key={key}"
+		frappe.local.response["location"] = f"/{app_info.route}?key={key}"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -363,7 +342,6 @@ def create_team(account_request, get_stripe_id=False):
 			account_request,
 			account_request.first_name,
 			account_request.last_name,
-			password=get_decrypted_password("Account Request", account_request.name, "password"),
 			country=account_request.country,
 			is_us_eu=account_request.is_us_eu,
 			via_erpnext=True,
@@ -428,9 +406,9 @@ def get_saas_product_info(product=None):
 	team = get_current_team()
 	product = frappe.utils.cstr(product)
 	site_request = frappe.db.get_value(
-		"SaaS Product Site Request",
+		"Product Trial Request",
 		filters={
-			"saas_product": product,
+			"product_trial": product,
 			"team": team,
 			"status": ("in", ["Pending", "Wait for Site"]),
 		},
@@ -438,26 +416,26 @@ def get_saas_product_info(product=None):
 		as_dict=1,
 	)
 	if site_request:
-		saas_product = frappe.db.get_value(
-			"SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
+		product_trial = frappe.db.get_value(
+			"Product Trial", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
 		)
 		return {
-			"title": saas_product.title,
-			"logo": saas_product.logo,
-			"domain": saas_product.domain,
+			"title": product_trial.title,
+			"logo": product_trial.logo,
+			"domain": product_trial.domain,
 			"site_request": site_request,
 		}
 
 
 @frappe.whitelist()
 def create_site(subdomain, site_request):
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return site_request_doc.create_site(subdomain)
 
 
 @frappe.whitelist()
 def get_site_progress(site_request):
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return site_request_doc.get_progress()
 
 
@@ -465,7 +443,7 @@ def get_site_progress(site_request):
 def login_to_site(site_request):
 	from press.api.site import login
 
-	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	site_request_doc = frappe.get_doc("Product Trial Request", site_request)
 	return login(site_request_doc.site)
 
 

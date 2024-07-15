@@ -19,6 +19,7 @@ class PressPermissionGroup(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_permission_group_user.press_permission_group_user import (
 			PressPermissionGroupUser,
 		)
@@ -216,6 +217,9 @@ class PressPermissionGroup(Document):
 def has_method_permission(
 	doctype: str, name: str, method: str, group_names: list = None
 ):
+	if frappe.local.system_user():
+		return True
+
 	user = frappe.session.user
 
 	if doctype not in get_all_restrictable_doctypes():

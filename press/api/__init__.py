@@ -1,4 +1,5 @@
 import frappe
+
 from press.utils import get_minified_script, get_minified_script_2
 
 

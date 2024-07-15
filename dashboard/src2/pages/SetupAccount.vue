@@ -48,6 +48,7 @@
 								required
 							/>
 							<FormControl
+								v-if="!oauthDomain"
 								label="Password"
 								type="password"
 								v-model="password"
@@ -140,6 +141,7 @@ export default {
 			invitationToTeam: null,
 			isInvitation: null,
 			oauthSignup: 0,
+			oauthDomain: false,
 			country: null,
 			termsAccepted: false,
 			invitedBy: null,
@@ -172,8 +174,9 @@ export default {
 						this.isInvitation = res.is_invitation;
 						this.invitedByParentTeam = res.invited_by_parent_team;
 						this.oauthSignup = res.oauth_signup;
+						this.oauthDomain = res.oauth_domain;
 						this.countries = res.countries;
-						this.saasProduct = res.saas_product;
+						this.saasProduct = res.product_trial;
 					}
 				}
 			};
@@ -192,12 +195,13 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
+					oauth_domain: this.oauthDomain,
 					signup_values: this.signupValues
 				},
 				onSuccess() {
-					let path = '/dashboard-beta';
+					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard-beta/app-trial/${this.saasProduct.name}`;
+						path = `/dashboard/app-trial/${this.saasProduct.name}`;
 					}
 					window.location.href = path;
 				}

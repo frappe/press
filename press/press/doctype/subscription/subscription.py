@@ -5,13 +5,13 @@
 
 from typing import List
 
-from frappe.query_builder.functions import Coalesce, Count
-from press.press.doctype.site_plan.site_plan import SitePlan
-
 import frappe
 from frappe.model.document import Document
-from press.utils import log_error
+from frappe.query_builder.functions import Coalesce, Count
+
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.site_plan.site_plan import SitePlan
+from press.utils import log_error
 
 
 class Subscription(Document):
@@ -23,6 +23,7 @@ class Subscription(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		additional_storage: DF.Data | None
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
@@ -50,6 +51,7 @@ class Subscription(Document):
 		price_field = (
 			Plan.price_inr if frappe.local.team().currency == "INR" else Plan.price_usd
 		)
+		filters = list_args.get("filters", {})
 
 		query = (
 			frappe.qb.from_(Subscription)
@@ -66,12 +68,17 @@ class Subscription(Document):
 			)
 			.where(
 				(Subscription.document_type == "Marketplace App")
-				& (Subscription.document_name == list_args["filters"]["document_name"])
+				& (Subscription.document_name == filters["document_name"])
 				& (Subscription.site != "")
 				& (price_field > 0)
 			)
 			.limit(list_args["limit"])
+			.offset(list_args["start"])
 		)
+
+		if filters.get("enabled"):
+			enabled = 1 if filters["enabled"] == "Active" else 0
+			query = query.where(Subscription.enabled == enabled)
 
 		return query.run(as_dict=True)
 
@@ -79,6 +86,9 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
+		if self.plan_type == "Server Storage Plan":
+			return
+
 		doc = self.get_subscribed_document()
 		plan_field = doc.meta.get_field("plan")
 		if not (
@@ -95,6 +105,8 @@ class Subscription(Document):
 			doc.save()
 
 	def enable(self):
+		if self.enabled:
+			return
 		try:
 			self.enabled = True
 			self.save()
@@ -102,6 +114,8 @@ class Subscription(Document):
 			frappe.log_error(title="Enable Subscription Error")
 
 	def disable(self):
+		if not self.enabled:
+			return
 		try:
 			self.enabled = False
 			self.save()
@@ -130,6 +144,9 @@ class Subscription(Document):
 
 		plan = frappe.get_cached_doc(self.plan_type, self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
+
+		if self.additional_storage:
+			amount = amount * int(self.additional_storage)
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -193,6 +210,7 @@ class Subscription(Document):
 			"team": self.team,
 			"document_type": self.document_type,
 			"document_name": self.document_name,
+			"plan_type": self.plan_type,
 		}
 		if self.document_type == "Marketplace App":
 			filters.update({"marketplace_app_subscription": self.marketplace_app_subscription})
@@ -256,7 +274,7 @@ def paid_plans():
 		"price_inr": (">", 0),
 		"enabled": 1,
 	}
-	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan"]
+	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan", "Server Storage Plan"]
 	for doctype in doctypes:
 		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
 

@@ -1,6 +1,6 @@
+import frappe
 import grequests
 import requests
-import frappe
 from tqdm import tqdm
 
 frappe.init(site="frappe.cloud")

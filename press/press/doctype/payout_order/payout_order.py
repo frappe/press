@@ -1,16 +1,16 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
-from typing import List
+from datetime import date
 from itertools import groupby
-from press.utils import log_error
+from typing import List
+
+import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
-
-from datetime import date
+from press.utils import log_error
 
 
 class PayoutOrder(Document):
@@ -21,6 +21,7 @@ class PayoutOrder(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
@@ -83,6 +84,10 @@ class PayoutOrder(Document):
 
 			invoice_item = get_invoice_item_for_po_item(invoice_name, row)
 
+			# check to avoid app revenue ledger item's calculation
+			if not invoice_item:
+				return
+
 			row.tax = row.tax or 0.0
 			row.total_amount = invoice_item.amount
 			row.site = invoice_item.site
@@ -138,17 +143,31 @@ class PayoutOrder(Document):
 
 def get_invoice_item_for_po_item(
 	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem:
-	return frappe.get_doc(
-		"Invoice Item",
-		{
-			"parent": invoice_name,
-			"document_name": payout_order_item.document_name,
-			"document_type": payout_order_item.document_type,
-			"plan": payout_order_item.plan,
-			"rate": payout_order_item.rate,
-		},
-	)
+) -> InvoiceItem | None:
+	try:
+		if payout_order_item.invoice_item:
+			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
+			if (
+				item.parent == invoice_name
+				and item.document_name == payout_order_item.document_name
+				and item.document_type == payout_order_item.document_type
+				and item.plan == payout_order_item.plan
+				and item.rate == payout_order_item.rate
+			):
+				return item
+
+		return frappe.get_doc(
+			"Invoice Item",
+			{
+				"parent": invoice_name,
+				"document_name": payout_order_item.document_name,
+				"document_type": payout_order_item.document_type,
+				"plan": payout_order_item.plan,
+				"rate": payout_order_item.rate,
+			},
+		)
+	except frappe.DoesNotExistError:
+		return None
 
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
@@ -162,7 +181,6 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
 		try:
-
 			item_names = [i.name for i in items]
 
 			po_exists = frappe.db.exists(
@@ -239,6 +257,7 @@ def get_unaccounted_marketplace_invoice_items():
 		.select(
 			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
 		)
+		.distinct()
 		.run(as_dict=True)
 	)
 

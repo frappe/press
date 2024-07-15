@@ -15,11 +15,12 @@
   "cluster",
   "provider",
   "virtual_machine",
+  "ignore_incidents_since",
   "is_server_prepared",
   "is_server_setup",
   "is_self_hosted",
   "is_server_renamed",
-  "ignore_incidents",
+  "public",
   "billing_section",
   "team",
   "column_break_11",
@@ -41,8 +42,10 @@
   "database_section",
   "database_server",
   "self_hosted_mariadb_server",
+  "is_managed_database",
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
+  "managed_database_service",
   "replication",
   "is_primary",
   "is_replication_setup",
@@ -59,6 +62,7 @@
   "use_for_new_benches",
   "use_for_new_sites",
   "staging",
+  "use_for_build",
   "column_break_ktkv",
   "new_worker_allocation",
   "set_bench_memory_limits",
@@ -150,6 +154,7 @@
    "label": "Database"
   },
   {
+   "depends_on": "eval:!doc.is_managed_database",
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
@@ -370,7 +375,7 @@
    "label": "SSH User"
   },
   {
-   "depends_on": "eval:doc.is_self_hosted==true",
+   "depends_on": "eval:doc.is_self_hosted==true && !doc.is_managed_database",
    "fieldname": "self_hosted_mariadb_server",
    "fieldtype": "Data",
    "label": "Self Hosted MariaDB Server IP"
@@ -381,7 +386,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.is_self_hosted==true",
+   "depends_on": "eval:doc.is_self_hosted==true && !doc.is_managed_database",
    "fieldname": "self_hosted_mariadb_root_password",
    "fieldtype": "Password",
    "label": "Self Hosted MariaDB Root Password"
@@ -460,12 +465,6 @@
    "label": "Skip Scheduled Backups"
   },
   {
-   "default": "0",
-   "fieldname": "ignore_incidents",
-   "fieldtype": "Check",
-   "label": "Ignore Incidents"
-  },
-  {
    "fieldname": "column_break_pdbx",
    "fieldtype": "Column Break"
   },
@@ -474,10 +473,42 @@
    "fieldname": "disable_agent_job_auto_retry",
    "fieldtype": "Check",
    "label": "Disable Agent Job Auto Retry"
+  },
+  {
+   "default": "0",
+   "description": "If user opts DBaaS eg. RDS",
+   "fieldname": "is_managed_database",
+   "fieldtype": "Check",
+   "label": "Is Managed Database"
+  },
+  {
+   "fieldname": "managed_database_service",
+   "fieldtype": "Link",
+   "label": "Managed Database Service",
+   "options": "Managed Database Service"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "fieldname": "ignore_incidents_since",
+   "fieldtype": "Datetime",
+   "label": "Ignore Incidents Since"
+  },
+  {
+   "default": "0",
+   "description": "If checked, server will be used to run Docker builds.",
+   "fieldname": "use_for_build",
+   "fieldtype": "Check",
+   "label": "Use For Build",
+   "search_index": 1
   }
  ],
  "links": [],
- "modified": "2024-03-22 12:12:52.727223",
+ "modified": "2024-07-03 10:27:53.851194",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -511,5 +542,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "title",
  "track_changes": 1
 }

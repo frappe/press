@@ -2,9 +2,12 @@
 # See license.txt
 
 from datetime import timedelta
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from twilio.base.exceptions import TwilioRestException
+
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	AlertmanagerWebhookLog,
@@ -23,10 +26,9 @@ from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import
 	create_test_prometheus_alert_rule,
 )
 from press.press.doctype.site.test_site import create_test_site
-from press.utils.test import foreground_enqueue_doc
-
-
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.telegram_utils import Telegram
+from press.utils.test import foreground_enqueue_doc
 
 
 class MockTwilioCallInstance:
@@ -77,6 +79,7 @@ class MockTwilioClient:
 	new=foreground_enqueue_doc,
 )
 @patch.object(AlertmanagerWebhookLog, "send_telegram_notification", new=Mock())
+@patch.object(AlertmanagerWebhookLog, "react", new=Mock())
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
@@ -367,7 +370,6 @@ class TestIncident(FrappeTestCase):
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
 		incident.reload()  # datetime conversion
-		# breakpoint()
 		incident.db_set(
 			"modified",
 			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
@@ -413,3 +415,15 @@ class TestIncident(FrappeTestCase):
 			mock_calls_create.assert_called_with(
 				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
 			)
+
+	@patch.object(Telegram, "send")
+	def test_telegram_message_is_sent_when_unable_to_reach_twilio(
+		self, mock_telegram_send
+	):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		with patch.object(
+			MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)
+		):
+			incident.call_humans()
+		mock_telegram_send.assert_called_once()

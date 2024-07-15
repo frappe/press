@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-03-11 22:53:32.367666",
+  "modified": "2024-05-03 13:15:29.685134",
   "name": "Create Server",
   "steps": [
    {
@@ -97,7 +97,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
     "step_name": "Set additional config",
     "wait_until_true": 0
    }
@@ -307,6 +307,78 @@
     "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-05-11 02:11:49.716655",
+  "name": "Increase Disk Size",
+  "steps": [
+   {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing disk on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)}) by {server.size_to_increase_by_for_20_percent_available}G\")\nserver.calculated_increase_disk_size()\n    ",
+    "step_name": "Increase Disk Size",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if frappe.db.get_value(doc.server_type, doc.server, \"provider\") == \"AWS EC2\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True, False)",
+    "step_name": "Wait for partition to resize",
+    "wait_until_true": 1
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-05-27 11:29:41.787719",
+  "name": "Prune Docker system",
+  "steps": [
+   {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Pruning docker cache on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.prune_docker_system()",
+    "step_name": "Prune Docker system",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prune Docker System\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for docker system prune",
+    "wait_until_true": 1
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-06-18 16:03:25.166898",
+  "name": "Increase Swap",
+  "steps": [
+   {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.increase_swap(4)",
+    "step_name": "Add swap on server",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Increase Swap",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Increase Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "step_name": "Wait for swap to be added",
     "wait_until_true": 1
    }
   ]

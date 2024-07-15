@@ -142,6 +142,13 @@ frappe.ui.form.on('Site', {
 				'fetch_bench_from_agent',
 				frm.doc.status !== 'Archived',
 			],
+			[
+				__('Set status based on Ping'),
+				'set_status_based_on_ping',
+				!['Active', 'Archived', 'Inactive', 'Suspended'].includes(
+					frm.doc.status,
+				),
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -245,6 +252,35 @@ Password: ${r.message.password}
 				dialog.show();
 			},
 			__('Actions'),
+		);
+
+		frm.add_custom_button(
+			__('Update DNS Record'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('Update DNS Record'),
+					fields: [
+						{
+							fieldtype: 'Data',
+							fieldname: 'value',
+							label: 'Value',
+							description: "Site's CNAME record will point to this value",
+							reqd: 1,
+						},
+					],
+					primary_action(args) {
+						frm
+							.call('update_dns_record', {
+								value: args.value,
+							})
+							.then(() => {
+								dialog.hide();
+							});
+					},
+				});
+				dialog.show();
+			},
+			__('Dangerous Actions'),
 		);
 
 		frm.add_custom_button(

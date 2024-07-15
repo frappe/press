@@ -57,15 +57,6 @@
 					<p>Email Address</p>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
 				</div>
-				<div class="form-group">
-					<p>Password</p>
-					<div>
-						<input type="password" id="password" class="border-sm" name="password"
-							onkeyup="validate_password(this)" onfocusout="togglePasswordPopup()"
-							onfocusin="togglePasswordPopup()">
-						<i class="bi bi-eye-slash" id="togglePassword"></i>
-					</div>
-				</div>
 
 				<div class="form-group">
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
@@ -164,12 +155,6 @@
 				return "Invalid email";
 			}
 		},
-		password: (value) => {
-			let password = value;
-			if (!value) {
-				return "Password is required"
-			}
-		},
 		country: (value) => {
 			if (!value) {
 				return "Please enter your country name";
@@ -181,10 +166,6 @@
 			}
 		}
 	};
-
-	function togglePasswordPopup() {
-		$('.password-popup').toggleClass('hidden');
-	}
 
 	function submit_account_request($form, values) {
 		$('#accountRequestButton').prop('disabled', true);
@@ -231,30 +212,6 @@
 			});
 	}
 
-	function validate_password(input) {
-		const $input = $(input);
-		const password = $input.val() || input
-
-		return frappe.call({
-			method: "press.api.saas.validate_password",
-			args: {
-				password: password,
-				first_name: document.querySelector("#first_name").value,
-				last_name: document.querySelector("#last_name").value,
-				email: document.querySelector("#email").value,
-			},
-			type: "POST",
-		}).then((r) => {
-			if (r.message.validation_passed === true) {
-				controller.show_input_feedback("password", "Strong Password")
-				return false
-			} else {
-				controller.show_input_error("password", r.message.suggestion);
-				return r.message.suggestion;
-			}
-		})
-	}
-
 	function validate_subdomain(input) {
 		let $input = $(input);
 		let subdomain = $input.val();
@@ -286,23 +243,6 @@
 				return false;
 			});
 	}
-
-	const togglePassword = document.querySelector('#togglePassword');
-	const password = document.querySelector('#password');
-	togglePassword.addEventListener('click', () => {
-		const type = password
-			.getAttribute('type') === 'password' ?
-			'text' : 'password';
-
-		password.setAttribute('type', type);
-		if (type === 'text') {
-			togglePassword.classList.remove('bi-eye-slash');
-			togglePassword.classList.add('bi-eye');
-		} else {
-			togglePassword.classList.remove('bi-eye');
-			togglePassword.classList.add('bi-eye-slash');
-		}
-	});
 
 	function signupWithGoogle() {
 		return frappe.call({

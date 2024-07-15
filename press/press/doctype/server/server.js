@@ -97,6 +97,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Agent Sentry'),
+				'setup_agent_sentry',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,
@@ -131,6 +137,18 @@ frappe.ui.form.on('Server', {
 			[
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
+			[
+				__('Enable Public Bench and Site Creation'),
+				'enable_server_for_new_benches_and_site',
+				true,
+				frm.doc.virtual_machine,
+			],
+			[
+				__('Disable Public Bench and Site Creation'),
+				'disable_server_for_new_benches_and_site',
 				true,
 				frm.doc.virtual_machine,
 			],

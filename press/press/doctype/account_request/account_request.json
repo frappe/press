@@ -8,13 +8,13 @@
   "request_key",
   "team",
   "email",
-  "password",
   "oauth_signup",
   "column_break_4",
   "role",
   "invited_by",
   "ip_address",
   "invited_by_parent_team",
+  "press_roles",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -35,7 +35,7 @@
   "saas_sign_up_section",
   "send_email",
   "saas",
-  "saas_product",
+  "product_trial",
   "saas_app",
   "saas_signup_values",
   "new_signup_flow",
@@ -198,12 +198,6 @@
    "label": "Saas Sign Up"
   },
   {
-   "fieldname": "password",
-   "fieldtype": "Password",
-   "label": "Password",
-   "read_only": 1
-  },
-  {
    "collapsible": 1,
    "fieldname": "section_break_31",
    "fieldtype": "Section Break"
@@ -244,12 +238,6 @@
    "label": "Oauth Signup"
   },
   {
-   "fieldname": "saas_product",
-   "fieldtype": "Link",
-   "label": "SaaS Product",
-   "options": "SaaS Product"
-  },
-  {
    "fieldname": "saas_signup_values",
    "fieldtype": "Small Text",
    "label": "SaaS Signup Values"
@@ -265,11 +253,23 @@
    "fieldname": "new_signup_flow",
    "fieldtype": "Check",
    "label": "New Signup Flow"
+  },
+  {
+   "fieldname": "product_trial",
+   "fieldtype": "Link",
+   "label": "Product Trial",
+   "options": "Product Trial"
+  },
+  {
+   "fieldname": "press_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Press Roles",
+   "options": "Account Request Press Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 23:05:20.520049",
+ "modified": "2024-07-06 23:40:30.636251",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

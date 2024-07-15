@@ -25,7 +25,7 @@ function show_banner() {
 			<div class="form-message orange">
 				<div class="flex align-center justify-between">
 					<span>
-						${trial_end_message} Please subscribe to avoid uninterrupted services.
+						${trial_end_message} Please subscribe for uninterrupted services.
 					</span>
 					<a class="btn btn-primary" href="${get_subscription_url()}">Subscribe</a>
 				</div>
@@ -42,5 +42,5 @@ function add_manage_subscription_link() {
 
 function get_subscription_url() {
 	let sitename = frappe.boot.sitename;
-	return `https://frappecloud.com/dashboard-beta/sites/${sitename}`;
+	return `https://frappecloud.com/dashboard/sites/${sitename}`;
 }

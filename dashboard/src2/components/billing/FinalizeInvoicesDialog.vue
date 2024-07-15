@@ -9,7 +9,7 @@
 						v-for="invoice in $resources.unpaidInvoices.data"
 					>
 						{{
-							$date(invoice.period_end).toLocaleString({
+							date(invoice.period_end).toLocaleString({
 								month: 'long',
 								year: 'numeric'
 							})
@@ -40,6 +40,8 @@
 </template>
 
 <script>
+import { date } from '../../utils/format';
+
 export default {
 	name: 'FinalizeInvoicesDialog',
 	props: {
@@ -54,6 +56,9 @@ export default {
 			url: 'press.api.billing.unpaid_invoices',
 			auto: true
 		}
+	},
+	methods: {
+		date
 	}
 };
 </script>

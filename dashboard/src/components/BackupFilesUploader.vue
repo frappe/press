@@ -99,9 +99,9 @@ export default {
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.39111 6.3913H25.3476V22.2174C25.3476 25.9478 22.2955 29 18.565 29H8.39111V6.3913Z" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M21.9565 6.3913V3H5V25.6087H8.3913" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/></svg>',
 					type: 'config',
 					ext: 'application/json',
-					title: 'Site Config',
+					title: 'Site Config (required if backup is encrypted)',
 					description:
-						'Upload the site config files backup. Usually file name ends in -site_config_backup.json',
+						'Upload the site config file. Usually file name ends in -site_config_backup.json',
 					file: null
 				}
 			]
@@ -115,7 +115,8 @@ export default {
 		},
 		async databaseBackupChecker(file, type) {
 			if (type === 'database') {
-				if (!file.name.endsWith('.sql.gz') && !file.name.endsWith('.sql')) {
+				// valid strings are "database.sql.gz", "database.sql", "database.sql (1).gz", "database.sql (2).gz"
+				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {
 					throw new Error(
 						'Database backup file should end with the name "database.sql.gz" or "database.sql"'
 					);

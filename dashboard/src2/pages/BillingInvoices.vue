@@ -17,64 +17,148 @@
 				</template>
 			</template>
 		</Dialog>
+		<BuyPrepaidCreditsDialog
+			v-if="showBuyPrepaidCreditsDialog"
+			v-model="showBuyPrepaidCreditsDialog"
+			:minimumAmount="minimumAmount"
+			@success="
+				() => {
+					showBuyPrepaidCreditsDialog = false;
+				}
+			"
+		/>
 	</div>
 </template>
 <script>
+import { h } from 'vue';
+import { Button } from 'frappe-ui';
 import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
-import { userCurrency } from '../utils/format';
-import { icon } from '../utils/components';
+import { userCurrency, date } from '../utils/format';
+import { confirmDialog, icon, renderInDialog } from '../utils/components';
+import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
+import { dayjsLocal } from '../utils/dayjs';
+import router from '../router';
 
 export default {
 	name: 'BillingInvoices',
 	props: ['tab'],
 	components: {
 		ObjectList,
-		InvoiceTable
+		InvoiceTable,
+		BuyPrepaidCreditsDialog
 	},
 	data() {
 		return {
 			invoiceDialog: false,
-			showInvoice: null
+			showInvoice: null,
+			showBuyPrepaidCreditsDialog: false,
+			minimumAmount: 0
 		};
 	},
 	computed: {
 		options() {
 			return {
 				doctype: 'Invoice',
-				fields: ['type', 'invoice_pdf'],
+				fields: [
+					'type',
+					'invoice_pdf',
+					'payment_mode',
+					'stripe_invoice_url',
+					'due_date',
+					'period_start',
+					'period_end'
+				],
+				filterControls: () => {
+					return [
+						{
+							type: 'select',
+							label: 'Type',
+							class: !this.$isMobile ? 'w-36' : '',
+							fieldname: 'type',
+							options: ['', 'Subscription', 'Prepaid Credits']
+						},
+						{
+							type: 'select',
+							label: 'Status',
+							class: !this.$isMobile ? 'w-36' : '',
+							fieldname: 'status',
+							options: [
+								'',
+								'Draft',
+								'Invoice Created',
+								'Unpaid',
+								'Paid',
+								'Refunded',
+								'Uncollectible',
+								'Collected',
+								'Empty'
+							]
+						}
+					];
+				},
 				columns: [
-					{ label: 'Invoice', fieldname: 'name' },
-					{ label: 'Status', fieldname: 'status', type: 'Badge' },
+					{
+						label: 'Invoice',
+						fieldname: 'name',
+						class: 'font-medium',
+						format(value, row) {
+							if (row.type == 'Subscription') {
+								let end = dayjsLocal(row.period_end);
+								return end.format('MMMM YYYY');
+							}
+							return 'Prepaid Credits';
+						},
+						width: 0.8
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: '150px'
+					},
 					{
 						label: 'Date',
 						fieldname: 'due_date',
-						format(value) {
-							return Intl.DateTimeFormat('en-US', {
-								year: 'numeric',
-								month: 'short',
-								day: 'numeric'
-							}).format(new Date(value));
+						format(value, row) {
+							if (row.type == 'Subscription') {
+								let start = dayjsLocal(row.period_start);
+								let end = dayjsLocal(row.period_end);
+								let sameYear = start.year() === end.year();
+								let formattedStart = sameYear
+									? start.format('MMM D')
+									: start.format('ll');
+								return `${formattedStart} - ${end.format('ll')}`;
+							}
+							return date(value, 'll');
 						}
 					},
-					{ label: 'Total', fieldname: 'total', format: this.formatCurrency },
+					{
+						label: 'Total',
+						fieldname: 'total',
+						format: this.formatCurrency,
+						align: 'right',
+						width: 0.6
+					},
 					{
 						label: 'Amount Paid',
 						fieldname: 'amount_paid',
 						format: this.formatCurrency,
-						width: 0.7
+						align: 'right',
+						width: 0.6
 					},
 					{
 						label: 'Amount Due',
 						fieldname: 'amount_due',
 						format: this.formatCurrency,
-						width: 0.7
+						align: 'right',
+						width: 0.6
 					},
 					{
 						label: '',
 						type: 'Button',
 						align: 'right',
-						Button({ row }) {
+						Button: ({ row }) => {
 							if (row.invoice_pdf) {
 								return {
 									label: 'Download Invoice',
@@ -93,16 +177,47 @@ export default {
 										prefix: icon('external-link')
 									},
 									onClick: () => {
-										window.open(
-											`/api/method/run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`
-										);
+										if (row.stripe_invoice_url && row.payment_mode == 'Card') {
+											window.open(
+												`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`
+											);
+										} else {
+											this.showBuyPrepaidCreditsDialog = true;
+											this.minimumAmount = row.amount_due;
+										}
 									}
 								};
+							}
+						},
+						prefix(row) {
+							if (row.stripe_payment_failed && row.status !== 'Paid') {
+								return h(Button, {
+									variant: 'ghost',
+									theme: 'red',
+									icon: 'alert-circle',
+									onClick(e) {
+										e.stopPropagation();
+										confirmDialog({
+											title: 'Payment Failed',
+											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:</p><div class="text-sm font-mono text-gray-600 rounded p-2 bg-gray-100">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
+											primaryAction: {
+												label: 'Change Payment Method',
+												variant: 'solid',
+												onClick: ({ hide }) => {
+													hide();
+													router.push({
+														name: 'BillingPaymentMethods'
+													});
+												}
+											}
+										});
+									}
+								});
 							}
 						}
 					}
 				],
-				orderBy: 'due_date desc',
+				orderBy: 'due_date desc, creation desc',
 				onRowClick: row => {
 					this.showInvoice = row;
 					this.invoiceDialog = true;

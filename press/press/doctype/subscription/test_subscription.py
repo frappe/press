@@ -20,7 +20,6 @@ def create_test_subscription(
 	document_type: str = "Site",
 	plan_type: str = "Site Plan",
 ):
-
 	subscription = frappe.get_doc(
 		{
 			"doctype": "Subscription",
@@ -40,6 +39,8 @@ class TestSubscription(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
 		frappe.set_user(self.team.user)
 
 	def tearDown(self):

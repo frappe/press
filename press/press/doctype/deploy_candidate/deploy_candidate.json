@@ -6,25 +6,31 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "is_single_container",
-  "is_ssh_enabled",
-  "staged",
-  "is_docker_remote_builder_used",
   "column_break_2",
   "group",
   "team",
   "scheduled_time",
+  "section_break_xefr",
+  "user_addressable_failure",
+  "retry_count",
+  "column_break_rpow",
+  "manually_failed",
+  "error_key",
   "section_break_6",
   "build_start",
-  "build_end",
+  "build_duration",
+  "pending_start",
+  "build_directory",
   "last_updated",
   "column_break_7",
-  "build_directory",
-  "build_duration",
+  "build_end",
+  "pending_duration",
+  "pending_end",
+  "build_server",
+  "no_cache",
   "section_break_11",
   "docker_image",
   "docker_image_id",
-  "docker_remote_builder_server",
   "column_break_13",
   "docker_image_repository",
   "docker_image_tag",
@@ -89,6 +95,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval: doc.status !== \"Draft\"",
    "fieldname": "build_duration",
    "fieldtype": "Time",
    "label": "Build Duration",
@@ -195,28 +202,6 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_single_container",
-   "fieldtype": "Check",
-   "label": "Is Single Container",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "staged",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Staged"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_ssh_enabled",
-   "fieldtype": "Check",
-   "label": "Is SSH Enabled",
-   "read_only": 1
-  },
-  {
    "fieldname": "ssh_section",
    "fieldtype": "Section Break"
   },
@@ -285,6 +270,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.scheduled_time",
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
@@ -319,32 +305,17 @@
    "label": "Compress App Cache"
   },
   {
-   "default": "0",
-   "fieldname": "is_docker_remote_builder_used",
-   "fieldtype": "Check",
-   "label": "Is Docker Remote Builder used",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval: doc.last_updated",
-   "description": "Used when parsing a remote builds output.",
+   "description": "Used when parsing build output.",
    "fieldname": "last_updated",
    "fieldtype": "Datetime",
+   "hidden": 1,
    "label": "Last Updated",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.docker_remote_builder_server",
-   "fieldname": "docker_remote_builder_server",
-   "fieldtype": "Link",
-   "label": "Docker Remote Builder Server",
-   "options": "Server",
    "read_only": 1
   },
   {
    "fieldname": "parameters_tab",
    "fieldtype": "Tab Break",
-   "label": "Bench Params"
+   "label": "Apps & Deps"
   },
   {
    "fieldname": "output_tab",
@@ -362,6 +333,88 @@
    "fieldtype": "Code",
    "label": "Build Error",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.user_addressable_failure",
+   "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
+   "fieldname": "user_addressable_failure",
+   "fieldtype": "Check",
+   "label": "User Addressable Failure",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.manually_failed",
+   "description": "Set if the build was manually failed or cancelled.",
+   "fieldname": "manually_failed",
+   "fieldtype": "Check",
+   "label": "Manually Failed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.status !== \"Draft\" && doc.status !== \"Pending\"",
+   "description": "Time spent by the build in queue, i.e. in status Pending.",
+   "fieldname": "pending_duration",
+   "fieldtype": "Time",
+   "label": "Pending Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_xefr",
+   "fieldtype": "Section Break",
+   "label": "Failure"
+  },
+  {
+   "fieldname": "column_break_rpow",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pending_start",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Pending Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_end",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Pending End",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.retry_count",
+   "description": "Under certain failure conditions, a build will be retried.",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.build_server",
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.user_addressable_failure",
+   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
+   "fieldname": "error_key",
+   "fieldtype": "Data",
+   "label": "Error Key"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.no_cache",
+   "description": "Set if the Docker build was run with the <code>--no-cache</code> flag.",
+   "fieldname": "no_cache",
+   "fieldtype": "Check",
+   "label": "No Cache"
   }
  ],
  "links": [
@@ -372,9 +425,13 @@
   {
    "link_doctype": "Error Log",
    "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-04-16 11:27:12.314611",
+ "modified": "2024-06-21 14:12:47.335402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

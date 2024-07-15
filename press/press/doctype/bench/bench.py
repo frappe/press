@@ -4,13 +4,17 @@
 
 import json
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal, Optional
+from itertools import groupby
+from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
+import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
+from frappe.utils import get_system_timezone
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
@@ -18,7 +22,9 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error, parse_supervisor_status
-from press.api.client import dashboard_whitelist
+
+TRANSITORY_STATES = ["Pending", "Installing"]
+FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[
@@ -57,10 +63,9 @@ class Bench(Document):
 		gunicorn_threads_per_worker: DF.Int
 		gunicorn_workers: DF.Int
 		is_code_server_enabled: DF.Check
-		is_single_container: DF.Check
-		is_ssh_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
+		managed_database_service: DF.Link | None
 		memory_high: DF.Int
 		memory_max: DF.Int
 		memory_swap: DF.Int
@@ -161,8 +166,6 @@ class Bench(Document):
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		self.docker_image = candidate.docker_image
-		self.is_single_container = candidate.is_single_container
-		self.is_ssh_enabled = candidate.is_ssh_enabled
 
 		if not self.apps:
 			for release in candidate.apps:
@@ -186,24 +189,27 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
 		config = {
-			"db_host": db_host,
 			"monitor": True,
-			"redis_cache": "redis://redis-cache:6379",
-			"redis_queue": "redis://redis-queue:6379",
-			"redis_socketio": "redis://redis-socketio:6379",
+			"redis_cache": "redis://localhost:13000",
+			"redis_queue": "redis://localhost:11000",
+			"redis_socketio": "redis://localhost:13000",
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
 		}
-		if self.is_single_container:
-			config.update(
-				{
-					"redis_cache": "redis://localhost:13000",
-					"redis_queue": "redis://localhost:11000",
-					"redis_socketio": "redis://localhost:13000",
-				}
+
+		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
+
+		if db_host:
+			config["db_host"] = db_host
+			config["db_port"] = 3306
+
+		if self.managed_database_service:
+			config["rds_db"] = 1
+			config["db_host"] = self.managed_database_service
+			config["db_port"] = frappe.db.get_value(
+				"Managed Database Service", self.managed_database_service, "port"
 			)
 
 		press_settings_common_site_config = frappe.db.get_single_value(
@@ -222,7 +228,7 @@ class Bench(Document):
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
 			"codeserver_port": 16000 + self.port_offset,
-			"is_ssh_enabled": bool(self.is_ssh_enabled),
+			"is_ssh_enabled": True,
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
@@ -230,7 +236,7 @@ class Bench(Document):
 			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
-			"single_container": bool(self.is_single_container),
+			"single_container": True,
 			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
 			"is_code_server_enabled": self.is_code_server_enabled,
 			"use_rq_workerpool": self.use_rq_workerpool,
@@ -298,10 +304,15 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def archive(self):
-		unarchived_sites = frappe.db.exists(
-			"Site", {"bench": self.name, "status": ("!=", "Archived")}
+		self.status = "Pending"
+		self.save()  # lock 1
+		unarchived_sites = frappe.db.get_value(
+			"Site",
+			{"bench": self.name, "status": ("!=", "Archived")},
+			"name",
+			for_update=True,  # lock 2
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
@@ -324,19 +335,23 @@ class Bench(Document):
 				"Site", filters={"bench": self.name, "status": ("!=", "Archived")}, pluck="name"
 			)
 			last_synced_time = round(
-				frappe.get_all(
-					"Site Usage",
-					filters=[["site", "in", sites]],
-					limit_page_length=1,
-					order_by="creation desc",
-					pluck="creation",
-					ignore_ifnull=True,
-				)[0].timestamp()
+				convert_user_timezone_to_utc(
+					frappe.get_all(
+						"Site Usage",
+						filters=[["site", "in", sites]],
+						limit_page_length=1,
+						order_by="creation desc",
+						pluck="creation",
+						ignore_ifnull=True,
+					)[0]
+				).timestamp()
 			)
 		except IndexError:
 			last_synced_time = None
 
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_info(self, since=last_synced_time)
 		if data:
 			for site, info in data.items():
@@ -345,6 +360,9 @@ class Bench(Document):
 				try:
 					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
+				except frappe.DoesNotExistError:
+					# Ignore: Site got renamed or deleted
+					pass
 				except Exception:
 					log_error(
 						"Site Sync Error",
@@ -358,6 +376,8 @@ class Bench(Document):
 	@frappe.whitelist()
 	def sync_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_analytics(self)
 		if not data:
 			return
@@ -476,7 +496,6 @@ class Bench(Document):
 
 	@frappe.whitelist()
 	def retry_bench(self):
-
 		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
 			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
 
@@ -658,11 +677,13 @@ def process_new_bench_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
 			StagingSite.create_if_needed(bench)
+			bench = frappe.get_doc("Bench", job.bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
+				group=bench.group,
+				server=bench.server,
 			)
-			bench = frappe.get_doc("Bench", job.bench)
 			bench.add_ssh_user()
 
 			bench_update = frappe.get_all(
@@ -705,12 +726,16 @@ def process_archive_bench_job_update(job):
 
 def process_add_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", True)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", True, update_modified=False
+		)
 
 
 def process_remove_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", False, update_modified=False
+		)
 
 
 def get_archive_jobs(bench: str):
@@ -761,6 +786,22 @@ def get_unfinished_site_migrations(bench: str):
 	)
 
 
+def get_scheduled_version_upgrades(bench: dict):
+	frappe.db.commit()
+	sites = frappe.qb.DocType("Site")
+	version_upgrades = frappe.qb.DocType("Version Upgrade")
+	return (
+		frappe.qb.from_(sites)
+		.join(version_upgrades)
+		.on(sites.name == version_upgrades.site)
+		.select("name")
+		.where(sites.server == bench.server)
+		.where(version_upgrades.destination_group == bench.group)
+		.where(version_upgrades.status.isin(["Scheduled", "Pending", "Running"]))
+		.run()
+	)
+
+
 def try_archive(bench: str):
 	try:
 		frappe.get_doc("Bench", bench).archive()
@@ -777,11 +818,14 @@ def try_archive(bench: str):
 		return False
 
 
-def archive_obsolete_benches():
+def archive_obsolete_benches(group: str = None, server: str = None):
+	query_substr = ""
+	if group and server:
+		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"
 	benches = frappe.db.sql(
-		"""
+		f"""
 		SELECT
-			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, g.public
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -789,10 +833,24 @@ def archive_obsolete_benches():
 		ON
 			bench.group = g.name
 		WHERE
-			bench.status = "Active"
+			bench.status = "Active" {query_substr}
+		ORDER BY
+			bench.server
 	""",
 		as_dict=True,
 	)
+	benches_by_server = groupby(benches, lambda x: x.server)
+	for server_benches in benches_by_server:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
+			queue="long",
+			job_id=f"archive_obsolete_benches:{server_benches[0]}",
+			deduplicate=True,
+			benches=list(server_benches[1]),
+		)
+
+
+def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
 		if (
 			bench.last_archive_failure
@@ -818,8 +876,9 @@ def archive_obsolete_benches():
 			continue
 
 		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
-			try_archive(bench.name)
-			continue
+			if not get_scheduled_version_upgrades(bench):
+				try_archive(bench.name)
+				continue
 
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
@@ -848,6 +907,8 @@ def sync_benches():
 			"press.press.doctype.bench.bench.sync_bench",
 			queue="sync",
 			name=bench,
+			job_id=f"sync_bench:{bench}",
+			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()
@@ -888,6 +949,8 @@ def sync_analytics():
 			"press.press.doctype.bench.bench.sync_bench_analytics",
 			queue="sync",
 			name=bench,
+			job_id=f"sync_bench_analytics:{bench}",
+			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()
@@ -909,6 +972,11 @@ def sync_bench_analytics(name):
 			reference_name=bench.name,
 		)
 		frappe.db.rollback()
+
+
+def convert_user_timezone_to_utc(datetime):
+	timezone = pytz.timezone(get_system_timezone())
+	return timezone.localize(datetime).astimezone(pytz.utc)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

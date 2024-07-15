@@ -2,16 +2,17 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import secrets
-import json
-import requests
 import calendar
+import json
+import secrets
 from datetime import datetime
 
 import frappe
-from press.utils import log_error
+import requests
+
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
+from press.utils import log_error
 
 
 class PlanExpiredError(Exception):
@@ -61,12 +62,12 @@ def get_analytics(**data):
 	"""
 	send data for a specific month
 	"""
-	month = data["month"]
+	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data["status"]
-	site = data["site"]
-	subscription_key = data["key"]
+	status = data.get("status")
+	site = data.get("site")
+	subscription_key = data.get("key")
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
@@ -168,31 +169,48 @@ def event_log():
 	if not event_data:
 		return
 
-	secret_key = event_data["user-variables"]["sk_mail"]
-	headers = event_data["message"]["headers"]
-	message_id = headers["message-id"]
-	site = (
-		frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
-		or message_id.split("@")[1]
-	)
-	status = event_data["event"]
+	if event_data.get("user-variables", {}).get("sk_mail") is None:
+		# We don't know where to send this event
+		# TOOD: Investigate why this is happening
+		# Hint: Likely from other emails not sent via the email delivery app
+		return
 
-	frappe.get_doc(
-		{
-			"doctype": "Mail Log",
-			"unique_token": secrets.token_hex(25),
-			"message_id": message_id,
-			"sender": headers["from"],
-			"recipient": event_data.get("recipient") or headers.get("to"),
-			"site": site,
-			"status": event_data["event"],
-			"subscription_key": secret_key,
-			"message": event_data["delivery-status"]["message"]
-			or event_data["delivery-status"]["description"],
-			"log": json.dumps(data),
-		}
-	).insert(ignore_permissions=True)
-	frappe.db.commit()
+	if "delivery-status" not in event_data:
+		return
+
+	try:
+		secret_key = event_data["user-variables"]["sk_mail"]
+		headers = event_data["message"]["headers"]
+		if "message-id" not in headers:
+			# We can't log this event without a message-id
+			# TOOD: Investigate why this is happening
+			return
+		message_id = headers["message-id"]
+		site = (
+			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
+			or message_id.split("@")[1]
+		)
+		status = event_data["event"]
+
+		frappe.get_doc(
+			{
+				"doctype": "Mail Log",
+				"unique_token": secrets.token_hex(25),
+				"message_id": message_id,
+				"sender": headers["from"],
+				"recipient": event_data.get("recipient") or headers.get("to"),
+				"site": site,
+				"status": event_data["event"],
+				"subscription_key": secret_key,
+				"message": event_data["delivery-status"]["message"]
+				or event_data["delivery-status"]["description"],
+				"log": json.dumps(data),
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		log_error("Mail App: Event log error", data=data)
+		raise
 
 	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
 

@@ -1,17 +1,25 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
-import frappe
 import json
+from functools import cached_property
+from typing import TYPE_CHECKING
+
+import frappe
 from frappe.model.document import Document
-from frappe.utils.background_jobs import enqueue_doc
-from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
-from press.telegram_utils import Telegram
-from press.utils import log_error
 from frappe.utils import get_url_to_form
+from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils.data import add_to_date
 
+from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
+	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
+		PrometheusAlertRule,
+	)
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -42,6 +50,10 @@ class AlertmanagerWebhookLog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.alertmanager_webhook_log_reaction_job.alertmanager_webhook_log_reaction_job import (
+			AlertmanagerWebhookLogReactionJob,
+		)
+
 		alert: DF.Link
 		combined_alerts: DF.Int
 		common_labels: DF.Code
@@ -49,10 +61,19 @@ class AlertmanagerWebhookLog(Document):
 		group_key: DF.Code
 		group_labels: DF.Code
 		payload: DF.Code
+		reaction_jobs: DF.Table[AlertmanagerWebhookLogReactionJob]
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		status: DF.Literal["Firing", "Resolved"]
 		truncated_alerts: DF.Int
 	# end: auto-generated types
+
+	@staticmethod
+	def clear_old_logs(days=10):
+		from frappe.query_builder import Interval
+		from frappe.query_builder.functions import Now
+
+		table = frappe.qb.DocType("Alertmanager Webhook Log")
+		frappe.db.delete(table, filters=(table.modified < (Now() - Interval(days=days))))
 
 	def validate(self):
 		self.parsed = json.loads(self.payload)
@@ -77,9 +98,6 @@ class AlertmanagerWebhookLog(Document):
 		return self.parsed_group_labels.get(INCIDENT_SCOPE)
 
 	def after_insert(self):
-		enqueue_doc(
-			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-		)
 		if self.alert == INCIDENT_ALERT:
 			enqueue_doc(
 				self.doctype,
@@ -89,6 +107,39 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
+		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
+			enqueue_doc(
+				self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
+			)
+		if self.status == "Firing" and frappe.get_cached_value(
+			"Prometheus Alert Rule", self.alert, "press_job_type"
+		):
+			enqueue_doc(
+				self.doctype,
+				self.name,
+				"react",
+				enqueue_after_commit=True,
+				job_id=f"react:{self.alert}:{self.server}",
+				deduplicate=True,
+			)
+
+	def react_for_instance(self, instance) -> "PressJob":
+		instance_type = self.guess_doctype(instance)
+		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		rule.react(instance_type, instance)
+
+	def react(self):
+		for instance in self.get_instances_from_alerts_payload(self.payload):
+			self.append("reaction_jobs", self.react_for_instance(instance))
+		self.save()
+
+	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
+		instances = []
+		payload = json.loads(payload)
+		instances.extend(
+			[alert["labels"]["instance"] for alert in payload["alerts"]]
+		)  # sites
+		return set(instances)
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
@@ -110,10 +161,7 @@ class AlertmanagerWebhookLog(Document):
 
 		instances = []
 		for alert in past_alerts:
-			payload = json.loads(alert["payload"])
-			instances.extend(
-				[alert["labels"]["instance"] for alert in payload["alerts"]]
-			)  # sites
+			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
 		return set(instances)
 
 	def total_instances(self) -> int:
@@ -190,8 +238,7 @@ class AlertmanagerWebhookLog(Document):
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
-		client = Telegram(self.severity)
-		client.send(message)
+		TelegramMessage.enqueue(message=message, topic=self.severity)
 
 	@property
 	def bench(self):
@@ -211,7 +258,7 @@ class AlertmanagerWebhookLog(Document):
 		return parsed
 
 	def ongoing_incident_exists(self) -> bool:
-		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+		ongoing_incident_status = frappe.db.get_value(
 			"Incident",
 			{
 				"alert": self.alert,

@@ -4,6 +4,7 @@
 
 import json
 import random
+from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -17,7 +18,8 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-from press.agent import Agent
+
+from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
@@ -27,10 +29,10 @@ from press.press.doctype.press_notification.press_notification import (
 )
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
+	job_matches_site_migration,
 	process_site_migration_job_update,
 )
-from press.utils import log_error
-from typing import Optional
+from press.utils import has_role, log_error
 
 
 class AgentJob(Document):
@@ -43,6 +45,7 @@ class AgentJob(Document):
 		from frappe.types import DF
 
 		bench: DF.Link | None
+		callback_failure_count: DF.Int
 		code_server: DF.Link | None
 		data: DF.Code | None
 		duration: DF.Time | None
@@ -93,7 +96,7 @@ class AgentJob(Document):
 		if not (site or group or server):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site:
+		if site and not has_role("Press Support Agent"):
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
@@ -151,12 +154,18 @@ class AgentJob(Document):
 			self.name,
 			"create_http_request",
 			timeout=600,
+			queue="short",
 			enqueue_after_commit=True,
 		)
 
 	def create_http_request(self):
 		try:
 			agent = Agent(self.server, server_type=self.server_type)
+			if agent.should_skip_requests():
+				self.retry_count = 0
+				self.set_status_and_next_retry_at()
+				return
+
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
@@ -166,6 +175,9 @@ class AgentJob(Document):
 
 			self.status = "Pending"
 			self.save()
+		except AgentRequestSkippedException:
+			self.retry_count = 0
+			self.set_status_and_next_retry_at()
 
 		except Exception:
 			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
@@ -297,12 +309,13 @@ def job_detail(job):
 		frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": job.name},
-			fields=["step_name", "status", "start", "end", "duration", "output"],
+			fields=["name", "step_name", "status", "start", "end", "duration", "output"],
 			order_by="creation",
 		)
 	):
 		step = {"name": job_step.step_name, "index": index, **job_step}
 		if job_step.status == "Running":
+			step["output"] = frappe.cache.hget("agent_job_step_output", job_step.name)
 			current = step
 		steps.append(step)
 
@@ -350,6 +363,7 @@ def publish_update(job):
 				"name": message["site"],
 				"status": message["status"],
 				"id": message["id"],
+				"site": message["site"],
 			},
 		)
 
@@ -388,9 +402,13 @@ def poll_pending_jobs_server(server):
 	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
 		return
 
+	agent = Agent(server.server, server_type=server.server_type)
+	if agent.should_skip_requests():
+		return
+
 	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "job_id", "status"],
+		fields=["name", "job_id", "status", "callback_failure_count"],
 		filters={
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
@@ -403,8 +421,6 @@ def poll_pending_jobs_server(server):
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
 		return
-
-	agent = Agent(server.server, server_type=server.server_type)
 
 	pending_ids = [j.job_id for j in pending_jobs]
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
@@ -437,6 +453,15 @@ def poll_pending_jobs_server(server):
 
 			frappe.db.commit()
 			publish_update(job.name)
+		except AgentCallbackException:
+			# Don't log error for AgentCallbackException
+			# it's already logged
+			# Rollback all other changes and increment the failure count
+			frappe.db.rollback()
+			frappe.db.set_value(
+				"Agent Job", job.name, "callback_failure_count", job.callback_failure_count + 1
+			)
+			frappe.db.commit()
 		except Exception:
 			log_error(
 				"Agent Job Poll Exception",
@@ -674,7 +699,7 @@ def get_next_retry_at(job_retry_count):
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
-	if auto_retry_disabled(server):
+	if is_auto_retry_disabled(server):
 		return
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
@@ -693,7 +718,11 @@ def retry_undelivered_jobs(server):
 			job_doc = frappe.get_doc("Agent Job", job)
 			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
-			if not job_doc.next_retry_at or get_datetime(job_doc.next_retry_at) > nowtime:
+			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
+				job_doc.set_status_and_next_retry_at()
+				continue
+
+			if get_datetime(job_doc.next_retry_at) > nowtime:
 				continue
 
 			if job_doc.retry_count <= max_retry_count:
@@ -702,9 +731,16 @@ def retry_undelivered_jobs(server):
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
+				process_job_updates(job)
 
 
-def auto_retry_disabled(server):
+def queued_jobs():
+	from frappe.utils.background_jobs import get_jobs
+
+	return get_jobs(site=frappe.local.site, queue="default", key="name")[frappe.local.site]
+
+
+def is_auto_retry_disabled(server):
 	"""Check if auto retry is disabled for the server"""
 	_auto_retry_disabled = False
 
@@ -751,6 +787,7 @@ def get_undelivered_jobs_for_server(server, job_types):
 			"job_id": 0,
 			"server": server.server,
 			"server_type": server.server_type,
+			"retry_count": (">", 0),
 			"job_type": ("in", job_types),
 		},
 		["name", "job_type"],
@@ -854,7 +891,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 		)
 
 		site_migration = get_ongoing_migration(job.site)
-		if site_migration:
+		if site_migration and job_matches_site_migration(job, site_migration):
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
@@ -932,16 +969,18 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
-			DeployCandidate.process_run_remote_builder(job, response_data)
+			DeployCandidate.process_run_build(job, response_data)
 
 	except Exception as e:
-		log_error(
-			"Agent Job Callback Exception",
-			job=job.as_dict(),
-			reference_doctype="Agent Job",
-			reference_name=job_name,
-		)
-		raise e
+		failure_count = job.callback_failure_count + 1
+		if failure_count in set([10, 100]) or failure_count % 1000 == 0:
+			log_error(
+				"Agent Job Callback Exception",
+				job=job.as_dict(),
+				reference_doctype="Agent Job",
+				reference_name=job_name,
+			)
+		raise AgentCallbackException from e
 
 
 def update_job_step_status():

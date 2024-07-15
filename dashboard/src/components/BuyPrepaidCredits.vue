@@ -110,7 +110,10 @@ export default {
 					amount: this.creditsToBuy
 				},
 				validate() {
-					if (this.creditsToBuy < this.minimumAmount) {
+					if (
+						this.creditsToBuy < this.minimumAmount &&
+						!this.$account.team.erpnext_partner
+					) {
 						return `Amount must be greater than ${this.minimumAmount}`;
 					}
 				},

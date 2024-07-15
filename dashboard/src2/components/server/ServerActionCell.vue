@@ -4,21 +4,25 @@
 			<h3 class="text-base font-medium">{{ props.actionLabel }}</h3>
 			<p class="mt-1 text-p-base text-gray-600">{{ props.description }}</p>
 		</div>
-		<RestrictedAction
+		<Button
 			v-if="server?.doc"
-			:doctype="server.doc.doctype"
-			:docname="server.doc.name"
-			:method="props.method"
-			:label="props.buttonLabel"
+			class="whitespace-nowrap"
 			@click="getServerActionHandler(props.actionLabel)"
-		/>
+		>
+			<p
+				:class="
+					group === 'Dangerous Actions' ? 'text-red-600' : 'text-gray-800'
+				"
+			>
+				{{ props.buttonLabel }}
+			</p>
+		</Button>
 	</div>
 </template>
 
 <script setup>
 import { getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import RestrictedAction from '../../components/RestrictedAction.vue';
 import { confirmDialog } from '../../utils/components';
 import router from '../../router';
 
@@ -28,7 +32,8 @@ const props = defineProps({
 	actionLabel: { type: String, required: true },
 	method: { type: String, required: true },
 	description: { type: String, required: true },
-	buttonLabel: { type: String, required: true }
+	buttonLabel: { type: String, required: true },
+	group: { type: String, required: false }
 });
 
 const server = getCachedDocumentResource(props.serverType, props.serverName);
@@ -58,7 +63,6 @@ function onRebootServer() {
 			label: 'Reboot Server'
 		},
 		onSuccess({ hide, values }) {
-			console.log(server, values.confirmServerName);
 			if (server.reboot.loading) return;
 			if (values.confirmServerName !== server.doc.name) {
 				throw new Error('Server name does not match');
@@ -142,7 +146,10 @@ function onDropServer() {
 					router.push({ name: 'Server List' });
 					return 'Server dropped';
 				},
-				error: 'Failed to drop server'
+				error: error =>
+					error.messages.length
+						? error.messages.join('\n')
+						: 'Failed to drop servers'
 			});
 		}
 	});

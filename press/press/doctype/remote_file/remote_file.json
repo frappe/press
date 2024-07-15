@@ -7,11 +7,13 @@
  "engine": "InnoDB",
  "field_order": [
   "file_name",
-  "site",
   "status",
+  "column_break_uzdq",
+  "site",
   "section_break_5",
   "file_size",
   "file_path",
+  "column_break_scaf",
   "file_type",
   "bucket",
   "url"
@@ -40,7 +42,7 @@
   },
   {
    "fieldname": "file_path",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "File Path",
    "read_only": 1
   },
@@ -76,14 +78,24 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uzdq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_scaf",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-08-20 15:53:44.984197",
+ "modified": "2024-05-10 15:07:11.179229",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
@@ -119,6 +131,7 @@
  "search_fields": "file_name",
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "title_field": "file_name",
  "track_changes": 1
 }

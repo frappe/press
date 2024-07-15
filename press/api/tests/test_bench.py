@@ -1,42 +1,42 @@
 import json
 import os
 import time
-import requests
+from unittest import skip
 from unittest.mock import Mock, patch
 
+import docker
 import frappe
+import requests
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase, timeout
-from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.app.test_app import create_test_app
-
 
 from press.api.bench import (
+	all,
+	bench_config,
 	dependencies,
 	deploy,
 	deploy_and_update,
 	deploy_information,
 	get,
 	new,
-	all,
 	update_config,
-	bench_config,
 	update_dependencies,
 )
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.doctype.bench.test_bench import create_test_bench
-from press.press.doctype.server.test_server import create_test_server
-from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
-import docker
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -80,11 +80,11 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(get_res["status"], "Awaiting Deploy")
 		self.assertEqual(get_res["public"], False)
 
+	@skip("Local builds deprecated. Builds need to be set for GHA.")
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
 	)
@@ -109,7 +109,6 @@ class TestAPIBench(FrappeTestCase):
 
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
-		patch_dc_command_for_ci()
 		deploy(group, [{"app": self.app.name}])
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
@@ -122,7 +121,7 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
 	)
@@ -639,14 +638,3 @@ def set_press_settings_for_docker_build() -> None:
 	press_settings.db_set("build_directory", build_dir)
 	press_settings.db_set("clone_directory", clone_dir)
 	press_settings.db_set("docker_registry_url", "registry.local.frappe.dev")
-
-
-def patch_dc_command_for_ci():
-	DeployCandidate.base_build_command = " ".join(
-		[
-			DeployCandidate.base_build_command,
-			"--cache-from type=gha",
-			"--cache-to type=gha,mode=max,ignore-error=true",
-			"--load",
-		]
-	)

@@ -2,7 +2,7 @@
 	<Card
 		v-if="site"
 		title="Backups"
-		subtitle="Backups are enabled and are scheduled to run every six hours."
+		subtitle="Backups are enabled and are scheduled to run every day."
 	>
 		<template #actions>
 			<Button

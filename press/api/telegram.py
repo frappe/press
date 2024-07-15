@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 import frappe
+
 from press.telegram_utils import Telegram
 from press.utils import log_error
 

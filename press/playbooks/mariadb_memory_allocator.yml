@@ -1,0 +1,7 @@
+---
+- name: Update MariaDB Memory Allocator
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: mariadb_memory_allocator

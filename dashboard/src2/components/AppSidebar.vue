@@ -32,16 +32,16 @@
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<FCLogo class="h-8 w-8 shrink-0 rounded" />
+						<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
 								Frappe Cloud
 							</div>
 							<Tooltip :text="$team?.doc?.user || null">
 								<div
-									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-none text-gray-700 sm:inline"
+									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-gray-700 sm:inline"
 								>
-									{{ $team?.get.loading ? 'Loading...' : $team.doc.user }}
+									{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 								</div>
 							</Tooltip>
 						</div>
@@ -82,11 +82,6 @@
 				</template>
 			</NavigationItems>
 		</nav>
-		<div class="mt-auto p-2">
-			<Button variant="ghost" @click="switchToOldDashboard">
-				Switch to old dashboard
-			</Button>
-		</div>
 		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
@@ -97,7 +92,6 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
-import { toast } from 'vue-sonner';
 
 export default {
 	name: 'AppSidebar',
@@ -122,23 +116,6 @@ export default {
 			window.open(
 				'https://frappecloud.com/frappe-cloud-feedback/new',
 				'_blank'
-			);
-		},
-		switchToOldDashboard() {
-			toast.promise(
-				this.$team.changeDefaultDashboard.submit(
-					{ new_dashboard: false },
-					{
-						onSuccess() {
-							window.location.href = '/dashboard';
-						}
-					}
-				),
-				{
-					loading: 'Switching to old dashboard...',
-					success: () => 'Switching to old dashboard...',
-					error: e => 'Failed to switch to old dashboard'
-				}
 			);
 		}
 	}

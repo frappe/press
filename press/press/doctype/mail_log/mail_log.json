@@ -8,14 +8,17 @@
  "engine": "InnoDB",
  "field_order": [
   "unique_token",
-  "site",
   "message_id",
+  "status",
+  "column_break_drnq",
+  "site",
   "subscription_key",
-  "date",
+  "column_break_erbe",
   "sender",
   "recipient",
+  "date",
+  "section_break_uslz",
   "message",
-  "status",
   "log"
  ],
  "fields": [
@@ -86,14 +89,26 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Data",
+   "fieldtype": "Code",
    "label": "Message",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_drnq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_erbe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_uslz",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-16 13:07:36.587086",
+ "modified": "2024-06-02 16:54:57.203891",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mail Log",
@@ -115,5 +130,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

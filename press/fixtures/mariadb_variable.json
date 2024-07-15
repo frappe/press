@@ -132,78 +132,6 @@
   "skippable": 0
  },
  {
-  "datatype": "Str",
-  "default_value": "",
-  "doc_section": "replication-and-binary-log",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-08-03 14:20:47.702196",
-  "name": "expire_logs_days",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "37",
-  "doc_section": "innodb",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-15 15:21:13.086214",
-  "name": "innodb_old_blocks_pct",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Int",
-  "default_value": null,
-  "doc_section": "innodb",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-06-15 14:41:36.038646",
-  "name": "innodb_buffer_pool_size",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "/var/lib/mysql/mysql-bin",
-  "doc_section": "replication-and-binary-log",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 0,
-  "modified": "2023-06-15 14:41:09.156699",
-  "name": "log_bin",
-  "set_on_new_servers": 0,
-  "skippable": 1
- },
- {
-  "datatype": "Str",
-  "default_value": "5000",
-  "doc_section": "innodb",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-22 14:02:04.157025",
-  "name": "innodb_old_blocks_time",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Int",
-  "default_value": "512",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-22 08:38:25.704420",
-  "name": "max_allowed_packet",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
   "datatype": "Int",
   "default_value": "5120",
   "doc_section": "server",
@@ -276,6 +204,90 @@
   "skippable": 0
  },
  {
+  "datatype": "Int",
+  "default_value": "32",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-06-12 10:30:47.403256",
+  "name": "max_heap_table_size",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-08-03 14:20:47.702196",
+  "name": "expire_logs_days",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "37",
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-15 15:21:13.086214",
+  "name": "innodb_old_blocks_pct",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Int",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-06-15 14:41:36.038646",
+  "name": "innodb_buffer_pool_size",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "/var/lib/mysql/mysql-bin",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-06-15 14:41:09.156699",
+  "name": "log_bin",
+  "set_on_new_servers": 0,
+  "skippable": 1
+ },
+ {
+  "datatype": "Str",
+  "default_value": "5000",
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-22 14:02:04.157025",
+  "name": "innodb_old_blocks_time",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Int",
+  "default_value": "512",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-22 08:38:25.704420",
+  "name": "max_allowed_packet",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
   "datatype": "Str",
   "default_value": "3600",
   "doc_section": "server",
@@ -285,6 +297,18 @@
   "modified": "2024-03-28 15:23:30.635417",
   "name": "max_statement_time",
   "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-07-03 07:13:23.014958",
+  "name": "innodb_print_all_deadlocks",
+  "set_on_new_servers": 0,
   "skippable": 0
  }
 ]

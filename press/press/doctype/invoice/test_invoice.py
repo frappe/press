@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 from frappe.utils.data import add_days, today
+
 from press.press.doctype.team.test_team import create_test_team
 
 from .invoice import Invoice
@@ -47,7 +48,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.amount_due, 60)
 
 	def test_invoice_cancel_usage_record(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -78,7 +78,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(usage_records[0].invoice, None)
 
 	def test_invoice_with_credits_less_than_total(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -115,7 +114,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 10)
 
 	def test_invoice_with_credits_more_than_total(self):
-
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -145,7 +143,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 60)
 
 	def test_invoice_credit_allocation(self):
-
 		# First Invoice
 		# Total: 600
 		# Team has 100 Free Credits and 1000 Prepaid Credits
@@ -209,7 +206,6 @@ class TestInvoice(unittest.TestCase):
 		)
 
 	def test_invoice_cancel_reverse_credit_allocation(self):
-
 		# First Invoice
 		# Total: 600
 		# Team has 100 Free Credits and 1000 Prepaid Credits
@@ -246,7 +242,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(self.team.get_balance(), 1100)
 
 	def test_intersecting_invoices(self):
-
 		invoice1 = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -309,8 +304,7 @@ class TestInvoice(unittest.TestCase):
 		# balance should 755.64 after buying prepaid credits with gst applied
 		self.assertEqual(self.team.get_balance(), 755.64)
 
-	def test_single_x_percent_flat_on_total(self):
-
+	def test_discount_amount(self):
 		invoice = frappe.get_doc(
 			doctype="Invoice",
 			team=self.team.name,
@@ -318,110 +312,33 @@ class TestInvoice(unittest.TestCase):
 			period_end=add_days(today(), 10),
 		).insert()
 
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount": 10})
 		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
 		invoice.save()
-
-		# Before discount
-		self.assertEqual(invoice.total, 1000)
-
-		# Apply 10% discount
-		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-		invoice.save()
-
-		# After discount
 		invoice.reload()
-		self.assertEqual(invoice.total_before_discount, 1000)
+
+		self.assertEqual(invoice.total_before_discount, 2000)
+		self.assertEqual(invoice.total_discount_amount, 10)
+		self.assertEqual(invoice.total, 2000 - 10)
+
+	def test_discount_percentage(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		invoice.append(
+			"items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount_percentage": 10}
+		)
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
+		invoice.save()
+		invoice.reload()
+		self.assertEqual(invoice.items[0].discount, 100)
+		self.assertEqual(invoice.total_before_discount, 2000)
 		self.assertEqual(invoice.total_discount_amount, 100)
-		self.assertEqual(invoice.total, 900)
-
-	def test_multiple_discounts_flat_on_total(self):
-
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.team.name,
-			period_start=today(),
-			period_end=add_days(today(), 10),
-		).insert()
-
-		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
-		invoice.save()
-
-		# Apply 10% discount
-		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-
-		# Apply another 10%
-		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-
-		invoice.save()
-
-		# After discount
-		invoice.reload()
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 200)
-		self.assertEqual(invoice.total, 800)
-
-	def test_discount_borrowed_from_team(self):
-
-		# Give 30% to team
-		self.team.append(
-			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-		self.team.save()
-
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.team.name,
-			period_start=today(),
-			period_end=add_days(today(), 10),
-		).insert()
-
-		# Add line items
-		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
-		invoice.save()
-		invoice.reload()
-
-		# After discount
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 300)
-		self.assertEqual(invoice.total, 700)
-
-	def test_mix_discounts_flat_on_total_and_percent(self):
-
-		# Give 30% to team
-		self.team.append(
-			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-		self.team.save()
-
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.team.name,
-			period_start=today(),
-			period_end=add_days(today(), 10),
-		).insert()
-
-		# Add line items
-		invoice.append("items", {"quantity": 1, "rate": 500, "amount": 500})
-		invoice.append("items", {"quantity": 1, "rate": 500, "amount": 500})
-
-		# Apply 100 units discount
-		invoice.append(
-			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
-		)
-
-		invoice.save()
-		invoice.reload()
-
-		# After discount
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 400)
-		self.assertEqual(invoice.total, 600)
+		self.assertEqual(invoice.total, 2000 - 100)
 
 	def test_finalize_invoice_with_total_zero(self):
 		invoice = frappe.get_doc(
@@ -482,6 +399,8 @@ class TestInvoice(unittest.TestCase):
 			team.allocate_credit_amount(10, source="Prepaid Credits")
 			# transfer 5 credits
 			team.allocate_credit_amount(-5, source="Transferred Credits")
+			team.payment_mode = "Prepaid Credits"
+			team.save()
 
 			# consume 10 credits
 			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
@@ -489,9 +408,9 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			# finalize invoice
-			with self.assertRaises(frappe.ValidationError) as err:
-				invoice.finalize_invoice()
-			self.assertTrue("Not enough credits for this invoice" in str(err.exception))
+			invoice.finalize_invoice()
+			self.assertTrue(invoice.status == "Unpaid")
+			self.assertTrue(invoice.amount_due > 0)
 
 		finally:
 			frappe.db.delete("Team", team.name)
@@ -574,6 +493,67 @@ class TestInvoice(unittest.TestCase):
 			self.assertEqual(settling_transaction.unallocated_amount, 100)
 
 		finally:
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_without_credits(self):
+		try:
+			team = create_test_team("tax_without_credits@example.com")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.amount_due, 10)
+			self.assertEquals(invoice.amount_due_with_tax, 11.8)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_with_credits(self):
+		try:
+			team = create_test_team("tax_with_credits@example.com")
+			team.allocate_credit_amount(5, source="Prepaid Credits")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.total, 10)
+			self.assertEquals(invoice.applied_credits, 5)
+			self.assertEquals(invoice.amount_due, 5)
+			self.assertEquals(invoice.amount_due_with_tax, 5.9)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_tax_for_usd_accounts(self):
+		try:
+			team = create_test_team("tax_for_usd_accounts@example.com", "United States")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.total, 10)
+			self.assertEquals(invoice.amount_due, 10)
+			self.assertEquals(invoice.amount_due_with_tax, 10)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
 			frappe.db.delete("Team", team.name)
 			frappe.db.delete("Balance Transaction", {"team": team.name})
 			frappe.db.commit()

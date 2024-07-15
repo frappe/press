@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus RQ Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/frappe/frappe-bench/env/bin/rq-exporter --host 127.0.0.1 --port 9726 --redis-host 127.0.0.1 --redis-port 11000
+SyslogIdentifier=rq-exporter
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

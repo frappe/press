@@ -9,6 +9,7 @@ import router from '../router';
 export default {
 	doctype: 'Server',
 	whitelistedMethods: {
+		increaseDiskSize: 'increase_disk_size_for_server',
 		changePlan: 'change_plan',
 		reboot: 'reboot',
 		rename: 'rename',
@@ -28,6 +29,34 @@ export default {
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title'
 		],
+		filterControls() {
+			return [
+				{
+					type: 'select',
+					label: 'Status',
+					fieldname: 'status',
+					options: ['', 'Active', 'Pending']
+				},
+				{
+					type: 'select',
+					label: 'Region',
+					fieldname: 'cluster',
+					options: [
+						'',
+						'Bahrain',
+						'Cape Town',
+						'Frankfurt',
+						'KSA',
+						'London',
+						'Mumbai',
+						'Singapore',
+						'UAE',
+						'Virginia',
+						'Zurich'
+					]
+				}
+			];
+		},
 		orderBy: 'creation desc',
 		columns: [
 			{
@@ -166,8 +195,7 @@ export default {
 				),
 				props: server => {
 					return {
-						serverName: server.doc.name,
-						dbServerName: server.doc.database_server
+						serverName: server.doc.name
 					};
 				}
 			},
@@ -298,9 +326,30 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Ansible Play',
+					filterControls({ documentResource: server }) {
+						return [
+							{
+								type: 'select',
+								label: 'Server',
+								fieldname: 'server',
+								options: [
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							}
+						];
+					},
 					filters: server => {
 						return {
-							server: ['in', [server.doc.name, server.doc.database_server]]
+							server: [
+								'in',
+								[
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							]
 						};
 					},
 					route(row) {
@@ -348,7 +397,7 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('activity'),
+				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
@@ -362,12 +411,12 @@ export default {
 	routes: [
 		{
 			name: 'Server Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{
 			name: 'Server Play',
-			path: 'play/:id',
+			path: 'plays/:id',
 			component: () => import('../pages/PlayPage.vue')
 		}
 	]

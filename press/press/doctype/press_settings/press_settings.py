@@ -6,11 +6,12 @@
 import boto3
 import frappe
 from boto3.session import Session
-from twilio.rest import Client
 from frappe.model.document import Document
 from frappe.utils import get_url
+from twilio.rest import Client
 
 from press.api.billing import get_stripe
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.telegram_utils import Telegram
 
 
@@ -22,11 +23,12 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
-		allow_developer_account: DF.Check
+		agent_sentry_dsn: DF.Data | None
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
 		aws_access_key_id: DF.Data | None
@@ -39,6 +41,7 @@ class PressSettings(Document):
 		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
 		bench_configuration: DF.Code
 		build_directory: DF.Data | None
+		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
 		clone_directory: DF.Data | None
@@ -56,8 +59,6 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
-		docker_remote_builder_server: DF.Link | None
-		docker_remote_builder_ssh: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_google_oauth: DF.Check
@@ -89,6 +90,8 @@ class PressSettings(Document):
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
+		micro_debit_charge_inr: DF.Currency
+		micro_debit_charge_usd: DF.Currency
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
@@ -131,6 +134,7 @@ class PressSettings(Document):
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
 		threshold: DF.Float
+		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
 		twilio_account_sid: DF.Data | None
 		twilio_api_key_secret: DF.Password | None
@@ -163,6 +167,8 @@ class PressSettings(Document):
 				"invoice.payment_succeeded",
 				"invoice.payment_failed",
 				"invoice.finalized",
+				"mandate.updated",
+				"setup_intent.succeeded",
 			],
 		)
 		self.stripe_webhook_endpoint_id = webhook["id"]
@@ -228,6 +234,10 @@ class PressSettings(Document):
 	@property
 	def telegram(self):
 		return Telegram
+
+	@property
+	def telegram_message(self):
+		return TelegramMessage
 
 	@property
 	def twilio_client(self) -> Client:

@@ -11,7 +11,6 @@
   "status",
   "status_before_update",
   "server",
-  "skip_auto_updates",
   "archive_failed",
   "column_break_3",
   "admin_password",
@@ -57,7 +56,8 @@
   "notifications_section",
   "notify_email",
   "auto_updates_section",
-  "auto_updates_scheduled",
+  "skip_auto_updates",
+  "only_update_at_specified_time",
   "auto_update_last_triggered_on",
   "column_break_53",
   "update_trigger_frequency",
@@ -79,6 +79,8 @@
   "column_break_63",
   "hybrid_saas_pool",
   "backups_section",
+  "backup_time",
+  "column_break_zgig",
   "skip_scheduled_backups",
   "tags_section",
   "tags"
@@ -430,12 +432,6 @@
    "label": "Update Trigger Time"
   },
   {
-   "default": "0",
-   "fieldname": "auto_updates_scheduled",
-   "fieldtype": "Check",
-   "label": "Auto Updates Scheduled"
-  },
-  {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
   },
@@ -578,7 +574,22 @@
    "fieldname": "standby_for_product",
    "fieldtype": "Link",
    "label": "Standby for Product",
-   "options": "SaaS Product"
+   "options": "Product Trial"
+  },
+  {
+   "fieldname": "backup_time",
+   "fieldtype": "Time",
+   "label": "Backup Time"
+  },
+  {
+   "fieldname": "column_break_zgig",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "only_update_at_specified_time",
+   "fieldtype": "Check",
+   "label": "Only update at specified time"
   }
  ],
  "links": [
@@ -643,7 +654,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-02-05 23:05:21.073454",
+ "modified": "2024-06-28 16:18:55.869153",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -672,6 +683,15 @@
    "read": 1,
    "role": "Press Member",
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Support Agent",
+   "share": 1
   }
  ],
  "sort_field": "creation",

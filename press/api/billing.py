@@ -1,26 +1,27 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
-import frappe
-
-from typing import Dict, List
 from itertools import groupby
-from frappe.utils import fmt_money
+from typing import Dict, List
+
+import frappe
 from frappe.core.utils import find
+from frappe.utils import fmt_money
+
 from press.press.doctype.team.team import (
 	has_unsettled_invoices,
 )
 from press.utils import get_current_team
 from press.utils.billing import (
+	GSTIN_FORMAT,
 	clear_setup_intent,
 	get_publishable_key,
-	get_setup_intent,
 	get_razorpay_client,
+	get_setup_intent,
 	get_stripe,
 	make_formatted_doc,
 	states_with_tin,
 	validate_gstin_check_digit,
-	GSTIN_FORMAT,
 )
 
 
@@ -214,10 +215,14 @@ def get_customer_details(team):
 def create_payment_intent_for_micro_debit(payment_method_name):
 	team = get_current_team(True)
 	stripe = get_stripe()
-	amount = 50 if team.currency == "USD" else 5000
+
+	micro_debit_charge_field = (
+		"micro_debit_charge_usd" if team.currency == "USD" else "micro_debit_charge_inr"
+	)
+	amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
 
 	intent = stripe.PaymentIntent.create(
-		amount=amount,
+		amount=int(amount * 100),
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Micro-Debit Card Test Charge",
@@ -235,7 +240,7 @@ def create_payment_intent_for_buying_credits(amount):
 	metadata = {"payment_for": "prepaid_credits"}
 	total_unpaid = total_unpaid_amount()
 
-	if amount < total_unpaid:
+	if amount < total_unpaid and not team.erpnext_partner:
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
 	if team.currency == "INR":
@@ -478,10 +483,20 @@ def after_card_add():
 @frappe.whitelist()
 def setup_intent_success(setup_intent, address=None):
 	setup_intent = frappe._dict(setup_intent)
+
+	# refetching the setup intent to get mandate_id from stripe
+	stripe = get_stripe()
+	setup_intent = stripe.SetupIntent.retrieve(setup_intent.id)
+
 	team = get_current_team(True)
 	clear_setup_intent()
+	mandate_reference = setup_intent.payment_method_options.card.mandate_options.reference
 	payment_method = team.create_payment_method(
-		setup_intent.payment_method, set_default=True
+		setup_intent.payment_method,
+		setup_intent.id,
+		setup_intent.mandate,
+		mandate_reference,
+		set_default=True,
 	)
 	if address:
 		address = frappe._dict(address)
@@ -547,13 +562,6 @@ def get_latest_unpaid_invoice():
 def team_has_balance_for_invoice(prepaid_mode_invoice):
 	team = get_current_team(get_doc=True)
 	return team.get_balance() >= prepaid_mode_invoice.amount_due
-
-
-@frappe.whitelist()
-def get_partner_credits():
-	team = get_current_team(get_doc=True)
-	available_credits = team.get_available_partner_credits()
-	return fmt_money(available_credits, 2, team.currency)
 
 
 @frappe.whitelist()

@@ -1,11 +1,18 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
+from typing import TYPE_CHECKING
+
 import frappe
 import yaml
-import json
+from frappe.core.utils import find
 from frappe.model.document import Document
+
 from press.agent import Agent
+
+if TYPE_CHECKING:
+	from press.press.doctype.server.server import Server
 
 
 class PrometheusAlertRule(Document):
@@ -17,6 +24,10 @@ class PrometheusAlertRule(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.prometheus_alert_rule_cluster.prometheus_alert_rule_cluster import (
+			PrometheusAlertRuleCluster,
+		)
+
 		alert_preview: DF.Code | None
 		annotations: DF.Code
 		description: DF.Data
@@ -25,10 +36,14 @@ class PrometheusAlertRule(Document):
 		group_by: DF.Code
 		group_interval: DF.Data
 		group_wait: DF.Data
+		ignore_on_clusters: DF.TableMultiSelect[PrometheusAlertRuleCluster]
 		labels: DF.Code
+		only_on_shared: DF.Check
+		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
 		severity: DF.Literal["Critical", "Warning", "Information"]
+		silent: DF.Check
 	# end: auto-generated types
 
 	def validate(self):
@@ -98,3 +113,40 @@ class PrometheusAlertRule(Document):
 			routes_dict["route"]["routes"].append(rule_doc.get_route())
 
 		return routes_dict
+
+	def react(self, instance_type: str, instance: str):
+		return self.run_press_job(self.press_job_type, instance_type, instance)
+
+	def run_press_job(
+		self, job_name: str, server_type: str, server_name: str, arguments=None
+	):
+		server: "Server" = frappe.get_doc(server_type, server_name)
+		if self.only_on_shared and not server.is_shared:
+			return
+		if find(self.ignore_on_clusters, lambda x: x.cluster == server.cluster):
+			return
+
+		if arguments is None:
+			arguments = {}
+
+		if existing_jobs := frappe.get_all(
+			"Press Job",
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"server_type": server_type,
+				"server": server_name,
+			},
+			pluck="name",
+		):
+			return frappe.get_doc("Press Job", existing_jobs[0])
+
+		return frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": job_name,
+				"server_type": server_type,
+				"server": server_name,
+				"virtual_machine": server.virtual_machine,
+				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
+			}
+		).insert()

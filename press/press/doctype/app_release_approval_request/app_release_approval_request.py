@@ -1,16 +1,17 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import glob
 import json
 import re
-import glob
-from pygments.lexers import PythonLexer as PL
-from pygments.formatters import HtmlFormatter as HF
-from pygments import highlight
 
 import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from pygments import highlight
+from pygments.formatters import HtmlFormatter as HF
+from pygments.lexers import PythonLexer as PL
+
 from press.press.doctype.app_release.app_release import AppRelease
 
 

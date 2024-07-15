@@ -4,7 +4,7 @@
 frappe.ui.form.on('Marketplace App', {
 	refresh: function (frm) {
 		frm.add_web_link(
-			`/dashboard/marketplace/apps/${frm.doc.name}/releases`,
+			`/dashboard/apps/${frm.doc.name}/`,
 			__('Open in dashboard'),
 		);
 	},

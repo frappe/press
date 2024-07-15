@@ -19,6 +19,7 @@ class DripEmail(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.module_setup_guide.module_setup_guide import ModuleSetupGuide
 
 		distribution: DF.Check

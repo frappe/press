@@ -4,11 +4,13 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.api.notifications import get_unread_count
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.api.notifications import get_unread_count
+from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
+	create_test_deploy_candidate_differences,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -30,7 +32,9 @@ class TestPressNotification(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 

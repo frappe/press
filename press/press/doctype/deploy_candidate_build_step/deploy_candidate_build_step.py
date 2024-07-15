@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -34,3 +34,9 @@ class DeployCandidateBuildStep(Document):
 	# end: auto-generated types
 
 	pass
+
+
+def on_doctype_update():
+	frappe.db.add_index("Deploy Candidate Build Step", ["stage_slug", "step_slug"])
+	frappe.db.add_index("Deploy Candidate Build Step", ["creation"])
+	frappe.db.add_index("Deploy Candidate Build Step", ["cached"])

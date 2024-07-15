@@ -3,15 +3,19 @@
 # For license information, please see license.txt
 
 
+from typing import TYPE_CHECKING
+
 import frappe
+from frappe.utils import unique
+
+from press.agent import Agent
+from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
-from press.agent import Agent
 from press.utils import log_error
-from frappe.utils import unique
-from frappe.core.utils import find
 
-import boto3
+if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 
 
 class ProxyServer(BaseServer):
@@ -22,6 +26,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import (
 			ProxyServerDomain,
 		)
@@ -321,15 +326,28 @@ class ProxyServer(BaseServer):
 			log_error("Primary Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
 
-	def _setup_secondary(self):
-		primary_public_key = frappe.db.get_value(
+	def get_primary_frappe_public_key(self):
+		if primary_public_key := frappe.db.get_value(
 			"Proxy Server", self.primary, "frappe_public_key"
+		):
+			return primary_public_key
+
+		primary = frappe.get_doc("Proxy Server", self.primary)
+		ansible = Ansible(
+			playbook="fetch_frappe_public_key.yml",
+			server=primary,
 		)
+		play = ansible.run()
+		if play.status == "Success":
+			return frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+
+	def _setup_secondary(self):
 		try:
 			ansible = Ansible(
 				playbook="secondary_proxy.yml",
 				server=self,
-				variables={"primary_public_key": primary_public_key},
+				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
 			self.reload()
@@ -350,58 +368,97 @@ class ProxyServer(BaseServer):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
+			self.doctype, self.name, "_trigger_failover", queue="long", timeout=3600
 		)
+
+	def stop_primary(self):
+		primary = frappe.get_doc("Proxy Server", self.primary)
+		try:
+			ansible = Ansible(
+				playbook="failover_prepare_primary_proxy.yml",
+				server=primary,
+			)
+			ansible.run()
+		except Exception:
+			pass  # may be unreachable
+
+	def forward_jobs_to_secondary(self):
+		frappe.db.set_value(
+			"Agent Job",
+			{"server": self.primary, "status": "Undelivered"},
+			"server",
+			self.name,
+		)
+
+	def move_wildcard_domains_from_primary(self):
+		frappe.db.set_value(
+			"Proxy Server Domain",
+			{"parent": self.primary},
+			"parent",
+			self.name,
+		)
+
+	def remove_primarys_access(self):
+		ansible = Ansible(
+			playbook="failover_remove_primary_access.yml",
+			server=self,
+			variables={
+				"primary_public_key": frappe.db.get_value(
+					"Proxy Server", self.primary, "frappe_public_key"
+				)
+			},
+		)
+		ansible.run()
+
+	def up_secondary(self):
+		ansible = Ansible(playbook="failover_up_secondary_proxy.yml", server=self)
+		ansible.run()
+
+	def update_dns_records_for_all_sites(self):
+		from itertools import groupby
+
+		servers = frappe.get_all("Server", {"proxy_server": self.primary}, pluck="name")
+		sites_domains = frappe.get_all(
+			"Site",
+			{"status": ("!=", "Archived"), "server": ("in", servers)},
+			["name", "domain"],
+			order_by="domain",
+		)
+		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
+			domain: RootDomain = frappe.get_doc("Root Domain", domain_name)
+			domain.update_dns_records_for_sites([site.name for site in sites], self.name)
 
 	def _trigger_failover(self):
 		try:
-			self.update_dns_record()
-			self.reload_nginx()
+			self.update_dns_records_for_all_sites()
+			self.stop_primary()
+			self.remove_primarys_access()
+			self.forward_jobs_to_secondary()
+			self.up_secondary()
 			self.update_app_servers()
+			self.move_wildcard_domains_from_primary()
 			self.switch_primary()
+			self.add_ssh_users_for_existing_benches()
 		except Exception:
 			self.status = "Broken"
-			log_error("Proxy Server Failover Exception", server=self.as_dict())
+			log_error("Proxy Server Failover Exception", doc=self)
 		self.save()
 
-	def update_dns_record(self):
-		try:
-			domain = frappe.get_doc("Root Domain", self.domain)
-			client = boto3.client(
-				"route53",
-				aws_access_key_id=domain.aws_access_key_id,
-				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-			)
-			zones = client.list_hosted_zones_by_name()["HostedZones"]
-			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
-			# i.e. x.example.com comes after example.com
-			# Name field has a trailing dot
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
-			client.change_resource_record_sets(
-				ChangeBatch={
-					"Changes": [
-						{
-							"Action": "UPSERT",
-							"ResourceRecordSet": {
-								"Name": self.primary,
-								"Type": "CNAME",
-								"TTL": 3600,
-								"ResourceRecords": [{"Value": self.name}],
-							},
-						}
-					]
-				},
-				HostedZoneId=hosted_zone,
-			)
-		except Exception:
-			self.status = "Broken"
-			log_error("Route 53 Record Update Error", domain=domain.name, server=self.name)
-
-	def reload_nginx(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		agent.restart_nginx()
+	def add_ssh_users_for_existing_benches(self):
+		benches = frappe.qb.DocType("Bench")
+		servers = frappe.qb.DocType("Server")
+		active_benches = (
+			frappe.qb.from_(benches)
+			.join(servers)
+			.on(servers.name == benches.server)
+			.select(benches.name)
+			.where(servers.proxy_server == self.primary)
+			.where(benches.status == "Active")
+			.run(as_dict=True)
+		)
+		for bench_name in active_benches:
+			bench: "Bench" = frappe.get_doc("Bench", bench_name)
+			bench.add_ssh_user()
 
 	def update_app_servers(self):
 		frappe.db.set_value(
@@ -409,10 +466,11 @@ class ProxyServer(BaseServer):
 		)
 
 	def switch_primary(self):
-		primary = frappe.get_doc("Proxy Server", self.primary)
+		frappe.db.set_value("Proxy Server", self.primary, "is_primary", False)
 		self.is_primary = True
-		primary.is_primary = False
-		primary.save()
+		self.is_replication_setup = False
+		self.primary = None
+		self.status = "Active"
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):
@@ -532,7 +590,7 @@ def process_update_nginx_job_update(job):
 	proxy_server = frappe.get_doc("Proxy Server", job.server)
 	if job.status == "Success":
 		proxy_server.status = "Active"
-	elif job.status in ["Failure", "Undelivered"]:
+	elif job.status in ["Failure", "Undelivered", "Delivery Failure"]:
 		proxy_server.status = "Broken"
 	elif job.status in ["Pending", "Running"]:
 		proxy_server.status = "Installing"

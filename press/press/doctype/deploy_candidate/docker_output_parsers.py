@@ -5,7 +5,6 @@ import dockerfile
 import frappe
 from frappe.core.utils import find
 from frappe.utils import now_datetime, rounded
-from press.utils import log_error
 
 # Reference:
 # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
@@ -16,6 +15,7 @@ if typing.TYPE_CHECKING:
 	from typing import Any, Generator, Optional, TypedDict
 
 	from frappe.types import DF
+
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 		DeployCandidateBuildStep,
@@ -37,18 +37,14 @@ class DockerBuildOutputParser:
 	"""
 	Parses `docker build` raw output and updates Deploy Candidate.
 
-	Output can be generated from a remote builder (agent) or from a build running
-	on press itself.
-
-	In case of a remote build, due to the way agent updates are propagated, all
-	lines are updated when agent is polled, and so output is looped N! times.
+	Due to the way agent updates are propagated, all lines are updated
+	when agent is polled, and so output is looped N! times.
 	"""
 
 	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_docker_remote_builder_used
 		self.last_updated = now_datetime()
 
 		# Used to generate output and track parser state
@@ -66,44 +62,19 @@ class DockerBuildOutputParser:
 			}
 		return self._steps_by_step_slug
 
-	# `output` can be from local or remote build
 	def parse_and_update(self, output: "BuildOutput"):
 		for raw_line in output:
 			self._parse_line_handle_exc(raw_line)
 		self._end_parsing()
 
 	def _parse_line_handle_exc(self, raw_line: str):
-		try:
-			self._parse_line(raw_line)
-			self._update_dc_build_output()
-		except Exception:
-			self.flush_output()
-			self._log_error(raw_line)
-
-	def _log_error(self, raw_line: str):
-		log_error(
-			title="Build Output Parse Error",
-			message=f"Error when parsing line: `{raw_line}`",
-			doc=self.dc,
-		)
-
-	def _update_dc_build_output(self):
-		# Output saved at the end of parsing all lines
-		if self.is_remote:
-			return
-
-		sec_since_last_update = (now_datetime() - self.last_updated).total_seconds()
-		if sec_since_last_update <= 1:
-			return
-
-		self.flush_output()
-		self.last_update = now_datetime()
+		self._parse_line(raw_line)
 
 	def flush_output(self, commit: bool = True):
 		self.dc.build_output = "".join(self.lines)
 		self.dc.build_error = "".join(self.error_lines)
 
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()
 
@@ -161,9 +132,7 @@ class DockerBuildOutputParser:
 			self.error_lines.append(escaped_line)
 
 	def _end_parsing(self):
-		if self.is_remote:
-			self.dc.last_updated = now_datetime()
-
+		self.dc.last_updated = now_datetime()
 		self.flush_output(True)
 
 	def _set_docker_image_id(self, line: str):
@@ -274,7 +243,6 @@ class UploadStepUpdater:
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_docker_remote_builder_used
 		self.output: list[dict] = []
 
 		# Used only if not remote
@@ -303,23 +271,14 @@ class UploadStepUpdater:
 			return
 
 		for line in output:
-			self._process_single_line(line)
+			self._update_output(line)
 
-		# If remote, duration is accumulated
-		if self.is_remote:
-			duration = (now_datetime() - self.dc.last_updated).total_seconds()
-			self.upload_step.duration += rounded(duration, 1)
-
-		# If not remote, duration is calculated once
-		else:
-			duration = (now_datetime() - self.start_time).total_seconds()
-			self.upload_step.duration = rounded(duration, 1)
-
-			# If remote, this has to be set on Agent Job success
-			self.upload_step.status = "Success"
+		last_update = self.dc.last_updated
+		duration = (now_datetime() - last_update).total_seconds()
+		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: 'DF.Literal["Success", "Failure"]'):
+	def end(self, status: 'Optional[DF.Literal["Success", "Failure"]]'):
 		if not self.upload_step:
 			return
 
@@ -327,20 +286,13 @@ class UploadStepUpdater:
 		self.upload_step.status = status
 		self.flush_output()
 
-	def _process_single_line(self, line: dict):
-		self._update_output(line)
-		if self.is_remote:
-			return
-
-		# If not remote, upload step output is updated every 1 second
-		now = now_datetime()
-		if (now - self.last_updated).total_seconds() <= 1:
-			return
-
-		self.flush_output()
-		self.last_updated = now
-
 	def _update_output(self, line: dict):
+		if error := line.get("error"):
+			message = line.get("errorDetail", {}).get("message", error)
+			line_str = f"no_id: Error {message}"
+			self.output.append({"id": "no_id", "output": line_str, "status": "Error"})
+			return
+
 		line_id = line.get("id")
 		if not line_id:
 			return
@@ -355,14 +307,23 @@ class UploadStepUpdater:
 		):
 			existing["output"] = line_str
 		else:
-			self.output.append({"id": line_id, "output": line_str})
+			self.output.append({"id": line_id, "output": line_str, "status": line_status})
 
 	def flush_output(self, commit: bool = True):
 		if not self.upload_step:
 			return
 
-		output_lines = [line["output"] for line in self.output]
+		output_lines = []
+		for line in self.output:
+			output_lines.append(line["output"])
+			status = line.get("status")
+
+			if status == "Error":
+				self.upload_step.status = "Failure"
+			elif status == "Pushed":
+				self.upload_step.status = "Success"
+
 		self.upload_step.output = "\n".join(output_lines)
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()

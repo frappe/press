@@ -2,12 +2,13 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
+from frappe.model.document import Document
 
 import press.utils
 from press.api.billing import get_stripe
-from frappe.model.document import Document
-import re
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -28,6 +29,7 @@ class StripeWebhookLog(Document):
 		invoice: DF.Link | None
 		invoice_id: DF.Data | None
 		payload: DF.Code | None
+		stripe_payment_method: DF.Link | None
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -46,6 +48,21 @@ class StripeWebhookLog(Document):
 			self.invoice = frappe.db.get_value(
 				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
 			)
+
+		if self.event_type == "payment_intent.payment_failed":
+			if payment_method := (
+				payload.get("data", {})
+				.get("object", {})
+				.get("last_payment_error", {})
+				.get("payment_method")
+			):
+				payment_method_id = payment_method.get("id")
+
+				self.stripe_payment_method = frappe.db.get_value(
+					"Stripe Payment Method",
+					{"stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id},
+					"name",
+				)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -67,7 +84,7 @@ def stripe_webhook_handler():
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
 		frappe.set_user(current_user)
-		raise Exception
+		raise
 
 
 def get_customer_id(form_dict):

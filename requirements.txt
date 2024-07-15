@@ -1,10 +1,10 @@
-ansible==2.10.7
+ansible==3.4.0
 beautifulsoup4
 Click
 coverage
 dnspython==1.16.0
 docker==6.1.2
-dockerfile==3.1.0
+dockerfile==3.2.0
 oci==2.116.0
 paramiko==3.3.1
 pexpect==4.8.0
@@ -14,6 +14,7 @@ PyGithub==1.44.1
 pyOpenSSL~=23.2.0
 python-telegram-bot==13.15
 razorpay~=1.2.0
+requests<2.32
 responses==0.23.1
 selenium
 semantic-version==2.10.0

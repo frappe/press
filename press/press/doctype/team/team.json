@@ -21,7 +21,7 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
-  "default_to_new_dashboard",
+  "allow_access_to_restricted_site_plans",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -414,9 +414,10 @@
   },
   {
    "default": "0",
-   "fieldname": "default_to_new_dashboard",
+   "description": "If checked, team can create sites within restricted site plans that limit allowed apps and deployment on specific release groups.",
+   "fieldname": "allow_access_to_restricted_site_plans",
    "fieldtype": "Check",
-   "label": "Default to New Dashboard"
+   "label": "Allow Access To Restricted Site Plans"
   }
  ],
  "links": [
@@ -469,9 +470,14 @@
    "group": "Marketplace",
    "link_doctype": "Marketplace Publisher Profile",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Stripe Payment Method",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2024-03-23 14:15:04.526141",
+ "modified": "2024-07-10 17:22:16.718936",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

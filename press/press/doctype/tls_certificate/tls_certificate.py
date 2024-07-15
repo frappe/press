@@ -31,11 +31,13 @@ class TLSCertificate(Document):
 		certificate: DF.Code | None
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
+		error: DF.Code | None
 		expires_on: DF.Datetime | None
 		full_chain: DF.Code | None
 		intermediate_chain: DF.Code | None
 		issued_on: DF.Datetime | None
 		private_key: DF.Code | None
+		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
 		team: DF.Link | None
@@ -60,7 +62,7 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
-		user, session_data, team, = (
+		(user, session_data, team,) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(),
@@ -87,16 +89,20 @@ class TLSCertificate(Document):
 			)
 			self._extract_certificate_details()
 			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
 		except Exception as e:
 			# If certbot is already running, retry after 5 seconds
 			# TODO: Move this to a queue
-			if (
-				e.output and "Another instance of Certbot is already running" in e.output.decode()
-			):
-				time.sleep(5)
-				frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
-				return
-
+			if hasattr(e, "output") and e.output:
+				if "Another instance of Certbot is already running" in e.output.decode():
+					time.sleep(5)
+					frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
+					return
+				self.error = e.output.decode()
+			else:
+				self.error = repr(e)
+			self.retry_count += 1
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
@@ -174,26 +180,67 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 
 
 def renew_tls_certificates():
+	tls_renewal_queue_size = frappe.db.get_single_value(
+		"Press Settings", "tls_renewal_queue_size"
+	)
 	pending = frappe.get_all(
 		"TLS Certificate",
-		fields=["name", "domain", "wildcard"],
-		filters={"status": "Active", "expires_on": ("<", frappe.utils.add_days(None, 25))},
+		fields=["name", "domain", "wildcard", "retry_count"],
+		filters={
+			"status": ("in", ("Active", "Failure")),
+			"expires_on": ("<", frappe.utils.add_days(None, 25)),
+			"retry_count": ("<", 5),
+		},
+		ignore_ifnull=True,
+		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
 	)
+	renewals_attempted = 0
 	for certificate in pending:
+		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
+			break
 		site = frappe.db.get_value(
-			"Site Domain", {"tls_certificate": certificate.name, "status": "Active"}, "site"
+			"Site Domain", {"tls_certificate": certificate.name}, "site"
 		)
-		if site:
-			site_status = frappe.db.get_value("Site", site, "status")
-			if (
-				site_status == "Active" and check_dns_cname_a(site, certificate.domain)["matched"]
-			):
+		try:
+			should_renew = False
+			if certificate.wildcard:
+				should_renew = True
+			else:
+				if not site:
+					continue
+				if frappe.db.get_value("Site", site, "status") != "Active":
+					continue
+				dns_response = check_dns_cname_a(site, certificate.domain)
+				if dns_response["matched"]:
+					should_renew = True
+				else:
+					frappe.db.set_value(
+						"TLS Certificate",
+						certificate.name,
+						{
+							"status": "Failure",
+							"error": f"DNS check failed. {dns_response.get('answer')}",
+							"retry_count": certificate.retry_count + 1,
+						},
+					)
+			if should_renew:
+				renewals_attempted += 1
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
 				frappe.db.commit()
-		if certificate.wildcard:
-			certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
-			certificate_doc._obtain_certificate()
+		except Exception as e:
+			frappe.db.rollback()
+			frappe.db.set_value(
+				"TLS Certificate",
+				certificate.name,
+				{
+					"status": "Failure",
+					"error": repr(e),
+					"retry_count": certificate.retry_count + 1,
+				},
+			)
+			log_error("TLS Renewal Exception", certificate=certificate, site=site)
+			frappe.db.commit()
 
 
 def update_server_tls_certifcate(server, certificate):
@@ -217,6 +264,36 @@ def update_server_tls_certifcate(server, certificate):
 		ansible.run()
 	except Exception:
 		log_error("TLS Setup Exception", server=server.as_dict())
+
+
+def retrigger_failed_wildcard_tls_callbacks():
+	server_doctypes = [
+		"Proxy Server",
+		"Server",
+		"Database Server",
+		"Log Server",
+		"Monitor Server",
+		"Registry Server",
+		"Analytics Server",
+		"Trace Server",
+	]
+	for server_doctype in server_doctypes:
+		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+		for server in servers:
+			plays = frappe.get_all(
+				"Ansible Play",
+				{"play": "Setup TLS Certificates", "server": server},
+				pluck="status",
+				limit=1,
+				order_by="creation DESC",
+			)
+			if plays and plays[0] != "Success":
+				server_doc = frappe.get_doc(server_doctype, server)
+				frappe.enqueue(
+					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+					server=server_doc,
+					certificate=server_doc.get_certificate(),
+				)
 
 
 class BaseCA:
@@ -323,8 +400,13 @@ class LetsEncrypt(BaseCA):
 			subprocess.check_output(
 				shlex.split(command), stderr=subprocess.STDOUT, env=environment
 			)
+		except subprocess.CalledProcessError as e:
+			output = (e.output or b"").decode()
+			if "Another instance of Certbot is already running" not in output:
+				log_error("Certbot Exception", command=command, output=output)
+			raise e
 		except Exception as e:
-			log_error("Certbot Exception", command=command, output=e.output.decode())
+			log_error("Certbot Exception", command=command, exception=e)
 			raise e
 
 	@property

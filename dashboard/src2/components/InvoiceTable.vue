@@ -79,7 +79,7 @@
 							Total (Without Tax)
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.total_before_tax) }}
+							{{ formatCurrency(doc.total) }}
 						</td>
 					</tr>
 					<tr v-if="doc.gst > 0">
@@ -100,15 +100,20 @@
 							{{
 								doc.partner_email && doc.partner_email != $team.doc.user
 									? formatCurrency(doc.total_before_discount)
-									: formatCurrency(doc.total)
+									: formatCurrency(doc.total + doc.gst)
 							}}
 						</td>
 					</tr>
-					<template v-if="doc.total !== doc.amount_due && doc.docstatus == 1">
+					<template
+						v-if="
+							doc.total !== doc.amount_due &&
+							['Paid', 'Unpaid'].includes(doc.status)
+						"
+					>
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right">Applied Balance:</td>
+							<td class="pr-2 text-right font-medium">Applied Balance</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								- {{ formatCurrency(doc.applied_credits) }}
 							</td>
@@ -116,7 +121,7 @@
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right">Amount Due:</td>
+							<td class="pr-2 text-right font-medium">Amount Due</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								{{ formatCurrency(doc.amount_due) }}
 							</td>

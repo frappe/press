@@ -1,17 +1,17 @@
 import os
-import re
-import urllib.request
-from selenium import webdriver
-import requests
-import subprocess
 import platform
+import re
+import subprocess
+import urllib.request
+from urllib.parse import urlsplit, urlunsplit
 
 import click
 import frappe
+import requests
 from bs4 import BeautifulSoup, SoupStrainer
-from selenium.webdriver.chrome.options import Options
-from urllib.parse import urlsplit, urlunsplit
 from frappe.core.utils import find
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 CHROMEDRIVER_PATH = os.path.expanduser("~/chromedriver")
 

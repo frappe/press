@@ -5,13 +5,12 @@
 </template>
 
 <script setup>
-import { h, ref } from 'vue';
+import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
-import { confirmDialog } from '../../utils/components';
+import { confirmDialog, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
-import router from '../../router';
 
 const team = getTeam();
 team.getTeamMembers.submit();
@@ -37,14 +36,6 @@ const teamMembersListOptions = ref({
 		let team = getTeam();
 		if (row.name === team.doc.user) return [];
 		return [
-			{
-				label: 'Manage Permissions',
-				onClick() {
-					router.push({
-						name: 'SettingsPermissionRoles'
-					});
-				}
-			},
 			{
 				label: 'Remove Member',
 				condition: () => row.name !== team.doc.user,
@@ -80,36 +71,12 @@ const teamMembersListOptions = ref({
 			variant: 'solid',
 			iconLeft: 'plus',
 			onClick() {
-				inviteMemberByEmail();
+				const InviteTeamMemberDialog = defineAsyncComponent(() =>
+					import('./InviteTeamMemberDialog.vue')
+				);
+				renderDialog(h(InviteTeamMemberDialog));
 			}
 		};
 	}
 });
-
-function inviteMemberByEmail() {
-	confirmDialog({
-		title: 'Add New Member',
-		message: 'Enter the email address of your teammate to invite them',
-		fields: [
-			{
-				label: 'Email',
-				fieldname: 'email',
-				autocomplete: 'off'
-			}
-		],
-		async onSuccess({ hide, values }) {
-			if (values.email) {
-				return team.inviteTeamMember.submit(
-					{ email: values.email, new_dashboard: true },
-					{
-						onSuccess() {
-							hide();
-							toast.success('Invite Sent!');
-						}
-					}
-				);
-			}
-		}
-	});
-}
 </script>

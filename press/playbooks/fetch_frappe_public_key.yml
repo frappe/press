@@ -1,0 +1,14 @@
+---
+- name: Fetch Frappe Public Key
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Fetch Frappe Public Key
+      user:
+        name: frappe
+        generate_ssh_key: yes # Won't overwrite existing key
+
+# Key will be put in server doc by AnsibleCallback

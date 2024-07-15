@@ -15,6 +15,7 @@ class SiteAnalytics(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_analytics_active.site_analytics_active import (
 			SiteAnalyticsActive,
 		)

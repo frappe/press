@@ -8,6 +8,7 @@ import re
 import time
 from datetime import datetime, timedelta
 from typing import Optional, TypedDict
+from pathlib import Path
 from urllib.parse import urljoin
 
 import frappe
@@ -61,9 +62,18 @@ def log_error(title, **kwargs):
 	except Exception:
 		pass
 
-	traceback = frappe.get_traceback(with_context=True)
-	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
-	message = f"Data:\n{serialized}\nException:\n{traceback}"
+	message = ""
+	if serialized := json.dumps(
+		kwargs,
+		indent=4,
+		sort_keys=True,
+		default=str,
+		skipkeys=True,
+	):
+		message += f"Data:\n{serialized}\n"
+
+	if traceback := frappe.get_traceback(with_context=True):
+		message += f"Exception:\n{traceback}\n"
 
 	try:
 		frappe.log_error(
@@ -148,6 +158,15 @@ def _get_current_team():
 def _system_user():
 	return (
 		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	)
+
+
+def has_role(role, user=None):
+	if not user:
+		user = frappe.session.user
+
+	return frappe.db.exists(
+		"Has Role", {"parenttype": "User", "parent": user, "role": role}
 	)
 
 
@@ -296,14 +315,19 @@ def get_frappe_backups(url, email, password):
 	return RemoteFrappeSite(url, email, password).get_backups()
 
 
+def is_allowed_access_to_restricted_site_plans():
+	team = get_current_team(get_doc=True)
+	return team.allow_access_to_restricted_site_plans
+
+
 class RemoteFrappeSite:
 	def __init__(self, url, usr, pwd):
 		if not url.startswith("http"):
 			# http will be redirected to https in requests
 			url = f"http://{url}"
 
-		self.user_site = url
-		self.user_login = usr
+		self.user_site = url.strip()
+		self.user_login = usr.strip()
 		self.password_login = pwd
 		self._remote_backup_links = {}
 
@@ -324,7 +348,7 @@ class RemoteFrappeSite:
 
 	def _validate_frappe_site(self):
 		"""Validates if Frappe Site and sets RemoteBackupRetrieval.site"""
-		res = requests.get(f"{self.user_site}/api/method/frappe.ping")
+		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
 			frappe.throw("Invalid Frappe Site")
@@ -338,6 +362,7 @@ class RemoteFrappeSite:
 		response = requests.post(
 			f"{self.site}/api/method/login",
 			data={"usr": self.user_login, "pwd": self.password_login},
+			timeout=(5, 10),
 		)
 		if not response.ok:
 			if response.status_code == 401:
@@ -376,6 +401,7 @@ class RemoteFrappeSite:
 		res = requests.get(
 			f"{self.site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
 			headers=headers,
+			timeout=(5, 10),
 		)
 		if not res.ok:
 			self._handle_backups_retrieval_failure(res)
@@ -718,3 +744,38 @@ def strip_split(string: str, sep: str = " ", maxsplit: int = -1) -> list[str]:
 			splits.append(p_stripped)
 
 	return splits
+
+
+def get_filepath(root: str, filename: str, max_depth: int = 1):
+	"""
+	Returns the absolute path of a `filename` under `root`. If
+	it is not found, returns None.
+
+	Example: get_filepath("apps/hrms", "hooks.py", 2)
+
+	Depth of search under file tree can be set using `max_depth`.
+	"""
+	path = _get_filepath(
+		Path(root),
+		filename,
+		max_depth,
+	)
+
+	if path is None:
+		return path
+
+	return path.absolute().as_posix()
+
+
+def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
+	if root.name == filename:
+		return root
+	if max_depth == 0 or not root.is_dir():
+		return None
+	for new_root in root.iterdir():
+		if possible_path := _get_filepath(
+			new_root,
+			filename,
+			max_depth - 1,
+		):
+			return possible_path

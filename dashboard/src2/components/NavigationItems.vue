@@ -42,8 +42,7 @@ export default {
 							return h(
 								'span',
 								{
-									class:
-										'!ml-auto rounded bg-gray-400 px-1.5 py-0.5 text-xs text-white'
+									class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600'
 								},
 								unreadNotificationsCount.data > 99
 									? '99+'
@@ -86,10 +85,13 @@ export default {
 					disabled
 				},
 				{
-					name: 'Apps',
+					name: 'Marketplace',
 					icon: () => h(App),
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
+					condition:
+						this.$team.doc.is_desk_user ||
+						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled
 				},
 				{
@@ -97,14 +99,18 @@ export default {
 					icon: () => h(WalletCards),
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
+					condition:
+						this.$team.doc.is_desk_user || this.$session.hasBillingAccess,
 					disabled
 				},
 				{
 					name: 'Partners',
 					icon: () => h(Globe),
 					route: '/partners',
-					isActive: routeName.startsWith('Partners'),
-					condition: Boolean(this.$team.doc.erpnext_partner),
+					isActive: routeName.startsWith('Partner'),
+					condition:
+						// this.$session.hasPartnerAccess &&
+						Boolean(this.$team.doc.erpnext_partner),
 					disabled
 				},
 				{

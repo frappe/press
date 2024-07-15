@@ -10,7 +10,15 @@
 		</Header>
 	</div>
 
-	<div v-if="serverEnabled" class="mx-auto max-w-2xl px-5">
+	<div
+		v-if="!$team.doc.is_desk_user && !$session.hasServerCreationAccess"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<ErrorMessage message="You aren't permitted to create new servers" />
+	</div>
+
+	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -319,6 +327,7 @@ import Header from '../components/Header.vue';
 import Summary from '../components/Summary.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
 import ClickToCopy from '../../src/components/ClickToCopyField.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	components: {
@@ -410,22 +419,26 @@ export default {
 				url: 'press.api.server.new',
 				validate({ server }) {
 					if (!server.title) {
-						return 'Server name is required';
+						throw new DashboardError('Server name is required');
 					} else if (!server.cluster) {
-						return 'Please select a region';
+						throw new DashboardError('Please select a region');
 					} else if (!server.app_plan) {
-						return 'Please select an App Server Plan';
+						throw new DashboardError('Please select an App Server Plan');
 					} else if (!server.db_plan) {
-						return 'Please select a Database Server Plan';
+						throw new DashboardError('Please select a Database Server Plan');
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
-						return "You don't have billing details added. Please add billing details from settings to continue.";
+						throw new DashboardError(
+							"You don't have billing details added. Please add billing details from settings to continue."
+						);
 					} else if (
 						(this.$team.doc.currency == 'USD' &&
 							this.$team.doc.balance <= 200) ||
 						(this.$team.doc.currency == 'INR' &&
 							this.$team.doc.balance <= 16000)
 					) {
-						return 'You need to have $200 worth of credits to create a server.';
+						throw new DashboardError(
+							'You need to have $200 worth of credits to create a server.'
+						);
 					}
 				},
 				onSuccess(server) {
@@ -441,26 +454,34 @@ export default {
 				url: 'press.api.selfhosted.create_and_verify_selfhosted',
 				validate() {
 					if (!this.serverTitle) {
-						return 'Server name is required';
+						throw new DashboardError('Server name is required');
 					} else if (
 						!this.appPublicIP ||
 						!this.dbPublicIP ||
 						!this.appPrivateIP ||
 						!this.dbPrivateIP
 					) {
-						return 'Please fill all the IP addresses';
+						throw new DashboardError('Please fill all the IP addresses');
 					} else if (this.validateIP(this.appPublicIP)) {
-						return 'Please enter a valid Application Public IP';
+						throw new DashboardError(
+							'Please enter a valid Application Public IP'
+						);
 					} else if (this.validateIP(this.appPrivateIP)) {
-						return 'Please enter a valid Application Private IP';
+						throw new DashboardError(
+							'Please enter a valid Application Private IP'
+						);
 					} else if (this.validateIP(this.dbPublicIP)) {
-						return 'Please enter a valid Database Public IP';
+						throw new DashboardError('Please enter a valid Database Public IP');
 					} else if (this.validateIP(this.dbPrivateIP)) {
-						return 'Please enter a valid Database Private IP';
+						throw new DashboardError(
+							'Please enter a valid Database Private IP'
+						);
 					} else if (this.dbPublicIP === this.appPublicIP) {
-						return "Please don't use the same server as Application and Database servers";
+						throw new DashboardError(
+							"Please don't use the same server as Application and Database servers"
+						);
 					} else if (!this.agreedToRegionConsent) {
-						return 'Please agree to the region consent';
+						throw new DashboardError('Please agree to the region consent');
 					}
 				},
 				onSuccess(server) {

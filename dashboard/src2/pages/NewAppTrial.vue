@@ -24,7 +24,7 @@
 							: ''
 					"
 				>
-					<div v-if="completedSites">
+					<div v-if="completedSites.length">
 						<div>
 							<div class="text-base text-gray-900">
 								{{
@@ -37,7 +37,7 @@
 								<li
 									v-for="site in completedSites"
 									:key="site"
-									class="whitespace-nowrap rounded p-2.5 text-base focus-within:ring focus-within:ring-gray-200 hover:bg-gray-100"
+									class="whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
 								>
 									<a
 										:href="`https://${site.site}`"
@@ -52,7 +52,6 @@
 								</li>
 							</ul>
 						</div>
-						<!-- {{ completedSites }} -->
 					</div>
 					<div v-if="siteRequest?.doc">
 						<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
@@ -79,7 +78,7 @@
 									}}
 								</div>
 							</div>
-							<FormControl
+							<!-- <FormControl
 								class="subdomain mt-2"
 								label="Site Name"
 								v-model="subdomain"
@@ -94,7 +93,7 @@
 										.{{ saasProduct.domain || 'frappe.cloud' }}
 									</div>
 								</template>
-							</FormControl>
+							</FormControl> -->
 							<ErrorMessage :message="siteRequest.createSite.error" />
 							<Button
 								class="w-full"
@@ -233,6 +232,7 @@ import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { getPlans } from '../data/plans';
 import { trialDays } from '../utils/site';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewAppTrial',
@@ -268,7 +268,7 @@ export default {
 		saasProduct() {
 			return {
 				type: 'document',
-				doctype: 'SaaS Product',
+				doctype: 'Product Trial',
 				name: this.productId
 			};
 		},
@@ -276,7 +276,7 @@ export default {
 			if (!this.pendingSiteRequest || this.completedSites.length) return;
 			return {
 				type: 'document',
-				doctype: 'SaaS Product Site Request',
+				doctype: 'Product Trial Request',
 				name: this.pendingSiteRequest,
 				realtime: true,
 				onSuccess(doc) {
@@ -289,13 +289,13 @@ export default {
 						method: 'create_site',
 						makeParams(params) {
 							let cluster = params?.cluster;
-							return { subdomain: this.subdomain, plan: this.plan, cluster };
+							return { plan: this.plan, cluster };
 						},
 						validate() {
 							if (!this.plan) {
-								return 'Please select a plan';
+								throw new DashboardError('Please select a plan');
 							}
-							return validateSubdomain(this.subdomain);
+							// throw new DashboardError(validateSubdomain(this.subdomain));
 						},
 						onSuccess() {
 							this.siteRequest.getProgress.reload();

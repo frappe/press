@@ -15,6 +15,8 @@ from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
+from press.utils import has_role
+
 ALLOWED_DOCTYPES = [
 	"Site",
 	"Site App",
@@ -35,8 +37,10 @@ ALLOWED_DOCTYPES = [
 	"Release Group Dependency",
 	"Cluster",
 	"Press Permission Group",
+	"Press Role",
+	"Press Role Permission",
 	"Team",
-	"SaaS Product Site Request",
+	"Product Trial Request",
 	"Deploy Candidate",
 	"Deploy Candidate Difference",
 	"Deploy Candidate Difference App",
@@ -59,10 +63,15 @@ ALLOWED_DOCTYPES = [
 	"App Release",
 	"Payout Order",
 	"App Patch",
-	"SaaS Product",
+	"Product Trial",
 	"Press Notification",
 	"User SSH Key",
 	"Frappe Version",
+	"Dashboard Banner",
+]
+
+ALLOWED_DOCTYPES_FOR_SUPPORT = [
+	"Site",
 ]
 
 whitelisted_methods = set()
@@ -79,8 +88,15 @@ def get_list(
 	parent=None,
 	debug=False,
 ):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	if filters is None:
 		filters = {}
+
+	# team doctype doesn't have a team field to filter by
+	if doctype == "Team":
+		return []
+
 	check_permissions(doctype)
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
@@ -115,6 +131,21 @@ def get_list(
 				.where(ParentDocType.team == frappe.local.team().name)
 			)
 
+	if roles := check_role_permissions(doctype):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+		QueriedDocType = frappe.qb.DocType(doctype)
+
+		field = doctype.lower().replace(" ", "_")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission[field]
+				== QueriedDocType.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
 	filters = frappe._dict(filters or {})
 	list_args = dict(
 		fields=fields,
@@ -136,10 +167,9 @@ def get_list(
 
 @frappe.whitelist()
 def get(doctype, name):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	check_permissions(doctype)
-	check_method_permissions(
-		doctype, name, "get_doc", "You don't have permission to view this document"
-	)
 	try:
 		doc = frappe.get_doc(doctype, name)
 	except frappe.DoesNotExistError:
@@ -148,9 +178,13 @@ def get(doctype, name):
 			return controller.on_not_found(name)
 		raise
 
-	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+	if not (
+		frappe.local.system_user() or has_role("Press Support Agent")
+	) and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
+
+	check_role_permissions(doctype, name)
 
 	fields = list(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -209,13 +243,16 @@ def insert(doc=None):
 @frappe.whitelist(methods=["POST", "PUT"])
 def set_value(doctype, name, fieldname, value=None):
 	check_permissions(doctype)
-	check_team_access(doctype, name)
+	check_document_access(doctype, name)
 
 	for field in fieldname.keys():
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
 		is_allowed_field(doctype, field)
 
-	return _set_value(doctype, name, fieldname, value)
+	_set_value(doctype, name, fieldname, value)
+
+	# frappe set_value returns just the doc and not press's overriden `get_doc`
+	return get(doctype, name)
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])
@@ -223,7 +260,7 @@ def delete(doctype, name):
 	method = "delete"
 
 	check_permissions(doctype)
-	check_team_access(doctype, name)
+	check_document_access(doctype, name)
 	check_dashboard_actions(doctype, name, method)
 
 	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
@@ -232,17 +269,24 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
-	check_team_access(dt, dn)
-	check_method_permissions(dt, dn, method)
+	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
-	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
+	_run_doc_method(
+		dt=dt,
+		dn=dn,
+		method=method,
+		args=fix_args(method, args),
+	)
 	frappe.response.docs = [get(dt, dn)]
 
 
 @frappe.whitelist()
 def search_link(doctype, query=None, filters=None, order_by=None, page_length=None):
 	check_permissions(doctype)
+	if doctype == "Team" and not frappe.local.system_user():
+		raise_not_permitted()
+
 	meta = frappe.get_meta(doctype)
 	DocType = frappe.qb.DocType(doctype)
 	valid_filters = validate_filters(doctype, filters)
@@ -270,8 +314,11 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 	return q.run(as_dict=1)
 
 
-def check_team_access(doctype: str, name: str):
+def check_document_access(doctype: str, name: str):
 	if frappe.local.system_user():
+		return
+
+	if has_role("Press Support Agent") and doctype in ALLOWED_DOCTYPES_FOR_SUPPORT:
 		return
 
 	team = ""
@@ -415,21 +462,11 @@ def check_permissions(doctype):
 	if doctype not in ALLOWED_DOCTYPES:
 		raise_not_permitted()
 
-	if not frappe.local.team():
+	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)
 
-	return True
-
-
-def check_method_permissions(doctype, docname, method, error_message=None) -> None:
-	from press.press.doctype.press_permission_group.press_permission_group import (
-		has_method_permission,
-	)
-
-	if not has_method_permission(doctype, docname, method):
-		frappe.throw(error_message or f"{method} is not permitted on {doctype} {docname}")
 	return True
 
 
@@ -463,3 +500,20 @@ def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
 		return decorated_func
 
 	return wrapper
+
+
+def fix_args(method, args):
+	# This is a fixer function. Certain callers of `run_doc_method`
+	# pass duplicates of the passed kwargs in the `args` arg.
+	#
+	# This causes "got multiple values for argument 'method'"
+	if not isinstance(args, dict):
+		return args
+
+	# Even if it doesn't match it'll probably throw
+	# down the call stack, but in that case it's unexpected
+	# behavior and so it's better to error-out.
+	if args.get("method") == method:
+		del args["method"]
+
+	return args

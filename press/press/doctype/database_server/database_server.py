@@ -3,9 +3,12 @@
 # For license information, please see license.txt
 
 
+import json
 from typing import Any
+
 import frappe
 from frappe.core.doctype.version.version import get_diff
+from frappe.core.utils import find
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
@@ -14,7 +17,6 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
-from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
@@ -25,6 +27,7 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
@@ -48,6 +51,8 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
+		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
+		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
@@ -57,6 +62,7 @@ class DatabaseServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		self_hosted_mariadb_server: DF.Data | None
@@ -110,7 +116,6 @@ class DatabaseServer(BaseServer):
 			and self.subscription
 			and self.subscription.team != self.team
 		):
-
 			self.subscription.disable()
 
 			# enable subscription if exists
@@ -347,25 +352,7 @@ class DatabaseServer(BaseServer):
 				self.server_id = 1
 
 	def _setup_server(self):
-		agent_password = self.get_password("agent_password")
-		agent_repository_url = self.get_agent_repository_url()
-		mariadb_root_password = self.get_password("mariadb_root_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
-
-		log_server = frappe.db.get_single_value("Press Settings", "log_server")
-		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
-		else:
-			kibana_password = None
-
+		config = self._get_config()
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_db.yml"
@@ -377,17 +364,17 @@ class DatabaseServer(BaseServer):
 				variables={
 					"server": self.name,
 					"workers": "2",
-					"agent_password": agent_password,
-					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
-					"log_server": log_server,
-					"kibana_password": kibana_password,
+					"agent_password": config.agent_password,
+					"agent_repository_url": config.agent_repository_url,
+					"monitoring_password": config.monitoring_password,
+					"log_server": config.log_server,
+					"kibana_password": config.kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
-					"mariadb_root_password": mariadb_root_password,
-					"certificate_private_key": certificate.private_key,
-					"certificate_full_chain": certificate.full_chain,
-					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"mariadb_root_password": config.mariadb_root_password,
+					"certificate_private_key": config.certificate.private_key,
+					"certificate_full_chain": config.certificate.full_chain,
+					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 				},
 			)
 			play = ansible.run()
@@ -402,6 +389,69 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	def _get_config(self):
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		return frappe._dict(
+			dict(
+				agent_password=self.get_password("agent_password"),
+				agent_repository_url=self.get_agent_repository_url(),
+				mariadb_root_password=self.get_password("mariadb_root_password"),
+				certificate=certificate,
+				monitoring_password=frappe.get_doc("Cluster", self.cluster).get_password(
+					"monitoring_password"
+				),
+				log_server=log_server,
+				kibana_password=kibana_password,
+			)
+		)
+
+	@frappe.whitelist()
+	def setup_essentials(self):
+		"""Setup missing esessiong after server setup"""
+		config = self._get_config()
+
+		try:
+			ansible = Ansible(
+				playbook="setup_essentials.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"workers": "2",
+					"agent_password": config.agent_password,
+					"agent_repository_url": config.agent_repository_url,
+					"monitoring_password": config.monitoring_password,
+					"log_server": config.log_server,
+					"kibana_password": config.kibana_password,
+					"private_ip": self.private_ip,
+					"server_id": self.server_id,
+					"certificate_private_key": config.certificate.private_key,
+					"certificate_full_chain": config.certificate.full_chain,
+					"certificate_intermediate_chain": config.certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+		except Exception:
+			self.status = "Broken"
+			log_error("Setup failed for missing essentials", server=self.as_dict())
 		self.save()
 
 	def process_hybrid_server_setup(self):
@@ -428,6 +478,7 @@ class DatabaseServer(BaseServer):
 				playbook="primary.yml",
 				server=self,
 				variables={
+					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
 					"secondary_root_public_key": secondary_root_public_key,
 				},
@@ -483,6 +534,34 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_replication", queue="long", timeout=18000
 		)
+
+	@frappe.whitelist()
+	def perform_physical_backup(self, path):
+		if not path:
+			frappe.throw("Provide a path to store the physical backup")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_perform_physical_backup",
+			queue="long",
+			timeout=18000,
+			path=path,
+		)
+
+	def _perform_physical_backup(self, path):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="mariadb_physical_backup.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": mariadb_root_password,
+					"backup_path": path,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Physical Backup Exception", server=self.as_dict())
 
 	def _trigger_failover(self):
 		try:
@@ -743,6 +822,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def get_stalks(self):
+		if self.agent.should_skip_requests():
+			return []
 		result = self.agent.get("database/stalks", raises=False)
 		if (not result) or ("error" in result):
 			return []
@@ -843,6 +924,46 @@ class DatabaseServer(BaseServer):
 			log_error(
 				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
 			)
+
+	@frappe.whitelist()
+	def update_memory_allocator(self, memory_allocator):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_update_memory_allocator",
+			memory_allocator=memory_allocator,
+			enqueue_after_commit=True,
+		)
+
+	def _update_memory_allocator(self, memory_allocator):
+		ansible = Ansible(
+			playbook="mariadb_memory_allocator.yml",
+			server=self,
+			variables={
+				"server": self.name,
+				"allocator": memory_allocator.lower(),
+				"mariadb_root_password": self.get_password("mariadb_root_password"),
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Memory Allocator Setup Error", server=self.name)
+		elif play.status == "Success":
+			result = json.loads(
+				frappe.get_all(
+					"Ansible Task",
+					filters={"play": play.name, "task": "Show Memory Allocator"},
+					pluck="result",
+					order_by="creation DESC",
+					limit=1,
+				)[0]
+			)
+			query_result = result.get("query_result")
+			if query_result:
+				self.reload()
+				self.memory_allocator = memory_allocator
+				self.memory_allocator_version = query_result[0][0]["Value"]
+				self.save()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

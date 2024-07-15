@@ -17,7 +17,10 @@
   "is_default",
   "column_break_9",
   "address_html",
-  "is_verified_with_micro_charge"
+  "is_verified_with_micro_charge",
+  "stripe_setup_intent_id",
+  "stripe_mandate_id",
+  "stripe_mandate_reference"
  ],
  "fields": [
   {
@@ -90,11 +93,26 @@
    "fieldname": "brand",
    "fieldtype": "Data",
    "label": "Card Brand"
+  },
+  {
+   "fieldname": "stripe_mandate_id",
+   "fieldtype": "Data",
+   "label": "Stripe Mandate ID"
+  },
+  {
+   "fieldname": "stripe_setup_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Setup Intent ID"
+  },
+  {
+   "fieldname": "stripe_mandate_reference",
+   "fieldtype": "Data",
+   "label": "Stripe Mandate Reference"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-19 11:55:22.183101",
+ "modified": "2024-06-26 10:29:16.449579",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",

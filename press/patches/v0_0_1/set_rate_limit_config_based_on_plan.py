@@ -4,6 +4,7 @@
 
 
 import frappe
+
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import log_error
 

@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.model.document import Document
 
 from press.utils import log_error
-from frappe.model.document import Document
 from press.utils.billing import get_razorpay_client
 
 
@@ -52,13 +52,25 @@ def razorpay_webhook_handler():
 		frappe.set_user("Administrator")
 
 		razorpay_order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
-		if not frappe.db.exists(
-			"Razorpay Payment Record",
-			{"order_id": razorpay_order_id},
-		):
-			log_error(
-				"Razorpay payment record for given order does not exist", order_id=razorpay_order_id
-			)
+		razorpay_payment_record = frappe.db.exists(
+			"Razorpay Payment Record", {"order_id": razorpay_order_id}
+		)
+
+		notes = form_dict["payload"]["payment"]["entity"]["notes"]
+		if not razorpay_payment_record:
+			# Don't log error if its not FrappeCloud order
+			# Example of valid notes
+			# "notes": {
+			# 	"Description": "Order for Frappe Cloud Prepaid Credits",
+			# 	"Team (Frappe Cloud ID)": "test@example.com",
+			# 	"gst": 245
+			# },
+
+			if notes and notes.get("description"):
+				log_error(
+					"Razorpay payment record for given order does not exist",
+					order_id=razorpay_order_id,
+				)
 			return
 
 		frappe.get_doc(

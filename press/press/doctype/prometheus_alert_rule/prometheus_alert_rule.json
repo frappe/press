@@ -25,7 +25,13 @@
   "preview_section",
   "alert_preview",
   "column_break_21",
-  "route_preview"
+  "route_preview",
+  "reaction_tab",
+  "press_job_type",
+  "ignore_on_clusters",
+  "column_break_oetk",
+  "only_on_shared",
+  "silent"
  ],
  "fields": [
   {
@@ -148,6 +154,40 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enabled"
+  },
+  {
+   "fieldname": "reaction_tab",
+   "fieldtype": "Tab Break",
+   "label": "Reaction"
+  },
+  {
+   "fieldname": "press_job_type",
+   "fieldtype": "Link",
+   "label": "Press Job Type",
+   "options": "Press Job Type"
+  },
+  {
+   "fieldname": "column_break_oetk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "only_on_shared",
+   "fieldtype": "Check",
+   "label": "Only on Shared"
+  },
+  {
+   "fieldname": "ignore_on_clusters",
+   "fieldtype": "Table MultiSelect",
+   "label": "Ignore on Clusters",
+   "options": "Prometheus Alert Rule Cluster"
+  },
+  {
+   "default": "0",
+   "description": "Don't forward to telegram (Only for reactions)",
+   "fieldname": "silent",
+   "fieldtype": "Check",
+   "label": "Silent"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -157,7 +197,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2024-01-31 13:35:32.987624",
+ "modified": "2024-05-27 12:08:23.598999",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",

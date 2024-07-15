@@ -30,6 +30,8 @@
   "free_credits_inr",
   "free_credits_usd",
   "ngrok_auth_token",
+  "micro_debit_charge_inr",
+  "micro_debit_charge_usd",
   "razorpay_settings_section",
   "razorpay_key_id",
   "razorpay_webhook_secret",
@@ -72,8 +74,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "docker_remote_builder_server",
-  "docker_remote_builder_ssh",
+  "build_server",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -146,7 +147,6 @@
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
-  "allow_developer_account",
   "threshold",
   "commission",
   "usd_rate",
@@ -158,6 +158,7 @@
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
+  "agent_sentry_dsn",
   "column_break_105",
   "agent_github_access_token",
   "lets_encrypt_section",
@@ -188,7 +189,8 @@
   "spaces_domain",
   "hybrid_server_tab",
   "hybrid_cluster",
-  "hybrid_domain"
+  "hybrid_domain",
+  "tls_renewal_queue_size"
  ],
  "fields": [
   {
@@ -828,12 +830,6 @@
    "non_negative": 1
   },
   {
-   "default": "0",
-   "fieldname": "allow_developer_account",
-   "fieldtype": "Check",
-   "label": "Allow Developer Account from Dashboard"
-  },
-  {
    "fieldname": "infrastructure_tab",
    "fieldtype": "Tab Break",
    "label": "Infrastructure"
@@ -1136,17 +1132,6 @@
    "label": "Realtime Job Updates"
   },
   {
-   "fieldname": "docker_remote_builder_server",
-   "fieldtype": "Link",
-   "label": "Docker Remote Builder Server",
-   "options": "Server"
-  },
-  {
-   "fieldname": "docker_remote_builder_ssh",
-   "fieldtype": "Data",
-   "label": "Docker Remote Builder (SSH)"
-  },
-  {
    "default": "0",
    "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
    "fieldname": "use_delta_builds",
@@ -1181,11 +1166,42 @@
    "fieldname": "disable_agent_job_deduplication",
    "fieldtype": "Check",
    "label": "Disable Agent Job Deduplication"
+  },
+  {
+   "fieldname": "agent_sentry_dsn",
+   "fieldtype": "Data",
+   "label": "Agent Sentry DSN"
+  },
+  {
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server"
+  },
+  {
+   "default": "10",
+   "fieldname": "tls_renewal_queue_size",
+   "fieldtype": "Int",
+   "label": "TLS Renewal Queue Size"
+  },
+  {
+   "default": "80",
+   "fieldname": "micro_debit_charge_inr",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (INR)",
+   "precision": "0"
+  },
+  {
+   "default": "1",
+   "fieldname": "micro_debit_charge_usd",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (USD)",
+   "precision": "0"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-03-22 12:30:21.968896",
+ "modified": "2024-06-25 16:39:20.923646",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

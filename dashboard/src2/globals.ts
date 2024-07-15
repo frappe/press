@@ -5,7 +5,7 @@ import theme from '../tailwind.theme.json';
 import { debounce } from 'frappe-ui';
 import { getTeam } from './data/team';
 import * as formatters from './utils/format';
-import type { Platform } from './types';
+import { getPlatform, isMobile } from './utils/device';
 
 export default function globals(app) {
 	app.config.globalProperties.$session = session;
@@ -24,22 +24,4 @@ export default function globals(app) {
 	app.config.globalProperties.formatBytes = formatters.bytes;
 	app.config.globalProperties.$planTitle = formatters.planTitle;
 	app.config.globalProperties.$plural = formatters.plural;
-}
-
-function getPlatform(): Platform {
-	const ua = navigator.userAgent.toLowerCase();
-
-	if (ua.indexOf('win') > -1) {
-		return 'win';
-	} else if (ua.indexOf('mac') > -1) {
-		return 'mac';
-	} else if (ua.indexOf('x11') > -1 || ua.indexOf('linux') > -1) {
-		return 'linux';
-	}
-
-	return 'unknown';
-}
-
-function isMobile(): boolean {
-	return window.innerWidth < 640;
 }

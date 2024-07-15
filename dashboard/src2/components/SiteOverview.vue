@@ -21,27 +21,34 @@
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Current Plan</div>
-					<div class="mt-2 flex items-start justify-between">
+					<div class="flex items-center justify-between">
 						<div>
-							<div class="leading-4">
-								<span class="text-base text-gray-900" v-if="currentPlan">
-									{{ $format.planTitle(currentPlan) }}
-									<span v-if="currentPlan.price_inr">/ month</span>
-								</span>
-								<span class="text-base text-gray-900" v-else>
-									No plan set
-								</span>
-							</div>
-							<div
-								class="mt-1 text-sm leading-3 text-gray-600"
-								v-if="currentPlan"
-							>
-								{{
-									currentPlan.support_included
-										? 'Support included'
-										: 'Support not included'
-								}}
+							<div class="text-base text-gray-700">Current Plan</div>
+							<div class="mt-2 flex justify-between">
+								<div>
+									<div class="leading-4">
+										<span class="text-base text-gray-900">
+											<template v-if="$site.doc.trial_end_date">
+												{{ trialDays($site.doc.trial_end_date) }}
+											</template>
+											<template v-else-if="currentPlan">
+												{{ $format.planTitle(currentPlan) }}
+												<span v-if="currentPlan.price_inr">/ month</span>
+											</template>
+											<template v-else> No plan set </template>
+										</span>
+									</div>
+									<div
+										class="mt-1 text-sm leading-3 text-gray-600"
+										v-if="currentPlan"
+									>
+										{{
+											currentPlan.support_included
+												? 'Support included'
+												: 'Support not included'
+										}}
+									</div>
+								</div>
 							</div>
 						</div>
 						<Button @click="showPlanChangeDialog">Change</Button>
@@ -63,7 +70,9 @@
 								<div class="text-sm text-gray-600">
 									{{ currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
 								</div>
@@ -86,7 +95,9 @@
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
 									{{ formatBytes(currentUsage.storage) }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of {{ formatBytes(currentPlan.max_storage_usage) }}
 									</template>
 								</div>
@@ -110,7 +121,9 @@
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
 									{{ formatBytes(currentUsage.database) }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of
 										{{ formatBytes(currentPlan.max_database_usage) }}
 									</template>
@@ -158,6 +171,7 @@ import InfoIcon from '~icons/lucide/info';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
+import { trialDays } from '../utils/site';
 
 export default {
 	name: 'SiteOverview',
@@ -187,7 +201,8 @@ export default {
 		},
 		loginAsAdmin() {
 			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
-		}
+		},
+		trialDays
 	},
 	computed: {
 		siteInformation() {

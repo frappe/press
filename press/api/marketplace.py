@@ -3,10 +3,11 @@
 # For license information, please see license.txt
 
 import json
-import frappe
-
 from typing import Dict, List
+
+import frappe
 from frappe.core.utils import find
+
 from press.api.bench import options
 from press.api.site import (
 	is_marketplace_app_source,
@@ -17,12 +18,122 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	MarketplaceAppPlan,
 )
 from press.press.doctype.app.app import new_app as new_app_doc
-from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
-from press.utils import get_current_team, get_last_doc, unique, get_app_tag
-from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
-from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
+from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.marketplace_app.marketplace_app import (
+	MarketplaceApp,
+	get_plans_for_app,
+)
+from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 from press.utils.billing import get_frappe_io_connection
+
+
+@frappe.whitelist()
+def get_install_app_options(marketplace_app: str):
+	"""Get options for installing a marketplace app"""
+
+	is_app_approved = frappe.db.get_value(
+		"Marketplace App", marketplace_app, "frappe_approved"
+	)
+
+	private_site_plan = frappe.db.get_value(
+		"Site Plan",
+		{"private_benches": 1, "document_type": "Site", "price_inr": ["!=", 0]},
+		order_by="price_inr asc",
+	)
+
+	public_site_plan = frappe.db.get_value(
+		"Site Plan",
+		{"private_benches": 0, "document_type": "Site", "price_inr": ["!=", 0]},
+		order_by="price_inr asc",
+	)
+
+	clusters = private_groups = []
+
+	latest_stable_version = frappe.get_all(
+		"Frappe Version", "max(name) as latest_version", pluck="latest_version"
+	)[0]
+	latest_public_group = frappe.db.get_value(
+		"Release Group",
+		filters={"public": 1, "version": latest_stable_version},
+	)
+	proxy_servers = frappe.db.get_all(
+		"Proxy Server",
+		{"is_primary": 1},
+		["name", "cluster"],
+	)
+
+	if is_app_approved:
+		clusters = frappe.db.get_all(
+			"Cluster",
+			filters={"public": 1},
+			fields=["name", "title", "image", "beta"],
+		)
+
+		for cluster in clusters:
+			cluster["bench"] = frappe.db.get_value(
+				"Bench",
+				filters={
+					"cluster": cluster["name"],
+					"status": "Active",
+					"group": latest_public_group,
+				},
+				order_by="creation desc",
+			)
+
+			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
+
+	ReleasGroup = frappe.qb.DocType("Release Group")
+	ReleasGroupApp = frappe.qb.DocType("Release Group App")
+	private_groups = (
+		frappe.qb.from_(ReleasGroup)
+		.left_join(ReleasGroupApp)
+		.on(ReleasGroup.name == ReleasGroupApp.parent)
+		.select(ReleasGroup.name, ReleasGroup.title)
+		.where(ReleasGroup.enabled == 1)
+		.where(ReleasGroup.team == get_current_team())
+		.where(ReleasGroup.public == 0)
+		.where(ReleasGroupApp.app == marketplace_app)
+		.run(as_dict=True)
+	)
+
+	for group in private_groups:
+		benches = frappe.db.get_all(
+			"Bench",
+			filters={"team": get_current_team(), "status": "Active", "group": group.name},
+			fields=["name", "cluster"],
+			order_by="creation desc",
+			limit=1,
+		)
+
+		group.clusters = frappe.db.get_all(
+			"Cluster",
+			filters={"public": 1, "name": ("in", [bench.cluster for bench in benches])},
+			fields=["name", "title", "image", "beta"],
+		)
+
+		for cluster in group.clusters:
+			cluster["bench"] = frappe.db.get_value(
+				"Bench",
+				filters={
+					"cluster": cluster["name"],
+					"status": "Active",
+					"group": latest_public_group,
+				},
+				order_by="creation desc",
+			)
+
+			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
+
+	return {
+		"plans": get_plans_for_app(marketplace_app),
+		"private_site_plan": private_site_plan,
+		"public_site_plan": public_site_plan,
+		"is_app_featured": is_app_approved,
+		"private_groups": private_groups,
+		"clusters": clusters,
+		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+	}
 
 
 @frappe.whitelist()
@@ -112,17 +223,6 @@ def become_publisher():
 	current_team = get_current_team(get_doc=True)
 	current_team.is_developer = True
 	current_team.save()
-
-
-@frappe.whitelist()
-def developer_toggle_allowed():
-	"""Feature flag to allow display of developer account toggle"""
-	# Already a developer
-	current_team = get_current_team(get_doc=True)
-	if current_team.is_developer:
-		return False
-
-	return frappe.db.get_value("Press Settings", None, "allow_developer_account") == "1"
 
 
 @frappe.whitelist()
@@ -243,8 +343,9 @@ def remove_app_screenshot(name, file):
 
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
-	from PIL import Image
 	from io import BytesIO
+
+	from PIL import Image
 
 	im = Image.open(BytesIO(file_content))
 	im_width, im_height = im.size
@@ -568,7 +669,6 @@ def get_app_info(app: str):
 
 @frappe.whitelist()
 def get_apps_with_plans(apps, release_group: str):
-
 	if isinstance(apps, str):
 		apps = json.loads(apps)
 
@@ -738,7 +838,6 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
-
 	if not updated_plan_data.get("title"):
 		frappe.throw("Plan title is required")
 
@@ -880,7 +979,6 @@ def get_discount_percent(plan, discount=0.0):
 
 @frappe.whitelist(allow_guest=True)
 def login_via_token(token, team, site):
-
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
 

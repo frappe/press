@@ -48,7 +48,7 @@ export default {
 			for (; i < this.data.length; i++) {
 				// there could be empty objects at the end of the array
 				// so we don't have to count them
-				if (!this.data[i].value) break;
+				if (typeof this.data[i].value !== 'number') break;
 
 				total += this.data[i].value;
 			}

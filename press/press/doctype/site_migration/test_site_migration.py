@@ -2,20 +2,19 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-import frappe
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import frappe
 from frappe.core.utils import find
+from frappe.tests.utils import FrappeTestCase
+
+from press.press.doctype.agent_job.agent_job import poll_pending_jobs
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-
 from press.press.doctype.remote_file.remote_file import RemoteFile
-
-from frappe.tests.utils import FrappeTestCase
-from press.press.doctype.agent_job.agent_job import poll_pending_jobs
-from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_migration.site_migration import (
@@ -60,6 +59,9 @@ BACKUP_JOB_RES = {
 
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
+@patch(
+	"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
+)
 class TestSiteMigration(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

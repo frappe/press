@@ -1,11 +1,12 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import shlex
-import subprocess
-import frappe
 import base64
+import shlex
 import struct
+import subprocess
+
+import frappe
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
@@ -29,12 +30,13 @@ class UserSSHKey(Document):
 		from frappe.types import DF
 
 		is_default: DF.Check
+		is_removed: DF.Check
 		ssh_fingerprint: DF.Data | None
 		ssh_public_key: DF.Code
 		user: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["ssh_fingerprint", "is_default", "user"]
+	dashboard_fields = ["ssh_fingerprint", "is_default", "user", "is_removed"]
 
 	valid_key_types = [
 		"ssh-rsa",
@@ -82,8 +84,21 @@ class UserSSHKey(Document):
 	@dashboard_whitelist()
 	def delete(self):
 		if self.is_default:
-			frappe.throw("Cannot delete default key")
-		super().delete()
+			other_key = frappe.get_all(
+				"User SSH Key",
+				filters={"user": self.user, "name": ("!=", self.name)},
+				fields=["name"],
+				limit=1,
+			)
+			if other_key:
+				frappe.db.set_value("User SSH Key", other_key[0].name, "is_default", True)
+
+		if frappe.db.exists("SSH Certificate", {"user_ssh_key": self.name}):
+			self.is_removed = 1
+			self.save()
+
+		else:
+			super().delete()
 
 	def make_other_keys_non_default(self):
 		frappe.db.set_value(

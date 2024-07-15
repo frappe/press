@@ -23,6 +23,8 @@ class PressNotification(Document):
 		is_addressed: DF.Check
 		message: DF.LongText | None
 		read: DF.Check
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		team: DF.Link
 		title: DF.SmallText | None
 		traceback: DF.Code | None
@@ -90,6 +92,16 @@ class PressNotification(Document):
 
 def create_new_notification(team, type, document_type, document_name, message):
 	if not frappe.db.exists("Press Notification", {"document_name": document_name}):
+		if document_type == "Agent Job":
+			reference_doctype = "Site"
+			reference_doc = frappe.db.get_value("Agent Job", document_name, "site")
+			if not reference_doc:
+				reference_doctype = "Server"
+				reference_doc = frappe.db.get_value("Agent Job", document_name, "server")
+		elif document_type == "Deploy Candidate":
+			reference_doctype = "Release Group"
+			reference_doc = frappe.db.get_value("Deploy Candidate", document_name, "group")
+
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
@@ -98,6 +110,8 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"document_type": document_type,
 				"document_name": document_name or 0,
 				"message": message,
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_doc,
 			}
 		).insert()
 		frappe.publish_realtime(

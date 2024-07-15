@@ -3,10 +3,12 @@
 # For license information, please see license.txt
 
 
-import frappe
 import json
+
+import frappe
 from frappe.model.document import Document
-from frappe.utils import random_string, get_url
+from frappe.utils import get_url, random_string
+
 from press.utils import get_country_info
 
 
@@ -18,6 +20,10 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
+		from press.press.doctype.account_request_press_role.account_request_press_role import (
+			AccountRequestPressRole,
+		)
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
@@ -37,16 +43,16 @@ class AccountRequest(Document):
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
-		password: DF.Password | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
+		product_trial: DF.Link | None
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
-		saas_product: DF.Link | None
 		saas_signup_values: DF.SmallText | None
 		send_email: DF.Check
 		state: DF.Data | None
@@ -112,7 +118,7 @@ class AccountRequest(Document):
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
-		if self.saas_product or custom_template:
+		if self.product_trial or custom_template:
 			template = "saas_verify_account"
 		else:
 			template = "verify_account"
@@ -145,8 +151,7 @@ class AccountRequest(Document):
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
-		dashboard_url = "dashboard-beta" if self.new_signup_flow else "dashboard"
-		return get_url(f"/{dashboard_url}/setup-account/{self.request_key}")
+		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
 	def full_name(self):

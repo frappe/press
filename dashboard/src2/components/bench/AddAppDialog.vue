@@ -157,7 +157,7 @@ export default {
 		TextInput,
 		NewAppDialog
 	},
-	emits: ['appAdd', 'new-app'],
+	emits: ['appAdd', 'newApp'],
 	data() {
 		return {
 			searchQuery: '',
@@ -317,7 +317,7 @@ export default {
 	methods: {
 		addAppFromGithub(app) {
 			app.group = this.groupName;
-			this.$emit('new-app', app);
+			this.$emit('newApp', app);
 		},
 		addApp(row) {
 			if (!this.selectedAppSources.includes(row))

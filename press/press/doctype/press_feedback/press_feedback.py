@@ -16,7 +16,9 @@ class PressFeedback(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		message: DF.SmallText
+		message: DF.Data
+		note: DF.SmallText | None
+		rating: DF.Rating
 		route: DF.Data | None
 		team: DF.Link
 	# end: auto-generated types

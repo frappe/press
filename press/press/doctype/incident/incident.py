@@ -2,23 +2,25 @@
 # For license information, please see license.txt
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
+
 import frappe
-from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils import cint
+from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
+from twilio.base.exceptions import TwilioRestException
 
+from press.telegram_utils import Telegram
 from press.utils import log_error
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-	from press.press.doctype.incident_settings_user.incident_settings_user import (
-		IncidentSettingsUser,
-	)
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
+	)
+	from press.press.doctype.incident_settings_user.incident_settings_user import (
+		IncidentSettingsUser,
 	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
@@ -51,6 +53,7 @@ class Incident(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
 		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
 
@@ -105,7 +108,9 @@ class Incident(WebsiteGenerator):
 		"""
 		Ignore incidents on server (Don't call)
 		"""
-		frappe.db.set_value("Server", self.server, "ignore_incidents", 1)
+		frappe.db.set_value(
+			"Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime()
+		)
 
 	def call_humans(self):
 		enqueue_doc(
@@ -124,7 +129,9 @@ class Incident(WebsiteGenerator):
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
-		if frappe.db.exists("Self Hosted Server", {"server": self.server}):
+		if frappe.db.exists(
+			"Self Hosted Server", {"server": self.server}
+		) or frappe.db.get_value("Server", self.server, "is_self_hosted"):
 			users = incident_settings.self_hosted_users
 		users = incident_settings.users
 		ret = users
@@ -161,17 +168,35 @@ class Incident(WebsiteGenerator):
 	def wait_for_pickup(self, call):
 		return call.fetch().status  # will eventually be no-answer
 
-	def _call_humans(self):
-		if not self.phone_call or not self.global_phone_call_enabled:
-			return
-		if frappe.db.get_value("Server", self.server, "ignore_incidents"):
-			return
-		for human in self.get_humans():
-			call = self.twilio_client.calls.create(
+	def notify_unable_to_reach_twilio(self):
+		telegram = Telegram()
+		telegram.send(
+			f"""Unable to reach Twilio for Incident in f{self.server}
+
+Likely due to insufficient balance or incorrect credentials""",
+			reraise=True,
+		)
+
+	def call_human(self, human: "IncidentSettingsUser | IncidentSettingsSelfHostedUser"):
+		try:
+			return self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
+		except TwilioRestException:
+			self.notify_unable_to_reach_twilio()
+
+	def _call_humans(self):
+		if not self.phone_call or not self.global_phone_call_enabled:
+			return
+		if (
+			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_since")
+		) and ignore_since < frappe.utils.now_datetime():
+			return
+		for human in self.get_humans():
+			if not (call := self.call_human(human)):
+				return  # can't twilio
 			acknowledged = False
 			status = call.status
 			try:
@@ -241,7 +266,7 @@ Incident URL: {incident_link}"""
 
 	def get_email_subject(self):
 		title = frappe.db.get_value("Server", self.server, "title")
-		name = title.rstrip(" - Application") or self.server
+		name = title.removesuffix(" - Application") or self.server
 		return f"Incident on {name} - {self.alert}"
 
 	def get_email_message(self):
@@ -417,5 +442,26 @@ def resolve_incidents():
 			incident.call_humans()
 
 
+def notify_ignored_servers():
+	servers = frappe.qb.DocType("Server")
+	if not (
+		ignored_servers := frappe.qb.from_(servers)
+		.select(servers.name, servers.ignore_incidents_since)
+		.where(servers.status == "Active")
+		.where(servers.ignore_incidents_since.isnotnull())
+		.run(as_dict=True)
+	):
+		return
+
+	message = "The following servers are being ignored for incidents:\n\n"
+	for server in ignored_servers:
+		message += (
+			f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
+		)
+	message += "\n@adityahase @balamurali27 @saurabh6790\n"
+	telegram = Telegram()
+	telegram.send(message)
+
+
 def on_doctype_update():
-	frappe.db.add_index("Incident", ["server", "status"])
+	frappe.db.add_index("Incident", ["alert", "server", "status"])

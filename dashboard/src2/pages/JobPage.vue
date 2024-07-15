@@ -9,18 +9,28 @@
 
 		<div class="mt-3">
 			<div>
-				<div class="flex items-center space-x-2">
+				<div class="flex items-center">
 					<h2 class="text-lg font-medium text-gray-900">{{ job.job_type }}</h2>
-					<Badge :label="job.status" />
-					<Button
-						class="!ml-auto"
-						@click="$resources.job.reload()"
-						:loading="$resources.job.loading"
-					>
-						<template #icon>
-							<i-lucide-refresh-ccw class="h-4 w-4" />
-						</template>
-					</Button>
+					<Badge class="ml-2" :label="job.status" />
+					<div class="ml-auto space-x-2">
+						<Button
+							@click="$resources.job.reload()"
+							:loading="$resources.job.loading"
+						>
+							<template #icon>
+								<i-lucide-refresh-ccw class="h-4 w-4" />
+							</template>
+						</Button>
+						<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+							<template v-slot="{ open }">
+								<Button>
+									<template #icon>
+										<i-lucide-more-horizontal class="h-4 w-4" />
+									</template>
+								</Button>
+							</template>
+						</Dropdown>
+					</div>
 				</div>
 				<div>
 					<div
@@ -103,6 +113,21 @@ export default {
 		},
 		job() {
 			return this.$resources.job.doc;
+		},
+		dropdownOptions() {
+			return [
+				{
+					label: 'View in Desk',
+					icon: 'external-link',
+					condition: () => this.$team.doc.is_desk_user,
+					onClick: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
+							'_blank'
+						);
+					}
+				}
+			].filter(option => option.condition?.() ?? true);
 		}
 	},
 	mounted() {
