@@ -3,13 +3,14 @@
 # See license.txt
 
 
+import json
+import typing
 import unittest
 from datetime import datetime
 from typing import Optional
 from unittest.mock import Mock, patch
 
 import frappe
-import json
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -17,19 +18,16 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.site.site import Site, process_rename_site_job_update
-
 from press.press.doctype.remote_file.remote_file import RemoteFile
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
+from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.utils import get_current_team
-
-import typing
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
@@ -420,3 +418,22 @@ class TestSite(unittest.TestCase):
 			remote_config_file=config,
 			subscription_plan=plan.name,
 		)
+
+	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
+		rg = create_test_release_group([create_test_app()], public=True)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		with self.assertRaises(frappe.exceptions.ValidationError) as context:
+			site.save(ignore_permissions=True)
+		self.assertTrue(
+			"Auto updates can't be disabled for sites on public benches"
+			in str(context.exception)
+		)
+
+	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
+		rg = create_test_release_group([create_test_app()], public=False)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		site.save(ignore_permissions=True)

@@ -24,14 +24,14 @@ from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_diffe
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.server.server import scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
-from press.utils.test import foreground_enqueue
+from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -54,6 +54,9 @@ class TestStagingSite(unittest.TestCase):
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch(
+	"press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc
+)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 class TestBench(FrappeTestCase):
 	def tearDown(self):

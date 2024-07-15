@@ -4,10 +4,12 @@
 
 
 import json
-import frappe
-from press.utils import get_current_team
-from press.press.doctype.app.app import new_app
 from typing import TYPE_CHECKING
+
+import frappe
+
+from press.press.doctype.app.app import new_app
+from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App

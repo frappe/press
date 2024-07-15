@@ -3,6 +3,7 @@
 
 # import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 

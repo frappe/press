@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 import frappe
+from frappe.utils import cint, cstr, flt
 from sql_metadata import Parser
-from frappe.utils import flt, cint, cstr
 
 # Any index that reads more than 30% table on average is not "useful"
 INDEX_SCORE_THRESHOLD = 0.3
@@ -239,7 +239,6 @@ class DBOptimizer:
 		return self._remove_existing_indexes(possible_db_indexes)
 
 	def _convert_to_db_index(self, column: str) -> DBIndex:
-
 		column_name, table = None, None
 
 		if "." in column:

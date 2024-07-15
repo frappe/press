@@ -1,12 +1,13 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-from press.press.audit import get_benches_in_server
-from press.press.doctype.server.server import Server
-from typing import List
 from random import choice
+from typing import List
 
 import frappe
+
+from press.press.audit import get_benches_in_server
+from press.press.doctype.server.server import Server
 
 
 class BackupTest:

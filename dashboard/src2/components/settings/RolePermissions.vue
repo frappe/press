@@ -56,6 +56,8 @@ const role = createDocumentResource({
 	name: props.roleId,
 	auto: true,
 	whitelistedMethods: {
+		addUser: 'add_user',
+		removeUser: 'remove_user',
 		bulkDelete: 'delete_permissions'
 	}
 });

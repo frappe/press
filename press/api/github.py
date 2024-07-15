@@ -3,19 +3,21 @@
 # For license information, please see license.txt
 
 import re
-import jwt
-import frappe
-import requests
-
-from pathlib import Path
 from base64 import b64decode
 from datetime import datetime, timedelta
-from press.utils import get_current_team, log_error
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+import frappe
+import jwt
+import requests
+
+from press.utils import get_current_team, log_error
+
 if TYPE_CHECKING:
-	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 	from typing import Optional
+
+	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -98,13 +100,10 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	versions = frappe.get_all("Frappe Version", filters={"public": True})
-
 	options = {
 		"authorized": bool(token),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
-		"versions": versions,
 	}
 	return options
 
@@ -205,10 +204,15 @@ def repository(owner, name, installation=None):
 @frappe.whitelist()
 def app(owner, repository, branch, installation=None):
 	headers = get_auth_headers(installation)
-	branch_info = requests.get(
+	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
 		headers=headers,
-	).json()
+	)
+
+	if not response.ok:
+		frappe.throw(f"Could not fetch branch ({branch}) info for repo {owner}/{repository}")
+
+	branch_info = response.json()
 	sha = branch_info["commit"]["commit"]["tree"]["sha"]
 	contents = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/git/trees/{sha}",

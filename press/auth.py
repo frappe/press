@@ -1,11 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import json
-import traceback
 import os
+import traceback
 
+import frappe
 
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000

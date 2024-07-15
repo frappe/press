@@ -4,6 +4,7 @@
 from typing import List
 
 import frappe
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -17,8 +18,17 @@ class SitePlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import (
+			SitePlanAllowedApp,
+		)
+		from press.press.doctype.site_plan_release_group.site_plan_release_group import (
+			SitePlanReleaseGroup,
+		)
+
+		allow_downgrading_from_other_plan: DF.Check
+		allowed_apps: DF.Table[SitePlanAllowedApp]
 		cluster: DF.Link | None
-		cpu_time_per_day: DF.Int
+		cpu_time_per_day: DF.Float
 		database_access: DF.Check
 		dedicated_server_plan: DF.Check
 		disk: DF.Int
@@ -37,6 +47,7 @@ class SitePlan(Plan):
 		price_inr: DF.Currency
 		price_usd: DF.Currency
 		private_benches: DF.Check
+		release_groups: DF.Table[SitePlanReleaseGroup]
 		roles: DF.Table[HasRole]
 		support_included: DF.Check
 		vcpu: DF.Int
@@ -68,7 +79,18 @@ class SitePlan(Plan):
 
 
 def get_plan_config(name):
-	cpu_time = frappe.db.get_value("Site Plan", name, "cpu_time_per_day")
-	if cpu_time and cpu_time > 0:
-		return {"rate_limit": {"limit": cpu_time * 3600, "window": 86400}}
+	limits = frappe.db.get_value(
+		"Site Plan",
+		name,
+		["cpu_time_per_day", "max_database_usage", "max_storage_usage"],
+		as_dict=True,
+	)
+	if limits and limits.get("cpu_time_per_day", 0) > 0:
+		return {
+			"rate_limit": {"limit": limits.cpu_time_per_day * 3600, "window": 86400},
+			"plan_limit": {
+				"max_database_usage": limits.max_database_usage,
+				"max_storage_usage": limits.max_storage_usage,
+			},
+		}
 	return {}

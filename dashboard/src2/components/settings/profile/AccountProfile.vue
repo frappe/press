@@ -16,7 +16,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
+								class="absolute inset-0 grid h-10 w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
@@ -241,8 +241,7 @@ export default {
 	},
 	methods: {
 		reloadAccount() {
-			this.$team.doc?.reload();
-			this.$resources.user.reload();
+			this.$team.reload();
 		},
 		onProfilePhotoChange() {
 			this.reloadAccount();

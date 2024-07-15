@@ -13,6 +13,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.api.client import dashboard_whitelist
 from press.api.github import get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
@@ -22,8 +23,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import get_last_doc, get_current_team
-from press.api.client import dashboard_whitelist
+from press.utils import get_current_team, get_last_doc
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -34,6 +34,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
 			MarketplaceAppCategories,
 		)
@@ -135,7 +136,6 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	def before_insert(self):
-
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -147,9 +147,9 @@ class MarketplaceApp(WebsiteGenerator):
 		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def check_if_duplicate(self):
-		if frappe.db.exists("Marketplace App", self.app):
+		if frappe.db.exists("Marketplace App", self.name):
 			frappe.throw(
-				f"App {self.app} already exists and is owned by some other team. Please contact support"
+				f"App {self.name} already exists and is owned by some other team. Please contact support."
 			)
 
 	def create_app_and_source_if_needed(self):
@@ -609,7 +609,6 @@ class MarketplaceApp(WebsiteGenerator):
 def get_plans_for_app(
 	app_name, frappe_version=None, include_free=True, include_disabled=False
 ):  # Unused for now, might use later
-
 	plans = []
 	filters = {"app": app_name}
 

@@ -156,7 +156,7 @@ export default {
 							india ? row.price_inr : row.price_usd,
 							0
 						);
-						return `${formattedValue} /mo`;
+						return `${formattedValue}/mo`;
 					}
 					return row.plan_title;
 				}
@@ -1007,7 +1007,7 @@ export default {
 													hide();
 													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Job',
+														name: 'Site Detail Jobs',
 														params: { name: site.name }
 													});
 												},

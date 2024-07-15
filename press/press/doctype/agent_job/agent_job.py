@@ -4,6 +4,7 @@
 
 import json
 import random
+from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -17,6 +18,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
+
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -27,11 +29,10 @@ from press.press.doctype.press_notification.press_notification import (
 )
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
-	process_site_migration_job_update,
 	job_matches_site_migration,
+	process_site_migration_job_update,
 )
-from press.utils import log_error, has_role
-from typing import Optional
+from press.utils import has_role, log_error
 
 
 class AgentJob(Document):

@@ -3,11 +3,11 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.core.utils import find
 from frappe.utils.verified_command import get_signed_params
 from frappe.website.doctype.personal_data_deletion_request.personal_data_deletion_request import (
 	PersonalDataDeletionRequest,
 )
-from frappe.core.utils import find
 
 
 def handle_exception(self):
@@ -28,6 +28,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		from frappe.website.doctype.personal_data_deletion_step.personal_data_deletion_step import (
 			PersonalDataDeletionStep,
 		)
+
 		from press.press.doctype.team_member_deletion_request.team_member_deletion_request import (
 			TeamMemberDeletionRequest,
 		)

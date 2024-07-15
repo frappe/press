@@ -4,6 +4,7 @@
 
 import random
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import pytz
@@ -13,10 +14,8 @@ from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 
 from press.agent import Agent
-from press.utils import log_error
 from press.api.client import dashboard_whitelist
-
-from typing import TYPE_CHECKING
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site

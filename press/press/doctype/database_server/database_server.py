@@ -3,10 +3,12 @@
 # For license information, please see license.txt
 
 
-from typing import Any
 import json
+from typing import Any
+
 import frappe
 from frappe.core.doctype.version.version import get_diff
+from frappe.core.utils import find
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
@@ -15,7 +17,6 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
-from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
@@ -26,6 +27,7 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
@@ -114,7 +116,6 @@ class DatabaseServer(BaseServer):
 			and self.subscription
 			and self.subscription.team != self.team
 		):
-
 			self.subscription.disable()
 
 			# enable subscription if exists

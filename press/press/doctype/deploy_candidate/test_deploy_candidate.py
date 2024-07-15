@@ -5,10 +5,11 @@
 import random
 import typing
 import unittest
-from unittest.mock import Mock, patch
 from unittest import skip
+from unittest.mock import Mock, patch
 
 import frappe
+
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release

@@ -2,17 +2,18 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from itertools import groupby
 import json
 from functools import cached_property
-import pytz
+from itertools import groupby
 from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
+import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from frappe.utils import get_system_timezone
+
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -22,7 +23,6 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
-
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -46,6 +46,7 @@ class Bench(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.bench_app.bench_app import BenchApp
 		from press.press.doctype.bench_mount.bench_mount import BenchMount
 		from press.press.doctype.bench_variable.bench_variable import BenchVariable
@@ -497,7 +498,6 @@ class Bench(Document):
 
 	@frappe.whitelist()
 	def retry_bench(self):
-
 		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
 			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
 

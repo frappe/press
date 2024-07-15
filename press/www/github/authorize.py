@@ -3,10 +3,12 @@
 
 
 import json
+from base64 import b64decode
+
 import frappe
 import requests
+
 from press.utils import log_error
-from base64 import b64decode
 
 
 def get_context(context):

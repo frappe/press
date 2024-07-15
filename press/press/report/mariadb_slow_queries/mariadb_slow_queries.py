@@ -1,21 +1,21 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import re
 import json
+import re
 from collections import defaultdict
 from dataclasses import dataclass
-import requests
-import sqlparse
 
 import frappe
+import requests
+import sqlparse
 from frappe.core.doctype.access_log.access_log import make_access_log
-from frappe.utils.caching import redis_cache
 from frappe.utils import convert_utc_to_timezone, get_system_timezone
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
-from press.api.site import protected
 from press.agent import Agent
+from press.api.site import protected
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	ColumnStat,
 	DBExplain,

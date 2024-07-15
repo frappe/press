@@ -1,7 +1,8 @@
 import frappe
-from press.api.server import all as get_all_servers
-from press.agent import Agent
 from frappe.utils import get_datetime
+
+from press.agent import Agent
+from press.api.server import all as get_all_servers
 
 
 @frappe.whitelist()

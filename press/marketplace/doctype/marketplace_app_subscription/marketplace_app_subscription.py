@@ -3,8 +3,8 @@
 
 import frappe
 import requests
-
 from frappe.model.document import Document
+
 from press.press.doctype.site.site import Site
 
 

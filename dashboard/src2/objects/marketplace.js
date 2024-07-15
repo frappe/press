@@ -2,12 +2,12 @@ import { defineAsyncComponent, h } from 'vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import NewAppDialog from '../components/NewAppDialog.vue';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { toast } from 'vue-sonner';
 import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { isMobile } from '../utils/device';
 
 export default {
 	doctype: 'Marketplace App',
@@ -59,7 +59,7 @@ export default {
 				width: 1.0
 			}
 		],
-		primaryAction({ listResource: apps }) {
+		primaryAction() {
 			return {
 				label: 'New App',
 				variant: 'solid',
@@ -67,28 +67,11 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					renderDialog(
-						h(NewAppDialog, {
-							showVersionSelector: true,
-							onAppAdded(app) {
-								toast.promise(apps.insert.submit(app), {
-									loading: 'Adding new app...',
-									success: () => {
-										router.push({
-											name: 'Marketplace App Detail Listing',
-											params: { name: app.name }
-										});
-										return 'New app added';
-									},
-									error: e => {
-										return e.messages.length
-											? e.messages.join('\n')
-											: e.message;
-									}
-								});
-							}
-						})
+					const NewAppDialog = defineAsyncComponent(() =>
+						import('../components/marketplace/NewMarketplaceAppDialog.vue')
 					);
+
+					renderDialog(h(NewAppDialog));
 				}
 			};
 		}
@@ -520,7 +503,7 @@ export default {
 							{
 								type: 'select',
 								label: 'Status',
-								class: 'w-24',
+								class: !isMobile() ? 'w-24' : '',
 								fieldname: 'enabled',
 								options: ['', 'Active', 'Disabled']
 							}

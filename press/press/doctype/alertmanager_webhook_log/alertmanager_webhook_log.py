@@ -1,23 +1,25 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from functools import cached_property
 from typing import TYPE_CHECKING
+
 import frappe
-import json
 from frappe.model.document import Document
+from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
+from frappe.utils.data import add_to_date
+
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
-from frappe.utils import get_url_to_form
-from frappe.utils.data import add_to_date
 
 if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
-	from press.press.doctype.press_job.press_job import PressJob
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -47,6 +49,7 @@ class AlertmanagerWebhookLog(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.alertmanager_webhook_log_reaction_job.alertmanager_webhook_log_reaction_job import (
 			AlertmanagerWebhookLogReactionJob,
 		)

@@ -6,13 +6,13 @@
 import boto3
 import frappe
 from boto3.session import Session
-from twilio.rest import Client
 from frappe.model.document import Document
 from frappe.utils import get_url
+from twilio.rest import Client
 
 from press.api.billing import get_stripe
-from press.telegram_utils import Telegram
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.telegram_utils import Telegram
 
 
 class PressSettings(Document):
@@ -23,6 +23,7 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
 		agent_github_access_token: DF.Data | None

@@ -1,14 +1,16 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from datetime import timezone
-from frappe.utils.data import format_duration, get_datetime
-from press.utils import log_error
-import requests
 import base64
 import json
+from datetime import timezone
+
+import frappe
+import requests
+from frappe.model.document import Document
+from frappe.utils.data import format_duration, get_datetime
+
+from press.utils import log_error
 
 
 class SilencedAlert(Document):

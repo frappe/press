@@ -2,18 +2,19 @@
 # See license.txt
 
 
+import json
 from unittest.mock import patch
-from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 
+import frappe
+from frappe.tests.utils import FrappeTestCase, change_settings
+
+from press.api.tests.test_server import create_test_server_plan
+from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.self_hosted_server.self_hosted_server import SelfHostedServer
-import frappe
-import json
 from press.press.doctype.team.test_team import create_test_team
-from press.api.tests.test_server import create_test_server_plan
-from frappe.tests.utils import FrappeTestCase, change_settings
 
 
 class TestSelfHostedServer(FrappeTestCase):

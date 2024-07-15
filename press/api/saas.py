@@ -1,10 +1,11 @@
-import frappe
 import json
-from frappe.core.utils import find
-from press.press.doctype.team.team import Team
-from press.api.account import get_account_request_from_key
-from press.utils import get_current_team, group_children_in_result, log_error
 
+import frappe
+from frappe.core.utils import find
+
+from press.api.account import get_account_request_from_key
+from press.press.doctype.site.erpnext_site import get_erpnext_domain
+from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.saas_site import (
 	SaasSite,
 	get_default_team_for_app,
@@ -12,10 +13,9 @@ from press.press.doctype.site.saas_site import (
 	get_saas_site_plan,
 	set_site_in_subscription_docs,
 )
-from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
-from press.press.doctype.site.erpnext_site import get_erpnext_domain
+from press.press.doctype.team.team import Team
+from press.utils import get_current_team, group_children_in_result, log_error
 from press.utils.telemetry import capture, identify
-
 
 # ----------------------------- SIGNUP APIs ---------------------------------
 
@@ -454,7 +454,7 @@ def subscription(site):
 		frappe.throw("Invalid Site")
 
 	plans = frappe.db.get_all(
-		"Plan",
+		"Site Plan",
 		fields=[
 			"name",
 			"plan_title",

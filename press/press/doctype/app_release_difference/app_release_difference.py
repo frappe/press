@@ -3,11 +3,13 @@
 # For license information, please see license.txt
 
 
+import json
+import re
+
 import frappe
 from frappe.model.document import Document
-import re
-import json
 from github import Github
+
 from press.api.github import get_access_token
 
 

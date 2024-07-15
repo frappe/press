@@ -2,12 +2,12 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from frappe.tests.utils import FrappeTestCase
 from typing import Dict, List
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job

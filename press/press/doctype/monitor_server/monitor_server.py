@@ -3,9 +3,9 @@
 # For license information, please see license.txt
 
 
-import frappe
 import json
 
+import frappe
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible

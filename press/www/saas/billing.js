@@ -72,8 +72,12 @@ if (showFloatingBanner != null) {
 }
 
 $(document).ready(function () {
-	// check if setup complete
-	if (frappe.boot.setup_complete === 1 && banner && !frappe.is_mobile()) {
+	if (
+		frappe.boot.setup_complete === 1 &&
+		banner &&
+		!frappe.is_mobile() &&
+		frappe.boot.subscription_conf.status !== 'Subscribed'
+	) {
 		$('.layout-main-section').before($floatingBar);
 	}
 });
