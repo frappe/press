@@ -612,7 +612,7 @@ class Team(Document):
 				"address_line1": billing_details.address,
 				"city": billing_details.city,
 				"state": billing_details.state,
-				"pincode": (billing_details.postal_code).strip().replace(" ", ""),
+				"pincode": billing_details.get("postal_code", "").strip().replace(" ", ""),
 				"country": billing_details.country,
 				"gstin": billing_details.gstin,
 			}
