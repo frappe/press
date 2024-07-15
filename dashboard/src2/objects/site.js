@@ -156,7 +156,7 @@ export default {
 							india ? row.price_inr : row.price_usd,
 							0
 						);
-						return `${formattedValue} /mo`;
+						return `${formattedValue}/mo`;
 					}
 					return row.plan_title;
 				}
