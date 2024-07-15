@@ -472,7 +472,6 @@ def executed_from_temp_dir():
 	cur_file = __file__
 	return cur_file.startswith(temp_dir)
 
-
 if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	if executed_from_temp_dir():
 		current_file = os.path.abspath(__file__)
