@@ -24,7 +24,7 @@ def get_data():
 		{
 			"label": _("Setup"),
 			"items": [
-				{"type": "doctype", "name": "Plan"},
+				{"type": "doctype", "name": "Site Plan"},
 				{"type": "doctype", "name": "App"},
 				{"type": "doctype", "name": "Release Group"},
 				{"type": "doctype", "name": "App Release"},
