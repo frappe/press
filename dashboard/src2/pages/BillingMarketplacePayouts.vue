@@ -76,6 +76,7 @@ export default {
 					{
 						label: 'Total',
 						fieldname: 'net_total_inr',
+						align: 'right',
 						format: (_, row) => {
 							let total = 0;
 							if (this.$team.doc.currency === 'INR') {
