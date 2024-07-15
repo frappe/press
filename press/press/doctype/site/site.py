@@ -468,14 +468,14 @@ class Site(Document, TagHelpers):
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
 	@frappe.whitelist()
-	def sync_apps_list_from_site(self):
+	def sync_apps(self):
 		agent = Agent(self.server)
-		apps_list = agent.sync_apps_list_from_site(site=self)
+		apps_list = agent.get_site_apps(site=self)
 		self.apps = []
 		for app in apps_list:
-			self.append("apps", {"app_name": app})
+			self.append("apps", {"app": app})
 		self.save()
-
+		
 	@frappe.whitelist()
 	def retry_rename(self):
 		"""Retry rename with current subdomain"""

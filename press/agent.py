@@ -1110,16 +1110,14 @@ class Agent:
 			data={},
 		)
 
-	def sync_apps_list_from_site(self, site):
-		raw_apps_list = self.post(
-			f"benches/{site.bench}/sites/{site.name}/sync_apps_list_from_site",
+	def get_site_apps(self, site):
+		raw_apps_list = self.get(
+			f"benches/{site.bench}/sites/{site.name}/apps",
 		)
 		apps: list[str] = [
 			line.split()[0] for line in raw_apps_list["data"].splitlines() if line
 		]
-		print(apps)
 		return apps
-
 
 class AgentCallbackException(Exception):
 	pass

@@ -9,6 +9,7 @@ import unittest
 from datetime import datetime
 from typing import Optional
 from unittest.mock import Mock, patch
+import responses
 
 import frappe
 from frappe.model.naming import make_autoname
@@ -142,6 +143,10 @@ def create_test_site(
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
+
+
+	def setUp(self):
+		frappe.db.truncate("Agent Request Failure")
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -437,3 +442,16 @@ class TestSite(unittest.TestCase):
 		site = create_test_site("testsite", bench=bench)
 		site.skip_auto_updates = True
 		site.save(ignore_permissions=True)
+
+	@responses.activate
+	def test_sync_apps_updates_apps_child_table(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app1, app2])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench)
+		responses.get(f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/apps",json.dumps({'data': 'frappe\nerpnext'}))
+		site.sync_apps()
+		self.assertEqual(site.apps[0].app,"frappe")
+		self.assertEqual(site.apps[1].app,"erpnext")
+		self.assertEqual(len(site.apps),2)
