@@ -64,7 +64,7 @@ def get_plans_for_app(app, site):
 
 def get_plan_prices(plan_name):
 	plan_prices = frappe.db.get_value(
-		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
+		"Site Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
 	)
 
 	return plan_prices

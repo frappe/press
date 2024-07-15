@@ -454,7 +454,7 @@ def subscription(site):
 		frappe.throw("Invalid Site")
 
 	plans = frappe.db.get_all(
-		"Plan",
+		"Site Plan",
 		fields=[
 			"name",
 			"plan_title",

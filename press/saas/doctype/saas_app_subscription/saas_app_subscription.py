@@ -146,7 +146,7 @@ class SaasAppSubscription(Document):
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
-		plan = frappe.get_cached_doc("Plan", self.plan)
+		plan = frappe.get_cached_doc("Site Plan", self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
 		payout = self.calculate_payout(amount)
 
@@ -303,7 +303,7 @@ def create_saas_invoice(
 			"description": "Saas Prepaid Purchase",
 			"document_type": "Saas App",
 			"document_name": document_name,
-			"plan": frappe.db.get_value("Plan", plan, "plan_title"),
+			"plan": frappe.db.get_value("Site Plan", plan, "plan_title"),
 			"quantity": 1,
 			"rate": amount,
 		},
