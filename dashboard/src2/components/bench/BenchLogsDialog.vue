@@ -22,18 +22,13 @@
 						</template>
 					</Button>
 				</div>
-				<div class="mt-3">
-					<div>
-						<div class="flex items-center space-x-2"></div>
-					</div>
-					<div class="mt-8 space-y-4">
-						<div
-							class="overflow-auto rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
-						>
-							<pre>{{
-								log.loading ? 'Loading...' : log?.data[logName] || 'No output'
-							}}</pre>
-						</div>
+				<div class="mt-4">
+					<div
+						class="h-[34rem] overflow-scroll rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
+					>
+						<pre>{{
+							log.loading ? 'Loading...' : log?.data[logName] || 'No output'
+						}}</pre>
 					</div>
 				</div>
 			</div>
@@ -76,6 +71,7 @@ const listOptions = ref({
 					bench: props.bench
 				};
 			},
+			cache: ['BenchLogs', props.bench],
 			auto: true
 		};
 	},
