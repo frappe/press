@@ -16,7 +16,7 @@ class SaasAppPlan(Document):
 		self.validate_payout_percentage()
 
 	def validate_plan(self):
-		dt = frappe.db.get_value("Plan", self.plan, "document_type")
+		dt = frappe.db.get_value("Site Plan", self.plan, "document_type")
 
 		if dt != "Saas App":
 			frappe.throw("The plan must be a Saas App plan.")
