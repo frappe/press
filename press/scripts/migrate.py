@@ -3,6 +3,7 @@
 import atexit
 import getpass
 import json
+import mimetypes
 import os
 import re
 import shlex
@@ -43,6 +44,7 @@ except ImportError:
 		"click",
 		"semantic-version",
 		"requests-toolbelt",
+		"mimetypes",
 	]
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
@@ -324,47 +326,81 @@ def is_valid_subdomain(subdomain):
 
 @add_line_after
 def take_backup(local_site):
-    print(f"Taking backup for site {local_site}")
-    odb = frappe.utils.backups.new_backup(ignore_files=False, force=True)
-    return [
-        ("config", getattr(odb, "site_config_backup_path", None) or getattr(odb, "backup_path_conf", None)),
-        ("database", odb.backup_path_db),
-        ("public", odb.backup_path_files),
-        ("private", odb.backup_path_private_files),
-    ]
+	print(f"Taking backup for site {local_site}")
+	odb = frappe.utils.backups.new_backup(ignore_files=False, force=True)
+	return [
+		(
+			"config",
+			getattr(odb, "site_config_backup_path", None)
+			or getattr(odb, "backup_path_conf", None),
+		),
+		("database", odb.backup_path_db),
+		("public", odb.backup_path_files),
+		("private", odb.backup_path_private_files),
+	]
 
 
 @add_line_after
 def upload_files(files):
-    files_uploaded = {}
-    for file_type, file_path in files:
-        file_name = file_path.split(os.sep)[-1]
-        uploaded_file = upload_backup_file(file_type, file_name, file_path)
-        if uploaded_file:
-            files_uploaded[file_type] = uploaded_file
-        else:
-            print(f"Upload failed for: {file_path}")
-            print("Cannot create site on Frappe Cloud without all site backup files uploaded.")
-            print("Exiting...")
-            sys.exit(1)
-    print("Uploaded backup files! ✅")
-    return files_uploaded
+	files_uploaded = {}
+	for file_type, file_path in files:
+		file_name = file_path.split(os.sep)[-1]
+		uploaded_file = upload_backup_file(file_type, file_name, file_path)
+		if uploaded_file:
+			files_uploaded[file_type] = uploaded_file
+		else:
+			print(f"Upload failed for: {file_path}")
+			print("Cannot create site on Frappe Cloud without all site backup files uploaded.")
+			print("Exiting...")
+			sys.exit(1)
+	print("Uploaded backup files! ✅")
+	return files_uploaded
+
+
+def external_file_checker(file_path, file_type):
+	file_name = os.path.basename(file_path)
+	mime_type, _ = mimetypes.guess_type(file_path)
+	print(mime_type)
+	if file_type == "database":
+		if not file_name.endswith((".sql.gz", ".sql")) and not file_name.endswith(
+			tuple(f".sql ({i}).gz" for i in range(1, 10))
+		):
+			raise ValueError(
+				'Database backup file should end with the name "database.sql.gz" or "database.sql"'
+			)
+		if mime_type not in [
+			"application/x-gzip",
+			"application/x-sql",
+			"application/gzip",
+			"application/sql",
+		]:
+			raise ValueError("Invalid database backup file")
+
+	elif file_type in ["public", "private"]:
+		if mime_type != "application/x-tar":
+			raise ValueError(f"Invalid {file_type} files backup file")
+
+	elif file_type == "config":
+		if mime_type != "application/json":
+			raise ValueError("Invalid config files backup file")
+
 
 @add_line_after
 def upload_backup(local_site):
-    files_uploaded = {}
-    if has_external_files:
-        print("Trying to upload externally provided files to s3")
-        files_to_upload = [
-            ("config", external_config_file_path),
-            ("database", external_db_path),
-            ("public", external_public_files_path),
-            ("private", external_private_files_path),
-        ]
-    else:
-        files_to_upload = take_backup(local_site)
-    files_uploaded = upload_files(files_to_upload)
-    return files_uploaded
+	files_uploaded = {}
+	if has_external_files:
+		print("Trying to upload externally added files to S3")
+		files_to_upload = [
+			("config", external_config_file_path),
+			("database", external_db_path),
+			("public", external_public_files_path),
+			("private", external_private_files_path),
+		]
+	else:
+		files_to_upload = take_backup(local_site)
+	files_uploaded = upload_files(files_to_upload)
+	return files_uploaded
+
 
 @add_line_after
 def restore_site(local_site):
@@ -378,7 +414,11 @@ def restore_site(local_site):
 	)
 
 	# backup site
-	files_uploaded = upload_backup(local_site)
+	try:
+		files_uploaded = upload_backup(local_site)
+	except Exception as e:
+		print(f"{e}")
+		sys.exit()
 
 	# push to frappe_cloud
 	payload = json.dumps({"name": selected_site, "files": files_uploaded})
@@ -429,7 +469,7 @@ def create_session():
 def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, remote_site, site_plans_url
-	global has_external_files, external_db_path, external_public_files_path , external_private_files_path, external_config_file_path
+	global has_external_files, external_db_path, external_public_files_path, external_private_files_path, external_config_file_path
 
 	remote_site = frappe_provider or frappe.conf.frappecloud_url
 	scheme = "https"
@@ -487,34 +527,48 @@ def executed_from_temp_dir():
 @click.command()
 def main():
 	global has_external_files, external_db_path, external_public_files_path, external_private_files_path, external_config_file_path
+	local_site = ""
 	if executed_from_temp_dir():
 		current_file = os.path.abspath(__file__)
 		atexit.register(cleanup, current_file)
 
-	local_site = click.prompt("Name of the site you want to migrate")
-	frappe_provider = click.prompt("Frappe provider (default: frappecloud.com)", default="frappecloud.com")
-	
-	restore_choice = click.prompt("Do you want to restore from external files? (yes/no)", default="no")
+	frappe_provider = click.prompt(
+		"Frappe provider (default: frappecloud.com)", default="frappecloud.com"
+	)
+
+	restore_choice = click.prompt(
+		"Do you want to restore from external files? (yes/no)", default="no"
+	)
 	if restore_choice.lower() in ["yes", "y"]:
 		has_external_files = True
-		external_db_path = click.prompt("Path to the external database file")
-		external_public_files_path = click.prompt("Path to the public files")
-		external_private_files_path = click.prompt("Path to the private files")
-		external_config_file_path = click.prompt("Path to the config file")
+		try:
+			external_db_path = click.prompt("Enter full path to the external database file")
+			external_file_checker(external_db_path, "database")
+			external_public_files_path = click.prompt("Enter full path to the public files")
+			external_file_checker(external_public_files_path, "public")
+			external_private_files_path = click.prompt("Enter full path to the private files")
+			external_file_checker(external_private_files_path, "private")
+			external_config_file_path = click.prompt("Enter full path to the config file")
+			external_file_checker(external_config_file_path, "config")
+		except ValueError as e:
+			print(f"Error while file validation ': {str(e)}")
+			sys.exit()
 	else:
+		local_site = click.prompt("Name of the site you want to migrate")
 		has_external_files = False
-		external_db_path  = None
+		external_db_path = None
 		external_public_files_path = None
 		external_private_files_path = None
-		external_config_file_path= None
+		external_config_file_path = None
 
 	try:
 		if not has_external_files:
 			frappe.init(site=local_site)
-			frappe.connect()	
+			frappe.connect()
 			frappecloud_migrator(local_site, frappe_provider)
 		else:
-			frappecloud_migrator(local_site=None,frappe_provider=frappe_provider)
+			print("heyyyy")
+			frappecloud_migrator(local_site=None, frappe_provider=frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExiting...")
 	except Exception:
@@ -523,6 +577,7 @@ def main():
 		print(get_traceback())
 	finally:
 		frappe.destroy()
+
 
 if __name__ == "__main__":
 	main()
