@@ -270,16 +270,18 @@ def select_site():
 			).strip()
 			if selected_site in available_sites:
 				site_data = available_sites[selected_site]
-				downgrade = is_downgrade(sites_info[selected_site])
-
-				if (not downgrade) or (
-					downgrade
-					and click.confirm(
-						"Downgrading may lead to a broken site. Are you sure you want to do this?"
-					)
-				):
+				global has_external_files
+				if not has_external_files:
+					downgrade = is_downgrade(sites_info[selected_site])
+					if (not downgrade) or (
+						downgrade
+						and click.confirm(
+							"Downgrading may lead to a broken site. Are you sure you want to do this?"
+						)
+					):
+						return site_data
+				else:
 					return site_data
-
 			else:
 				print("Site {} does not exist. Try again ❌".format(selected_site))
 	else:
@@ -321,42 +323,50 @@ def is_valid_subdomain(subdomain):
 
 
 @add_line_after
+def take_backup(local_site):
+    print(f"Taking backup for site {local_site}")
+    odb = frappe.utils.backups.new_backup(ignore_files=False, force=True)
+    return [
+        ("config", getattr(odb, "site_config_backup_path", None) or getattr(odb, "backup_path_conf", None)),
+        ("database", odb.backup_path_db),
+        ("public", odb.backup_path_files),
+        ("private", odb.backup_path_private_files),
+    ]
+
+
+@add_line_after
+def upload_files(files):
+    files_uploaded = {}
+    for file_type, file_path in files:
+        file_name = file_path.split(os.sep)[-1]
+        uploaded_file = upload_backup_file(file_type, file_name, file_path)
+        if uploaded_file:
+            files_uploaded[file_type] = uploaded_file
+        else:
+            print(f"Upload failed for: {file_path}")
+            print("Cannot create site on Frappe Cloud without all site backup files uploaded.")
+            print("Exiting...")
+            sys.exit(1)
+    print("Uploaded backup files! ✅")
+    return files_uploaded
+
+@add_line_after
 def upload_backup(local_site):
-	# take backup
-	files_uploaded = {}
-	print("Taking backup for site {}".format(local_site))
-	odb = frappe.utils.backups.new_backup(ignore_files=False, force=True)
+    files_uploaded = {}
+    if has_external_files:
+        print("Trying to upload externally provided files to s3")
+        files_to_upload = [
+            ("config", external_config_file_path),
+            ("database", external_db_path),
+            ("public", external_public_files_path),
+            ("private", external_private_files_path),
+        ]
+    else:
+        files_to_upload = take_backup(local_site)
+    files_uploaded = upload_files(files_to_upload)
+    return files_uploaded
 
-	# upload files
-	for x, (file_type, file_path) in enumerate(
-		[
-			(
-				"config",
-				getattr(odb, "site_config_backup_path", None)
-				or getattr(odb, "backup_path_conf", None),
-			),
-			("database", odb.backup_path_db),
-			("public", odb.backup_path_files),
-			("private", odb.backup_path_private_files),
-		]
-	):
-		file_name = file_path.split(os.sep)[-1]
-
-		uploaded_file = upload_backup_file(file_type, file_name, file_path)
-
-		if uploaded_file:
-			files_uploaded[file_type] = uploaded_file
-		else:
-			print("Upload failed for: {}".format(file_path))
-			print("Cannot create site on Frappe Cloud without all site backup files uploaded.")
-			print("Exitting...")
-			sys.exit(1)
-
-	print("Uploaded backup files! ✅")
-
-	return files_uploaded
-
-
+@add_line_after
 def restore_site(local_site):
 	# get list of existing sites they can restore
 	selected_site = select_site()["name"]
@@ -419,6 +429,7 @@ def create_session():
 def frappecloud_migrator(local_site, frappe_provider):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, remote_site, site_plans_url
+	global has_external_files, external_db_path, external_public_files_path , external_private_files_path, external_config_file_path
 
 	remote_site = frappe_provider or frappe.conf.frappecloud_url
 	scheme = "https"
@@ -472,30 +483,46 @@ def executed_from_temp_dir():
 	cur_file = __file__
 	return cur_file.startswith(temp_dir)
 
-if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
+
+@click.command()
+def main():
+	global has_external_files, external_db_path, external_public_files_path, external_private_files_path, external_config_file_path
 	if executed_from_temp_dir():
 		current_file = os.path.abspath(__file__)
 		atexit.register(cleanup, current_file)
 
-	try:
-		local_site = sys.argv[1]
-	except Exception:
-		local_site = input("Name of the site you want to migrate: ").strip()
+	local_site = click.prompt("Name of the site you want to migrate")
+	frappe_provider = click.prompt("Frappe provider (default: frappecloud.com)", default="frappecloud.com")
+	
+	restore_choice = click.prompt("Do you want to restore from external files? (yes/no)", default="no")
+	if restore_choice.lower() in ["yes", "y"]:
+		has_external_files = True
+		external_db_path = click.prompt("Path to the external database file")
+		external_public_files_path = click.prompt("Path to the public files")
+		external_private_files_path = click.prompt("Path to the private files")
+		external_config_file_path = click.prompt("Path to the config file")
+	else:
+		has_external_files = False
+		external_db_path  = None
+		external_public_files_path = None
+		external_private_files_path = None
+		external_config_file_path= None
 
 	try:
-		frappe_provider = sys.argv[2]
-	except Exception:
-		frappe_provider = "frappecloud.com"
-
-	try:
-		frappe.init(site=local_site)
-		frappe.connect()
-		frappecloud_migrator(local_site, frappe_provider)
+		if not has_external_files:
+			frappe.init(site=local_site)
+			frappe.connect()	
+			frappecloud_migrator(local_site, frappe_provider)
+		else:
+			frappecloud_migrator(local_site=None,frappe_provider=frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
-		print("\nExitting...")
+		print("\nExiting...")
 	except Exception:
 		from frappe.utils import get_traceback
 
 		print(get_traceback())
+	finally:
+		frappe.destroy()
 
-	frappe.destroy()
+if __name__ == "__main__":
+	main()
