@@ -1119,6 +1119,7 @@ class Agent:
 		]
 		return apps
 
+
 class AgentCallbackException(Exception):
 	pass
 

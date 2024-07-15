@@ -475,7 +475,7 @@ class Site(Document, TagHelpers):
 		for app in apps_list:
 			self.append("apps", {"app": app})
 		self.save()
-		
+
 	@frappe.whitelist()
 	def retry_rename(self):
 		"""Retry rename with current subdomain"""

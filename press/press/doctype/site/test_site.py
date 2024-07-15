@@ -144,7 +144,6 @@ def create_test_site(
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
-
 	def setUp(self):
 		frappe.db.truncate("Agent Request Failure")
 
@@ -450,8 +449,11 @@ class TestSite(unittest.TestCase):
 		group = create_test_release_group([app1, app2])
 		bench = create_test_bench(group=group)
 		site = create_test_site(bench=bench)
-		responses.get(f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/apps",json.dumps({'data': 'frappe\nerpnext'}))
+		responses.get(
+			f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/apps",
+			json.dumps({"data": "frappe\nerpnext"}),
+		)
 		site.sync_apps()
-		self.assertEqual(site.apps[0].app,"frappe")
-		self.assertEqual(site.apps[1].app,"erpnext")
-		self.assertEqual(len(site.apps),2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(len(site.apps), 2)
