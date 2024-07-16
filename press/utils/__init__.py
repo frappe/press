@@ -7,8 +7,8 @@ import json
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Optional, TypedDict
 from pathlib import Path
+from typing import Optional, TypedDict
 from urllib.parse import urljoin
 
 import frappe
@@ -26,6 +26,7 @@ SupervisorStatusEntry = TypedDict(
 		"name": str,
 		"status": str,
 		"uptime": Optional[float],  # in seconds
+		"uptime_string": Optional[str],
 		"message": Optional[str],  # when not running
 		"group": Optional[str],
 		"pid": Optional[int],
@@ -664,9 +665,10 @@ def parse_supervisor_status(output: str) -> list["SupervisorStatusEntry"]:
 
 		else:
 			# example: "RUNNING   pid 9, uptime 150 days, 2:55:52"
-			pid, uptime = parse_pid_uptime(info_splits[1])
+			pid, uptime, uptime_string = parse_pid_uptime(info_splits[1])
 			entry["pid"] = pid
 			entry["uptime"] = uptime
+			entry["uptime_string"] = uptime_string
 
 		parsed.append(entry)
 
@@ -693,11 +695,13 @@ def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
 	if len(pid_splits) == 2 and pid_splits[0] == "pid":
 		pid = int(pid_splits[1])
 
+	uptime_string = ""
 	uptime_splits = strip_split(uptime_split, maxsplit=1)
 	if len(uptime_splits) == 2 and uptime_splits[0] == "uptime":
-		uptime = parse_uptime(uptime_splits[1])
+		uptime_string = uptime_splits[1]
+		uptime = parse_uptime(uptime_string)
 
-	return pid, uptime
+	return pid, uptime, uptime_string
 
 
 def parse_uptime(s: str) -> Optional[float]:
