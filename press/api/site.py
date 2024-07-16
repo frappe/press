@@ -751,6 +751,7 @@ def get_site_plans():
 		.on(Bench.group == plan_details_query.release_group)
 		.left_join(ReleaseGroup)
 		.on(ReleaseGroup.name == plan_details_query.release_group)
+		.where(Bench.status == "Active")
 	)
 
 	plan_details = plan_details_with_bench_query.run(as_dict=True)
@@ -786,9 +787,14 @@ def get_site_plans():
 			and plan_details_dict[plan.name]["release_groups"]
 		):
 			continue
-		plan.clusters = plan_details_dict[plan.name]["clusters"]
-		plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
-		plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
+		if plan.name in plan_details_dict:
+			plan.clusters = plan_details_dict[plan.name]["clusters"]
+			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
+			plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
+		else:
+			plan.clusters = []
+			plan.allowed_apps = []
+			plan.bench_versions = []
 		filtered_plans.append(plan)
 
 	return filtered_plans
