@@ -160,20 +160,22 @@ export default {
 							? 'Database Server Plan'
 							: 'Replication Server Plan',
 					value: planDescription,
-					subValue: additionalStorage
-						? `${this.$format.userCurrency(
-								doc.storage_plan[priceField] * additionalStorage,
-								0
-						  )}/mo`
-						: '',
+					subValue:
+						additionalStorage > 0
+							? `${this.$format.userCurrency(
+									doc.storage_plan[priceField] * additionalStorage,
+									0
+							  )}/mo`
+							: '',
 					type: 'header',
-					help: additionalStorage
-						? `Server Plan: ${this.$format.userCurrency(
-								currentPlan[priceField]
-						  )}/mo & Add-on Storage Plan: ${this.$format.userCurrency(
-								doc.storage_plan[priceField] * additionalStorage
-						  )}/mo`
-						: ''
+					help:
+						additionalStorage > 0
+							? `Server Plan: ${this.$format.userCurrency(
+									currentPlan[priceField]
+							  )}/mo & Add-on Storage Plan: ${this.$format.userCurrency(
+									doc.storage_plan[priceField] * additionalStorage
+							  )}/mo`
+							: ''
 				},
 				{
 					label: 'CPU',
