@@ -108,6 +108,7 @@
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
+						:selectedVersion="version"
 					/>
 				</div>
 			</div>
