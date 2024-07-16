@@ -4,11 +4,15 @@
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
-						<FCLogo class="inline-block h-7 w-7" />
+						<img
+							v-if="brandDetails && brandDetails.app_logo"
+							:src="brandDetails.app_logo"
+						/>
+						<FCLogo class="inline-block h-7 w-7" v-else />
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
-							Frappe Cloud
+							{{ appName }}
 						</span>
 					</div>
 				</slot>
@@ -27,7 +31,11 @@
 			</div>
 		</div>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<FrappeLogo class="h-4" />
+			<img
+				v-if="brandDetails && brandDetails.app_footer_logo"
+				:src="brandDetails.app_footer_logo"
+			/>
+			<FrappeLogo class="h-4" v-else />
 		</div>
 	</div>
 </template>
@@ -44,6 +52,13 @@ export default {
 		FCLogo,
 		FrappeLogo
 	},
+	data() {
+		return {
+			appLogo: '',
+			appName: 'Frappe Cloud',
+			appFooterLogo: ''
+		};
+	},
 	mounted() {
 		const params = new URLSearchParams(window.location.search);
 
@@ -58,6 +73,22 @@ export default {
 	methods: {
 		redirectForFrappeioAuth() {
 			window.location = '/f-login';
+		}
+	},
+	resources: {
+		brandDetails() {
+			return {
+				url: 'press.api.utils.get_app_details',
+				auto: true,
+				onSuccess(data) {
+					console.log(data);
+				}
+			};
+		}
+	},
+	computed: {
+		brandDetails() {
+			return this.$resources.brandDetails.data || '';
 		}
 	}
 };
