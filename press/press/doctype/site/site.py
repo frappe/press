@@ -1882,15 +1882,17 @@ class Site(Document, TagHelpers):
 		For others, don't allow to deploy on those specific release group benches, choose anything except that
 		"""
 
-		release_group_names = frappe.db.get_all(
-			"Site Plan Release Group",
-			pluck="release_group",
-			filters={
-				"parenttype": "Site Plan",
-				"parentfield": "release_groups",
-				"parent": self.get_plan_name(),
-			},
-		)
+		release_group_names = []
+		if self.get_plan_name():
+			release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={
+					"parenttype": "Site Plan",
+					"parentfield": "release_groups",
+					"parent": self.get_plan_name(),
+				},
+			)
 
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
