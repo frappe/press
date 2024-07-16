@@ -74,7 +74,9 @@ def get(name, timezone, duration="7d"):
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
 	check = slow_logs_by_duration["datasets"]
 	SLOW_QUERY_DURATION_THRESHOLD = 50
-	has_slow_queries = any(max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check)
+	has_slow_queries = any(
+		max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check
+	)
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
@@ -99,7 +101,7 @@ def get(name, timezone, duration="7d"):
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
-		"has_slow_queries": has_slow_queries
+		"has_slow_queries": has_slow_queries,
 	}
 
 
@@ -704,28 +706,29 @@ def mariadb_processlist(site):
 @frappe.whitelist()
 @protected("Site")
 def mariadb_slow_queries(
-    name,
-    start_datetime,
-    stop_datetime,
-    max_lines=1000,
-    search_pattern=".*",
-    normalize_queries=True,
-    analyze=False,
+	name,
+	start_datetime,
+	stop_datetime,
+	max_lines=1000,
+	search_pattern=".*",
+	normalize_queries=True,
+	analyze=False,
 ):
-    meta = frappe._dict(
-        {
-            "site": name,
-            "start_datetime": start_datetime,
-            "stop_datetime": stop_datetime,
-            "max_lines": max_lines,
-            "search_pattern": search_pattern,
-            "normalize_queries": normalize_queries,
-            "analyze": analyze,
-        }
-    )
-    columns, data = execute(filters=meta)
-    ret = {"columns": columns, "data": data}
-    return ret
+	meta = frappe._dict(
+		{
+			"site": name,
+			"start_datetime": start_datetime,
+			"stop_datetime": stop_datetime,
+			"max_lines": max_lines,
+			"search_pattern": search_pattern,
+			"normalize_queries": normalize_queries,
+			"analyze": analyze,
+		}
+	)
+	columns, data = execute(filters=meta)
+	ret = {"columns": columns, "data": data}
+	return ret
+
 
 @frappe.whitelist()
 @protected("Site")
@@ -811,6 +814,8 @@ def plausible_analytics(name):
 	)
 
 	return response
+
+
 def get_doctype_name(table_name: str) -> str:
 	return table_name.removeprefix("tab")
 
@@ -827,7 +832,9 @@ def mariadb_add_suggested_index(name, table, column):
 		},
 	)
 	if record_exists:
-		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
+		frappe.throw(
+			"There is already a pending job for Add Database Index. Please wait until finished."
+		)
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)

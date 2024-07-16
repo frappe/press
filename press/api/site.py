@@ -805,7 +805,7 @@ def get_plans(name=None, rg=None):
 			"private_benches",
 			"monitor_access",
 			"dedicated_server_plan",
-			"allow_downgrading_from_other_plan"
+			"allow_downgrading_from_other_plan",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},

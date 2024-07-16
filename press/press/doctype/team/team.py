@@ -112,7 +112,7 @@ class Team(Document):
 		"partner_referral_code",
 		"parent_team",
 		"is_developer",
-		"enable_performance_tuning"
+		"enable_performance_tuning",
 	]
 
 	def get_doc(self, doc):
