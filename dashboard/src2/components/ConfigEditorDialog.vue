@@ -112,12 +112,8 @@ export default {
 	resources: {
 		standardKeys() {
 			return {
-				type: 'list',
-				doctype: 'Site Config Key',
-				fields: ['name', 'key', 'title', 'description', 'type'],
-				filters: { internal: false },
-				orderBy: 'title asc',
-				pageLength: 1000,
+				url: 'press.api.site.get_site_config_standard_keys',
+				cache: 'Site Config Standard Keys',
 				auto: true
 			};
 		}

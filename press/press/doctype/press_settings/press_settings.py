@@ -23,7 +23,6 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
 		agent_github_access_token: DF.Data | None

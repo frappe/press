@@ -963,7 +963,7 @@
   {
    "fieldname": "usd_rate",
    "fieldtype": "Float",
-   "label": "Commission USD Rate"
+   "label": "USD Rate"
   },
   {
    "fieldname": "press_monitoring_password",
@@ -1201,7 +1201,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-06-25 16:39:20.923646",
+ "modified": "2024-07-15 17:31:59.916926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
