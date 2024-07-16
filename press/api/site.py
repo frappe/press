@@ -805,6 +805,7 @@ def get_plans(name=None, rg=None):
 			"private_benches",
 			"monitor_access",
 			"dedicated_server_plan",
+			"allow_downgrading_from_other_plan"
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
@@ -837,6 +838,8 @@ def get_plans(name=None, rg=None):
 	out = []
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
+			continue
+		if not plan.allow_downgrading_from_other_plan and plan.price_usd == 5:
 			continue
 		if not on_dedicated_server and plan.dedicated_server_plan:
 			continue
