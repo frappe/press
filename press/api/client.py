@@ -63,6 +63,7 @@ ALLOWED_DOCTYPES = [
 	"App Patch",
 	"Product Trial",
 	"Press Notification",
+	"User SSH Key",
 	"Frappe Version",
 	"Dashboard Banner",
 ]
@@ -90,8 +91,8 @@ def get_list(
 	if filters is None:
 		filters = {}
 
-	# team doctype doesn't have a team field to filter by
-	if doctype == "Team":
+	# these doctypes doesn't have a team field to filter by but are used in get or run_doc_method
+	if doctype in ["Team", "User SSH Key"]:
 		return []
 
 	check_permissions(doctype)
