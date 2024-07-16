@@ -41,9 +41,6 @@ class SitePlanChange(Document):
 					"Sorry, you cannot downgrade to {} from {}".format(self.to_plan, self.from_plan)
 				)
 
-		if self.type == "Upgrade" and self.to_plan == "USD 5":
-			frappe.throw("Not allowed to upgrade to USD 5")
-
 		if self.type == "Initial Plan":
 			self.from_plan = ""
 
