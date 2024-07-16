@@ -8,7 +8,7 @@ import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, TypeVar
 from urllib.parse import urljoin
 
 import frappe
@@ -19,8 +19,8 @@ from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
 
-SupervisorStatusEntry = TypedDict(
-	"SupervisorStatusEntry",
+SupervisorProcess = TypedDict(
+	"SupervisorProcess",
 	{
 		"program": str,  # group and name
 		"name": str,
@@ -615,7 +615,7 @@ def reconnect_on_failure():
 	return wrapper
 
 
-def parse_supervisor_status(output: str) -> list["SupervisorStatusEntry"]:
+def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	# Note: this function is verbose due to supervisor status being kinda
 	# unstructured, and I'm not entirely sure of all possible input formats.
 	#
@@ -629,10 +629,10 @@ def parse_supervisor_status(output: str) -> list["SupervisorStatusEntry"]:
 	pid_rex = re.compile(r"^pid\s+\d+")
 
 	lines = output.split("\n")
-	parsed: list["SupervisorStatusEntry"] = []
+	parsed: list["SupervisorProcess"] = []
 
 	for line in lines:
-		entry: "SupervisorStatusEntry" = {
+		entry: "SupervisorProcess" = {
 			"program": "",
 			"status": "",
 		}
@@ -783,3 +783,10 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+
+
+V = TypeVar("V")
+
+
+def flatten(value_lists: "list[list[V]]") -> "list[V]":
+	return [value for values in value_lists for value in values]
