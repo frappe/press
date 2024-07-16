@@ -255,7 +255,7 @@ export default {
 					this.errorMessage = errorMessage;
 				}
 			} else {
-				if (setupIntent.status === 'succeeded') {
+				if (setupIntent?.status === 'succeeded') {
 					this.$resources.setupIntentSuccess.submit(
 						{
 							setupIntent
@@ -305,7 +305,7 @@ export default {
 						let payload = await this.stripe.confirmCardPayment(client_secret, {
 							payment_method: { card: this.card }
 						});
-						if (payload.paymentIntent.status === 'succeeded') {
+						if (payload.paymentIntent?.status === 'succeeded') {
 							this.microChargeCompleted = true;
 						}
 					},
