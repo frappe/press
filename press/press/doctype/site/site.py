@@ -1434,6 +1434,19 @@ class Site(Document, TagHelpers):
 		self.save()
 		return setup_complete
 
+	@dashboard_whitelist()
+	def product_redirect_url(self):
+		email = frappe.db.get_value("Team", self.team, "user")
+		standby_product_redirect_route = frappe.db.get_value(
+			"Product Trial", self.standby_for_product, "product_redirect_route"
+		)
+		sid = self.get_login_sid(user=email)
+		if not self.is_setup_wizard_complete() or not standby_product_redirect_route:
+			standby_product_redirect_route = "/desk"
+		return (
+			f"https://{self.host_name or self.name}{standby_product_redirect_route}?sid={sid}"
+		)
+
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
 		if self.status in ("Active", "Archived", "Inactive", "Suspended"):

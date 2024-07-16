@@ -40,8 +40,8 @@
 									class="whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
 								>
 									<a
-										:href="`https://${site.site}`"
-										class="block font-medium text-gray-900 underline focus:outline-none"
+										@click="() => redirectToProductPage(site.site)"
+										class="block font-medium text-gray-900 underline cursor-pointer focus:outline-none"
 										target="_blank"
 									>
 										{{ site.site }}
@@ -272,6 +272,18 @@ export default {
 				name: this.productId
 			};
 		},
+		site() {
+			return {
+				type: 'document',
+				method: 'get_product_redirect_url',
+				doctype: 'Site',
+				name:
+					this.completedSites.length > 0 ? this.completedSites[0].site : null,
+				whitelistedMethods: {
+					productRedirectUrl: 'product_redirect_url'
+				}
+			};
+		},
 		siteRequest() {
 			if (!this.pendingSiteRequest || this.completedSites.length) return;
 			return {
@@ -342,6 +354,11 @@ export default {
 			let cluster = await this.getClosestCluster();
 			return this.siteRequest.createSite.submit({ cluster });
 		},
+		async redirectToProductPage(site) {
+			window.location.href = await this.site.productRedirectUrl.submit({
+				site
+			});
+		},
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
 			let proxyServers = Object.keys(this.saasProduct.proxy_servers);
@@ -382,6 +399,9 @@ export default {
 		trialDays
 	},
 	computed: {
+		site() {
+			return this.$resources.site;
+		},
 		pendingSiteRequest() {
 			return this.$resources.getSiteRequest.data?.pending || null;
 		},
