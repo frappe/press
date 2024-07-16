@@ -13,7 +13,8 @@ export default {
 		'isPrivateBenchSite',
 		'isDedicatedServerSite',
 		'selectedCluster',
-		'selectedApps'
+		'selectedApps',
+		'selectedVersion'
 	],
 	emits: ['update:modelValue'],
 	components: {
@@ -61,6 +62,18 @@ export default {
 								: !this.selectedApps.every(app =>
 										plan.allowed_apps.includes(app.app)
 								  ))
+					};
+				});
+			}
+			if (this.selectedVersion) {
+				plans = plans.map(plan => {
+					return {
+						...plan,
+						disabled:
+							plan.disabled ||
+							(plan.bench_versions.length == 0
+								? false
+								: !plan.bench_versions.includes(this.selectedVersion))
 					};
 				});
 			}
