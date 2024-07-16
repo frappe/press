@@ -784,6 +784,7 @@ def get_site_plans():
 		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip the plan
 		if (
 			not has_team_access_to_restricted_site_plans
+			and plan.name in plan_details_dict
 			and plan_details_dict[plan.name]["release_groups"]
 		):
 			continue
