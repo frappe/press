@@ -140,15 +140,15 @@ class TestPayoutOrder(FrappeTestCase):
 		self.create_test_usd_invoice()
 
 		# No payout order before running the job
-		self.assertFalse(frappe.db.exists("Payout Order", {"recipient": self.test_team.name}))
+		self.assertFalse(frappe.db.exists("Payout Order", {"team": self.test_team.name}))
 
 		# Run the monthly job
 		create_marketplace_payout_orders_monthly()
 
 		# The Payout Order should have been created
-		self.assertTrue(frappe.db.exists("Payout Order", {"recipient": self.test_team.name}))
+		self.assertTrue(frappe.db.exists("Payout Order", {"team": self.test_team.name}))
 
-		po = frappe.get_doc("Payout Order", {"recipient": self.test_team.name})
+		po = frappe.get_doc("Payout Order", {"team": self.test_team.name})
 		self.assertEqual(len(po.items), 1)
 
 		# The invoice item must be marked as paid out
@@ -160,7 +160,7 @@ class TestPayoutOrder(FrappeTestCase):
 		# Re-run should not create a new PO
 		# Since all items are already accounted for
 		create_marketplace_payout_orders_monthly()
-		po_count = frappe.db.count("Payout Order", {"recipient": self.test_team.name})
+		po_count = frappe.db.count("Payout Order", {"team": self.test_team.name})
 		self.assertEqual(po_count, 1)
 
 	def test_does_not_create_duplicate_monthly_payout_order(self):
@@ -172,9 +172,7 @@ class TestPayoutOrder(FrappeTestCase):
 		period_end = frappe.utils.data.get_last_day(today)
 
 		# No POs initially
-		num_payout_orders = frappe.db.count(
-			"Payout Order", {"recipient": self.test_team.name}
-		)
+		num_payout_orders = frappe.db.count("Payout Order", {"team": self.test_team.name})
 		self.assertEqual(num_payout_orders, 0)
 
 		po = create_payout_order_from_invoice_items(
@@ -183,9 +181,7 @@ class TestPayoutOrder(FrappeTestCase):
 
 		create_marketplace_payout_orders_monthly()
 
-		num_payout_orders = frappe.db.count(
-			"Payout Order", {"recipient": self.test_team.name}
-		)
+		num_payout_orders = frappe.db.count("Payout Order", {"team": self.test_team.name})
 		self.assertEqual(num_payout_orders, 1)
 
 		# The original PO must now contain the invoice item
