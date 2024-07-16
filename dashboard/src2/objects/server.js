@@ -167,6 +167,16 @@ export default {
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
 							}
+						},
+						{
+							label: 'Impersonate Team',
+							icon: defineAsyncComponent(() =>
+								import('~icons/lucide/venetian-mask')
+							),
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(server.doc.team);
+							}
 						}
 					]
 				}

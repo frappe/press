@@ -22,6 +22,8 @@ export default {
 				this.modelValue;
 			},
 			set(value) {
+				if (!value) return;
+
 				this.$emit('update:modelValue', {
 					label: this.isVersion(value.label)
 						? value.label
