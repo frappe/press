@@ -56,6 +56,7 @@ class Team(Document):
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
+		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		erpnext_partner: DF.Check
 		frappe_partnership_date: DF.Date | None
@@ -111,6 +112,7 @@ class Team(Document):
 		"partner_referral_code",
 		"parent_team",
 		"is_developer",
+		"enable_performance_tuning",
 	]
 
 	def get_doc(self, doc):

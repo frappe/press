@@ -213,10 +213,11 @@ class Site(Document, TagHelpers):
 		group = frappe.db.get_value(
 			"Release Group",
 			self.group,
-			["title", "public", "team", "central_bench"],
+			["title", "public", "team", "central_bench", "version"],
 			as_dict=1,
 		)
 		doc.group_title = group.title
+		doc.version = group.version
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
@@ -466,6 +467,15 @@ class Site(Document, TagHelpers):
 			"Site Domain", {"site": self.name, "name": ("!=", self.name)}, pluck="name"
 		)
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
+
+	@frappe.whitelist()
+	def sync_apps(self):
+		agent = Agent(self.server)
+		apps_list = agent.get_site_apps(site=self)
+		self.apps = []
+		for app in apps_list:
+			self.append("apps", {"app": app})
+		self.save()
 
 	@frappe.whitelist()
 	def retry_rename(self):

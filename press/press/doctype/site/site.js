@@ -97,6 +97,7 @@ frappe.ui.form.on('Site', {
 		[
 			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
 			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],

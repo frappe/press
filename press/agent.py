@@ -967,10 +967,12 @@ class Agent:
 
 	def add_database_index(self, site, doctype, columns):
 		data = {"doctype": doctype, "columns": list(columns)}
-		return self.post(
+		return self.create_agent_job(
+			"Add Database Index",
 			f"benches/{site.bench}/sites/{site.name}/add-database-index",
-			data=data,
-		)["data"]
+			data,
+			site=site.name,
+		)
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
@@ -1109,6 +1111,15 @@ class Agent:
 			"docker_cache_utils/get_cached_apps",
 			data={},
 		)
+
+	def get_site_apps(self, site):
+		raw_apps_list = self.get(
+			f"benches/{site.bench}/sites/{site.name}/apps",
+		)
+		apps: list[str] = [
+			line.split()[0] for line in raw_apps_list["data"].splitlines() if line
+		]
+		return apps
 
 
 class AgentCallbackException(Exception):

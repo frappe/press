@@ -1459,6 +1459,22 @@ export default {
 					]
 				}
 			},
+			{
+				label: 'Performance',
+				icon: icon('zap'),
+				route: 'performance',
+				type: 'Component',
+				condition() {
+					let $team = getTeam();
+					return !!$team.doc?.enable_performance_tuning_flag;
+				},
+				component: defineAsyncComponent(() =>
+					import('../components/site/SitePerformance.vue')
+				),
+				props: site => {
+					return { siteName: site.doc?.name };
+				}
+			},
 			logsTab(),
 			{
 				label: 'Activity',
@@ -1552,6 +1568,7 @@ export default {
 					}
 				}
 			},
+
 			tagTab()
 		],
 		actions(context) {
