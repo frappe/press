@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
 from press.utils import get_country_info
+from press.utils.telemetry import capture
 
 
 class AccountRequest(Document):
@@ -134,7 +135,7 @@ class AccountRequest(Document):
 				# "image_path": "/assets/press/images/frappe-logo-black.png",
 				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
 				"read_pixel_path": get_url(
-					f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
+					f"/api/method/press.utils.telemetry.capture_read_event?email={self.email}"
 				),
 			}
 		)
@@ -145,6 +146,8 @@ class AccountRequest(Document):
 			args=args,
 			now=True,
 		)
+		# Telemetry: Verification Mail Sent
+		capture("verification_mail_sent", "fc_signup", self.email)
 
 	def get_verification_url(self):
 		if self.saas:

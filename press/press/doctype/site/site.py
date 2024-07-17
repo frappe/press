@@ -460,6 +460,14 @@ class Site(Document, TagHelpers):
 		] and self.has_value_changed("subdomain"):
 			self.rename(self._get_site_name(self.subdomain))
 
+		# Telemetry: Send event if first site status changed to Active
+		if self.status == "Active":
+			team = frappe.get_doc("Team", self.team)
+			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+				from press.utils.telemetry import capture
+
+				capture("first_site_status_changed_to_active", "fc_signup", team.user)
+
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
@@ -1442,6 +1450,15 @@ class Site(Document, TagHelpers):
 			self.team = frappe.db.get_value("Team", {"user": user}, "name")
 
 		self.save()
+
+		# Telemetry: Send event if first site status changed to Active
+		if self.setup_wizard_complete:
+			team = frappe.get_doc("Team", self.team)
+			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+				from press.utils.telemetry import capture
+
+				capture("first_site_setup_wizard_completed", "fc_signup", team.user)
+
 		return setup_complete
 
 	@frappe.whitelist()
@@ -2998,3 +3015,11 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 		"apps": apps,
 		"clusters": clusters,
 	}
+
+
+def sync_sites_setup_wizard_complete_status():
+	sites = frappe.get_all(
+		"Site", filters={"status": "Active", "setup_wizard_complete": 0}, pluck="name"
+	)
+	for site in sites:
+		frappe.enqueue_doc("Site", site, method="is_setup_wizard_complete")

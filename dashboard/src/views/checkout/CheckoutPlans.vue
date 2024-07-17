@@ -98,7 +98,7 @@ export default {
 		},
 		capturePosthogEvent() {
 			if (window.posthog) {
-				posthog.capture('fc_subscribe_plan_selected', {
+				window.posthog.capture('fc_subscribe_plan_selected', {
 					distinct_id: this.team
 				});
 			}

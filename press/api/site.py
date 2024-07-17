@@ -175,10 +175,10 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			doc.save(ignore_permissions=True)
 
 	# Telemetry: Send event if first site
-	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
+	if frappe.db.count("Site", {"team": team.name}) <= 1:
 		from press.utils.telemetry import capture
 
-		capture("created_first_site", "fc_signup", team.account_request)
+		capture("created_first_site", "fc_signup", team.user)
 
 	return {
 		"site": site.name,
@@ -777,7 +777,10 @@ def get_site_plans():
 			and plan["cluster"] not in plan_details_dict[plan["name"]]["clusters"]
 		):
 			plan_details_dict[plan["name"]]["clusters"].append(plan["cluster"])
-		if plan["version"] and plan["version"] not in plan_details_dict[plan["name"]]["bench_versions"]:
+		if (
+			plan["version"]
+			and plan["version"] not in plan_details_dict[plan["name"]]["bench_versions"]
+		):
 			plan_details_dict[plan["name"]]["bench_versions"].append(plan["version"])
 
 	for plan in plans:
