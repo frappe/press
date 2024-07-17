@@ -90,6 +90,7 @@ getInitialData().then(() => {
 		posthog.init(window.press_frontend_posthog_project_id, {
 			api_host: window.press_frontend_posthog_host,
 			person_profiles: 'identified_only',
+			autocapture: false,
 			session_recording: {
 				maskAllInputs: true
 			}
