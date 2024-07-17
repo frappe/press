@@ -91,6 +91,7 @@ getInitialData().then(() => {
 			api_host: window.press_frontend_posthog_host,
 			person_profiles: 'identified_only',
 			autocapture: false,
+			disable_session_recording: false,
 			session_recording: {
 				maskAllInputs: true
 			}
