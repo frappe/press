@@ -1304,6 +1304,9 @@ def handle_payment_intent_succeeded(payment_intent):
 	invoice.insert()
 	invoice.reload()
 
+	if not team.payment_mode:
+		frappe.db.set_value("Team", team.name, "payment_mode", "Prepaid Credits")
+
 	# latest stripe API sets charge id in latest_charge
 	charge = payment_intent.get("latest_charge")
 	if not charge:
