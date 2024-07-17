@@ -1,5 +1,5 @@
 <template>
-	<div class="px-5 py-4 border rounded-md space-y-12">
+	<div class="space-y-12 rounded-md border px-5 py-4">
 		<div>
 			<div class="flex justify-between border-b pb-4">
 				<div>
@@ -16,10 +16,10 @@
 					>Save</Button
 				>
 			</div>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 border-b py-6">
+			<div class="grid grid-cols-1 gap-x-5 border-b py-6 md:grid-cols-2">
 				<div class="border-r pr-6">
-					<span class="font-medium text-base">Profile</span>
-					<div class="my-4 group relative flex">
+					<span class="text-base font-medium">Profile</span>
+					<div class="group relative my-4 flex">
 						<div class="flex flex-col">
 							<Avatar
 								size="3xl"
@@ -54,7 +54,7 @@
 							</template>
 						</FileUploader>
 					</div>
-					<div class="sm:col-span-4 pb-8">
+					<div class="pb-8 sm:col-span-4">
 						<FormControl
 							class="mt-4"
 							label="Title"
@@ -64,7 +64,7 @@
 						/>
 					</div>
 					<div class="sm:col-span-4">
-						<span class="font-medium text-base">Links</span>
+						<span class="text-base font-medium">Links</span>
 						<div>
 							<FormControl
 								class="mt-4"
@@ -106,7 +106,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex w-full">
-						<span class="font-medium text-base">Screenshots and Videos</span>
+						<span class="text-base font-medium">Screenshots and Videos</span>
 						<FileUploader
 							class="ml-auto"
 							@success="() => imageAddSuccess('Added screenshot')"
@@ -132,7 +132,7 @@
 						</FileUploader>
 					</div>
 					<div
-						class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-4 pt-4"
+						class="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 lg:grid-cols-3 xl:grid-cols-4"
 					>
 						<Dropdown
 							class="w-fit"
@@ -142,7 +142,7 @@
 						>
 							<template v-slot="{ open }">
 								<img
-									class="mx-1 cursor-pointer w-36 h-24 overflow-x-auto object-cover rounded-md"
+									class="mx-1 h-24 w-36 cursor-pointer overflow-x-auto rounded-md object-cover"
 									:src="image"
 								/>
 							</template>
@@ -151,7 +151,7 @@
 				</div>
 			</div>
 			<div class="mt-6">
-				<span class="font-medium text-base">Description</span>
+				<span class="text-base font-medium">Description</span>
 				<FormControl
 					class="mt-4"
 					label="Summary"
@@ -160,9 +160,9 @@
 					v-model="marketplaceApp.description"
 				/>
 				<div class="mt-4">
-					<span class="text-gray-600 text-xs">Description</span>
+					<span class="text-xs text-gray-600">Description</span>
 					<TextEditor
-						class="mt-1 text-base rounded py-1.5 px-2 border border-gray-100 bg-gray-100 placeholder-gray-500 hover:border-gray-200 hover:bg-gray-200 focus:bg-white focus:border-gray-500 focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400 text-gray-800 transition-colors w-full block"
+						class="mt-1 block w-full rounded border border-gray-100 bg-gray-100 px-2 py-1.5 text-base text-gray-800 placeholder-gray-500 transition-colors hover:border-gray-200 hover:bg-gray-200 focus:border-gray-500 focus:bg-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"
@@ -217,9 +217,12 @@ export default {
 						args: this.marketplaceApp
 					};
 				},
-				onSuccess(response) {
+				onSuccess() {
 					toast.success('Updated Successfully');
 					this.editing = false;
+				},
+				onError(e) {
+					toast.error(e);
 				}
 			};
 		},
