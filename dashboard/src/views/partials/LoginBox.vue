@@ -4,11 +4,7 @@
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
-						<img
-							v-if="brandDetails && brandDetails.app_logo"
-							:src="brandDetails.app_logo"
-						/>
-						<FCLogo class="inline-block h-7 w-7" v-else />
+						<BrandLogo :header="1" />
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
@@ -31,33 +27,20 @@
 			</div>
 		</div>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<img
-				v-if="brandDetails && brandDetails.app_footer_logo"
-				:src="brandDetails.app_footer_logo"
-			/>
-			<FrappeLogo class="h-4" v-else />
+			<BrandLogo :footer="1" />
 		</div>
 	</div>
 </template>
 
 <script>
-import FCLogo from '@/components/icons/FCLogo.vue';
-import FrappeLogo from '@/components/icons/FrappeLogo.vue';
+import BrandLogo from '@/views/general/BrandLogo.vue';
 import { notify } from '@/utils/toast';
 
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
 	components: {
-		FCLogo,
-		FrappeLogo
-	},
-	data() {
-		return {
-			appLogo: '',
-			appName: 'Frappe Cloud',
-			appFooterLogo: ''
-		};
+		BrandLogo
 	},
 	mounted() {
 		const params = new URLSearchParams(window.location.search);
@@ -76,19 +59,16 @@ export default {
 		}
 	},
 	resources: {
-		brandDetails() {
+		appName() {
 			return {
-				url: 'press.api.utils.get_app_details',
-				auto: true,
-				onSuccess(data) {
-					console.log(data);
-				}
+				url: 'press.api.utils.get_app_name',
+				auto: true
 			};
 		}
 	},
 	computed: {
-		brandDetails() {
-			return this.$resources.brandDetails.data || '';
+		appName() {
+			return this.$resources.appName.data;
 		}
 	}
 };
