@@ -396,15 +396,17 @@ class VirtualMachine(Document):
 				self.save()
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self, *args, **kwargs):
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		except frappe.QueryTimeoutError:  # lock wait timeout
+			return
 		if self.cloud_provider == "AWS EC2":
-			return self._sync_aws()
+			return self._sync_aws(*args, **kwargs)
 		elif self.cloud_provider == "OCI":
-			return self._sync_oci()
+			return self._sync_oci(*args, **kwargs)
 
 	def _sync_oci(self, instance=None):
-		if self.get_ongoing_press_job():
-			return
 		if not instance:
 			instance = self.client().get_instance(instance_id=self.instance_id).data
 		if instance and instance.lifecycle_state != "TERMINATED":
@@ -485,8 +487,6 @@ class VirtualMachine(Document):
 		self.update_servers()
 
 	def _sync_aws(self, response=None):
-		if self.get_ongoing_press_job():
-			return
 		if not response:
 			response = self.client().describe_instances(InstanceIds=[self.instance_id])
 		if response["Reservations"]:
@@ -945,7 +945,7 @@ class VirtualMachine(Document):
 					"Virtual Machine", {"instance_id": instance["InstanceId"]}
 				)
 				try:
-					machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
+					machine.sync({"Reservations": [{"Instances": [instance]}]})
 					frappe.db.commit()  # release lock
 				except Exception:
 					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
@@ -998,10 +998,12 @@ class VirtualMachine(Document):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
-			machine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc(
+				"Virtual Machine", {"instance_id": instance.id}
+			)
 			try:
-				machine._sync_oci(instance)
-				frappe.db.commit()
+				machine.sync(instance)
+				frappe.db.commit()  # release lock
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
