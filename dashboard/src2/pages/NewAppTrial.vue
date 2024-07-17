@@ -225,7 +225,7 @@
 </template>
 <script>
 import { ErrorMessage, Progress } from 'frappe-ui';
-import LoginBox from '@/views/partials/LoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue';
 import { vElementSize } from '@vueuse/components';
 import { validateSubdomain } from '@/utils';
 import SitePlansCards from '../components/SitePlansCards.vue';

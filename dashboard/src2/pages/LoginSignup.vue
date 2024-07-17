@@ -155,7 +155,7 @@
 </template>
 
 <script>
-import LoginBox from '@/views/partials/LoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 

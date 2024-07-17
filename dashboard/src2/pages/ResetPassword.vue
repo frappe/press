@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import LoginBox from '@/views/partials/LoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue';
 
 export default {
 	name: 'ResetPassword',
