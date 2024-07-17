@@ -26,7 +26,7 @@ from press.press.doctype.team.team import (
 	has_unsettled_invoices,
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
-from press.utils.telemetry import capture, identify
+from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
@@ -46,7 +46,7 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		ar = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -60,9 +60,8 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 
 	frappe.set_user(current_user)
 
-	# Telemetry: Verification email sent
-	identify(email)
-	capture("verification_email_sent", "fc_signup", ar.name)
+	# Telemetry: Account Request Created
+	capture("account_request_created", "fc_signup", email)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -145,7 +144,7 @@ def setup_account(
 			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_signup", account_request.name)
+	capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
 
 

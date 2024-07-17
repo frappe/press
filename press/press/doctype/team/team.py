@@ -724,7 +724,7 @@ class Team(Document):
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
 		# Telemetry: Added card
-		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
+		capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc
@@ -1276,7 +1276,7 @@ def handle_payment_intent_succeeded(payment_intent):
 	)
 
 	# Telemetry: Added prepaid credits
-	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
+	capture("added_card_or_prepaid_credits", "fc_signup", team.user)
 	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
