@@ -662,8 +662,7 @@ export default {
 						{
 							label: 'Config Value',
 							fieldname: 'value',
-							class: 'font-mono',
-							width: 2
+							class: 'font-mono'
 						},
 						{
 							label: 'Type',
