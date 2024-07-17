@@ -86,14 +86,16 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def after_insert(self):
-		# Telemetry: Account Request Created
-		capture("account_request_created", "fc_signup", self.email)
+		if not self.is_saas_signup():
+			# Telemetry: Account Request Created
+			capture("account_request_created", "fc_signup", self.email)
 		if self.send_email:
 			self.send_verification_email()
 		else:
-			# Telemetry: Verification Mail Sent
-			# If user used oauth, we don't send verification email but to track the event in stat, send this event
-			capture("verification_email_sent", "fc_signup", self.email)
+			if not self.is_saas_signup():
+				# Telemetry: Verification Mail Sent
+				# If user used oauth, we don't send verification email but to track the event in stat, send this event
+				capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()
@@ -145,6 +147,9 @@ class AccountRequest(Document):
 				),
 			}
 		)
+		if not self.is_saas_signup():
+			# Telemetry: Verification Mail Sent
+			capture("verification_email_sent", "fc_signup", self.email)
 		frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
@@ -152,8 +157,6 @@ class AccountRequest(Document):
 			args=args,
 			now=True,
 		)
-		# Telemetry: Verification Mail Sent
-		capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_verification_url(self):
 		if self.saas:
@@ -170,3 +173,9 @@ class AccountRequest(Document):
 		return (
 			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
 		)
+
+	def is_saas_signup(self):
+		# check whether it's a saas or erpnext signup
+		if self.erpnext or self.saas:
+			return True
+		return False
