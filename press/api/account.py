@@ -61,7 +61,7 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 	frappe.set_user(current_user)
 
 	# Telemetry: Account Request Created
-	capture("account_request_created", "fc_onboarding", email)
+	capture("account_request_created", "fc_signup", email)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -144,7 +144,7 @@ def setup_account(
 			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_onboarding", account_request.email)
+	capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
 
 
@@ -285,7 +285,7 @@ def validate_request_key(key, timezone=None):
 		product_trial_doc = (
 			frappe.get_doc("Product Trial", product_trial) if product_trial else None
 		)
-		capture("clicked_verify_link", "fc_onboarding", account_request.email)
+		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
 			"email": account_request.email,
 			"first_name": account_request.first_name,

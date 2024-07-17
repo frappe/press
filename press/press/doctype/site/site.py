@@ -466,7 +466,7 @@ class Site(Document, TagHelpers):
 			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 				from press.utils.telemetry import capture
 
-				capture("new_site_status_changed_to_active", "fc_onboarding", team.user)
+				capture("new_site_status_changed_to_active", "fc_signup", team.user)
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -1457,7 +1457,7 @@ class Site(Document, TagHelpers):
 			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 				from press.utils.telemetry import capture
 
-				capture("new_site_setup_wizard_completed", "fc_onboarding", team.user)
+				capture("new_site_setup_wizard_completed", "fc_signup", team.user)
 
 		return setup_complete
 

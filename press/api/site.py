@@ -178,7 +178,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 	if frappe.db.count("Site", {"team": team.name}) <= 1:
 		from press.utils.telemetry import capture
 
-		capture("new_site_creation_initiated", "fc_onboarding", team.user)
+		capture("new_site_creation_initiated", "fc_signup", team.user)
 
 	return {
 		"site": site.name,
