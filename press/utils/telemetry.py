@@ -38,7 +38,7 @@ def identify(site, **kwargs):
 @frappe.whitelist(allow_guest=True)
 def capture_read_event(email: str = None):
 	try:
-		capture("verification_mail_read", "fc_signup", email)
+		capture("verification_mail_read", "fc_onboarding", email)
 	except Exception as e:
 		log_error("Failed to capture read_email event", e)
 	finally:

@@ -147,7 +147,7 @@ class AccountRequest(Document):
 			now=True,
 		)
 		# Telemetry: Verification Mail Sent
-		capture("verification_mail_sent", "fc_signup", self.email)
+		capture("verification_mail_sent", "fc_onboarding", self.email)
 
 	def get_verification_url(self):
 		if self.saas:
