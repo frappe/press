@@ -1008,14 +1008,6 @@ class VirtualMachine(Document):
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
 
-	def get_ongoing_press_job(self):
-		return frappe.db.get_value(
-			"Press Job",
-			{"virtual_machine": self.name, "status": ("in", ["Pending", "Running"])},
-			"name",
-			for_update=True,
-		)
-
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Virtual Machine"
