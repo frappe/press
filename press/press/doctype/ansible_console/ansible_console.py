@@ -59,7 +59,9 @@ class AnsibleConsole(Document):
 @frappe.whitelist()
 def execute_command(doc):
 	frappe.enqueue(
-		"press.press.doctype.ansible_console.ansible_console._execute_command", doc=doc
+		"press.press.doctype.ansible_console.ansible_console._execute_command",
+		doc=doc,
+		timeout=1800,
 	)
 	return doc
 
