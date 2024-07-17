@@ -228,6 +228,20 @@ export default {
 		Summary,
 		Header
 	},
+	mounted() {
+		if (window.posthog && !this.$team.doc.onboarding.site_created) {
+			posthog.identify(this.$team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'first_new_site_creation'
+			});
+			posthog.startSessionRecording();
+		}
+	},
+	unmounted() {
+		if (window.posthog && posthog.sessionRecordingStarted()) {
+			posthog.stopSessionRecording();
+		}
+	},
 	data() {
 		return {
 			version: null,

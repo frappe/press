@@ -12,6 +12,7 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
+import posthog from 'posthog-js';
 
 let request = options => {
 	let _options = options || {};
@@ -80,6 +81,20 @@ getInitialData().then(() => {
 			},
 			logErrors: true
 		});
+	}
+
+	if (
+		window.press_frontend_posthog_project_id &&
+		window.press_frontend_posthog_host
+	) {
+		posthog.init(window.press_frontend_posthog_project_id, {
+			api_host: window.press_frontend_posthog_host,
+			person_profiles: 'identified_only',
+			session_recording: {
+				maskAllInputs: true
+			}
+		});
+		window.posthog = posthog;
 	}
 
 	importGlobals().then(() => {
