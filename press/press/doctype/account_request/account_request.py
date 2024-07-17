@@ -88,6 +88,10 @@ class AccountRequest(Document):
 	def after_insert(self):
 		if self.send_email:
 			self.send_verification_email()
+		else:
+			# Telemetry: Verification Mail Sent
+			# If user used oauth, we don't send verification email but to track the event in stat, send this event
+			capture("verification_mail_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()
