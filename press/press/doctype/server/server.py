@@ -26,6 +26,7 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class BaseServer(Document, TagHelpers):
@@ -530,7 +531,9 @@ class BaseServer(Document, TagHelpers):
 	def increase_disk_size(self, increment=50):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
-		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine: "VirtualMachine" = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine
+		)
 		virtual_machine.increase_disk_size(increment)
 		if self.provider == "AWS EC2":
 			self.enqueue_extend_ec2_volume()

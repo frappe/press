@@ -148,9 +148,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def check_if_duplicate(self):
 		if frappe.db.exists("Marketplace App", self.name):
-			frappe.throw(
-				f"App {self.name} already exists and is owned by some other team. Please contact support."
-			)
+			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):
