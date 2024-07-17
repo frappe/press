@@ -86,6 +86,8 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def after_insert(self):
+		# Telemetry: Account Request Created
+		capture("account_request_created", "fc_signup", self.email)
 		if self.send_email:
 			self.send_verification_email()
 		else:

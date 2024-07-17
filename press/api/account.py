@@ -60,9 +60,6 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 
 	frappe.set_user(current_user)
 
-	# Telemetry: Account Request Created
-	capture("account_request_created", "fc_signup", email)
-
 
 @frappe.whitelist(allow_guest=True)
 def setup_account(
