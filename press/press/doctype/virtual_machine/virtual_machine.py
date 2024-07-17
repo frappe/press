@@ -1009,7 +1009,7 @@ class VirtualMachine(Document):
 	def get_ongoing_press_job(self):
 		return frappe.db.get_value(
 			"Press Job",
-			{"virtual_machine": self.name, "status": ("in", "Pending", "Running")},
+			{"virtual_machine": self.name, "status": ("in", ["Pending", "Running"])},
 			"name",
 			for_update=True,
 		)
