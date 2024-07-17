@@ -164,3 +164,7 @@ class PressJob(Document):
 
 	def on_trash(self):
 		frappe.db.delete("Press Job Step", {"job": self.name})
+
+
+def on_doctype_update():
+	frappe.db.add_index("Press Job", ["virtual_machine", "status"])

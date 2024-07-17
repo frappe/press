@@ -403,6 +403,8 @@ class VirtualMachine(Document):
 			return self._sync_oci()
 
 	def _sync_oci(self, instance=None):
+		if self.get_ongoing_press_job():
+			return
 		if not instance:
 			instance = self.client().get_instance(instance_id=self.instance_id).data
 		if instance and instance.lifecycle_state != "TERMINATED":
@@ -483,6 +485,8 @@ class VirtualMachine(Document):
 		self.update_servers()
 
 	def _sync_aws(self, response=None):
+		if self.get_ongoing_press_job():
+			return
 		if not response:
 			response = self.client().describe_instances(InstanceIds=[self.instance_id])
 		if response["Reservations"]:
@@ -937,10 +941,12 @@ class VirtualMachine(Document):
 		)
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
-				machine = frappe.get_doc("Virtual Machine", {"instance_id": instance["InstanceId"]})
+				machine: VirtualMachine = frappe.get_doc(
+					"Virtual Machine", {"instance_id": instance["InstanceId"]}
+				)
 				try:
 					machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
-					frappe.db.commit()
+					frappe.db.commit()  # release lock
 				except Exception:
 					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 					frappe.db.rollback()
@@ -999,6 +1005,14 @@ class VirtualMachine(Document):
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
+
+	def get_ongoing_press_job(self):
+		return frappe.db.get_value(
+			"Press Job",
+			{"virtual_machine": self.name, "status": ("in", "Pending", "Running")},
+			"name",
+			for_update=True,
+		)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
