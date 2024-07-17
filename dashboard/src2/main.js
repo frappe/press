@@ -13,6 +13,7 @@ import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
 import posthog from 'posthog-js';
+import { toast } from 'vue-sonner';
 
 let request = options => {
 	let _options = options || {};
@@ -30,6 +31,11 @@ setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
+setConfig('fallbackErrorHandler', error => {
+	toast.error(
+		error.messages.length ? error.messages.join('\n') : error.message
+	);
+});
 
 let app;
 let socket;
