@@ -10,9 +10,7 @@
 						images.
 					</p>
 				</div>
-				<Button
-					:variant="editing ? 'solid' : 'subtle'"
-					@click="$resources.updateListing.submit()"
+				<Button :variant="editing ? 'solid' : 'subtle'" @click="updateListing"
 					>Save</Button
 				>
 			</div>
@@ -216,13 +214,6 @@ export default {
 						method: 'update_listing',
 						args: this.marketplaceApp
 					};
-				},
-				onSuccess() {
-					toast.success('Updated Successfully');
-					this.editing = false;
-				},
-				onError(e) {
-					toast.error(e);
 				}
 			};
 		},
@@ -241,20 +232,17 @@ export default {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
 				},
 				onError(e) {
-					toast.error(e);
+					toast.error(
+						e.messages.length
+							? e.messages.join('\n')
+							: e.message || 'Failed to fetch listing data'
+					);
 				}
 			};
 		},
 		removeScreenshot() {
 			return {
-				url: 'press.api.marketplace.remove_app_screenshot',
-				onSuccess(response) {
-					toast.success('Removed screenshot');
-					this.$resources.listingData.reload();
-				},
-				onError(e) {
-					toast.error(e);
-				}
+				url: 'press.api.marketplace.remove_app_screenshot'
 			};
 		}
 	},
@@ -266,16 +254,44 @@ export default {
 		imageAddFailure(e) {
 			toast.error(e);
 		},
+		updateListing() {
+			toast.promise(this.$resources.updateListing.submit(), {
+				success: () => {
+					this.editing = false;
+					return 'Updated successfully';
+				},
+				loading: 'Updating listing...',
+				error: err => {
+					return err.messages.length
+						? err.messages.join('\n')
+						: err.message || 'Failed to update listing';
+				}
+			});
+		},
 		dropdownOptions(image) {
 			return [
 				{ label: 'View', onClick: () => window.open(image) },
 				{
 					label: 'Delete',
 					onClick: () => {
-						this.$resources.removeScreenshot.submit({
-							name: this.app.doc.name,
-							file: image
-						});
+						toast.promise(
+							this.$resources.removeScreenshot.submit({
+								name: this.app.doc.name,
+								file: image
+							}),
+							{
+								loading: 'Deleting screenshot...',
+								success: () => {
+									this.$resources.listingData.reload();
+									return 'Screenshot deleted successfully';
+								},
+								error: err => {
+									return err.messages.length
+										? err.messages.join('\n')
+										: err.message || 'Failed to delete screenshot';
+								}
+							}
+						);
 					}
 				}
 			];
