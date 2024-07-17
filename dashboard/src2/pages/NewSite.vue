@@ -229,7 +229,6 @@ export default {
 		Header
 	},
 	mounted() {
-		console.log("hello")
 		if (window.posthog && !this.$team.doc.onboarding.site_created) {
 			window.posthog.identify(this.$team.doc.user, {
 				app: 'frappe_cloud',
