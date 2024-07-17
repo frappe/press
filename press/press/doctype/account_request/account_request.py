@@ -93,7 +93,7 @@ class AccountRequest(Document):
 		else:
 			# Telemetry: Verification Mail Sent
 			# If user used oauth, we don't send verification email but to track the event in stat, send this event
-			capture("verification_mail_sent", "fc_signup", self.email)
+			capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()
@@ -153,7 +153,7 @@ class AccountRequest(Document):
 			now=True,
 		)
 		# Telemetry: Verification Mail Sent
-		capture("verification_mail_sent", "fc_signup", self.email)
+		capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_verification_url(self):
 		if self.saas:
