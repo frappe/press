@@ -33,7 +33,7 @@ setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
 setConfig('fallbackErrorHandler', error => {
 	toast.error(
-		error.messages.length ? error.messages.join('\n') : error.message
+		error.messages?.length ? error.messages.join('\n') : error.message
 	);
 });
 
