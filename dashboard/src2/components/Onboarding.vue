@@ -232,16 +232,16 @@ export default {
 	},
 	mounted() {
 		if (window.posthog) {
-			posthog.identify(this.$team.doc.user, {
+			window.posthog.identify(this.$team.doc.user, {
 				app: 'frappe_cloud',
 				action: 'onboarding'
 			});
-			posthog.startSessionRecording();
+			window.posthog.startSessionRecording();
 		}
 	},
 	unmounted() {
-		if (window.posthog && posthog.sessionRecordingStarted()) {
-			posthog.stopSessionRecording();
+		if (window.posthog && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
 		}
 	},
 	data() {
