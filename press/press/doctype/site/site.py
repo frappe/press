@@ -3025,7 +3025,13 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 
 def sync_sites_setup_wizard_complete_status():
 	sites = frappe.get_all(
-		"Site", filters={"status": "Active", "setup_wizard_complete": 0}, pluck="name"
+		"Site",
+		filters={
+			"status": "Active",
+			"setup_wizard_complete": 0,
+			"team": ("!=", "Administrator"),
+		},
+		pluck="name",
 	)
 	for site in sites:
 		frappe.enqueue_doc("Site", site, method="is_setup_wizard_complete")
