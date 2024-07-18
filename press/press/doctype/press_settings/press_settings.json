@@ -161,6 +161,7 @@
   "agent_sentry_dsn",
   "column_break_105",
   "agent_github_access_token",
+  "branch",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -1197,11 +1198,17 @@
    "fieldtype": "Currency",
    "label": "Micro Debit Charge (USD)",
    "precision": "0"
+  },
+  {
+   "default": "master",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-07-15 17:31:59.916926",
+ "modified": "2024-07-18 16:26:48.824438",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
