@@ -71,7 +71,7 @@ def get_context(context):
 
 
 @frappe.whitelist(allow_guest=True)
-def search(query, offset=0, limit=20):
+def search(query: str, offset: int = 0, limit: int = 20):
 	return frappe.qb.get_query(
 		"Marketplace App",
 		filters={
