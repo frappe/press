@@ -1467,6 +1467,12 @@ class Site(Document, TagHelpers):
 
 		return setup_complete
 
+	def fetch_setup_wizard_complete_status(self):
+		try:
+			self.is_setup_wizard_complete()
+		except:
+			pass
+
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
 		if self.status in ("Active", "Archived", "Inactive", "Suspended"):
@@ -3034,4 +3040,4 @@ def sync_sites_setup_wizard_complete_status():
 		pluck="name",
 	)
 	for site in sites:
-		frappe.enqueue_doc("Site", site, method="is_setup_wizard_complete")
+		frappe.enqueue_doc("Site", site, method="fetch_setup_wizard_complete_status")
