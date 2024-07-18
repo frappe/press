@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List
+from contextlib import suppress
 
 import dateutil.parser
 import frappe
@@ -1468,10 +1469,8 @@ class Site(Document, TagHelpers):
 		return setup_complete
 
 	def fetch_setup_wizard_complete_status(self):
-		try:
+		with suppress(Exception):
 			self.is_setup_wizard_complete()
-		except:
-			pass
 
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
