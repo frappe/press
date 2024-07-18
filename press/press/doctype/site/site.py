@@ -461,7 +461,7 @@ class Site(Document, TagHelpers):
 			self.rename(self._get_site_name(self.subdomain))
 
 		# Telemetry: Send event if first site status changed to Active
-		if self.status == "Active":
+		if self.status == "Active" and self.has_value_changed("status"):
 			team = frappe.get_doc("Team", self.team)
 			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 				from press.utils.telemetry import capture
@@ -635,6 +635,12 @@ class Site(Document, TagHelpers):
 		from press.press.doctype.press_role.press_role import (
 			add_permission_for_newly_created_doc,
 		)
+
+		team = frappe.get_doc("Team", self.team)
+		if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+			from press.utils.telemetry import capture
+
+			capture("created_first_site", "fc_signup", team.user)
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
