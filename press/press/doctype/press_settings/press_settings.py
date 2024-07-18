@@ -39,6 +39,7 @@ class PressSettings(Document):
 		backup_region: DF.Data | None
 		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
 		bench_configuration: DF.Code
+		branch: DF.Data | None
 		build_directory: DF.Data | None
 		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
