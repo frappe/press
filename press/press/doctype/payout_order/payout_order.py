@@ -47,6 +47,8 @@ class PayoutOrder(Document):
 		"period_end",
 		"team",
 		"mode_of_payment",
+		"net_total_inr",
+		"net_total_usd",
 		"status",
 		"total_amount",
 		"items",

@@ -40,7 +40,13 @@ export default {
 		options() {
 			return {
 				doctype: 'Payout Order',
-				fields: ['period_end', 'mode_of_payment', 'total_amount', 'status'],
+				fields: [
+					'period_end',
+					'mode_of_payment',
+					'status',
+					'net_total_inr',
+					'net_total_usd'
+				],
 				filterControls: () => {
 					return [
 						{
@@ -69,10 +75,17 @@ export default {
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
 					{
 						label: 'Total',
-						fieldname: 'total_amount',
+						fieldname: 'net_total_inr',
 						align: 'right',
-						format: (value, row) => {
-							return this.$format.userCurrency(value);
+						format: (_, row) => {
+							let total = 0;
+							if (this.$team.doc.currency === 'INR') {
+								total = row.net_total_inr + row.net_total_usd * 82;
+							} else {
+								total = row.net_total_inr / 82 + row.net_total_usd;
+							}
+
+							return this.$format.userCurrency(total);
 						}
 					}
 				],
