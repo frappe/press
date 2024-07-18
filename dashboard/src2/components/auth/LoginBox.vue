@@ -4,11 +4,11 @@
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
-						<FCLogo class="inline-block h-7 w-7" />
+						<BrandLogo :header="true" />
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
-							Frappe Cloud
+							{{ appName }}
 						</span>
 					</div>
 				</slot>
@@ -27,22 +27,21 @@
 			</div>
 		</div>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<FrappeLogo class="h-4" />
+			<BrandLogo :footer="true" />
 		</div>
 	</div>
 </template>
 
 <script>
-import FCLogo from '@/components/icons/FCLogo.vue';
-import FrappeLogo from '@/components/icons/FrappeLogo.vue';
+import BrandLogo from '../BrandLogo.vue';
 import { notify } from '@/utils/toast';
+import { getBrandInfo } from '../../data/branding';
 
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
 	components: {
-		FCLogo,
-		FrappeLogo
+		BrandLogo
 	},
 	mounted() {
 		const params = new URLSearchParams(window.location.search);
@@ -58,6 +57,12 @@ export default {
 	methods: {
 		redirectForFrappeioAuth() {
 			window.location = '/f-login';
+		}
+	},
+	computed: {
+		appName() {
+			let brandDetails = getBrandInfo();
+			return brandDetails.app_name;
 		}
 	}
 };

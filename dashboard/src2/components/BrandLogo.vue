@@ -21,6 +21,7 @@
 <script>
 import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
+import { getBrandInfo } from '../data/branding';
 
 export default {
 	name: 'BrandLogo',
@@ -29,17 +30,9 @@ export default {
 		FrappeLogo
 	},
 	props: ['header', 'footer'],
-	resources: {
-		brandDetails() {
-			return {
-				url: 'press.api.utils.get_brand_details',
-				auto: true
-			};
-		}
-	},
 	computed: {
 		brandDetails() {
-			return this.$resources.brandDetails.data;
+			return getBrandInfo();
 		}
 	}
 };

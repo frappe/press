@@ -11,5 +11,5 @@ export function fetchBrandInfo() {
 }
 
 export function getBrandInfo() {
-	return brand.data || [];
+	return BrandInfo.data || [];
 }

@@ -32,10 +32,10 @@
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
+						<BrandLogo :header="true" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
-								Frappe Cloud
+								{{ appName }}
 							</div>
 							<Tooltip :text="$team?.doc?.user || null">
 								<div
@@ -92,6 +92,8 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
+import { getBrandInfo } from '../data/branding';
+import BrandLogo from './BrandLogo.vue';
 
 export default {
 	name: 'AppSidebar',
@@ -101,7 +103,8 @@ export default {
 			import('./SwitchTeamDialog.vue')
 		),
 		Tooltip,
-		NavigationItems
+		NavigationItems,
+		BrandLogo
 	},
 	data() {
 		return {
@@ -117,6 +120,12 @@ export default {
 				'https://frappecloud.com/frappe-cloud-feedback/new',
 				'_blank'
 			);
+		}
+	},
+	compute: {
+		appName() {
+			let brandInfo = getBrandInfo();
+			return brandInfo.app_name;
 		}
 	}
 };
