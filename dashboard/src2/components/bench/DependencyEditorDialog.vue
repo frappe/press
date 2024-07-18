@@ -4,7 +4,7 @@
 			title: 'Edit Dependency',
 			actions: [
 				{
-					label: 'Edit',
+					label: 'Change',
 					variant: 'solid',
 					loading: groupDocResource?.updateDependency?.loading,
 					onClick: editDependency
@@ -17,10 +17,30 @@
 			<div class="space-y-4">
 				<FormControl
 					type="select"
+					:disabled="useCustomVersion"
 					:label="dependency.title"
 					:options="dependencyOptions"
 					v-model="selectedDependencyVersion"
 				/>
+
+				<div v-if="useCustomVersion">
+					<FormControl
+						type="data"
+						label="Custom Version"
+						placeholder="Please enter a custom version..."
+						v-model="customVersion"
+					/>
+					<p class="mt-2 text-sm text-yellow-600">
+						Please ensure custom version of the dependency exists before using
+						it.
+					</p>
+				</div>
+				<FormControl
+					type="checkbox"
+					label="Use Custom Version"
+					v-model="useCustomVersion"
+				/>
+
 				<ErrorMessage :message="groupDocResource?.updateDependency?.error" />
 			</div>
 		</template>
@@ -36,6 +56,8 @@ export default {
 	data() {
 		return {
 			showDialog: true,
+			useCustomVersion: true,
+			customVersion: '',
 			selectedDependencyVersion: null,
 			groupDocResource: getCachedDocumentResource(
 				'Release Group',
