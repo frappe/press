@@ -10,7 +10,6 @@ import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
-
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -33,6 +32,7 @@ from press.utils import (
 )
 
 if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
 
 
@@ -628,6 +628,13 @@ def get_installed_apps_in_version(name):
 		app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 
 	return apps
+
+
+@frappe.whitelist()
+@protected("Bench")
+def get_processes(name):
+	bench: "Bench" = frappe.get_doc("Bench", name)
+	return bench.supervisorctl_status()
 
 
 @frappe.whitelist()
