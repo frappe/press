@@ -4,10 +4,10 @@
 			title: 'Edit Dependency',
 			actions: [
 				{
-					label: 'Change',
+					label: 'Update',
 					variant: 'solid',
 					loading: groupDocResource?.updateDependency?.loading,
-					onClick: editDependency
+					onClick: updateDependency
 				}
 			]
 		}"
@@ -26,7 +26,7 @@
 				<div v-if="useCustomVersion">
 					<FormControl
 						type="data"
-						label="Custom Version"
+						:label="`Custom ${dependency.title}`"
 						placeholder="Please enter a custom version..."
 						v-model="customVersion"
 					/>
@@ -41,7 +41,9 @@
 					v-model="useCustomVersion"
 				/>
 
-				<ErrorMessage :message="groupDocResource?.updateDependency?.error" />
+				<ErrorMessage
+					:message="groupDocResource?.updateDependency?.error || error"
+				/>
 			</div>
 		</template>
 	</Dialog>
@@ -52,12 +54,16 @@ import { getCachedDocumentResource } from 'frappe-ui';
 
 export default {
 	name: 'DependencyEditorDialog',
-	props: ['group', 'dependency'],
+	props: {
+		group: { required: true, type: Object },
+		dependency: { required: true, type: Object }
+	},
 	data() {
 		return {
+			error: '',
 			showDialog: true,
-			useCustomVersion: true,
 			customVersion: '',
+			useCustomVersion: false,
 			selectedDependencyVersion: null,
 			groupDocResource: getCachedDocumentResource(
 				'Release Group',
@@ -78,6 +84,13 @@ export default {
 				label: v,
 				value: v
 			}));
+		},
+		version() {
+			if (this.useCustomVersion) {
+				return this.customVersion;
+			}
+
+			return this.selectedDependencyVersion;
 		}
 	},
 	resources: {
@@ -100,12 +113,44 @@ export default {
 			};
 		}
 	},
+	mounted() {
+		window.d = this;
+	},
 	methods: {
-		editDependency() {
+		setErrorIfCannotUpdate() {
+			if (this.useCustomVersion && !this.customVersion) {
+				this.error = 'Please enter a custom version';
+				return true;
+			}
+
+			if (this.dependency.version === this.selectedDependencyVersion) {
+				this.error = 'Selected version is the same as previous version';
+				return true;
+			}
+
+			if (this.dependency.version === this.customVersion) {
+				this.error = 'Custom version entered is the same as previous version';
+				return true;
+			}
+
+			if (!this.selectedDependencyVersion) {
+				this.error = 'Please select a version';
+				return true;
+			}
+
+			this.error = '';
+			return false;
+		},
+		updateDependency() {
+			if (this.setErrorIfCannotUpdate()) {
+				return;
+			}
+
 			this.groupDocResource.updateDependency.submit(
 				{
 					dependency_name: this.dependency.name,
-					version: this.selectedDependencyVersion
+					version: this.version,
+					is_custom: this.useCustomVersion
 				},
 				{
 					onSuccess: () => {
