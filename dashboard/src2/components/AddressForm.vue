@@ -43,6 +43,8 @@ export default {
 	mounted() {
 		if (this.address?.gstin && this.address.gstin !== 'Not Applicable') {
 			this.gstApplicable = true;
+		} else {
+			this.update('gstin', 'Not Applicable');
 		}
 	},
 	watch: {
@@ -80,7 +82,9 @@ export default {
 			return {
 				url: 'press.api.billing.validate_gst',
 				makeParams() {
-					return { address: this.address };
+					return {
+						address: this.address
+					};
 				}
 			};
 		}
@@ -93,12 +97,8 @@ export default {
 			});
 		},
 		async validateGST() {
-			const gstinNumber = this.gstApplicable
-				? this.address.gstin
-				: 'Not Applicable';
-			this.update('gstin', gstinNumber);
-			this.address.gstin = gstinNumber;
-			await this.$resources.validateGST.submit();
+			this.update('gstin', this.gstApplicable	? this.address.gstin : 'Not Applicable');
+			await this.$resources.validateGST.submit()
 		},
 		async validateValues() {
 			let { country } = this.address;
