@@ -144,7 +144,7 @@
 							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
 						>
 							<div
-								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center"
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
 									'bg-gray-100': isAutomatedBilling
 								}"
@@ -153,7 +153,7 @@
 								Automated Billing
 							</div>
 							<div
-								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center"
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
 									'bg-gray-100': !isAutomatedBilling
 								}"
