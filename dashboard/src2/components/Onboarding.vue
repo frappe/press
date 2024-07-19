@@ -251,7 +251,7 @@
 								/>
 								<div>
 									<span class="text-base font-semibold">{{ app.title }}</span>
-									<p class="line-clamp mt-1 text-sm text-gray-600">
+									<p class="line-clamp-1 mt-1 text-sm text-gray-600">
 										{{ app.description }}
 									</p>
 								</div>
