@@ -12,6 +12,8 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
+import posthog from 'posthog-js';
+import { toast } from 'vue-sonner';
 
 let request = options => {
 	let _options = options || {};
@@ -29,6 +31,11 @@ setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
+setConfig('fallbackErrorHandler', error => {
+	toast.error(
+		error.messages?.length ? error.messages.join('\n') : error.message
+	);
+});
 
 let app;
 let socket;
@@ -80,6 +87,22 @@ getInitialData().then(() => {
 			},
 			logErrors: true
 		});
+	}
+
+	if (
+		window.press_frontend_posthog_project_id &&
+		window.press_frontend_posthog_host
+	) {
+		posthog.init(window.press_frontend_posthog_project_id, {
+			api_host: window.press_frontend_posthog_host,
+			person_profiles: 'identified_only',
+			autocapture: false,
+			disable_session_recording: true,
+			session_recording: {
+				maskAllInputs: true
+			}
+		});
+		window.posthog = posthog;
 	}
 
 	importGlobals().then(() => {

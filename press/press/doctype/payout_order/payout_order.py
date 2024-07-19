@@ -1,16 +1,16 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
-from typing import List
+from datetime import date
 from itertools import groupby
-from press.utils import log_error
+from typing import List
+
+import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
-
-from datetime import date
+from press.utils import log_error
 
 
 class PayoutOrder(Document):
@@ -24,6 +24,8 @@ class PayoutOrder(Document):
 		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
+		currency_inr: DF.Data | None
+		currency_usd: DF.Data | None
 		due_date: DF.Date | None
 		frappe_purchase_order: DF.Data | None
 		ignore_commission: DF.Check
@@ -34,33 +36,34 @@ class PayoutOrder(Document):
 		notes: DF.SmallText | None
 		period_end: DF.Date | None
 		period_start: DF.Date | None
-		recipient: DF.Link
 		recipient_currency: DF.Data | None
 		status: DF.Literal["Draft", "Paid", "Commissioned"]
+		team: DF.Link
+		total_amount: DF.Currency
 		type: DF.Literal["Marketplace", "SaaS"]
 	# end: auto-generated types
 
 	dashboard_fields = [
 		"period_end",
-		"recipient",
+		"team",
 		"mode_of_payment",
-		"status",
 		"net_total_inr",
 		"net_total_usd",
+		"status",
+		"total_amount",
 		"items",
 	]
 
 	@staticmethod
 	def get_list_query(query):
 		PayoutOrder = frappe.qb.DocType("Payout Order")
-		query = query.where(
-			(PayoutOrder.docstatus != 2) & (PayoutOrder.recipient == frappe.local.team().name)
-		)
+		query = query.where((PayoutOrder.docstatus != 2))
 		return query
 
 	def validate(self):
 		self.validate_items()
 		self.validate_net_totals()
+		self.compute_total_amount()
 
 	def validate_items(self):
 		for row in self.items:
@@ -101,7 +104,7 @@ class PayoutOrder(Document):
 					{
 						"doctype": "Marketplace App Payment",
 						"app": row.document_name,
-						"team": self.recipient,
+						"team": self.team,
 					}
 				).insert(ignore_permissions=True)
 			)
@@ -132,6 +135,16 @@ class PayoutOrder(Document):
 		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
 			self.status = "Commissioned"
 
+	def compute_total_amount(self):
+		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
+		if self.recipient_currency == "USD":
+			inr_in_usd = 0
+			if self.net_total_inr > 0:
+				inr_in_usd = self.net_total_inr / exchange_rate
+			self.total_amount = self.net_total_usd + inr_in_usd
+		elif self.recipient_currency == "INR":
+			self.total_amount = self.net_total_inr + (self.net_total_usd * exchange_rate)
+
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
 			frappe.throw(
@@ -143,7 +156,6 @@ class PayoutOrder(Document):
 def get_invoice_item_for_po_item(
 	invoice_name: str, payout_order_item: PayoutOrderItem
 ) -> InvoiceItem | None:
-
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -181,21 +193,18 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
 		try:
-
 			item_names = [i.name for i in items]
 
 			po_exists = frappe.db.exists(
-				"Payout Order", {"recipient": app_team, "period_end": period_end}
+				"Payout Order", {"team": app_team, "period_end": period_end}
 			)
 
 			if not po_exists:
 				create_payout_order_from_invoice_item_names(
-					item_names, recipient=app_team, period_start=period_start, period_end=period_end
+					item_names, team=app_team, period_start=period_start, period_end=period_end
 				)
 			else:
-				po = frappe.get_doc(
-					"Payout Order", {"recipient": app_team, "period_end": period_end}
-				)
+				po = frappe.get_doc("Payout Order", {"team": app_team, "period_end": period_end})
 				add_invoice_items_to_po(po, item_names)
 
 			frappe.db.set_value(
@@ -268,7 +277,7 @@ def get_unaccounted_marketplace_invoice_items():
 @frappe.whitelist()
 def create_payout_order_from_invoice_items(
 	invoice_items: List[InvoiceItem],
-	recipient: str,
+	team: str,
 	period_start: date,
 	period_end: date,
 	mode_of_payment: str = "Cash",
@@ -279,7 +288,7 @@ def create_payout_order_from_invoice_items(
 	po = frappe.get_doc(
 		{
 			"doctype": "Payout Order",
-			"recipient": recipient,
+			"team": team,
 			"mode_of_payment": mode_of_payment,
 			"notes": notes,
 			"type": type,

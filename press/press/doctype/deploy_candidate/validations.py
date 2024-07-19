@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import frappe
 import semantic_version as sv
+
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	PackageManagers,

@@ -2,15 +2,15 @@
 # For license information, please see license.txt
 
 import gzip
+from datetime import datetime
 
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+from frappe.utils import add_to_date, convert_utc_to_system_timezone, now_datetime
 
 from press.utils import log_error
-from datetime import datetime
-from frappe.utils import convert_utc_to_system_timezone, add_to_date, now_datetime
 
 
 class MariaDBStalk(Document):
@@ -21,6 +21,7 @@ class MariaDBStalk(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.mariadb_stalk_diagnostic.mariadb_stalk_diagnostic import (
 			MariaDBStalkDiagnostic,
 		)

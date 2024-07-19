@@ -116,7 +116,7 @@
 </template>
 
 <script>
-import LoginBox from '@/views/partials/LoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';

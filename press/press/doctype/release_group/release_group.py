@@ -2,21 +2,22 @@
 
 import json
 from contextlib import suppress
+from datetime import datetime
 from functools import cached_property
 from itertools import chain
-from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, TypedDict
 
 import frappe
-from frappe.query_builder.functions import Count
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cstr, flt, sbool, get_url
+from frappe.query_builder.functions import Count
+from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
+
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -31,7 +32,6 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
-
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -63,6 +63,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.common_site_config.common_site_config import CommonSiteConfig
 		from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
 		from press.press.doctype.release_group_dependency.release_group_dependency import (
@@ -887,11 +888,10 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@property
 	def deploy_in_progress(self):
+		from press.press.doctype.bench.bench import TRANSITORY_STATES as BENCH_TRANSITORY
 		from press.press.doctype.deploy_candidate.deploy_candidate import (
 			TRANSITORY_STATES as DC_TRANSITORY,
 		)
-
-		from press.press.doctype.bench.bench import TRANSITORY_STATES as BENCH_TRANSITORY
 
 		if not self.last_dc_info:
 			return False
@@ -1369,9 +1369,30 @@ def new_release_group(
 ):
 	if cluster:
 		if not server:
+			restricted_release_group_names = frappe.db.get_all(
+				"Site Plan Release Group",
+				pluck="release_group",
+				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+				distinct=True,
+			)
+			restricted_server_names = frappe.db.get_all(
+				"Release Group Server",
+				pluck="server",
+				filters={
+					"parenttype": "Release Group",
+					"parentfield": "servers",
+					"parent": ("in", restricted_release_group_names),
+				},
+				distinct=True,
+			)
 			server = frappe.get_all(
 				"Server",
-				{"status": "Active", "cluster": cluster, "use_for_new_benches": True},
+				{
+					"status": "Active",
+					"cluster": cluster,
+					"use_for_new_benches": True,
+					"name": ("not in", restricted_server_names),
+				},
 				pluck="name",
 				limit=1,
 			)[0]

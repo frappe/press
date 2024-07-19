@@ -7,10 +7,10 @@ import boto3
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
-from tenacity import retry, stop_after_attempt, wait_fixed
-from tenacity.retry import retry_if_result
 from oci.core import ComputeClient
 from oci.core.models import CreateImageDetails
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_result
 
 
 class VirtualMachineImage(Document):

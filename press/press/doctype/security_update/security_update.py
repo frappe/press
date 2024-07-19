@@ -1,12 +1,14 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
 from frappe.model.document import Document
+from frappe.utils import now_datetime
+
 from press.runner import Ansible
 from press.utils import log_error
-import re
-from frappe.utils import now_datetime
 
 
 class SecurityUpdate(Document):

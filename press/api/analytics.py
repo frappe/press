@@ -2,30 +2,35 @@
 # For license information, please see license.txt
 
 
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search, A
-import frappe
-from pytz import timezone as pytz_timezone
-import requests
 import json
+from datetime import datetime, timedelta
+
+import frappe
+import requests
 import sqlparse
-from frappe.utils import flt
-from press.api.site import protected
-from press.press.doctype.site_plan.site_plan import get_plan_config
+from elasticsearch import Elasticsearch
+from elasticsearch_dsl import A, Search
 from frappe.utils import (
 	convert_utc_to_timezone,
+	flt,
 	get_datetime,
 	get_datetime_str,
 	get_system_timezone,
 )
 from frappe.utils.password import get_decrypted_password
-from datetime import datetime, timedelta
-from press.agent import Agent
-from press.press.report.binary_log_browser.binary_log_browser import (
-	get_files_in_timespan,
-	convert_user_timezone_to_utc,
-)
+from pytz import timezone as pytz_timezone
 
+from press.agent import Agent
+from press.api.site import protected
+from press.press.doctype.site_plan.site_plan import get_plan_config
+from press.press.report.binary_log_browser.binary_log_browser import (
+	convert_user_timezone_to_utc,
+	get_files_in_timespan,
+)
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	execute,
+	analyze_queries,
+)
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -38,7 +43,6 @@ except ImportError:
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
-
 	timespan, timegrain = {
 		"1h": (60 * 60, 60),
 		"6h": (6 * 60 * 60, 5 * 60),
@@ -68,6 +72,12 @@ def get(name, timezone, duration="7d"):
 	)
 	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
+	check = slow_logs_by_duration["datasets"]
+	SLOW_QUERY_DURATION_THRESHOLD = 50
+	has_slow_queries = any(
+		max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check
+	)
+
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
@@ -91,6 +101,7 @@ def get(name, timezone, duration="7d"):
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
+		"has_slow_queries": has_slow_queries,
 	}
 
 
@@ -399,7 +410,8 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 			},
 		)
 		.exclude(
-			"wildcard", mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*"  # noqa
+			"wildcard",
+			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
 		)
 		.extra(size=0)
 	)
@@ -693,29 +705,35 @@ def mariadb_processlist(site):
 
 @frappe.whitelist()
 @protected("Site")
-def mariadb_slow_queries(site, start, end, pattern=".*", max_lines=100):
-	from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
-		get_slow_query_logs,
+def mariadb_slow_queries(
+	name,
+	start_datetime,
+	stop_datetime,
+	max_lines=1000,
+	search_pattern=".*",
+	normalize_queries=True,
+	analyze=False,
+):
+	meta = frappe._dict(
+		{
+			"site": name,
+			"start_datetime": start_datetime,
+			"stop_datetime": stop_datetime,
+			"max_lines": max_lines,
+			"search_pattern": search_pattern,
+			"normalize_queries": normalize_queries,
+			"analyze": analyze,
+		}
 	)
-	from press.utils import convert_user_timezone_to_utc
+	columns, data = execute(filters=meta)
+	ret = {"columns": columns, "data": data}
+	return ret
 
-	db_name = frappe.db.get_value("Site", site, "database_name")
-	rows = get_slow_query_logs(
-		db_name,
-		convert_user_timezone_to_utc(start),
-		convert_user_timezone_to_utc(end),
-		pattern,
-		max_lines,
-	)
 
-	for row in rows:
-		row["query"] = sqlparse.format(
-			row["query"].strip(), keyword_case="upper", reindent=True
-		)
-		row["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
-			get_system_timezone(),
-		)
+@frappe.whitelist()
+@protected("Site")
+def mariadb_analyze_query(name, rows):
+	rows = analyze_queries(data=rows, site=name)
 	return rows
 
 
@@ -796,3 +814,28 @@ def plausible_analytics(name):
 	)
 
 	return response
+
+
+def get_doctype_name(table_name: str) -> str:
+	return table_name.removeprefix("tab")
+
+
+@frappe.whitelist()
+@protected("Site")
+def mariadb_add_suggested_index(name, table, column):
+	record_exists = frappe.db.exists(
+		"Agent Job",
+		{
+			"site": name,
+			"status": ["in", ["Undelivered", "Running", "Pending"]],
+			"job_type": "Add Database Index",
+		},
+	)
+	if record_exists:
+		frappe.throw(
+			"There is already a pending job for Add Database Index. Please wait until finished."
+		)
+	doctype = get_doctype_name(table)
+	site = frappe.get_cached_doc("Site", name)
+	agent = Agent(site.server)
+	agent.add_database_index(site, doctype=doctype, columns=[column])

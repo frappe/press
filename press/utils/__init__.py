@@ -302,6 +302,16 @@ def get_frappe_backups(url, email, password):
 	return RemoteFrappeSite(url, email, password).get_backups()
 
 
+def is_allowed_access_to_restricted_site_plans():
+	team = get_current_team(get_doc=True)
+	return team.allow_access_to_restricted_site_plans
+
+
+def is_allowed_access_performance_tuning():
+	team = get_current_team(get_doc=True)
+	return team.enable_performance_tuning
+
+
 class RemoteFrappeSite:
 	def __init__(self, url, usr, pwd):
 		if not url.startswith("http"):

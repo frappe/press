@@ -1,6 +1,7 @@
 import frappe
-from frappe.utils.data import today
 from frappe.utils import flt
+from frappe.utils.data import today
+
 from press.utils import get_current_team
 
 

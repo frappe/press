@@ -23,6 +23,8 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
+from rq.job import Job
+
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
@@ -38,16 +40,15 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 )
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
+	get_build_server,
 	get_package_manager_files,
 	is_suspended,
 	load_pyproject,
-	get_build_server,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
-from rq.job import Job
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -55,7 +56,6 @@ TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
 if typing.TYPE_CHECKING:
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 
@@ -68,6 +68,7 @@ class DeployCandidate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 			DeployCandidateApp,
 		)
@@ -238,7 +239,7 @@ class DeployCandidate(Document):
 		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
-		user, session_data, team, = (
+		(user, session_data, team,) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(True),
@@ -483,7 +484,6 @@ class DeployCandidate(Document):
 		deploy_after_build: bool,
 		no_push: bool,
 	) -> None:
-
 		context_filename = self._package_and_upload_context()
 		settings = self._fetch_registry_settings()
 
@@ -1062,7 +1062,6 @@ class DeployCandidate(Document):
 		self.additional_packages = []
 		dep_versions = {d.dependency: d.version for d in self.dependencies}
 		for p in self.packages:
-
 			#  second clause cause: '/opt/certbot/bin/pip'
 			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith(
 				"/pip"
@@ -1916,6 +1915,24 @@ def should_build_retry_build_output(build_output: str):
 
 	# Failed to pull package from pypi
 	if "Connection to pypi.org timed out" in build_output:
+		return True
+
+	# Caused when fetching Python from deadsnakes/ppa
+	if "Error: retrieving gpg key timed out" in build_output:
+		return True
+
+	# Yarn registry bad gateway
+	if (
+		"error https://registry.yarnpkg.com/" in build_output
+		and 'Request failed "502 Bad Gateway"' in build_output
+	):
+		return True
+
+	# NPM registry internal server error
+	if (
+		"Error: https://registry.npmjs.org/" in build_output
+		and 'Request failed "500 Internal Server Error"' in build_output
+	):
 		return True
 
 	return False

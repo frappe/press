@@ -138,7 +138,8 @@ export default {
 				name: this.roleId,
 				whitelistedMethods: {
 					addUser: 'add_user',
-					removeUser: 'remove_user'
+					removeUser: 'remove_user',
+					bulkDelete: 'delete_permissions'
 				}
 			};
 		}

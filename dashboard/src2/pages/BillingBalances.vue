@@ -41,11 +41,13 @@ export default {
 					{
 						label: 'Amount',
 						fieldname: 'amount',
+						align: 'right',
 						format: this.formatCurrency
 					},
 					{
 						label: 'Balance',
 						fieldname: 'ending_balance',
+						align: 'right',
 						format: this.formatCurrency
 					}
 				],

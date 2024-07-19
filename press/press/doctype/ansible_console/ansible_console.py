@@ -15,6 +15,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
+
 from press.utils import reconnect_on_failure
 
 
@@ -26,6 +27,7 @@ class AnsibleConsole(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.ansible_console_output.ansible_console_output import (
 			AnsibleConsoleOutput,
 		)
@@ -57,7 +59,9 @@ class AnsibleConsole(Document):
 @frappe.whitelist()
 def execute_command(doc):
 	frappe.enqueue(
-		"press.press.doctype.ansible_console.ansible_console._execute_command", doc=doc
+		"press.press.doctype.ansible_console.ansible_console._execute_command",
+		doc=doc,
+		timeout=7200,
 	)
 	return doc
 

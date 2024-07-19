@@ -8,25 +8,25 @@ from typing import Union
 import frappe
 from frappe import _
 from frappe.core.doctype.user.user import update_password
+from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
-from frappe.utils.data import sha256_hash
+from frappe.query_builder.custom import GROUP_CONCAT
+from frappe.rate_limiter import rate_limit
 from frappe.utils import get_url
+from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
-from frappe.core.utils import find
-from frappe.rate_limiter import rate_limit
+from pypika.terms import ValueWrapper
 
+from press.api.site import protected
 from press.press.doctype.team.team import (
 	Team,
-	get_team_members,
 	get_child_team_members,
+	get_team_members,
 	has_unsettled_invoices,
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
-from press.utils.telemetry import capture, identify
-from press.api.site import protected
-from frappe.query_builder.custom import GROUP_CONCAT
-from pypika.terms import ValueWrapper
+from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
@@ -46,7 +46,7 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		ar = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -59,10 +59,6 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 		).insert()
 
 	frappe.set_user(current_user)
-
-	# Telemetry: Verification email sent
-	identify(email)
-	capture("verification_email_sent", "fc_signup", ar.name)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -145,7 +141,7 @@ def setup_account(
 			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_signup", account_request.name)
+	capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
 
 
@@ -1090,4 +1086,14 @@ def get_permission_roles():
 		)
 		.where(PressRole.team == get_current_team())
 		.run(as_dict=True)
+	)
+
+
+@frappe.whitelist()
+def get_user_ssh_keys():
+	return frappe.db.get_list(
+		"User SSH Key",
+		{"is_removed": 0, "user": frappe.session.user},
+		["name", "ssh_fingerprint", "creation", "is_default"],
+		order_by="creation desc",
 	)

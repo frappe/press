@@ -4,6 +4,7 @@
 
 
 from typing import TYPE_CHECKING
+
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -27,8 +28,8 @@ from press.utils import log_error
 from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.site.site import Site
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -53,6 +54,7 @@ class SiteMigration(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_migration_step.site_migration_step import (
 			SiteMigrationStep,
 		)

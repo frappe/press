@@ -3,21 +3,21 @@
 # See license.txt
 
 
-import frappe
 import unittest
-
-
-from typing import Optional
 from datetime import date, timedelta
-from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.drip_email.drip_email import DripEmail
-from press.press.doctype.site.test_site import create_test_site
+from typing import Optional
+
+import frappe
+
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.drip_email.drip_email import DripEmail
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
 )
+from press.press.doctype.site.test_site import create_test_site
 
 
 def create_test_drip_email(

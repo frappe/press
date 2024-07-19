@@ -2,9 +2,11 @@
 # For license information, please see license.txt
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
+
 import frappe
-from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils import cint
+from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
@@ -13,14 +15,12 @@ from twilio.base.exceptions import TwilioRestException
 from press.telegram_utils import Telegram
 from press.utils import log_error
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-	from press.press.doctype.incident_settings_user.incident_settings_user import (
-		IncidentSettingsUser,
-	)
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
+	)
+	from press.press.doctype.incident_settings_user.incident_settings_user import (
+		IncidentSettingsUser,
 	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
@@ -53,6 +53,7 @@ class Incident(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
 		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
 

@@ -29,7 +29,7 @@
 	<div>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
-			:tabs="object.detail.tabs"
+			:tabs="tabs"
 		>
 			<template #tab-content="{ tab }">
 				<!-- this div is required for some reason -->
@@ -119,6 +119,16 @@ export default {
 	computed: {
 		object() {
 			return getObject(this.objectType);
+		},
+		tabs() {
+			return this.object.detail.tabs.filter(tab => {
+				if (tab.condition) {
+					return tab.condition({
+						documentResource: this.$resources.document
+					});
+				}
+				return true;
+			});
 		},
 		title() {
 			let doc = this.$resources.document?.doc;

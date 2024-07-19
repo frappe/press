@@ -24,9 +24,9 @@ from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_diffe
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.server.server import scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,

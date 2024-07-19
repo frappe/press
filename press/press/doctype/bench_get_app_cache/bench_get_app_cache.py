@@ -5,6 +5,7 @@ from datetime import datetime
 
 import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.deploy_candidate.cache_utils import run_command_in_docker_cache
 from press.utils import ttl_cache
 
@@ -82,7 +83,6 @@ this takes a few of seconds (mostly a minute).
 
 @ttl_cache(ttl=20)
 def get_app_cache_items():
-
 	result = run_command_in_docker_cache("ls -luAt --time-style=full-iso bench/apps")
 	if result["returncode"]:
 		return []

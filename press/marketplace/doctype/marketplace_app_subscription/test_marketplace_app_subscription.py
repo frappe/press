@@ -1,15 +1,16 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-import frappe
 import unittest
 
+import frappe
+
+from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
+	create_test_marketplace_app_plan,
+)
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
-)
-from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
-	create_test_marketplace_app_plan,
 )
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team

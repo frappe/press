@@ -3,15 +3,16 @@
 # For license information, please see license.txt
 
 
+from typing import TYPE_CHECKING
+
 import frappe
+from frappe.utils import unique
+
+from press.agent import Agent
 from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
-from press.agent import Agent
 from press.utils import log_error
-from frappe.utils import unique
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
@@ -25,6 +26,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import (
 			ProxyServerDomain,
 		)

@@ -14,6 +14,7 @@ from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
+
 from press.utils import has_role
 
 ALLOWED_DOCTYPES = [
@@ -23,7 +24,6 @@ ALLOWED_DOCTYPES = [
 	"Site Backup",
 	"Site Activity",
 	"Site Config",
-	"Site Config Key",
 	"Site Plan",
 	"Site Update",
 	"Invoice",
@@ -53,7 +53,6 @@ ALLOWED_DOCTYPES = [
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
-	"User",
 	"Partner Approval Request",
 	"Marketplace App",
 	"Subscription",
@@ -92,8 +91,8 @@ def get_list(
 	if filters is None:
 		filters = {}
 
-	# team doctype doesn't have a team field to filter by
-	if doctype == "Team":
+	# these doctypes doesn't have a team field to filter by but are used in get or run_doc_method
+	if doctype in ["Team", "User SSH Key"]:
 		return []
 
 	check_permissions(doctype)

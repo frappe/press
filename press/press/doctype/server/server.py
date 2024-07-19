@@ -17,6 +17,7 @@ from frappe.core.utils import find
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
+
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
@@ -1067,6 +1068,7 @@ class Server(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None

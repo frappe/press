@@ -156,7 +156,7 @@ export default {
 							india ? row.price_inr : row.price_usd,
 							0
 						);
-						return `${formattedValue} /mo`;
+						return `${formattedValue}/mo`;
 					}
 					return row.plan_title;
 				}
@@ -1007,7 +1007,7 @@ export default {
 													hide();
 													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Job',
+														name: 'Site Detail Jobs',
 														params: { name: site.name }
 													});
 												},
@@ -1459,6 +1459,22 @@ export default {
 					]
 				}
 			},
+			{
+				label: 'Performance',
+				icon: icon('zap'),
+				route: 'performance',
+				type: 'Component',
+				condition() {
+					const team = getTeam();
+					return !!team.doc?.enable_performance_tuning;
+				},
+				component: defineAsyncComponent(() =>
+					import('../components/site/SitePerformance.vue')
+				),
+				props: site => {
+					return { siteName: site.doc?.name };
+				}
+			},
 			logsTab(),
 			{
 				label: 'Activity',
@@ -1552,6 +1568,7 @@ export default {
 					}
 				}
 			},
+
 			tagTab()
 		],
 		actions(context) {

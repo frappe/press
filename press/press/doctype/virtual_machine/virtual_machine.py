@@ -1,31 +1,31 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import base64
 import ipaddress
+
 import boto3
-from oci.core import ComputeClient, BlockstorageClient, VirtualNetworkClient
+import frappe
+from frappe.core.utils import find
+from frappe.desk.utils import slug
+from frappe.model.document import Document
+from frappe.model.naming import make_autoname
+from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
 from oci.core.models import (
-	LaunchInstanceShapeConfigDetails,
-	UpdateInstanceShapeConfigDetails,
-	LaunchInstancePlatformConfig,
-	CreateVnicDetails,
-	LaunchInstanceDetails,
-	UpdateInstanceDetails,
-	InstanceSourceViaImageDetails,
-	InstanceOptions,
-	UpdateBootVolumeDetails,
-	UpdateVolumeDetails,
 	CreateBootVolumeBackupDetails,
+	CreateVnicDetails,
 	CreateVolumeBackupDetails,
+	InstanceOptions,
+	InstanceSourceViaImageDetails,
+	LaunchInstanceDetails,
+	LaunchInstancePlatformConfig,
+	LaunchInstanceShapeConfigDetails,
+	UpdateBootVolumeDetails,
+	UpdateInstanceDetails,
+	UpdateInstanceShapeConfigDetails,
+	UpdateVolumeDetails,
 )
 
-
-from frappe.model.document import Document
-from frappe.core.utils import find
-from frappe.model.naming import make_autoname
-from frappe.desk.utils import slug
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 
@@ -38,6 +38,7 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
@@ -396,11 +397,15 @@ class VirtualMachine(Document):
 				self.save()
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self, *args, **kwargs):
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		except frappe.QueryTimeoutError:  # lock wait timeout
+			return
 		if self.cloud_provider == "AWS EC2":
-			return self._sync_aws()
+			return self._sync_aws(*args, **kwargs)
 		elif self.cloud_provider == "OCI":
-			return self._sync_oci()
+			return self._sync_oci(*args, **kwargs)
 
 	def _sync_oci(self, instance=None):
 		if not instance:
@@ -937,10 +942,12 @@ class VirtualMachine(Document):
 		)
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
-				machine = frappe.get_doc("Virtual Machine", {"instance_id": instance["InstanceId"]})
+				machine: VirtualMachine = frappe.get_doc(
+					"Virtual Machine", {"instance_id": instance["InstanceId"]}
+				)
 				try:
-					machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
-					frappe.db.commit()
+					machine.sync({"Reservations": [{"Instances": [instance]}]})
+					frappe.db.commit()  # release lock
 				except Exception:
 					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 					frappe.db.rollback()
@@ -992,10 +999,12 @@ class VirtualMachine(Document):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
-			machine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc(
+				"Virtual Machine", {"instance_id": instance.id}
+			)
 			try:
-				machine._sync_oci(instance)
-				frappe.db.commit()
+				machine.sync(instance)
+				frappe.db.commit()  # release lock
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()

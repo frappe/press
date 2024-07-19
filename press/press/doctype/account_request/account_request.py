@@ -3,11 +3,14 @@
 # For license information, please see license.txt
 
 
-import frappe
 import json
+
+import frappe
 from frappe.model.document import Document
-from frappe.utils import random_string, get_url
+from frappe.utils import get_url, random_string
+
 from press.utils import get_country_info
+from press.utils.telemetry import capture
 
 
 class AccountRequest(Document):
@@ -18,6 +21,7 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.account_request_press_role.account_request_press_role import (
 			AccountRequestPressRole,
 		)
@@ -82,8 +86,16 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def after_insert(self):
+		if not self.is_saas_signup():
+			# Telemetry: Account Request Created
+			capture("account_request_created", "fc_signup", self.email)
 		if self.send_email:
 			self.send_verification_email()
+		else:
+			if not self.is_saas_signup():
+				# Telemetry: Verification Mail Sent
+				# If user used oauth, we don't send verification email but to track the event in stat, send this event
+				capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()
@@ -131,10 +143,13 @@ class AccountRequest(Document):
 				# "image_path": "/assets/press/images/frappe-logo-black.png",
 				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
 				"read_pixel_path": get_url(
-					f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
+					f"/api/method/press.utils.telemetry.capture_read_event?email={self.email}"
 				),
 			}
 		)
+		if not self.is_saas_signup():
+			# Telemetry: Verification Mail Sent
+			capture("verification_email_sent", "fc_signup", self.email)
 		frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
@@ -158,3 +173,9 @@ class AccountRequest(Document):
 		return (
 			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
 		)
+
+	def is_saas_signup(self):
+		# check whether it's a saas or erpnext signup
+		if self.erpnext or self.saas:
+			return True
+		return False

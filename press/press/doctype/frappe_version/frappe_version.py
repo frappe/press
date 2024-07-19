@@ -25,6 +25,7 @@ class FrappeVersion(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.frappe_version_dependency.frappe_version_dependency import (
 			FrappeVersionDependency,
 		)

@@ -3,27 +3,27 @@
 # For license information, please see license.txt
 
 import os
-import frappe
-
-from frappe import _
-from frappe.core.utils import find
-from typing import List
 from hashlib import blake2b
-from press.utils import log_error, get_valid_teams_for_user
-from frappe.utils import get_fullname
-from frappe.utils import get_url_to_form, random_string
-from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from frappe.model.document import Document
-from press.exceptions import FrappeioServerNotSet
+from typing import List
+
+import frappe
+from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.core.utils import find
+from frappe.model.document import Document
+from frappe.utils import get_fullname, get_url_to_form, random_string
+
+from press.api.client import dashboard_whitelist
+from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.utils import get_valid_teams_for_user, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
-from press.api.client import dashboard_whitelist
 
 
 class Team(Document):
@@ -34,6 +34,7 @@ class Team(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import (
 			CommunicationEmail,
@@ -42,6 +43,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		allow_access_to_restricted_site_plans: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
@@ -54,6 +56,7 @@ class Team(Document):
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
+		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		erpnext_partner: DF.Check
 		frappe_partnership_date: DF.Date | None
@@ -109,6 +112,7 @@ class Team(Document):
 		"partner_referral_code",
 		"parent_team",
 		"is_developer",
+		"enable_performance_tuning",
 	]
 
 	def get_doc(self, doc):
@@ -169,6 +173,7 @@ class Team(Document):
 		self.set_billing_name()
 		self.set_partner_email()
 		self.validate_disable()
+		self.validate_billing_team()
 
 	def before_insert(self):
 		if not self.notify_email:
@@ -196,6 +201,13 @@ class Team(Document):
 				frappe.throw(
 					"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
 				)
+
+	def validate_billing_team(self):
+		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
+			return
+
+		if self.payment_mode == "Paid By Partner" and not self.billing_team:
+			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -602,7 +614,7 @@ class Team(Document):
 				"address_line1": billing_details.address,
 				"city": billing_details.city,
 				"state": billing_details.state,
-				"pincode": (billing_details.postal_code).strip().replace(" ", ""),
+				"pincode": billing_details.get("postal_code", "").strip().replace(" ", ""),
 				"country": billing_details.country,
 				"gstin": billing_details.gstin,
 			}
@@ -712,7 +724,7 @@ class Team(Document):
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
 		# Telemetry: Added card
-		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
+		capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc
@@ -1264,7 +1276,7 @@ def handle_payment_intent_succeeded(payment_intent):
 	)
 
 	# Telemetry: Added prepaid credits
-	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
+	capture("added_card_or_prepaid_credits", "fc_signup", team.user)
 	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
@@ -1291,6 +1303,9 @@ def handle_payment_intent_succeeded(payment_intent):
 	)
 	invoice.insert()
 	invoice.reload()
+
+	if not team.payment_mode:
+		frappe.db.set_value("Team", team.name, "payment_mode", "Prepaid Credits")
 
 	# latest stripe API sets charge id in latest_charge
 	charge = payment_intent.get("latest_charge")

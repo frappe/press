@@ -1,12 +1,12 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import requests
-
 import frappe
+import requests
 from frappe.model.document import Document
-from press.utils import log_error
+
 from press.agent import Agent
+from press.utils import log_error
 
 
 class AgentRequestFailure(Document):

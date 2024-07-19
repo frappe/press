@@ -69,19 +69,19 @@ export default {
 					'period_start',
 					'period_end'
 				],
-				filterControls() {
+				filterControls: () => {
 					return [
 						{
 							type: 'select',
 							label: 'Type',
-							class: 'w-36',
+							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'type',
 							options: ['', 'Subscription', 'Prepaid Credits']
 						},
 						{
 							type: 'select',
 							label: 'Status',
-							class: 'w-36',
+							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'status',
 							options: [
 								'',

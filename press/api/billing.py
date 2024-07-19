@@ -1,26 +1,27 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
-import frappe
-
-from typing import Dict, List
 from itertools import groupby
-from frappe.utils import fmt_money
+from typing import Dict, List
+
+import frappe
 from frappe.core.utils import find
+from frappe.utils import fmt_money
+
 from press.press.doctype.team.team import (
 	has_unsettled_invoices,
 )
 from press.utils import get_current_team
 from press.utils.billing import (
+	GSTIN_FORMAT,
 	clear_setup_intent,
 	get_publishable_key,
-	get_setup_intent,
 	get_razorpay_client,
+	get_setup_intent,
 	get_stripe,
 	make_formatted_doc,
 	states_with_tin,
 	validate_gstin_check_digit,
-	GSTIN_FORMAT,
 )
 
 

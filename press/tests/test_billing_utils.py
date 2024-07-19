@@ -1,8 +1,8 @@
+from unittest import TestCase
+
 import frappe
 
-from unittest import TestCase
 from press.api.billing import validate_gst
-
 
 VALID_GSTINS = [
 	{"gstin": "27AALFV4847R1Z2", "state": "Maharashtra", "country": "India"},

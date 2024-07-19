@@ -106,6 +106,9 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:selectedCluster="cluster"
+						:selectedApps="apps"
+						:selectedVersion="version"
 					/>
 				</div>
 			</div>
@@ -225,6 +228,20 @@ export default {
 		Summary,
 		Header
 	},
+	mounted() {
+		if (window.posthog && !this.$team.doc.onboarding.site_created) {
+			window.posthog.identify(this.$team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'first_new_site_creation'
+			});
+			window.posthog.startSessionRecording();
+		}
+	},
+	unmounted() {
+		if (window.posthog && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
+		}
+	},
 	data() {
 		return {
 			version: null,
@@ -243,10 +260,16 @@ export default {
 	watch: {
 		apps() {
 			this.version = this.autoSelectVersion();
+			this.cluster = null;
 			this.agreedToRegionConsent = false;
 		},
 		async version() {
+			this.cluster = null;
 			this.cluster = await this.getClosestCluster();
+			this.agreedToRegionConsent = false;
+		},
+		cluster() {
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		subdomain: {
@@ -412,6 +435,9 @@ export default {
 					return a.app_title.localeCompare(b.app_title);
 				}
 			});
+		},
+		selectedVersionAppNames() {
+			return this.selectedVersionApps.map(app => app.app);
 		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);

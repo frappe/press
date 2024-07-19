@@ -230,6 +230,20 @@ export default {
 		),
 		TextInsideCircle
 	},
+	mounted() {
+		if (window.posthog) {
+			window.posthog.identify(this.$team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'onboarding'
+			});
+			window.posthog.startSessionRecording();
+		}
+	},
+	unmounted() {
+		if (window.posthog && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
+		}
+	},
 	data() {
 		return {
 			showAddCardDialog: false,

@@ -47,12 +47,12 @@ export default {
 					'net_total_inr',
 					'net_total_usd'
 				],
-				filterControls() {
+				filterControls: () => {
 					return [
 						{
 							type: 'select',
 							label: 'Status',
-							class: 'w-36',
+							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'status',
 							options: ['', 'Draft', 'Paid', 'Commissioned']
 						}
@@ -76,6 +76,7 @@ export default {
 					{
 						label: 'Total',
 						fieldname: 'net_total_inr',
+						align: 'right',
 						format: (_, row) => {
 							let total = 0;
 							if (this.$team.doc.currency === 'INR') {

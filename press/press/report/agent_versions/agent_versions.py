@@ -4,6 +4,7 @@
 import json
 
 import frappe
+
 from press.agent import Agent
 from press.press.report.server_stats.server_stats import get_servers
 

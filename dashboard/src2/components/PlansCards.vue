@@ -10,7 +10,7 @@
 						? 'border-gray-900 ring-1 ring-gray-900'
 						: 'border-gray-300',
 					{
-						'pointer-events-none': plan.disabled
+						'pointer-events-none opacity-50': plan.disabled
 					}
 				]"
 				@click="$emit('update:modelValue', plan)"

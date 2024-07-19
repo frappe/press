@@ -669,7 +669,6 @@ def get_app_info(app: str):
 
 @frappe.whitelist()
 def get_apps_with_plans(apps, release_group: str):
-
 	if isinstance(apps, str):
 		apps = json.loads(apps)
 
@@ -839,7 +838,6 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
-
 	if not updated_plan_data.get("title"):
 		frappe.throw("Plan title is required")
 
@@ -981,7 +979,6 @@ def get_discount_percent(plan, discount=0.0):
 
 @frappe.whitelist(allow_guest=True)
 def login_via_token(token, team, site):
-
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
 

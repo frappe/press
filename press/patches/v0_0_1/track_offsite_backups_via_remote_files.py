@@ -3,8 +3,9 @@
 # For license information, please see license.txt
 
 
-import frappe
 import json
+
+import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 
 

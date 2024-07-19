@@ -1,14 +1,14 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
+import frappe
+from frappe.utils import cint
 from prometheus_client import (
 	CollectorRegistry,
 	Gauge,
 	generate_latest,
 )
 from werkzeug.wrappers import Response
-import frappe
-from frappe.utils import cint
 
 
 class MetricsRenderer:

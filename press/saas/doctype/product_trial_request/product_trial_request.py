@@ -3,9 +3,10 @@
 
 import frappe
 from frappe.model.document import Document
-from press.saas.doctype.product_trial.product_trial import ProductTrial
-from press.press.doctype.site.site import Site
+
 from press.api.client import dashboard_whitelist
+from press.press.doctype.site.site import Site
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 class ProductTrialRequest(Document):

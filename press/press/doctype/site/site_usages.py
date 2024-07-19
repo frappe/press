@@ -1,7 +1,9 @@
-import frappe
 import functools
-from press.press.doctype.site_plan.site_plan import get_plan_config
+
+import frappe
+
 from press.api.analytics import get_current_cpu_usage
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import log_error
 
 

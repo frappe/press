@@ -13,6 +13,7 @@ class AnsibleConsoleLog(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.ansible_console_output.ansible_console_output import (
 			AnsibleConsoleOutput,
 		)

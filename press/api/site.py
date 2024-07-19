@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 import json
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 import dns.exception
 import frappe
@@ -17,6 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
+
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -32,13 +33,13 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	has_role,
+	is_allowed_access_to_restricted_site_plans,
 	log_error,
 	unique,
 )
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
+	from frappe.types import DF
 
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
@@ -46,7 +47,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from frappe.types import DF
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -173,12 +173,6 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		for doc in subscription_docs:
 			doc.site = site.name
 			doc.save(ignore_permissions=True)
-
-	# Telemetry: Send event if first site
-	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
-		from press.utils.telemetry import capture
-
-		capture("created_first_site", "fc_signup", team.account_request)
 
 	return {
 		"site": site.name,
@@ -464,11 +458,21 @@ def options_for_new(for_bench: str = None):
 			order_by="number desc",
 		)
 	available_versions = []
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
 	for version in versions:
 		filters = (
 			{"name": for_bench}
 			if for_bench
-			else {"enabled": 1, "public": 1, "version": version.name}
+			else {
+				"enabled": 1,
+				"public": 1,
+				"version": version.name,
+				"name": ("not in", restricted_release_group_names),
+			}
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
@@ -685,7 +689,7 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_site_plans():
-	return Plan.get_plans(
+	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
 			"name",
@@ -705,6 +709,93 @@ def get_site_plans():
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
+
+	filtered_plans = []
+
+	has_team_access_to_restricted_site_plans = is_allowed_access_to_restricted_site_plans()
+
+	plan_names = [x.name for x in plans]
+
+	SitePlan = frappe.qb.DocType("Site Plan")
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	SitePlanReleaseGroup = frappe.qb.DocType("Site Plan Release Group")
+	SitePlanAllowedApp = frappe.qb.DocType("Site Plan Allowed App")
+
+	plan_details_query = (
+		frappe.qb.from_(SitePlan)
+		.select(SitePlan.name, SitePlanReleaseGroup.release_group, SitePlanAllowedApp.app)
+		.left_join(SitePlanReleaseGroup)
+		.on(SitePlanReleaseGroup.parent == SitePlan.name)
+		.left_join(SitePlanAllowedApp)
+		.on(SitePlanAllowedApp.parent == SitePlan.name)
+		.where(SitePlan.name.isin(plan_names))
+	)
+
+	plan_details_with_bench_query = (
+		frappe.qb.from_(plan_details_query)
+		.select(
+			plan_details_query.name,
+			plan_details_query.release_group,
+			plan_details_query.app,
+			Bench.cluster,
+			ReleaseGroup.version,
+		)
+		.left_join(Bench)
+		.on(Bench.group == plan_details_query.release_group)
+		.left_join(ReleaseGroup)
+		.on(ReleaseGroup.name == plan_details_query.release_group)
+		.where(Bench.status == "Active")
+	)
+
+	plan_details = plan_details_with_bench_query.run(as_dict=True)
+	plan_details_dict = {}
+
+	for plan in plan_details:
+		if plan["name"] not in plan_details_dict:
+			plan_details_dict[plan["name"]] = {
+				"allowed_apps": [],
+				"release_groups": [],
+				"clusters": [],
+				"bench_versions": [],
+			}
+		if (
+			plan["release_group"]
+			and plan["release_group"] not in plan_details_dict[plan["name"]]["release_groups"]
+		):
+			plan_details_dict[plan["name"]]["release_groups"].append(plan["release_group"])
+		if plan["app"] and plan["app"] not in plan_details_dict[plan["name"]]["allowed_apps"]:
+			plan_details_dict[plan["name"]]["allowed_apps"].append(plan["app"])
+		if (
+			plan["cluster"]
+			and plan["cluster"] not in plan_details_dict[plan["name"]]["clusters"]
+		):
+			plan_details_dict[plan["name"]]["clusters"].append(plan["cluster"])
+		if (
+			plan["version"]
+			and plan["version"] not in plan_details_dict[plan["name"]]["bench_versions"]
+		):
+			plan_details_dict[plan["name"]]["bench_versions"].append(plan["version"])
+
+	for plan in plans:
+		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip the plan
+		if (
+			not has_team_access_to_restricted_site_plans
+			and plan.name in plan_details_dict
+			and plan_details_dict[plan.name]["release_groups"]
+		):
+			continue
+		if plan.name in plan_details_dict:
+			plan.clusters = plan_details_dict[plan.name]["clusters"]
+			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
+			plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
+		else:
+			plan.clusters = []
+			plan.allowed_apps = []
+			plan.bench_versions = []
+		filtered_plans.append(plan)
+
+	return filtered_plans
 
 
 @frappe.whitelist()
@@ -726,6 +817,7 @@ def get_plans(name=None, rg=None):
 			"private_benches",
 			"monitor_access",
 			"dedicated_server_plan",
+			"allow_downgrading_from_other_plan",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
@@ -758,6 +850,8 @@ def get_plans(name=None, rg=None):
 	out = []
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
+			continue
+		if not plan.allow_downgrading_from_other_plan and plan.price_usd == 5:
 			continue
 		if not on_dedicated_server and plan.dedicated_server_plan:
 			continue
@@ -2076,3 +2170,13 @@ def change_server(name, server, scheduled_datetime=None, skip_failing_patches=Fa
 
 	if not scheduled_datetime:
 		site_migration.start()
+
+
+@frappe.whitelist()
+def get_site_config_standard_keys():
+	return frappe.get_all(
+		"Site Config Key",
+		{"internal": 0},
+		["name", "key", "title", "description", "type"],
+		order_by="title asc",
+	)

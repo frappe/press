@@ -1,16 +1,15 @@
 import json
+import os
+
 import frappe
-
+from frappe.core.utils import find
+from frappe.utils import get_url
 from frappe.utils.oauth import get_oauth2_authorize_url
-
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
-
-from frappe.utils import get_url
-from frappe.core.utils import find
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 from press.api.account import get_account_request_from_key, setup_account
 from press.api.saas import (
@@ -20,10 +19,6 @@ from press.api.saas import (
 )
 from press.press.doctype.site.saas_site import get_saas_domain
 from press.utils import log_error
-
-
-import os
-
 from press.utils.telemetry import capture, identify
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"

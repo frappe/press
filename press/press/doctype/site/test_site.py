@@ -3,13 +3,15 @@
 # See license.txt
 
 
+import json
+import typing
 import unittest
 from datetime import datetime
 from typing import Optional
 from unittest.mock import Mock, PropertyMock, patch
+import responses
 
 import frappe
-import json
 from frappe.model.naming import make_autoname
 
 from press.exceptions import InsufficientSpaceOnServer
@@ -18,21 +20,18 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.server import BaseServer, Server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
-
 from press.press.doctype.remote_file.remote_file import RemoteFile
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
 from press.telegram_utils import Telegram
 from press.utils import get_current_team
-
-import typing
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
@@ -147,6 +146,9 @@ def create_test_site(
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
+
+	def setUp(self):
+		frappe.db.truncate("Agent Request Failure")
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -468,3 +470,38 @@ class TestSite(unittest.TestCase):
 		)
 		with patch.object(Server, "free_space", new=PropertyMock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
+
+	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
+		rg = create_test_release_group([create_test_app()], public=True)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		with self.assertRaises(frappe.exceptions.ValidationError) as context:
+			site.save(ignore_permissions=True)
+		self.assertTrue(
+			"Auto updates can't be disabled for sites on public benches"
+			in str(context.exception)
+		)
+
+	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
+		rg = create_test_release_group([create_test_app()], public=False)
+		bench = create_test_bench(group=rg)
+		site = create_test_site("testsite", bench=bench)
+		site.skip_auto_updates = True
+		site.save(ignore_permissions=True)
+
+	@responses.activate
+	def test_sync_apps_updates_apps_child_table(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app1, app2])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench)
+		responses.get(
+			f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.name}/apps",
+			json.dumps({"data": "frappe\nerpnext"}),
+		)
+		site.sync_apps()
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(len(site.apps), 2)
