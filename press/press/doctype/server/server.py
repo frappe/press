@@ -292,6 +292,11 @@ class BaseServer(Document, TagHelpers):
 		url = f"https://github.com/{repository_owner}/agent"
 		return url
 
+	def get_agent_repository_branch(self):
+		settings = frappe.get_single("Press Settings")
+		branch = settings.branch or "master"
+		return branch
+
 	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
@@ -424,7 +429,10 @@ class BaseServer(Document, TagHelpers):
 		try:
 			ansible = Ansible(
 				playbook="update_agent.yml",
-				variables={"agent_repository_url": self.get_agent_repository_url()},
+				variables={
+					"agent_repository_url": self.get_agent_repository_url(),
+					"agent_repository_branch": self.get_agent_repository_branch(),
+				},
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,

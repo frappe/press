@@ -160,8 +160,9 @@ export default {
 				'Release Group',
 				this.$resources.deploy.doc?.group
 			);
-			this.$resources.deploy.reload();
 			rgDoc.reload();
+			this.$resources.deploy.reload();
+			this.$resources.errors.reload();
 		});
 	},
 	beforeUnmount() {

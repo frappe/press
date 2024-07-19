@@ -455,6 +455,21 @@ export default {
 							}
 						});
 					}
+				},
+				{
+					label: 'View Processes',
+					condition: () => bench.status === 'Active',
+					onClick: () => {
+						let SupervisorProcessesDialog = defineAsyncComponent(() =>
+							import('../components/bench/SupervisorProcessesDialog.vue')
+						);
+
+						renderDialog(
+							h(SupervisorProcessesDialog, {
+								bench: bench.name
+							})
+						);
+					}
 				}
 			];
 		},
