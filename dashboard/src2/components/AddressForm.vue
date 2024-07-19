@@ -40,22 +40,20 @@ export default {
 			gstApplicable: false
 		};
 	},
+	mounted() {
+		if (this.address?.gstin && this.address.gstin !== 'Not Applicable') {
+			this.gstApplicable = true;
+		}
+	},
 	watch: {
 		'address.gstin'(gstin) {
 			this.update('gstin', gstin);
 		},
 		gstApplicable(gstApplicable) {
 			if (gstApplicable) {
-				if (this.address.gstin === 'Not Applicable') {
-					this.update('gstin', '');
-				}
+				this.update('gstin', this.address.gstin === 'Not Applicable' ? '' : this.address.gstin);
 			} else {
 				this.update('gstin', 'Not Applicable');
-			}
-		},
-		gstin(gstin) {
-			if (gstin && gstin !== 'Not Applicable') {
-				gstApplicable.value = true;
 			}
 		}
 	},
@@ -76,10 +74,6 @@ export default {
 			}
 		},
 		validateGST() {
-			this.update(
-				'gstin',
-				this.gstApplicable ? this.address.gstin : 'Not Applicable'
-			);
 			return {
 				url: 'press.api.billing.validate_gst',
 				makeParams() {
@@ -95,6 +89,13 @@ export default {
 				[key]: value
 			});
 		},
+		async validateGST() {
+			this.update(
+				'gstin',
+				this.gstApplicable ? this.address.gstin : 'Not Applicable'
+			);
+			await this.$resources.validateGST.submit();
+		},
 		async validateValues() {
 			let { country } = this.address;
 			let is_india = country == 'India';
@@ -108,7 +109,7 @@ export default {
 			}
 
 			try {
-				await this.$resources.validateGST.submit();
+				await this.validateGST();
 			} catch (error) {
 				return error.messages?.join('\n');
 			}
