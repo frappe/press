@@ -26,7 +26,7 @@
 
 <script>
 import Form from '@/components/Form.vue';
-import { indianStates } from '@/utils/billing';
+import { indianStates } from '@/utils/billing.js';
 
 export default {
 	name: 'AddressForm',

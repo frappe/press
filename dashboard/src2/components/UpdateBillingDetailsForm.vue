@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from './AddressForm.vue';
 import { notify } from '@/utils/toast.js';
 
 export default {

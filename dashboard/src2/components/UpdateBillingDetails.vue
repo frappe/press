@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from './AddressForm.vue';
 import { toast } from 'vue-sonner';
 
 export default {
