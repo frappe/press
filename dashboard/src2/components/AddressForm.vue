@@ -51,7 +51,10 @@ export default {
 		},
 		gstApplicable(gstApplicable) {
 			if (gstApplicable) {
-				this.update('gstin', this.address.gstin === 'Not Applicable' ? '' : this.address.gstin);
+				this.update(
+					'gstin',
+					this.address.gstin === 'Not Applicable' ? '' : this.address.gstin
+				);
 			} else {
 				this.update('gstin', 'Not Applicable');
 			}
@@ -90,10 +93,11 @@ export default {
 			});
 		},
 		async validateGST() {
-			this.update(
-				'gstin',
-				this.gstApplicable ? this.address.gstin : 'Not Applicable'
-			);
+			const gstinNumber = this.gstApplicable
+				? this.address.gstin
+				: 'Not Applicable';
+			this.update('gstin', gstinNumber);
+			this.address.gstin = gstinNumber;
 			await this.$resources.validateGST.submit();
 		},
 		async validateValues() {
