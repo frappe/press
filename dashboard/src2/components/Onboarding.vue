@@ -179,9 +179,8 @@
 								/>
 							</div>
 							<!-- Purchase Prepaid Credit -->
-							<div>
+							<div v-else class="mt-3">
 								<BuyPrepaidCreditsForm
-									v-if="!isAutomatedBilling"
 									:minimumAmount="minimumAmount"
 									@success="onBuyCreditsSuccess"
 								/>
