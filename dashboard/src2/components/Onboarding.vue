@@ -267,9 +267,6 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import TextInsideCircle from './TextInsideCircle.vue';
-import CardWithDetails from '../../src/components/CardWithDetails.vue';
-import AlertBanner from './AlertBanner.vue';
-import BuyPrepaidCreditsForm from './BuyPrepaidCreditsForm.vue';
 
 export default {
 	name: 'Onboarding',
@@ -277,18 +274,16 @@ export default {
 		StripeCard2: defineAsyncComponent(() =>
 			import('../components/StripeCard.vue')
 		),
-		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
-			import('../components/BuyPrepaidCreditsDialog.vue')
-		),
-		UpdateBillingDetails: defineAsyncComponent(() =>
-			import('@/components/UpdateBillingDetails.vue')
-		),
 		UpdateBillingDetailsForm: defineAsyncComponent(() =>
 			import('@/components/UpdateBillingDetailsForm.vue')
 		),
-		AlertBanner,
-		CardWithDetails,
-		BuyPrepaidCreditsForm,
+		CardWithDetails: defineAsyncComponent(() =>
+			import('../../src/components/CardWithDetails.vue')
+		),
+		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
+			import('./BuyPrepaidCreditsForm.vue')
+		),
+		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
 		TextInsideCircle
 	},
 	mounted() {

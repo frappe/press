@@ -31,7 +31,7 @@ export default {
 					isActive: routeName === 'Welcome',
 					condition: !(
 						this.$team.doc.onboarding.complete &&
-						this.$team.doc.onboarding.site_create
+						this.$team.doc.onboarding.site_created
 					)
 				},
 				{
@@ -62,7 +62,7 @@ export default {
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
-					disabled
+					disabled: !(this.$team.doc.onboarding.complete || this.$team.doc.onboarding.site_created)
 				},
 				{
 					name: 'Benches',
