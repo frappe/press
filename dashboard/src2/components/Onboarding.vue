@@ -294,7 +294,6 @@ export default {
 			});
 			window.posthog.startSessionRecording();
 		}
-		console.log(this.$team);
 	},
 	unmounted() {
 		if (window.posthog && window.posthog.sessionRecordingStarted()) {
