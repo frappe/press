@@ -197,11 +197,11 @@
 </template>
 
 <script>
-import { Breadcrumbs, createResource, TextInput } from 'frappe-ui';
-import { getDocResource } from '../utils/resource';
+import { Breadcrumbs, debounce } from 'frappe-ui';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
 import { DashboardError } from '../utils/error';
+import { validateSubdomain } from '@/utils.js';
 
 export default {
 	name: 'InstallApp',
@@ -231,6 +231,17 @@ export default {
 			agreedToRegionConsent: false
 		};
 	},
+	watch: {
+		subdomain: {
+			handler: debounce(function (value) {
+				let invalidMessage = validateSubdomain(value);
+				this.$resources.subdomainExists.error = invalidMessage;
+				if (!invalidMessage) {
+					this.$resources.subdomainExists.submit();
+				}
+			}, 500)
+		},
+	},
 	resources: {
 		app() {
 			return {
@@ -257,6 +268,9 @@ export default {
 				},
 				async onSuccess() {
 					this.cluster = await this.getClosestCluster();
+					if(this.$resources.installAppOptions.data?.plans.length > 0){
+						this.selectedPlan = this.$resources.installAppOptions.data.plans[0];
+					}
 				}
 			};
 		},
@@ -265,7 +279,7 @@ export default {
 				url: 'press.api.site.exists',
 				makeParams() {
 					return {
-						domain: this.$resources.options.domain,
+						domain: this.$resources.installAppOptions.data?.domain,
 						subdomain: this.subdomain
 					};
 				},
@@ -377,6 +391,7 @@ export default {
 			return this.$resources.installAppOptions.data;
 		},
 		plans() {
+			if(!this.$resources?.installAppOptions) return [];
 			return this.options.plans.map(plan => ({
 				...plan,
 				label:
