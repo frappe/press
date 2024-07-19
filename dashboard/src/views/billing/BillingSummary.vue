@@ -129,7 +129,7 @@ export default {
 			import('@/components/ChangePaymentModeDialog.vue')
 		),
 		UpdateBillingDetails: defineAsyncComponent(() =>
-			import('@/components/UpdateBillingDetails.vue')
+			import('../../../src2/components/UpdateBillingDetails.vue')
 		)
 	},
 	resources: {

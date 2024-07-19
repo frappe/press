@@ -27,7 +27,7 @@
 
 <script>
 import AddressForm from '@/components/AddressForm.vue';
-import { notify } from '@/utils/toast';
+import { notify } from '@/utils/toast.js';
 
 export default {
 	name: 'UpdateBillingDetailsForm',
@@ -66,7 +66,7 @@ export default {
 									? ''
 									: billingInformation.gstin,
 						});
-						billing_name = billingInformation.billing_name;
+						this.billing_name = billingInformation.billing_name;
 					}
 				}
 			};

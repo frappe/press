@@ -275,7 +275,7 @@ export default {
 			import('../components/StripeCard.vue')
 		),
 		UpdateBillingDetailsForm: defineAsyncComponent(() =>
-			import('@/components/UpdateBillingDetailsForm.vue')
+			import('./UpdateBillingDetailsForm.vue')
 		),
 		CardWithDetails: defineAsyncComponent(() =>
 			import('../../src/components/CardWithDetails.vue')
