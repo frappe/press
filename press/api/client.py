@@ -6,9 +6,7 @@ from __future__ import unicode_literals
 import inspect
 
 import frappe
-from frappe import is_whitelisted
 from frappe.client import set_value as _set_value
-from frappe.handler import get_attr
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
@@ -77,14 +75,14 @@ whitelisted_methods = set()
 
 @frappe.whitelist()
 def get_list(
-	doctype,
-	fields=None,
-	filters=None,
-	order_by=None,
-	start=0,
-	limit=20,
-	parent=None,
-	debug=False,
+	doctype: str,
+	fields: list | None = None,
+	filters: dict | None = None,
+	order_by: str | None = None,
+	start: int = 0,
+	limit: int = 20,
+	parent: str | None = None,
+	debug: bool = False,
 ):
 	from press.press.doctype.press_role.press_role import check_role_permissions
 
@@ -239,7 +237,7 @@ def insert(doc=None):
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
-def set_value(doctype, name, fieldname, value=None):
+def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None = None):
 	check_permissions(doctype)
 	check_document_access(doctype, name)
 
@@ -254,7 +252,7 @@ def set_value(doctype, name, fieldname, value=None):
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])
-def delete(doctype, name):
+def delete(doctype: str, name: str):
 	method = "delete"
 
 	check_permissions(doctype)
@@ -265,7 +263,7 @@ def delete(doctype, name):
 
 
 @frappe.whitelist()
-def run_doc_method(dt, dn, method, args=None):
+def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
@@ -280,7 +278,13 @@ def run_doc_method(dt, dn, method, args=None):
 
 
 @frappe.whitelist()
-def search_link(doctype, query=None, filters=None, order_by=None, page_length=None):
+def search_link(
+	doctype: str,
+	query: str | None = None,
+	filters: dict | None = None,
+	order_by: str | None = None,
+	page_length: int | None = None,
+):
 	check_permissions(doctype)
 	if doctype == "Team" and not frappe.local.system_user():
 		raise_not_permitted()
@@ -345,27 +349,6 @@ def check_dashboard_actions(doctype, name, method):
 
 	if fn not in whitelisted_methods:
 		raise_not_permitted()
-
-
-@frappe.whitelist()
-def run_doctype_method(doctype, method, **kwargs):
-	check_permissions(doctype)
-
-	from frappe.modules.utils import get_doctype_module, get_module_name
-
-	module = get_doctype_module(doctype)
-	method_path = get_module_name(doctype, module, "", "." + method)
-
-	try:
-		_function = get_attr(method_path)
-	except Exception as e:
-		frappe.throw(
-			frappe._("Failed to get method for command {0} with {1}").format(method_path, e)
-		)
-
-	is_whitelisted(_function)
-
-	return frappe.call(_function, **kwargs)
 
 
 def apply_custom_filters(doctype, query, **list_args):

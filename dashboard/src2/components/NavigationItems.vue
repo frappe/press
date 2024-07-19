@@ -29,7 +29,10 @@ export default {
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !this.$team.doc.onboarding.complete
+					condition: !(
+						this.$team.doc.onboarding.complete &&
+						this.$team.doc.onboarding.site_created
+					)
 				},
 				{
 					name: 'Notifications',
@@ -58,7 +61,8 @@ export default {
 					route: '/sites',
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
-						routeName.startsWith('Site Detail')
+						routeName.startsWith('Site Detail'),
+					disabled: !(this.$team.doc.onboarding.complete || this.$team.doc.onboarding.site_created)
 				},
 				{
 					name: 'Benches',

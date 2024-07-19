@@ -988,7 +988,8 @@ class Agent:
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
-		return self.post("update", data={"url": url})
+		branch = frappe.get_doc(self.server_type, self.server).get_agent_repository_branch()
+		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
 		return self.get("ping")["message"]

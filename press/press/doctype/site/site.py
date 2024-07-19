@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List
+from contextlib import suppress
 
 import dateutil.parser
 import frappe
@@ -1479,6 +1480,10 @@ class Site(Document, TagHelpers):
 				capture("first_site_setup_wizard_completed", "fc_signup", team.user)
 
 		return setup_complete
+
+	def fetch_setup_wizard_complete_status(self):
+		with suppress(Exception):
+			self.is_setup_wizard_complete()
 
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
@@ -3047,4 +3052,4 @@ def sync_sites_setup_wizard_complete_status():
 		pluck="name",
 	)
 	for site in sites:
-		frappe.enqueue_doc("Site", site, method="is_setup_wizard_complete")
+		frappe.enqueue_doc("Site", site, method="fetch_setup_wizard_complete_status")

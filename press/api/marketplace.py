@@ -29,12 +29,31 @@ from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
+def get(app):
+	record = frappe.get_doc("Marketplace App", app)
+	return {
+		"name": record.name,
+		"title": record.title,
+		"description": record.description,
+		"image": record.image,
+	}
+
+
+@frappe.whitelist()
 def get_install_app_options(marketplace_app: str):
 	"""Get options for installing a marketplace app"""
 
 	is_app_approved = frappe.db.get_value(
 		"Marketplace App", marketplace_app, "frappe_approved"
 	)
+
+	restricted_site_plan_release_group = frappe.get_all(
+		"Site Plan Release Group", fields=["parent", "release_group"], ignore_permissions=True
+	)
+	restricted_site_plans = [x.parent for x in restricted_site_plan_release_group]
+	restricted_release_groups = [
+		x.release_group for x in restricted_site_plan_release_group
+	]
 
 	private_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -44,7 +63,12 @@ def get_install_app_options(marketplace_app: str):
 
 	public_site_plan = frappe.db.get_value(
 		"Site Plan",
-		{"private_benches": 0, "document_type": "Site", "price_inr": ["!=", 0]},
+		{
+			"private_benches": 0,
+			"document_type": "Site",
+			"price_inr": ["!=", 0],
+			"name": ["not in", restricted_site_plans],
+		},
 		order_by="price_inr asc",
 	)
 
@@ -55,7 +79,11 @@ def get_install_app_options(marketplace_app: str):
 	)[0]
 	latest_public_group = frappe.db.get_value(
 		"Release Group",
-		filters={"public": 1, "version": latest_stable_version},
+		filters={
+			"public": 1,
+			"version": latest_stable_version,
+			"name": ("not in", restricted_release_groups),
+		},
 	)
 	proxy_servers = frappe.db.get_all(
 		"Proxy Server",
@@ -523,6 +551,15 @@ def options_for_marketplace_app() -> Dict[str, Dict]:
 		)
 
 	return marketplace_options
+
+
+@frappe.whitelist()
+def get_marketplace_apps_for_onboarding() -> List[Dict]:
+	return frappe.get_all(
+		"Marketplace App",
+		fields=["name", "title", "image", "description"],
+		filters={"show_for_first_site_creation": True, "status": "Published"},
+	)
 
 
 def is_on_marketplace(app: str) -> bool:

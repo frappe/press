@@ -299,7 +299,7 @@ export default {
 		),
 		AlertBillingInformation,
 		UpdateBillingDetails: defineAsyncComponent(() =>
-			import('@/components/UpdateBillingDetails.vue')
+			import('../../../src2/components/UpdateBillingDetails.vue')
 		)
 	},
 	data() {

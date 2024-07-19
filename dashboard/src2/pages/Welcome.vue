@@ -13,7 +13,8 @@ export default {
 	},
 	beforeRouteEnter(to, from, next) {
 		let $team = getTeam();
-		if ($team.doc.onboarding.complete) {
+		window.$team = $team;
+		if ($team.doc.onboarding.complete && $team.doc.onboarding.site_created) {
 			next({ name: 'Site List' });
 		} else {
 			next();

@@ -34,7 +34,6 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
 			MarketplaceAppCategories,
 		)
@@ -74,6 +73,7 @@ class MarketplaceApp(WebsiteGenerator):
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
 		screenshots: DF.Table[MarketplaceAppScreenshot]
+		show_for_first_site_creation: DF.Check
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
