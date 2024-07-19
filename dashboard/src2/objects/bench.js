@@ -864,7 +864,22 @@ export default {
 						},
 						{
 							label: 'Version',
-							fieldname: 'version'
+							fieldname: 'version',
+							suffix(row) {
+								if (!row.is_custom) {
+									return;
+								}
+
+								return h(
+									Tooltip,
+									{
+										text: 'Custom version',
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									() => h(icon('alert-circle', 'w-3 h-3'), {})
+								);
+							}
 						}
 					],
 					rowActions({

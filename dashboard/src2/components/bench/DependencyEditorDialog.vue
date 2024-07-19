@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Edit Dependency',
+			title: `Edit ${dependency.title}`,
 			actions: [
 				{
 					label: 'Update',
@@ -15,26 +15,31 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<FormControl
-					type="select"
-					:disabled="useCustomVersion"
-					:label="dependency.title"
-					:options="dependencyOptions"
-					v-model="selectedDependencyVersion"
-				/>
-
+				<!-- Custom dependency version -->
 				<div v-if="useCustomVersion">
 					<FormControl
 						type="data"
 						:label="`Custom ${dependency.title}`"
-						placeholder="Please enter a custom version..."
+						placeholder="Please enter a custom version"
 						v-model="customVersion"
 					/>
 					<p class="mt-2 text-sm text-yellow-600">
-						Please ensure custom version of the dependency exists before using
-						it.
+						Please ensure entered version of this dependency exists before
+						setting it.
 					</p>
 				</div>
+
+				<!-- Non custom version -->
+				<FormControl
+					v-else
+					type="select"
+					:disabled="useCustomVersion"
+					:label="dependency.title"
+					placeholder="Please select a version"
+					:options="dependencyOptions"
+					v-model="selectedDependencyVersion"
+				/>
+
 				<FormControl
 					type="checkbox"
 					label="Use Custom Version"
@@ -71,19 +76,27 @@ export default {
 			)
 		};
 	},
+	mounted() {
+		if (this.dependency.is_custom) {
+			this.useCustomVersion = true;
+			this.customVersion = this.dependency.version;
+		} else {
+			this.selectedDependencyVersion = this.dependency.version;
+		}
+	},
 	computed: {
 		dependencyOptions() {
-			const versions = [
-				...new Set([
-					...(this.$resources.dependencyVersions.data || []),
-					this.dependency.version
-				])
-			].sort();
-			this.selectedDependencyVersion = this.dependency.version;
-			return versions.map(v => ({
-				label: v,
-				value: v
-			}));
+			const versions = new Set(this.$resources.dependencyVersions.data ?? []);
+			if (!this.dependency.is_custom) {
+				versions.add(this.dependency.version);
+			}
+
+			return Array.from(versions)
+				.sort()
+				.map(v => ({
+					label: v,
+					value: v
+				}));
 		},
 		version() {
 			if (this.useCustomVersion) {
@@ -113,9 +126,6 @@ export default {
 			};
 		}
 	},
-	mounted() {
-		window.d = this;
-	},
 	methods: {
 		setErrorIfCannotUpdate() {
 			if (this.useCustomVersion && !this.customVersion) {
@@ -123,18 +133,13 @@ export default {
 				return true;
 			}
 
-			if (this.dependency.version === this.selectedDependencyVersion) {
-				this.error = 'Selected version is the same as previous version';
-				return true;
-			}
-
-			if (this.dependency.version === this.customVersion) {
-				this.error = 'Custom version entered is the same as previous version';
-				return true;
-			}
-
 			if (!this.selectedDependencyVersion) {
 				this.error = 'Please select a version';
+				return true;
+			}
+
+			if (this.dependency.version === this.version) {
+				this.error = 'Chosen version is same as the previous version';
 				return true;
 			}
 

@@ -14,7 +14,6 @@ class BenchDependencyVersion(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		is_custom: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
@@ -22,4 +21,4 @@ class BenchDependencyVersion(Document):
 		version: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["version", "supported_frappe_version", "is_custom"]
+	dashboard_fields = ["version", "supported_frappe_version"]
