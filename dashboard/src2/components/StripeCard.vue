@@ -307,6 +307,7 @@ export default {
 						});
 						if (payload.paymentIntent?.status === 'succeeded') {
 							this.microChargeCompleted = true;
+							this.$emit('complete');
 						}
 					},
 					onError: error => {
