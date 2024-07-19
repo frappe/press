@@ -42,9 +42,9 @@
 
 				<Button
 					:loading="!microChargeCompleted"
-					:loadingText="'Attempting Test Charge'"
+					:loadingText="'Verifying Card'"
 				>
-					Test Charge Initiated
+					Card Verified
 					<template #prefix>
 						<GreenCheckIcon class="h-4 w-4" />
 					</template>
@@ -68,7 +68,7 @@
 					@click="submit"
 					:loading="addingCard"
 				>
-					Save Card
+					Verify & Save Card
 				</Button>
 			</div>
 		</div>
@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from './AddressForm.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'vue-sonner';
@@ -307,6 +307,7 @@ export default {
 						});
 						if (payload.paymentIntent?.status === 'succeeded') {
 							this.microChargeCompleted = true;
+							this.$emit('complete');
 						}
 					},
 					onError: error => {

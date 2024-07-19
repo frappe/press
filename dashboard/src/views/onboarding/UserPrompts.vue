@@ -9,7 +9,7 @@ export default {
 	name: 'UserPrompts',
 	components: {
 		UpdateBillingDetails: defineAsyncComponent(() =>
-			import('@/components/UpdateBillingDetails.vue')
+			import('../../../src2/components/UpdateBillingDetails.vue')
 		)
 	},
 	resources: {

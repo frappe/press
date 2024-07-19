@@ -197,7 +197,7 @@
 </template>
 
 <script>
-import { Breadcrumbs, TextInput } from 'frappe-ui';
+import { Breadcrumbs, createResource, TextInput } from 'frappe-ui';
 import { getDocResource } from '../utils/resource';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
@@ -232,6 +232,15 @@ export default {
 		};
 	},
 	resources: {
+		app() {
+			return {
+				url: 'press.api.marketplace.get',
+				params: {
+					app: this.app
+				},
+				auto: true
+			};
+		},
 		installAppOptions() {
 			return {
 				url: 'press.api.marketplace.get_install_app_options',
@@ -362,11 +371,7 @@ export default {
 	},
 	computed: {
 		appDoc() {
-			let doc = getDocResource({
-				doctype: 'Marketplace App',
-				name: this.app
-			});
-			return doc.doc || {};
+			return this.$resources.app.data || {};
 		},
 		options() {
 			return this.$resources.installAppOptions.data;

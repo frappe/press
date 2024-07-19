@@ -89,7 +89,7 @@
 	</div>
 </template>
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from '../../../src2/components/AddressForm.vue';
 import StripeCard from '@/components/StripeCard.vue';
 import BuyPrepaidCredits from '@/components/BuyPrepaidCredits.vue';
 

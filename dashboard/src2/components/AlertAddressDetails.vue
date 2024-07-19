@@ -20,7 +20,7 @@
 </template>
 <script>
 import AlertBanner from './AlertBanner.vue';
-import UpdateBillingDetails from '@/components/UpdateBillingDetails.vue';
+import UpdateBillingDetails from './UpdateBillingDetails.vue';
 
 export default {
 	name: 'AlertAddressDetails',

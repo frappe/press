@@ -144,7 +144,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
-import UpdateBillingDetails from '@/components/UpdateBillingDetails.vue';
+import UpdateBillingDetails from '../components/UpdateBillingDetails.vue';
 
 export default {
 	name: 'BillingOverview',

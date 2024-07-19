@@ -29,6 +29,17 @@ from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
+def get(app):
+	record = frappe.get_doc("Marketplace App", app)
+	return {
+		"name": record.name,
+		"title": record.title,
+		"description": record.description,
+		"image": record.image,
+	}
+
+
+@frappe.whitelist()
 def get_install_app_options(marketplace_app: str):
 	"""Get options for installing a marketplace app"""
 
@@ -523,6 +534,15 @@ def options_for_marketplace_app() -> Dict[str, Dict]:
 		)
 
 	return marketplace_options
+
+
+@frappe.whitelist()
+def get_marketplace_apps_for_onboarding() -> List[Dict]:
+	return frappe.get_all(
+		"Marketplace App",
+		fields=["name", "title", "image", "description"],
+		filters={"show_for_first_site_creation": True, "status": "Published"},
+	)
 
 
 def is_on_marketplace(app: str) -> bool:
