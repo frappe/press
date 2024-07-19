@@ -4,7 +4,7 @@
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
-						<BrandLogo :header="true" />
+						<BrandLogo type="header" />
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
@@ -27,7 +27,7 @@
 			</div>
 		</div>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<BrandLogo :footer="true" />
+			<BrandLogo type="footer" />
 		</div>
 	</div>
 </template>

@@ -32,7 +32,7 @@
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<BrandLogo :header="true" />
+						<BrandLogo type="header" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
 								{{ appName }}
@@ -122,7 +122,7 @@ export default {
 			);
 		}
 	},
-	compute: {
+	computed: {
 		appName() {
 			let brandInfo = getBrandInfo();
 			return brandInfo.app_name;

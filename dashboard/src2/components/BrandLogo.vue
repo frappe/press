@@ -1,5 +1,5 @@
 <template>
-	<span v-if="header">
+	<span v-if="type == 'header'">
 		<img
 			v-if="brandDetails && brandDetails.app_logo"
 			:src="brandDetails.app_logo"
@@ -8,7 +8,7 @@
 		<FCLogo class="inline-block h-7 w-7" v-else />
 	</span>
 
-	<span v-else-if="footer">
+	<span v-else-if="type == 'footer'">
 		<img
 			v-if="brandDetails && brandDetails.app_footer_logo"
 			:src="brandDetails.app_footer_logo"
@@ -29,7 +29,11 @@ export default {
 		FCLogo,
 		FrappeLogo
 	},
-	props: ['header', 'footer'],
+	props: {
+		type: {
+			type: String
+		}
+	},
 	computed: {
 		brandDetails() {
 			return getBrandInfo();
