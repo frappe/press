@@ -146,7 +146,7 @@ def get_setup_intent(team):
 						"amount_type": "maximum",
 						"amount": 1500000,
 						"currency": currency.lower(),
-						"start_date": int(frappe.utils.get_timestamp()),
+						"start_date": int(frappe.utils.get_timestamp(frappe.utils.nowdate())),
 						"interval": "sporadic",
 						"supported_types": ["india"],
 					},

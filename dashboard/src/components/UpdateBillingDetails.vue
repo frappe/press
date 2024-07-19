@@ -38,7 +38,7 @@
 
 <script>
 import AddressForm from '@/components/AddressForm.vue';
-import { notify } from '@/utils/toast';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'UpdateBillingDetails',
@@ -93,9 +93,7 @@ export default {
 				},
 				onSuccess() {
 					this.$emit('update:show', false);
-					notify({
-						title: 'Address updated successfully!'
-					});
+					toast.success('Address updated successfully!');
 					this.$emit('updated');
 				},
 				validate() {
