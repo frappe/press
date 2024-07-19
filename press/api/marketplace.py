@@ -47,6 +47,14 @@ def get_install_app_options(marketplace_app: str):
 		"Marketplace App", marketplace_app, "frappe_approved"
 	)
 
+	restricted_site_plan_release_group = frappe.get_all(
+		"Site Plan Release Group", fields=["parent", "release_group"], ignore_permissions=True
+	)
+	restricted_site_plans = [x.parent for x in restricted_site_plan_release_group]
+	restricted_release_groups = [
+		x.release_group for x in restricted_site_plan_release_group
+	]
+
 	private_site_plan = frappe.db.get_value(
 		"Site Plan",
 		{"private_benches": 1, "document_type": "Site", "price_inr": ["!=", 0]},
@@ -55,7 +63,12 @@ def get_install_app_options(marketplace_app: str):
 
 	public_site_plan = frappe.db.get_value(
 		"Site Plan",
-		{"private_benches": 0, "document_type": "Site", "price_inr": ["!=", 0]},
+		{
+			"private_benches": 0,
+			"document_type": "Site",
+			"price_inr": ["!=", 0],
+			"name": ["not in", restricted_site_plans],
+		},
 		order_by="price_inr asc",
 	)
 
@@ -66,7 +79,11 @@ def get_install_app_options(marketplace_app: str):
 	)[0]
 	latest_public_group = frappe.db.get_value(
 		"Release Group",
-		filters={"public": 1, "version": latest_stable_version},
+		filters={
+			"public": 1,
+			"version": latest_stable_version,
+			"name": ("not in", restricted_release_groups),
+		},
 	)
 	proxy_servers = frappe.db.get_all(
 		"Proxy Server",
