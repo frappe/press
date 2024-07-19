@@ -8,32 +8,18 @@
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
 			<FormControl
+				label="I have GSTIN"
+				type="checkbox"
+				v-model="gstApplicable"
+			/>
+			<FormControl
+				class="mt-2"
 				label="GSTIN"
 				v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
 				:disabled="!gstApplicable"
 			/>
-			<Button
-				v-if="gstApplicable"
-				class="mt-2"
-				@click="
-					update('gstin', 'Not Applicable');
-					gstApplicable = false;
-				"
-			>
-				I don't have a GSTIN
-			</Button>
-			<Button
-				v-else
-				class="mt-2"
-				@click="
-					update('gstin', '');
-					gstApplicable = true;
-				"
-			>
-				Add a GSTIN
-			</Button>
 		</div>
 	</div>
 </template>
@@ -51,12 +37,26 @@ export default {
 	},
 	data() {
 		return {
-			gstApplicable: true
+			gstApplicable: false
 		};
 	},
 	watch: {
 		'address.gstin'(gstin) {
 			this.update('gstin', gstin);
+		},
+		gstApplicable(gstApplicable) {
+			if (gstApplicable) {
+				if (this.address.gstin === 'Not Applicable') {
+					this.update('gstin', '');
+				}
+			} else {
+				this.update('gstin', 'Not Applicable');
+			}
+		},
+		gstin(gstin) {
+			if (gstin && gstin !== 'Not Applicable') {
+				gstApplicable.value = true;
+			}
 		}
 	},
 	resources: {
@@ -76,6 +76,10 @@ export default {
 			}
 		},
 		validateGST() {
+			this.update(
+				'gstin',
+				this.gstApplicable ? this.address.gstin : 'Not Applicable'
+			);
 			return {
 				url: 'press.api.billing.validate_gst',
 				makeParams() {

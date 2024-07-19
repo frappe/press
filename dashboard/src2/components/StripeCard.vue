@@ -42,9 +42,9 @@
 
 				<Button
 					:loading="!microChargeCompleted"
-					:loadingText="'Attempting Test Charge'"
+					:loadingText="'Verifying Card'"
 				>
-					Test Charge Initiated
+					Card Verified
 					<template #prefix>
 						<GreenCheckIcon class="h-4 w-4" />
 					</template>
@@ -68,7 +68,7 @@
 					@click="submit"
 					:loading="addingCard"
 				>
-					Save Card
+					Verify & Save Card
 				</Button>
 			</div>
 		</div>
