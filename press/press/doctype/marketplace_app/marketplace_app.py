@@ -34,9 +34,15 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import MarketplaceAppCategories
-		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import MarketplaceAppScreenshot
-		from press.press.doctype.marketplace_app_version.marketplace_app_version import MarketplaceAppVersion
+		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
+			MarketplaceAppCategories,
+		)
+		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import (
+			MarketplaceAppScreenshot,
+		)
+		from press.press.doctype.marketplace_app_version.marketplace_app_version import (
+			MarketplaceAppVersion,
+		)
 
 		after_install_script: DF.Code | None
 		after_uninstall_script: DF.Code | None
@@ -54,7 +60,15 @@ class MarketplaceApp(WebsiteGenerator):
 		poll_method: DF.Data | None
 		privacy_policy: DF.Data | None
 		published: DF.Check
-		review_stage: DF.Literal["Not Started", "Description Missing", "Logo Missing", "App Release Not Reviewed", "Ready for Review", "Ready to Publish", "Rejected"]
+		review_stage: DF.Literal[
+			"Not Started",
+			"Description Missing",
+			"Logo Missing",
+			"App Release Not Reviewed",
+			"Ready for Review",
+			"Ready to Publish",
+			"Rejected",
+		]
 		route: DF.Data | None
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
@@ -63,7 +77,9 @@ class MarketplaceApp(WebsiteGenerator):
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
-		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected"]
+		status: DF.Literal[
+			"Draft", "Published", "In Review", "Attention Required", "Rejected"
+		]
 		stop_auto_review: DF.Check
 		subject: DF.Data | None
 		subscription_type: DF.Literal["Free", "Paid", "Freemium"]
