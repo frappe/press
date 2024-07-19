@@ -622,7 +622,7 @@ class Site(Document, TagHelpers):
 
 	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
 		try:
-			server.calculated_increase_disk_size(diff / 1024 / 1024 / 1024)
+			server.calculated_increase_disk_size(diff / 1024 / 1024 // 1024)
 		except VolumeResizeLimitError:
 			frappe.throw(
 				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",

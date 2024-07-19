@@ -6,12 +6,13 @@
 import unittest
 from datetime import datetime
 from typing import Optional
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import frappe
 import json
 from frappe.model.naming import make_autoname
 
+from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
@@ -20,6 +21,7 @@ from press.press.doctype.database_server.test_database_server import (
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.server import BaseServer, Server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 from press.press.doctype.remote_file.remote_file import RemoteFile
@@ -27,6 +29,7 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
+from press.telegram_utils import Telegram
 from press.utils import get_current_team
 
 import typing
@@ -396,7 +399,7 @@ class TestSite(unittest.TestCase):
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
 
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
-	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})
+	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})  # type: ignore
 	def test_new_site_with_backup_files(self):
 		# no asserts here, just checking if it doesn't fail
 		database = create_test_remote_file().name
@@ -420,3 +423,48 @@ class TestSite(unittest.TestCase):
 			remote_config_file=config,
 			subscription_plan=plan.name,
 		)
+
+	@patch.object(Telegram, "send", new=Mock())
+	@patch.object(BaseServer, "disk_capacity", new=PropertyMock(return_value=100))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	@patch.object(RemoteFile, "get_content", new=lambda _: {"a": "test"})
+	@patch.object(RemoteFile, "exists", lambda _: True)
+	@patch.object(BaseServer, "increase_disk_size")
+	@patch.object(BaseServer, "create_subscription_for_storage", new=Mock())
+	def test_restore_site_adds_storage_if_no_sufficient_storage_available_on_public_server(
+		self, mock_increase_disk_size: Mock
+	):
+
+		"""Ensure restore site adds storage if no sufficient storage available."""
+		site = create_test_site()
+		site.remote_database_file = create_test_remote_file(file_size=1024).name
+		site.remote_public_file = create_test_remote_file(file_size=1024).name
+		site.remote_private_file = create_test_remote_file(file_size=1024).name
+		db_server = frappe.get_value("Server", site.server, "database_server")
+
+		frappe.db.set_value("Server", site.server, "public", True)
+		frappe.db.set_value(
+			"Database Server",
+			db_server,
+			"public",
+			True,
+		)
+		with patch.object(
+			BaseServer, "free_space", new=PropertyMock(return_value=500 * 1024 * 1024 * 1024)
+		):
+			site.restore_site()
+		mock_increase_disk_size.assert_not_called()
+
+		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=0)):
+			site.restore_site()
+		mock_increase_disk_size.assert_called()
+
+		frappe.db.set_value("Server", site.server, "public", False)
+		frappe.db.set_value(
+			"Database Server",
+			db_server,
+			"public",
+			False,
+		)
+		with patch.object(Server, "free_space", new=PropertyMock(return_value=0)):
+			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
