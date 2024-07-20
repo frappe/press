@@ -404,9 +404,8 @@ def app_details_for_new_public_site():
 			"subscription_type",
 			{"sources": ["source", "version"]},
 		],
-		filters={"status": "Published", "frappe_approved": 1},
+		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
-
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]

@@ -558,7 +558,7 @@ def get_marketplace_apps_for_onboarding() -> List[Dict]:
 	return frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "description"],
-		filters={"show_for_first_site_creation": True, "status": "Published"},
+		filters={"show_for_site_creation": True, "status": "Published"},
 	)
 
 
