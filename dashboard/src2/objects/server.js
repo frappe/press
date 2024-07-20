@@ -233,6 +233,9 @@ export default {
 					],
 					orderBy: 'creation desc',
 					searchField: 'host_name',
+					route(row) {
+						return { name: 'Site Detail', params: { name: row.name } };
+					},
 					filterControls() {
 						return [
 							{
