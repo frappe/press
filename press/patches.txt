@@ -126,3 +126,4 @@ press.press.doctype.press_notification.patches.link_reference_doctype_to_notific
 press.press.doctype.site.patches.set_plan_limit_in_site_config
 press.press.doctype.payout_order.patches.change_fields_from_recipient_to_team
 press.press.doctype.payout_order.patches.compute_total_amount
+press.press.doctype.marketplace_app.patches.change_field_from_first_site_creation_to_site_creation
