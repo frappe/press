@@ -4,7 +4,7 @@
 		<Dialog
 			v-model="showAppVersionDialog"
 			:options="{
-				title: `Apps in ${$releaseGroup.getAppVersions.params.args.bench}`,
+				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
 				size: '6xl'
 			}"
 		>
