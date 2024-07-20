@@ -115,6 +115,9 @@ class AgentJob(Document):
 		for result in results:
 			if result.status == "Undelivered":
 				result.status = "Pending"
+			elif result.status == "Delivery Failure":
+				result.status = "Failure"
+
 			# agent job start and end are in utc
 			if result.start:
 				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)

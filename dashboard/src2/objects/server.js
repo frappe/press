@@ -7,6 +7,7 @@ import { trialDays } from '../utils/site';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
 import router from '../router';
+import { jobTab } from './common/jobs';
 
 export default {
 	doctype: 'Server',
@@ -404,61 +405,7 @@ export default {
 					}
 				}
 			},
-			{
-				label: 'Jobs',
-				icon: icon('truck'),
-				childrenRoutes: ['Server Job'],
-				route: 'jobs',
-				type: 'list',
-				list: {
-					doctype: 'Agent Job',
-					filters: server => {
-						return { server: server.doc.name };
-					},
-					route(row) {
-						return {
-							name: 'Server Job',
-							params: { id: row.name }
-						};
-					},
-					orderBy: 'creation desc',
-					fields: ['server', 'end'],
-					columns: [
-						{
-							label: 'Job Type',
-							fieldname: 'job_type',
-							width: 2
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge'
-						},
-						{
-							label: 'Job ID',
-							fieldname: 'job_id'
-						},
-						{
-							label: 'Duration',
-							fieldname: 'duration',
-							format(value, row) {
-								if (row.job_id === 0 || !row.end) return;
-								return duration(value);
-							}
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner'
-						},
-						{
-							label: '',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							align: 'right'
-						}
-					]
-				}
-			},
+			jobTab('Server'),
 			{
 				label: 'Plays',
 				icon: icon('play'),

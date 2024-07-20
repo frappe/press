@@ -13,6 +13,7 @@ import LucideRocket from '~icons/lucide/rocket';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
+import { jobTab } from './common/jobs';
 
 export default {
 	doctype: 'Release Group',
@@ -539,99 +540,7 @@ export default {
 					}
 				}
 			},
-			{
-				label: 'Jobs',
-				icon: icon('truck'),
-				route: 'jobs',
-				childrenRoutes: ['Bench Job'],
-				type: 'list',
-				list: {
-					doctype: 'Agent Job',
-					filters: releaseGroup => {
-						return { group: releaseGroup.doc.name };
-					},
-					route(row) {
-						return {
-							name: 'Bench Job',
-							params: { id: row.name }
-						};
-					},
-					searchField: 'job_type',
-					fields: ['end'],
-					orderBy: 'creation desc',
-					filterControls() {
-						return [
-							{
-								type: 'select',
-								label: 'Status',
-								fieldname: 'status',
-								options: [
-									'',
-									'Undelivered',
-									'Pending',
-									'Running',
-									'Success',
-									'Failure',
-									'Delivery Failure'
-								]
-							},
-							{
-								type: 'link',
-								label: 'Type',
-								fieldname: 'job_type',
-								options: {
-									doctype: 'Agent Job Type',
-									orderBy: 'name asc',
-									pageLength: 100
-								}
-							}
-						];
-					},
-					columns: [
-						{
-							label: 'Job Type',
-							fieldname: 'job_type',
-							width: '13rem'
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							width: '8rem'
-						},
-						{
-							label: 'Site',
-							fieldname: 'site'
-						},
-						{
-							label: 'Job ID',
-							fieldname: 'job_id',
-							width: '7rem'
-						},
-						{
-							label: 'Duration',
-							fieldname: 'duration',
-							width: '5rem',
-							format(value, row) {
-								if (row.job_id === 0 || !row.end) return;
-								return duration(value);
-							}
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner',
-							width: '10rem'
-						},
-						{
-							label: '',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							width: '8rem',
-							align: 'right'
-						}
-					]
-				}
-			},
+			jobTab('Release Group'),
 			{
 				label: 'Config',
 				icon: icon('settings'),
