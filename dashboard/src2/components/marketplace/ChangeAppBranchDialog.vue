@@ -15,9 +15,9 @@
 		v-model="show"
 	>
 		<template v-slot:body-content>
-			<LoadingText v-if="$resources.branches.loading"
-				>Fetching Branches</LoadingText
-			>
+			<div v-if="$resources.branches.loading" class="mt-2 flex justify-center">
+				<LoadingText />
+			</div>
 			<ErrorMessage
 				v-else-if="$resources.branches.error"
 				:message="$resources.branches.error"

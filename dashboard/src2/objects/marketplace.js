@@ -169,7 +169,7 @@ export default {
 										{
 											options: {
 												title: `Add version support for ${app.doc.title}`,
-												size: '2xl'
+												size: '4xl'
 											}
 										},
 										{
@@ -238,8 +238,7 @@ export default {
 															return {
 																url: 'press.api.marketplace.options_for_version',
 																params: {
-																	name: app.doc.name,
-																	source: versions.data[0].source
+																	name: app.doc.name
 																},
 																auto: true
 															};
@@ -389,18 +388,21 @@ export default {
 							{
 								label: 'Remove Version',
 								onClick() {
-									toast.promise(app.removeVersion.submit(row.version), {
-										loading: 'Removing version...',
-										success: () => {
-											versions.reload();
-											return 'Version removed successfully';
-										},
-										error: e => {
-											return e.messages.length
-												? e.messages.join('\n')
-												: e.message;
+									toast.promise(
+										app.removeVersion.submit({ version: row.version }),
+										{
+											loading: 'Removing version...',
+											success: () => {
+												versions.reload();
+												return 'Version removed successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
 										}
-									});
+									);
 								}
 							}
 						];

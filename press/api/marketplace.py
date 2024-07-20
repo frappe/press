@@ -1073,7 +1073,12 @@ def subscriptions():
 def branches(name):
 	from press.api.github import branches as git_branches
 
-	app_source = frappe.get_doc("App Source", name)
+	app_source = frappe.db.get_value(
+		"App Source",
+		name,
+		["github_installation_id", "repository_owner", "repository"],
+		as_dict=True,
+	)
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
@@ -1090,16 +1095,18 @@ def change_branch(name, source, version, to_branch):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def options_for_version(name, source):
+def options_for_version(name):
 	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
 	added_versions = frappe.get_all(
 		"Marketplace App Version", {"parent": name}, pluck="version"
 	)
-	branchesList = branches(source)
+	app = frappe.db.get_value("Marketplace App", name, "app")
+	source = frappe.get_value("App Source", {"app": app})
+	branches_list = branches(source)
 	versions = list(set(frappe_version).difference(set(added_versions)))
-	branchesList = [branch["name"] for branch in branchesList]
+	branches_list = [branch["name"] for branch in branches_list]
 
-	return [{"version": version, "branch": branchesList} for version in versions]
+	return [{"version": version, "branch": branches_list} for version in versions]
 
 
 @protected("Marketplace App")
