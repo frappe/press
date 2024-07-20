@@ -290,7 +290,7 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			self._set_latest_bench()
+			self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
@@ -1900,7 +1900,7 @@ class Site(Document, TagHelpers):
 	def get_plan_config(self, plan=None):
 		return get_plan_config(self.get_plan_name(plan))
 
-	def _set_latest_bench(self):
+	def set_latest_bench(self):
 		from pypika.terms import PseudoColumn
 
 		if not (self.domain and self.cluster and self.group):
