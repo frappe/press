@@ -1,7 +1,9 @@
 import { defineAsyncComponent, h } from 'vue';
+import LucideAppWindow from '~icons/lucide/app-window';
+import { planTitle, duration, userCurrency } from '../utils/format';
 import ServerActions from '../components/server/ServerActions.vue';
-import { planTitle, duration } from '../utils/format';
 import { icon } from '../utils/components';
+import { trialDays } from '../utils/site';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
 import router from '../router';
@@ -207,6 +209,109 @@ export default {
 					return {
 						serverName: server.doc.name
 					};
+				}
+			},
+			{
+				label: 'Sites',
+				icon: icon(LucideAppWindow),
+				route: 'sites',
+				type: 'list',
+				list: {
+					doctype: 'Site',
+					filters: server => {
+						return { server: server.doc.name };
+					},
+					fields: [
+						'plan.plan_title as plan_title',
+						'plan.price_usd as price_usd',
+						'plan.price_inr as price_inr',
+						'group.title as group_title',
+						'group.public as group_public',
+						'group.team as group_team',
+						'group.version as version',
+						'trial_end_date'
+					],
+					orderBy: 'creation desc',
+					searchField: 'host_name',
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+							},
+							{
+								type: 'link',
+								label: 'Version',
+								fieldname: 'group.version',
+								options: {
+									doctype: 'Frappe Version'
+								}
+							},
+							{
+								type: 'link',
+								label: 'Bench',
+								fieldname: 'group',
+								options: {
+									doctype: 'Release Group'
+								}
+							},
+							{
+								type: 'link',
+								label: 'Tag',
+								fieldname: 'tags.tag',
+								options: {
+									doctype: 'Press Tag',
+									filters: {
+										doctype_name: 'Site'
+									}
+								}
+							}
+						];
+					},
+					columns: [
+						{
+							label: 'Site',
+							fieldname: 'host_name',
+							width: 1.5,
+							class: 'font-medium',
+							format(value, row) {
+								return value || row.name;
+							}
+						},
+						{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.6 },
+						{
+							label: 'Plan',
+							fieldname: 'plan',
+							width: 0.85,
+							format(value, row) {
+								if (row.trial_end_date) {
+									return trialDays(row.trial_end_date);
+								}
+								let $team = getTeam();
+								if (row.price_usd > 0) {
+									let india = $team.doc.country == 'India';
+									let formattedValue = userCurrency(
+										india ? row.price_inr : row.price_usd,
+										0
+									);
+									return `${formattedValue}/mo`;
+								}
+								return row.plan_title;
+							}
+						},
+						{
+							label: 'Bench',
+							fieldname: 'group_title',
+							width: '15rem'
+						},
+						{
+							label: 'Version',
+							fieldname: 'version',
+							width: 0.5
+						}
+					]
 				}
 			},
 			{
