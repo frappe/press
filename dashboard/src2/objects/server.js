@@ -356,6 +356,29 @@ export default {
 							width: 0.25
 						}
 					],
+					filterControls() {
+						return [
+							{
+								type: 'link',
+								label: 'Version',
+								fieldname: 'version',
+								options: {
+									doctype: 'Frappe Version'
+								}
+							},
+							{
+								type: 'link',
+								label: 'Tag',
+								fieldname: 'tags.tag',
+								options: {
+									doctype: 'Press Tag',
+									filters: {
+										doctype_name: 'Release Group'
+									}
+								}
+							}
+						];
+					},
 					route(row) {
 						return {
 							name: 'Release Group Detail',
