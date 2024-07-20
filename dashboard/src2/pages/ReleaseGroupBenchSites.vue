@@ -3,7 +3,7 @@
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
-			:options="{ title: 'Apps', size: '3xl' }"
+			:options="{ title: 'Apps', size: '6xl' }"
 		>
 			<template #body-content>
 				<div class="mb-4 text-base font-medium">
