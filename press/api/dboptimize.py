@@ -3,10 +3,13 @@ from typing import TYPE_CHECKING
 
 import frappe
 from press.agent import Agent
-from press.api.site import protected
+
+# from press.api.site import protected
 
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	OptimizeDatabaseQuery,
+	_fetch_column_stats,
+	_fetch_table_stats,
 )
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	ColumnStat,
@@ -18,7 +21,7 @@ from press.press.report.mariadb_slow_queries.db_optimizer import (
 
 
 @frappe.whitelist()
-@protected("Site")
+# @protected("Site")
 def mariadb_analyze_query(name, row):
 	suggested_index = analyze_query(row=row, site=name)
 	return suggested_index
@@ -38,14 +41,30 @@ def analyze_query(row, site):
 			"doctype": "MariaDB Analyze Query",
 			"site": site,
 			"query": query,
+			"tables_in_query": [],
 		}
 	)
-	for table_name in tables:
-		doc.append("tables_in_query", {"table": table_name})
-	doc.save()
+	doc.insert()
+	# for table_name in tables:
+	#     doc.append("tables_in_query", {"table": table_name})
+	for table in tables:
+		stats = _fetch_table_stats(analyzer.site, table)
+		doc.append("tables_in_query", {"table": table, "table_statistics": json.dumps(stats)})
+		if not stats:
+			# Old framework version
+			return
+		db_table = DBTable.from_frappe_ouput(stats)
+		column_stats = _fetch_column_stats(analyzer.site, table, doc.get_title())
 	# if index := analyzer.analyze():
 	#     row["suggested_index"] = f"{index.table}.{index.column}"
+	doc.save()
 	return tables
+
+
+def fetch_column_stats_update(job, response_data):
+	print(job)
+	print("Wassup")
+	print(response_data)
 
 
 # @frappe.whitelist()

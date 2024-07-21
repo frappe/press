@@ -21,6 +21,8 @@ from frappe.utils import (
 
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
+
+# from press.api.dboptimize import fetch_column_stats_update
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -972,6 +974,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			DeployCandidate.process_run_build(job, response_data)
 		elif job.job_type == "Column Statistics":
 			pass
+			# fetch_column_stats_update(job,response_data)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

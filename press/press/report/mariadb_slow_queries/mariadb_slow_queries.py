@@ -184,7 +184,10 @@ def normalize_query(query: str) -> str:
 
 def format_query(q, strip_comments=False):
 	return sqlparse.format(
-		str(q).strip(), keyword_case="upper", reindent=True, strip_comments=strip_comments
+		str(q).strip(),
+		keyword_case="upper",
+		reindent=True,
+		strip_comments=strip_comments,
 	)
 
 
@@ -280,7 +283,7 @@ def _fetch_table_stats(site: str, table: str):
 
 
 @redis_cache(ttl=60 * 5)
-def _fetch_column_stats(site, table):
+def _fetch_column_stats(site, table, doc_name):
 	site = frappe.get_cached_doc("Site", site)
 	db_server_name = frappe.db.get_value(
 		"Server", site.server, "database_server", cache=True
@@ -289,14 +292,17 @@ def _fetch_column_stats(site, table):
 	agent = Agent(database_server.name, "Database Server")
 
 	data = {
+		# "site": site,
+		"doc_name": doc_name,
 		"schema": site.database_name,
 		"table": table,
 		"private_ip": database_server.private_ip,
 		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 	}
-
-	column_stats = agent.post("database/column-stats", data=data)
-	return [ColumnStat.from_frappe_ouput(c) for c in column_stats]
+	column_stats = agent.create_agent_job(
+		"Column Statistics", f"/database/column-stats", data
+	)
+	# return [ColumnStat.from_frappe_ouput(c) for c in column_stats]
 
 
 def get_doctype_name(table_name: str) -> str:

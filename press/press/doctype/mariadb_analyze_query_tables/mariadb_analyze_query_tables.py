@@ -19,6 +19,7 @@ class MariaDBAnalyzeQueryTables(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		table: DF.Data | None
+		table_statistics: DF.Code | None
 	# end: auto-generated types
 
 	pass
