@@ -1,9 +1,5 @@
 <template>
-	<FormControl
-		class="mt-4"
-		v-model="billing_name"
-		label="Billing Name"
-	/>
+	<FormControl class="mt-4" v-model="billing_name" label="Billing Name" />
 	<AddressForm
 		ref="address-form"
 		class="mt-4"
@@ -26,6 +22,7 @@
 </template>
 
 <script>
+import { DashboardError } from '../utils/error';
 import AddressForm from './AddressForm.vue';
 import { notify } from '@/utils/toast.js';
 
@@ -64,7 +61,7 @@ export default {
 							gstin:
 								billingInformation.gstin == 'Not Applicable'
 									? ''
-									: billingInformation.gstin,
+									: billingInformation.gstin
 						});
 						this.billing_name = billingInformation.billing_name;
 					}
@@ -93,7 +90,9 @@ export default {
 					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
 					var billingNameValid = billingNameRegex.test(billing_name);
 					if (!billingNameValid) {
-						return 'Billing Name contains invalid characters';
+						throw new DashboardError(
+							'Billing Name contains invalid characters'
+						);
 					}
 					this.billing_name = billing_name;
 					return this.$refs['address-form'].validateValues();
