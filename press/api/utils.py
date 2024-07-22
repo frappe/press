@@ -7,9 +7,6 @@ from press.press.doctype.brand_settings.brand_settings import (
 
 @frappe.whitelist(allow_guest=True)
 def get_brand_details():
-	data = _get_brand_details()
-
-	print(data)
 	return _get_brand_details()
 
 

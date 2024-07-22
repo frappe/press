@@ -37,11 +37,13 @@
    "label": "Terms"
   },
   {
+   "description": "Define full URL like https://frappecloud.com/terms",
    "fieldname": "terms_of_service",
    "fieldtype": "Data",
    "label": "Terms of Service"
   },
   {
+   "description": "Define full URL like https://frappecloud.com/cookie-policy",
    "fieldname": "cookie_policy",
    "fieldtype": "Data",
    "label": "Cookie Policy"
@@ -51,6 +53,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Define full URL like https://frappecloud.com/privacy",
    "fieldname": "privacy_policy",
    "fieldtype": "Data",
    "label": "Privacy Policy"
@@ -69,7 +72,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-07-22 14:31:18.289758",
+ "modified": "2024-07-22 15:27:04.394302",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Brand Settings",

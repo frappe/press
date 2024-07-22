@@ -32,10 +32,15 @@ def get_brand_details():
 		"brand_logo": brand_details.get("brand_logo"),
 		"brand_name": brand_details.get("brand_name") or "Frappe Cloud",
 		"footer_logo": brand_details.get("footer_logo"),
+		"terms_of_service": brand_details.get("terms_of_service")
+		or "https://frappecloud.com/terms",
+		"cookie_policy": brand_details.get("cookie_policy")
+		or "https://frappecloud.com/cookie-policy",
+		"privacy_policy": brand_details.get("privacy_policy")
+		or "https://frappecloud.com/privacy",
 	}
 
 
 def get_brand_name():
 	brand_details = frappe.get_cached_doc("Brand Settings")
-	print(brand_details.as_dict())
 	return brand_details.get("brand_name") or "Frappe Cloud"
