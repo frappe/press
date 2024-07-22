@@ -21,12 +21,9 @@
 						type="data"
 						:label="`Custom ${dependency.title}`"
 						placeholder="Please enter a custom version"
+						description="Please ensure entered version of this dependency exists before setting it"
 						v-model="customVersion"
 					/>
-					<p class="mt-2 text-sm text-yellow-600">
-						Please ensure entered version of this dependency exists before
-						setting it.
-					</p>
 				</div>
 
 				<!-- Non custom version -->
@@ -40,11 +37,25 @@
 					v-model="selectedDependencyVersion"
 				/>
 
-				<FormControl
-					type="checkbox"
-					label="Use Custom Version"
-					v-model="useCustomVersion"
-				/>
+				<!-- Use Custom Version Checkbox -->
+				<div class="flex items-center gap-2">
+					<FormControl
+						type="checkbox"
+						label="Use Custom Version"
+						v-model="useCustomVersion"
+					/>
+					<Tooltip text="View documentation">
+						<a
+							class="no-underline"
+							target="_blank"
+							href="https://frappecloud.com/docs/benches/editing-bench-dependency-version#setting-a-custom-version"
+							><FeatherIcon
+								name="help-circle"
+								class="h-3 w-3 text-gray-700"
+							></FeatherIcon
+						></a>
+					</Tooltip>
+				</div>
 
 				<ErrorMessage
 					:message="groupDocResource?.updateDependency?.error || error"
