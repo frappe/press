@@ -14,7 +14,9 @@
   "terms_of_service",
   "cookie_policy",
   "column_break_gcuq",
-  "privacy_policy"
+  "privacy_policy",
+  "onboarding_tab",
+  "onboarding_message"
  ],
  "fields": [
   {
@@ -67,12 +69,22 @@
    "fieldname": "footer_logo",
    "fieldtype": "Attach Image",
    "label": "Footer Logo"
+  },
+  {
+   "fieldname": "onboarding_tab",
+   "fieldtype": "Tab Break",
+   "label": "Onboarding"
+  },
+  {
+   "fieldname": "onboarding_message",
+   "fieldtype": "Text",
+   "label": "Onboarding Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-07-22 15:27:04.394302",
+ "modified": "2024-07-22 16:22:33.080437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Brand Settings",

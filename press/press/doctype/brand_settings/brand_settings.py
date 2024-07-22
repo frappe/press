@@ -18,6 +18,7 @@ class BrandSettings(Document):
 		brand_name: DF.Data | None
 		cookie_policy: DF.Data | None
 		footer_logo: DF.AttachImage | None
+		onboarding_message: DF.Text | None
 		privacy_policy: DF.Data | None
 		terms_of_service: DF.Data | None
 	# end: auto-generated types
@@ -44,3 +45,7 @@ def get_brand_details():
 def get_brand_name():
 	brand_details = frappe.get_cached_doc("Brand Settings")
 	return brand_details.get("brand_name") or "Frappe Cloud"
+
+
+def get_onboarding_message():
+	return frappe.db.get_single_value("Brand Settings", "onboarding_message")
