@@ -1,8 +1,8 @@
 <template>
 	<span v-if="type == 'header'">
 		<img
-			v-if="brandDetails && brandDetails.app_logo"
-			:src="brandDetails.app_logo"
+			v-if="brandDetails && brandDetails.brand_logo"
+			:src="brandDetails.brand_logo"
 			class="inline-block h-7 w-7"
 		/>
 		<FCLogo class="inline-block h-7 w-7" v-else />
@@ -10,8 +10,9 @@
 
 	<span v-else-if="type == 'footer'">
 		<img
-			v-if="brandDetails && brandDetails.app_footer_logo"
-			:src="brandDetails.app_footer_logo"
+			v-if="brandDetails && brandDetails.footer_logo"
+			:src="brandDetails.footer_logo"
+			class="h-4"
 		/>
 		<FrappeLogo class="h-4" v-else />
 	</span>

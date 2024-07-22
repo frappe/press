@@ -1,15 +1,18 @@
 import frappe
+from press.press.doctype.brand_settings.brand_settings import (
+	get_brand_details as _get_brand_details,
+	get_brand_name as _get_brand_name,
+)
 
 
 @frappe.whitelist(allow_guest=True)
 def get_brand_details():
-	return {
-		"app_logo": frappe.get_website_settings("app_logo"),
-		"app_name": frappe.get_website_settings("app_name"),
-		"app_footer_logo": frappe.get_website_settings("footer_logo"),
-	}
+	data = _get_brand_details()
+
+	print(data)
+	return _get_brand_details()
 
 
 @frappe.whitelist(allow_guest=True)
-def get_app_name():
-	return frappe.get_website_settings("app_name") or "Frappe Cloud"
+def get_brand_name():
+	return _get_brand_name() or "Frappe Cloud"

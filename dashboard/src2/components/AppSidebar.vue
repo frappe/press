@@ -35,7 +35,7 @@
 						<BrandLogo type="header" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
-								{{ appName }}
+								{{ brandName }}
 							</div>
 							<Tooltip :text="$team?.doc?.user || null">
 								<div
@@ -123,9 +123,9 @@ export default {
 		}
 	},
 	computed: {
-		appName() {
+		brandName() {
 			let brandInfo = getBrandInfo();
-			return brandInfo.app_name;
+			return brandInfo.brand_name;
 		}
 	}
 };

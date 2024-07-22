@@ -8,7 +8,7 @@
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
-							{{ appName }}
+							{{ brandName }}
 						</span>
 					</div>
 				</slot>
@@ -60,9 +60,9 @@ export default {
 		}
 	},
 	computed: {
-		appName() {
+		brandName() {
 			let brandDetails = getBrandInfo();
-			return brandDetails.app_name;
+			return brandDetails.brand_name;
 		}
 	}
 };
