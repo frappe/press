@@ -139,18 +139,15 @@ export default {
 	},
 	methods: {
 		setErrorIfCannotUpdate() {
-			if (this.useCustomVersion && !this.customVersion) {
-				this.error = 'Please enter a custom version';
-				return true;
-			}
-
-			if (!this.selectedDependencyVersion) {
-				this.error = 'Please select a version';
+			if (!this.version) {
+				const verb = this.useCustomVersion ? 'enter' : 'select';
+				this.error = `Please ${verb} a version`;
 				return true;
 			}
 
 			if (this.dependency.version === this.version) {
-				this.error = 'Chosen version is same as the previous version';
+				const verb = this.useCustomVersion ? 'Entered' : 'selected';
+				this.error = `${verb} version is same as the previous version`;
 				return true;
 			}
 
