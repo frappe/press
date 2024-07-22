@@ -14,6 +14,7 @@ import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
 import posthog from 'posthog-js';
 import { toast } from 'vue-sonner';
+import { fetchBrandInfo } from './data/branding.js';
 
 let request = options => {
 	let _options = options || {};
@@ -50,6 +51,8 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
+	fetchBrandInfo();
+
 	if (session.isLoggedIn) {
 		fetchPlans();
 		session.roles.fetch();
