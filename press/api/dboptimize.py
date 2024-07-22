@@ -62,9 +62,15 @@ def analyze_query(row, site):
 
 
 def fetch_column_stats_update(job, response_data):
-	print(job)
-	print("Wassup")
-	print(response_data)
+	if job.status == "Success":
+		doc_name = response_data["data"]["doc_name"]
+		column_statistics = response_data["steps"][0]["data"]["output"]
+		table = job.request_data["table"]
+		doc = frappe.get_doc("MariaDB Analyze Query", doc_name)
+		for item in doc.tables_in_query:
+			if item.table == table:
+				item.column_statistics = json.dumps(column_statistics)
+				doc.save()
 
 
 # @frappe.whitelist()
