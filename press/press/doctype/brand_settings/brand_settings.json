@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-22 14:06:23.709878",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "brand_section",
+  "brand_logo",
+  "footer_logo",
+  "column_break_oezy",
+  "brand_name",
+  "terms_section",
+  "terms_of_service",
+  "cookie_policy",
+  "column_break_gcuq",
+  "privacy_policy"
+ ],
+ "fields": [
+  {
+   "fieldname": "brand_section",
+   "fieldtype": "Section Break",
+   "label": "Brand"
+  },
+  {
+   "fieldname": "column_break_oezy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Brand Name"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "terms_of_service",
+   "fieldtype": "Data",
+   "label": "Terms of Service"
+  },
+  {
+   "fieldname": "cookie_policy",
+   "fieldtype": "Data",
+   "label": "Cookie Policy"
+  },
+  {
+   "fieldname": "column_break_gcuq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "privacy_policy",
+   "fieldtype": "Data",
+   "label": "Privacy Policy"
+  },
+  {
+   "fieldname": "brand_logo",
+   "fieldtype": "Attach Image",
+   "label": "Brand Logo"
+  },
+  {
+   "fieldname": "footer_logo",
+   "fieldtype": "Attach Image",
+   "label": "Footer Logo"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-07-22 14:31:18.289758",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Brand Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
