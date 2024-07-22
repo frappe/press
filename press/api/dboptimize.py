@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import frappe
 from press.agent import Agent
 
-# from press.api.site import protected
+from press.api.site import protected
 
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	OptimizeDatabaseQuery,
@@ -21,7 +21,7 @@ from press.press.report.mariadb_slow_queries.db_optimizer import (
 
 
 @frappe.whitelist()
-# @protected("Site")
+@protected("Site")
 def mariadb_analyze_query(name, row):
 	suggested_index = analyze_query(row=row, site=name)
 	return suggested_index
