@@ -401,8 +401,15 @@ export default {
 																								}),
 																								{
 																									loading: 'Installing app...',
-																									success: () => {
+																									success: jobId => {
 																										apps.reload();
+																										router.push({
+																											name: 'Site Job',
+																											params: {
+																												name: site.name,
+																												id: jobId
+																											}
+																										});
 																										return 'App will be installed shortly';
 																									},
 																									error: e => {
@@ -422,8 +429,15 @@ export default {
 																					}),
 																					{
 																						loading: 'Installing app...',
-																						success: () => {
+																						success: jobId => {
 																							apps.reload();
+																							router.push({
+																								name: 'Site Job',
+																								params: {
+																									name: site.name,
+																									id: jobId
+																								}
+																							});
 																							return 'App will be installed shortly';
 																						},
 																						error: e => {
@@ -498,20 +512,22 @@ export default {
 										onSuccess({ hide }) {
 											if (site.uninstallApp.loading) return;
 											toast.promise(
-												site.uninstallApp.submit(
-													{
-														app: row.app
-													},
-													{
-														onSuccess: () => {
-															hide();
-															apps.reload();
-														}
-													}
-												),
+												site.uninstallApp.submit({
+													app: row.app
+												}),
 												{
-													loading: 'Uninstalling app...',
-													success: () => 'App uninstalled successfully',
+													loading: 'Scheduling app uninstall...',
+													success: jobId => {
+														hide();
+														router.push({
+															name: 'Site Job',
+															params: {
+																name: site.name,
+																id: jobId
+															}
+														});
+														return 'App uninstall scheduled';
+													},
 													error: e => {
 														return e.messages?.length
 															? e.messages.join('\n')
@@ -915,13 +931,13 @@ export default {
 														}),
 														{
 															loading: 'Scheduling backup restore...',
-															success: restoreJobId => {
+															success: jobId => {
 																hide();
 																router.push({
 																	name: 'Site Job',
 																	params: {
 																		name: site.name,
-																		id: restoreJobId
+																		id: jobId
 																	}
 																});
 																return 'Backup restore scheduled successfully.';
@@ -962,10 +978,10 @@ export default {
 															}),
 															{
 																loading: 'Scheduling backup restore...',
-																success: restoreJobId => {
+																success: jobId => {
 																	router.push({
 																		name: 'Site Job',
-																		params: { name: siteName, id: restoreJobId }
+																		params: { name: siteName, id: jobId }
 																	});
 																	return 'Backup restore scheduled successfully.';
 																},

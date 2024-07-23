@@ -569,7 +569,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def install_app(self, app, plan=None):
+	def install_app(self, app: str, plan: str | None = None) -> str:
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
 			if not is_free:
@@ -583,23 +583,25 @@ class Site(Document, TagHelpers):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App", app)
 			agent = Agent(self.server)
-			agent.install_app_site(self, app)
+			job = agent.install_app_site(self, app)
 			self.status = "Pending"
 			self.save()
 
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
-		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(
-				self.name, app, plan, self.team
-			)
+			if plan:
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan, self.team
+				)
+
+			return job.name
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app):
+	def uninstall_app(self, app: str) -> str:
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
-		agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app)
 		self.status = "Pending"
 		self.save()
 
@@ -618,6 +620,8 @@ class Site(Document, TagHelpers):
 		)
 		if marketplace_app_name and app_subscription:
 			frappe.db.set_value("Subscription", app_subscription, "enabled", 0)
+
+		return job.name
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
