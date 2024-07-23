@@ -46,17 +46,13 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Tooltip text="Refresh" v-if="$list">
-					<Button
-						label="Refresh"
-						@click="debounce($list.reload(), 10)"
-						:loading="isLoading"
-					>
-						<template #icon>
+				<Button label="Refresh" @click="$list.reload" :loading="isLoading">
+					<template #icon>
+						<Tooltip text="Refresh" v-if="$list">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-						</template>
-					</Button>
-				</Tooltip>
+						</Tooltip>
+					</template>
+				</Button>
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -132,7 +128,6 @@ import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	debounce,
 	ListView,
 	ListHeader,
 	ListRow,
