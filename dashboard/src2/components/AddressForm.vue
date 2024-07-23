@@ -27,6 +27,7 @@
 <script>
 import Form from '@/components/Form.vue';
 import { indianStates } from '@/utils/billing.js';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'AddressForm',
@@ -97,8 +98,11 @@ export default {
 			});
 		},
 		async validateGST() {
-			this.update('gstin', this.gstApplicable	? this.address.gstin : 'Not Applicable');
-			await this.$resources.validateGST.submit()
+			this.update(
+				'gstin',
+				this.gstApplicable ? this.address.gstin : 'Not Applicable'
+			);
+			await this.$resources.validateGST.submit();
 		},
 		async validateValues() {
 			let { country } = this.address;
@@ -109,13 +113,13 @@ export default {
 				.map(df => this.address[df.fieldname]);
 
 			if (!values.every(Boolean)) {
-				return 'Please fill required values';
+				throw new DashboardError('Please fill required values');
 			}
 
 			try {
 				await this.validateGST();
 			} catch (error) {
-				return error.messages?.join('\n');
+				throw new DashboardError(error.messages?.join('\n'));
 			}
 		}
 	},
