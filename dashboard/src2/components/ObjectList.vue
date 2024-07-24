@@ -128,6 +128,7 @@
 </template>
 <script>
 import { reactive } from 'vue';
+import { throttle } from '../utils/throttle';
 import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
@@ -163,7 +164,6 @@ export default {
 	},
 	data() {
 		return {
-			lastRefreshed: null,
 			searchQuery: ''
 		};
 	},
@@ -218,9 +218,6 @@ export default {
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
 				auto: true,
-				onSuccess: () => {
-					this.lastRefreshed = new Date();
-				},
 				onError: e => {
 					if (this.$list.data) {
 						this.$list.data = [];
@@ -253,15 +250,11 @@ export default {
 			this.$socket.emit('doctype_subscribe', doctype);
 			subscribed[doctype] = true;
 
+			const throttledReload = throttle(this.$list.reload, 5000);
 			this.$socket.on('list_update', data => {
 				const names = (this.$list.data || []).map(d => d.name);
-				if (
-					data.doctype === doctype &&
-					names.includes(data.name) &&
-					// update list if last refreshed is more than 5 seconds ago
-					new Date() - this.lastRefreshed > 5000
-				) {
-					this.$list.reload();
+				if (data.doctype === doctype && names.includes(data.name)) {
+					throttledReload();
 				}
 			});
 		}
