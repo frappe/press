@@ -19,10 +19,9 @@
 			>
 				Proceed to payment using Razorpay
 			</Button>
-			<Button v-else
-				variant="solid"
-				:loading="$resources.prepaidCreditForOnboarding.loading"
-			>Confirming payment</Button>
+			<Button v-else variant="solid" :loading="isVerifyingPayment"
+				>Confirming payment</Button
+			>
 		</div>
 	</div>
 </template>
@@ -45,7 +44,8 @@ export default {
 	},
 	data() {
 		return {
-			isPaymentComplete: false
+			isPaymentComplete: false,
+			isVerifyingPayment: false
 		};
 	},
 	mounted() {
@@ -81,14 +81,6 @@ export default {
 				url: 'press.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
-				}
-			};
-		},
-		prepaidCreditForOnboarding() {
-			return {
-				url: 'press.api.billing.prepaid_credits_via_onboarding',
-				onSuccess() {
-					this.$emit('success');
 				}
 			};
 		}
@@ -127,11 +119,21 @@ export default {
 			this.isPaymentComplete = true;
 			if (this.isOnboarding) {
 				console.log('Onboarding');
-				this.$resources.prepaidCreditForOnboarding.submit();
+				this.checkForOnboardingPaymentCompletion();
 			} else {
 				this.$emit('success');
+				toast.success('Payment successful');
 			}
-			toast.success('Payment successful');
+		},
+		async checkForOnboardingPaymentCompletion() {
+			this.isVerifyingPayment = true;
+			await this.$team.reload();
+			if (!this.$team.doc.payment_mode) {
+				setTimeout(this.checkForOnboardingPaymentCompletion, 2000);
+			} else {
+				this.isVerifyingPayment = false;
+				this.$emit('success');
+			}
 		}
 	},
 	beforeUnmount() {
