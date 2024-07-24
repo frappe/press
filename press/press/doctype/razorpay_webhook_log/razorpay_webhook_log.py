@@ -34,6 +34,37 @@ class RazorpayWebhookLog(Document):
 
 
 @frappe.whitelist(allow_guest=True)
+def razorpay_authorized_payment_handler():
+	client = get_razorpay_client()
+	current_user = frappe.session.user
+	form_dict = frappe.local.form_dict
+
+	try:
+		payload = frappe.request.get_data()
+		signature = frappe.get_request_header("X-Razorpay-Signature")
+		webhook_secret = frappe.db.get_single_value(
+			"Press Settings", "razorpay_webhook_secret"
+		)
+
+		client.utility.verify_webhook_signature(payload.decode(), signature, webhook_secret)
+		if form_dict["payload"]["payment"]["entity"]["status"] != "authorized":
+			raise Exception("invalid payment status received")
+		payment_id = form_dict["payload"]["payment"]["entity"]["id"]
+		amount = form_dict["payload"]["payment"]["entity"]["amount"]
+
+		res = client.payment.capture(payment_id, amount)
+		print(res)
+
+	except Exception:
+		frappe.db.rollback()
+		log_error(
+			title="Razorpay Webhook Handler",
+			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
+		)
+		frappe.set_user(current_user)
+		raise Exception
+
+@frappe.whitelist(allow_guest=True)
 def razorpay_webhook_handler():
 	client = get_razorpay_client()
 	current_user = frappe.session.user

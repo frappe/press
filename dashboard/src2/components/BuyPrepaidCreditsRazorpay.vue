@@ -14,10 +14,15 @@
 			<Button
 				variant="solid"
 				:loading="$resources.createRazorpayOrder.loading"
+				v-if="!isPaymentComplete"
 				@click="buyCreditsWithRazorpay"
 			>
 				Proceed to payment using Razorpay
 			</Button>
+			<Button v-else
+				variant="solid"
+				:loading="$resources.prepaidCreditForOnboarding.loading"
+			>Confirming payment</Button>
 		</div>
 	</div>
 </template>
@@ -33,7 +38,15 @@ export default {
 		},
 		minimumAmount: {
 			default: 0
+		},
+		isOnboarding: {
+			default: false
 		}
+	},
+	data() {
+		return {
+			isPaymentComplete: false
+		};
 	},
 	mounted() {
 		this.razorpayCheckoutJS = document.createElement('script');
@@ -70,6 +83,14 @@ export default {
 					console.log('Payment Failed.');
 				}
 			};
+		},
+		prepaidCreditForOnboarding() {
+			return {
+				url: 'press.api.billing.prepaid_credits_via_onboarding',
+				onSuccess() {
+					this.$emit('success');
+				}
+			};
 		}
 	},
 	methods: {
@@ -85,10 +106,8 @@ export default {
 				prefill: {
 					email: this.$team.doc.user
 				},
-				theme: { color: '#171717' },
-				handler: () => {
-					this.$emit('success');
-				}
+				handler: this.handlePaymentSuccess,
+				theme: { color: '#171717' }
 			};
 
 			const rzp = new Razorpay(options);
@@ -98,13 +117,20 @@ export default {
 
 			// Attach failure handler
 			rzp.on('payment.failed', this.handlePaymentFailed);
-			rzp.on('payment.success', this.handlePaymentSuccess);
+			// rzp.on('payment.success', this.handlePaymentSuccess);
 		},
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
 			toast.error('Payment failed');
 		},
-		handlePaymentSuccess(response) {
+		handlePaymentSuccess() {
+			this.isPaymentComplete = true;
+			if (this.isOnboarding) {
+				console.log('Onboarding');
+				this.$resources.prepaidCreditForOnboarding.submit();
+			} else {
+				this.$emit('success');
+			}
 			toast.success('Payment successful');
 		}
 	},

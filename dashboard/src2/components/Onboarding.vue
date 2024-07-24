@@ -181,6 +181,7 @@
 							<!-- Purchase Prepaid Credit -->
 							<div v-else class="mt-3">
 								<BuyPrepaidCreditsForm
+									:isOnboarding="true"
 									:minimumAmount="minimumAmount"
 									@success="onBuyCreditsSuccess"
 								/>

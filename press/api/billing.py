@@ -404,7 +404,7 @@ def prepaid_credits_via_onboarding():
 	while team.get_balance() == 0 or seconds > 20:
 		seconds += 1
 		sleep(1)
-		frappe.db.rollback()
+		team.reload()
 
 	team.payment_mode = "Prepaid Credits"
 	team.save()
