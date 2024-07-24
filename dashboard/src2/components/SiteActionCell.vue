@@ -57,7 +57,7 @@ function getSiteActionHandler(action) {
 			import('./SiteChangeBenchDialog.vue')
 		),
 		'Change region': defineAsyncComponent(() =>
-			import('./SiteChangeRegionDialog.vue')
+			import('./site/SiteChangeRegionDialog.vue')
 		),
 		'Change server': defineAsyncComponent(() =>
 			import('./SiteChangeServerDialog.vue')
