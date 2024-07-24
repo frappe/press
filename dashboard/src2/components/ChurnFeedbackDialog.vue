@@ -53,6 +53,7 @@
 <script>
 import FormControl from 'frappe-ui/src/components/FormControl.vue';
 import StarRatingInput from '../../src/components/StarRatingInput.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'ChurnFeedbackDialog',
@@ -85,7 +86,7 @@ export default {
 				},
 				validate() {
 					if (!this.feedback) {
-						return 'Please select a reason';
+						throw new DashboardError('Please select a reason');
 					}
 
 					if (
@@ -96,7 +97,7 @@ export default {
 						].includes(this.feedback) &&
 						!this.note
 					) {
-						return 'Please provide a brief reason';
+						throw new DashboardError('Please provide a brief reason');
 					}
 				},
 				onSuccess() {
