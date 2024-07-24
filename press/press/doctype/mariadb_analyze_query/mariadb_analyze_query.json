@@ -7,7 +7,9 @@
  "field_order": [
   "site",
   "query",
-  "tables_in_query"
+  "explain_output",
+  "tables_in_query",
+  "suggested_index"
  ],
  "fields": [
   {
@@ -28,11 +30,21 @@
    "fieldtype": "Table",
    "label": "Tables In Query",
    "options": "MariaDB Analyze Query Tables"
+  },
+  {
+   "fieldname": "suggested_index",
+   "fieldtype": "Data",
+   "label": "Suggested Index"
+  },
+  {
+   "fieldname": "explain_output",
+   "fieldtype": "Code",
+   "label": "Explain Output"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-21 16:59:15.422763",
+ "modified": "2024-07-24 11:47:47.254111",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Analyze Query",

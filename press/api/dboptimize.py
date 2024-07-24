@@ -44,6 +44,7 @@ def analyze_query(row, site):
 			"tables_in_query": [],
 		}
 	)
+	doc.explain_output = json.dumps(explain_output)
 	doc.insert()
 	# for table_name in tables:
 	#     doc.append("tables_in_query", {"table": table_name})
@@ -61,17 +62,44 @@ def analyze_query(row, site):
 	return tables
 
 
+def check_if_all_fetch_column_stats_was_sucessful(doc):
+	for item in doc.tables_in_query:
+		if not item.status == "Success":
+			return False
+	return True
+
+
 def fetch_column_stats_update(job, response_data):
+	doc_name = response_data["data"]["doc_name"]
 	if job.status == "Success":
-		doc_name = response_data["data"]["doc_name"]
 		column_statistics = response_data["steps"][0]["data"]["output"]
 		table = json.loads(job.request_data)["table"]
 		doc = frappe.get_doc("MariaDB Analyze Query", doc_name)
 		for item in doc.tables_in_query:
 			if item.table == table:
-				print(item.table)
 				item.column_statistics = column_statistics
+				item.status = "Success"
 				doc.save()
+		if check_if_all_fetch_column_stats_was_sucessful(doc):
+			get_suggested_index(doc)
+
+
+def get_suggested_index(doc):
+	explain_output = json.loads(doc.explain_output)
+	optimizer = DBOptimizer(query=doc.query, explain_plan=explain_output)
+	for item in doc.tables_in_query:
+		stats = json.loads(item.table_statistics)
+		if not stats:
+			# Old framework version
+			return
+		db_table = DBTable.from_frappe_ouput(stats)
+		column_stats = json.loads(item.column_statistics)
+		column_stats = [ColumnStat.from_frappe_ouput(c) for c in column_stats]
+		db_table.update_cardinality(column_stats)
+		optimizer.update_table_data(db_table)
+	index = optimizer.suggest_index()
+	doc.suggested_index = f"{index.table}.{index.column}"
+	doc.save()
 
 
 # @frappe.whitelist()
