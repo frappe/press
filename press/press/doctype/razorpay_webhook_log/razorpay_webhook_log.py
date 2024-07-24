@@ -64,6 +64,7 @@ def razorpay_authorized_payment_handler():
 		frappe.set_user(current_user)
 		raise Exception
 
+
 @frappe.whitelist(allow_guest=True)
 def razorpay_webhook_handler():
 	client = get_razorpay_client()
