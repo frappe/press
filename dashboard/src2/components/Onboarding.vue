@@ -1,8 +1,11 @@
 <template>
 	<div class="mx-auto max-w-2xl rounded-lg border-0 px-2 sm:border sm:p-8">
 		<div class="prose prose-sm max-w-none">
-			<h1 class="text-2xl font-semibold">Welcome to Frappe Cloud</h1>
-			<p>
+			<h1 class="text-2xl font-semibold">Welcome to {{ brandName }}</h1>
+			<p v-if="onboarding">
+				{{ onboarding.message }}
+			</p>
+			<p v-else>
 				Frappe Cloud makes it easy to manage sites and apps like ERPNext in an
 				easy to use dashboard with powerful features like automatic backups,
 				custom domains, SSL certificates, custom apps, automatic updates and
@@ -266,6 +269,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import TextInsideCircle from './TextInsideCircle.vue';
+// import { fetchOnboardingDetails } from '../data/branding';
 
 export default {
 	name: 'Onboarding',
@@ -340,12 +344,30 @@ export default {
 		},
 		trialSite() {
 			return this.$team.doc.trial_sites?.[0];
+		},
+		onboarding() {
+			return this.$resources.onboardingDetails.data;
+		},
+		brandName() {
+			return this.$resources.brandName.data;
 		}
 	},
 	resources: {
 		availableApps() {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
+				auto: true
+			};
+		},
+		onboardingDetails() {
+			return {
+				url: 'press.api.utils.get_onboarding_details',
+				auto: true
+			};
+		},
+		brandName() {
+			return {
+				url: 'press.api.utils.get_brand_name',
 				auto: true
 			};
 		}

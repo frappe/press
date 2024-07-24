@@ -76,17 +76,14 @@
 								By clicking on
 								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
 								>, you accept our
-								<Link href="https://frappecloud.com/terms" target="_blank"
+								<Link :href="policies.terms_of_service" target="_blank"
 									>Terms of Service </Link
 								>,
-								<Link href="https://frappecloud.com/privacy" target="_blank">
+								<Link :href="policies.privacy_policy" target="_blank">
 									Privacy Policy
 								</Link>
 								&#38;
-								<Link
-									href="https://frappecloud.com/cookie-policy"
-									target="_blank"
-								>
+								<Link :href="policies.cookie_policy" target="_blank">
 									Cookie Policy
 								</Link>
 							</label>
@@ -120,6 +117,7 @@ import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
+import { getBrandInfo } from '../data/branding';
 
 export default {
 	name: 'SetupAccount',
@@ -221,6 +219,9 @@ export default {
 				df.required = true;
 				return df;
 			});
+		},
+		policies() {
+			return getBrandInfo();
 		}
 	}
 };
