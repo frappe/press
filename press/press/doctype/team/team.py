@@ -797,8 +797,7 @@ class Team(Document):
 		doc.submit()
 
 		self.reload()
-		if not self.payment_modegit :
-			# change payment mode to prepaid credits if default is card or not set
+		if not self.payment_mode:
 			self.validate_payment_mode()
 			self.save(ignore_permissions=True)
 		return doc
