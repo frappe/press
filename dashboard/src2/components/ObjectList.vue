@@ -46,9 +46,14 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Button label="Refresh" @click="$list.reload" :loading="isLoading">
+				<Button
+					label="Refresh"
+					v-if="$list"
+					@click="$list.reload()"
+					:loading="isLoading"
+				>
 					<template #icon>
-						<Tooltip text="Refresh" v-if="$list">
+						<Tooltip text="Refresh">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
 						</Tooltip>
 					</template>
