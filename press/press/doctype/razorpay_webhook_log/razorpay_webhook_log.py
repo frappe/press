@@ -36,7 +36,6 @@ class RazorpayWebhookLog(Document):
 @frappe.whitelist(allow_guest=True)
 def razorpay_authorized_payment_handler():
 	client = get_razorpay_client()
-	current_user = frappe.session.user
 	form_dict = frappe.local.form_dict
 
 	try:
@@ -55,12 +54,10 @@ def razorpay_authorized_payment_handler():
 		client.payment.capture(payment_id, amount)
 
 	except Exception:
-		frappe.db.rollback()
 		log_error(
 			title="Razorpay Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
 		)
-		frappe.set_user(current_user)
 		raise Exception
 
 
