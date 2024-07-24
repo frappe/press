@@ -1,4 +1,5 @@
 import { icon } from '../../utils/components';
+import { isMobile } from '../../utils/device';
 import { duration } from '../../utils/format';
 
 function getJobRoute(doctype) {
@@ -38,6 +39,7 @@ export function jobTab(doctype) {
 						type: 'select',
 						label: 'Status',
 						fieldname: 'status',
+						class: !isMobile() ? 'w-24' : '',
 						options: ['', 'Pending', 'Running', 'Success', 'Failure']
 					},
 					{
@@ -67,7 +69,7 @@ export function jobTab(doctype) {
 				{
 					label: 'Site',
 					fieldname: 'site',
-					width: 1.25,
+					width: 1.2,
 					condition: () => doctype !== 'Site'
 				},
 				{
@@ -78,7 +80,7 @@ export function jobTab(doctype) {
 				{
 					label: 'Duration',
 					fieldname: 'duration',
-					width: 0.5,
+					width: 0.35,
 					format(value, row) {
 						if (row.job_id === 0 || !row.end) return;
 						return duration(value);
@@ -86,8 +88,7 @@ export function jobTab(doctype) {
 				},
 				{
 					label: 'Created By',
-					fieldname: 'owner',
-					width: 0.5
+					fieldname: 'owner'
 				},
 				{
 					label: '',
