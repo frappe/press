@@ -52,8 +52,7 @@ def razorpay_authorized_payment_handler():
 		payment_id = form_dict["payload"]["payment"]["entity"]["id"]
 		amount = form_dict["payload"]["payment"]["entity"]["amount"]
 
-		res = client.payment.capture(payment_id, amount)
-		print(res)
+		client.payment.capture(payment_id, amount)
 
 	except Exception:
 		frappe.db.rollback()
