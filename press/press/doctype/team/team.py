@@ -385,7 +385,7 @@ class Team(Document):
 
 	def validate_payment_mode(self):
 		if not self.payment_mode and self.get_balance() > 0:
-			frappe.db.set_value("Team", self.name, "payment_mode", "Prepaid Credits")
+			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
 			if self.payment_mode == "Card":
@@ -799,7 +799,7 @@ class Team(Document):
 		self.reload()
 		if not self.default_payment_method:
 			# change payment mode to prepaid credits if default is card or not set
-			self.payment_mode = self.payment_mode
+			self.payment_mode = "Prepaid Credits"
 			self.save(ignore_permissions=True)
 		return doc
 
