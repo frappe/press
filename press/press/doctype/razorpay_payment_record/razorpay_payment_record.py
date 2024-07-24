@@ -45,6 +45,7 @@ class RazorpayPaymentRecord(Document):
 			source="Prepaid Credits",
 			remark=f"Razorpay: {self.payment_id}",
 		)
+		team.reload()
 
 		# Add a field to track razorpay event
 		invoice = frappe.get_doc(
