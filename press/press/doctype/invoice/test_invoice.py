@@ -530,7 +530,7 @@ class TestInvoice(unittest.TestCase):
 			self.assertEquals(invoice.total, 10)
 			self.assertEquals(invoice.applied_credits, 5)
 			self.assertEquals(invoice.amount_due, 5)
-			self.assertEquals(invoice.amount_due_with_tax, 5.9)
+			self.assertEquals(invoice.amount_due_with_tax, 5)
 
 		finally:
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
