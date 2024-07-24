@@ -12,7 +12,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, userCurrency } from '../utils/format';
+import { bytes, date, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
@@ -20,6 +20,7 @@ import { getDocResource } from '../utils/resource';
 import { logsTab } from './tabs/site/logs';
 import { trialDays } from '../utils/site';
 import dayjs from '../utils/dayjs';
+import { jobTab } from './common/jobs';
 
 export default {
 	doctype: 'Site',
@@ -400,8 +401,15 @@ export default {
 																								}),
 																								{
 																									loading: 'Installing app...',
-																									success: () => {
+																									success: jobId => {
 																										apps.reload();
+																										router.push({
+																											name: 'Site Job',
+																											params: {
+																												name: site.name,
+																												id: jobId
+																											}
+																										});
 																										return 'App will be installed shortly';
 																									},
 																									error: e => {
@@ -421,8 +429,15 @@ export default {
 																					}),
 																					{
 																						loading: 'Installing app...',
-																						success: () => {
+																						success: jobId => {
 																							apps.reload();
+																							router.push({
+																								name: 'Site Job',
+																								params: {
+																									name: site.name,
+																									id: jobId
+																								}
+																							});
 																							return 'App will be installed shortly';
 																						},
 																						error: e => {
@@ -497,20 +512,22 @@ export default {
 										onSuccess({ hide }) {
 											if (site.uninstallApp.loading) return;
 											toast.promise(
-												site.uninstallApp.submit(
-													{
-														app: row.app
-													},
-													{
-														onSuccess: () => {
-															hide();
-															apps.reload();
-														}
-													}
-												),
+												site.uninstallApp.submit({
+													app: row.app
+												}),
 												{
-													loading: 'Uninstalling app...',
-													success: () => 'App uninstalled successfully',
+													loading: 'Scheduling app uninstall...',
+													success: jobId => {
+														hide();
+														router.push({
+															name: 'Site Job',
+															params: {
+																name: site.name,
+																id: jobId
+															}
+														});
+														return 'App uninstall scheduled';
+													},
 													error: e => {
 														return e.messages?.length
 															? e.messages.join('\n')
@@ -914,13 +931,13 @@ export default {
 														}),
 														{
 															loading: 'Scheduling backup restore...',
-															success: restoreJobId => {
+															success: jobId => {
 																hide();
 																router.push({
 																	name: 'Site Job',
 																	params: {
 																		name: site.name,
-																		id: restoreJobId
+																		id: jobId
 																	}
 																});
 																return 'Backup restore scheduled successfully.';
@@ -961,10 +978,10 @@ export default {
 															}),
 															{
 																loading: 'Scheduling backup restore...',
-																success: restoreJobId => {
+																success: jobId => {
 																	router.push({
 																		name: 'Site Job',
-																		params: { name: siteName, id: restoreJobId }
+																		params: { name: siteName, id: jobId }
 																	});
 																	return 'Backup restore scheduled successfully.';
 																},
@@ -1373,92 +1390,7 @@ export default {
 					}
 				}
 			},
-			{
-				label: 'Jobs',
-				icon: icon('truck'),
-				childrenRoutes: ['Site Job'],
-				route: 'jobs',
-				type: 'list',
-				list: {
-					doctype: 'Agent Job',
-					filters: site => {
-						return { site: site.doc?.name };
-					},
-					route(row) {
-						return {
-							name: 'Site Job',
-							params: { id: row.name, name: row.site }
-						};
-					},
-					orderBy: 'creation desc',
-					searchField: 'job_type',
-					fields: ['site', 'end'],
-					filterControls() {
-						return [
-							{
-								type: 'select',
-								label: 'Status',
-								fieldname: 'status',
-								options: [
-									'',
-									'Undelivered',
-									'Pending',
-									'Running',
-									'Success',
-									'Failure',
-									'Delivery Failure'
-								]
-							},
-							{
-								type: 'link',
-								label: 'Type',
-								fieldname: 'job_type',
-								options: {
-									doctype: 'Agent Job Type',
-									orderBy: 'name asc',
-									pageLength: 100
-								}
-							}
-						];
-					},
-					columns: [
-						{
-							label: 'Job Type',
-							fieldname: 'job_type',
-							class: 'font-medium',
-							width: 2
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge'
-						},
-						{
-							label: 'Job ID',
-							fieldname: 'job_id'
-						},
-						{
-							label: 'Duration',
-							fieldname: 'duration',
-							format(value, row) {
-								if (row.job_id === 0 || !row.end) return;
-								return duration(value);
-							}
-						},
-						{
-							label: 'Created By',
-							fieldname: 'owner',
-							width: 1
-						},
-						{
-							label: '',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							align: 'right'
-						}
-					]
-				}
-			},
+			jobTab('Site'),
 			{
 				label: 'Performance',
 				icon: icon('zap'),

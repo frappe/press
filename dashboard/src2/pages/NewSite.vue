@@ -34,23 +34,41 @@
 				</div>
 				<div class="mt-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-						<button
+						<component
 							v-for="v in availableVersions"
 							:key="v.name"
-							:class="[
-								version === v.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-gray-50',
-								v.disabled && 'pointer-events-none opacity-50',
-								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
-							]"
-							@click="version = v.name"
+							:is="v.disabled ? 'Tooltip' : 'div'"
+							:text="
+								v.disabled
+									? `This version is not available for the ${$format.plural(
+											versionAppsMap[v.name].length,
+											'app',
+											'apps'
+									  )} ${$format.commaAnd(versionAppsMap[v.name])}`
+									: ''
+							"
 						>
-							<span class="font-medium">{{ v.name }} </span>
-							<span class="ml-1 text-gray-600">
-								{{ v.status }}
-							</span>
-						</button>
+							<button
+								:class="[
+									version === v.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'bg-white text-gray-900  hover:bg-gray-50',
+									v.disabled && 'opacity-50 hover:cursor-default',
+									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
+								]"
+								@click="
+									() => {
+										if (v.disabled) return;
+										version = v.name;
+									}
+								"
+							>
+								<span class="font-medium">{{ v.name }} </span>
+								<span class="ml-1 text-gray-600">
+									{{ v.status }}
+								</span>
+							</button>
+						</component>
 					</div>
 				</div>
 			</div>
@@ -450,6 +468,24 @@ export default {
 		selectedPlan() {
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan.name);
+		},
+		versionAppsMap() {
+			const versions = this.availableVersions.map(v => v.name);
+			let problemAppVersions = {};
+			if (!this.bench)
+				for (let app of this.apps) {
+					const appVersions = app.sources.map(s => s.version);
+					const problemVersions = versions.filter(
+						version => !appVersions.includes(version)
+					);
+					for (let version of problemVersions) {
+						if (!problemAppVersions[version]) {
+							problemAppVersions[version] = [];
+						}
+						problemAppVersions[version].push(app.app_title);
+					}
+				}
+			return problemAppVersions;
 		},
 		breadcrumbs() {
 			if (this.bench) {

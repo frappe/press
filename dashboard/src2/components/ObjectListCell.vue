@@ -32,7 +32,7 @@
 		<div v-else-if="column.type == 'Select'">
 			<Dropdown :options="formattedValue" right>
 				<template v-slot="{ open }">
-					<Button type="white" icon-right="chevron-down">
+					<Button variant="outline" icon-right="chevron-down">
 						{{ row.selectedOption || value[0] }}
 					</Button>
 				</template>

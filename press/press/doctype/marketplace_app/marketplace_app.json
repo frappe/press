@@ -49,8 +49,6 @@
   "subscription_update_hook",
   "site_config_section",
   "site_config",
-  "onboarding_related_section",
-  "show_for_first_site_creation",
   "scripts_tab",
   "run_after_install_script",
   "after_install_script",
@@ -59,7 +57,10 @@
   "review_tab",
   "stop_auto_review",
   "review_stage",
-  "status"
+  "status",
+  "dashboard_tab",
+  "onboarding_related_section",
+  "show_for_site_creation"
  ],
  "fields": [
   {
@@ -354,13 +355,18 @@
   {
    "fieldname": "onboarding_related_section",
    "fieldtype": "Section Break",
-   "label": "Onboarding Related"
+   "label": "Onboarding/Site Creation Related"
   },
   {
    "default": "0",
-   "fieldname": "show_for_first_site_creation",
+   "fieldname": "show_for_site_creation",
    "fieldtype": "Check",
-   "label": "Show for first site creation"
+   "label": "Show for site creation"
+  },
+  {
+   "fieldname": "dashboard_tab",
+   "fieldtype": "Tab Break",
+   "label": "Dashboard"
   }
  ],
  "has_web_view": 1,
@@ -384,7 +390,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2024-07-18 17:09:24.944708",
+ "modified": "2024-07-20 12:10:51.378296",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

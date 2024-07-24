@@ -46,13 +46,18 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Tooltip text="Refresh" v-if="$list">
-					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
-						<template #icon>
+				<Button
+					label="Refresh"
+					v-if="$list"
+					@click="$list.reload()"
+					:loading="isLoading"
+				>
+					<template #icon>
+						<Tooltip text="Refresh">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-						</template>
-					</Button>
-				</Tooltip>
+						</Tooltip>
+					</template>
+				</Button>
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -237,19 +242,19 @@ export default {
 	mounted() {
 		if (this.options.data) return;
 		if (this.options.list) {
-			let resource = this.$list.list || this.$list;
+			const resource = this.$list.list || this.$list;
 			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
 			this.$socket.emit('doctype_subscribe', doctype);
 			subscribed[doctype] = true;
 
 			this.$socket.on('list_update', data => {
-				let names = (this.$list.data || []).map(d => d.name);
+				const names = (this.$list.data || []).map(d => d.name);
 				if (
 					data.doctype === doctype &&
 					names.includes(data.name) &&
@@ -263,7 +268,7 @@ export default {
 	},
 	beforeUnmount() {
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			this.$socket.emit('doctype_unsubscribe', doctype);
 			subscribed[doctype] = false;
 		}

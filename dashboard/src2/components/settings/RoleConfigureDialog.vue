@@ -37,7 +37,7 @@
 							@click="() => addUser(member.value)"
 						/>
 					</div>
-					<div class="rounded border-2 border-dashed p-3">
+					<div class="rounded border p-3">
 						<div class="mb-1 text-gray-600">Members</div>
 						<div
 							v-if="roleUsers.length === 0"

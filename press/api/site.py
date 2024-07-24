@@ -404,9 +404,8 @@ def app_details_for_new_public_site():
 			"subscription_type",
 			{"sources": ["source", "version"]},
 		],
-		filters={"status": "Published", "frappe_approved": 1},
+		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
-
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
@@ -2103,11 +2102,24 @@ def version_upgrade(
 	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
 
 	if shared_site:
-		destination_group = frappe.db.get_value(
-			"Release Group", {"version": next_version, "public": 1}, "name"
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		destination_group = (
+			frappe.qb.from_(ReleaseGroup)
+			.select(ReleaseGroup.name)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.where(ReleaseGroup.version == next_version)
+			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroupServer.server == site.server)
+			.run(as_dict=True, pluck="name")
 		)
 
-		if not destination_group:
+		if destination_group:
+			destination_group = destination_group[0]
+		else:
 			frappe.throw(f"There are no public benches with {next_version}.")
 
 	version_upgrade = frappe.get_doc(

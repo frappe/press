@@ -200,7 +200,9 @@ export default {
 			return this.$format.bytes(v, 2, 2);
 		},
 		loginAsAdmin() {
-			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
+			this.$site.loginAsAdmin
+				.submit({ reason: '' })
+				.then(url => window.open(url, '_blank'));
 		},
 		trialDays
 	},

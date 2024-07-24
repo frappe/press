@@ -263,7 +263,7 @@ def delete(doctype: str, name: str):
 
 
 @frappe.whitelist()
-def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
+def run_doc_method(dt: str, dn: str, method: str, args: dict | str | None = None):
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
