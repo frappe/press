@@ -503,7 +503,7 @@ class Invoice(Document):
 					)
 
 	def validate_team(self):
-		team = frappe.get_cached_doc("Team", self.team)
+		team = frappe.get_doc("Team", self.team)
 
 		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
 		self.customer_email = (

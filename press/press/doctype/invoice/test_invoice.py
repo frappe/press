@@ -517,9 +517,36 @@ class TestInvoice(unittest.TestCase):
 			frappe.db.commit()
 
 	def test_tax_with_credits(self):
+		"""Test invoice with tax when payment mode is prepaid credits"""
 		try:
 			team = create_test_team("tax_with_credits@example.com")
 			team.allocate_credit_amount(5, source="Prepaid Credits")
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			invoice.finalize_invoice()
+			self.assertEquals(invoice.total, 10)
+			self.assertEquals(invoice.applied_credits, 5)
+			self.assertEquals(invoice.amount_due, 5)
+			self.assertEquals(invoice.amount_due_with_tax, 5)
+
+		finally:
+			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	@patch.object(Invoice, "create_stripe_invoice", new=Mock())
+	def test_tax_with_credits_with_card(self):
+		"""Test invoice with tax when payment mode is card"""
+		try:
+			team = create_test_team("tax_with_credits@example.com")
+			team.allocate_credit_amount(5, source="Prepaid Credits")
+			frappe.db.set_value("Team", team.name, "payment_mode", "Card")
+			# team.reload()
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
 
 			invoice = frappe.get_doc(doctype="Invoice", team=team.name)

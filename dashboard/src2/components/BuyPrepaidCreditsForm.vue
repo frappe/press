@@ -83,6 +83,7 @@
 		v-if="paymentGateway === 'Razorpay'"
 		:amount="creditsToBuy"
 		:minimumAmount="minimumAmount"
+		:isOnboarding="isOnboarding"
 		@success="onSuccess"
 		@cancel="onCancel"
 	/>
@@ -115,6 +116,10 @@ export default {
 		minimumAmount: {
 			type: Number,
 			default: 0
+		},
+		isOnboarding: {
+			type: Boolean,
+			default: false
 		}
 	},
 	emits: ['success'],
