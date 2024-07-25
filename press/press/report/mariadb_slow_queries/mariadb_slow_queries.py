@@ -302,7 +302,6 @@ def _fetch_column_stats(site, table, doc_name):
 	column_stats = agent.create_agent_job(
 		"Column Statistics", f"/database/column-stats", data
 	)
-	# return [ColumnStat.from_frappe_ouput(c) for c in column_stats]
 
 
 def get_doctype_name(table_name: str) -> str:

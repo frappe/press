@@ -7,6 +7,7 @@
  "field_order": [
   "site",
   "query",
+  "status",
   "explain_output",
   "tables_in_query",
   "suggested_index"
@@ -40,11 +41,16 @@
    "fieldname": "explain_output",
    "fieldtype": "Code",
    "label": "Explain Output"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-24 11:47:47.254111",
+ "modified": "2024-07-24 13:05:20.255142",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Analyze Query",

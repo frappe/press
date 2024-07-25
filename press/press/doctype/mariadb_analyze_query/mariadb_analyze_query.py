@@ -20,6 +20,7 @@ class MariaDBAnalyzeQuery(Document):
 		explain_output: DF.Code | None
 		query: DF.Data
 		site: DF.Data
+		status: DF.Data | None
 		suggested_index: DF.Data | None
 		tables_in_query: DF.Table[MariaDBAnalyzeQueryTables]
 	# end: auto-generated types
