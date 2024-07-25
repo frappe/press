@@ -49,13 +49,34 @@ def razorpay_authorized_payment_handler():
 		if form_dict["payload"]["payment"]["entity"]["status"] != "authorized":
 			raise Exception("invalid payment status received")
 		payment_id = form_dict["payload"]["payment"]["entity"]["id"]
+		order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
 		amount = form_dict["payload"]["payment"]["entity"]["amount"]
+		notes = form_dict["payload"]["payment"]["entity"]["notes"]
 
+		razorpay_payment_record = frappe.db.exists(
+			"Razorpay Payment Record", {"order_id": order_id}
+		)
+		if not razorpay_payment_record:
+			# Don't log error if its not FrappeCloud order
+			# Example of valid notes
+			# "notes": {
+			# 	"Description": "Order for Frappe Cloud Prepaid Credits",
+			# 	"Team (Frappe Cloud ID)": "test@example.com"
+			#   "gst": 245
+			# },
+
+			if notes and notes.get("description"):
+				log_error(
+					"Razorpay payment record for given order does not exist",
+					order_id=order_id,
+				)
+			return
+
+		# Capture the authorized payment
 		client.payment.capture(payment_id, amount)
-
 	except Exception:
 		log_error(
-			title="Razorpay Webhook Handler",
+			title="Razorpay Authorized Payment Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
 		)
 		raise Exception
