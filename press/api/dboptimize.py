@@ -28,8 +28,8 @@ def mariadb_analyze_query(name, row):
 
 
 def analyze_query(row, site):
-	if mariadb_analyze_query_already_exists(site, row["example"]):
-		return "Failure"
+	# if mariadb_analyze_query_already_exists(site, row["query"]):
+	#     frappe.throw("The query seems to have already been optimized")
 	doc = frappe.get_doc(
 		{
 			"doctype": "MariaDB Analyze Query",
@@ -41,6 +41,8 @@ def analyze_query(row, site):
 
 	query = row["example"]
 	doc.query = query
+	doc.normalized_query = row["query"]
+
 	if not query.lower().startswith(("select", "update", "delete")):
 		doc.status = "Failure"
 		doc.save()
@@ -99,7 +101,7 @@ def fetch_column_stats_update(job, response_data):
 			doc.save()
 			frappe.db.commit()
 			# Perisists within doctype
-			get_suggested_index(doc)
+			save_suggested_index(doc)
 	elif job.status == "Failure":
 		doc = frappe.get_doc("MariaDB Analyze Query", doc_name)
 		for item in doc.tables_in_query:
@@ -112,7 +114,7 @@ def fetch_column_stats_update(job, response_data):
 		frappe.db.commit()
 
 
-def get_suggested_index(doc):
+def save_suggested_index(doc):
 	explain_output = json.loads(doc.explain_output)
 	optimizer = DBOptimizer(query=doc.query, explain_plan=explain_output)
 	for item in doc.tables_in_query:
@@ -146,7 +148,29 @@ def get_status_of_mariadb_analyze_query(name, query):
 		return None
 
 
-def mariadb_analyze_query_already_exists(site, query):
-	if frappe.db.exists("MariaDB Analyze Query", {"site": site, "query": query}):
+def mariadb_analyze_query_already_exists(site, normalized_query):
+	if frappe.db.exists(
+		"MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}
+	):
 		return True
 	return False
+
+
+@frappe.whitelist()
+@protected("Site")
+def mariadb_analyze_query_already_running_for_site(name):
+	if frappe.db.exists("MariaDB Analyze Query", {"site": name, "status": "Running"}):
+		return True
+	return False
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_suggested_index(name, normalized_query):
+	suggested_index = frappe.get_value(
+		"MariaDB Analyze Query",
+		{"site": name, "status": "Success", "normalized_query": normalized_query},
+		["site", "normalized_query", "suggested_index"],
+		as_dict=True,
+	)
+	return suggested_index

@@ -6,8 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "normalized_query",
+  "column_break_holt",
   "query",
   "status",
+  "section_break_cdwy",
   "explain_output",
   "tables_in_query",
   "suggested_index"
@@ -46,11 +49,25 @@
    "fieldname": "status",
    "fieldtype": "Data",
    "label": "Status"
+  },
+  {
+   "fieldname": "column_break_holt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "normalized_query",
+   "fieldtype": "Data",
+   "label": "Normalized Query",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_cdwy",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-24 13:05:20.255142",
+ "modified": "2024-07-27 11:25:39.845811",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Analyze Query",
