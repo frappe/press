@@ -53,16 +53,16 @@
 					</div>
 				</div>
 			</div>
-			<!-- <div
+			<div
 				v-if="optimizable === false"
 				class="mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
 			>
 				No query index suggestions available. Try adding indexes manually.
-			</div> -->
+			</div>
 		</template>
 		<template v-if="$site.doc?.version === 'Version 14'" #actions>
 			<Button
-				v-if="!analyze_query_already_running && !optimizable"
+				v-if="shouldShowAnalyzeQueryButton()"
 				class="w-full"
 				:variant="'solid'"
 				theme="gray"
@@ -136,6 +136,21 @@ export default {
 					return e.messages.length ? e.messages.join('\n') : e.message;
 				}
 			});
+		},
+		shouldShowAnalyzeQueryButton() {
+			try {
+				if (!this.analyze_query_already_running) {
+					if (this.optimizable == false) {
+						return false;
+					} else {
+						if (this.optimizable == true) {
+							return false;
+						} else {
+							return true;
+						}
+					}
+				}
+			} catch (error) {}
 		}
 	},
 	resources: {
@@ -194,19 +209,6 @@ export default {
 				}
 			};
 		},
-		getSuggesteIndex() {
-			return {
-				url: 'press.api.dboptimize.get_status_of_mariadb_analyze_query',
-				auto: true,
-				method: 'POST',
-				makeParams() {
-					return {
-						name: this.siteName,
-						query: this.query
-					};
-				}
-			};
-		},
 		mariadbAnalyzeQueryAlreadyRunningForSite() {
 			return {
 				url: 'press.api.dboptimize.mariadb_analyze_query_already_running_for_site',
@@ -237,7 +239,10 @@ export default {
 				},
 				onSuccess(data) {
 					try {
-						if (data.suggested_index.length == 0) {
+						if (
+							data.suggested_index == null ||
+							data.suggested_index.length == 0
+						) {
 							this.optimizable = false;
 						} else {
 							this.optimizable = true;
