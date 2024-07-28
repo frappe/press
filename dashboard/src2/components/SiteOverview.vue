@@ -209,7 +209,7 @@ export default {
 						const urlWithUserData = new URL(url)
 						urlWithUserData.searchParams.set('name', this.$team.doc.user_info.name)
 						urlWithUserData.searchParams.set('email', this.$team.doc.user_info.email)
-						window.open(urlWithUserData.toString())
+						window.open(urlWithUserData.toString(), '_blank')
 					}
 				});
 		},
