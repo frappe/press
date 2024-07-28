@@ -202,7 +202,16 @@ export default {
 		loginAsAdmin() {
 			this.$site.loginAsAdmin
 				.submit({ reason: '' })
-				.then(url => window.open(url, '_blank'));
+				.then(url => {
+					if(this.isSetupWizardComplete) {
+						window.open(url, '_blank')
+					} else {
+						const urlWithUserData = new URL(url)
+						urlWithUserData.searchParams.set('name', this.$team.doc.user_info.name)
+						urlWithUserData.searchParams.set('email', this.$team.doc.user_info.email)
+						window.open(urlWithUserData.toString())
+					}
+				});
 		},
 		trialDays
 	},
