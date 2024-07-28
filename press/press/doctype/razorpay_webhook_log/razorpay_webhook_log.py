@@ -74,7 +74,13 @@ def razorpay_authorized_payment_handler():
 
 		# Capture the authorized payment
 		client.payment.capture(payment_id, amount)
-	except Exception:
+	except Exception as e:
+		error_message = str(e)
+		if (
+			"payment has already been captured" in error_message
+			or "the order is already paid" in error_message
+		):
+			return
 		log_error(
 			title="Razorpay Authorized Payment Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
