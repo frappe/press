@@ -17,7 +17,6 @@ from frappe.utils.password import get_decrypted_password
 from press.agent import Agent
 from press.api.site import protected
 from press.press.report.mariadb_slow_queries.db_optimizer import (
-	ColumnStat,
 	DBExplain,
 	DBIndex,
 	DBOptimizer,
@@ -299,9 +298,7 @@ def _fetch_column_stats(site, table, doc_name):
 		"private_ip": database_server.private_ip,
 		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 	}
-	column_stats = agent.create_agent_job(
-		"Column Statistics", f"/database/column-stats", data
-	)
+	agent.create_agent_job("Column Statistics", "/database/column-stats", data)
 
 
 def get_doctype_name(table_name: str) -> str:

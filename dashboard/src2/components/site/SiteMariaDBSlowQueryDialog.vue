@@ -28,7 +28,8 @@
 				v-if="analyze_query_already_running"
 				class="mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
 			>
-				There already is a query that is being analyzed for this site.
+				There already is a query that is being analyzed for this site. Please
+				wait while it completes.
 			</div>
 			<div v-if="optimizable === true">
 				<h2 class="font-semibold">Suggested Index</h2>
