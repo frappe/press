@@ -73,7 +73,7 @@ class PressNotification(Document):
 			subject=f"Bench Deploy Failed - {rg_title}",
 			template="bench_deploy_failure",
 			args={
-				"message": self.message,
+				"message": self.title,
 				"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
 			},
 		)
