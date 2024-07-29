@@ -1266,6 +1266,11 @@ def handle_payment_intent_succeeded(payment_intent):
 		# ignore creating if already allocated
 		return
 
+	if not frappe.db.exists("Team", {"stripe_customer_id": payment_intent["customer"]}):
+		# might be checkout session payment
+		# log the stripe webhook log
+		# TODO: handle checkout session payment
+		return
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount_with_tax = payment_intent["amount"] / 100
 	gst = float(metadata.get("gst", 0))
