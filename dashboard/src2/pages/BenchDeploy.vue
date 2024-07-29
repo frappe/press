@@ -95,11 +95,13 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { createResource, getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
+import dayjs from 'dayjs';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'BenchDeploy',
@@ -190,8 +192,24 @@ export default {
 							'_blank'
 						);
 					}
+				},
+				{
+					label: 'Fail and Redeploy',
+					icon: 'repeat',
+					condition: () => this.showFailAndRedeploy,
+					onClick: () => this.failAndRedeploy()
 				}
 			].filter(option => option.condition?.() ?? true);
+		},
+		showFailAndRedeploy() {
+			if (!this.deploy || this.deploy.status !== 'Running') {
+				return false;
+			}
+
+			const start = dayjs(this.deploy.build_start);
+			const now = dayjs(new Date());
+
+			return now.diff(start, 'hours') > 2;
 		}
 	},
 	methods: {
@@ -216,6 +234,28 @@ export default {
 					: null;
 			}
 			return deploy;
+		},
+		failAndRedeploy() {
+			if (!this.deploy) {
+				return;
+			}
+
+			const group = this.deploy.group;
+			const onError = () => toast.error('Could not fail and redeploy');
+			const router = this.$router;
+
+			createResource({
+				url: 'press.api.bench.fail_and_redeploy',
+				params: { name: group, dc_name: this.deploy.name },
+				onSuccess(name) {
+					if (!name) {
+						onError();
+					} else {
+						router.push(`/benches/${group}/deploys/${name}`);
+					}
+				},
+				onError
+			}).fetch();
 		}
 	}
 };
