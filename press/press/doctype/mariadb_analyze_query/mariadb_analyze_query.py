@@ -18,8 +18,8 @@ class MariaDBAnalyzeQuery(Document):
 		)
 
 		explain_output: DF.Code | None
-		normalized_query: DF.Data
-		query: DF.Data
+		normalized_query: DF.LongText
+		query: DF.LongText
 		site: DF.Data
 		status: DF.Data | None
 		suggested_index: DF.Data | None

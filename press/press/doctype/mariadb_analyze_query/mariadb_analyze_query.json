@@ -18,7 +18,7 @@
  "fields": [
   {
    "fieldname": "query",
-   "fieldtype": "Data",
+   "fieldtype": "Long Text",
    "label": "Query",
    "reqd": 1
   },
@@ -56,7 +56,7 @@
   },
   {
    "fieldname": "normalized_query",
-   "fieldtype": "Data",
+   "fieldtype": "Long Text",
    "label": "Normalized Query",
    "reqd": 1
   },
@@ -67,7 +67,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-27 11:25:39.845811",
+ "modified": "2024-07-29 17:32:21.578471",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Analyze Query",
