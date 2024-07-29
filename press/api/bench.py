@@ -1006,7 +1006,7 @@ def rename(name, title):
 
 
 @frappe.whitelist()
-@protected("App Patch")
+@protected("Release Group")
 def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
 	return create_app_patch(
 		release_group,
