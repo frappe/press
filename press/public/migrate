@@ -34,6 +34,7 @@ def frappecloud_migrator():
 	py = sys.executable
 	script = tempfile.NamedTemporaryFile(mode="w")
 	script.write(script_contents)
+	script.flush()
 	print(f"Site Migrator stored at {script.name}")
 	os.execv(py, [py, script.name])
 
