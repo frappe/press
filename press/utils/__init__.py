@@ -637,6 +637,9 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	parsed: list["SupervisorProcess"] = []
 
 	for line in lines:
+		if "DeprecationWarning:" in line or "pkg_resources is deprecated" in line:
+			continue
+
 		entry: "SupervisorProcess" = {
 			"program": "",
 			"status": "",
