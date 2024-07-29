@@ -6,15 +6,18 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "app",
   "filename",
-  "bench",
-  "group",
-  "build_assets",
   "status",
   "column_break_vedh",
-  "url",
-  "app",
   "app_release",
+  "url",
+  "build_assets",
+  "meta_section",
+  "bench",
+  "team",
+  "column_break_llye",
+  "group",
   "section_break_fqnr",
   "patch"
  ],
@@ -47,7 +50,8 @@
   },
   {
    "fieldname": "section_break_fqnr",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Patch"
   },
   {
    "fieldname": "patch",
@@ -91,11 +95,28 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Not Applied\nIn Process\nFailed\nApplied"
+  },
+  {
+   "fieldname": "meta_section",
+   "fieldtype": "Section Break",
+   "label": "Meta"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_llye",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-27 17:00:56.628082",
+ "modified": "2024-07-29 13:42:12.525421",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",
