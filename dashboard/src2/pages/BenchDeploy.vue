@@ -84,15 +84,6 @@
 			</div>
 		</div>
 
-		<!-- Build Failure -->
-		<div class="mt-8" v-if="deploy.build_error && deploy.status === 'Failure'">
-			<BuildError
-				:build_error="deploy.build_error"
-				:build_steps="deploy.build_steps"
-			/>
-			<hr class="mt-4" />
-		</div>
-
 		<!-- Build Steps -->
 		<div :class="deploy.build_error ? 'mt-4' : 'mt-8'" class="space-y-4">
 			<JobStep
@@ -108,7 +99,6 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
-import BuildError from '../components/BuildError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
@@ -117,7 +107,6 @@ export default {
 	components: {
 		JobStep,
 		AlertBanner,
-		BuildError,
 		AlertAddressableError
 	},
 	resources: {
