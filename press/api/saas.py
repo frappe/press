@@ -375,6 +375,10 @@ def get_site_status(key, app=None):
 	)
 	if site:
 		capture("completed_site_allocation", "fc_saas", site.name)
+		site = frappe.get_doc("Site", account_request.get_site_name())
+		site.create_user(
+			account_request.email, account_request.first_name, account_request.last_name
+		)
 		return site
 	else:
 		return {"status": "Pending"}

@@ -44,6 +44,8 @@ class SaasSite(Site):
 			)
 
 			self.subscription_docs = create_app_subscriptions(site=self, app=self.app)
+			# if account_request:
+			# 	self.create_user()
 
 	def rename_pooled_site(self, account_request=None, subdomain=None):
 		self.subdomain = account_request.subdomain if account_request else subdomain
@@ -54,8 +56,16 @@ class SaasSite(Site):
 		self._update_configuration(self.get_plan_config(plan), save=False)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
+		# user = self.get_user_details()
+		# self.create_user(user.email, user.first_name, user.last_name)
 
 		return self
+
+	# def get_user_details(self):
+	# 	user = frappe.db.get_value("Team", self.team, "user")
+	# 	return frappe.db.get_value(
+	# 		"User", user, ["email", "first_name", "last_name"], as_dict=True
+	# 	)
 
 	def can_change_plan(self):
 		return True

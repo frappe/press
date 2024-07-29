@@ -1256,6 +1256,12 @@ class Site(Document, TagHelpers):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
 
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def login_as_team(self, reason=None):
+		sid = self.get_login_sid(user=frappe.db.get_value("Team", self.team, "user"))
+		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)

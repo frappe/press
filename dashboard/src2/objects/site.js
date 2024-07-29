@@ -42,6 +42,7 @@ export default {
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
 		loginAsAdmin: 'login_as_admin',
+		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
