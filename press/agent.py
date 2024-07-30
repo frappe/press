@@ -124,8 +124,11 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site):
+	def new_site(self, site, create_user:dict = None):
 		apps = [app.app for app in site.apps]
+
+		if create_user:
+			data["create_user"] = create_user
 
 		data = {
 			"config": json.loads(site.config),

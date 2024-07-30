@@ -729,7 +729,12 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			agent.new_site(self)
+			if (self.standby_for_product or self.standby_for) and self.account_request:
+				# if standby site, rename site and create first user for trial signups
+				create_user = self.get_user_details()
+				agent.new_site(self, create_user=create_user)
+			else:
+				agent.new_site(self)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -2622,6 +2627,11 @@ def process_new_site_job_update(job):
 			frappe.db.commit()
 
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+	if job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 
 
 def get_remove_step_status(job):
