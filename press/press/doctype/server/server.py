@@ -803,7 +803,7 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(playbook="glass_file.yml", server=self)
 			ansible.run()
 		except Exception:
-			log_error("Add Glass File Exception", server=self.as_dict())
+			log_error("Add Glass File Exception", doc=self)
 
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
@@ -823,7 +823,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Increase swap exception", server=self.as_dict())
+			log_error("Increase swap exception", doc=self)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -837,7 +837,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("MySQLdump Setup Exception", server=self.as_dict())
+			log_error("MySQLdump Setup Exception", doc=self)
 
 	@frappe.whitelist()
 	def set_swappiness(self):
@@ -851,7 +851,20 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Swappiness Setup Exception", server=self.as_dict())
+			log_error("Swappiness Setup Exception", doc=self)
+
+	def update_filebeat(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_filebeat")
+
+	def _update_filebeat(self):
+		try:
+			ansible = Ansible(
+				playbook="filebeat_update.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Filebeat Update Exception", doc=self)
 
 	@frappe.whitelist()
 	def update_tls_certificate(self):
