@@ -205,9 +205,13 @@ export default {
 				.then(url => window.open(url, '_blank'));
 		},
 		loginAsTeam() {
-			this.$site.loginAsTeam
-				.submit({ reason: '' })
-				.then(url => window.open(url, '_blank'));
+			if (this.$site.additional_system_user_created) {
+				this.$site.loginAsTeam
+					.submit({ reason: '' })
+					.then(url => window.open(url, '_blank'));
+			} else {
+				this.loginAsAdmin();
+			}
 		},
 		trialDays
 	},

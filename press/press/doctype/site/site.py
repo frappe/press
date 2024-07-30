@@ -86,7 +86,6 @@ class Site(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_config.site_config import SiteConfig
@@ -94,6 +93,7 @@ class Site(Document, TagHelpers):
 		_keys_removed_in_last_update: DF.Data | None
 		_site_usages: DF.Data | None
 		account_request: DF.Link | None
+		additional_system_user_created: DF.Check
 		admin_password: DF.Password | None
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
@@ -135,16 +135,7 @@ class Site(Document, TagHelpers):
 		staging: DF.Check
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
-		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
-		]
+		status: DF.Literal["Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
 		tags: DF.Table[ResourceTag]
@@ -153,9 +144,7 @@ class Site(Document, TagHelpers):
 		trial_end_date: DF.Date | None
 		update_end_of_month: DF.Check
 		update_on_day_of_month: DF.Int
-		update_on_weekday: DF.Literal[
-			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-		]
+		update_on_weekday: DF.Literal["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
 		update_trigger_time: DF.Time | None
 	# end: auto-generated types
@@ -179,6 +168,7 @@ class Site(Document, TagHelpers):
 		"server",
 		"host_name",
 		"skip_auto_updates",
+		"additional_system_user_created"
 	]
 
 	@staticmethod
@@ -466,7 +456,6 @@ class Site(Document, TagHelpers):
 			team = frappe.get_doc("Team", self.team)
 			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 				from press.utils.telemetry import capture
-
 				capture("first_site_status_changed_to_active", "fc_signup", team.user)
 
 	def rename_upstream(self, new_name: str):
@@ -518,7 +507,7 @@ class Site(Document, TagHelpers):
 		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.standby_for_product:
+		if self.standby_for_product or self.standby_for:
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
 			job = agent.rename_site(self, new_name, create_user)
@@ -1259,15 +1248,28 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def login_as_team(self, reason=None):
-		sid = self.get_login_sid(user=frappe.db.get_value("Team", self.team, "user"))
-		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		if self.additional_system_user_created:
+			team_user = frappe.db.get_value("Team", self.team, "user")
+			log_site_activity(self.name, f"Login as {team_user}", reason=reason)
+			sid = self.get_login_sid(user=team_user)
+			return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		else:
+			frappe.throw("No additional system user created for this site")
 
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
+	
+	def create_user_with_team_info(self):
+		team_user = frappe.db.get_value("Team", self.team, "user")
+		user = frappe.get_doc("User", team_user)
+		return self.create_user(user.email, user.first_name, user.last_name)
+
 
 	def create_user(self, email, first_name, last_name, password=None):
+		if self.additional_system_user_created:
+			return
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
@@ -1851,6 +1853,11 @@ class Site(Document, TagHelpers):
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):
+		if self.team == "Administrator":
+			user = frappe.db.get_value("Account Request", self.account_request, "email")
+			self.team = frappe.db.get_value("Team", {"user": user}, "name")
+			self.save()
+
 		user_email = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.db.get_value(
 			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
@@ -2889,6 +2896,10 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
+
+def process_create_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
