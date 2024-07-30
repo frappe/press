@@ -181,7 +181,7 @@ export default {
 
 			// add ellipsis if breadcrumbs too long
 			for (let i = 0; i < items.length; i++) {
-				if (items[i].label.length > 30) {
+				if (items[i].label.length > 30 && i !== items.length - 1) {
 					items[i].label = items[i].label.slice(0, 30) + '...';
 				}
 			}
