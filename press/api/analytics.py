@@ -27,10 +27,7 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 	convert_user_timezone_to_utc,
 	get_files_in_timespan,
 )
-from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
-	execute,
-	analyze_queries,
-)
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -728,13 +725,6 @@ def mariadb_slow_queries(
 	columns, data = execute(filters=meta)
 	ret = {"columns": columns, "data": data}
 	return ret
-
-
-@frappe.whitelist()
-@protected("Site")
-def mariadb_analyze_query(name, rows):
-	rows = analyze_queries(data=rows, site=name)
-	return rows
 
 
 @frappe.whitelist()

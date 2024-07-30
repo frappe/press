@@ -1404,7 +1404,7 @@ export default {
 					import('../components/site/SitePerformance.vue')
 				),
 				props: site => {
-					return { siteName: site.doc?.name };
+					return { siteName: site.doc?.name, siteVersion: site.doc?.version };
 				}
 			},
 			logsTab(),
