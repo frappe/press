@@ -287,7 +287,7 @@ export default {
 		TextInsideCircle
 	},
 	mounted() {
-		if (window.posthog) {
+		if (window.posthog && window.posthog.__loaded) {
 			window.posthog.identify(this.$team.doc.user, {
 				app: 'frappe_cloud',
 				action: 'onboarding'
@@ -296,7 +296,7 @@ export default {
 		}
 	},
 	unmounted() {
-		if (window.posthog && window.posthog.sessionRecordingStarted()) {
+		if (window.posthog && window.posthog.__loaded && window.posthog.sessionRecordingStarted()) {
 			window.posthog.stopSessionRecording();
 		}
 	},
