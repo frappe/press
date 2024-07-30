@@ -2848,7 +2848,7 @@ def process_rename_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
-	if updated_status == "Active":
+	if job.status == "Success":
 		request_data = json.loads(job.request_data)
 		if "create_user" in request_data:
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
