@@ -731,8 +731,7 @@ class Site(Document, TagHelpers):
 		else:
 			if (self.standby_for_product or self.standby_for) and self.account_request:
 				# if standby site, rename site and create first user for trial signups
-				create_user = self.get_user_details()
-				agent.new_site(self, create_user=create_user)
+				agent.new_site(self, create_user=self.get_user_details())
 			else:
 				agent.new_site(self)
 

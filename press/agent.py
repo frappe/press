@@ -124,11 +124,8 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site, create_user:dict = None):
+	def new_site(self, site, create_user: dict = None):
 		apps = [app.app for app in site.apps]
-
-		if create_user:
-			data["create_user"] = create_user
 
 		data = {
 			"config": json.loads(site.config),
@@ -138,6 +135,9 @@ class Agent:
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
+
+		if create_user:
+			data["create_user"] = create_user
 
 		return self.create_agent_job(
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
