@@ -1548,7 +1548,7 @@ def check_dns_cname_a(name, domain):
 					{"status": "Active", "primary": proxy, "is_replication_setup": True},
 					pluck="ip",
 				)
-				if site_ip in secondary_ips:
+				if domain_ip in secondary_ips:
 					result["matched"] = True
 		except dns.exception.DNSException as e:
 			result["answer"] = str(e)
