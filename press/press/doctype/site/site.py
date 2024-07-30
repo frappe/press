@@ -1250,7 +1250,6 @@ class Site(Document, TagHelpers):
 	def login_as_team(self, reason=None):
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
-			log_site_activity(self.name, f"Login as {team_user}", reason=reason)
 			sid = self.get_login_sid(user=team_user)
 			return f"https://{self.host_name or self.name}/desk?sid={sid}"
 		else:
@@ -1853,19 +1852,26 @@ class Site(Document, TagHelpers):
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):
-		if self.team == "Administrator":
-			user = frappe.db.get_value("Account Request", self.account_request, "email")
-			self.team = frappe.db.get_value("Team", {"user": user}, "name")
-			self.save()
-
-		user_email = frappe.db.get_value("Team", self.team, "user")
-		user = frappe.db.get_value(
-			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
-		)
+		if frappe.db.get_value("Team", self.team, "user") == "Administrator" and self.account_request:
+			ar = frappe.get_doc("Account Request", self.account_request)
+			user_email = ar.email
+			user_first_name = ar.first_name
+			user_last_name = ar.last_name
+			user = {
+				"first_name": ar.first_name,
+				"last_name": ar.last_name,
+			}
+		else:
+			user_email = frappe.db.get_value("Team", self.team, "user")
+			user = frappe.db.get_value(
+				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
+			)
+			user_first_name = user.first_name or ""
+			user_last_name = user.last_name or ""
 		return {
 			"email": user_email,
-			"first_name": user.first_name,
-			"last_name": user.last_name,
+			"first_name": user_first_name,
+			"last_name": user_last_name
 		}
 
 	def setup_erpnext(self):
@@ -2827,6 +2833,11 @@ def process_rename_site_job_update(job):
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+	if updated_status == "Active":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 
 
 def process_add_proxysql_user_job_update(job):
