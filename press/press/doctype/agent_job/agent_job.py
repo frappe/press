@@ -886,7 +886,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			process_restore_job_update,
 			process_restore_tables_job_update,
 			process_uninstall_app_site_job_update,
-			process_create_user_job_update
+			process_create_user_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
