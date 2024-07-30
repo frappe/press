@@ -62,6 +62,30 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 
 
 @frappe.whitelist(allow_guest=True)
+def verify_otp(email, otp):
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": email}):
+		frappe.throw("Invalid OTP")
+	account_request = frappe.get_doc("Account Request", {"email": email})
+	if account_request.otp != otp:
+		frappe.throw("Invalid OTP")
+	account_request.reset_otp()
+	return account_request.request_key
+
+
+@frappe.whitelist(allow_guest=True)
+def resend_otp(email):
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": email}):
+		frappe.throw("Invalid Email")
+	account_request = frappe.get_doc("Account Request", {"email": email})
+	if not account_request:
+		frappe.throw("Invalid Email")
+	account_request.reset_otp()
+	account_request.send_verification_email()
+
+
+@frappe.whitelist(allow_guest=True)
 def setup_account(
 	key,
 	first_name=None,
