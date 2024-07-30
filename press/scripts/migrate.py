@@ -360,7 +360,6 @@ def upload_files(files):
 def external_file_checker(file_path, file_type):
 	file_name = os.path.basename(file_path)
 	mime_type, _ = mimetypes.guess_type(file_path)
-	print(mime_type)
 	if file_type == "database":
 		if not file_name.endswith((".sql.gz", ".sql")) and not file_name.endswith(
 			tuple(f".sql ({i}).gz" for i in range(1, 10))
@@ -567,7 +566,6 @@ def main():
 			frappe.connect()
 			frappecloud_migrator(local_site, frappe_provider)
 		else:
-			print("heyyyy")
 			frappecloud_migrator(local_site=None, frappe_provider=frappe_provider)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExiting...")
