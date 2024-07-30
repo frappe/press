@@ -420,6 +420,7 @@ class BaseServer(Document, TagHelpers):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
+		self.validate_managed_database_instance()
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
@@ -427,6 +428,13 @@ class BaseServer(Document, TagHelpers):
 			self._set_hostname_abbreviation()
 
 		self.validate_mounts()
+		
+	def validate_managed_database_instance(self):
+		if hasattr(self, "is_managed_database") and self.is_managed_database:
+			if not self.managed_database_service:
+				frappe.throw(_("Managed Database Service is required"))
+
+			self.database_server = ""
 
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
