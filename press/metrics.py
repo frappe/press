@@ -44,9 +44,7 @@ class MetricsRenderer:
 			filters={"status": ("!=", "Success")},
 		)
 
-		self.get_status(
-			"press_site_total", "Site", filters={"status": ("not in", ("Archived", "Active"))}
-		)
+		self.get_status("press_site_total", "Site", filters={"status": ("!=", "Archived")})
 		self.get_status("press_bench_total", "Bench", filters={"status": ("!=", "Archived")})
 		self.get_status("press_server_total", "Server")
 
