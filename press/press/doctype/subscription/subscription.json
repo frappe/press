@@ -15,8 +15,7 @@
   "interval",
   "site",
   "marketplace_app_subscription",
-  "additional_storage",
-  "secret_key"
+  "additional_storage"
  ],
  "fields": [
   {
@@ -90,11 +89,6 @@
    "fieldname": "additional_storage",
    "fieldtype": "Data",
    "label": "Additional Storage"
-  },
-  {
-   "fieldname": "secret_key",
-   "fieldtype": "Data",
-   "label": "Secret Key"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -104,7 +98,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-07-29 13:50:50.513509",
+ "modified": "2024-07-30 12:06:55.163984",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
