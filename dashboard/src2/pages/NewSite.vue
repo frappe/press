@@ -256,7 +256,7 @@ export default {
 		}
 	},
 	unmounted() {
-		if (window.posthog && window.posthog.sessionRecordingStarted() && window.posthog.__loaded) {
+		if (window.posthog && window.posthog.__loaded && window.posthog.sessionRecordingStarted()) {
 			window.posthog.stopSessionRecording();
 		}
 	},
