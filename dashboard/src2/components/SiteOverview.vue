@@ -205,7 +205,7 @@ export default {
 				.then(url => window.open(url, '_blank'));
 		},
 		loginAsTeam() {
-			if (this.$site.additional_system_user_created) {
+			if (this.$site.doc.additional_system_user_created) {
 				this.$site.loginAsTeam
 					.submit({ reason: '' })
 					.then(url => window.open(url, '_blank'));
