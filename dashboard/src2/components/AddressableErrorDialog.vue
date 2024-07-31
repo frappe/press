@@ -53,8 +53,7 @@
 	</Dialog>
 </template>
 <script>
-import { Button, Dialog, FeatherIcon } from 'frappe-ui';
-import ErrorMessage from 'frappe-ui/src/components/ErrorMessage.vue';
+import { Button, Dialog, FeatherIcon, ErrorMessage } from 'frappe-ui';
 
 export default {
 	props: {
