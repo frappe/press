@@ -746,10 +746,6 @@ def get_site_plans():
 		.where(Bench.status == "Active")
 	)
 
-	# print query
-	print(plan_details_with_bench_query.get_sql())
-	print(plan_details_with_bench_query.walk())
-
 	plan_details = plan_details_with_bench_query.run(as_dict=True)
 	plan_details_dict = {}
 
