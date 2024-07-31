@@ -1483,7 +1483,7 @@ class Site(Document, TagHelpers):
 			return False
 
 		self.reload()
-		self.setup_wizard_complete = True
+		self.setup_wizard_complete = 1
 		
 		if self.team == "Administrator":
 			user = frappe.db.get_value("Account Request", self.account_request, "email")
