@@ -227,7 +227,7 @@
 import { ErrorMessage, Progress } from 'frappe-ui';
 import LoginBox from '../components/auth/LoginBox.vue';
 import { vElementSize } from '@vueuse/components';
-import { validateSubdomain } from '@/utils';
+import { validateSubdomain } from '../utils/site';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { getPlans } from '../data/plans';

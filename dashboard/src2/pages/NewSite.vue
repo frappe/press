@@ -222,7 +222,7 @@ import {
 	getCachedDocumentResource
 } from 'frappe-ui';
 import SitePlansCards from '../components/SitePlansCards.vue';
-import { validateSubdomain } from '../../src/utils.js';
+import { validateSubdomain } from '../utils/site';
 import Header from '../components/Header.vue';
 import router from '../router';
 import { plans } from '../data/plans';
