@@ -1052,7 +1052,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		if not hasattr(self, "ssh_user"):
 			return "root"
 		return self.ssh_user or "root"
-	
+
 	def _ssh_port(self):
 		if not hasattr(self, "ssh_port"):
 			return 22
