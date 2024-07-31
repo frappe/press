@@ -80,7 +80,7 @@
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import DateTimeControl from './DateTimeControl.vue';
+import DateTimeControl from '../DateTimeControl.vue';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
