@@ -280,7 +280,7 @@ export default {
 					columns: [
 						{
 							label: 'App',
-							fieldname: 'app',
+							fieldname: 'title',
 							width: 1,
 							suffix(row) {
 								if (!row.is_app_patched) {
