@@ -51,16 +51,16 @@ function getSiteActionHandler(action) {
 			import('./SiteDatabaseAccessDialog.vue')
 		),
 		'Version upgrade': defineAsyncComponent(() =>
-			import('./SiteVersionUpgradeDialog.vue')
+			import('./site/SiteVersionUpgradeDialog.vue')
 		),
 		'Change bench': defineAsyncComponent(() =>
-			import('./SiteChangeBenchDialog.vue')
+			import('./site/SiteChangeBenchDialog.vue')
 		),
 		'Change region': defineAsyncComponent(() =>
 			import('./site/SiteChangeRegionDialog.vue')
 		),
 		'Change server': defineAsyncComponent(() =>
-			import('./SiteChangeServerDialog.vue')
+			import('./site/SiteChangeServerDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {
