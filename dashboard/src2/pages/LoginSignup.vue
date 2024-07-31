@@ -154,6 +154,7 @@
 							type="text"
 							class="mt-4"
 							placeholder="5 digit OTP"
+							maxlength="5"
 							v-model="otp"
 							required
 						/>
