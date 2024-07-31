@@ -70,9 +70,9 @@ def verify_otp(account_request:str, otp:str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}):
-		frappe.throw("Invalid OTP")
+		frappe.throw("Invalid OTP. Please try again.")
 	if account_request.otp != otp:
-		frappe.throw("Invalid OTP")
+		frappe.throw("Invalid OTP. Please try again.")
 	account_request.reset_otp()
 	return account_request.request_key
 
