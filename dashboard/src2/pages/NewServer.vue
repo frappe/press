@@ -326,7 +326,7 @@ import LucideServer from '~icons/lucide/server-off';
 import Header from '../components/Header.vue';
 import Summary from '../components/Summary.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
-import ClickToCopy from '../../src/components/ClickToCopyField.vue';
+import ClickToCopy from '../components/ClickToCopyField.vue';
 import { DashboardError } from '../utils/error';
 
 export default {
