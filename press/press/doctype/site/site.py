@@ -222,6 +222,9 @@ class Site(Document, TagHelpers):
 		doc.version = group.version
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
+		doc.latest_frappe_version = frappe.db.get_value(
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
@@ -698,7 +701,7 @@ class Site(Document, TagHelpers):
 		)
 		space_for_download = db_size + public_size + private_size
 		space_for_extracted_files = (
-			0 if self.is_version_14_or_higher() else (8 * db_size) + public_size + private_size
+			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 

@@ -708,9 +708,11 @@ def get_site_plans():
 		filters={"document_type": "Site"},
 	)
 
-	filtered_plans = []
-
 	plan_names = [x.name for x in plans]
+	if len(plan_names) == 0:
+		return []
+	
+	filtered_plans = []
 
 	SitePlan = frappe.qb.DocType("Site Plan")
 	Bench = frappe.qb.DocType("Bench")
@@ -2110,7 +2112,9 @@ def version_upgrade(
 		if destination_group:
 			destination_group = destination_group[0]
 		else:
-			frappe.throw(f"There are no public benches with {next_version}.")
+			frappe.throw(
+				f"There are no public benches with the version {frappe.bold(next_version)}."
+			)
 
 	version_upgrade = frappe.get_doc(
 		{

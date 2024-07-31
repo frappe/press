@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from press.agent import Agent
+from press.utils import log_error
 
 from press.api.site import protected
 
@@ -54,8 +55,8 @@ def analyze_query(row, site):
 
 	analyzer = OptimizeDatabaseQuery(site, query)
 	explain_output = analyzer.fetch_explain() or []
-	explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
 	doc.explain_output = json.dumps(explain_output)
+	explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
 
 	optimizer = DBOptimizer(query=analyzer.query, explain_plan=explain_output)
 	for table in optimizer.tables_examined:
@@ -116,6 +117,7 @@ def fetch_column_stats_update(job, response_data):
 
 def save_suggested_index(doc):
 	explain_output = json.loads(doc.explain_output)
+	explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
 	optimizer = DBOptimizer(query=doc.query, explain_plan=explain_output)
 	for item in doc.tables_in_query:
 		stats = json.loads(item.table_statistics)
@@ -174,3 +176,12 @@ def get_suggested_index(name, normalized_query):
 		as_dict=True,
 	)
 	return suggested_index
+
+
+def delete_all_occurences_of_mariadb_analyze_query(job):
+	try:
+		if job.status == "Success" or job.status == "Failure":
+			frappe.db.delete("MariaDB Analyze Query", {"site": job.site})
+			frappe.db.commit()
+	except Exception as e:
+		log_error("Deleting all occurences of MariaDB Analyze Query Failed", data=e)
