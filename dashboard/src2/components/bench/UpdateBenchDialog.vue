@@ -107,7 +107,6 @@ import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
-import FormControl from 'frappe-ui/src/components/FormControl.vue';
 
 export default {
 	name: 'UpdateBenchDialog',
@@ -116,8 +115,7 @@ export default {
 		GenericList,
 		CommitChooser,
 		CommitTag,
-		AlertBanner,
-		FormControl
+		AlertBanner
 	},
 	data() {
 		return {
