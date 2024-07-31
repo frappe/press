@@ -7,13 +7,6 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<!-- <div
-				v-if="$site.doc?.version !== 'Version 14'"
-				class="mb-5 flex items-center space-x-2 rounded-lg border-blue-200 bg-blue-100 p-3 text-sm text-gray-800"
-			>
-				<i-lucide-info class="h-4 w-4" />
-				<div>Upcoming Feature : Analyze Query coming soon on Version-15</div>
-			</div> -->
 			<h2 class="font-semibold">Query</h2>
 			<pre
 				class="mt-2 rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
@@ -61,7 +54,13 @@
 				No query index suggestions available. Try adding indexes manually.
 			</div>
 		</template>
-		<template v-if="$site.doc?.version === 'Version 14'" #actions>
+		<template
+			v-if="
+				!analyze_query_already_running &&
+				(shouldShowAnalyzeQueryButton() || optimizable)
+			"
+			#actions
+		>
 			<Button
 				v-if="shouldShowAnalyzeQueryButton()"
 				class="w-full"
@@ -139,19 +138,17 @@ export default {
 			});
 		},
 		shouldShowAnalyzeQueryButton() {
-			try {
-				if (!this.analyze_query_already_running) {
-					if (this.optimizable == false) {
-						return false;
-					} else {
-						if (this.optimizable == true) {
-							return false;
-						} else {
-							return true;
-						}
-					}
-				}
-			} catch (error) {}
+			if (this.analyze_query_already_running) {
+				return;
+			}
+
+			if (this.optimizable == false) {
+				return false;
+			}
+			if (this.optimizable == true) {
+				return false;
+			}
+			return true;
 		}
 	},
 	resources: {
@@ -178,7 +175,7 @@ export default {
 						toast.success('Analayze query has started in the background');
 					} else {
 						this.optimizable = true;
-						toast.success('Analaysis on query could not be performed');
+						toast.error('Analaysis on query could not be performed');
 					}
 					this.show = false;
 				},
