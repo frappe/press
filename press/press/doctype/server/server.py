@@ -391,7 +391,7 @@ class BaseServer(Document, TagHelpers):
 				playbook="filebeat.yml",
 				server=self,
 				user=self._ssh_user(),
-				port=self.ssh_port or 22,
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"log_server": log_server,
