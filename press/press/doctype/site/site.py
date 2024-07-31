@@ -1479,8 +1479,11 @@ class Site(Document, TagHelpers):
 			return
 
 		setup_complete = cint(value["setup_complete"])
-		self.setup_wizard_complete = setup_complete
+		if not setup_complete:
+			return False
 
+		self.reload()
+		self.setup_wizard_complete = True
 		if self.team == "Administrator":
 			user = frappe.db.get_value("Account Request", self.account_request, "email")
 			self.team = frappe.db.get_value("Team", {"user": user}, "name")
