@@ -98,7 +98,7 @@ export default {
 						toast.promise(
 							listResource.runDocMethod.submit({
 								method: 'apply_patch',
-								name: row.name
+								name: String(row.name)
 							}),
 							{
 								loading: 'Creating job to apply patch',
@@ -115,7 +115,7 @@ export default {
 						toast.promise(
 							listResource.runDocMethod.submit({
 								method: 'revert_patch',
-								name: row.name
+								name: String(row.name)
 							}),
 							{
 								loading: 'Creating job to revert patch',
