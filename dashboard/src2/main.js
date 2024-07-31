@@ -31,11 +31,6 @@ setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
-setConfig('fallbackErrorHandler', error => {
-	toast.error(
-		error.messages?.length ? error.messages.join('\n') : error.message
-	);
-});
 
 let app;
 let socket;
