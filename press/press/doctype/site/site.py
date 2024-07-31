@@ -222,6 +222,9 @@ class Site(Document, TagHelpers):
 		doc.version = group.version
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
+		doc.latest_frappe_version = frappe.db.get_value(
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None

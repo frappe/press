@@ -2110,7 +2110,9 @@ def version_upgrade(
 		if destination_group:
 			destination_group = destination_group[0]
 		else:
-			frappe.throw(f"There are no public benches with {next_version}.")
+			frappe.throw(
+				f"There are no public benches with the version {frappe.bold(next_version)}."
+			)
 
 	version_upgrade = frappe.get_doc(
 		{
