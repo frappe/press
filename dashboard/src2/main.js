@@ -59,7 +59,12 @@ getInitialData().then(() => {
 		Sentry.init({
 			app,
 			dsn: window.press_dashboard_sentry_dsn,
-			integrations: [Sentry.browserTracingIntegration({ router })],
+			integrations: [
+				Sentry.browserTracingIntegration({ router }),
+				Sentry.replayIntegration()
+			],
+			replaysSessionSampleRate: 0.1,
+			replaysOnErrorSampleRate: 1.0,
 			beforeSend(event, hint) {
 				const ignoreErrors = [
 					/api\/method\/press.api.client/,
