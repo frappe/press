@@ -709,8 +709,10 @@ def get_site_plans():
 	)
 
 	filtered_plans = []
-
 	plan_names = [x.name for x in plans]
+
+	if len(plan_names) == 0:
+		return filtered_plans
 
 	SitePlan = frappe.qb.DocType("Site Plan")
 	Bench = frappe.qb.DocType("Bench")
@@ -743,6 +745,10 @@ def get_site_plans():
 		.on(ReleaseGroup.name == plan_details_query.release_group)
 		.where(Bench.status == "Active")
 	)
+
+	# print query
+	print(plan_details_with_bench_query.get_sql())
+	print(plan_details_with_bench_query.walk())
 
 	plan_details = plan_details_with_bench_query.run(as_dict=True)
 	plan_details_dict = {}
