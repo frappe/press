@@ -274,7 +274,13 @@ def paid_plans():
 		"price_inr": (">", 0),
 		"enabled": 1,
 	}
-	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan", "Server Storage Plan"]
+	doctypes = [
+		"Site Plan",
+		"Marketplace App Plan",
+		"Server Plan",
+		"Server Storage Plan",
+		"Cluster Plan",
+	]
 	for doctype in doctypes:
 		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
 
@@ -312,7 +318,14 @@ def created_usage_records(free_sites, date=None):
 		filters={
 			"document_type": (
 				"in",
-				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
+				(
+					"Site",
+					"Server",
+					"Database Server",
+					"Self Hosted Server",
+					"Marketplace App",
+					"Cluster",
+				),
 			),
 			"date": date,
 			"document_name": ("not in", free_sites),
