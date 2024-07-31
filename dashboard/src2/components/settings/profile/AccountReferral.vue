@@ -4,7 +4,7 @@
 		title="Refer & Earn"
 		subtitle="Your unique referral link"
 	>
-		<div class="space-y-4 overflow-hidden flex flex-col">
+		<div class="flex flex-col space-y-4 overflow-hidden">
 			<ClickToCopyField :textContent="referralLink" />
 			<span class="text-base font-medium text-gray-700">
 				When someone sign's up using the above link and spends at least
@@ -17,7 +17,7 @@
 	</Card>
 </template>
 <script>
-import ClickToCopyField from '@/components/ClickToCopyField.vue';
+import ClickToCopyField from '../../ClickToCopyField.vue';
 import { getTeam } from '../../../data/team';
 
 export default {

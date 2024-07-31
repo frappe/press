@@ -85,7 +85,7 @@ import { confirmDialog, icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
-import ClickToCopyField from '../../../src/components/ClickToCopyField.vue';
+import ClickToCopyField from '../ClickToCopyField.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);

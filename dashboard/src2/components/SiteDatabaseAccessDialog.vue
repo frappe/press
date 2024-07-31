@@ -119,7 +119,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
-import ClickToCopyField from '../../src/components/ClickToCopyField.vue';
+import ClickToCopyField from './ClickToCopyField.vue';
 import { pollJobStatus } from '../utils/agentJob';
 import { getPlan } from '../data/plans';
 
