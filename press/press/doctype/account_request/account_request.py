@@ -118,7 +118,6 @@ class AccountRequest(Document):
 	def reset_otp(self):
 		self.otp = random.randint(10000, 99999)
 		self.save(ignore_permissions=True)
-		frappe.db.commit()
 
 	@frappe.whitelist()
 	def send_verification_email(self):
@@ -128,7 +127,7 @@ class AccountRequest(Document):
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print()
-			# return
+			# return TODO: uncomment this line
 
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
