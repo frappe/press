@@ -2634,6 +2634,7 @@ def process_new_site_job_update(job):
 		request_data = json.loads(job.request_data)
 		if "create_user" in request_data:
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
 
 
 def get_remove_step_status(job):
@@ -2864,6 +2865,7 @@ def process_rename_site_job_update(job):
 		request_data = json.loads(job.request_data)
 		if "create_user" in request_data:
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
 
 
 def process_add_proxysql_user_job_update(job):
@@ -2938,6 +2940,7 @@ def process_restore_tables_job_update(job):
 def process_create_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+		frappe.db.commit()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
