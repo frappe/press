@@ -1875,10 +1875,6 @@ class Site(Document, TagHelpers):
 			user_email = ar.email
 			user_first_name = ar.first_name
 			user_last_name = ar.last_name
-			user = {
-				"first_name": ar.first_name,
-				"last_name": ar.last_name,
-			}
 		else:
 			user_email = frappe.db.get_value("Team", self.team, "user")
 			user = frappe.db.get_value(
