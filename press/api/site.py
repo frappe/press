@@ -33,7 +33,6 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	has_role,
-	is_allowed_access_to_restricted_site_plans,
 	log_error,
 	unique,
 )
@@ -711,8 +710,6 @@ def get_site_plans():
 
 	filtered_plans = []
 
-	has_team_access_to_restricted_site_plans = is_allowed_access_to_restricted_site_plans()
-
 	plan_names = [x.name for x in plans]
 
 	SitePlan = frappe.qb.DocType("Site Plan")
@@ -777,13 +774,6 @@ def get_site_plans():
 			plan_details_dict[plan["name"]]["bench_versions"].append(plan["version"])
 
 	for plan in plans:
-		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip the plan
-		if (
-			not has_team_access_to_restricted_site_plans
-			and plan.name in plan_details_dict
-			and plan_details_dict[plan.name]["release_groups"]
-		):
-			continue
 		if plan.name in plan_details_dict:
 			plan.clusters = plan_details_dict[plan.name]["clusters"]
 			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
