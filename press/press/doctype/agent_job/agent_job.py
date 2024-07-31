@@ -928,7 +928,10 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
-		from press.api.dboptimize import fetch_column_stats_update
+		from press.api.dboptimize import (
+			fetch_column_stats_update,
+			delete_all_occurences_of_mariadb_analyze_query,
+		)
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration and job_matches_site_migration(job, site_migration):
@@ -1025,6 +1028,8 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
+		elif job.job_type == "Add Database Index":
+			delete_all_occurences_of_mariadb_analyze_query(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

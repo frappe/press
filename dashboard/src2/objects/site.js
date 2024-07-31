@@ -1399,7 +1399,10 @@ export default {
 				type: 'Component',
 				condition() {
 					const team = getTeam();
-					return !!team.doc?.enable_performance_tuning;
+					return (
+						!!team.doc?.enable_performance_tuning ||
+						this.$account.user.user_type == 'System User'
+					);
 				},
 				component: defineAsyncComponent(() =>
 					import('../components/site/SitePerformance.vue')
