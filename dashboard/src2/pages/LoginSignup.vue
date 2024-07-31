@@ -262,10 +262,6 @@ export default {
 				},
 				onSuccess(key) {
 					window.open(`/dashboard/setup-account/${key}`, '_self');
-				},
-				onError() {
-					// Already the error messagee is shown in UI <ErrorMessage />
-					// So, no need to show the default error toast
 				}
 			};
 		},

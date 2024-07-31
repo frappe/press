@@ -66,7 +66,7 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 
 
 @frappe.whitelist(allow_guest=True)
-def verify_otp(account_request, otp):
+def verify_otp(account_request:str, otp:str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}):
@@ -78,7 +78,7 @@ def verify_otp(account_request, otp):
 
 
 @frappe.whitelist(allow_guest=True)
-def resend_otp(account_request):
+def resend_otp(account_request:str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}):
