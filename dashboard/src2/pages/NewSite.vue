@@ -247,7 +247,7 @@ export default {
 		Header
 	},
 	mounted() {
-		if (window.posthog && !this.$team.doc.onboarding.site_created) {
+		if (!this.$team.doc.onboarding.site_created && window.posthog?.__loaded) {
 			window.posthog.identify(this.$team.doc.user, {
 				app: 'frappe_cloud',
 				action: 'first_new_site_creation'
@@ -256,7 +256,7 @@ export default {
 		}
 	},
 	unmounted() {
-		if (window.posthog && window.posthog.sessionRecordingStarted()) {
+		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
 			window.posthog.stopSessionRecording();
 		}
 	},

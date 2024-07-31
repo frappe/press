@@ -316,10 +316,6 @@ def get_frappe_backups(url, email, password):
 	return RemoteFrappeSite(url, email, password).get_backups()
 
 
-def is_allowed_access_to_restricted_site_plans():
-	team = get_current_team(get_doc=True)
-	return team.allow_access_to_restricted_site_plans
-
 
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
@@ -637,6 +633,9 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	parsed: list["SupervisorProcess"] = []
 
 	for line in lines:
+		if "DeprecationWarning:" in line or "pkg_resources is deprecated" in line:
+			continue
+
 		entry: "SupervisorProcess" = {
 			"program": "",
 			"status": "",

@@ -21,6 +21,7 @@ from frappe.utils import (
 
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
+
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -885,6 +886,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			process_restore_job_update,
 			process_restore_tables_job_update,
 			process_uninstall_app_site_job_update,
+			process_create_user_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -892,6 +894,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
+		from press.api.dboptimize import fetch_column_stats_update
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration and job_matches_site_migration(job, site_migration):
@@ -973,6 +976,10 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
 			DeployCandidate.process_run_build(job, response_data)
+		elif job.job_type == "Column Statistics":
+			fetch_column_stats_update(job, response_data)
+		elif job.job_type == "Create User":
+			process_create_user_job_update(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1
