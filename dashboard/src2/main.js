@@ -13,7 +13,7 @@ import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
 import { toast } from 'vue-sonner';
-import './vendor/posthog.js'
+import './vendor/posthog.js';
 
 let request = options => {
 	let _options = options || {};
@@ -31,11 +31,6 @@ setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
-setConfig('fallbackErrorHandler', error => {
-	toast.error(
-		error.messages?.length ? error.messages.join('\n') : error.message
-	);
-});
 
 let app;
 let socket;
@@ -59,7 +54,12 @@ getInitialData().then(() => {
 		Sentry.init({
 			app,
 			dsn: window.press_dashboard_sentry_dsn,
-			integrations: [Sentry.browserTracingIntegration({ router })],
+			integrations: [
+				Sentry.browserTracingIntegration({ router }),
+				Sentry.replayIntegration()
+			],
+			replaysSessionSampleRate: 0.1,
+			replaysOnErrorSampleRate: 1.0,
 			beforeSend(event, hint) {
 				const ignoreErrors = [
 					/api\/method\/press.api.client/,
@@ -72,6 +72,7 @@ getInitialData().then(() => {
 					'BuildValidationError',
 					'ValidationError',
 					'PermissionError',
+					'SecurityException',
 					'AuthenticationError'
 				];
 				const error = hint.originalException;

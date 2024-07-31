@@ -12,8 +12,8 @@
 			<Button
 				class="ml-auto"
 				variant="outline"
-				@click="loginAsAdmin"
-				:loading="$site.loginAsAdmin.loading"
+				@click="loginAsTeam"
+				:loading="$site.loginAsTeam.loading"
 			>
 				Login
 			</Button>
@@ -203,6 +203,15 @@ export default {
 			this.$site.loginAsAdmin
 				.submit({ reason: '' })
 				.then(url => window.open(url, '_blank'));
+		},
+		loginAsTeam() {
+			if (this.$site.doc.additional_system_user_created) {
+				this.$site.loginAsTeam
+					.submit({ reason: '' })
+					.then(url => window.open(url, '_blank'));
+			} else {
+				this.loginAsAdmin();
+			}
 		},
 		trialDays
 	},

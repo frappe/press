@@ -51,8 +51,8 @@
 				if (site.status != 'Active') {
 					setTimeout(poll_site_status, 1000)
 				} else {
-					get_site_url_and_sid().then(site => {
-						window.open(`${site.url}/desk?sid=${site.sid}`, '_self');
+					get_site_url_and_sid().then(url => {
+						window.open(url, '_self');
 					});
 				}
 			});

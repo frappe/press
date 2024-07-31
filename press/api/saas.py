@@ -13,6 +13,7 @@ from press.press.doctype.site.saas_site import (
 	get_saas_site_plan,
 	set_site_in_subscription_docs,
 )
+from press.press.doctype.site.site import Site
 from press.press.doctype.team.team import Team
 from press.utils import get_current_team, group_children_in_result, log_error
 from press.utils.telemetry import capture, identify
@@ -394,11 +395,10 @@ def get_site_url_and_sid(key, app=None):
 	name = frappe.db.get_value(
 		"Site", {"subdomain": account_request.subdomain, "domain": domain}
 	)
-	site = frappe.get_doc("Site", name)
-	return {
-		"url": f"https://{site.name}",
-		"sid": site.login(),
-	}
+	site: "Site" = frappe.get_doc("Site", name)
+	if site.additional_system_user_created:
+		return site.login_as_team()
+	return site.login_as_admin()
 
 
 @frappe.whitelist()

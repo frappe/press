@@ -42,6 +42,7 @@ export default {
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
 		loginAsAdmin: 'login_as_admin',
+		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
@@ -221,14 +222,14 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc.is_desk_user
+				$team.doc?.is_desk_user
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc.is_desk_user) {
+			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
