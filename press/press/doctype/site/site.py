@@ -86,7 +86,6 @@ class Site(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_config.site_config import SiteConfig
@@ -94,6 +93,7 @@ class Site(Document, TagHelpers):
 		_keys_removed_in_last_update: DF.Data | None
 		_site_usages: DF.Data | None
 		account_request: DF.Link | None
+		additional_system_user_created: DF.Check
 		admin_password: DF.Password | None
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
@@ -179,6 +179,7 @@ class Site(Document, TagHelpers):
 		"server",
 		"host_name",
 		"skip_auto_updates",
+		"additional_system_user_created",
 	]
 
 	@staticmethod
@@ -518,7 +519,7 @@ class Site(Document, TagHelpers):
 		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.standby_for_product:
+		if self.standby_for_product or self.standby_for:
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
 			job = agent.rename_site(self, new_name, create_user)
@@ -728,7 +729,11 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			agent.new_site(self)
+			if (self.standby_for_product or self.standby_for) and self.account_request:
+				# if standby site, rename site and create first user for trial signups
+				agent.new_site(self, create_user=self.get_user_details())
+			else:
+				agent.new_site(self)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -1256,12 +1261,29 @@ class Site(Document, TagHelpers):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
 
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def login_as_team(self, reason=None):
+		if self.additional_system_user_created:
+			team_user = frappe.db.get_value("Team", self.team, "user")
+			sid = self.get_login_sid(user=team_user)
+			return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		else:
+			frappe.throw("No additional system user created for this site")
+
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
+	def create_user_with_team_info(self):
+		team_user = frappe.db.get_value("Team", self.team, "user")
+		user = frappe.get_doc("User", team_user)
+		return self.create_user(user.email, user.first_name, user.last_name)
+
 	def create_user(self, email, first_name, last_name, password=None):
+		if self.additional_system_user_created:
+			return
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
@@ -1845,14 +1867,25 @@ class Site(Document, TagHelpers):
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):
-		user_email = frappe.db.get_value("Team", self.team, "user")
-		user = frappe.db.get_value(
-			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
-		)
+		if (
+			frappe.db.get_value("Team", self.team, "user") == "Administrator"
+			and self.account_request
+		):
+			ar = frappe.get_doc("Account Request", self.account_request)
+			user_email = ar.email
+			user_first_name = ar.first_name
+			user_last_name = ar.last_name
+		else:
+			user_email = frappe.db.get_value("Team", self.team, "user")
+			user = frappe.db.get_value(
+				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
+			)
+			user_first_name = user.first_name or ""
+			user_last_name = user.last_name or ""
 		return {
 			"email": user_email,
-			"first_name": user.first_name,
-			"last_name": user.last_name,
+			"first_name": user_first_name,
+			"last_name": user_last_name,
 		}
 
 	def setup_erpnext(self):
@@ -2590,6 +2623,11 @@ def process_new_site_job_update(job):
 
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
+	if job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2815,6 +2853,11 @@ def process_rename_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
+	if job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+
 
 def process_add_proxysql_user_job_update(job):
 	if job.status == "Success":
@@ -2883,6 +2926,11 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_create_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
