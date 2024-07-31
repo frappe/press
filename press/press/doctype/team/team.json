@@ -21,7 +21,6 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
-  "enable_performance_tuning",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -55,6 +54,7 @@
   "skip_backups",
   "column_break_31",
   "database_access_enabled",
+  "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
@@ -476,7 +476,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-07-30 12:42:16.986998",
+ "modified": "2024-07-31 16:11:37.767065",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
