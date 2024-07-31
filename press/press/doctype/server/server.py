@@ -390,8 +390,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="filebeat.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"log_server": log_server,
@@ -414,8 +414,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="ping.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -434,8 +434,8 @@ class BaseServer(Document, TagHelpers):
 					"agent_repository_branch": self.get_agent_repository_branch(),
 				},
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1048,6 +1048,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
 
+	def _ssh_user(self):
+		if not hasattr(self, "ssh_user"):
+			return "root"
+		return self.ssh_user or "root"
+
+	def _ssh_port(self):
+		if not hasattr(self, "ssh_port"):
+			return 22
+		return self.ssh_port or 22
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1257,8 +1267,8 @@ class Server(BaseServer):
 				if getattr(self, "is_self_hosted", False)
 				else "server.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
@@ -1298,8 +1308,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="standalone.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"domain": self.domain,
@@ -1371,8 +1381,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="agent_set_proxy_ip.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxy_ip": proxy_ip,
@@ -1539,8 +1549,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="rename.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,

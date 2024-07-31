@@ -701,7 +701,7 @@ class Site(Document, TagHelpers):
 		)
 		space_for_download = db_size + public_size + private_size
 		space_for_extracted_files = (
-			0 if self.is_version_14_or_higher() else (8 * db_size) + public_size + private_size
+			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
