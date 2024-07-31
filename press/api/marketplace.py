@@ -153,8 +153,13 @@ def get_install_app_options(marketplace_app: str):
 
 			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
+	app_plans = get_plans_for_app(marketplace_app)
+
+	if not [plan for plan in app_plans if plan["price_inr"] > 0 or plan["price_usd"] > 0]:
+		app_plans = []
+
 	return {
-		"plans": get_plans_for_app(marketplace_app),
+		"plans": app_plans,
 		"private_site_plan": private_site_plan,
 		"public_site_plan": public_site_plan,
 		"is_app_featured": is_app_approved,
