@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from press.agent import Agent
+from press.utils import log_error
 
 from press.api.site import protected
 
@@ -175,3 +176,12 @@ def get_suggested_index(name, normalized_query):
 		as_dict=True,
 	)
 	return suggested_index
+
+
+def delete_all_occurences_of_mariadb_analyze_query(job):
+	try:
+		if job.status == "Success" or job.status == "Failure":
+			frappe.db.delete("MariaDB Analyze Query", {"site": job.site})
+			frappe.db.commit()
+	except Exception as e:
+		log_error("Deleting all occurences of MariaDB Analyze Query Failed", data=e)

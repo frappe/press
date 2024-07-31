@@ -79,7 +79,9 @@ class SiteMigration(Document):
 		self.validate_bench()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
-			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+			frappe.throw(
+				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists."
+			)
 
 	def validate_bench(self):
 		if (

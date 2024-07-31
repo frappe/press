@@ -2,7 +2,6 @@
 	<div class="p-5">
 		<div class="space-y-5">
 			<AccountProfile />
-			<AccountEmails />
 			<AccountReferral />
 			<AccountPartner />
 		</div>
@@ -10,7 +9,6 @@
 </template>
 
 <script setup>
-import AccountEmails from './AccountEmails.vue';
 import AccountProfile from './AccountProfile.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountPartner from './AccountPartner.vue';
