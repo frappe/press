@@ -175,7 +175,7 @@ export default {
 						toast.success('Analayze query has started in the background');
 					} else {
 						this.optimizable = true;
-						toast.success('Analaysis on query could not be performed');
+						toast.error('Analaysis on query could not be performed');
 					}
 					this.show = false;
 				},
