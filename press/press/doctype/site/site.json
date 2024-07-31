@@ -13,10 +13,11 @@
   "server",
   "archive_failed",
   "column_break_3",
-  "admin_password",
   "bench",
   "group",
   "cluster",
+  "admin_password",
+  "additional_system_user_created",
   "config_tab",
   "hide_config",
   "host_name",
@@ -590,6 +591,12 @@
    "fieldname": "only_update_at_specified_time",
    "fieldtype": "Check",
    "label": "Only update at specified time"
+  },
+  {
+   "default": "0",
+   "fieldname": "additional_system_user_created",
+   "fieldtype": "Check",
+   "label": "Additional System User Created"
   }
  ],
  "links": [
@@ -654,7 +661,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-06-28 16:18:55.869153",
+ "modified": "2024-07-30 09:42:15.771631",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
