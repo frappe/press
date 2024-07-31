@@ -22,7 +22,7 @@
 
 <script setup>
 import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h, ref } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
@@ -122,8 +122,6 @@ function onActivateSite() {
 const FeedbackDialog = defineAsyncComponent(() =>
 	import('./ChurnFeedbackDialog.vue')
 );
-
-const showFeedbackDialog = ref(false);
 
 function onDropSite() {
 	return confirmDialog({
