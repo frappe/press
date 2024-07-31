@@ -222,14 +222,14 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc.is_desk_user
+				$team.doc?.is_desk_user
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc.is_desk_user) {
+			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
