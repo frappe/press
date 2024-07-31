@@ -332,141 +332,17 @@ export default {
 								prefix: icon('plus')
 							},
 							onClick() {
+								const InstallAppDialog = defineAsyncComponent(() =>
+									import('../components/site/InstallAppDialog.vue')
+								);
+
 								renderDialog(
-									h(
-										GenericDialog,
-										{
-											options: {
-												title: 'Install app on your site',
-												size: '4xl'
-											}
-										},
-										{
-											default: () =>
-												h(ObjectList, {
-													options: {
-														label: 'App',
-														fieldname: 'app',
-														fieldtype: 'ListSelection',
-														emptyStateMessage:
-															'No apps found' +
-															(!site.doc?.group_public
-																? '. Please add them from your bench.'
-																: ''),
-														columns: [
-															{
-																label: 'Title',
-																fieldname: 'title',
-																class: 'font-medium',
-																width: 2
-															},
-															{
-																label: 'Repo',
-																fieldname: 'repository_owner',
-																class: 'text-gray-600'
-															},
-															{
-																label: 'Branch',
-																fieldname: 'branch',
-																class: 'text-gray-600'
-															},
-															{
-																label: '',
-																fieldname: '',
-																align: 'right',
-																type: 'Button',
-																width: '5rem',
-																Button({ row }) {
-																	return {
-																		label: 'Install',
-																		onClick() {
-																			if (site.installApp.loading) return;
-
-																			if (row.plans) {
-																				let SiteAppPlanSelectDialog =
-																					defineAsyncComponent(() =>
-																						import(
-																							'../components/site/SiteAppPlanSelectDialog.vue'
-																						)
-																					);
-
-																				renderDialog(
-																					h(SiteAppPlanSelectDialog, {
-																						app: row,
-																						currentPlan: null,
-																						onPlanSelected(plan) {
-																							toast.promise(
-																								site.installApp.submit({
-																									app: row.app,
-																									plan: plan.name
-																								}),
-																								{
-																									loading: 'Installing app...',
-																									success: jobId => {
-																										apps.reload();
-																										router.push({
-																											name: 'Site Job',
-																											params: {
-																												name: site.name,
-																												id: jobId
-																											}
-																										});
-																										return 'App will be installed shortly';
-																									},
-																									error: e => {
-																										return e.messages?.length
-																											? e.messages.join('\n')
-																											: e.message;
-																									}
-																								}
-																							);
-																						}
-																					})
-																				);
-																			} else {
-																				toast.promise(
-																					site.installApp.submit({
-																						app: row.app
-																					}),
-																					{
-																						loading: 'Installing app...',
-																						success: jobId => {
-																							apps.reload();
-																							router.push({
-																								name: 'Site Job',
-																								params: {
-																									name: site.name,
-																									id: jobId
-																								}
-																							});
-																							return 'App will be installed shortly';
-																						},
-																						error: e => {
-																							return e.messages?.length
-																								? e.messages.join('\n')
-																								: e.message;
-																						}
-																					}
-																				);
-																			}
-																		}
-																	};
-																}
-															}
-														],
-														resource() {
-															return {
-																url: 'press.api.site.available_apps',
-																params: {
-																	name: site.doc?.name
-																},
-																auto: true
-															};
-														}
-													}
-												})
+									h(InstallAppDialog, {
+										site: site.name,
+										onInstalled() {
+											apps.reload();
 										}
-									)
+									})
 								);
 							}
 						};
