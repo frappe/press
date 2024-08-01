@@ -138,6 +138,7 @@ class AccountRequest(Document):
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
 		if self.product_trial or custom_template:
+			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
 		else:
 			template = "verify_account"
