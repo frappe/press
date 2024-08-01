@@ -126,8 +126,10 @@ class AccountRequest(Document):
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
+			print(f"\nOTP for {self.email}:")
+			print(self.otp)
 			print()
-			# return TODO: uncomment this line
+			return
 
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
