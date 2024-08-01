@@ -2824,6 +2824,12 @@ def process_rename_site_job_update(job):
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
+	if job.job_type == "Rename Site" and job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
+
 	try:
 		other_job = frappe.get_last_doc(
 			"Agent Job",
@@ -2860,12 +2866,6 @@ def process_rename_site_job_update(job):
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-
-	if job.status == "Success":
-		request_data = json.loads(job.request_data)
-		if "create_user" in request_data:
-			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-			frappe.db.commit()
 
 
 def process_add_proxysql_user_job_update(job):
