@@ -230,7 +230,7 @@ import { vElementSize } from '@vueuse/components';
 import { validateSubdomain } from '../utils/site';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { getPlans } from '../data/plans';
+import { getPlans, plans } from '../data/plans';
 import { trialDays } from '../utils/site';
 import { DashboardError } from '../utils/error';
 
@@ -244,6 +244,16 @@ export default {
 		LoginBox,
 		SitePlansCards,
 		ProductSignupPitch
+	},
+	mounted() {
+		if (this.selectedPlan) return;
+		if (plans.fetched) {
+			this.setDefaultPlan();
+		} else {
+			plans.promise.then(() => {
+				this.setDefaultPlan();
+			});
+		}
 	},
 	data() {
 		return {
@@ -375,6 +385,14 @@ export default {
 		},
 		onResize({ width }) {
 			this.inputPaddingRight = width + 10 + 'px';
+		},
+		setDefaultPlan() {
+			if (this.selectedPlan) return;
+			const filteredPlans = getPlans().filter(plan => !plan.disabled);
+			this.selectedPlan = filteredPlans.length ? filteredPlans[0] : null;
+			if(this.selectedPlan) {
+				this.plan = this.selectedPlan.name;
+			}
 		},
 		goToDashboard() {
 			window.location.reload();
