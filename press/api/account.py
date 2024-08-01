@@ -16,6 +16,7 @@ from frappe.utils import get_url
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
+from press.press.doctype.account_request.account_request import AccountRequest
 from pypika.terms import ValueWrapper
 
 from press.api.site import protected
@@ -41,12 +42,13 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 		"Team", {"user": email}, ["name", "enabled"]
 	) or [0, 0]
 
+	account_request = None
 	if exists and not enabled:
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		frappe.get_doc(
+		account_request = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -59,6 +61,30 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 		).insert()
 
 	frappe.set_user(current_user)
+	if account_request:
+		return account_request.name
+
+
+@frappe.whitelist(allow_guest=True)
+def verify_otp(account_request:str, otp:str):
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": account_request.email}):
+		frappe.throw("Invalid OTP. Please try again.")
+	if account_request.otp != otp:
+		frappe.throw("Invalid OTP. Please try again.")
+	account_request.reset_otp()
+	return account_request.request_key
+
+
+@frappe.whitelist(allow_guest=True)
+def resend_otp(account_request:str):
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": account_request.email}):
+		frappe.throw("Invalid Email")
+	account_request.reset_otp()
+	account_request.send_verification_email()
 
 
 @frappe.whitelist(allow_guest=True)

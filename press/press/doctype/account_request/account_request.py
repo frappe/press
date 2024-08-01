@@ -4,6 +4,7 @@
 
 
 import json
+import random
 
 import frappe
 from frappe.model.document import Document
@@ -21,7 +22,6 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.account_request_press_role.account_request_press_role import (
 			AccountRequestPressRole,
 		)
@@ -44,6 +44,7 @@ class AccountRequest(Document):
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
+		otp: DF.Data | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
@@ -68,6 +69,9 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
+
+		if not self.otp:
+			self.otp = random.randint(10000, 99999)
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}
@@ -111,6 +115,10 @@ class AccountRequest(Document):
 				return True
 		return False
 
+	def reset_otp(self):
+		self.otp = random.randint(10000, 99999)
+		self.save(ignore_permissions=True)
+
 	@frappe.whitelist()
 	def send_verification_email(self):
 		url = self.get_verification_url()
@@ -118,10 +126,12 @@ class AccountRequest(Document):
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
+			print(f"\nOTP for {self.email}:")
+			print(self.otp)
 			print()
 			return
 
-		subject = "Verify your email for Frappe"
+		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
 
 		custom_template = self.saas_app and frappe.db.get_value(
@@ -145,6 +155,7 @@ class AccountRequest(Document):
 				"read_pixel_path": get_url(
 					f"/api/method/press.utils.telemetry.capture_read_event?email={self.email}"
 				),
+				"otp": self.otp,
 			}
 		)
 		if not self.is_saas_signup():

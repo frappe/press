@@ -9,6 +9,7 @@
   "team",
   "email",
   "oauth_signup",
+  "otp",
   "column_break_4",
   "role",
   "invited_by",
@@ -265,11 +266,16 @@
    "fieldtype": "Table MultiSelect",
    "label": "Press Roles",
    "options": "Account Request Press Role"
+  },
+  {
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-06 23:40:30.636251",
+ "modified": "2024-07-29 15:24:00.050805",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
