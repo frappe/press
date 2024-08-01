@@ -2634,6 +2634,7 @@ def process_new_site_job_update(job):
 		request_data = json.loads(job.request_data)
 		if "create_user" in request_data:
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
 
 
 def get_remove_step_status(job):
@@ -2823,6 +2824,12 @@ def process_rename_site_job_update(job):
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
+	if job.job_type == "Rename Site" and job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
+
 	try:
 		other_job = frappe.get_last_doc(
 			"Agent Job",
@@ -2859,11 +2866,6 @@ def process_rename_site_job_update(job):
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-
-	if job.status == "Success":
-		request_data = json.loads(job.request_data)
-		if "create_user" in request_data:
-			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 
 
 def process_add_proxysql_user_job_update(job):
@@ -2938,6 +2940,7 @@ def process_restore_tables_job_update(job):
 def process_create_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+		frappe.db.commit()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
