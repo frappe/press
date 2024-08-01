@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed } from 'vue';
+import { defineAsyncComponent } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
 
@@ -42,4 +42,4 @@ const MobileNav = defineAsyncComponent(() =>
 );
 </script>
 
-<style src="../src/assets/style.css"></style>
+<style src="./assets/style.css"></style>
