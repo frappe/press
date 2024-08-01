@@ -86,8 +86,8 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<p for="phone">Phone Number</p>
-					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
+					<p for="phone_number">Phone Number</p>
+					<input type="tel" id="phone_number" class="form-control" name="phone_number" autocomplete="tel">
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent">
@@ -117,6 +117,7 @@
 	let key = frappe.utils.get_url_arg('key');
 	const app = document.getElementById('app').value;
 	const headless = document.getElementById('headless').value;
+	const phone_number_regex = /^\+?[0-9]+$/;
 
 	if (headless == 1) {
 		frappe.ready(() => {
@@ -179,6 +180,11 @@
 				return 'Please enter a valid number';
 			}
 		},
+		phone_number: (value) => {
+			if(value.length < 10 || !phone_number_regex.test(value)) {
+				return 'Please provide a valid phone number';
+			}
+		}
 	};
 
 	function regional_settings($form, values) {
