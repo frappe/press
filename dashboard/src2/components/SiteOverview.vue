@@ -13,7 +13,7 @@
 				class="ml-auto"
 				variant="outline"
 				@click="loginAsTeam"
-				:loading="$site.loginAsTeam.loading"
+				:loading="$site.loginAsAdmin.loading"
 			>
 				Login
 			</Button>
