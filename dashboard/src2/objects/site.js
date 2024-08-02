@@ -728,6 +728,31 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
+						function getFileName(file) {
+							if (file == 'database') return 'database';
+							if (file == 'public') return 'public files';
+							if (file == 'private') return 'private files';
+							if (file == 'config') return 'config file';
+						}
+
+						function confirmDownload(backup, file) {
+							confirmDialog({
+								title: 'Download Backup',
+								message: `You will be downloading the ${getFileName(
+									file
+								)} backup of the site <b>${
+									site.doc?.host_name || site.doc?.name
+								}</b> that was created on ${date(backup.creation, 'llll')}.${
+									!backup.offsite
+										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> in your site to download the backup.<div>'
+										: ''
+								}`,
+								onSuccess() {
+									downloadBackup(backup, file);
+								}
+							});
+						}
+
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
 							if (backup.offsite) {
@@ -758,27 +783,27 @@ export default {
 									{
 										label: 'Download Database',
 										onClick() {
-											return downloadBackup(row, 'database');
+											return confirmDownload(row, 'database');
 										}
 									},
 									{
 										label: 'Download Public',
 										onClick() {
-											return downloadBackup(row, 'public');
+											return confirmDownload(row, 'public');
 										},
 										condition: () => row.public_url
 									},
 									{
 										label: 'Download Private',
 										onClick() {
-											return downloadBackup(row, 'private');
+											return confirmDownload(row, 'private');
 										},
 										condition: () => row.private_url
 									},
 									{
 										label: 'Download Config',
 										onClick() {
-											return downloadBackup(row, 'config');
+											return confirmDownload(row, 'config');
 										},
 										condition: () => row.config_file_url
 									}
