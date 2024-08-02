@@ -45,7 +45,7 @@ let router = createRouter({
 		{
 			path: '/checkout/:secretKey',
 			name: 'Checkout',
-			component: () => import('../src/views/checkout/Checkout.vue'),
+			component: () => import('./pages/checkout/Checkout.vue'),
 			props: true,
 			meta: {
 				isLoginPage: true
@@ -54,7 +54,7 @@ let router = createRouter({
 		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
-			component: () => import('../src/views/checkout/Subscription.vue'),
+			component: () => import('./pages/checkout/Subscription.vue'),
 			props: true,
 			meta: {
 				hideSidebar: true
