@@ -17,134 +17,228 @@
 				</div>
 			</div>
 			<div class="relative w-full" v-if="saasProduct">
-				<LoginBox
-					:title="
-						siteRequest?.doc?.status == 'Pending'
-							? `Create your ${saasProduct.title} site`
-							: ''
-					"
-				>
-					<div v-if="completedSites.length">
-						<div>
-							<div class="text-base text-gray-900">
-								{{
-									completedSites.length > 1
-										? 'You have already created the following sites:'
-										: 'You have already created the following site:'
-								}}
-							</div>
-							<ul class="mt-2">
-								<li
-									v-for="site in completedSites"
-									:key="site"
-									class="whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
+				<div class="relative h-full">
+					<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
+						<div class="flex">
+							<div class="mx-auto flex items-center space-x-2">
+								<FCLogo class="inline-block h-7 w-7" />
+								<span
+									class="select-none text-xl font-semibold tracking-tight text-gray-900"
 								>
-									<a
-										:href="`https://${site.site}`"
-										class="block font-medium text-gray-900 underline focus:outline-none"
-										target="_blank"
-									>
-										{{ site.site }}
-									</a>
-									<div class="mt-1.5 text-base text-gray-600">
-										{{ trialDays(site.trial_end_date) }}
-									</div>
-								</li>
-							</ul>
+									Frappe Cloud
+								</span>
+								<p class="mx-1 text-3xl font-semibold">+</p>
+
+								<img
+									:src="saasProduct.logo"
+									class="inline-block h-7 w-7 rounded-sm"
+								/>
+								<span
+									class="select-none text-xl font-semibold tracking-tight text-gray-900"
+								>
+									{{ saasProduct.title }}
+								</span>
+							</div>
 						</div>
-					</div>
-					<div v-if="siteRequest?.doc">
-						<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
-							<FormControl
-								label="Your Email"
-								:modelValue="$team.doc.user"
-								:disabled="true"
-							/>
-							<div class="cursor-pointer" @click.stop="showPlanDialog = true">
-								<label class="text-xs text-gray-600">Choose a plan</label>
-								<Button class="w-full">
-									<span class="text-base text-gray-900" v-if="plan">
-										{{ selectedPlanDescription }}
-									</span>
-									<span class="text-base text-gray-600" v-else>
-										No plan selected
-									</span>
-								</Button>
-								<div class="mt-1 text-xs text-gray-600">
-									{{
-										plan === 'Trial'
-											? ''
-											: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
-									}}
+						<div
+							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-8 sm:shadow-xl"
+						>
+							<div
+								class="mb-6 text-center"
+								v-if="siteRequest?.doc?.status == 'Pending'"
+							>
+								<span
+									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+								>
+									Create your {{ saasProduct.title }} site
+								</span>
+							</div>
+							<div v-if="completedSites.length">
+								<div>
+									<div class="text-base text-gray-900">
+										{{
+											completedSites.length > 1
+												? `You have already created these ${saasProduct.title} sites:`
+												: `You have already created these ${saasProduct.title} site:`
+										}}
+									</div>
+									<!-- Site List -->
+									<ul class="mt-4">
+										<li
+											v-for="site in completedSites"
+											:key="site"
+											class="overflow-hidden whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
+										>
+											<!-- Site name -->
+											<p
+												class="block font-medium text-gray-900 focus:outline-none"
+												target="_blank"
+											>
+												{{ site.site }}
+											</p>
+											<!-- Action Buttons -->
+											<div class="mt-3 flex w-full flex-row justify-between">
+												<Button
+													variant="outline"
+													iconLeft="external-link"
+													:link="`https://${site.site}`"
+												>
+													Visit Site</Button
+												>
+												<Button
+													variant="outline"
+													iconLeft="user"
+													@click="() => loginAsTeam(site.site)"
+													:disabled="
+														loginAsTeamInProgressInSite &&
+														loginAsTeamInProgressInSite !== site.site
+													"
+													:loading="loginAsTeamInProgressInSite === site.site"
+													loadingText="Logging in ..."
+												>
+													Login as team</Button
+												>
+												<Button
+													variant="outline"
+													iconLeft="info"
+													:link="`/dashboard/sites/${site.site}/overview`"
+												>
+													Manage</Button
+												>
+											</div>
+											<div class="mt-3 flex flex-row items-center text-base">
+												<i-lucide-alert-triangle
+													:class="{
+														'h-4 w-4 text-red-600': isTrialEnded(
+															site.trial_end_date
+														),
+														'h-4 w-4 text-amber-600': !isTrialEnded(
+															site.trial_end_date
+														)
+													}"
+												/>
+												<p
+													class="ms-1"
+													:class="{
+														'text-red-600': isTrialEnded(site.trial_end_date),
+														'text-amber-600': !isTrialEnded(site.trial_end_date)
+													}"
+												>
+													{{ trialDays(site.trial_end_date) }}
+												</p>
+												<Button variant="solid" class="ms-auto">
+													Subscribe Now
+												</Button>
+											</div>
+										</li>
+									</ul>
+									<!-- Redirect to FC -->
+									<Button class="mt-4 w-full" route="/">
+										Click to visit Frappe Cloud dashboard
+									</Button>
 								</div>
 							</div>
-							<!-- <FormControl
-								class="subdomain mt-2"
-								label="Site Name"
-								v-model="subdomain"
-								@keydown.enter="createSite"
-							>
-								<template #suffix>
+							<div v-if="siteRequest?.doc">
+								<div
+									class="space-y-3"
+									v-if="siteRequest.doc.status == 'Pending'"
+								>
+									<FormControl
+										label="Your Email"
+										:modelValue="$team.doc.user"
+										:disabled="true"
+									/>
 									<div
-										ref="domainSuffix"
-										v-element-size="onResize"
-										class="flex select-none items-center text-base text-gray-600"
+										class="cursor-pointer"
+										@click.stop="showPlanDialog = true"
 									>
-										.{{ saasProduct.domain || 'frappe.cloud' }}
+										<label class="text-xs text-gray-600">Choose a plan</label>
+										<Button class="w-full">
+											<span class="text-base text-gray-900" v-if="plan">
+												{{ selectedPlanDescription }}
+											</span>
+											<span class="text-base text-gray-600" v-else>
+												No plan selected
+											</span>
+										</Button>
+										<div class="mt-1 text-xs text-gray-600">
+											{{
+												plan === 'Trial'
+													? ''
+													: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
+											}}
+										</div>
 									</div>
-								</template>
-							</FormControl> -->
-							<ErrorMessage :message="siteRequest.createSite.error" />
-							<Button
-								class="w-full"
-								variant="solid"
-								@click="createSite"
-								:loading="
-									findingClosestServer || siteRequest.createSite.loading
-								"
-							>
-								Create
-							</Button>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
-							<Progress
-								label="Creating site"
-								:value="siteRequest.getProgress.data?.progress || 0"
-								size="md"
-							/>
-							<ErrorMessage class="mt-2" :message="progressError" />
-							<Button
-								class="mt-2"
-								v-if="siteRequest.getProgress.error && progressErrorCount > 9"
-								route="/"
-							>
-								&#8592; Back to Dashboard
-							</Button>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Site Created'">
-							<div class="text-base text-gray-900">
-								Your site
-								<span class="font-semibold text-gray-900">{{
-									siteRequest.doc.site
-								}}</span>
-								is ready.
-							</div>
-							<div class="py-3 text-base text-gray-900">
-								{{
-									siteRequest.getLoginSid.loading
-										? 'Logging in to your site...'
-										: ''
-								}}
-							</div>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Error'">
-							<div class="text-p-base text-red-600">
-								There was an error creating your site. Please contact
-								<a class="underline" href="/support">Frappe Cloud Support</a>.
+									<ErrorMessage :message="siteRequest.createSite.error" />
+									<Button
+										class="w-full"
+										variant="solid"
+										@click="createSite"
+										:loading="
+											findingClosestServer || siteRequest.createSite.loading
+										"
+									>
+										Create
+									</Button>
+								</div>
+								<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
+									<Progress
+										label="Creating site"
+										:value="siteRequest.getProgress.data?.progress || 0"
+										size="md"
+									/>
+									<div class="mt-4 flex flex-row items-center gap-1">
+										<Spinner class="w-3" />
+										<p class="text-sm italic">
+											{{
+												siteRequest.getProgress.data?.current_step ||
+												!siteRequest.getProgress.data?.progress
+													? 'Waiting for update'
+													: ''
+											}}
+										</p>
+									</div>
+									<ErrorMessage class="mt-2" :message="progressError" />
+									<Button
+										class="mt-2"
+										v-if="
+											siteRequest.getProgress.error && progressErrorCount > 9
+										"
+										route="/"
+									>
+										&#8592; Back to Dashboard
+									</Button>
+								</div>
+								<div v-else-if="siteRequest.doc.status == 'Site Created'">
+									<div class="text-base text-gray-900">
+										Your site
+										<span class="font-semibold text-gray-900">{{
+											siteRequest.doc.site
+										}}</span>
+										is ready.
+									</div>
+									<div class="py-3 text-base text-gray-900">
+										{{
+											siteRequest.getLoginSid.loading
+												? 'Logging in to your site...'
+												: ''
+										}}
+									</div>
+								</div>
+								<div v-else-if="siteRequest.doc.status == 'Error'">
+									<div class="text-p-base text-red-600">
+										There was an error creating your site. Please contact
+										<a class="underline" href="/support">Frappe Cloud Support</a
+										>.
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
-				</LoginBox>
+					<div class="absolute bottom-4 z-[1] flex w-full justify-center">
+						<FrappeLogo class="h-4" />
+					</div>
+				</div>
 				<div class="absolute bottom-12 left-1/2 -translate-x-1/2">
 					<Dropdown
 						:options="[
@@ -224,15 +318,17 @@
 	</div>
 </template>
 <script>
-import { ErrorMessage, Progress } from 'frappe-ui';
-import LoginBox from '../components/auth/LoginBox.vue';
+import { ErrorMessage, Progress, createResource } from 'frappe-ui';
+import FCLogo from '@/components/icons/FCLogo.vue';
+import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
-import { validateSubdomain } from '../utils/site';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { getPlans, plans } from '../data/plans';
-import { trialDays } from '../utils/site';
+import { trialDays, isTrialEnded } from '../utils/site';
 import { DashboardError } from '../utils/error';
+import AlertBanner from '../components/AlertBanner.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'NewAppTrial',
@@ -241,9 +337,11 @@ export default {
 		'element-size': vElementSize
 	},
 	components: {
-		LoginBox,
+		FCLogo,
+		FrappeLogo,
 		SitePlansCards,
-		ProductSignupPitch
+		ProductSignupPitch,
+		AlertBanner
 	},
 	mounted() {
 		if (this.selectedPlan) return;
@@ -257,14 +355,14 @@ export default {
 	},
 	data() {
 		return {
-			subdomain: null,
 			plan: null,
 			inputPaddingRight: null,
 			showPlanDialog: false,
 			selectedPlan: null,
 			progressErrorCount: 0,
 			findingClosestServer: false,
-			closestCluster: null
+			closestCluster: null,
+			loginAsTeamInProgressInSite: null
 		};
 	},
 	resources: {
@@ -305,7 +403,6 @@ export default {
 							if (!this.plan) {
 								throw new DashboardError('Please select a plan');
 							}
-							// throw new DashboardError(validateSubdomain(this.subdomain));
 						},
 						onSuccess() {
 							this.siteRequest.getProgress.reload();
@@ -340,7 +437,8 @@ export default {
 						onSuccess(data) {
 							let sid = data;
 							let loginURL = `https://${this.siteRequest.doc.site}/desk?sid=${sid}`;
-							window.location.href = loginURL;
+							window.open(loginURL, '_blank');
+							window.location.reload();
 						}
 					}
 				}
@@ -390,14 +488,39 @@ export default {
 			if (this.selectedPlan) return;
 			const filteredPlans = getPlans().filter(plan => !plan.disabled);
 			this.selectedPlan = filteredPlans.length ? filteredPlans[0] : null;
-			if(this.selectedPlan) {
+			if (this.selectedPlan) {
 				this.plan = this.selectedPlan.name;
 			}
+		},
+		loginAsTeam(site_name) {
+			if (this.loginAsTeamInProgressInSite) return;
+			this.loginAsTeamInProgressInSite = site_name;
+			let todo = createResource({
+				url: '/api/method/press.api.client.run_doc_method',
+				params: {
+					dt: 'Site',
+					dn: site_name,
+					method: 'login_as_team'
+				},
+				onSuccess: res => {
+					this.loginAsTeamInProgressInSite = null;
+					if (!res?.message) {
+						toast.error("Couldn't login to the site");
+						return;
+					}
+					window.open(res.message, '_blank');
+				},
+				onError: () => {
+					toast.error("Couldn't login to the site");
+				}
+			});
+			todo.fetch();
 		},
 		goToDashboard() {
 			window.location.reload();
 		},
-		trialDays
+		trialDays,
+		isTrialEnded
 	},
 	computed: {
 		pendingSiteRequest() {
@@ -435,8 +558,3 @@ export default {
 	}
 };
 </script>
-<style scoped>
-.subdomain :deep(input) {
-	padding-right: v-bind(inputPaddingRight);
-}
-</style>

@@ -28,28 +28,32 @@ class ProductTrialRequest(Document):
 
 	dashboard_fields = ["site", "status", "product_trial"]
 
+	agent_job_step_to_frontend_step = {
+		"New Site": {
+			"New Site": "Building Site",
+			"Install Apps": "Installing Apps",
+			"Update Site Configuration": "Updating Configuration",
+			"Enable Scheduler": "Finalizing Site",
+			"Bench Setup Nginx": "Finalizing Site",
+			"Reload Nginx": "Just a moment",
+		},
+		"Rename Site": {
+			"Enable Maintenance Mode": "Starting",
+			"Wait for Enqueued Jobs": "Starting",
+			"Update Site Configuration": "Preparing Site",
+			"Rename Site": "Preparing Site",
+			"Bench Setup NGINX": "Preparing Site",
+			"Reload NGINX": "Finalizing Site",
+			"Disable Maintenance Mode": "Finalizing Site",
+			"Enable Scheduler": "Just a moment",
+		}
+	}
+
 	@dashboard_whitelist()
 	def create_site(self, plan, cluster=None):
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
-		site: Site = product.setup_trial_site(self.team, cluster)
-		user = self.get_user_details()
-		agent_job = site.create_user(user.email, user.first_name, user.last_name)
-		self.agent_job = agent_job.name
-		site.create_subscription(plan)
-		site.reload()
-		trial_days = (
-			frappe.db.get_value("Product Trial", self.product_trial, "trial_days") or 14
-		)
-		site.trial_end_date = frappe.utils.add_days(None, trial_days)
-		# update_config implicitly calles site.save
-		site.flags.ignore_permissions = True
-		site.update_site_config(
-			{
-				"subscription": {"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d")},
-				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
-			}
-		)
-		# site.save(ignore_permissions=True)
+		site, agent_job_name = product.setup_trial_site(self.team, plan, cluster)
+		self.agent_job = agent_job_name
 		self.site = site.name
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
@@ -72,14 +76,13 @@ class ProductTrialRequest(Document):
 			filters = {"name": self.agent_job, "site": self.site}
 		else:
 			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
-		job_name, status = frappe.db.get_value(
+		job_name, status, job_type = frappe.db.get_value(
 			"Agent Job",
 			filters,
-			["name", "status"],
+			["name", "status", "job_type"],
 		)
 		if status == "Success":
-			self.status = "Site Created"
-			self.save(ignore_permissions=True)
+			frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
 			return {"progress": 100}
 		elif status == "Running":
 			steps = frappe.db.get_all(
@@ -91,13 +94,16 @@ class ProductTrialRequest(Document):
 			done = [s for s in steps if s.status in ("Success", "Skipped", "Failure")]
 			progress = len(done) / len(steps) * 100
 			if progress <= current_progress:
-				progress = current_progress + 1
-			return {"progress": progress}
-		elif status == "Failure":
-			self.status = "Error"
-			self.save(ignore_permissions=True)
+				progress = current_progress
+			current_running_step = ""
+			for step in steps:
+				if step.status == "Running":
+					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(step.step_name, step.step_name)
+					break
+			return {"progress": progress, "current_step": current_running_step}
+		elif status == "Failure" or status == "Delivery Failure":
+			frappe.db.set_value("Product Trial Request", self.name, "status", "Error")
 			return {"progress": current_progress, "error": True}
-		elif status == "Undelivered":
-			return {"progress": current_progress, "error": True}
-
-		return {"progress": current_progress + 1}
+		else:
+			# If agent job is undelivered, pending
+			return {"progress": current_progress}

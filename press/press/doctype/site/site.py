@@ -526,7 +526,7 @@ class Site(Document, TagHelpers):
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
 			job = agent.rename_site(self, new_name, create_user)
-			self.flags.rename_job = job.name
+			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -732,11 +732,11 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			if (self.standby_for_product or self.standby_for) and self.account_request:
+			if self.standby_for_product or self.standby_for :
 				# if standby site, rename site and create first user for trial signups
-				agent.new_site(self, create_user=self.get_user_details())
+				self.flags.new_site_agent_job_name = agent.new_site(self, create_user=self.get_user_details()).name
 			else:
-				agent.new_site(self)
+				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1

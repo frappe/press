@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+import frappe.utils
+from press.press.doctype.site.site import Site
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -17,16 +19,50 @@ class ProductTrial(Document):
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
-	def setup_trial_site(self, team, cluster=None):
+	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str]:
 		standby_site = self.get_standby_site(cluster)
-		if not standby_site:
-			frappe.throw("Cannot set up trial site. Please try after some time.")
+		team_record = frappe.get_doc("Team", team)
+		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
+		site: "Site" = None
+		agent_job_name = None
+		if standby_site:
+			site = frappe.get_doc("Site", standby_site)
+			site.is_standby = False
+			site.team = team_record.name
+			site.trial_end_date = trial_end_date
+			site.save(ignore_permissions=True)
+			agent_job_name = site.flags.get("rename_site_agent_job_name", None)
+			site.create_subscription(plan)
+		else:
+			# Create a site in the cluster, if standby site is not available
+			apps = [{"app": d.app} for d in self.apps]
+			if "frappe" not in apps:
+				apps.insert(0, {"app": "frappe"})
+			site = frappe.get_doc(
+				doctype="Site",
+				subdomain=self.get_unique_site_name(),
+				domain=self.domain,
+				group=self.release_group,
+				cluster=cluster,
+				is_standby=False,
+				standby_for_product=self.name,
+				subscription_plan=plan,
+				team=team,
+				apps=apps,
+				trial_end_date=trial_end_date
+			)
+			site.insert(ignore_permissions=True)
+			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
-		site = frappe.get_doc("Site", standby_site)
-		site.is_standby = False
-		site.team = team
-		site.save(ignore_permissions=True)
-		return site
+		site.reload()
+		site.flags.ignore_permissions = True
+		site.update_site_config(
+			{
+				"subscription": {"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d")},
+				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
+			}
+		)
+		return site, agent_job_name
 
 	def get_proxy_servers_for_available_clusters(self):
 		clusters = self.get_available_clusters()
