@@ -71,9 +71,7 @@ class Team(Document):
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
-		payment_mode: DF.Literal[
-			"", "Card", "Prepaid Credits", "Partner Credits", "Paid By Partner"
-		]
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
 		referrer_id: DF.Data | None
 		security_portal_enabled: DF.Check
