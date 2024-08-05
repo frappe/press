@@ -50,9 +50,9 @@ class ProductTrialRequest(Document):
 	}
 
 	@dashboard_whitelist()
-	def create_site(self, plan, cluster=None):
+	def create_site(self, cluster=None):
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
-		site, agent_job_name = product.setup_trial_site(self.team, plan, cluster)
+		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
 		self.status = "Wait for Site"

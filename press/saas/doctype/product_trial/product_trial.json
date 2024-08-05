@@ -15,10 +15,10 @@
   "description",
   "section_break_rvnt",
   "domain",
-  "trial_days",
-  "column_break_cpkv",
   "release_group",
-  "product_redirect_route",
+  "column_break_cpkv",
+  "trial_days",
+  "trial_plan",
   "section_break_ipmu",
   "apps",
   "pooling_tab",
@@ -141,9 +141,11 @@
    "hide_border": 1
   },
   {
-   "fieldname": "product_redirect_route",
-   "fieldtype": "Data",
-   "label": "Product Redirect Route"
+   "fieldname": "trial_plan",
+   "fieldtype": "Link",
+   "label": "Trial Plan",
+   "options": "Site Plan",
+   "reqd": 1
   }
  ],
  "image_field": "logo",
@@ -158,7 +160,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-05 13:02:49.854031",
+ "modified": "2024-08-05 15:44:58.046568",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

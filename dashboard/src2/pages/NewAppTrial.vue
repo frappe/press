@@ -165,27 +165,6 @@
 										:modelValue="$team.doc.user"
 										:disabled="true"
 									/>
-									<div
-										class="cursor-pointer"
-										@click.stop="showPlanDialog = true"
-									>
-										<label class="text-xs text-gray-600">Choose a plan</label>
-										<Button class="w-full">
-											<span class="text-base text-gray-900" v-if="plan">
-												{{ selectedPlanDescription }}
-											</span>
-											<span class="text-base text-gray-600" v-else>
-												No plan selected
-											</span>
-										</Button>
-										<div class="mt-1 text-xs text-gray-600">
-											{{
-												plan === 'Trial'
-													? ''
-													: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
-											}}
-										</div>
-									</div>
 									<ErrorMessage
 										:message="$resources.siteRequest?.createSite?.error"
 									/>
@@ -286,68 +265,6 @@
 					</Dropdown>
 				</div>
 			</div>
-			<!-- Choose Site Plan (at the time of registration) -->
-			<Dialog
-				:options="{
-					title: 'Choose Plan',
-					size: '4xl',
-					actions: [
-						{
-							label: 'Select plan',
-							variant: 'solid',
-							onClick: () => {
-								this.plan = this.selectedPlan.name;
-								this.showPlanDialog = false;
-							}
-						},
-						{
-							label: 'Cancel',
-							onClick: () => {
-								this.plan = null;
-								this.showPlanDialog = false;
-							}
-						}
-					]
-				}"
-				v-model="showPlanDialog"
-			>
-				<template #body-content>
-					<p class="text-p-base text-gray-900">
-						You won't be charged during the {{ saasProduct.trial_days }}-day
-						trial period. The plan you select here will become active after the
-						trial period.
-					</p>
-					<SitePlansCards v-model="selectedPlan" class="mt-4" />
-				</template>
-				<template #actions>
-					<div class="flex items-center">
-						<Button
-							class="order-1 ml-2"
-							variant="solid"
-							@click="
-								() => {
-									this.plan = this.selectedPlan.name;
-									this.showPlanDialog = false;
-								}
-							"
-						>
-							Select Plan
-						</Button>
-						<Button
-							class="ml-auto"
-							@click="
-								() => {
-									this.plan = null;
-									this.selectedPlan = null;
-									this.showPlanDialog = false;
-								}
-							"
-						>
-							Cancel
-						</Button>
-					</div>
-				</template>
-			</Dialog>
 			<!-- Subscribe Now Dialog -->
 			<AppTrialSubscriptionDialog
 				v-if="showAppTrialSubscriptionDialog"
@@ -387,14 +304,6 @@ export default {
 		AppTrialSubscriptionDialog
 	},
 	mounted() {
-		if (this.selectedPlan) return;
-		if (plans.fetched) {
-			this.setDefaultPlan();
-		} else {
-			plans.promise.then(() => {
-				this.setDefaultPlan();
-			});
-		}
 		// Open subscription dialog if hash is #subscription and billing details or payment mode is not set
 		if (
 			this.$route.hash === '#subscription' &&
@@ -449,12 +358,7 @@ export default {
 						method: 'create_site',
 						makeParams(params) {
 							let cluster = params?.cluster;
-							return { plan: this.plan, cluster };
-						},
-						validate() {
-							if (!this.plan) {
-								throw new DashboardError('Please select a plan');
-							}
+							return { cluster };
 						},
 						onSuccess() {
 							this.$resources.siteRequest.getProgress.reload();
@@ -539,14 +443,6 @@ export default {
 		onResize({ width }) {
 			this.inputPaddingRight = width + 10 + 'px';
 		},
-		setDefaultPlan() {
-			if (this.selectedPlan) return;
-			const filteredPlans = getPlans().filter(plan => !plan.disabled);
-			this.selectedPlan = filteredPlans.length ? filteredPlans[0] : null;
-			if (this.selectedPlan) {
-				this.plan = this.selectedPlan.name;
-			}
-		},
 		loginAsTeam(site_name) {
 			if (this.loginAsTeamInProgressInSite) return;
 			this.loginAsTeamInProgressInSite = site_name;
@@ -589,16 +485,6 @@ export default {
 		},
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
-		},
-		selectedPlanDescription() {
-			if (!this.plan) return;
-			let plan = getPlans().find(plan => plan.name == this.plan);
-			let country = this.$team.doc.country;
-			let pricePerMonth = this.$format.userCurrency(
-				country === 'India' ? plan.price_inr : plan.price_usd,
-				0
-			);
-			return `${pricePerMonth} per month`;
 		},
 		progressError() {
 			if (!this.$resources.siteRequest?.getProgress?.data?.error) return;

@@ -26,7 +26,6 @@ class ProductTrial(Document):
 		domain: DF.Link
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
-		product_redirect_route: DF.Data | None
 		published: DF.Check
 		release_group: DF.Link
 		signup_fields: DF.Table[ProductTrialSignupField]
@@ -34,6 +33,7 @@ class ProductTrial(Document):
 		standby_queue_size: DF.Int
 		title: DF.Data
 		trial_days: DF.Int
+		trial_plan: DF.Link
 	# end: auto-generated types
 
 	dashboard_fields = ["title", "logo", "description", "domain", "trial_days"]
@@ -43,6 +43,13 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
+	
+	def validate(self):
+		plan = frappe.get_doc("Site Plan", self.trial_plan)
+		if plan.document_type != "Site":
+			frappe.throw("Selected plan is not for site")
+		if not plan.is_trial_plan:
+			frappe.throw("Selected plan is not a trial plan")
 
 	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str]:
 		standby_site = self.get_standby_site(cluster)
