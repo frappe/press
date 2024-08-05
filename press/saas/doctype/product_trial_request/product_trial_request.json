@@ -13,7 +13,9 @@
   "agent_job",
   "column_break_cubd",
   "status",
-  "site"
+  "site",
+  "signup_info_tab",
+  "signup_details"
  ],
  "fields": [
   {
@@ -60,11 +62,22 @@
    "in_list_view": 1,
    "label": "Product Trial",
    "options": "Product Trial"
+  },
+  {
+   "fieldname": "signup_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "Signup Info"
+  },
+  {
+   "default": "{}",
+   "fieldname": "signup_details",
+   "fieldtype": "JSON",
+   "label": "Signup Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 17:29:05.620825",
+ "modified": "2024-08-05 15:52:40.603046",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

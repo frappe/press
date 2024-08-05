@@ -821,6 +821,9 @@ def get_site_request(product):
 			team=team.name,
 		).insert(ignore_permissions=True)
 		site_request.is_pending = True
+
+	if hasattr(site_request, 'site_plan'):
+		site_request.is_trial_plan = bool(frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan"))
 	
 	return site_request
 	# else:

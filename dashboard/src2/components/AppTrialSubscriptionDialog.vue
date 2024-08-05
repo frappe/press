@@ -12,14 +12,20 @@
 					You are just few steps away from creating your first site.
 				</p>
 				<div class="mt-6 space-y-6">
-					<div class="rounded-md">
+					<!-- Step 1 : Choose a plan -->
+					<div>
 						<div v-if="step == 1">
 							<div class="flex items-center space-x-2">
 								<TextInsideCircle>1</TextInsideCircle>
 								<span class="text-base font-medium"> Choose Site Plan </span>
 							</div>
 							<div class="pl-7">
-								<SitePlansCards v-model="selectedPlan" class="mt-4" />
+								<SitePlansCards
+									:hideRestrictedPlans="true"
+									v-model="selectedPlan"
+									class="mt-4"
+								/>
+								<p></p>
 								<div class="flex w-full justify-end">
 									<Button
 										class="mt-2 w-full sm:w-fit"
@@ -34,7 +40,7 @@
 						<div v-else>
 							<div class="flex items-center justify-between space-x-2">
 								<div class="flex items-center space-x-2">
-									<TextInsideCircle>2</TextInsideCircle>
+									<TextInsideCircle>1</TextInsideCircle>
 									<span class="text-base font-medium">
 										Site plan selected ({{ selectedPlan.name }})
 									</span>
@@ -47,7 +53,7 @@
 							</div>
 						</div>
 					</div>
-					<!-- Step 2 - Update Billing Details -->
+					<!-- Step 2 : Update Billing Details -->
 					<div
 						class="rounded-md"
 						:class="{ 'pointer-events-none opacity-50': step < 2 }"
@@ -175,50 +181,66 @@
 							</div>
 						</div>
 					</div>
-					<div
-						v-if="step < 4"
-						class="pointer-events-none rounded-md opacity-50"
-					>
-						<div class="flex items-center justify-between space-x-2">
-							<div class="flex items-center space-x-2">
-								<TextInsideCircle>4</TextInsideCircle>
-								<div class="text-base font-medium">
-									Subscription Confirmation
+					<!-- Step 4 : Finalize -->
+					<div>
+						<div
+							v-if="step < 4"
+							class="pointer-events-none rounded-md opacity-50"
+						>
+							<div class="flex items-center justify-between space-x-2">
+								<div class="flex items-center space-x-2">
+									<TextInsideCircle>4</TextInsideCircle>
+									<div class="text-base font-medium">
+										Subscription Confirmation
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-					<div v-else>
-						<div class="flex items-center justify-between space-x-2">
-							<div class="flex items-center space-x-2">
-								<TextInsideCircle>4</TextInsideCircle>
-								<span class="text-base font-medium">
-									🎉 Subscription Confirmed
-								</span>
+						<div v-else-if="isChangingPlan">
+							<div class="flex items-center justify-between space-x-2">
+								<div class="flex items-center space-x-2">
+									<TextInsideCircle>4</TextInsideCircle>
+									<div class="text-base font-medium">Updating Site Plan</div>
+								</div>
 							</div>
-							<div
-								class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
-							>
-								<i-lucide-check class="h-3 w-3 text-white" />
+							<div class="mt-3 pl-7">
+								<Button :loading="true" loadingText="Updating Site Plan...">
+									Site Plan Updated
+								</Button>
 							</div>
 						</div>
-						<div class="mt-1.5 pl-7">
-							<div class="flex items-center space-x-2">
-								<span class="text-p-base text-gray-800">
-									Your subscription has been confirmed.<br />
-									If any of your site has been disabled, it will be enabled
-									soon.
-								</span>
-							</div>
-							<div class="flex w-full justify-end">
-								<Button
-									class="mt-2 w-full sm:w-fit"
-									variant="solid"
-									iconRight="arrow-right"
-									@click="showDialog = false"
+						<div v-else>
+							<div class="flex items-center justify-between space-x-2">
+								<div class="flex items-center space-x-2">
+									<TextInsideCircle>4</TextInsideCircle>
+									<span class="text-base font-medium">
+										🎉 Subscription Confirmed
+									</span>
+								</div>
+								<div
+									class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 								>
-									Back to Dashboard
-								</Button>
+									<i-lucide-check class="h-3 w-3 text-white" />
+								</div>
+							</div>
+							<div class="mt-1.5 pl-7">
+								<div class="flex items-center space-x-2">
+									<span class="text-p-base text-gray-800">
+										Your subscription has been confirmed.<br />
+										If any of your site has been disabled, it will be enabled
+										soon.
+									</span>
+								</div>
+								<div class="flex w-full justify-end">
+									<Button
+										class="mt-2 w-full sm:w-fit"
+										variant="solid"
+										iconRight="arrow-right"
+										@click="showDialog = false"
+									>
+										Back to Dashboard
+									</Button>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -228,11 +250,13 @@
 	</Dialog>
 </template>
 <script>
+import { createResource } from 'frappe-ui';
 import { defineAsyncComponent } from 'vue';
 import TextInsideCircle from './TextInsideCircle.vue';
+import { toast } from 'vue-sonner';
 
 export default {
-	name: 'Onboarding',
+	name: 'AppTrialSubscriptionDialog',
 	components: {
 		SitePlansCards: defineAsyncComponent(() => import('./SitePlansCards.vue')),
 		StripeCard2: defineAsyncComponent(() =>
@@ -250,7 +274,7 @@ export default {
 		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
 		TextInsideCircle
 	},
-	props: ['currentPlan'],
+	props: ['site', 'currentPlan', 'trialPlan'],
 	data() {
 		return {
 			step: 1,
@@ -260,31 +284,33 @@ export default {
 				country: '',
 				gstin: ''
 			},
-			isAutomatedBilling: true
+			isAutomatedBilling: true,
+			isChangingPlan: false
 		};
 	},
 	emits: ['update:modelValue', 'success'],
 	mounted() {
-		this.selectedPlan = {
-			name: this.currentPlan
-		};
-	},
-	watch: {
-		step(newStep) {
-			if (newStep === 4) {
-				this.$team.reload();
-				this.$emit('success');
-			}
+		if (this.trialPlan && this.currentPlan !== this.trialPlan) {
+			this.selectedPlan = {
+				name: this.trialPlan
+			};
+		} else {
+			this.selectedPlan = null;
 		}
 	},
 	methods: {
 		confirmPlan() {
+			if (!this.selectedPlan) {
+				toast.error('Please select a plan');
+				return;
+			}
 			this.step = 2;
 		},
 		onBillingAddresUpdateSuccess() {
 			this.$team.reload();
 			if (this.$team.doc.payment_mode) {
 				this.step = 4;
+				this.changePlan();
 			} else {
 				this.step = 3;
 			}
@@ -292,10 +318,40 @@ export default {
 		onBuyCreditsSuccess() {
 			this.$team.reload();
 			this.step = 4;
+			this.changePlan();
 		},
 		onAddCardSuccess() {
 			this.$team.reload();
 			this.step = 4;
+			this.changePlan();
+		},
+		changePlan() {
+			if (this.isChangingPlan) return;
+			this.isChangingPlan = true;
+			const plan_name = this.selectedPlan?.name;
+			console.log('Changing plan to', plan_name);
+			let request = createResource({
+				url: '/api/method/press.api.client.run_doc_method',
+				params: {
+					dt: 'Site',
+					dn: this.site,
+					method: 'set_plan',
+					args: {
+						plan: plan_name
+					}
+				},
+				onSuccess: res => {
+					this.isChangingPlan = false;
+					this.$team.reload();
+					this.$emit('success');
+				},
+				onError: () => {
+					this.isChangingPlan = false;
+					toast.error('Failed to change the plan. Please try again later.');
+					this.showDialog = false;
+				}
+			});
+			request.submit();
 		}
 	},
 	computed: {

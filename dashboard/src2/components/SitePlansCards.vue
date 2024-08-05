@@ -14,7 +14,8 @@ export default {
 		'isDedicatedServerSite',
 		'selectedCluster',
 		'selectedApps',
-		'selectedVersion'
+		'selectedVersion',
+		'hideRestrictedPlans'
 	],
 	emits: ['update:modelValue'],
 	components: {
@@ -76,6 +77,9 @@ export default {
 								: !plan.bench_versions.includes(this.selectedVersion))
 					};
 				});
+			}
+			if (this.hideRestrictedPlans) {
+				plans = plans.filter(plan => !plan.restricted_plan);
 			}
 
 			return plans.map(plan => {

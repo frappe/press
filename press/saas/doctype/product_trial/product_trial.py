@@ -36,11 +36,18 @@ class ProductTrial(Document):
 		trial_plan: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "logo", "description", "domain", "trial_days"]
+	dashboard_fields = ["title", "logo", "description", "domain", "trial_days", "trial_plan"]
 
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
+		doc.signup_fields = [{
+			"label": field.label,
+			"name": field.fieldname,
+			"type": field.fieldtype,
+			"options": [option for option in ((field.options or "").split("\n")) if option],
+			"required": field.required,
+		} for field in self.signup_fields]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 	

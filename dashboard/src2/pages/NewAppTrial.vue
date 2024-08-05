@@ -132,7 +132,11 @@
 												{{ trialDays(siteRequest?.trial_end_date) }}
 											</p>
 											<Button
-												v-if="!isBillingDetailsSet || !isPaymentModeSet"
+												v-if="
+													!isBillingDetailsSet ||
+													!isPaymentModeSet ||
+													siteRequest?.is_trial_plan
+												"
 												@click="subscribeNow"
 												variant="solid"
 												class="ms-auto"
@@ -268,7 +272,9 @@
 			<!-- Subscribe Now Dialog -->
 			<AppTrialSubscriptionDialog
 				v-if="showAppTrialSubscriptionDialog"
+				:site="siteRequest?.site"
 				:currentPlan="siteRequest?.site_plan"
+				:trialPlan="$resources.saasProduct?.doc?.trial_plan"
 				v-model="showAppTrialSubscriptionDialog"
 				@success="subscriptionConfirmed"
 			/>
@@ -282,9 +288,7 @@ import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { getPlans, plans } from '../data/plans';
 import { trialDays, isTrialEnded } from '../utils/site';
-import { DashboardError } from '../utils/error';
 import AlertBanner from '../components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
 import AppTrialSubscriptionDialog from '../components/AppTrialSubscriptionDialog.vue';
@@ -338,7 +342,8 @@ export default {
 			return {
 				type: 'document',
 				doctype: 'Product Trial',
-				name: this.productId
+				name: this.productId,
+				auto: true
 			};
 		},
 		siteRequest() {
@@ -397,7 +402,9 @@ export default {
 							let sid = data;
 							let loginURL = `https://${this.$resources.siteRequest.doc.site}/desk?sid=${sid}`;
 							window.open(loginURL, '_blank');
-							window.location.reload();
+							setTimeout(() => {
+								window.location.reload();
+							}, 2000);
 						}
 					}
 				}
@@ -485,6 +492,9 @@ export default {
 		},
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
+		},
+		saasProductSignupFields() {
+			return this.saasProduct?.signup_fields ?? [];
 		},
 		progressError() {
 			if (!this.$resources.siteRequest?.getProgress?.data?.error) return;

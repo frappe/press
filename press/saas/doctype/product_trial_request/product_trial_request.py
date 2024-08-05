@@ -21,6 +21,7 @@ class ProductTrialRequest(Document):
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
 		product_trial: DF.Link | None
+		signup_details: DF.JSON | None
 		site: DF.Link | None
 		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Error", "Expired"]
 		team: DF.Link | None

@@ -21,6 +21,7 @@ class ProductTrialSignupField(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		required: DF.Check
 	# end: auto-generated types
 
 	pass

@@ -1725,6 +1725,8 @@ class Site(Document, TagHelpers):
 	def set_plan(self, plan):
 		from press.api.site import validate_plan
 
+		print("hello > ", plan)
+
 		validate_plan(self.server, plan)
 		self.change_plan(plan)
 
