@@ -81,7 +81,7 @@ class GitHubWebhookLog(Document):
 	def handle_push_event(self):
 		payload = self.get_parsed_payload()
 		if self.git_reference_type == "branch":
-			self.create_app_release(payload)
+			self.create_app_releases(payload)
 		elif self.git_reference_type == "tag":
 			self.create_app_tag(payload)
 
@@ -149,38 +149,28 @@ class GitHubWebhookLog(Document):
 	def get_parsed_payload(self):
 		return frappe.parse_json(self.payload)
 
-	def create_app_release(self, payload):
-		source = frappe.get_value(
+	def create_app_releases(self, payload):
+		sources = frappe.db.get_all(
 			"App Source",
-			{
+			filters={
 				"branch": self.branch,
 				"repository": self.repository,
 				"repository_owner": self.repository_owner,
 				"enabled": 1,
 			},
-			["name", "app"],
+			fields=["name", "app"],
 			as_dict=True,
 		)
 
 		commit = payload.get("head_commit", {})
-		if not source or not commit or not commit.get("id"):
+		if len(sources) == 0 or not commit or not commit.get("id"):
 			return
 
-		release = frappe.get_doc(
-			{
-				"doctype": "App Release",
-				"app": source.app,
-				"source": source.name,
-				"hash": commit.get("id"),
-				"message": commit.get("message", "MESSAGE NOT FOUND"),
-				"author": commit.get("author", {}).get("name", "AUTHOR NOT FOUND"),
-			}
-		)
-
-		try:
-			release.insert(ignore_permissions=True)
-		except Exception:
-			log_error("App Release Creation Error", payload=payload, doc=self)
+		for source in sources:
+			try:
+				create_app_release(source.name, source.app, commit)
+			except Exception:
+				log_error("App Release Creation Error", payload=payload, doc=self)
 
 	def create_app_tag(self, payload):
 		commit = payload.get("head_commit", {})
@@ -243,3 +233,17 @@ def get_repository_details_from_payload(payload: dict):
 		owner = payload.get("installation", {}).get("account", {}).get("login")
 
 	return dict(name=repo, owner=owner)
+
+
+def create_app_release(source: str, app: str, commit: dict):
+	release = frappe.get_doc(
+		{
+			"doctype": "App Release",
+			"app": app,
+			"source": source,
+			"hash": commit.get("id"),
+			"message": commit.get("message", "MESSAGE NOT FOUND"),
+			"author": commit.get("author", {}).get("name", "AUTHOR NOT FOUND"),
+		}
+	)
+	release.insert(ignore_permissions=True)
