@@ -17,7 +17,7 @@ class PressJob(Document):
 		from frappe.types import DF
 
 		arguments: DF.Code
-		duration: DF.Time | None
+		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job_type: DF.Link
 		name: DF.Int | None
@@ -61,7 +61,6 @@ class PressJob(Document):
 					"job_type": self.job_type,
 					"step_name": step.step_name,
 					"wait_until_true": step.wait_until_true,
-					"duration": "00:00:00",
 				}
 			)
 			doc.insert()
@@ -80,13 +79,13 @@ class PressJob(Document):
 		for step in pending_steps:
 			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
 		self.end = frappe.utils.now_datetime()
-		self.duration = self.end - self.start
+		self.duration = (self.end - self.start).total_seconds()
 		self.save()
 
 	def succeed(self):
 		self.status = "Success"
 		self.end = frappe.utils.now_datetime()
-		self.duration = self.end - self.start
+		self.duration = (self.end - self.start).total_seconds()
 		self.save()
 
 	@frappe.whitelist()
