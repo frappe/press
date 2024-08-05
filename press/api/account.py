@@ -819,14 +819,18 @@ def get_site_request(product):
 		).insert(ignore_permissions=True)
 		return {"pending": site_request.name}
 	else:
-		pending = [
+		pending_requests = [
 			d
 			for d in requests
 			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
 		]
+		completed_requests = [d for d in requests if d.site and d.status == "Site Created"]
+		for d in completed_requests:
+			d.site_status = frappe.get_value("Site", d.site, "status")
+			d.plan = frappe.get_value("Site", d.site, "plan")
 		return {
-			"pending": pending[0].name if pending else None,
-			"completed": [d for d in requests if d.site and d.status == "Site Created"],
+			"pending": pending_requests[0].name if pending_requests else None,
+			"completed": completed_requests,
 		}
 
 

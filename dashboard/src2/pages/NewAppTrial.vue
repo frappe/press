@@ -53,85 +53,92 @@
 									Create your {{ saasProduct.title }} site
 								</span>
 							</div>
-							<div v-if="completedSites.length">
+							<div v-if="completedSite">
 								<div>
 									<div class="text-base text-gray-900">
-										{{
-											completedSites.length > 1
-												? `You have already created these ${saasProduct.title} sites:`
-												: `You have already created these ${saasProduct.title} site:`
-										}}
+										You have already created this {{ saasProduct.title }} site :
 									</div>
-									<!-- Site List -->
-									<ul class="mt-4">
-										<li
-											v-for="site in completedSites"
-											:key="site"
-											class="overflow-hidden whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
+									<!-- Site -->
+									<div
+										class="mt-4 overflow-hidden whitespace-nowrap py-2.5 text-base"
+									>
+										<!-- Site name -->
+										<p
+											class="block font-medium text-gray-900 focus:outline-none"
+											target="_blank"
 										>
-											<!-- Site name -->
-											<p
-												class="block font-medium text-gray-900 focus:outline-none"
-												target="_blank"
+											{{ completedSite.site }}
+										</p>
+										<!-- Action Buttons -->
+										<div class="mt-3 flex w-full flex-row justify-between">
+											<Button
+												variant="outline"
+												iconLeft="external-link"
+												:link="`https://${completedSite.site}`"
+												:disabled="completedSite.site_status !== 'Active'"
 											>
-												{{ site.site }}
+												Visit Site</Button
+											>
+											<Button
+												variant="outline"
+												iconLeft="user"
+												@click="() => loginAsTeam(completedSite.site)"
+												:disabled="
+													(loginAsTeamInProgressInSite &&
+														loginAsTeamInProgressInSite !==
+															completedSite.site) ||
+													completedSite.site_status !== 'Active'
+												"
+												:loading="
+													loginAsTeamInProgressInSite === completedSite.site
+												"
+												loadingText="Logging in ..."
+											>
+												Login as team</Button
+											>
+											<Button
+												variant="outline"
+												iconLeft="info"
+												:link="`/dashboard/sites/${completedSite.site}/overview`"
+											>
+												Manage</Button
+											>
+										</div>
+										<div class="mt-3 flex flex-row items-center text-base">
+											<i-lucide-alert-triangle
+												:class="{
+													'h-4 w-4 text-red-600': isTrialEnded(
+														completedSite.trial_end_date
+													),
+													'h-4 w-4 text-amber-600': !isTrialEnded(
+														completedSite.trial_end_date
+													)
+												}"
+											/>
+											<p
+												class="ms-1"
+												:class="{
+													'text-red-600': isTrialEnded(
+														completedSite.trial_end_date
+													),
+													'text-amber-600': !isTrialEnded(
+														completedSite.trial_end_date
+													)
+												}"
+											>
+												{{ trialDays(completedSite.trial_end_date) }}
 											</p>
-											<!-- Action Buttons -->
-											<div class="mt-3 flex w-full flex-row justify-between">
-												<Button
-													variant="outline"
-													iconLeft="external-link"
-													:link="`https://${site.site}`"
-												>
-													Visit Site</Button
-												>
-												<Button
-													variant="outline"
-													iconLeft="user"
-													@click="() => loginAsTeam(site.site)"
-													:disabled="
-														loginAsTeamInProgressInSite &&
-														loginAsTeamInProgressInSite !== site.site
-													"
-													:loading="loginAsTeamInProgressInSite === site.site"
-													loadingText="Logging in ..."
-												>
-													Login as team</Button
-												>
-												<Button
-													variant="outline"
-													iconLeft="info"
-													:link="`/dashboard/sites/${site.site}/overview`"
-												>
-													Manage</Button
-												>
-											</div>
-											<div class="mt-3 flex flex-row items-center text-base">
-												<i-lucide-alert-triangle
-													:class="{
-														'h-4 w-4 text-red-600': isTrialEnded(
-															site.trial_end_date
-														),
-														'h-4 w-4 text-amber-600': !isTrialEnded(
-															site.trial_end_date
-														)
-													}"
-												/>
-												<p
-													class="ms-1"
-													:class="{
-														'text-red-600': isTrialEnded(site.trial_end_date),
-														'text-amber-600': !isTrialEnded(site.trial_end_date)
-													}"
-												>
-													{{ trialDays(site.trial_end_date) }}
-												</p>
-												<Button variant="solid" class="ms-auto">
-													Subscribe Now
-												</Button>
-											</div>
-										</li>
-									</ul>
+											<Button
+												v-if="!isBillingDetailsSet || !isPaymentModeSet"
+												@click="subscribeNow"
+												variant="solid"
+												class="ms-auto"
+											>
+												Subscribe Now
+											</Button>
+											<Badge v-else class="ms-auto" label="Subscribed" theme="green">Subscribed</Badge>
+										</div>
+									</div>
 									<!-- Redirect to FC -->
 									<Button class="mt-4 w-full" route="/">
 										Click to visit Frappe Cloud dashboard
@@ -253,6 +260,7 @@
 					</Dropdown>
 				</div>
 			</div>
+			<!-- Choose Site Plan (at the time of registration) -->
 			<Dialog
 				:options="{
 					title: 'Choose Plan',
@@ -314,11 +322,18 @@
 					</div>
 				</template>
 			</Dialog>
+			<!-- Subscribe Now Dialog -->
+			<AppTrialSubscriptionDialog
+				v-if="showAppTrialSubscriptionDialog"
+				:currentPlan="completedSite.plan"
+				v-model="showAppTrialSubscriptionDialog"
+				@success=""
+			/>
 		</div>
 	</div>
 </template>
 <script>
-import { ErrorMessage, Progress, createResource } from 'frappe-ui';
+import { ErrorMessage, Progress, createResource, Badge } from 'frappe-ui';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
@@ -329,6 +344,7 @@ import { trialDays, isTrialEnded } from '../utils/site';
 import { DashboardError } from '../utils/error';
 import AlertBanner from '../components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
+import AppTrialSubscriptionDialog from '../components/AppTrialSubscriptionDialog.vue';
 
 export default {
 	name: 'NewAppTrial',
@@ -341,7 +357,8 @@ export default {
 		FrappeLogo,
 		SitePlansCards,
 		ProductSignupPitch,
-		AlertBanner
+		AlertBanner,
+		AppTrialSubscriptionDialog
 	},
 	mounted() {
 		if (this.selectedPlan) return;
@@ -362,7 +379,8 @@ export default {
 			progressErrorCount: 0,
 			findingClosestServer: false,
 			closestCluster: null,
-			loginAsTeamInProgressInSite: null
+			loginAsTeamInProgressInSite: null,
+			showAppTrialSubscriptionDialog: false
 		};
 	},
 	resources: {
@@ -381,7 +399,7 @@ export default {
 			};
 		},
 		siteRequest() {
-			if (!this.pendingSiteRequest || this.completedSites.length) return;
+			if (!this.pendingSiteRequest || this.completedSite) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
@@ -520,14 +538,23 @@ export default {
 			window.location.reload();
 		},
 		trialDays,
-		isTrialEnded
+		isTrialEnded,
+		subscribeNow() {
+			this.showAppTrialSubscriptionDialog = true;
+		},
+		subscriptionConfirmed(){
+			this.$resources.getSiteRequest.reload();
+		}
 	},
 	computed: {
 		pendingSiteRequest() {
 			return this.$resources.getSiteRequest.data?.pending || null;
 		},
-		completedSites() {
-			return this.$resources.getSiteRequest.data?.completed || [];
+		completedSite() {
+			if (!this.$resources.getSiteRequest.data?.completed) {
+				return null;
+			}
+			return this.$resources.getSiteRequest.data?.completed[0];
 		},
 		siteRequest() {
 			return this.$resources.siteRequest;
@@ -554,6 +581,12 @@ export default {
 				return 'An error occurred';
 			}
 			return null;
+		},
+		isBillingDetailsSet() {
+			return Boolean(this.$team.doc.billing_details?.name);
+		},
+		isPaymentModeSet() {
+			return Boolean(this.$team.doc.payment_mode);
 		}
 	}
 };
