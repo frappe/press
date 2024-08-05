@@ -262,8 +262,7 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain",
-   "set_only_once": 1
+   "options": "Root Domain"
   },
   {
    "fieldname": "_site_usages",
@@ -661,7 +660,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-07-30 09:42:15.771631",
+ "modified": "2024-08-05 09:14:28.209647",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -462,7 +462,7 @@ class Site(Document, TagHelpers):
 			"Pending",
 			"Archived",
 			"Suspended",
-		] and self.has_value_changed("subdomain"):
+		] and (self.has_value_changed("subdomain") or self.has_value_changed("domain")):
 			self.rename(self._get_site_name(self.subdomain))
 
 		# Telemetry: Send event if first site status changed to Active
