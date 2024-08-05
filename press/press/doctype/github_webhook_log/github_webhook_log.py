@@ -159,7 +159,6 @@ class GitHubWebhookLog(Document):
 				"enabled": 1,
 			},
 			fields=["name", "app"],
-			as_dict=True,
 		)
 
 		commit = payload.get("head_commit", {})
