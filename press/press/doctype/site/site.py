@@ -1887,12 +1887,12 @@ class Site(Document, TagHelpers):
 			user = frappe.db.get_value(
 				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
 			)
-			user_first_name = user.first_name or ""
-			user_last_name = user.last_name or ""
+			user_first_name = user.first_name
+			user_last_name = user.last_name
 		return {
 			"email": user_email,
-			"first_name": user_first_name,
-			"last_name": user_last_name,
+			"first_name": user_first_name or "",
+			"last_name": user_last_name or "",
 		}
 
 	def setup_erpnext(self):
