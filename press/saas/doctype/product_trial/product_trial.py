@@ -11,6 +11,31 @@ from press.utils.unique_name_generator import generate as generate_random_name
 
 
 class ProductTrial(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
+		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
+
+		apps: DF.Table[ProductTrialApp]
+		description: DF.MarkdownEditor | None
+		domain: DF.Link
+		enable_pooling: DF.Check
+		logo: DF.AttachImage | None
+		product_redirect_route: DF.Data | None
+		published: DF.Check
+		release_group: DF.Link
+		signup_fields: DF.Table[ProductTrialSignupField]
+		standby_pool_size: DF.Int
+		standby_queue_size: DF.Int
+		title: DF.Data
+		trial_days: DF.Int
+	# end: auto-generated types
+
 	dashboard_fields = ["title", "logo", "description", "domain", "trial_days"]
 
 	def get_doc(self, doc):
@@ -58,8 +83,11 @@ class ProductTrial(Document):
 		site.flags.ignore_permissions = True
 		site.update_site_config(
 			{
-				"subscription": {"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d")},
-				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
+				"subscription": {
+					"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
+					"app_trial": self.name,
+				},
+				"app_include_js": ["https://devfc.tanmoysrt.xyz/saas/subscription.js"], # TODO: change this to frappecloud.com
 			}
 		)
 		return site, agent_job_name

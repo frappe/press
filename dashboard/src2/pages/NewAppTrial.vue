@@ -41,11 +41,11 @@
 							</div>
 						</div>
 						<div
-							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-8 sm:shadow-xl"
+							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-6 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
 						>
 							<div
 								class="mb-6 text-center"
-								v-if="siteRequest?.doc?.status == 'Pending'"
+								v-if="$resources.siteRequest?.doc?.status == 'Pending'"
 							>
 								<span
 									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
@@ -53,7 +53,8 @@
 									Create your {{ saasProduct.title }} site
 								</span>
 							</div>
-							<div v-if="!siteRequest?.is_pending">
+							<!-- Site Details -->
+							<div v-if="siteRequest?.is_pending === false">
 								<div>
 									<div class="text-base text-gray-900">
 										You have already created this {{ saasProduct.title }} site :
@@ -70,7 +71,9 @@
 											{{ siteRequest?.site }}
 										</p>
 										<!-- Action Buttons -->
-										<div class="mt-3 flex w-full flex-row justify-between">
+										<div
+											class="mt-3 flex w-full flex-row justify-between gap-2"
+										>
 											<Button
 												variant="outline"
 												iconLeft="external-link"
@@ -151,10 +154,11 @@
 									</Button>
 								</div>
 							</div>
-							<div v-if="$resources.siteRequest">
+							<!-- Site Creation -->
+							<div v-if="$resources.siteRequest?.doc">
 								<div
 									class="space-y-3"
-									v-if="$resources.siteRequest?.status == 'Pending'"
+									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
 								>
 									<FormControl
 										label="Your Email"
@@ -182,32 +186,43 @@
 											}}
 										</div>
 									</div>
-									<ErrorMessage :message="$resources.siteRequest?.createSite?.error" />
+									<ErrorMessage
+										:message="$resources.siteRequest?.createSite?.error"
+									/>
 									<Button
 										class="w-full"
 										variant="solid"
 										@click="createSite"
 										:loading="
-											findingClosestServer || $resources.siteRequest?.createSite?.loading
+											findingClosestServer ||
+											$resources.siteRequest?.createSite?.loading
 										"
 									>
 										Create
 									</Button>
 								</div>
-								<div v-else-if="$resources.siteRequest?.status == 'Wait for Site'">
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Wait for Site'
+									"
+								>
 									<Progress
 										label="Creating site"
-										:value="siteRequest.getProgress.data?.progress || 0"
+										:value="
+											$resources.siteRequest.getProgress.data?.progress || 0
+										"
 										size="md"
 									/>
 									<div class="mt-4 flex flex-row items-center gap-1">
 										<Spinner class="w-3" />
 										<p class="text-sm italic">
 											{{
-												siteRequest.getProgress.data?.current_step ||
-												!siteRequest.getProgress.data?.progress
+												$resources.siteRequest.getProgress.data?.current_step
+													? $resources.siteRequest.getProgress.data
+															?.current_step
+													: !$resources.siteRequest.getProgress.data?.progress
 													? 'Waiting for update'
-													: ''
+													: 'Just a moment'
 											}}
 										</p>
 									</div>
@@ -215,18 +230,23 @@
 									<Button
 										class="mt-2"
 										v-if="
-											$resources.siteRequest?.getProgress?.error && progressErrorCount > 9
+											$resources.siteRequest?.getProgress?.error &&
+											progressErrorCount > 9
 										"
 										route="/"
 									>
 										&#8592; Back to Dashboard
 									</Button>
 								</div>
-								<div v-else-if="$resources.siteRequest?.status == 'Site Created'">
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Site Created'
+									"
+								>
 									<div class="text-base text-gray-900">
 										Your site
 										<span class="font-semibold text-gray-900">{{
-											$resources.siteRequest?.site
+											$resources.siteRequest?.doc?.site
 										}}</span>
 										is ready.
 									</div>
@@ -331,9 +351,9 @@
 			<!-- Subscribe Now Dialog -->
 			<AppTrialSubscriptionDialog
 				v-if="showAppTrialSubscriptionDialog"
-				:currentPlan="siteRequest?.doc?.site_plan"
+				:currentPlan="siteRequest?.site_plan"
 				v-model="showAppTrialSubscriptionDialog"
-				@success=""
+				@success="subscriptionConfirmed"
 			/>
 		</div>
 	</div>
@@ -375,9 +395,17 @@ export default {
 				this.setDefaultPlan();
 			});
 		}
+		// Open subscription dialog if hash is #subscription and billing details or payment mode is not set
+		if (
+			this.$route.hash === '#subscription' &&
+			!(this.isBillingDetailsSet && this.isPaymentModeSet)
+		) {
+			this.$resources.getSiteRequest.promise.then(this.subscribeNow);
+		}
 	},
 	data() {
 		return {
+			siteRequestLoaded: false,
 			plan: null,
 			inputPaddingRight: null,
 			showPlanDialog: false,
@@ -405,7 +433,6 @@ export default {
 			};
 		},
 		siteRequest() {
-			console.log(this.siteRequest);
 			if (!this.siteRequest?.is_pending) return;
 			return {
 				type: 'document',
@@ -414,7 +441,7 @@ export default {
 				realtime: true,
 				onSuccess(doc) {
 					if (doc.status == 'Wait for Site') {
-						this.siteRequest.getProgress.reload();
+						this.$resources.siteRequest.getProgress.reload();
 					}
 				},
 				whitelistedMethods: {
@@ -430,7 +457,10 @@ export default {
 							}
 						},
 						onSuccess() {
-							this.siteRequest.getProgress.reload();
+							this.$resources.siteRequest.getProgress.reload();
+						},
+						onerror(e) {
+							console.log(e);
 						}
 					},
 					getProgress: {
@@ -438,21 +468,21 @@ export default {
 						makeParams() {
 							return {
 								current_progress:
-									this.siteRequest.getProgress.data?.progress || 0
+									this.$resources.siteRequest.getProgress.data?.progress || 0
 							};
 						},
 						onSuccess(data) {
 							this.progressErrorCount += 1;
 							if (data.progress == 100) {
-								this.siteRequest.getLoginSid.fetch();
+								this.$resources.siteRequest.getLoginSid.fetch();
 							} else if (
 								!(
-									this.siteRequest.getProgress.error &&
+									this.$resources.siteRequest.getProgress.error &&
 									this.progressErrorCount <= 10
 								)
 							) {
 								setTimeout(() => {
-									this.siteRequest.getProgress.reload();
+									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
 						}
@@ -461,7 +491,7 @@ export default {
 						method: 'get_login_sid',
 						onSuccess(data) {
 							let sid = data;
-							let loginURL = `https://${this.siteRequest.doc.site}/desk?sid=${sid}`;
+							let loginURL = `https://${this.$resources.siteRequest.doc.site}/desk?sid=${sid}`;
 							window.open(loginURL, '_blank');
 							window.location.reload();
 						}
@@ -473,7 +503,7 @@ export default {
 	methods: {
 		async createSite() {
 			let cluster = await this.getClosestCluster();
-			return this.siteRequest.createSite.submit({ cluster });
+			return this.$resources.siteRequest.createSite.submit({ cluster });
 		},
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
@@ -571,7 +601,7 @@ export default {
 			return `${pricePerMonth} per month`;
 		},
 		progressError() {
-			if (!this.siteRequest?.getProgress.data?.error) return;
+			if (!this.$resources.siteRequest?.getProgress?.data?.error) return;
 			if (this.progressErrorCount > 9) {
 				return 'An error occurred. Please contact <a href="/support">Frappe Cloud Support</a>.';
 			}
