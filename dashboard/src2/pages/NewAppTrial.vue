@@ -149,8 +149,8 @@
 										</div>
 									</div>
 									<!-- Redirect to FC -->
-									<Button class="mt-4 w-full" route="/">
-										Click to visit Frappe Cloud dashboard
+									<Button class="mt-4 w-full" link="/">
+										Visit Frappe Cloud dashboard
 									</Button>
 								</div>
 							</div>
