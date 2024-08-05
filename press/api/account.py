@@ -822,7 +822,7 @@ def get_site_request(product):
 		).insert(ignore_permissions=True)
 		site_request.is_pending = True
 
-	if hasattr(site_request, 'site_plan'):
+	if hasattr(site_request, 'site_plan') and site_request.site_plan:
 		record = frappe.get_value("Site Plan", site_request.site_plan, ["is_trial_plan", "price_inr", "price_usd"], as_dict=1)
 		site_request.is_trial_plan = bool(frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan"))
 		if team.currency == "INR":
