@@ -61,7 +61,7 @@
 									</div>
 									<!-- Site -->
 									<div
-										class="mt-4 overflow-hidden whitespace-nowrap py-2.5 text-base"
+										class="mt-2 overflow-hidden whitespace-nowrap py-2.5 text-base"
 									>
 										<!-- Site name -->
 										<p
@@ -109,6 +109,7 @@
 										</div>
 										<div class="mt-3 flex flex-row items-center text-base">
 											<i-lucide-alert-triangle
+												v-if="siteRequest?.is_trial_plan"
 												:class="{
 													'h-4 w-4 text-red-600': isTrialEnded(
 														siteRequest?.trial_end_date
@@ -119,6 +120,7 @@
 												}"
 											/>
 											<p
+												v-if="siteRequest?.is_trial_plan"
 												class="ms-1"
 												:class="{
 													'text-red-600': isTrialEnded(
@@ -130,6 +132,9 @@
 												}"
 											>
 												{{ trialDays(siteRequest?.trial_end_date) }}
+											</p>
+											<p v-else class="ms-1">
+												{{ siteRequest.site_plan_description }}
 											</p>
 											<Button
 												v-if="
@@ -153,7 +158,7 @@
 										</div>
 									</div>
 									<!-- Redirect to FC -->
-									<Button class="mt-4 w-full" link="/">
+									<Button class="mt-5 w-full" link="/">
 										Visit Frappe Cloud dashboard
 									</Button>
 								</div>

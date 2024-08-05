@@ -823,24 +823,14 @@ def get_site_request(product):
 		site_request.is_pending = True
 
 	if hasattr(site_request, 'site_plan'):
+		record = frappe.get_value("Site Plan", site_request.site_plan, ["is_trial_plan", "price_inr", "price_usd"], as_dict=1)
 		site_request.is_trial_plan = bool(frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan"))
+		if team.currency == "INR":
+			site_request.site_plan_description = f"₹{record.price_inr} / month"
+		else:
+			site_request.site_plan_description = f"${record.price_usd} / month"
 	
 	return site_request
-	# else:
-	# 	pending_requests = [
-	# 		d
-	# 		for d in requests
-	# 		if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
-	# 	]
-	# 	completed_requests = [d for d in requests if d.site and d.status == "Site Created"]
-	# 	for d in completed_requests:
-	# 		d.site_status = frappe.get_value("Site", d.site, "status")
-	# 		d.plan = frappe.get_value("Site", d.site, "plan")
-	# 	return {
-	# 		"pending": pending_requests[0].name if pending_requests else None,
-	# 		"completed": completed_requests,
-	# 	}
-
 
 def redirect_to(location):
 	return build_response(
