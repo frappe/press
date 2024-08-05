@@ -53,7 +53,7 @@
 									Create your {{ saasProduct.title }} site
 								</span>
 							</div>
-							<div v-if="completedSite">
+							<div v-if="!siteRequest?.is_pending">
 								<div>
 									<div class="text-base text-gray-900">
 										You have already created this {{ saasProduct.title }} site :
@@ -67,30 +67,30 @@
 											class="block font-medium text-gray-900 focus:outline-none"
 											target="_blank"
 										>
-											{{ completedSite.site }}
+											{{ siteRequest?.site }}
 										</p>
 										<!-- Action Buttons -->
 										<div class="mt-3 flex w-full flex-row justify-between">
 											<Button
 												variant="outline"
 												iconLeft="external-link"
-												:link="`https://${completedSite.site}`"
-												:disabled="completedSite.site_status !== 'Active'"
+												:link="`https://${siteRequest?.site}`"
+												:disabled="siteRequest?.site_status !== 'Active'"
 											>
 												Visit Site</Button
 											>
 											<Button
 												variant="outline"
 												iconLeft="user"
-												@click="() => loginAsTeam(completedSite.site)"
+												@click="() => loginAsTeam(siteRequest?.site)"
 												:disabled="
 													(loginAsTeamInProgressInSite &&
 														loginAsTeamInProgressInSite !==
-															completedSite.site) ||
-													completedSite.site_status !== 'Active'
+															siteRequest?.site) ||
+													siteRequest?.site_status !== 'Active'
 												"
 												:loading="
-													loginAsTeamInProgressInSite === completedSite.site
+													loginAsTeamInProgressInSite === siteRequest?.site
 												"
 												loadingText="Logging in ..."
 											>
@@ -99,7 +99,7 @@
 											<Button
 												variant="outline"
 												iconLeft="info"
-												:link="`/dashboard/sites/${completedSite.site}/overview`"
+												:link="`/dashboard/sites/${siteRequest?.site}/overview`"
 											>
 												Manage</Button
 											>
@@ -108,10 +108,10 @@
 											<i-lucide-alert-triangle
 												:class="{
 													'h-4 w-4 text-red-600': isTrialEnded(
-														completedSite.trial_end_date
+														siteRequest?.trial_end_date
 													),
 													'h-4 w-4 text-amber-600': !isTrialEnded(
-														completedSite.trial_end_date
+														siteRequest?.trial_end_date
 													)
 												}"
 											/>
@@ -119,14 +119,14 @@
 												class="ms-1"
 												:class="{
 													'text-red-600': isTrialEnded(
-														completedSite.trial_end_date
+														siteRequest?.trial_end_date
 													),
 													'text-amber-600': !isTrialEnded(
-														completedSite.trial_end_date
+														siteRequest?.trial_end_date
 													)
 												}"
 											>
-												{{ trialDays(completedSite.trial_end_date) }}
+												{{ trialDays(siteRequest?.trial_end_date) }}
 											</p>
 											<Button
 												v-if="!isBillingDetailsSet || !isPaymentModeSet"
@@ -136,7 +136,13 @@
 											>
 												Subscribe Now
 											</Button>
-											<Badge v-else class="ms-auto" label="Subscribed" theme="green">Subscribed</Badge>
+											<Badge
+												v-else
+												class="ms-auto"
+												label="Subscribed"
+												theme="green"
+												>Subscribed</Badge
+											>
 										</div>
 									</div>
 									<!-- Redirect to FC -->
@@ -145,10 +151,10 @@
 									</Button>
 								</div>
 							</div>
-							<div v-if="siteRequest?.doc">
+							<div v-if="$resources.siteRequest">
 								<div
 									class="space-y-3"
-									v-if="siteRequest.doc.status == 'Pending'"
+									v-if="$resources.siteRequest?.status == 'Pending'"
 								>
 									<FormControl
 										label="Your Email"
@@ -176,19 +182,19 @@
 											}}
 										</div>
 									</div>
-									<ErrorMessage :message="siteRequest.createSite.error" />
+									<ErrorMessage :message="$resources.siteRequest?.createSite?.error" />
 									<Button
 										class="w-full"
 										variant="solid"
 										@click="createSite"
 										:loading="
-											findingClosestServer || siteRequest.createSite.loading
+											findingClosestServer || $resources.siteRequest?.createSite?.loading
 										"
 									>
 										Create
 									</Button>
 								</div>
-								<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
+								<div v-else-if="$resources.siteRequest?.status == 'Wait for Site'">
 									<Progress
 										label="Creating site"
 										:value="siteRequest.getProgress.data?.progress || 0"
@@ -209,30 +215,30 @@
 									<Button
 										class="mt-2"
 										v-if="
-											siteRequest.getProgress.error && progressErrorCount > 9
+											$resources.siteRequest?.getProgress?.error && progressErrorCount > 9
 										"
 										route="/"
 									>
 										&#8592; Back to Dashboard
 									</Button>
 								</div>
-								<div v-else-if="siteRequest.doc.status == 'Site Created'">
+								<div v-else-if="$resources.siteRequest?.status == 'Site Created'">
 									<div class="text-base text-gray-900">
 										Your site
 										<span class="font-semibold text-gray-900">{{
-											siteRequest.doc.site
+											$resources.siteRequest?.site
 										}}</span>
 										is ready.
 									</div>
 									<div class="py-3 text-base text-gray-900">
 										{{
-											siteRequest.getLoginSid.loading
+											$resources.siteRequest?.getLoginSid?.loading
 												? 'Logging in to your site...'
 												: ''
 										}}
 									</div>
 								</div>
-								<div v-else-if="siteRequest.doc.status == 'Error'">
+								<div v-else-if="$resources.siteRequest?.status == 'Error'">
 									<div class="text-p-base text-red-600">
 										There was an error creating your site. Please contact
 										<a class="underline" href="/support">Frappe Cloud Support</a
@@ -325,7 +331,7 @@
 			<!-- Subscribe Now Dialog -->
 			<AppTrialSubscriptionDialog
 				v-if="showAppTrialSubscriptionDialog"
-				:currentPlan="completedSite.plan"
+				:currentPlan="siteRequest?.doc?.site_plan"
 				v-model="showAppTrialSubscriptionDialog"
 				@success=""
 			/>
@@ -399,11 +405,12 @@ export default {
 			};
 		},
 		siteRequest() {
-			if (!this.pendingSiteRequest || this.completedSite) return;
+			console.log(this.siteRequest);
+			if (!this.siteRequest?.is_pending) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
-				name: this.pendingSiteRequest,
+				name: this.siteRequest.name,
 				realtime: true,
 				onSuccess(doc) {
 					if (doc.status == 'Wait for Site') {
@@ -542,22 +549,13 @@ export default {
 		subscribeNow() {
 			this.showAppTrialSubscriptionDialog = true;
 		},
-		subscriptionConfirmed(){
+		subscriptionConfirmed() {
 			this.$resources.getSiteRequest.reload();
 		}
 	},
 	computed: {
-		pendingSiteRequest() {
-			return this.$resources.getSiteRequest.data?.pending || null;
-		},
-		completedSite() {
-			if (!this.$resources.getSiteRequest.data?.completed) {
-				return null;
-			}
-			return this.$resources.getSiteRequest.data?.completed[0];
-		},
 		siteRequest() {
-			return this.$resources.siteRequest;
+			return this.$resources.getSiteRequest?.data ?? {};
 		},
 		saasProduct() {
 			return this.$resources.saasProduct.doc;

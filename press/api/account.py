@@ -808,30 +808,35 @@ def get_site_request(product):
 			"team": team.name,
 			"product_trial": product,
 		},
-		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
+		fields=["name", "status", "site", "site.trial_end_date as trial_end_date", "site.status as site_status", "site.plan as site_plan"],
 		order_by="creation desc",
 	).run(as_dict=1)
-	if not requests:
+	if requests:
+		site_request = requests[0]
+		site_request.is_pending = (not site_request.site) or site_request.status in ["Pending", "Wait for Site", "Error"]
+	else:
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return {"pending": site_request.name}
-	else:
-		pending_requests = [
-			d
-			for d in requests
-			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
-		]
-		completed_requests = [d for d in requests if d.site and d.status == "Site Created"]
-		for d in completed_requests:
-			d.site_status = frappe.get_value("Site", d.site, "status")
-			d.plan = frappe.get_value("Site", d.site, "plan")
-		return {
-			"pending": pending_requests[0].name if pending_requests else None,
-			"completed": completed_requests,
-		}
+		site_request.is_pending = True
+	
+	return site_request
+	# else:
+	# 	pending_requests = [
+	# 		d
+	# 		for d in requests
+	# 		if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
+	# 	]
+	# 	completed_requests = [d for d in requests if d.site and d.status == "Site Created"]
+	# 	for d in completed_requests:
+	# 		d.site_status = frappe.get_value("Site", d.site, "status")
+	# 		d.plan = frappe.get_value("Site", d.site, "plan")
+	# 	return {
+	# 		"pending": pending_requests[0].name if pending_requests else None,
+	# 		"completed": completed_requests,
+	# 	}
 
 
 def redirect_to(location):
