@@ -347,7 +347,6 @@ class SiteMigration(Document):
 			and site.status_before_update == "Active"
 		):
 			site.activate()
-			site.status_before_update = None
 			if self.migration_type == "Cluster":
 				site.create_dns_record()
 
