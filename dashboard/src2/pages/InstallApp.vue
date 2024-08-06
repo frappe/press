@@ -312,7 +312,7 @@ export default {
 								  }
 								: null,
 							cluster: this.cluster,
-							bench: this.regions.find(r => r.name === this.cluster).bench,
+							bench: this.regions.find(r => r.name === this.cluster)?.bench,
 							group: this.selectedGroup?.value,
 							subscription_plan: this.selectedGroup
 								? this.options.private_site_plan
