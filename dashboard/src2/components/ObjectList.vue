@@ -1,8 +1,15 @@
 <template>
 	<div>
-		<AlertBanner v-if="banner" v-bind="banner" class="mb-4">
+		<!-- Banners -->
+		<component
+			:is="banner.dismissable ? 'DismissableBanner' : 'AlertBanner'"
+			v-if="banner"
+			v-bind="banner"
+			class="mb-4"
+		>
 			<Button v-if="banner.button" v-bind="banner.button" class="ml-auto" />
-		</AlertBanner>
+		</component>
+
 		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">
@@ -129,6 +136,7 @@
 <script>
 import { reactive } from 'vue';
 import { throttle } from '../utils/throttle';
+import DismissableBanner from './DismissableBanner.vue';
 import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
@@ -151,6 +159,7 @@ export default {
 	emits: ['update:selections'],
 	components: {
 		AlertBanner,
+		DismissableBanner,
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
