@@ -9,11 +9,11 @@
  "field_order": [
   "product_trial",
   "team",
-  "account_request",
-  "agent_job",
+  "site",
   "column_break_cubd",
   "status",
-  "site",
+  "account_request",
+  "agent_job",
   "signup_info_tab",
   "signup_details"
  ],
@@ -41,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nSite Created\nSite Ready\nError\nExpired"
+   "options": "Pending\nWait for Site\nCompleting Setup Wizard\nSite Created\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -77,7 +77,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-06 19:01:54.865575",
+ "modified": "2024-08-06 21:47:48.419369",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

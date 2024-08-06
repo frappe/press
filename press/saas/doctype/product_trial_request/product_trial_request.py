@@ -25,7 +25,7 @@ class ProductTrialRequest(Document):
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
-		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Site Ready", "Error", "Expired"]
+		status: DF.Literal["Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"]
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -103,13 +103,6 @@ class ProductTrialRequest(Document):
 				else:
 					signup_values[field.fieldname] = None
 		self.signup_details = json.dumps(signup_values)
-
-
-		frappe.db.set_value("Product Trial Request", self.name, "signup_details", self.signup_details)
-		frappe.db.commit()
-		frappe.throw("Not implemented")
-
-
 		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
@@ -140,9 +133,20 @@ class ProductTrialRequest(Document):
 			["name", "status", "job_type"],
 		)
 		if status == "Success":
-			frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
-			return {"progress": 100}
+			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
+			if mode != "auto":
+				frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
+				return {"progress": 100}
+			else:
+				if self.status == "Site Created":
+					return {"progress": 100}
+				elif self.status != "Completing Setup Wizard":
+					self.status = "Completing Setup Wizard"
+					self.complete_setup_wizard()
+					self.save(ignore_permissions=True)
+				return {"progress": 90, "current_step": "Completing Setup Wizard"}
 		elif status == "Running":
+			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
 			steps = frappe.db.get_all(
 				"Agent Job Step",
 				filters={"agent_job": job_name},
@@ -150,7 +154,10 @@ class ProductTrialRequest(Document):
 				order_by="creation asc",
 			)
 			done = [s for s in steps if s.status in ("Success", "Skipped", "Failure")]
-			progress = len(done) / len(steps) * 100
+			steps_count = len(steps)
+			if mode == "auto":
+				steps_count += 1
+			progress = (len(done) / steps_count) * 100
 			if progress <= current_progress:
 				progress = current_progress
 			current_running_step = ""
@@ -165,3 +172,28 @@ class ProductTrialRequest(Document):
 		else:
 			# If agent job is undelivered, pending
 			return {"progress": current_progress}
+		
+	def complete_setup_wizard(self):
+		frappe.enqueue_doc(
+			"Product Trial Request",
+			self.name,
+			method="_complete_setup_wizard",
+			timeout=600,
+			enqueue_after_commit=True
+		)
+		
+	def _complete_setup_wizard(self):
+		if frappe.get_value("Product Trial Request", self.name, "status") != "Completing Setup Wizard":
+			return
+		data = self.get_setup_wizard_payload()
+		try:
+			site: "Site" = frappe.get_doc("Site", self.site)
+			client = site.get_connection_as_admin()
+			response = client.post_api("frappe.desk.page.setup_wizard.setup_wizard.setup_complete", {
+				"args": json.dumps(data) 
+			})
+			if response["status"] == "ok":
+				frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
+		except Exception as e:
+			frappe.log_error(title="Product Trial Request Setup Wizard Completion Error")
+			frappe.throw(f"Failed to complete Setup Wizard: {e}")

@@ -196,7 +196,9 @@
 								</form>
 								<div
 									v-else-if="
-										$resources.siteRequest?.doc?.status == 'Wait for Site'
+										$resources.siteRequest?.doc?.status == 'Wait for Site' ||
+										$resources.siteRequest?.doc?.status ==
+											'Completing Setup Wizard'
 									"
 								>
 									<Progress
@@ -367,7 +369,10 @@ export default {
 				name: this.siteRequest.name,
 				realtime: true,
 				onSuccess(doc) {
-					if (doc.status == 'Wait for Site') {
+					if (
+						doc.status == 'Wait for Site' ||
+						doc.status == 'Completing Setup Wizard'
+					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
 				},
