@@ -27,7 +27,10 @@
   "standby_pool_size",
   "standby_queue_size",
   "signup_details_tab",
-  "signup_fields"
+  "signup_fields",
+  "setup_wizard_tab",
+  "setup_wizard_completion_mode",
+  "setup_wizard_payload_generator_script"
  ],
  "fields": [
   {
@@ -146,6 +149,25 @@
    "label": "Trial Plan",
    "options": "Site Plan",
    "reqd": 1
+  },
+  {
+   "fieldname": "setup_wizard_tab",
+   "fieldtype": "Tab Break",
+   "label": "Setup Wizard"
+  },
+  {
+   "default": "manual",
+   "fieldname": "setup_wizard_completion_mode",
+   "fieldtype": "Select",
+   "label": "Setup Wizard Completion Mode",
+   "options": "manual\nauto"
+  },
+  {
+   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.",
+   "fieldname": "setup_wizard_payload_generator_script",
+   "fieldtype": "Code",
+   "label": "Setup Wizard Payload Generator Script",
+   "options": "Python"
   }
  ],
  "image_field": "logo",
@@ -160,7 +182,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-05 15:44:58.046568",
+ "modified": "2024-08-06 13:49:17.360298",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

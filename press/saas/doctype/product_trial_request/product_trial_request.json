@@ -41,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nSite Created\nError\nExpired"
+   "options": "Pending\nWait for Site\nSite Created\nSite Ready\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -77,7 +77,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-05 15:52:40.603046",
+ "modified": "2024-08-06 19:01:54.865575",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

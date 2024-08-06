@@ -4,6 +4,7 @@
 import json
 import frappe
 from frappe.model.document import Document
+from frappe.utils.safe_exec import safe_exec
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.site.site import Site
@@ -24,7 +25,7 @@ class ProductTrialRequest(Document):
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
-		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Error", "Expired"]
+		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Site Ready", "Error", "Expired"]
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -51,6 +52,43 @@ class ProductTrialRequest(Document):
 		}
 	}
 
+	@frappe.whitelist()
+	def get_setup_wizard_payload(self):
+		data = frappe.get_value("Product Trial", self.product_trial, ["setup_wizard_completion_mode", "setup_wizard_payload_generator_script"], as_dict=True)
+		if data.setup_wizard_completion_mode != "auto":
+			frappe.throw("In manual Setup Wizard Completion Mode, the payload cannot be generated")
+		if not data.setup_wizard_payload_generator_script:
+			return {}
+		signup_details = json.loads(self.signup_details)
+		team_details = frappe.get_value("Team", self.team, ["name", "user", "country", "currency"], as_dict=True)
+		team_user = frappe.get_doc("User", team_details.user)
+		try:
+			_locals = {
+				"team": frappe._dict({
+					"name": team_details.name,
+					"user": frappe._dict({
+						"email": team_user.email,
+						"full_name": team_user.full_name or "",
+						"first_name": team_user.first_name or "",
+						"last_name": team_user.last_name or "",
+					}),
+					"country": team_details.country,
+					"currency": team_details.currency
+				}),
+				"signup_details": frappe._dict(signup_details),
+				"payload": frappe._dict()
+			}
+			safe_exec(
+				data.setup_wizard_payload_generator_script,
+				_locals=_locals,
+				restrict_commit_rollback=True,
+			)
+			return frappe._dict(_locals.get("payload", {}))
+
+		except Exception as e:
+			frappe.log_error(title="Product Trial Reqeust Setup Wizard Payload Generation Error")
+			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
+
 	@dashboard_whitelist()
 	def create_site(self, cluster=None, signup_values=None):
 		if not signup_values:
@@ -64,6 +102,14 @@ class ProductTrialRequest(Document):
 					frappe.throw(f"Required field {field.label} is missing")
 				else:
 					signup_values[field.fieldname] = None
+		self.signup_details = json.dumps(signup_values)
+
+
+		frappe.db.set_value("Product Trial Request", self.name, "signup_details", self.signup_details)
+		frappe.db.commit()
+		frappe.throw("Not implemented")
+
+
 		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
