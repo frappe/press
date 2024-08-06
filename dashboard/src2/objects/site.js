@@ -1563,7 +1563,7 @@ export default {
 };
 
 function upsellBanner(site, title) {
-	if (!site.doc.current_plan.private_benches && site.doc.group_public) {
+	if (!site.doc.current_plan?.private_benches && site.doc.group_public) {
 		return {
 			title: title,
 			dismissable: true,
