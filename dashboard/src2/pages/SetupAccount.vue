@@ -65,11 +65,11 @@
 							v-model="country"
 							required
 						/>
-						<Form
+						<!-- <Form
 							v-if="signupFields.length > 0"
 							:fields="signupFields"
 							v-model="signupValues"
-						/>
+						/> -->
 						<div class="mt-4 flex items-start">
 							<label class="text-base text-gray-900">
 								<FormControl type="checkbox" v-model="termsAccepted" />

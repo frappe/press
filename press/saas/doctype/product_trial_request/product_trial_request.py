@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import frappe
 from frappe.model.document import Document
 
@@ -51,8 +52,18 @@ class ProductTrialRequest(Document):
 	}
 
 	@dashboard_whitelist()
-	def create_site(self, cluster=None):
+	def create_site(self, cluster=None, signup_values=None):
+		if not signup_values:
+			signup_values = {}
+
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
+		# Validate signup values
+		for field in product.signup_fields:
+			if field.fieldname not in signup_values:
+				if field.required:
+					frappe.throw(f"Required field {field.label} is missing")
+				else:
+					signup_values[field.fieldname] = None
 		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name

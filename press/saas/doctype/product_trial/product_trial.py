@@ -43,8 +43,8 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 		doc.signup_fields = [{
 			"label": field.label,
-			"name": field.fieldname,
-			"type": field.fieldtype,
+			"fieldname": field.fieldname,
+			"fieldtype": field.fieldtype,
 			"options": [option for option in ((field.options or "").split("\n")) if option],
 			"required": field.required,
 		} for field in self.signup_fields]

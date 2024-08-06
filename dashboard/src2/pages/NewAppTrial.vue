@@ -165,14 +165,20 @@
 							</div>
 							<!-- Site Creation -->
 							<div v-if="$resources.siteRequest?.doc">
-								<div
+								<form
 									class="space-y-3"
 									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
+									@submit.prevent="createSite()"
 								>
 									<FormControl
 										label="Your Email"
 										:modelValue="$team.doc.user"
 										:disabled="true"
+									/>
+									<Form
+										v-if="saasProductSignupFields.length > 0"
+										:fields="saasProductSignupFields"
+										v-model="signupValues"
 									/>
 									<ErrorMessage
 										:message="$resources.siteRequest?.createSite?.error"
@@ -180,7 +186,6 @@
 									<Button
 										class="w-full"
 										variant="solid"
-										@click="createSite"
 										:loading="
 											findingClosestServer ||
 											$resources.siteRequest?.createSite?.loading
@@ -188,7 +193,7 @@
 									>
 										Create
 									</Button>
-								</div>
+								</form>
 								<div
 									v-else-if="
 										$resources.siteRequest?.doc?.status == 'Wait for Site'
@@ -297,6 +302,7 @@ import { trialDays, isTrialEnded } from '../utils/site';
 import AlertBanner from '../components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
 import AppTrialSubscriptionDialog from '../components/AppTrialSubscriptionDialog.vue';
+import Form from '@/components/Form.vue';
 
 export default {
 	name: 'NewAppTrial',
@@ -310,7 +316,8 @@ export default {
 		SitePlansCards,
 		ProductSignupPitch,
 		AlertBanner,
-		AppTrialSubscriptionDialog
+		AppTrialSubscriptionDialog,
+		Form
 	},
 	mounted() {
 		// Open subscription dialog if hash is #subscription and billing details or payment mode is not set
@@ -332,7 +339,8 @@ export default {
 			findingClosestServer: false,
 			closestCluster: null,
 			loginAsTeamInProgressInSite: null,
-			showAppTrialSubscriptionDialog: false
+			showAppTrialSubscriptionDialog: false,
+			signupValues: {}
 		};
 	},
 	resources: {
@@ -368,7 +376,11 @@ export default {
 						method: 'create_site',
 						makeParams(params) {
 							let cluster = params?.cluster;
-							return { cluster };
+							let signup_values = params?.signup_values;
+							return {
+								cluster,
+								signup_values
+							};
 						},
 						onSuccess() {
 							this.$resources.siteRequest.getProgress.reload();
@@ -419,7 +431,10 @@ export default {
 	methods: {
 		async createSite() {
 			let cluster = await this.getClosestCluster();
-			return this.$resources.siteRequest.createSite.submit({ cluster });
+			return this.$resources.siteRequest.createSite.submit({
+				cluster,
+				signup_values: this.signupValues
+			});
 		},
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
