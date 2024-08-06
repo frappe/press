@@ -1024,6 +1024,7 @@ class ReleaseGroup(Document, TagHelpers):
 			.select(
 				AppRelease.name,
 				AppRelease.source,
+				AppRelease.public,
 				AppRelease.status,
 				AppRelease.hash,
 				AppRelease.message,
@@ -1038,10 +1039,8 @@ class ReleaseGroup(Document, TagHelpers):
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
 			if app.source in only_approved_for_sources:
-				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
-				latest_app_releases = find_all(
-					latest_app_releases, lambda x: x.status == "Approved"
-				)
+				latest_app_release = find(latest_app_releases, can_use_release)
+				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
@@ -1480,3 +1479,10 @@ def prune_servers_without_sites():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Release Group"
 )
+
+
+def can_use_release(app_src):
+	if not app_src.public:
+		return True
+
+	return app_src.status == "Approved"
