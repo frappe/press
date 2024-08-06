@@ -186,6 +186,9 @@ class AppRelease(Document):
 		self.output += self.run(f"git reset --hard {self.hash}")
 
 	def _get_repo_url(self, source: "AppSource") -> str:
+		if source.get("gitlab_access_token"):
+			return source.repository_url.replace("https://", f"https://oauth2:{source.get_password('gitlab_access_token')}@")
+
 		if not source.github_installation_id:
 			return source.repository_url
 

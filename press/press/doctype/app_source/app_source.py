@@ -98,8 +98,60 @@ class AppSource(Document):
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
 		# self.create_release()
 
+	def create_gitlab_release(self, force=False):
+		from urllib.parse import urlparse
+
+		repo_url = urlparse(self.repository_url)
+		api_path = f"/api/v4/projects/{self.gitlab_project_id}/repository/branches/{self.branch}"
+		url = f"{repo_url.scheme}://{repo_url.netloc}{api_path}"
+
+		headers = {}
+
+		gitlab_token = ""
+		if self.get("gitlab_access_token"):
+			gitlab_token = gitlab_token or self.get_password("gitlab_access_token")
+		# gitlab_token = gitlab_token or frappe.db.get_single_value("Press Settings", None, "gitlab_access_token")
+
+		if gitlab_token:
+			headers["Authorization"] = f"Bearer {gitlab_token}"
+
+		res = requests.get(url, headers=headers).json()
+
+		frappe.db.set_value(
+			"App Source",
+			self.name,
+			{
+				"last_github_response": "GitLab",
+				"last_github_poll_failed": False,
+				"last_synced": frappe.utils.now(),
+			},
+		)
+		commit_hash = res["commit"]["id"]
+		commit_message = res["commit"]["message"]
+		commit_author = res["commit"]["author_name"]
+		if not frappe.db.exists(
+			"App Release", {"app": self.app, "source": self.name, "hash": commit_hash}
+		):
+			frappe.get_doc(
+				{
+					"__newname": f"{self.name}-{commit_hash}",
+					"doctype": "App Release",
+					"app": self.app,
+					"source": self.name,
+					"hash": commit_hash,
+					"team": self.team,
+					"message": commit_message,
+					"author": commit_author,
+					"deployable": False,
+				}
+			).insert()
+
 	@frappe.whitelist()
 	def create_release(self, force=False):
+		if self.gitlab_project_id:
+			self.create_gitlab_release(force)
+			return
+
 		if self.last_github_poll_failed and not force:
 			return
 
