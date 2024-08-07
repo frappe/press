@@ -17,7 +17,6 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.query_builder.functions import Count
 from frappe.utils import cstr, flt, get_url, sbool
 from frappe.utils.caching import redis_cache
-
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -63,7 +62,6 @@ class ReleaseGroup(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.common_site_config.common_site_config import CommonSiteConfig
 		from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
 		from press.press.doctype.release_group_dependency.release_group_dependency import (
@@ -268,12 +266,12 @@ class ReleaseGroup(Document, TagHelpers):
 		self.common_site_config = json.dumps(new_config, indent=4)
 
 	@dashboard_whitelist()
-	def update_dependency(self, dependency_name, version):
+	def update_dependency(self, dependency_name, version, is_custom):
 		"""Updates a dependency version in the Release Group Dependency table"""
-
 		for dependency in self.dependencies:
 			if dependency.name == dependency_name:
 				dependency.version = version
+				dependency.is_custom = is_custom
 				self.save()
 				return
 
@@ -1026,6 +1024,7 @@ class ReleaseGroup(Document, TagHelpers):
 			.select(
 				AppRelease.name,
 				AppRelease.source,
+				AppRelease.public,
 				AppRelease.status,
 				AppRelease.hash,
 				AppRelease.message,
@@ -1040,10 +1039,8 @@ class ReleaseGroup(Document, TagHelpers):
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
 			if app.source in only_approved_for_sources:
-				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
-				latest_app_releases = find_all(
-					latest_app_releases, lambda x: x.status == "Approved"
-				)
+				latest_app_release = find(latest_app_releases, can_use_release)
+				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
@@ -1482,3 +1479,10 @@ def prune_servers_without_sites():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Release Group"
 )
+
+
+def can_use_release(app_src):
+	if not app_src.public:
+		return True
+
+	return app_src.status == "Approved"

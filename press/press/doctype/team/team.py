@@ -34,7 +34,6 @@ class Team(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import (
 			CommunicationEmail,
@@ -43,7 +42,6 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		allow_access_to_restricted_site_plans: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
@@ -73,9 +71,7 @@ class Team(Document):
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
-		payment_mode: DF.Literal[
-			"", "Card", "Prepaid Credits", "Partner Credits", "Paid By Partner"
-		]
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
 		referrer_id: DF.Data | None
 		security_portal_enabled: DF.Check
@@ -797,9 +793,8 @@ class Team(Document):
 		doc.submit()
 
 		self.reload()
-		if not self.default_payment_method:
-			# change payment mode to prepaid credits if default is card or not set
-			self.payment_mode = self.payment_mode
+		if not self.payment_mode:
+			self.validate_payment_mode()
 			self.save(ignore_permissions=True)
 		return doc
 
@@ -1267,6 +1262,11 @@ def handle_payment_intent_succeeded(payment_intent):
 		# ignore creating if already allocated
 		return
 
+	if not frappe.db.exists("Team", {"stripe_customer_id": payment_intent["customer"]}):
+		# might be checkout session payment
+		# log the stripe webhook log
+		# TODO: handle checkout session payment
+		return
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount_with_tax = payment_intent["amount"] / 100
 	gst = float(metadata.get("gst", 0))

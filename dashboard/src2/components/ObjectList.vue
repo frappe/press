@@ -1,8 +1,15 @@
 <template>
 	<div>
-		<AlertBanner v-if="banner" v-bind="banner" class="mb-4">
+		<!-- Banners -->
+		<component
+			:is="banner.dismissable ? 'DismissableBanner' : 'AlertBanner'"
+			v-if="banner"
+			v-bind="banner"
+			class="mb-4"
+		>
 			<Button v-if="banner.button" v-bind="banner.button" class="ml-auto" />
-		</AlertBanner>
+		</component>
+
 		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<div v-if="showControls" class="flex items-center space-x-2">
@@ -46,13 +53,18 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Tooltip text="Refresh" v-if="$list">
-					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
-						<template #icon>
+				<Button
+					label="Refresh"
+					v-if="$list"
+					@click="$list.reload()"
+					:loading="isLoading"
+				>
+					<template #icon>
+						<Tooltip text="Refresh">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-						</template>
-					</Button>
-				</Tooltip>
+						</Tooltip>
+					</template>
+				</Button>
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -123,6 +135,8 @@
 </template>
 <script>
 import { reactive } from 'vue';
+import { throttle } from '../utils/throttle';
+import DismissableBanner from './DismissableBanner.vue';
 import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
@@ -145,6 +159,7 @@ export default {
 	emits: ['update:selections'],
 	components: {
 		AlertBanner,
+		DismissableBanner,
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
@@ -158,7 +173,6 @@ export default {
 	},
 	data() {
 		return {
-			lastRefreshed: null,
 			searchQuery: ''
 		};
 	},
@@ -213,9 +227,6 @@ export default {
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
 				auto: true,
-				onSuccess: () => {
-					this.lastRefreshed = new Date();
-				},
 				onError: e => {
 					if (this.$list.data) {
 						this.$list.data = [];
@@ -237,33 +248,29 @@ export default {
 	mounted() {
 		if (this.options.data) return;
 		if (this.options.list) {
-			let resource = this.$list.list || this.$list;
+			const resource = this.$list.list || this.$list;
 			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
 			this.$socket.emit('doctype_subscribe', doctype);
 			subscribed[doctype] = true;
 
+			const throttledReload = throttle(this.$list.reload, 5000);
 			this.$socket.on('list_update', data => {
-				let names = (this.$list.data || []).map(d => d.name);
-				if (
-					data.doctype === doctype &&
-					names.includes(data.name) &&
-					// update list if last refreshed is more than 5 seconds ago
-					new Date() - this.lastRefreshed > 5000
-				) {
-					this.$list.reload();
+				const names = (this.$list.data || []).map(d => d.name);
+				if (data.doctype === doctype && names.includes(data.name)) {
+					throttledReload();
 				}
 			});
 		}
 	},
 	beforeUnmount() {
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			this.$socket.emit('doctype_unsubscribe', doctype);
 			subscribed[doctype] = false;
 		}

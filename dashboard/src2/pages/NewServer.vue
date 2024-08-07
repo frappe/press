@@ -326,7 +326,7 @@ import LucideServer from '~icons/lucide/server-off';
 import Header from '../components/Header.vue';
 import Summary from '../components/Summary.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
-import ClickToCopy from '../../src/components/ClickToCopyField.vue';
+import ClickToCopy from '../components/ClickToCopyField.vue';
 import { DashboardError } from '../utils/error';
 
 export default {
@@ -432,9 +432,8 @@ export default {
 						);
 					} else if (
 						(this.$team.doc.currency == 'USD' &&
-							this.$team.doc.balance <= 200) ||
-						(this.$team.doc.currency == 'INR' &&
-							this.$team.doc.balance <= 16000)
+							this.$team.doc.balance < 200) ||
+						(this.$team.doc.currency == 'INR' && this.$team.doc.balance < 16000)
 					) {
 						throw new DashboardError(
 							'You need to have $200 worth of credits to create a server.'

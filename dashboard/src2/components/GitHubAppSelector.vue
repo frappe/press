@@ -107,7 +107,6 @@ export default {
 		return {
 			app: {},
 			selectedBranch: '',
-			requiresReAuth: false,
 			selectedGithubUser: null,
 			selectedGithubRepository: null
 		};
@@ -146,12 +145,7 @@ export default {
 		options() {
 			return {
 				url: 'press.api.github.options',
-				auto: true,
-				onError(error) {
-					if (error.messages.includes('Bad credentials')) {
-						this.requiresReAuth = true;
-					}
-				}
+				auto: true
 			};
 		},
 		branches() {
@@ -190,6 +184,11 @@ export default {
 				this.$resources.options.data &&
 				(!this.$resources.options.data.authorized ||
 					this.$resources.options.data.installations.length === 0)
+			);
+		},
+		requiresReAuth() {
+			return this.$resources.options?.error?.messages.includes(
+				'Bad credentials'
 			);
 		},
 		state() {

@@ -33,7 +33,6 @@ from press.utils import (
 	get_frappe_backups,
 	get_last_doc,
 	has_role,
-	is_allowed_access_to_restricted_site_plans,
 	log_error,
 	unique,
 )
@@ -404,9 +403,8 @@ def app_details_for_new_public_site():
 			"subscription_type",
 			{"sources": ["source", "version"]},
 		],
-		filters={"status": "Published", "frappe_approved": 1},
+		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
-
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
@@ -710,11 +708,11 @@ def get_site_plans():
 		filters={"document_type": "Site"},
 	)
 
-	filtered_plans = []
-
-	has_team_access_to_restricted_site_plans = is_allowed_access_to_restricted_site_plans()
-
 	plan_names = [x.name for x in plans]
+	if len(plan_names) == 0:
+		return []
+	
+	filtered_plans = []
 
 	SitePlan = frappe.qb.DocType("Site Plan")
 	Bench = frappe.qb.DocType("Bench")
@@ -778,13 +776,6 @@ def get_site_plans():
 			plan_details_dict[plan["name"]]["bench_versions"].append(plan["version"])
 
 	for plan in plans:
-		# If release_group isn't empty (means Restricted Site Plan) and team has not access to this kind of plan, Skip the plan
-		if (
-			not has_team_access_to_restricted_site_plans
-			and plan.name in plan_details_dict
-			and plan_details_dict[plan.name]["release_groups"]
-		):
-			continue
 		if plan.name in plan_details_dict:
 			plan.clusters = plan_details_dict[plan.name]["clusters"]
 			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
@@ -1549,7 +1540,7 @@ def check_dns_cname_a(name, domain):
 					{"status": "Active", "primary": proxy, "is_replication_setup": True},
 					pluck="ip",
 				)
-				if site_ip in secondary_ips:
+				if domain_ip in secondary_ips:
 					result["matched"] = True
 		except dns.exception.DNSException as e:
 			result["answer"] = str(e)
@@ -2103,12 +2094,27 @@ def version_upgrade(
 	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
 
 	if shared_site:
-		destination_group = frappe.db.get_value(
-			"Release Group", {"version": next_version, "public": 1}, "name"
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		destination_group = (
+			frappe.qb.from_(ReleaseGroup)
+			.select(ReleaseGroup.name)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.where(ReleaseGroup.version == next_version)
+			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroupServer.server == site.server)
+			.run(as_dict=True, pluck="name")
 		)
 
-		if not destination_group:
-			frappe.throw(f"There are no public benches with {next_version}.")
+		if destination_group:
+			destination_group = destination_group[0]
+		else:
+			frappe.throw(
+				f"There are no public benches with the version {frappe.bold(next_version)}."
+			)
 
 	version_upgrade = frappe.get_doc(
 		{

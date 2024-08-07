@@ -66,6 +66,7 @@ class SitePlan(Plan):
 		"max_storage_usage",
 		"database_access",
 		"support_included",
+		"private_benches",
 	]
 
 	def get_doc(self, doc):

@@ -10,8 +10,9 @@
 				:title="title"
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
 			>
-				<div v-if="!(signupEmailSent || resetPasswordEmailSent)">
+				<div v-if="!(resetPasswordEmailSent || accountRequestCreated)">
 					<form class="flex flex-col" @submit.prevent="submitForm">
+						<!-- Forgot Password Section -->
 						<template v-if="hasForgotPassword">
 							<FormControl
 								label="Email"
@@ -39,6 +40,8 @@
 								Reset Password
 							</Button>
 						</template>
+
+						<!-- Login Section -->
 						<template v-else-if="isLogin">
 							<FormControl
 								label="Email"
@@ -77,6 +80,8 @@
 							</Button>
 							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
+
+						<!-- Signup Section -->
 						<template v-else>
 							<FormControl
 								label="Email"
@@ -94,7 +99,8 @@
 								Sign up with email
 							</Button>
 						</template>
-						<ErrorMessage class="mt-2" :message="$resources.signup.error" />
+
+						<ErrorMessage class="mt-2" :message="error" />
 					</form>
 					<div class="flex flex-col" v-if="!hasForgotPassword && !isOauthLogin">
 						<div class="-mb-2 mt-6 border-t text-center">
@@ -118,7 +124,7 @@
 						</Button>
 						<div
 							class="mt-6 text-center"
-							v-if="!(signupEmailSent || resetPasswordEmailSent)"
+							v-if="!(accountRequestCreated || resetPasswordEmailSent)"
 						>
 							<router-link
 								class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
@@ -136,14 +142,64 @@
 						</div>
 					</div>
 				</div>
-				<div class="text-p-base text-gray-700" v-else>
-					<p v-if="signupEmailSent">
-						We have sent an email to
-						<span class="font-semibold">{{ email }}</span
-						>. Please click on the link received to verify your email and set up
-						your account.
-					</p>
-					<p v-if="resetPasswordEmailSent">
+				<div v-else-if="accountRequestCreated">
+					<form class="flex flex-col">
+						<FormControl
+							label="Email"
+							type="email"
+							placeholder="johndoe@mail.com"
+							autocomplete="email"
+							v-model="email"
+							required
+						/>
+						<FormControl
+							label="OTP (Sent to your email)"
+							type="text"
+							class="mt-4"
+							placeholder="5 digit OTP"
+							maxlength="5"
+							v-model="otp"
+							required
+						/>
+						<ErrorMessage class="mt-2" :message="$resources.verifyOTP.error" />
+						<Button
+							class="mt-4"
+							variant="solid"
+							:loading="$resources.verifyOTP.loading"
+							@click="$resources.verifyOTP.submit()"
+						>
+							Verify & Next
+						</Button>
+						<Button
+							class="mt-2"
+							variant="outline"
+							:loading="$resources.resendOTP.loading"
+							@click="$resources.resendOTP.submit()"
+						>
+							Didn't receive otp? Resend
+						</Button>
+					</form>
+					<div class="mt-6 text-center">
+						<router-link
+							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
+							:to="{
+								name: $route.name == 'Login' ? 'Signup' : 'Login',
+								query: { ...$route.query, forgot: undefined }
+							}"
+						>
+							{{
+								$route.name == 'Login'
+									? 'New member? Create a new account.'
+									: 'Already have an account? Log in.'
+							}}
+						</router-link>
+					</div>
+				</div>
+				<div
+					class="text-p-base text-gray-700"
+					v-else-if="resetPasswordEmailSent"
+				>
+					<p>
 						We have sent an email to
 						<span class="font-semibold">{{ email }}</span
 						>. Please click on the link received to reset your password.
@@ -158,6 +214,7 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'Signup',
@@ -168,14 +225,21 @@ export default {
 	},
 	data() {
 		return {
-			email: null,
+			email: '',
+			account_request: '',
+			accountRequestCreated: false,
+			otp: '',
 			password: null,
-			signupEmailSent: false,
 			resetPasswordEmailSent: false
 		};
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+	},
+	watch: {
+		email() {
+			this.resetSignupState();
+		}
 	},
 	resources: {
 		signup() {
@@ -187,8 +251,33 @@ export default {
 					product: this.$route.query.product,
 					new_signup_flow: true
 				},
+				onSuccess(account_request) {
+					this.account_request = account_request;
+					this.accountRequestCreated = true;
+				}
+			};
+		},
+		verifyOTP() {
+			return {
+				url: 'press.api.account.verify_otp',
+				params: {
+					account_request: this.account_request,
+					otp: this.otp
+				},
+				onSuccess(key) {
+					window.open(`/dashboard/setup-account/${key}`, '_self');
+				}
+			};
+		},
+		resendOTP() {
+			return {
+				url: 'press.api.account.resend_otp',
+				params: {
+					account_request: this.account_request
+				},
 				onSuccess() {
-					this.signupEmailSent = true;
+					this.otp = '';
+					toast.success('Resent OTP to your email');
 				}
 			};
 		},
@@ -236,6 +325,17 @@ export default {
 		}
 	},
 	methods: {
+		resetSignupState() {
+			if (
+				!this.isLogin &&
+				!this.hasForgotPassword &&
+				this.accountRequestCreated
+			) {
+				this.accountRequestCreated = false;
+				this.account_request = '';
+				this.otp = '';
+			}
+		},
 		async submitForm() {
 			if (this.isLogin) {
 				if (this.isOauthLogin) {
@@ -273,6 +373,15 @@ export default {
 		}
 	},
 	computed: {
+		error() {
+			if (this.$resources.signup.error) {
+				return this.$resources.signup.error;
+			}
+
+			if (this.$resources.resetPassword.error) {
+				return this.$resources.resetPassword.error;
+			}
+		},
 		saasProduct() {
 			return this.$resources.signupSettings.data?.product_trial;
 		},

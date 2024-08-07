@@ -22,7 +22,7 @@
 
 <script setup>
 import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h, ref } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
@@ -51,16 +51,16 @@ function getSiteActionHandler(action) {
 			import('./SiteDatabaseAccessDialog.vue')
 		),
 		'Version upgrade': defineAsyncComponent(() =>
-			import('./SiteVersionUpgradeDialog.vue')
+			import('./site/SiteVersionUpgradeDialog.vue')
 		),
 		'Change bench': defineAsyncComponent(() =>
-			import('./SiteChangeBenchDialog.vue')
+			import('./site/SiteChangeBenchDialog.vue')
 		),
 		'Change region': defineAsyncComponent(() =>
-			import('./SiteChangeRegionDialog.vue')
+			import('./site/SiteChangeRegionDialog.vue')
 		),
 		'Change server': defineAsyncComponent(() =>
-			import('./SiteChangeServerDialog.vue')
+			import('./site/SiteChangeServerDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {
@@ -122,8 +122,6 @@ function onActivateSite() {
 const FeedbackDialog = defineAsyncComponent(() =>
 	import('./ChurnFeedbackDialog.vue')
 );
-
-const showFeedbackDialog = ref(false);
 
 function onDropSite() {
 	return confirmDialog({

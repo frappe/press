@@ -2038,5 +2038,23 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-07-18 17:49:54.294402",
+  "name": "Column Statistics",
+  "request_method": "POST",
+  "request_path": "/database/column-stats",
+  "steps": [
+   {
+    "parent": "Column Statistics",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Fetch Column Statistics"
+   }
+  ]
  }
 ]

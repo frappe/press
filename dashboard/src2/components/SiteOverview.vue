@@ -12,12 +12,22 @@
 			<Button
 				class="ml-auto"
 				variant="outline"
-				@click="loginAsAdmin"
+				@click="loginAsTeam"
 				:loading="$site.loginAsAdmin.loading"
 			>
 				Login
 			</Button>
 		</AlertBanner>
+		<DismissableBanner
+			v-if="!$site.doc.current_plan?.private_benches && $site.doc.group_public"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			:id="$site.name"
+		>
+			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
+				Upgrade Plan
+			</Button>
+		</DismissableBanner>
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -168,6 +178,7 @@
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
 import InfoIcon from '~icons/lucide/info';
+import DismissableBanner from './DismissableBanner.vue';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -176,7 +187,7 @@ import { trialDays } from '../utils/site';
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
-	components: { SiteDailyUsage, Progress, AlertBanner },
+	components: { SiteDailyUsage, Progress, AlertBanner, DismissableBanner },
 	data() {
 		return {
 			isSetupWizardComplete: true
@@ -200,7 +211,18 @@ export default {
 			return this.$format.bytes(v, 2, 2);
 		},
 		loginAsAdmin() {
-			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
+			this.$site.loginAsAdmin
+				.submit({ reason: '' })
+				.then(url => window.open(url, '_blank'));
+		},
+		loginAsTeam() {
+			if (this.$site.doc.additional_system_user_created) {
+				this.$site.loginAsTeam
+					.submit({ reason: '' })
+					.then(url => window.open(url, '_blank'));
+			} else {
+				this.loginAsAdmin();
+			}
 		},
 		trialDays
 	},

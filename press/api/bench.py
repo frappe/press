@@ -34,6 +34,7 @@ from press.utils import (
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 @frappe.whitelist()
@@ -1005,13 +1006,30 @@ def rename(name, title):
 
 
 @frappe.whitelist()
-@protected("App Patch")
+@protected("Release Group")
 def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
+	team = get_current_team()
+
 	return create_app_patch(
 		release_group,
 		app,
+		team,
 		patch_config,
 	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def fail_and_redeploy(name: str, dc_name: str):
+	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
+	res = dc.fail_and_redeploy()
+
+	# If failed error is True
+	if res.get("error"):
+		return None
+
+	# New Deploy Candidate name
+	return res.get("message")
 
 
 @frappe.whitelist(allow_guest=True)

@@ -16,9 +16,8 @@ from frappe.utils import get_url
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
-from pypika.terms import ValueWrapper
-
 from press.api.site import protected
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -27,6 +26,7 @@ from press.press.doctype.team.team import (
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture
+from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
@@ -41,12 +41,13 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 		"Team", {"user": email}, ["name", "enabled"]
 	) or [0, 0]
 
+	account_request = None
 	if exists and not enabled:
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		frappe.get_doc(
+		account_request = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -59,6 +60,30 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 		).insert()
 
 	frappe.set_user(current_user)
+	if account_request:
+		return account_request.name
+
+
+@frappe.whitelist(allow_guest=True)
+def verify_otp(account_request: str, otp: str):
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": account_request.email}):
+		frappe.throw("Invalid OTP. Please try again.")
+	if account_request.otp != otp:
+		frappe.throw("Invalid OTP. Please try again.")
+	account_request.reset_otp()
+	return account_request.request_key
+
+
+@frappe.whitelist(allow_guest=True)
+def resend_otp(account_request: str):
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	# ensure no team has been created with this email
+	if frappe.db.exists("Team", {"user": account_request.email}):
+		frappe.throw("Invalid Email")
+	account_request.reset_otp()
+	account_request.send_verification_email()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -599,20 +624,20 @@ def update_feature_flags(values=None):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def send_reset_password_email(email):
-	email = frappe.utils.validate_email_address(email, True)
-	if not email:
+	valid_email = frappe.utils.validate_email_address(email)
+	if not valid_email:
 		frappe.throw(
-			"{} is not a valid Email Address".format(email),
+			f"{email} is not a valid email address",
 			frappe.InvalidEmailAddressError,
 		)
 
-	email = email.strip()
+	valid_email = valid_email.strip()
 	key = frappe.generate_hash()
 	hashed_key = sha256_hash(key)
-	if frappe.db.exists("User", email):
+	if frappe.db.exists("User", valid_email):
 		frappe.db.set_value(
 			"User",
-			email,
+			valid_email,
 			{
 				"reset_password_key": hashed_key,
 				"last_reset_password_key_generated_on": frappe.utils.now_datetime(),
@@ -620,19 +645,19 @@ def send_reset_password_email(email):
 		)
 		url = get_url("/dashboard/reset-password/" + key)
 		if frappe.conf.developer_mode:
-			print(f"\nReset password URL for {email}:")
+			print(f"\nReset password URL for {valid_email}:")
 			print(url)
 			print()
 			return
 		frappe.sendmail(
-			recipients=email,
+			recipients=valid_email,
 			subject="Reset Password",
 			template="reset_password",
 			args={"link": url},
 			now=True,
 		)
 	else:
-		frappe.throw("User {0} does not exist".format(email))
+		frappe.throw("User {0} does not exist".format(valid_email))
 
 
 @frappe.whitelist(allow_guest=True)

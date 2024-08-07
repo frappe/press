@@ -73,7 +73,7 @@ class MarketplaceApp(WebsiteGenerator):
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
 		screenshots: DF.Table[MarketplaceAppScreenshot]
-		show_for_first_site_creation: DF.Check
+		show_for_site_creation: DF.Check
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]

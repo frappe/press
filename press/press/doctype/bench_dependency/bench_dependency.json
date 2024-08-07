@@ -27,6 +27,7 @@
   },
   {
    "default": "0",
+   "description": "Internal dependencies are not editable by the user from the dashboard.",
    "fieldname": "internal",
    "fieldtype": "Check",
    "label": "Internal"
@@ -34,7 +35,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-26 12:57:36.932875",
+ "modified": "2024-07-18 16:19:44.928250",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Dependency",

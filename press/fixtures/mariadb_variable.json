@@ -169,12 +169,12 @@
  },
  {
   "datatype": "Str",
-  "default_value": "100",
+  "default_value": "200",
   "doc_section": "server",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-12-17 20:05:35.338733",
+  "modified": "2024-07-29 13:26:57.153685",
   "name": "max_connections",
   "set_on_new_servers": 1,
   "skippable": 0

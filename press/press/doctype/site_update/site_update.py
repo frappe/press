@@ -268,6 +268,7 @@ class SiteUpdate(Document):
 				job_id=f"auto_scale_workers:{server.name}",
 				deduplicate=True,
 				enqueue_after_commit=True,
+				at_front=True,
 			)
 
 	@frappe.whitelist()

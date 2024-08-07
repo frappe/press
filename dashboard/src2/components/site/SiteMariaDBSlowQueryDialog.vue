@@ -7,16 +7,9 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<div
-				v-if="$site.doc?.version !== 'Version 14'"
-				class="mb-5 flex items-center space-x-2 rounded-lg border-blue-200 bg-blue-100 p-3 text-sm text-gray-800"
-			>
-				<i-lucide-info class="h-4 w-4" />
-				<div>Upcoming Feature : Analyze Query coming soon on Version-15</div>
-			</div>
-			<h2 class="font-semibold">Query</h2> 
+			<h2 class="font-semibold">Query</h2>
 			<pre
-				class="rounded-lg mt-2 border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				class="mt-2 rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
 				>{{ query }}</pre
 			>
 			<div class="flex p-2 text-sm">
@@ -24,19 +17,35 @@
 					>Duration: {{ duration.toFixed(2) }} seconds</span
 				>
 			</div>
+			<div
+				v-if="analyze_query_already_running"
+				class="mt-5 flex items-center rounded-lg border-blue-200 bg-yellow-100 p-3 text-sm text-gray-800"
+			>
+				There already is a query that is being analyzed for this site. Please
+				wait while it completes.
+			</div>
 			<div v-if="optimizable === true">
-				<h2 class="font-semibold">Suggested Index</h2> 
+				<h2 class="font-semibold">Suggested Index</h2>
 				<div
 					class="mt-2 space-y-1 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
-				><div class="flex">
-					<p class="font-semibold">Table: </p> <span >{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[0] }}</span>
-
+				>
+					<div class="flex">
+						<p class="font-semibold">Table:</p>
+						<span>{{
+							this.$resources.getSuggestedIndex.data.suggested_index.split(
+								'.'
+							)[0]
+						}}</span>
+					</div>
+					<div class="flex">
+						<p class="font-semibold">Column:</p>
+						<span>{{
+							this.$resources.getSuggestedIndex.data.suggested_index.split(
+								'.'
+							)[1]
+						}}</span>
+					</div>
 				</div>
-				<div class="flex">
-					<p class="font-semibold">Column: </p> <span>{{ this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1] }}</span>
-
-				</div>
-			</div>
 			</div>
 			<div
 				v-if="optimizable === false"
@@ -45,9 +54,15 @@
 				No query index suggestions available. Try adding indexes manually.
 			</div>
 		</template>
-		<template v-if="$site.doc?.version === 'Version 14'" #actions>
+		<template
+			v-if="
+				!analyze_query_already_running &&
+				(shouldShowAnalyzeQueryButton() || optimizable)
+			"
+			#actions
+		>
 			<Button
-				v-if="!optimizable"
+				v-if="shouldShowAnalyzeQueryButton()"
 				class="w-full"
 				:variant="'solid'"
 				theme="gray"
@@ -97,6 +112,7 @@ export default {
 			show: true,
 			analyze_button: false,
 			optimizable: null,
+			analyze_query_already_running: true
 		};
 	},
 	computed: {
@@ -108,46 +124,60 @@ export default {
 		applySuggestion() {
 			toast.promise(this.$resources.applySuggested.submit(), {
 				loading: 'Scheduling add database index job...',
-				success: s =>{
-
+				success: s => {
 					this.show = false;
-					this.$router.push(({name: 'Site Detail Jobs',params:{ name: this.siteName}}))
+					this.$router.push({
+						name: 'Site Detail Jobs',
+						params: { name: this.siteName }
+					});
 					return 'The job to add a database index has been sucessfully created.';
-
 				},
 				error: e => {
 					return e.messages.length ? e.messages.join('\n') : e.message;
 				}
 			});
+		},
+		shouldShowAnalyzeQueryButton() {
+			if (this.analyze_query_already_running) {
+				return;
+			}
+
+			if (this.optimizable == false) {
+				return false;
+			}
+			if (this.optimizable == true) {
+				return false;
+			}
+			return true;
 		}
 	},
 	resources: {
 		analyzeQuery() {
 			return {
-				url: 'press.api.analytics.mariadb_analyze_query',
+				url: 'press.api.dboptimize.mariadb_analyze_query',
 				makeParams() {
 					return {
-						rows: [
-							{
-								query: this.query,
-								count: this.count,
-								duration: this.duration,
-								rows_examined: this.rows_examined,
-								rows_sent: this.rows_sent,
-								example: this.example
-							}
-						],
+						row: {
+							query: this.query,
+							count: this.count,
+							duration: this.duration,
+							rows_examined: this.rows_examined,
+							rows_sent: this.rows_sent,
+							example: this.example
+						},
 						name: this.siteName
 					};
 				},
 				onSuccess(data) {
 					this.analyze_button = false;
-					data = data[0];
-					if (!data.suggested_index) {
+					if (data == 'Running') {
 						this.optimizable = false;
+						toast.success('Query is being analysed in the background');
 					} else {
 						this.optimizable = true;
+						toast.error('Analaysis on query could not be performed');
 					}
+					this.show = false;
 				},
 				beforeSubmit(params) {
 					this.analyze_button = true;
@@ -166,13 +196,57 @@ export default {
 					return {
 						name: this.siteName,
 						table:
-							this.$resources.analyzeQuery.data[0].suggested_index.split(
+							this.$resources.getSuggestedIndex.data.suggested_index.split(
 								'.'
 							)[0],
 						column:
-							this.$resources.analyzeQuery.data[0].suggested_index.split('.')[1]
+							this.$resources.getSuggestedIndex.data.suggested_index.split(
+								'.'
+							)[1]
+					};
+				}
+			};
+		},
+		mariadbAnalyzeQueryAlreadyRunningForSite() {
+			return {
+				url: 'press.api.dboptimize.mariadb_analyze_query_already_running_for_site',
+				auto: true,
+				makeParams() {
+					return {
+						name: this.siteName
 					};
 				},
+				onSuccess(data) {
+					if (data) {
+						this.analyze_query_already_running = true;
+					} else {
+						this.analyze_query_already_running = false;
+					}
+				}
+			};
+		},
+		getSuggestedIndex() {
+			return {
+				url: 'press.api.dboptimize.get_suggested_index',
+				auto: true,
+				makeParams() {
+					return {
+						name: this.siteName,
+						normalized_query: this.query
+					};
+				},
+				onSuccess(data) {
+					try {
+						if (
+							data.suggested_index == null ||
+							data.suggested_index.length == 0
+						) {
+							this.optimizable = false;
+						} else {
+							this.optimizable = true;
+						}
+					} catch (error) {}
+				}
 			};
 		}
 	}

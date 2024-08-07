@@ -37,6 +37,7 @@
 </template>
 
 <script>
+import { DashboardError } from '../utils/error';
 import AddressForm from './AddressForm.vue';
 import { toast } from 'vue-sonner';
 
@@ -101,7 +102,9 @@ export default {
 					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
 					var billingNameValid = billingNameRegex.test(billing_name);
 					if (!billingNameValid) {
-						return 'Billing Name contains invalid characters';
+						throw new DashboardError(
+							'Billing Name contains invalid characters'
+						);
 					}
 					this.billingInformation.billing_name = billing_name;
 					return this.$refs['address-form'].validateValues();

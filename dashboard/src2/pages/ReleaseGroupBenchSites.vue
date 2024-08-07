@@ -3,13 +3,13 @@
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
-			:options="{ title: 'Apps', size: '3xl' }"
+			:options="{
+				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
+				size: '6xl'
+			}"
 		>
 			<template #body-content>
-				<div class="mb-4 text-base font-medium">
-					{{ $releaseGroup.getAppVersions.params.args.bench }}
-				</div>
-				<GenericList :options="appVersionOptions" />
+				<ObjectList :options="appVersionOptions" />
 			</template>
 		</Dialog>
 	</div>
@@ -21,7 +21,6 @@ import {
 	Tooltip,
 	createDocumentResource
 } from 'frappe-ui';
-import GenericList from '../components/GenericList.vue';
 import ObjectList from '../components/ObjectList.vue';
 import Badge from '@/components/global/Badge.vue';
 import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
@@ -35,7 +34,7 @@ import ActionButton from '../components/ActionButton.vue';
 export default {
 	name: 'ReleaseGroupBenchSites',
 	props: ['releaseGroup'],
-	components: { GenericList, ObjectList },
+	components: { ObjectList },
 	data() {
 		return {
 			showAppVersionDialog: false,
@@ -254,7 +253,7 @@ export default {
 						type: 'Badge'
 					}
 				],
-				data: this.$releaseGroup.getAppVersions.data
+				data: () => this.$releaseGroup.getAppVersions.data
 			};
 		},
 		$releaseGroup() {

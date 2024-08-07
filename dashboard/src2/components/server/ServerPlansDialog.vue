@@ -15,7 +15,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<div class="mt-2 mb-4 w-full space-y-2">
+			<div class="mb-4 mt-2 w-full space-y-2">
 				<div class="grid grid-cols-2 gap-3">
 					<button
 						v-for="c in [
@@ -115,12 +115,15 @@ export default {
 				{
 					onSuccess: () => {
 						this.show = false;
-						let plan = (serverPlans.data || []).find(
+
+						const plan = this.$resources.serverPlans.data.find(
 							plan => plan.name === this.$server.doc.plan
 						);
-						let formattedPlan = plan
+
+						const formattedPlan = plan
 							? `${this.$format.planTitle(plan)}/mo`
 							: this.$server.doc.plan;
+
 						this.$toast.success(`Plan changed to ${formattedPlan}`);
 					}
 				}

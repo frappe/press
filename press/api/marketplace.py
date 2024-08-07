@@ -153,8 +153,13 @@ def get_install_app_options(marketplace_app: str):
 
 			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
+	app_plans = get_plans_for_app(marketplace_app)
+
+	if not [plan for plan in app_plans if plan["price_inr"] > 0 or plan["price_usd"] > 0]:
+		app_plans = []
+
 	return {
-		"plans": get_plans_for_app(marketplace_app),
+		"plans": app_plans,
 		"private_site_plan": private_site_plan,
 		"public_site_plan": public_site_plan,
 		"is_app_featured": is_app_approved,
@@ -558,7 +563,7 @@ def get_marketplace_apps_for_onboarding() -> List[Dict]:
 	return frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "description"],
-		filters={"show_for_first_site_creation": True, "status": "Published"},
+		filters={"show_for_site_creation": True, "status": "Published"},
 	)
 
 
@@ -1073,7 +1078,12 @@ def subscriptions():
 def branches(name):
 	from press.api.github import branches as git_branches
 
-	app_source = frappe.get_doc("App Source", name)
+	app_source = frappe.db.get_value(
+		"App Source",
+		name,
+		["github_installation_id", "repository_owner", "repository"],
+		as_dict=True,
+	)
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
@@ -1090,16 +1100,18 @@ def change_branch(name, source, version, to_branch):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def options_for_version(name, source):
+def options_for_version(name):
 	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
 	added_versions = frappe.get_all(
 		"Marketplace App Version", {"parent": name}, pluck="version"
 	)
-	branchesList = branches(source)
+	app = frappe.db.get_value("Marketplace App", name, "app")
+	source = frappe.get_value("App Source", {"app": app, "team": get_current_team()})
+	branches_list = branches(source)
 	versions = list(set(frappe_version).difference(set(added_versions)))
-	branchesList = [branch["name"] for branch in branchesList]
+	branches_list = [branch["name"] for branch in branches_list]
 
-	return [{"version": version, "branch": branchesList} for version in versions]
+	return [{"version": version, "branch": branches_list} for version in versions]
 
 
 @protected("Marketplace App")

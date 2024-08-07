@@ -393,8 +393,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="filebeat.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"log_server": log_server,
@@ -417,8 +417,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="ping.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -437,8 +437,8 @@ class BaseServer(Document, TagHelpers):
 					"agent_repository_branch": self.get_agent_repository_branch(),
 				},
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -826,7 +826,7 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(playbook="glass_file.yml", server=self)
 			ansible.run()
 		except Exception:
-			log_error("Add Glass File Exception", server=self.as_dict())
+			log_error("Add Glass File Exception", doc=self)
 
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
@@ -846,7 +846,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Increase swap exception", server=self.as_dict())
+			log_error("Increase swap exception", doc=self)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -860,7 +860,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("MySQLdump Setup Exception", server=self.as_dict())
+			log_error("MySQLdump Setup Exception", doc=self)
 
 	@frappe.whitelist()
 	def set_swappiness(self):
@@ -874,7 +874,20 @@ class BaseServer(Document, TagHelpers):
 			)
 			ansible.run()
 		except Exception:
-			log_error("Swappiness Setup Exception", server=self.as_dict())
+			log_error("Swappiness Setup Exception", doc=self)
+
+	def update_filebeat(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_filebeat")
+
+	def _update_filebeat(self):
+		try:
+			ansible = Ansible(
+				playbook="filebeat_update.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Filebeat Update Exception", doc=self)
 
 	@frappe.whitelist()
 	def update_tls_certificate(self):
@@ -1066,6 +1079,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		agent.reload_nginx()
+
+	def _ssh_user(self):
+		if not hasattr(self, "ssh_user"):
+			return "root"
+		return self.ssh_user or "root"
+
+	def _ssh_port(self):
+		if not hasattr(self, "ssh_port"):
+			return 22
+		return self.ssh_port or 22
 
 
 class Server(BaseServer):
@@ -1277,8 +1300,8 @@ class Server(BaseServer):
 				if getattr(self, "is_self_hosted", False)
 				else "server.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
@@ -1318,8 +1341,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="standalone.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"domain": self.domain,
@@ -1391,8 +1414,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="agent_set_proxy_ip.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"proxy_ip": proxy_ip,
@@ -1559,8 +1582,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="rename.yml",
 				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or 22,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,

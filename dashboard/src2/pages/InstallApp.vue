@@ -201,7 +201,7 @@ import { Breadcrumbs, debounce } from 'frappe-ui';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
 import { DashboardError } from '../utils/error';
-import { validateSubdomain } from '@/utils.js';
+import { validateSubdomain } from '../utils/site';
 
 export default {
 	name: 'InstallApp',
@@ -240,7 +240,7 @@ export default {
 					this.$resources.subdomainExists.submit();
 				}
 			}, 500)
-		},
+		}
 	},
 	resources: {
 		app() {
@@ -268,7 +268,7 @@ export default {
 				},
 				async onSuccess() {
 					this.cluster = await this.getClosestCluster();
-					if(this.$resources.installAppOptions.data?.plans.length > 0){
+					if (this.$resources.installAppOptions.data?.plans.length > 0) {
 						this.selectedPlan = this.$resources.installAppOptions.data.plans[0];
 					}
 				}
@@ -312,7 +312,7 @@ export default {
 								  }
 								: null,
 							cluster: this.cluster,
-							bench: this.regions.find(r => r.name === this.cluster).bench,
+							bench: this.regions.find(r => r.name === this.cluster)?.bench,
 							group: this.selectedGroup?.value,
 							subscription_plan: this.selectedGroup
 								? this.options.private_site_plan
@@ -391,7 +391,7 @@ export default {
 			return this.$resources.installAppOptions.data;
 		},
 		plans() {
-			if(!this.$resources?.installAppOptions) return [];
+			if (!this.$resources?.installAppOptions) return [];
 			return this.options.plans.map(plan => ({
 				...plan,
 				label:

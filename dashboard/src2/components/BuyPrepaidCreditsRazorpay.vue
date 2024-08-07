@@ -14,10 +14,14 @@
 			<Button
 				variant="solid"
 				:loading="$resources.createRazorpayOrder.loading"
+				v-if="!isPaymentComplete"
 				@click="buyCreditsWithRazorpay"
 			>
 				Proceed to payment using Razorpay
 			</Button>
+			<Button v-else variant="solid" :loading="isVerifyingPayment"
+				>Confirming payment</Button
+			>
 		</div>
 	</div>
 </template>
@@ -33,7 +37,16 @@ export default {
 		},
 		minimumAmount: {
 			default: 0
+		},
+		isOnboarding: {
+			default: false
 		}
+	},
+	data() {
+		return {
+			isPaymentComplete: false,
+			isVerifyingPayment: false
+		};
 	},
 	mounted() {
 		this.razorpayCheckoutJS = document.createElement('script');
@@ -85,10 +98,8 @@ export default {
 				prefill: {
 					email: this.$team.doc.user
 				},
-				theme: { color: '#171717' },
-				handler: () => {
-					this.$emit('success');
-				}
+				handler: this.handlePaymentSuccess,
+				theme: { color: '#171717' }
 			};
 
 			const rzp = new Razorpay(options);
@@ -98,14 +109,31 @@ export default {
 
 			// Attach failure handler
 			rzp.on('payment.failed', this.handlePaymentFailed);
-			rzp.on('payment.success', this.handlePaymentSuccess);
+			// rzp.on('payment.success', this.handlePaymentSuccess);
 		},
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
 			toast.error('Payment failed');
 		},
-		handlePaymentSuccess(response) {
-			toast.success('Payment successful');
+		handlePaymentSuccess() {
+			this.isPaymentComplete = true;
+			if (this.isOnboarding) {
+				console.log('Onboarding');
+				this.checkForOnboardingPaymentCompletion();
+			} else {
+				this.$emit('success');
+				toast.success('Payment successful');
+			}
+		},
+		async checkForOnboardingPaymentCompletion() {
+			this.isVerifyingPayment = true;
+			await this.$team.reload();
+			if (!this.$team.doc.payment_mode) {
+				setTimeout(this.checkForOnboardingPaymentCompletion, 2000);
+			} else {
+				this.isVerifyingPayment = false;
+				this.$emit('success');
+			}
 		}
 	},
 	beforeUnmount() {

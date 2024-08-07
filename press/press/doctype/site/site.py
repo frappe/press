@@ -92,7 +92,6 @@ class Site(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_config.site_config import SiteConfig
@@ -100,6 +99,7 @@ class Site(Document, TagHelpers):
 		_keys_removed_in_last_update: DF.Data | None
 		_site_usages: DF.Data | None
 		account_request: DF.Link | None
+		additional_system_user_created: DF.Check
 		admin_password: DF.Password | None
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
@@ -185,6 +185,7 @@ class Site(Document, TagHelpers):
 		"server",
 		"host_name",
 		"skip_auto_updates",
+		"additional_system_user_created",
 	]
 
 	@staticmethod
@@ -227,6 +228,9 @@ class Site(Document, TagHelpers):
 		doc.version = group.version
 		doc.group_team = group.team
 		doc.group_public = group.public or group.central_bench
+		doc.latest_frappe_version = frappe.db.get_value(
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
@@ -296,7 +300,7 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			self._set_latest_bench()
+			self.set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
@@ -464,7 +468,7 @@ class Site(Document, TagHelpers):
 			"Pending",
 			"Archived",
 			"Suspended",
-		] and self.has_value_changed("subdomain"):
+		] and (self.has_value_changed("subdomain") or self.has_value_changed("domain")):
 			self.rename(self._get_site_name(self.subdomain))
 
 		# Telemetry: Send event if first site status changed to Active
@@ -524,7 +528,7 @@ class Site(Document, TagHelpers):
 		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.standby_for_product:
+		if self.standby_for_product or self.standby_for:
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
 			job = agent.rename_site(self, new_name, create_user)
@@ -575,7 +579,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def install_app(self, app, plan=None):
+	def install_app(self, app: str, plan: str | None = None) -> str:
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
 			if not is_free:
@@ -589,23 +593,25 @@ class Site(Document, TagHelpers):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App", app)
 			agent = Agent(self.server)
-			agent.install_app_site(self, app)
+			job = agent.install_app_site(self, app)
 			self.status = "Pending"
 			self.save()
 
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
-		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(
-				self.name, app, plan, self.team
-			)
+			if plan:
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan, self.team
+				)
+
+			return job.name
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app):
+	def uninstall_app(self, app: str) -> str:
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
-		agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app)
 		self.status = "Pending"
 		self.save()
 
@@ -624,6 +630,8 @@ class Site(Document, TagHelpers):
 		)
 		if marketplace_app_name and app_subscription:
 			frappe.db.set_value("Subscription", app_subscription, "enabled", 0)
+
+		return job.name
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
@@ -699,7 +707,7 @@ class Site(Document, TagHelpers):
 		)
 		space_for_download = db_size + public_size + private_size
 		space_for_extracted_files = (
-			0 if self.is_version_14_or_higher() else (8 * db_size) + public_size + private_size
+			(0 if self.is_version_14_or_higher() else (8 * db_size)) + public_size + private_size
 		)  # 8 times db size for extraction; estimated
 		return space_for_download + space_for_extracted_files
 
@@ -737,7 +745,11 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			agent.new_site(self)
+			if (self.standby_for_product or self.standby_for) and self.account_request:
+				# if standby site, rename site and create first user for trial signups
+				agent.new_site(self, create_user=self.get_user_details())
+			else:
+				agent.new_site(self)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -1265,12 +1277,29 @@ class Site(Document, TagHelpers):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
 
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def login_as_team(self, reason=None):
+		if self.additional_system_user_created:
+			team_user = frappe.db.get_value("Team", self.team, "user")
+			sid = self.get_login_sid(user=team_user)
+			return f"https://{self.host_name or self.name}/desk?sid={sid}"
+		else:
+			frappe.throw("No additional system user created for this site")
+
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
+	def create_user_with_team_info(self):
+		team_user = frappe.db.get_value("Team", self.team, "user")
+		user = frappe.get_doc("User", team_user)
+		return self.create_user(user.email, user.first_name, user.last_name)
+
 	def create_user(self, email, first_name, last_name, password=None):
+		if self.additional_system_user_created:
+			return
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
@@ -1463,7 +1492,11 @@ class Site(Document, TagHelpers):
 			return
 
 		setup_complete = cint(value["setup_complete"])
-		self.setup_wizard_complete = setup_complete
+		if not setup_complete:
+			return False
+
+		self.reload()
+		self.setup_wizard_complete = 1
 
 		if self.team == "Administrator":
 			user = frappe.db.get_value("Account Request", self.account_request, "email")
@@ -1854,14 +1887,25 @@ class Site(Document, TagHelpers):
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):
-		user_email = frappe.db.get_value("Team", self.team, "user")
-		user = frappe.db.get_value(
-			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
-		)
+		if (
+			frappe.db.get_value("Team", self.team, "user") == "Administrator"
+			and self.account_request
+		):
+			ar = frappe.get_doc("Account Request", self.account_request)
+			user_email = ar.email
+			user_first_name = ar.first_name
+			user_last_name = ar.last_name
+		else:
+			user_email = frappe.db.get_value("Team", self.team, "user")
+			user = frappe.db.get_value(
+				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
+			)
+			user_first_name = user.first_name
+			user_last_name = user.last_name
 		return {
 			"email": user_email,
-			"first_name": user.first_name,
-			"last_name": user.last_name,
+			"first_name": user_first_name or "",
+			"last_name": user_last_name or "",
 		}
 
 	def setup_erpnext(self):
@@ -1913,7 +1957,7 @@ class Site(Document, TagHelpers):
 	def get_plan_config(self, plan=None):
 		return get_plan_config(self.get_plan_name(plan))
 
-	def _set_latest_bench(self):
+	def set_latest_bench(self):
 		from pypika.terms import PseudoColumn
 
 		if not (self.domain and self.cluster and self.group):
@@ -2599,6 +2643,12 @@ def process_new_site_job_update(job):
 
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
+	if job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
+
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2787,6 +2837,12 @@ def process_rename_site_job_update(job):
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
+	if job.job_type == "Rename Site" and job.status == "Success":
+		request_data = json.loads(job.request_data)
+		if "create_user" in request_data:
+			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+			frappe.db.commit()
+
 	try:
 		other_job = frappe.get_last_doc(
 			"Agent Job",
@@ -2892,6 +2948,12 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_create_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
+		frappe.db.commit()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
