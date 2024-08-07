@@ -745,8 +745,10 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			if (self.standby_for_product or self.standby_for) and not self.is_standby :
-				self.flags.new_site_agent_job_name = agent.new_site(self, create_user=self.get_user_details()).name
+			if (self.standby_for_product or self.standby_for) and not self.is_standby:
+				self.flags.new_site_agent_job_name = agent.new_site(
+					self, create_user=self.get_user_details()
+				).name
 			else:
 				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
@@ -2651,27 +2653,39 @@ def process_new_site_job_update(job):
 			frappe.db.commit()
 
 	# Update in product trial request
-	if job.job_type in ("New Site", "Add Site to Upstream") and updated_status in ("Active", "Broken"):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
+	if job.job_type in ("New Site", "Add Site to Upstream") and updated_status in (
+		"Active",
+		"Broken",
+	):
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active"
+		)
 
 
 def update_product_trial_request_status_based_on_site_status(site, is_site_active):
-		records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
-		if not records:
-			return
-		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
-		if is_site_active:
-			mode = frappe.get_value("Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode")
-			if mode != "auto":
-				product_trial_request.status = "Site Created"
-			else:
-				product_trial_request.status = "Completing Setup Wizard"
-				product_trial_request.save(ignore_permissions=True)
-				product_trial_request.reload()
-				product_trial_request.complete_setup_wizard()
+	records = frappe.get_list(
+		"Product Trial Request", filters={"site": site}, fields=["name"]
+	)
+	if not records:
+		return
+	product_trial_request = frappe.get_doc(
+		"Product Trial Request", records[0].name, for_update=True
+	)
+	if is_site_active:
+		mode = frappe.get_value(
+			"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
+		)
+		if mode != "auto":
+			product_trial_request.status = "Site Created"
 		else:
-			product_trial_request.status = "Error"
+			product_trial_request.status = "Completing Setup Wizard"
 			product_trial_request.save(ignore_permissions=True)
+			product_trial_request.reload()
+			product_trial_request.complete_setup_wizard()
+	else:
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2902,6 +2916,7 @@ def process_rename_site_job_update(job):
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
 
 def process_add_proxysql_user_job_update(job):
 	if job.status == "Success":
