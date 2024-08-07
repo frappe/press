@@ -21,14 +21,13 @@
 				:options="paymentModeOptions"
 				v-model="paymentMode"
 			/>
-			<p class="mb-5 mt-2 text-base text-gray-600">
+			<p class="mb-5 mt-2 text-sm text-gray-600">
 				{{ paymentModeDescription }}
 			</p>
 			<ErrorMessage
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
 			/>
-			{{ $resources.changePaymentMode.error }}
 		</template>
 	</Dialog>
 	<BillingInformationDialog
@@ -57,13 +56,10 @@ export default {
 	emits: ['update:modelValue'],
 	components: {
 		BillingInformationDialog: defineAsyncComponent(() =>
-			import('@/components/BillingInformationDialog.vue')
+			import('./billing/BillingInformationDialog.vue')
 		),
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
-			import('../components/BuyPrepaidCreditsDialog.vue')
-		),
-		PrepaidCreditsDialog: defineAsyncComponent(() =>
-			import('@/components/PrepaidCreditsDialog.vue')
+			import('./BuyPrepaidCreditsDialog.vue')
 		)
 	},
 	data() {
