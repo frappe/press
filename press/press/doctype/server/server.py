@@ -1022,15 +1022,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 	@cached_property
 	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
 		return int(
-			max(
-				50,
-				min(
+			min(
+				self.auto_add_storage_max or 250,
+				max(
+					self.auto_add_storage_min or 50,
 					abs(self.disk_capacity - self.space_available_in_6_hours * 5)
 					/ 4
 					/ 1024
 					/ 1024
 					/ 1024,
-					250,
 				),
 			)
 		)
@@ -1076,11 +1076,11 @@ class Server(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
-		auto_add_storage_step: DF.Int
+		auto_add_storage_max: DF.Int
+		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
