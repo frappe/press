@@ -27,13 +27,14 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
+		auto_add_storage_max: DF.Int
+		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None

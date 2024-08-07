@@ -29,7 +29,11 @@ from frappe.utils import (
 	time_diff_in_hours,
 )
 
-from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
+from press.exceptions import (
+	CannotChangePlan,
+	InsufficientSpaceOnServer,
+	VolumeResizeLimitError,
+)
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -62,6 +66,7 @@ from press.press.doctype.site_analytics.site_analytics import create_site_analyt
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import (
 	convert,
+	fmt_timedelta,
 	get_client_blacklisted_keys,
 	get_current_team,
 	guess_type,
@@ -76,6 +81,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server.server import BaseServer
 
 
 class Site(Document, TagHelpers):
@@ -462,7 +468,7 @@ class Site(Document, TagHelpers):
 			"Pending",
 			"Archived",
 			"Suspended",
-		] and self.has_value_changed("subdomain"):
+		] and (self.has_value_changed("subdomain") or self.has_value_changed("domain")):
 			self.rename(self._get_site_name(self.subdomain))
 
 		# Telemetry: Send event if first site status changed to Active
@@ -710,22 +716,29 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def check_enough_space_on_server(self):
-		app: "Server" = frappe.get_doc("Server", self.server)
-		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-		app_server_free_space = app.free_space
-		db_server_free_space = db.free_space
-		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
+	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+		if (diff := server.free_space - space_required) <= 0:
+			msg = f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+			if server.public:
+				self.try_increasing_disk(server, diff, msg)
+			else:
+				frappe.throw(msg, InsufficientSpaceOnServer)
+
+	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
+		try:
+			server.calculated_increase_disk_size(diff / 1024 / 1024 // 1024)
+		except VolumeResizeLimitError:
 			frappe.throw(
-				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
+				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
 				InsufficientSpaceOnServer,
 			)
 
-		if (diff := db_server_free_space - self.space_required_on_db_server) <= 0:
-			frappe.throw(
-				f"Insufficient estimated space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db_server_free_space)} (Need {human_readable(abs(diff))})",
-				InsufficientSpaceOnServer,
-			)
+	def check_enough_space_on_server(self):
+		app: "Server" = frappe.get_doc("Server", self.server)
+		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+
+		self.check_and_increase_disk(app, self.space_required_on_app_server)
+		self.check_and_increase_disk(db, self.space_required_on_db_server)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -1892,8 +1905,8 @@ class Site(Document, TagHelpers):
 			user_last_name = user.last_name if (user and user.last_name) else ""
 		return {
 			"email": user_email,
-			"first_name": user_first_name,
-			"last_name": user_last_name,
+			"first_name": user_first_name or "",
+			"last_name": user_last_name or "",
 		}
 
 	def setup_erpnext(self):

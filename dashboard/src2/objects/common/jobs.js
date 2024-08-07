@@ -32,7 +32,7 @@ export function jobTab(doctype) {
 			},
 			orderBy: 'creation desc',
 			searchField: 'job_type',
-			fields: ['end'],
+			fields: ['end', 'job_id'],
 			filterControls() {
 				return [
 					{
@@ -71,11 +71,6 @@ export function jobTab(doctype) {
 					fieldname: 'site',
 					width: 1.2,
 					condition: () => doctype !== 'Site'
-				},
-				{
-					label: 'Job ID',
-					fieldname: 'job_id',
-					width: 0.25
 				},
 				{
 					label: 'Duration',

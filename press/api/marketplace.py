@@ -1106,7 +1106,7 @@ def options_for_version(name):
 		"Marketplace App Version", {"parent": name}, pluck="version"
 	)
 	app = frappe.db.get_value("Marketplace App", name, "app")
-	source = frappe.get_value("App Source", {"app": app})
+	source = frappe.get_value("App Source", {"app": app, "team": get_current_team()})
 	branches_list = branches(source)
 	versions = list(set(frappe_version).difference(set(added_versions)))
 	branches_list = [branch["name"] for branch in branches_list]
