@@ -46,7 +46,7 @@
 	</div>
 </template>
 <script>
-import StripeLogo from './components/icons/StripeLogo.vue';
+import StripeLogo from './icons/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../utils/error';
