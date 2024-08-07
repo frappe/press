@@ -224,7 +224,7 @@ let router = createRouter({
 		{
 			path: '/:pathMatch(.*)*',
 			name: '404',
-			component: () => import('../src/views/general/404.vue')
+			component: () => import('./pages/404.vue')
 		}
 	]
 });
