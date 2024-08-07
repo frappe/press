@@ -60,7 +60,7 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str]:
+	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str, bool]:
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
@@ -72,7 +72,7 @@ class ProductTrial(Document):
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
 			site.save(ignore_permissions=True)
-			agent_job_name = site.flags.get("rename_site_agent_job_name", None)
+			agent_job_name = None
 			site.create_subscription(plan)
 		else:
 			# Create a site in the cluster, if standby site is not available
@@ -106,7 +106,9 @@ class ProductTrial(Document):
 				"app_include_js": ["https://devfc.tanmoysrt.xyz/saas/subscription.js"], # TODO: change this to frappecloud.com
 			}
 		)
-		return site, agent_job_name
+		if standby_site:
+			agent_job_name = site.create_user_with_team_info()
+		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
 		clusters = self.get_available_clusters()

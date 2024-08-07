@@ -1281,7 +1281,7 @@ class Site(Document, TagHelpers):
 	def create_user_with_team_info(self):
 		team_user = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.get_doc("User", team_user)
-		return self.create_user(user.email, user.first_name, user.last_name)
+		return self.create_user(user.email, user.first_name or "", user.last_name or "")
 
 	def create_user(self, email, first_name, last_name, password=None):
 		if self.additional_system_user_created:
@@ -2638,16 +2638,16 @@ def process_new_site_job_update(job):
 			frappe.db.commit()
 
 	# Update in product trial request
-	if job.job_type in ("New Site", "Add Site to Upstream"):
-		update_product_trial_request_status_based_on_site_status(job.site, updated_status)
+	if job.job_type in ("New Site", "Add Site to Upstream") and updated_status in ("Active", "Broken"):
+		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
 
 
-def update_product_trial_request_status_based_on_site_status(site, status):
+def update_product_trial_request_status_based_on_site_status(site, is_site_active):
 		records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 		if not records:
 			return
 		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
-		if status == "Active":
+		if is_site_active:
 			mode = frappe.get_value("Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode")
 			if mode != "auto":
 				product_trial_request.status = "Site Created"
@@ -2656,12 +2656,9 @@ def update_product_trial_request_status_based_on_site_status(site, status):
 				product_trial_request.save(ignore_permissions=True)
 				product_trial_request.reload()
 				product_trial_request.complete_setup_wizard()
-		elif status == "Broken":
+		else:
 			product_trial_request.status = "Error"
 			product_trial_request.save(ignore_permissions=True)
-		
-		if status in ("Active", "Broken"):
-			frappe.db.commit()
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2893,10 +2890,6 @@ def process_rename_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
-	# Update in product trial request
-	update_product_trial_request_status_based_on_site_status(job.site, updated_status)
-
-
 def process_add_proxysql_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "is_database_access_enabled", True)
@@ -2969,7 +2962,9 @@ def process_restore_tables_job_update(job):
 def process_create_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-		frappe.db.commit()
+		update_product_trial_request_status_based_on_site_status(job.site, True)
+	elif job.status in ("Failure", "Delivery Failure"):
+		update_product_trial_request_status_based_on_site_status(job.site, False)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

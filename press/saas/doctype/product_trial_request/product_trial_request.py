@@ -5,6 +5,7 @@ import json
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
+import math
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.site.site import Site
@@ -107,10 +108,9 @@ class ProductTrialRequest(Document):
 		self.signup_details = json.dumps(signup_values)
 		self.validate_signup_fields()
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
-		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
+		site, agent_job_name, _ = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
-		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 
 	def get_user_details(self):
@@ -139,7 +139,7 @@ class ProductTrialRequest(Document):
 		if status == "Success":
 			if self.status == "Site Created":
 				return {"progress": 100}
-			return {"progress": 90, "current_step": "Completing Setup Wizard"}
+			return {"progress": 90, "current_step": self.status}
 		elif status == "Running":
 			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
 			steps = frappe.db.get_all(
@@ -153,8 +153,7 @@ class ProductTrialRequest(Document):
 			if mode == "auto":
 				steps_count += 1
 			progress = (len(done) / steps_count) * 100
-			if progress <= current_progress:
-				progress = current_progress
+			progress = max(progress, current_progress)
 			current_running_step = ""
 			for step in steps:
 				if step.status == "Running":
