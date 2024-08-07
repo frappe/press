@@ -268,7 +268,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			next({ name: 'Login' });
+			if (to.name == 'NewAppTrial') {
+				next({
+					name: 'Login',
+					query: { product: to.params.productId }
+				});
+			} else {
+				next({ name: 'Login' });
+			}
 		}
 	}
 });

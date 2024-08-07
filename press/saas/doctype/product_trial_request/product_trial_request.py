@@ -2,10 +2,11 @@
 # For license information, please see license.txt
 
 import json
+import urllib.parse
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
-import math
+import urllib
 
 from press.api.client import dashboard_whitelist
 from press.press.doctype.site.site import Site
@@ -26,7 +27,14 @@ class ProductTrialRequest(Document):
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
-		status: DF.Literal["Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"]
+		status: DF.Literal[
+			"Pending",
+			"Wait for Site",
+			"Completing Setup Wizard",
+			"Site Created",
+			"Error",
+			"Expired",
+		]
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -50,34 +58,47 @@ class ProductTrialRequest(Document):
 			"Reload NGINX": "Finalizing Site",
 			"Disable Maintenance Mode": "Finalizing Site",
 			"Enable Scheduler": "Just a moment",
-		}
+		},
 	}
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
-		data = frappe.get_value("Product Trial", self.product_trial, ["setup_wizard_completion_mode", "setup_wizard_payload_generator_script"], as_dict=True)
+		data = frappe.get_value(
+			"Product Trial",
+			self.product_trial,
+			["setup_wizard_completion_mode", "setup_wizard_payload_generator_script"],
+			as_dict=True,
+		)
 		if data.setup_wizard_completion_mode != "auto":
-			frappe.throw("In manual Setup Wizard Completion Mode, the payload cannot be generated")
+			frappe.throw(
+				"In manual Setup Wizard Completion Mode, the payload cannot be generated"
+			)
 		if not data.setup_wizard_payload_generator_script:
 			return {}
 		signup_details = json.loads(self.signup_details)
-		team_details = frappe.get_value("Team", self.team, ["name", "user", "country", "currency"], as_dict=True)
+		team_details = frappe.get_value(
+			"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
+		)
 		team_user = frappe.get_doc("User", team_details.user)
 		try:
 			_locals = {
-				"team": frappe._dict({
-					"name": team_details.name,
-					"user": frappe._dict({
-						"email": team_user.email,
-						"full_name": team_user.full_name or "",
-						"first_name": team_user.first_name or "",
-						"last_name": team_user.last_name or "",
-					}),
-					"country": team_details.country,
-					"currency": team_details.currency
-				}),
+				"team": frappe._dict(
+					{
+						"name": team_details.name,
+						"user": frappe._dict(
+							{
+								"email": team_user.email,
+								"full_name": team_user.full_name or "",
+								"first_name": team_user.first_name or "",
+								"last_name": team_user.last_name or "",
+							}
+						),
+						"country": team_details.country,
+						"currency": team_details.currency,
+					}
+				),
 				"signup_details": frappe._dict(signup_details),
-				"payload": frappe._dict()
+				"payload": frappe._dict(),
 			}
 			safe_exec(
 				data.setup_wizard_payload_generator_script,
@@ -111,7 +132,9 @@ class ProductTrialRequest(Document):
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 		self.reload()
-		site, agent_job_name, _ = product.setup_trial_site(self.team, product.trial_plan, cluster)
+		site, agent_job_name, _ = product.setup_trial_site(
+			self.team, product.trial_plan, cluster
+		)
 		self.agent_job = agent_job_name
 		self.site = site.name
 		self.save(ignore_permissions=True)
@@ -144,7 +167,9 @@ class ProductTrialRequest(Document):
 				return {"progress": 100}
 			return {"progress": 90, "current_step": self.status}
 		elif status == "Running":
-			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
+			mode = frappe.get_value(
+				"Product Trial", self.product_trial, "setup_wizard_completion_mode"
+			)
 			steps = frappe.db.get_all(
 				"Agent Job Step",
 				filters={"agent_job": job_name},
@@ -160,26 +185,31 @@ class ProductTrialRequest(Document):
 			current_running_step = ""
 			for step in steps:
 				if step.status == "Running":
-					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(step.step_name, step.step_name)
+					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(
+						step.step_name, step.step_name
+					)
 					break
-			return {"progress": progress+0.1, "current_step": current_running_step}
+			return {"progress": progress + 0.1, "current_step": current_running_step}
 		elif self.status == "Error":
 			return {"progress": current_progress, "error": True}
 		else:
 			# If agent job is undelivered, pending
-			return {"progress": current_progress+0.1}
-		
+			return {"progress": current_progress + 0.1}
+
 	def complete_setup_wizard(self):
 		frappe.enqueue_doc(
 			"Product Trial Request",
 			self.name,
 			method="_complete_setup_wizard",
 			timeout=600,
-			enqueue_after_commit=True
+			enqueue_after_commit=True,
 		)
-		
+
 	def _complete_setup_wizard(self):
-		if frappe.get_value("Product Trial Request", self.name, "status") != "Completing Setup Wizard":
+		if (
+			frappe.get_value("Product Trial Request", self.name, "status")
+			!= "Completing Setup Wizard"
+		):
 			return
 		data = self.get_setup_wizard_payload()
 		retry = 0
@@ -188,9 +218,10 @@ class ProductTrialRequest(Document):
 			try:
 				site: "Site" = frappe.get_doc("Site", self.site)
 				client = site.get_connection_as_admin()
-				response = client.post_api("frappe.desk.page.setup_wizard.setup_wizard.setup_complete", {
-					"args": json.dumps(data) 
-				})
+				response = client.post_api(
+					"frappe.desk.page.setup_wizard.setup_wizard.setup_complete",
+					{"args": json.dumps(data)},
+				)
 				if response["status"] == "ok":
 					frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
 					frappe.db.commit()
@@ -203,3 +234,21 @@ class ProductTrialRequest(Document):
 					break
 			finally:
 				retry += 1
+
+
+def get_app_trial_page_url():
+	referer = frappe.request.headers.get("referer", "")
+	if not referer:
+		return None
+	try:
+		# parse the referer url
+		site = urllib.parse.urlparse(referer).hostname
+		print(site)
+		# check if any product trial request exists for the site
+		product_trial_name = frappe.db.get_value(
+			"Product Trial Request", {"site": site}, "product_trial"
+		)
+		if product_trial_name:
+			return f"/dashboard/app-trial/{product_trial_name}"
+	except Exception:
+		return None
