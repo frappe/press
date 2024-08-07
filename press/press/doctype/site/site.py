@@ -732,8 +732,7 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			if self.standby_for_product or self.standby_for :
-				# if standby site, rename site and create first user for trial signups
+			if (self.standby_for_product or self.standby_for) and not self.is_standby :
 				self.flags.new_site_agent_job_name = agent.new_site(self, create_user=self.get_user_details()).name
 			else:
 				self.flags.new_site_agent_job_name = agent.new_site(self).name

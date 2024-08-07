@@ -190,6 +190,9 @@ class ProductTrial(Document):
 
 	def create_standby_site(self, cluster):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
+		apps = [{"app": d.app} for d in self.apps]
+		if "frappe" not in apps:
+			apps.insert(0, {"app": "frappe"})
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
@@ -199,9 +202,9 @@ class ProductTrial(Document):
 			is_standby=True,
 			standby_for_product=self.name,
 			team=administrator,
-			apps=[{"app": d.app} for d in self.apps],
+			apps=apps,
 		)
-		site.insert()
+		site.insert(ignore_permissions=True)
 
 	def get_standby_sites_count(self, cluster):
 		active_standby_sites = frappe.db.count(
