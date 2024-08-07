@@ -813,7 +813,7 @@ def get_site_request(product):
 	).run(as_dict=1)
 	if requests:
 		site_request = requests[0]
-		site_request.is_pending = (not site_request.site) or site_request.status in ["Pending", "Wait for Site", "Error"]
+		site_request.is_pending = (not site_request.site) or site_request.status in ["Pending", "Wait for Site", "Completing Setup Wizard" ,"Error"]
 	else:
 		site_request = frappe.new_doc(
 			"Product Trial Request",

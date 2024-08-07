@@ -190,6 +190,8 @@ class ProductTrialRequest(Document):
 				})
 				if response["status"] == "ok":
 					frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
+					frappe.db.commit()
+					frappe.publish_realtime("product_trial_request_update", {"name": self.name})
 				break
 			except Exception as e:
 				if retry >= 3:

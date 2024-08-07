@@ -45,8 +45,8 @@ function get_subscription_url() {
 		frappe.boot.subscription_conf &&
 		frappe.boot.subscription_conf.app_trial
 	) {
-		return `https://devfc.tanmoysrt.xyz/dashboard/app-trial/${frappe.boot.subscription_conf.app_trial}#subscription`; // #TODOL change this to frappecloud.com
+		return `http://fc.local:8080/dashboard/app-trial/${frappe.boot.subscription_conf.app_trial}#subscription`; // #TODOL change this to frappecloud.com
 	}
 	let sitename = frappe.boot.sitename;
-	return `https://devfc.tanmoysrt.xyz/dashboard/sites/${sitename}`; // #TODOL change this to frappecloud.com
+	return `http://fc.local:8080/dashboard/sites/${sitename}`; // #TODOL change this to frappecloud.com
 }

@@ -410,7 +410,7 @@ def get_saas_product_info(product=None):
 		filters={
 			"product_trial": product,
 			"team": team,
-			"status": ("in", ["Pending", "Wait for Site"]),
+			"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard"]),
 		},
 		fieldname=["name", "status", "site"],
 		as_dict=1,
