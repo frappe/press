@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
-from press.saas.doctype.product_trial_request.product_trial_request import (
-	get_app_trial_page_url,
-)
+
 
 from . import __version__ as app_version
 
@@ -74,7 +72,10 @@ website_route_rules = [
 
 website_redirects = [
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
-	{"source": "/suspended-site", "target": get_app_trial_page_url() or "/dashboard"},
+	{
+		"source": "/suspended-site",
+		"target": "/api/method/press.api.handle_suspended_site_redirection",
+	},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
 ]

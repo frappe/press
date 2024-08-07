@@ -243,12 +243,15 @@ def get_app_trial_page_url():
 	try:
 		# parse the referer url
 		site = urllib.parse.urlparse(referer).hostname
-		print(site)
 		# check if any product trial request exists for the site
 		product_trial_name = frappe.db.get_value(
 			"Product Trial Request", {"site": site}, "product_trial"
 		)
 		if product_trial_name:
+			# Check site status
+			# site_status = frappe.db.get_value("Site", site, "status")
+			# if site_status in ("Active", "Inactive", "Suspended"):
 			return f"/dashboard/app-trial/{product_trial_name}"
-	except Exception:
+	except Exception as e:
+		frappe.log_error(title="App Trial Page URL Error")
 		return None
