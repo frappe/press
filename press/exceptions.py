@@ -23,3 +23,7 @@ class MissingAppsInBench(ValidationError):
 
 class InsufficientSpaceOnServer(ValidationError):
 	pass
+
+
+class VolumeResizeLimitError(ValidationError):
+	pass

@@ -25,6 +25,8 @@
   "team",
   "column_break_11",
   "plan",
+  "auto_add_storage_min",
+  "auto_add_storage_max",
   "networking_section",
   "ip",
   "column_break_3",
@@ -505,10 +507,26 @@
    "fieldtype": "Check",
    "label": "Use For Build",
    "search_index": 1
+  },
+  {
+   "default": "50",
+   "description": "Minimum storage to add automatically each time",
+   "fieldname": "auto_add_storage_min",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Min",
+   "non_negative": 1
+  },
+  {
+   "default": "250",
+   "description": "Maximum storage to add automatically each time",
+   "fieldname": "auto_add_storage_max",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Max",
+   "non_negative": 1
   }
  ],
  "links": [],
- "modified": "2024-07-03 10:27:53.851194",
+ "modified": "2024-08-07 11:29:39.496368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
