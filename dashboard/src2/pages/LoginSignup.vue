@@ -209,7 +209,7 @@
 
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
-import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
+import GoogleIconSolid from '../components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { toast } from 'vue-sonner';
 
