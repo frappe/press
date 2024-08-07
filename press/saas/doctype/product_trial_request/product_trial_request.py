@@ -89,7 +89,7 @@ class ProductTrialRequest(Document):
 			frappe.log_error(title="Product Trial Reqeust Setup Wizard Payload Generation Error")
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
-	def validate(self):
+	def validate_signup_fields(self):
 		signup_values = json.loads(self.signup_details)
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 		# Validate signup values
@@ -105,6 +105,7 @@ class ProductTrialRequest(Document):
 		if not signup_values:
 			signup_values = {}
 		self.signup_details = json.dumps(signup_values)
+		self.validate_signup_fields()
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
