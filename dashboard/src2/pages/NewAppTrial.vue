@@ -56,70 +56,10 @@
 							<!-- Site Details -->
 							<div v-if="siteRequest?.is_pending === false">
 								<div>
-									<div class="text-base text-gray-900">
+									<!-- <div class="text-base text-gray-900">
 										You have already created this {{ saasProduct.title }} site :
-									</div>
-									<!-- Site -->
-									<div
-										class="mt-2 overflow-hidden whitespace-nowrap py-2.5 text-base"
-									>
-										<!-- Site name -->
-										<p
-											class="block font-medium text-gray-900 focus:outline-none"
-											target="_blank"
-										>
-											{{ siteRequest?.site }}
-										</p>
-										<!-- Action Buttons -->
-										<div
-											class="mt-3 flex w-full flex-row justify-between gap-2"
-										>
-											<Button
-												variant="outline"
-												iconLeft="external-link"
-												:link="`https://${siteRequest?.site}`"
-												:disabled="siteRequest?.site_status !== 'Active'"
-											>
-												Visit Site</Button
-											>
-											<Button
-												variant="outline"
-												iconLeft="user"
-												@click="() => loginAsTeam(siteRequest?.site)"
-												:disabled="
-													(loginAsTeamInProgressInSite &&
-														loginAsTeamInProgressInSite !==
-															siteRequest?.site) ||
-													siteRequest?.site_status !== 'Active'
-												"
-												:loading="
-													loginAsTeamInProgressInSite === siteRequest?.site
-												"
-												loadingText="Logging in ..."
-											>
-												Login as team</Button
-											>
-											<Button
-												variant="outline"
-												iconLeft="info"
-												:link="`/dashboard/sites/${siteRequest?.site}/overview`"
-											>
-												Manage</Button
-											>
-										</div>
-										<div class="mt-3 flex flex-row items-center text-base">
-											<i-lucide-alert-triangle
-												v-if="siteRequest?.is_trial_plan"
-												:class="{
-													'h-4 w-4 text-red-600': isTrialEnded(
-														siteRequest?.trial_end_date
-													),
-													'h-4 w-4 text-amber-600': !isTrialEnded(
-														siteRequest?.trial_end_date
-													)
-												}"
-											/>
-											<p
+									</div> -->
+									<!-- <p
 												v-if="siteRequest?.is_trial_plan"
 												class="ms-1"
 												:class="{
@@ -147,18 +87,82 @@
 												class="ms-auto"
 											>
 												Subscribe Now
-											</Button>
-											<Badge
-												v-else
-												class="ms-auto"
-												label="Subscribed"
-												theme="green"
-												>Subscribed</Badge
+											</Button> -->
+									<AlertBanner
+										:type="
+											isTrialEnded(siteRequest?.trial_end_date)
+												? `error`
+												: `warning`
+										"
+										class="col-span-1 lg:col-span-2"
+										:title="trialDays(siteRequest?.trial_end_date)"
+										v-if="
+											!isBillingDetailsSet ||
+											!isPaymentModeSet ||
+											siteRequest?.is_trial_plan
+										"
+									>
+										<Button
+											class="ml-auto"
+											variant="outline"
+											@click="subscribeNow"
+										>
+											Subscribe
+										</Button>
+									</AlertBanner>
+									<!-- Site -->
+									<div
+										class="mt-2 overflow-hidden whitespace-nowrap py-2.5 text-base"
+									>
+										<!-- Site name -->
+										<p
+											class="block font-medium text-gray-900 focus:outline-none"
+											target="_blank"
+										>
+											{{ siteRequest?.site }}
+										</p>
+										<!-- Action Buttons -->
+										<div
+											class="mt-3 flex w-full flex-row justify-between gap-2"
+										>
+											<Button
+												class="w-1/2"
+												variant="outline"
+												iconLeft="external-link"
+												:link="`https://${siteRequest?.site}`"
+												:disabled="siteRequest?.site_status !== 'Active'"
 											>
+												Visit Site</Button
+											>
+											<Button
+											class="w-1/2"
+												variant="outline"
+												iconLeft="user"
+												@click="() => loginAsTeam(siteRequest?.site)"
+												:disabled="
+													(loginAsTeamInProgressInSite &&
+														loginAsTeamInProgressInSite !==
+															siteRequest?.site) ||
+													siteRequest?.site_status !== 'Active'
+												"
+												:loading="
+													loginAsTeamInProgressInSite === siteRequest?.site
+												"
+												loadingText="Logging in ..."
+											>
+												Login as team</Button
+											>
+											<!-- <Button
+												variant="outline"
+												iconLeft="info"
+												:link="`/dashboard/sites/${siteRequest?.site}/overview`"
+											>
+												Manage</Button
+											> -->
 										</div>
 									</div>
 									<!-- Redirect to FC -->
-									<Button class="mt-5 w-full" link="/">
+									<Button class="mt-3 w-full" link="/">
 										Visit Frappe Cloud dashboard
 									</Button>
 								</div>
