@@ -346,7 +346,8 @@ export default {
 			closestCluster: null,
 			loginAsTeamInProgressInSite: null,
 			showAppTrialSubscriptionDialog: false,
-			signupValues: {}
+			signupValues: {},
+			isCalledRedirection: false
 		};
 	},
 	resources: {
@@ -409,6 +410,7 @@ export default {
 						onSuccess(data) {
 							this.progressErrorCount += 1;
 							if (data.progress == 100) {
+								this.isCalledRedirection = true;
 								this.$resources.siteRequest.getLoginSid.fetch();
 							} else if (
 								!(
@@ -425,6 +427,7 @@ export default {
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(data) {
+							if (this.isCalledRedirection) return
 							let sid = data;
 							let loginURL = `https://${this.$resources.siteRequest.doc.site}/desk?sid=${sid}`;
 							window.open(loginURL, '_blank');
