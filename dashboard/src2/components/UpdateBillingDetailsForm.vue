@@ -22,9 +22,9 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
 import { DashboardError } from '../utils/error';
 import AddressForm from './AddressForm.vue';
-import { notify } from '@/utils/toast.js';
 
 export default {
 	name: 'UpdateBillingDetailsForm',
@@ -80,9 +80,7 @@ export default {
 					};
 				},
 				onSuccess() {
-					notify({
-						title: 'Address updated successfully!'
-					});
+					toast.success('Address updated successfully!');
 					this.$emit('updated');
 				},
 				validate() {
