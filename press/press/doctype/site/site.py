@@ -577,44 +577,15 @@ class Site(Document, TagHelpers):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def install_app(self, app: str, plan: str | None = None) -> str:
+	def install_marketplace_conf(self, app: str, plan: str | None = None):
+		marketplace_app_hook(app=app, site=self.name, op="install")
+
 		if plan:
-			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
-			if not is_free:
-				if not frappe.local.team().can_install_paid_apps():
-					frappe.throw(
-						"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
-					)
+			MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 
-					# TODO: check if app is available and can be installed
-
-		if not find(self.apps, lambda x: x.app == app):
-			log_site_activity(self.name, "Install App", app)
-			agent = Agent(self.server)
-			job = agent.install_app_site(self, app)
-			self.status = "Pending"
-			self.save()
-
-			marketplace_app_hook(app=app, site=self.name, op="install")
-
-			if plan:
-				MarketplaceAppPlan.create_marketplace_app_subscription(
-					self.name, app, plan, self.team
-				)
-
-			return job.name
-
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def uninstall_app(self, app: str) -> str:
-		log_site_activity(self.name, "Uninstall App")
-		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
-		self.status = "Pending"
-		self.save()
-
+	def uninstall_marketplace_conf(self, app: str):
 		marketplace_app_hook(app=app, site=self.name, op="uninstall")
 
 		# disable marketplace plan if it exists
@@ -630,6 +601,44 @@ class Site(Document, TagHelpers):
 		)
 		if marketplace_app_name and app_subscription:
 			frappe.db.set_value("Subscription", app_subscription, "enabled", 0)
+
+	def check_marketplace_app_installable(self, plan: str | None = None):
+		if not plan:
+			return
+		if not frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0:
+			if not frappe.local.team().can_install_paid_apps():
+				frappe.throw(
+					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+				)
+
+				# TODO: check if app is available and can be installed
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def install_app(self, app: str, plan: str | None = None) -> str:
+		self.check_marketplace_app_installable(plan)
+
+		if find(self.apps, lambda x: x.app == app):
+			return
+
+		log_site_activity(self.name, "Install App", app)
+		agent = Agent(self.server)
+		job = agent.install_app_site(self, app)
+		self.status = "Pending"
+		self.save()
+		self.install_marketplace_conf(app, plan)
+
+		return job.name
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def uninstall_app(self, app: str) -> str:
+		log_site_activity(self.name, "Uninstall App")
+		agent = Agent(self.server)
+		job = agent.uninstall_app_site(self, app)
+		self.status = "Pending"
+		self.save()
+		self.uninstall_marketplace_conf(app)
 
 		return job.name
 
