@@ -2638,6 +2638,31 @@ def process_new_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 			frappe.db.commit()
 
+	# Update in product trial request
+	if job.job_type in ("New Site", "Add Site to Upstream"):
+		update_product_trial_request_status_based_on_site_status(job.site, updated_status)
+
+
+def update_product_trial_request_status_based_on_site_status(site, status):
+		records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
+		if not records:
+			return
+		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+		if status == "Active":
+			mode = frappe.get_value("Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode")
+			if mode != "auto":
+				product_trial_request.status = "Site Created"
+			else:
+				product_trial_request.status = "Completing Setup Wizard"
+				product_trial_request.save(ignore_permissions=True)
+				product_trial_request.reload()
+				product_trial_request.complete_setup_wizard()
+		elif status == "Broken":
+			product_trial_request.status = "Error"
+			product_trial_request.save(ignore_permissions=True)
+		
+		if status in ("Active", "Broken"):
+			frappe.db.commit()
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2868,6 +2893,9 @@ def process_rename_site_job_update(job):
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+	# Update in product trial request
+	update_product_trial_request_status_based_on_site_status(job.site, updated_status)
 
 
 def process_add_proxysql_user_job_update(job):

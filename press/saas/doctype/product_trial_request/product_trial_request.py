@@ -89,11 +89,8 @@ class ProductTrialRequest(Document):
 			frappe.log_error(title="Product Trial Reqeust Setup Wizard Payload Generation Error")
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
-	@dashboard_whitelist()
-	def create_site(self, cluster=None, signup_values=None):
-		if not signup_values:
-			signup_values = {}
-
+	def validate(self):
+		signup_values = json.loads(self.signup_details)
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 		# Validate signup values
 		for field in product.signup_fields:
@@ -102,7 +99,13 @@ class ProductTrialRequest(Document):
 					frappe.throw(f"Required field {field.label} is missing")
 				else:
 					signup_values[field.fieldname] = None
+
+	@dashboard_whitelist()
+	def create_site(self, cluster=None, signup_values=None):
+		if not signup_values:
+			signup_values = {}
 		self.signup_details = json.dumps(signup_values)
+		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 		site, agent_job_name = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
@@ -133,18 +136,9 @@ class ProductTrialRequest(Document):
 			["name", "status", "job_type"],
 		)
 		if status == "Success":
-			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
-			if mode != "auto":
-				frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
+			if self.status == "Site Created":
 				return {"progress": 100}
-			else:
-				if self.status == "Site Created":
-					return {"progress": 100}
-				elif self.status != "Completing Setup Wizard":
-					self.status = "Completing Setup Wizard"
-					self.complete_setup_wizard()
-					self.save(ignore_permissions=True)
-				return {"progress": 90, "current_step": "Completing Setup Wizard"}
+			return {"progress": 90, "current_step": "Completing Setup Wizard"}
 		elif status == "Running":
 			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
 			steps = frappe.db.get_all(
@@ -165,13 +159,12 @@ class ProductTrialRequest(Document):
 				if step.status == "Running":
 					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(step.step_name, step.step_name)
 					break
-			return {"progress": progress, "current_step": current_running_step}
-		elif status == "Failure" or status == "Delivery Failure":
-			frappe.db.set_value("Product Trial Request", self.name, "status", "Error")
+			return {"progress": progress+0.1, "current_step": current_running_step}
+		elif self.status == "Error":
 			return {"progress": current_progress, "error": True}
 		else:
 			# If agent job is undelivered, pending
-			return {"progress": current_progress}
+			return {"progress": current_progress+0.1}
 		
 	def complete_setup_wizard(self):
 		frappe.enqueue_doc(
@@ -186,14 +179,22 @@ class ProductTrialRequest(Document):
 		if frappe.get_value("Product Trial Request", self.name, "status") != "Completing Setup Wizard":
 			return
 		data = self.get_setup_wizard_payload()
-		try:
-			site: "Site" = frappe.get_doc("Site", self.site)
-			client = site.get_connection_as_admin()
-			response = client.post_api("frappe.desk.page.setup_wizard.setup_wizard.setup_complete", {
-				"args": json.dumps(data) 
-			})
-			if response["status"] == "ok":
-				frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
-		except Exception as e:
-			frappe.log_error(title="Product Trial Request Setup Wizard Completion Error")
-			frappe.throw(f"Failed to complete Setup Wizard: {e}")
+		retry = 0
+		# Retry 3 times before failing
+		while True:
+			try:
+				site: "Site" = frappe.get_doc("Site", self.site)
+				client = site.get_connection_as_admin()
+				response = client.post_api("frappe.desk.page.setup_wizard.setup_wizard.setup_complete", {
+					"args": json.dumps(data) 
+				})
+				if response["status"] == "ok":
+					frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
+				break
+			except Exception as e:
+				if retry >= 3:
+					frappe.log_error(title="Product Trial Request Setup Wizard Completion Error")
+					frappe.throw(f"Failed to complete Setup Wizard: {e}")
+					break
+			finally:
+				retry += 1
