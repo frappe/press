@@ -1888,8 +1888,8 @@ class Site(Document, TagHelpers):
 			user = frappe.db.get_value(
 				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
 			)
-			user_first_name = user.first_name or ""
-			user_last_name = user.last_name or ""
+			user_first_name = user.first_name if (user and user.first_name) else ""
+			user_last_name = user.last_name if (user and user.last_name) else ""
 		return {
 			"email": user_email,
 			"first_name": user_first_name,
