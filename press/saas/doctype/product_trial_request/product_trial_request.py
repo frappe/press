@@ -108,6 +108,9 @@ class ProductTrialRequest(Document):
 		self.signup_details = json.dumps(signup_values)
 		self.validate_signup_fields()
 		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
+		self.status = "Wait for Site"
+		self.save(ignore_permissions=True)
+		self.reload()
 		site, agent_job_name, _ = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
