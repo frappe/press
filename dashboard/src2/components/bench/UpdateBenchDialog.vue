@@ -101,9 +101,9 @@
 <script>
 import { h } from 'vue';
 import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
-import CommitChooser from '@/components/utils/CommitChooser.vue';
-import CommitTag from '@/components/utils/CommitTag.vue';
-import GenericList from '../../components/GenericList.vue';
+import CommitChooser from '../CommitChooser.vue';
+import CommitTag from '../CommitTag.vue';
+import GenericList from '../GenericList.vue';
 import { getTeam } from '../../data/team';
 import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
