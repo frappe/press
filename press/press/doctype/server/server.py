@@ -1036,9 +1036,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
 		return int(
 			min(
-				self.auto_add_storage_max or 250,
+				self.auto_add_storage_max,
 				max(
-					self.auto_add_storage_min or 50,
+					self.auto_add_storage_min,
 					abs(self.disk_capacity - self.space_available_in_6_hours * 5)
 					/ 4
 					/ 1024
