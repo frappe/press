@@ -1,331 +1,225 @@
 {
- "category": "Modules",
  "charts": [],
- "creation": "2020-03-13 12:00:25.244955",
- "developer_mode_only": 0,
- "disable_user_customization": 0,
+ "content": "[{\"id\":\"zYUVFJZX-t\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Frappe Cloud</span>\",\"col\":12}},{\"id\":\"VFzeFzlnB5\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"iNJ8WoS9kD\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Sites</b></span>\",\"col\":12}},{\"id\":\"EYeJrbXv1P\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Active Sites\",\"col\":3}},{\"id\":\"7jAM0HBrde\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Broken Sites\",\"col\":3}},{\"id\":\"ttO5vXfzL_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pending Sites\",\"col\":3}},{\"id\":\"nvLoQ_N15n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Suspended Sites\",\"col\":3}},{\"id\":\"AVO8JCkksy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"aLqo1uNPYu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Benches</b></span>\",\"col\":12}},{\"id\":\"BcJPVEkRcy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Active Benches\",\"col\":3}},{\"id\":\"PhHBf-f1ej\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Broken Benches\",\"col\":3}},{\"id\":\"JJB6cOEiXy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"7a18ugroq8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Servers</b></span>\",\"col\":12}},{\"id\":\"M3urSE6cor\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Application Server\",\"col\":3}},{\"id\":\"5qOJXl1CkE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Database Server\",\"col\":3}},{\"id\":\"PWrCW7DruI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Proxy Server\",\"col\":3}},{\"id\":\"_GVOmg7C_U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Hybrid Servers\",\"col\":3}},{\"id\":\"XHWA0NCImO\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"X1dteEUHoR\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Settings</b></span>\",\"col\":12}},{\"id\":\"eeEbYjVj_n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Press Settings\",\"col\":3}},{\"id\":\"EiWS2tWYwu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Root Domain\",\"col\":3}},{\"id\":\"EoLO5YYzdR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Tls Certificate\",\"col\":3}},{\"id\":\"-Jx1Irf-28\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Team\",\"col\":3}},{\"id\":\"n-T0ehr2ca\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"xZEclbenJQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"P6nCUrJreH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"App\",\"col\":3}},{\"id\":\"1kAyHtrIrJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"App Source\",\"col\":3}},{\"id\":\"-N-Xb5MVPV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"App Release\",\"col\":3}},{\"id\":\"ND9oElFB7R\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"0DYlbnEtOT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Subscription</b></span>\",\"col\":12}},{\"id\":\"eddRzzqwSZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Server Plan\",\"col\":3}},{\"id\":\"GYk3Frsy1L\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Site Plan\",\"col\":3}},{\"id\":\"o_aDSbQlPf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Subscription\",\"col\":3}},{\"id\":\"VZSHmE1jzA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Invoice\",\"col\":3}},{\"id\":\"B8T-3IZ8Qg\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"WDyzNHuOas\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operations</b></span>\",\"col\":12}},{\"id\":\"Ziby8rOfsU\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent Job\",\"col\":3}},{\"id\":\"Vm4Tn0dxiD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ansible Play\",\"col\":3}},{\"id\":\"n6VE51hPkc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Press Job\",\"col\":3}}]",
+ "creation": "2024-07-30 18:43:18.421196",
+ "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
- "extends_another_page": 0,
+ "for_user": "",
  "hide_custom": 0,
- "icon": "setting-gear",
+ "icon": "tool",
  "idx": 0,
- "is_default": 0,
- "is_standard": 1,
+ "indicator_color": "",
+ "is_hidden": 1,
  "label": "Press",
- "links": [
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site",
-   "link_to": "Site",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site Activity",
-   "link_to": "Site Activity",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site Update",
-   "link_to": "Site Update",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site Backup",
-   "link_to": "Site Backup",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site Domain",
-   "link_to": "Site Domain",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site Usage",
-   "link_to": "Site Usage",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Payments",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Invoice",
-   "link_to": "Invoice",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Payment Ledger Entry",
-   "link_to": "Payment Ledger Entry",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Plan",
-   "link_to": "Plan",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Infrastructure",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Server",
-   "link_to": "Server",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Database Server",
-   "link_to": "Database Server",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Proxy Server",
-   "link_to": "Proxy Server",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Bench",
-   "link_to": "Bench",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Site",
-   "link_to": "Site",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Apps",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "App",
-   "link_to": "App",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Release Group",
-   "link_to": "Release Group",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "App Release",
-   "link_to": "App Release",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "App Tag",
-   "link_to": "App Tag",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "GitHub Webhook Log",
-   "link_to": "GitHub Webhook Log",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Teams",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Team",
-   "link_to": "Team",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Account Request",
-   "link_to": "Account Request",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Updates",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deploy",
-   "link_to": "Deploy",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deploy Candidate Difference",
-   "link_to": "Deploy Candidate Difference",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Settings",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Press Settings",
-   "link_to": "Press Settings",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  }
- ],
- "modified": "2021-05-24 12:44:58.237352",
+ "links": [],
+ "modified": "2024-08-02 16:33:40.351403",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press",
+ "number_cards": [],
  "owner": "Administrator",
- "pin_to_bottom": 0,
- "pin_to_top": 1,
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 28.0,
  "shortcuts": [
   {
-   "doc_view": "",
-   "label": "Active Servers",
-   "link_to": "Server",
-   "stats_filter": "{\"status\": \"Active\"}",
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Root Domain",
+   "link_to": "Root Domain",
+   "stats_filter": "[]",
    "type": "DocType"
   },
   {
-   "doc_view": "",
-   "label": "Database Servers",
-   "link_to": "Database Server",
-   "stats_filter": "{\"status\": \"Active\"}",
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Agent Job",
+   "link_to": "Agent Job",
+   "stats_filter": "[]",
    "type": "DocType"
   },
   {
-   "doc_view": "",
-   "label": "Proxy Servers",
-   "link_to": "Proxy Server",
-   "stats_filter": "{\"status\": \"Active\"}",
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Server Plan",
+   "link_to": "Server Plan",
+   "stats_filter": "[[\"Server Plan\",\"enabled\",\"=\",1,false]]",
    "type": "DocType"
   },
   {
-   "label": "Active Benches",
-   "link_to": "Bench",
-   "stats_filter": "{\"status\": \"Active\"}",
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Ansible Play",
+   "link_to": "Ansible Play",
+   "stats_filter": "[]",
    "type": "DocType"
   },
   {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Team",
+   "link_to": "Team",
+   "stats_filter": "[[\"Team\",\"enabled\",\"=\",1,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Press Job",
+   "link_to": "Press Job",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "",
    "label": "Active Sites",
    "link_to": "Site",
-   "stats_filter": "{\"status\": \"Active\"}",
+   "stats_filter": "[[\"Site\",\"status\",\"=\",\"Active\",false]]",
    "type": "DocType"
   },
   {
-   "label": "Pending Jobs",
-   "link_to": "Agent Job",
-   "stats_filter": "{\"status\": [\"in\", [\"Running\", \"Pending\"]]}",
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Site Plan",
+   "link_to": "Site Plan",
+   "stats_filter": "[[\"Site Plan\",\"enabled\",\"=\",1,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Active Benches",
+   "link_to": "Bench",
+   "stats_filter": "[[\"Bench\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Subscription",
+   "link_to": "Subscription",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Tls Certificate",
+   "link_to": "TLS Certificate",
+   "stats_filter": "[[\"TLS Certificate\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Invoice",
+   "link_to": "Invoice",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "format": "",
+   "label": "Broken Sites",
+   "link_to": "Site",
+   "stats_filter": "[[\"Site\",\"status\",\"=\",\"Broken\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Broken Benches",
+   "link_to": "Bench",
+   "stats_filter": "[[\"Bench\",\"status\",\"=\",\"Broken\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "App",
+   "link_to": "App",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "List",
+   "format": "",
+   "label": "Pending Sites",
+   "link_to": "Site",
+   "stats_filter": "[[\"Site\",\"status\",\"=\",\"Pending\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Application Server",
+   "link_to": "Server",
+   "stats_filter": "[[\"Server\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "App Source",
+   "link_to": "App Source",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
+   "label": "Suspended Sites",
+   "link_to": "Site",
+   "stats_filter": "[[\"Site\",\"status\",\"=\",\"Suspended\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Database Server",
+   "link_to": "Database Server",
+   "stats_filter": "[[\"Database Server\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "App Release",
+   "link_to": "App Release",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Proxy Server",
+   "link_to": "Proxy Server",
+   "stats_filter": "[[\"Proxy Server\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Hybrid Servers",
+   "link_to": "Self Hosted Server",
+   "stats_filter": "[[\"Self Hosted Server\",\"status\",\"=\",\"Active\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Press Settings",
+   "link_to": "Press Settings",
    "type": "DocType"
   }
- ]
+ ],
+ "title": "Press"
 }
