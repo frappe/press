@@ -220,12 +220,18 @@ export default {
 	computed: {
 		appOwner() {
 			if (this.tabIndex === 0) {
-				return this.githubAppLink.split('/')[3];
+				const urlParts = this.githubAppLink.split('/');
+				if (urlParts.length < 4) return;
+
+				return urlParts[3];
 			}
 		},
 		appName() {
 			if (this.tabIndex === 0) {
-				return this.githubAppLink.split('/')[4].replace('.git', '');
+				const urlParts = this.githubAppLink.split('/');
+				if (urlParts.length < 5) return;
+
+				return urlParts[4].replace('.git', '');
 			}
 		},
 		branchOptions() {
