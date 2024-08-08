@@ -2762,6 +2762,18 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def process_marketplace_hooks_for_backup_restore(
+	apps_from_backup: set[str], site: Site
+):
+	site_apps = set([app.app for app in site.apps])
+	apps_to_install = apps_from_backup - site_apps
+	apps_to_uninstall = site_apps - apps_from_backup
+	for app in apps_to_install:
+		marketplace_app_hook(app=app, site=site.name, op="install")
+	for app in apps_to_uninstall:
+		marketplace_app_hook(app=app, site=site.name, op="uninstall")
+
+
 def process_restore_job_update(job, force=False):
 	"""
 	force: force updates apps table sync
@@ -2777,11 +2789,14 @@ def process_restore_job_update(job, force=False):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if force or updated_status != site_status:
 		if job.status == "Success":
-			apps: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site = frappe.get_doc("Site", job.site)
+			apps_from_backup: list[str] = [
+				line.split()[0] for line in job.output.splitlines() if line
+			]
+			site = Site(job.site)
+			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.apps = []
 			bench_apps = frappe.get_doc("Bench", site.bench).apps
-			for app in apps:
+			for app in apps_from_backup:
 				if not find(bench_apps, lambda x: x.app == app):
 					continue
 				site.append("apps", {"app": app})
