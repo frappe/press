@@ -311,6 +311,8 @@ def update_app_image() -> str:
 
 	validate_app_image_dimensions(file_content)
 
+	file_content = convert_to_webp(file_content)
+
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
@@ -319,7 +321,7 @@ def update_app_image() -> str:
 			"attached_to_name": app_name,
 			"attached_to_field": "image",
 			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
+			"file_name": f"{frappe.local.uploaded_filename.split('.')[0]}.webp",
 			"is_private": 0,
 			"content": file_content,
 		}
@@ -331,6 +333,20 @@ def update_app_image() -> str:
 	return file_url
 
 
+def convert_to_webp(file_content: bytes) -> bytes:
+	from io import BytesIO
+	from PIL import Image
+
+	image_bytes = BytesIO()
+	image = Image.open(BytesIO(file_content))
+	image = image.convert("RGB")
+
+	image.save(image_bytes, "webp")
+	image_bytes = image_bytes.getvalue()
+
+	return image_bytes
+
+
 @frappe.whitelist()
 def add_app_screenshot() -> str:
 	"""Handles App Image Upload"""
@@ -338,12 +354,14 @@ def add_app_screenshot() -> str:
 	app_name = frappe.form_dict.docname
 	app_doc = frappe.get_doc("Marketplace App", app_name)
 
+	file_content = convert_to_webp(file_content)
+
 	_file = frappe.get_doc(
 		{
 			"doctype": "File",
 			"attached_to_field": "image",
 			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
+			"file_name": f"{frappe.local.uploaded_filename.split('.')[0]}.webp",
 			"is_private": 0,
 			"content": file_content,
 		}
@@ -377,7 +395,6 @@ def remove_app_screenshot(name, file):
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
 	from io import BytesIO
-
 	from PIL import Image
 
 	im = Image.open(BytesIO(file_content))
