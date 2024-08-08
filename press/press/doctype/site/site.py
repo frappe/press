@@ -487,14 +487,20 @@ class Site(Document, TagHelpers):
 		)
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
+	def set_apps(self, apps: list):
+		self.apps = []
+		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		for app in apps:
+			if not find(bench_apps, lambda x: x.app == app):
+				continue
+			self.append("apps", {"app": app})
+		self.save()
+
 	@frappe.whitelist()
 	def sync_apps(self):
 		agent = Agent(self.server)
 		apps_list = agent.get_site_apps(site=self)
-		self.apps = []
-		for app in apps_list:
-			self.append("apps", {"app": app})
-		self.save()
+		self.set_apps(apps_list)
 
 	@frappe.whitelist()
 	def retry_rename(self):
@@ -2794,13 +2800,7 @@ def process_restore_job_update(job, force=False):
 			]
 			site = Site(job.site)
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
-			site.apps = []
-			bench_apps = frappe.get_doc("Bench", site.bench).apps
-			for app in apps_from_backup:
-				if not find(bench_apps, lambda x: x.app == app):
-					continue
-				site.append("apps", {"app": app})
-			site.save()
+			site.set_apps(apps_from_backup)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
