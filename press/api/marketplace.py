@@ -312,7 +312,7 @@ def update_app_image() -> str:
 	validate_app_image_dimensions(file_content)
 
 	file_name = frappe.local.uploaded_filename
-	if frappe.local.uploaded_filename.split(".")[-1] in ["png", "jpg", "jpeg"]:
+	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
 		file_content = convert_to_webp(file_content)
 		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
 
@@ -358,7 +358,7 @@ def add_app_screenshot() -> str:
 	app_doc = frappe.get_doc("Marketplace App", app_name)
 
 	file_name = frappe.local.uploaded_filename
-	if frappe.local.uploaded_filename.split(".")[-1] in ["png", "jpg", "jpeg"]:
+	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
 		file_content = convert_to_webp(file_content)
 		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
 
