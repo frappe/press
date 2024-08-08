@@ -9,6 +9,8 @@ import requests
 
 
 def execute():
+	IMAGE_FORMATS_TO_CONVERT = ["png", "jpeg", "jpg"]
+
 	def convert_to_webp(screenshot):
 		if screenshot.startswith("files") or screenshot.startswith("/files"):
 			image_content = frappe.get_doc("File", {"file_url": screenshot}).get_content()
@@ -44,20 +46,15 @@ def execute():
 	for app_name in tqdm(marketplace_app_names):
 		app = frappe.get_doc("Marketplace App", app_name)
 
-		if app.image:
+		if app.image and app.image.split(".")[-1] in IMAGE_FORMATS_TO_CONVERT:
 			app.image = convert_to_webp(app.image)
 
 		screenshots = app.screenshots
-		app.screenshots = []
 
 		for screenshot in screenshots:
-			file_url = convert_to_webp(screenshot.image)
+			if screenshot.image.split(".")[-1] not in IMAGE_FORMATS_TO_CONVERT:
+				continue
 
-			app.append(
-				"screenshots",
-				{
-					"image": file_url,
-				},
-			)
+			screenshot.image = convert_to_webp(screenshot.image)
 
 		app.save()
