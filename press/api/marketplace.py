@@ -311,6 +311,11 @@ def update_app_image() -> str:
 
 	validate_app_image_dimensions(file_content)
 
+	file_name = frappe.local.uploaded_filename
+	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
+		file_content = convert_to_webp(file_content)
+		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
+
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
@@ -319,7 +324,7 @@ def update_app_image() -> str:
 			"attached_to_name": app_name,
 			"attached_to_field": "image",
 			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
+			"file_name": file_name,
 			"is_private": 0,
 			"content": file_content,
 		}
@@ -331,6 +336,21 @@ def update_app_image() -> str:
 	return file_url
 
 
+def convert_to_webp(file_content: bytes) -> bytes:
+	from io import BytesIO
+
+	from PIL import Image
+
+	image_bytes = BytesIO()
+	image = Image.open(BytesIO(file_content))
+	image = image.convert("RGB")
+
+	image.save(image_bytes, "webp")
+	image_bytes = image_bytes.getvalue()
+
+	return image_bytes
+
+
 @frappe.whitelist()
 def add_app_screenshot() -> str:
 	"""Handles App Image Upload"""
@@ -338,12 +358,17 @@ def add_app_screenshot() -> str:
 	app_name = frappe.form_dict.docname
 	app_doc = frappe.get_doc("Marketplace App", app_name)
 
+	file_name = frappe.local.uploaded_filename
+	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
+		file_content = convert_to_webp(file_content)
+		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
+
 	_file = frappe.get_doc(
 		{
 			"doctype": "File",
 			"attached_to_field": "image",
 			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
+			"file_name": file_name,
 			"is_private": 0,
 			"content": file_content,
 		}
