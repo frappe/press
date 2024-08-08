@@ -1399,6 +1399,10 @@ def has_unsettled_invoices(team):
 	)
 
 
+def has_active_servers(team):
+	return frappe.db.exists("Server", {"status": "Active", "team": team})
+
+
 def is_us_eu():
 	"""Is the customer from U.S. or European Union"""
 	from press.utils import get_current_team
