@@ -56,7 +56,10 @@ getInitialData().then(() => {
 			dsn: window.press_dashboard_sentry_dsn,
 			integrations: [
 				Sentry.browserTracingIntegration({ router }),
-				Sentry.replayIntegration()
+				Sentry.replayIntegration({
+					maskAllText: false,
+					blockAllMedia: false
+				})
 			],
 			replaysSessionSampleRate: 0.1,
 			replaysOnErrorSampleRate: 1.0,
@@ -65,6 +68,7 @@ getInitialData().then(() => {
 					/api\/method\/press.api.client/,
 					/dynamically imported module/,
 					/NetworkError when attempting to fetch resource/,
+					/Failed to fetch/,
 					/Load failed/,
 					/Importing a module script failed./
 				];
@@ -81,8 +85,9 @@ getInitialData().then(() => {
 					error?.name === 'DashboardError' ||
 					ignoreErrorTypes.includes(error?.exc_type) ||
 					(error?.message && ignoreErrors.some(re => re.test(error.message)))
-				)
+				) {
 					return null;
+				}
 
 				return event;
 			},

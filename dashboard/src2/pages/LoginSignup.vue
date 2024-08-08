@@ -40,6 +40,7 @@
 								Reset Password
 							</Button>
 						</template>
+
 						<!-- Login Section -->
 						<template v-else-if="isLogin">
 							<FormControl
@@ -79,6 +80,7 @@
 							</Button>
 							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
+
 						<!-- Signup Section -->
 						<template v-else>
 							<FormControl
@@ -97,7 +99,8 @@
 								Sign up with email
 							</Button>
 						</template>
-						<ErrorMessage class="mt-2" :message="$resources.signup.error" />
+
+						<ErrorMessage class="mt-2" :message="error" />
 					</form>
 					<div class="flex flex-col" v-if="!hasForgotPassword && !isOauthLogin">
 						<div class="-mb-2 mt-6 border-t text-center">
@@ -370,6 +373,15 @@ export default {
 		}
 	},
 	computed: {
+		error() {
+			if (this.$resources.signup.error) {
+				return this.$resources.signup.error;
+			}
+
+			if (this.$resources.resetPassword.error) {
+				return this.$resources.resetPassword.error;
+			}
+		},
 		saasProduct() {
 			return this.$resources.signupSettings.data?.product_trial;
 		},

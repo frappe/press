@@ -201,7 +201,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPartner Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -476,7 +476,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-07-31 16:11:37.767065",
+ "modified": "2024-08-02 10:33:18.861721",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

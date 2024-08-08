@@ -67,8 +67,9 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "duration",
-   "fieldtype": "Time",
+   "fieldtype": "Duration",
    "in_list_view": 1,
    "label": "Duration",
    "read_only": 1
@@ -114,7 +115,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 19:53:33.508928",
+ "modified": "2024-08-05 16:56:46.525168",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job Step",

@@ -172,7 +172,7 @@ export default {
 					this.analyze_button = false;
 					if (data == 'Running') {
 						this.optimizable = false;
-						toast.success('Analayze query has started in the background');
+						toast.success('Query is being analysed in the background');
 					} else {
 						this.optimizable = true;
 						toast.error('Analaysis on query could not be performed');

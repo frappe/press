@@ -71,9 +71,7 @@ class Team(Document):
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
-		payment_mode: DF.Literal[
-			"", "Card", "Prepaid Credits", "Partner Credits", "Paid By Partner"
-		]
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "Paid By Partner"]
 		razorpay_enabled: DF.Check
 		referrer_id: DF.Data | None
 		security_portal_enabled: DF.Check
@@ -1399,6 +1397,10 @@ def has_unsettled_invoices(team):
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
 	)
+
+
+def has_active_servers(team):
+	return frappe.db.exists("Server", {"status": "Active", "team": team})
 
 
 def is_us_eu():

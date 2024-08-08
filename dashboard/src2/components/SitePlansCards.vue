@@ -102,6 +102,9 @@ export default {
 							value: this.$format.bytes(plan.max_storage_usage, 1, 2)
 						},
 						{
+							value: 'Product Warranty'
+						},
+						{
 							value: plan.support_included ? 'Support Included' : ''
 						},
 						{

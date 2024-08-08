@@ -325,6 +325,12 @@ export default {
 							width: '34rem'
 						}
 					],
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
+					},
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
@@ -728,6 +734,31 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
+						function getFileName(file) {
+							if (file == 'database') return 'database';
+							if (file == 'public') return 'public files';
+							if (file == 'private') return 'private files';
+							if (file == 'config') return 'config file';
+						}
+
+						function confirmDownload(backup, file) {
+							confirmDialog({
+								title: 'Download Backup',
+								message: `You will be downloading the ${getFileName(
+									file
+								)} backup of the site <b>${
+									site.doc?.host_name || site.doc?.name
+								}</b> that was created on ${date(backup.creation, 'llll')}.${
+									!backup.offsite
+										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> in your site to download the backup.<div>'
+										: ''
+								}`,
+								onSuccess() {
+									downloadBackup(backup, file);
+								}
+							});
+						}
+
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
 							if (backup.offsite) {
@@ -758,27 +789,27 @@ export default {
 									{
 										label: 'Download Database',
 										onClick() {
-											return downloadBackup(row, 'database');
+											return confirmDownload(row, 'database');
 										}
 									},
 									{
 										label: 'Download Public',
 										onClick() {
-											return downloadBackup(row, 'public');
+											return confirmDownload(row, 'public');
 										},
 										condition: () => row.public_url
 									},
 									{
 										label: 'Download Private',
 										onClick() {
-											return downloadBackup(row, 'private');
+											return confirmDownload(row, 'private');
 										},
 										condition: () => row.private_url
 									},
 									{
 										label: 'Download Config',
 										onClick() {
-											return downloadBackup(row, 'config');
+											return confirmDownload(row, 'config');
 										},
 										condition: () => row.config_file_url
 									}
@@ -916,6 +947,12 @@ export default {
 								});
 							}
 						};
+					},
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
 					}
 				}
 			},
@@ -1264,6 +1301,12 @@ export default {
 								}
 							}
 						];
+					},
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
 					}
 				}
 			},
@@ -1518,3 +1561,23 @@ export default {
 		}
 	]
 };
+
+function upsellBanner(site, title) {
+	if (!site.doc.current_plan?.private_benches && site.doc.group_public) {
+		return {
+			title: title,
+			dismissable: true,
+			id: site.name,
+			button: {
+				label: 'Upgrade Plan',
+				variant: 'outline',
+				onClick() {
+					let SitePlansDialog = defineAsyncComponent(() =>
+						import('../components/ManageSitePlansDialog.vue')
+					);
+					renderDialog(h(SitePlansDialog, { site: site.name }));
+				}
+			}
+		};
+	}
+}

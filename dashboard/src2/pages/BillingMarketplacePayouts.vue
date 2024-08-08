@@ -3,7 +3,7 @@
 		<ObjectList :options="options" />
 		<Dialog
 			v-model="payoutDialog"
-			:options="{ size: '4xl', title: showPayout?.name }"
+			:options="{ size: '6xl', title: showPayout?.name }"
 		>
 			<template #body-content>
 				<template v-if="showPayout">
