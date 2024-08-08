@@ -1963,7 +1963,7 @@ def change_group_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def clone_group(name: str = None, new_group_title: str = None, server: str = None):
+def clone_group(name: str, new_group_title: str, server: str = None):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
 	cloned_group = frappe.new_doc("Release Group")

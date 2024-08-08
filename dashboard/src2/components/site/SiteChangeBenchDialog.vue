@@ -82,7 +82,7 @@
 		<template #body-content>
 			<FormControl label="New Bench Name" v-model="newGroupTitle" />
 			<FormControl
-				v-if="$resources.serverOptions.data"
+				v-if="$resources.serverOptions.data.length > 0"
 				class="mt-4"
 				label="Select Server"
 				type="select"
@@ -178,12 +178,10 @@ export default {
 		},
 		serverOptions() {
 			return {
-				url: 'press.api.server.get_list',
-				params: {
-					team: this.$team.doc.name
-				},
+				type: 'list',
+				doctype: 'Server',
+				fields: ['name', 'title'],
 				auto: true,
-				initialData: [],
 				transform(data) {
 					return data.map(server => ({
 						label: server.title,

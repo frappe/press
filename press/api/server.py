@@ -365,11 +365,6 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 
 @frappe.whitelist()
-def get_list(team):
-	return frappe.get_all("Server", {"team": team, "status": "Active"}, ["name", "title"])
-
-
-@frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
