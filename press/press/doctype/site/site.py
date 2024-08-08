@@ -2775,9 +2775,15 @@ def process_marketplace_hooks_for_backup_restore(
 	apps_to_install = apps_from_backup - site_apps
 	apps_to_uninstall = site_apps - apps_from_backup
 	for app in apps_to_install:
-		marketplace_app_hook(app=app, site=site.name, op="install")
+		if (
+			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
+		):  # like india_compliance; no need to check subscription
+			marketplace_app_hook(app=app, site=site.name, op="install")
 	for app in apps_to_uninstall:
-		marketplace_app_hook(app=app, site=site.name, op="uninstall")
+		if (
+			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
+		):  # like india_compliance; no need to check subscription
+			marketplace_app_hook(app=app, site=site.name, op="uninstall")
 
 
 def process_restore_job_update(job, force=False):
@@ -2798,7 +2804,7 @@ def process_restore_job_update(job, force=False):
 			apps_from_backup: list[str] = [
 				line.split()[0] for line in job.output.splitlines() if line
 			]
-			site = Site(job.site)
+			site = Site("Site", job.site)
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
