@@ -1,11 +1,12 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
+from io import BytesIO
+
 import frappe
+import requests
 from PIL import Image
 from tqdm import tqdm
-from io import BytesIO
-import requests
 
 
 def execute():

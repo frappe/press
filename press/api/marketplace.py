@@ -338,6 +338,7 @@ def update_app_image() -> str:
 
 def convert_to_webp(file_content: bytes) -> bytes:
 	from io import BytesIO
+
 	from PIL import Image
 
 	image_bytes = BytesIO()
@@ -401,6 +402,7 @@ def remove_app_screenshot(name, file):
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
 	from io import BytesIO
+
 	from PIL import Image
 
 	im = Image.open(BytesIO(file_content))
