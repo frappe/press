@@ -487,14 +487,20 @@ class Site(Document, TagHelpers):
 		)
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
+	def set_apps(self, apps: list):
+		self.apps = []
+		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		for app in apps:
+			if not find(bench_apps, lambda x: x.app == app):
+				continue
+			self.append("apps", {"app": app})
+		self.save()
+
 	@frappe.whitelist()
 	def sync_apps(self):
 		agent = Agent(self.server)
 		apps_list = agent.get_site_apps(site=self)
-		self.apps = []
-		for app in apps_list:
-			self.append("apps", {"app": app})
-		self.save()
+		self.set_apps(apps_list)
 
 	@frappe.whitelist()
 	def retry_rename(self):
@@ -577,44 +583,15 @@ class Site(Document, TagHelpers):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def install_app(self, app: str, plan: str | None = None) -> str:
+	def install_marketplace_conf(self, app: str, plan: str | None = None):
+		marketplace_app_hook(app=app, site=self.name, op="install")
+
 		if plan:
-			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
-			if not is_free:
-				if not frappe.local.team().can_install_paid_apps():
-					frappe.throw(
-						"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
-					)
+			MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 
-					# TODO: check if app is available and can be installed
-
-		if not find(self.apps, lambda x: x.app == app):
-			log_site_activity(self.name, "Install App", app)
-			agent = Agent(self.server)
-			job = agent.install_app_site(self, app)
-			self.status = "Pending"
-			self.save()
-
-			marketplace_app_hook(app=app, site=self.name, op="install")
-
-			if plan:
-				MarketplaceAppPlan.create_marketplace_app_subscription(
-					self.name, app, plan, self.team
-				)
-
-			return job.name
-
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def uninstall_app(self, app: str) -> str:
-		log_site_activity(self.name, "Uninstall App")
-		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
-		self.status = "Pending"
-		self.save()
-
+	def uninstall_marketplace_conf(self, app: str):
 		marketplace_app_hook(app=app, site=self.name, op="uninstall")
 
 		# disable marketplace plan if it exists
@@ -630,6 +607,44 @@ class Site(Document, TagHelpers):
 		)
 		if marketplace_app_name and app_subscription:
 			frappe.db.set_value("Subscription", app_subscription, "enabled", 0)
+
+	def check_marketplace_app_installable(self, plan: str | None = None):
+		if not plan:
+			return
+		if not frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0:
+			if not frappe.local.team().can_install_paid_apps():
+				frappe.throw(
+					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+				)
+
+				# TODO: check if app is available and can be installed
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def install_app(self, app: str, plan: str | None = None) -> str:
+		self.check_marketplace_app_installable(plan)
+
+		if find(self.apps, lambda x: x.app == app):
+			return
+
+		log_site_activity(self.name, "Install App", app)
+		agent = Agent(self.server)
+		job = agent.install_app_site(self, app)
+		self.status = "Pending"
+		self.save()
+		self.install_marketplace_conf(app, plan)
+
+		return job.name
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def uninstall_app(self, app: str) -> str:
+		log_site_activity(self.name, "Uninstall App")
+		agent = Agent(self.server)
+		job = agent.uninstall_app_site(self, app)
+		self.status = "Pending"
+		self.save()
+		self.uninstall_marketplace_conf(app)
 
 		return job.name
 
@@ -2753,6 +2768,24 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def process_marketplace_hooks_for_backup_restore(
+	apps_from_backup: set[str], site: Site
+):
+	site_apps = set([app.app for app in site.apps])
+	apps_to_install = apps_from_backup - site_apps
+	apps_to_uninstall = site_apps - apps_from_backup
+	for app in apps_to_install:
+		if (
+			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
+		):  # like india_compliance; no need to check subscription
+			marketplace_app_hook(app=app, site=site.name, op="install")
+	for app in apps_to_uninstall:
+		if (
+			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
+		):  # like india_compliance; no need to check subscription
+			marketplace_app_hook(app=app, site=site.name, op="uninstall")
+
+
 def process_restore_job_update(job, force=False):
 	"""
 	force: force updates apps table sync
@@ -2768,15 +2801,12 @@ def process_restore_job_update(job, force=False):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if force or updated_status != site_status:
 		if job.status == "Success":
-			apps: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site = frappe.get_doc("Site", job.site)
-			site.apps = []
-			bench_apps = frappe.get_doc("Bench", site.bench).apps
-			for app in apps:
-				if not find(bench_apps, lambda x: x.app == app):
-					continue
-				site.append("apps", {"app": app})
-			site.save()
+			apps_from_backup: list[str] = [
+				line.split()[0] for line in job.output.splitlines() if line
+			]
+			site = Site("Site", job.site)
+			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
+			site.set_apps(apps_from_backup)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
