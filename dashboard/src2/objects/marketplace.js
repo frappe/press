@@ -67,11 +67,11 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					const NewAppDialog = defineAsyncComponent(() =>
+					const NewMarketplaceAppDialog = defineAsyncComponent(() =>
 						import('../components/marketplace/NewMarketplaceAppDialog.vue')
 					);
 
-					renderDialog(h(NewAppDialog));
+					renderDialog(h(NewMarketplaceAppDialog));
 				}
 			};
 		}
