@@ -71,7 +71,8 @@
 					onClick: () =>
 						$resources.cloneGroup.submit({
 							name: site,
-							new_group_title: newGroupTitle
+							new_group_title: newGroupTitle,
+							server: selectedServer
 						})
 				}
 			]
@@ -80,6 +81,14 @@
 	>
 		<template #body-content>
 			<FormControl label="New Bench Name" v-model="newGroupTitle" />
+			<FormControl
+				v-if="$resources.serverOptions.data"
+				class="mt-4"
+				label="Select Server"
+				type="select"
+				:options="$resources.serverOptions.data"
+				v-model="selectedServer"
+			/>
 			<ErrorMessage :message="$resources.cloneGroup.error" />
 		</template>
 	</Dialog>
@@ -96,7 +105,8 @@ export default {
 			targetGroup: null,
 			newGroupTitle: '',
 			skipFailingPatches: false,
-			showCloneBenchDialog: false
+			showCloneBenchDialog: false,
+			selectedServer: null
 		};
 	},
 	computed: {
@@ -163,6 +173,22 @@ export default {
 							id: data.candidate_name
 						}
 					});
+				}
+			};
+		},
+		serverOptions() {
+			return {
+				url: 'press.api.server.get_list',
+				params: {
+					team: this.$team.doc.name
+				},
+				auto: true,
+				initialData: [],
+				transform(data) {
+					return data.map(server => ({
+						label: server.title,
+						value: server.name
+					}));
 				}
 			};
 		}
