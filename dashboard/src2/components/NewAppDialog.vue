@@ -66,21 +66,7 @@
 					</div>
 					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
 						<GitHubAppSelector
-							@validateApp="
-								data => {
-									selectedBranch = {
-										label: data.branch,
-										value: data.branch
-									};
-									selectedGithubRepository = data.repository;
-									selectedGithubUser = data.selectedGithubUser;
-
-									$resources.validateApp.submit({
-										...data,
-										installation: data.selectedGithubUser.value.id
-									});
-								}
-							"
+							@validateApp="validateApp"
 							@fieldChange="appValidated = false"
 						/>
 					</div>
@@ -239,6 +225,21 @@ export default {
 				label: branch.name,
 				value: branch.name
 			}));
+		}
+	},
+	methods: {
+		validateApp(data) {
+			this.selectedBranch = {
+				label: data.branch,
+				value: data.branch
+			};
+			this.selectedGithubRepository = data.repository;
+			this.selectedGithubUser = data.selectedGithubUser;
+
+			this.$resources.validateApp.submit({
+				...data,
+				installation: data.selectedGithubUser.value.id
+			});
 		}
 	}
 };
