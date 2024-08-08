@@ -5,7 +5,7 @@
 			size: 'xl',
 			actions: [
 				{
-					label: isAppOnBench ? 'Replace App' : 'Add App',
+					label: isAppOnBench ? 'Update App' : 'Add App',
 					variant: 'solid',
 					disabled: !app || !appValidated,
 					onClick: addAppHandler
@@ -105,7 +105,7 @@
 				:show-icon="false"
 				:title="
 					`App <strong>${app.name}</strong> already exists on this Bench. ` +
-					`Clicking on Replace App will change app source to the selected one.`
+					`Clicking on Update App will change app source to the selected one.`
 				"
 				type="warning"
 			/>

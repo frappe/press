@@ -364,15 +364,15 @@ export default {
 											apps.reload();
 											releaseGroup.reload();
 										},
-										onNewApp(app, isReplacement) {
-											const loading = isReplacement
+										onNewApp(app, isUpdate) {
+											const loading = isUpdate
 												? 'Replacing App...'
 												: 'Adding App...';
 
 											toast.promise(
 												releaseGroup.addApp.submit({
 													app,
-													is_replacement: isReplacement
+													is_update: isUpdate
 												}),
 												{
 													loading,
@@ -380,7 +380,7 @@ export default {
 														apps.reload();
 														releaseGroup.reload();
 
-														if (isReplacement) {
+														if (isUpdate) {
 															return `App ${app.title} updated`;
 														}
 

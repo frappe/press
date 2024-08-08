@@ -324,9 +324,9 @@ export default {
 		}
 	},
 	methods: {
-		addAppFromGithub(app, isReplacement) {
+		addAppFromGithub(app, isUpdate) {
 			app.group = this.group.name;
-			this.$emit('newApp', app, isReplacement);
+			this.$emit('newApp', app, isUpdate);
 		},
 		addApp(row) {
 			if (!this.selectedAppSources.includes(row))

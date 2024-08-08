@@ -1103,9 +1103,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def update_source(self, source: "AppSource", is_replacement: bool = False):
+	def update_source(self, source: "AppSource", is_update: bool = False):
 		self.remove_app_if_invalid(source)
-		if is_replacement:
+		if is_update:
 			update_rg_app_source(self, source)
 		else:
 			self.append("apps", {"source": source.name, "app": source.app})
@@ -1280,7 +1280,7 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
-	def add_app(self, app, is_replacement: bool = False):
+	def add_app(self, app, is_update: bool = False):
 		if isinstance(app, str):
 			app = json.loads(app)
 
@@ -1299,7 +1299,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.team,
 			app.get("github_installation_id", None),
 		)
-		self.update_source(source, is_replacement)
+		self.update_source(source, is_update)
 
 	@dashboard_whitelist()
 	def remove_app(self, app: str):
