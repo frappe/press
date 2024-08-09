@@ -65,7 +65,8 @@ $(document).ready(function () {
 	if (
 		frappe.boot.setup_complete === 1 &&
 		!frappe.is_mobile() &&
-		frappe.boot.subscription_conf.status !== 'Subscribed'
+		frappe.boot.subscription_conf.status !== 'Subscribed' &&
+		frappe.boot.telemetry_site_age
 	) {
 		$('.layout-main-section').before($floatingBar);
 
