@@ -245,7 +245,7 @@ class Team(Document):
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
-		team = frappe.get_doc(
+		team: "Team" = frappe.get_doc(
 			{
 				"doctype": "Team",
 				"user": account_request.email,
@@ -401,6 +401,14 @@ class Team(Document):
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
 				doc.is_default = 0
 				doc.save()
+
+		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
+		if (
+			self.has_value_changed("payment_mode") and self.payment_mode and self.account_request
+		):
+			ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
+			if not (ar.is_saas_signup() or ar.invited_by_parent_team):
+				capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 
 	def on_update(self):
 		self.validate_payment_mode()
@@ -719,8 +727,6 @@ class Team(Document):
 
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
-		# Telemetry: Added card
-		capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc
@@ -1275,8 +1281,6 @@ def handle_payment_intent_succeeded(payment_intent):
 		amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
 
-	# Telemetry: Added prepaid credits
-	capture("added_card_or_prepaid_credits", "fc_signup", team.user)
 	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
