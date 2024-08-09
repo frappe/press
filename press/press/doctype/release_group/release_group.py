@@ -52,6 +52,7 @@ LastDeployInfo = TypedDict(
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.app.app import App
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -1102,9 +1103,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def append_source(self, source: "AppSource"):
+	def update_source(self, source: "AppSource", is_update: bool = False):
 		self.remove_app_if_invalid(source)
-		self.append("apps", {"source": source.name, "app": source.app})
+		if is_update:
+			update_rg_app_source(self, source)
+		else:
+			self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
 	def remove_app_if_invalid(self, source: "AppSource"):
@@ -1276,7 +1280,7 @@ class ReleaseGroup(Document, TagHelpers):
 			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
 
 	@dashboard_whitelist()
-	def add_app(self, app):
+	def add_app(self, app, is_update: bool = False):
 		if isinstance(app, str):
 			app = json.loads(app)
 
@@ -1284,7 +1288,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		if frappe.db.exists("App", name):
-			app_doc = frappe.get_doc("App", name)
+			app_doc: "App" = frappe.get_doc("App", name)
 		else:
 			app_doc = new_app(name, app["title"])
 
@@ -1295,7 +1299,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.team,
 			app.get("github_installation_id", None),
 		)
-		self.append_source(source)
+		self.update_source(source, is_update)
 
 	@dashboard_whitelist()
 	def remove_app(self, app: str):
@@ -1486,3 +1490,10 @@ def can_use_release(app_src):
 		return True
 
 	return app_src.status == "Approved"
+
+
+def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
+	for app in rg.apps:
+		if app.app == source.app:
+			app.source = source.name
+			break
