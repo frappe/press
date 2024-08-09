@@ -120,6 +120,8 @@ class Incident(WebsiteGenerator):
 			queue="long",
 			enqueue_after_commit=True,
 			at_front=True,
+			job_id=f"call_humans:{self.name}",
+			deduplicate=True,
 		)
 
 	def get_humans(
