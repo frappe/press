@@ -326,22 +326,6 @@ class ProxyServer(BaseServer):
 			log_error("Primary Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
 
-	def get_primary_frappe_public_key(self):
-		if primary_public_key := frappe.db.get_value(
-			"Proxy Server", self.primary, "frappe_public_key"
-		):
-			return primary_public_key
-
-		primary = frappe.get_doc("Proxy Server", self.primary)
-		ansible = Ansible(
-			playbook="fetch_frappe_public_key.yml",
-			server=primary,
-		)
-		play = ansible.run()
-		if play.status == "Success":
-			return frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
-		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
-
 	def _setup_secondary(self):
 		try:
 			ansible = Ansible(
