@@ -58,7 +58,7 @@ export default {
 	},
 	methods: {
 		onQuery: debounce(function (query) {
-			this.query = query;
+			this.query = query.trim();
 		}, 500)
 	},
 	computed: {
