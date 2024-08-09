@@ -188,4 +188,4 @@ class AccountRequest(Document):
 		)
 
 	def is_saas_signup(self):
-		return self.saas_app or self.product_trial
+		return bool(self.saas_app or self.product_trial)
