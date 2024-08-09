@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from datetime import timedelta
 import json
 import shlex
 import typing
@@ -19,10 +20,12 @@ from frappe.utils.user import is_system_user
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
-from press.utils import log_error
+from press.telegram_utils import Telegram
+from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
@@ -535,10 +538,30 @@ class BaseServer(Document, TagHelpers):
 	def enqueue_extend_ec2_volume(self):
 		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
 
+	@cached_property
+	def time_to_wait_before_updating_volume(self) -> Union[timedelta, int]:
+		if self.provider != "AWS EC2":
+			return 0
+		if not (
+			last_updated_at := frappe.get_value(
+				"Virtual Machine Volume",
+				{"parent": self.virtual_machine, "idx": 1},  # first volume is likely main
+				"last_updated_at",
+			)
+		):
+			return 0
+		diff = frappe.utils.now_datetime() - last_updated_at
+		return diff if diff < timedelta(hours=6) else 0
+
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50):
+	def increase_disk_size(self, increment=50) -> bool:
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
+		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
+			frappe.throw(
+				f"Please wait {fmt_timedelta(self.time_to_wait_before_updating_volume)} before resizing volume",
+				VolumeResizeLimitError,
+			)
 		virtual_machine: "VirtualMachine" = frappe.get_doc(
 			"Virtual Machine", self.virtual_machine
 		)
@@ -954,7 +977,7 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	@property
+	@cached_property
 	def free_space(self):
 		from press.api.server import prometheus_query
 
@@ -1002,27 +1025,36 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		)["datasets"]
 		if response:
 			return response[0]["values"][-1]
-		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+		return (
+			frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+			* 1024
+			* 1024
+			* 1024
+		)
 
 	@cached_property
 	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
 		return int(
-			max(
-				50,
-				min(
+			min(
+				self.auto_add_storage_max,
+				max(
+					self.auto_add_storage_min,
 					abs(self.disk_capacity - self.space_available_in_6_hours * 5)
 					/ 4
 					/ 1024
 					/ 1024
 					/ 1024,
-					250,
 				),
 			)
 		)
 
-	def calculated_increase_disk_size(self):
+	def calculated_increase_disk_size(self, additional: int = 0):
+		telegram = Telegram("Information")
+		telegram.send(
+			f"Increasing disk on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
+		)
 		self.increase_disk_size_for_server(
-			self.name, self.size_to_increase_by_for_20_percent_available
+			self.name, self.size_to_increase_by_for_20_percent_available + additional
 		)
 
 	def prune_docker_system(self):
@@ -1058,6 +1090,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return 22
 		return self.ssh_port or 22
 
+	def get_primary_frappe_public_key(self):
+		if primary_public_key := frappe.db.get_value(
+			self.doctype, self.primary, "frappe_public_key"
+		):
+			return primary_public_key
+
+		primary = frappe.get_doc(self.doctype, self.primary)
+		ansible = Ansible(
+			playbook="fetch_frappe_public_key.yml",
+			server=primary,
+		)
+		play = ansible.run()
+		if play.status == "Success":
+			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1067,10 +1115,11 @@ class Server(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
+		auto_add_storage_max: DF.Int
+		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		database_server: DF.Link | None
 		disable_agent_job_auto_retry: DF.Check
@@ -1457,12 +1506,11 @@ class Server(BaseServer):
 		self.save()
 
 	def _setup_secondary(self):
-		primary_public_key = frappe.db.get_value("Server", self.primary, "frappe_public_key")
 		try:
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
-				variables={"primary_public_key": primary_public_key},
+				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
 			self.reload()

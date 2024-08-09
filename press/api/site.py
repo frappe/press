@@ -409,21 +409,26 @@ def app_details_for_new_public_site():
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
 
-	app_source_details = frappe.db.get_all(
-		"App Source",
-		[
-			"name",
-			"app",
-			"repository_url",
-			"repository",
-			"repository_owner",
-			"branch",
-			"team",
-			"public",
-			"app_title",
-			"frappe",
-		],
-		filters={"name": ["in", marketplace_app_sources]},
+	AppSource = frappe.qb.DocType("App Source")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	app_source_details = (
+		frappe.qb.from_(AppSource)
+		.select(
+			AppSource.name,
+			AppSource.app,
+			AppSource.repository_url,
+			AppSource.repository,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.team,
+			AppSource.public,
+			MarketplaceApp.title.as_("app_title"),
+			AppSource.frappe,
+		)
+		.join(MarketplaceApp)
+		.on(AppSource.app == MarketplaceApp.app)
+		.where(AppSource.name.isin(marketplace_app_sources))
+		.run(as_dict=True)
 	)
 
 	total_installs_by_app = get_total_installs_by_app()
@@ -711,7 +716,7 @@ def get_site_plans():
 	plan_names = [x.name for x in plans]
 	if len(plan_names) == 0:
 		return []
-	
+
 	filtered_plans = []
 
 	SitePlan = frappe.qb.DocType("Site Plan")
@@ -1958,7 +1963,7 @@ def change_group_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def clone_group(name, new_group_title):
+def clone_group(name: str, new_group_title: str, server: str = None):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
 	cloned_group = frappe.new_doc("Release Group")
@@ -1972,7 +1977,7 @@ def clone_group(name, new_group_title):
 			"version": group.version,
 			"dependencies": group.dependencies,
 			"is_redisearch_enabled": group.is_redisearch_enabled,
-			"servers": [{"server": site.server, "default": False}],
+			"servers": [{"server": server if server else site.server, "default": False}],
 		}
 	)
 

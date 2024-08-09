@@ -138,7 +138,7 @@ class AccountRequest(Document):
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
-		if self.product_trial or custom_template:
+		if self.is_saas_signup() or custom_template:
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
 		else:
@@ -188,7 +188,4 @@ class AccountRequest(Document):
 		)
 
 	def is_saas_signup(self):
-		# check whether it's a saas or erpnext signup
-		if self.erpnext or self.saas:
-			return True
-		return False
+		return bool(self.saas_app or self.product_trial)

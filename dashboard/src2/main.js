@@ -56,7 +56,10 @@ getInitialData().then(() => {
 			dsn: window.press_dashboard_sentry_dsn,
 			integrations: [
 				Sentry.browserTracingIntegration({ router }),
-				Sentry.replayIntegration()
+				Sentry.replayIntegration({
+					maskAllText: false,
+					blockAllMedia: false
+				})
 			],
 			replaysSessionSampleRate: 0.1,
 			replaysOnErrorSampleRate: 1.0,

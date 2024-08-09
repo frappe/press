@@ -15,7 +15,6 @@ from frappe.utils import (
 	flt,
 	get_datetime,
 	get_datetime_str,
-	get_system_timezone,
 )
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone

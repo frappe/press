@@ -160,6 +160,7 @@
 		</Dialog>
 	</Card>
 	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
+	<ActiveServersDialog v-model="showActiveServersDialog" />
 </template>
 
 <script>
@@ -168,6 +169,7 @@ import FileUploader from '@/components/FileUploader.vue';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
+import ActiveServersDialog from '../../ActiveServersDialog.vue';
 import { h } from 'vue';
 
 export default {
@@ -175,14 +177,16 @@ export default {
 	components: {
 		FileUploader,
 		FinalizeInvoicesDialog,
-		ChurnFeedbackDialog
+		ChurnFeedbackDialog,
+		ActiveServersDialog
 	},
 	data() {
 		return {
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
-			showFinalizeInvoicesDialog: false
+			showFinalizeInvoicesDialog: false,
+			showActiveServersDialog: false
 		};
 	},
 	computed: {
@@ -216,6 +220,8 @@ export default {
 
 				if (data === 'Unpaid Invoices') {
 					this.showFinalizeInvoicesDialog = true;
+				} else if (data === 'Active Servers') {
+					this.showActiveServersDialog = true;
 				} else {
 					renderDialog(
 						h(ChurnFeedbackDialog, {

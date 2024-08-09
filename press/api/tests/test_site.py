@@ -3,7 +3,7 @@
 # See license.txt
 
 import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 import responses
@@ -18,6 +18,9 @@ from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
+)
+from press.press.doctype.marketplace_app.test_marketplace_app import (
+	create_test_marketplace_app,
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
@@ -611,6 +614,59 @@ insights 0.8.3	    HEAD
 		self.assertEqual(len(site.apps), 1)
 		self.assertEqual(site.apps[0].app, "frappe")
 		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	@patch("press.press.doctype.site.site.marketplace_app_hook")
+	def test_restore_job_runs_marketplace_hooks_for_apps_found_in_backup(
+		self, mock_marketplace_app_hook: Mock
+	):
+		from press.api.site import restore
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		create_test_marketplace_app("erpnext")
+		app3 = create_test_app("insights", "Insights")
+		create_test_marketplace_app("insights")
+		group = create_test_release_group([app, app2, app3])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		database = create_test_remote_file(site.name).name
+		public = create_test_remote_file(site.name).name
+		private = create_test_remote_file(site.name).name
+
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job(
+			"Restore Site",
+			"Success",
+			data=frappe._dict(
+				output="""frappe	15.0.0-dev HEAD
+insights 0.8.3	    HEAD
+"""
+			),
+		):
+			restore(
+				site.name,
+				{
+					"database": database,
+					"public": public,
+					"private": private,
+				},
+			)
+			poll_pending_jobs()
+
+		mock_marketplace_app_hook.assert_has_calls(
+			[
+				call(app="insights", site=site.name, op="install"),
+				call(app="erpnext", site=site.name, op="uninstall"),
+			]
+		)
 
 	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")

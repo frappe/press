@@ -1,17 +1,14 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Add a new app',
+			title: 'Update bench apps',
 			size: 'xl',
 			actions: [
 				{
-					label: 'Add App',
+					label: isAppOnBench ? 'Update App' : 'Add App',
 					variant: 'solid',
 					disabled: !app || !appValidated,
-					onClick() {
-						$emit('app-added', app);
-						show = false;
-					}
+					onClick: addAppHandler
 				}
 			]
 		}"
@@ -66,21 +63,7 @@
 					</div>
 					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
 						<GitHubAppSelector
-							@validateApp="
-								data => {
-									selectedBranch = {
-										label: data.branch,
-										value: data.branch
-									};
-									selectedGithubRepository = data.repository;
-									selectedGithubUser = data.selectedGithubUser;
-
-									$resources.validateApp.submit({
-										...data,
-										installation: data.selectedGithubUser.value.id
-									});
-								}
-							"
+							@validateApp="validateApp"
 							@fieldChange="appValidated = false"
 						/>
 					</div>
@@ -102,6 +85,17 @@
 					</div>
 				</div>
 			</FTabs>
+			<AlertBanner
+				v-if="isAppOnBench"
+				class="mt-4"
+				:show-icon="false"
+				:title="
+					`App <strong>${app.name}</strong> already exists on this Bench. ` +
+					`Clicking on Update App will change app source to the selected one.`
+				"
+				type="warning"
+			/>
+
 			<ErrorMessage
 				:message="$resources.validateApp.error || $resources.branches.error"
 			/>
@@ -113,13 +107,21 @@
 import { FormControl, Tabs } from 'frappe-ui';
 import { DashboardError } from '../utils/error';
 import GitHubAppSelector from './GitHubAppSelector.vue';
+import AlertBanner from './AlertBanner.vue';
 
 export default {
 	name: 'NewAppDialog',
 	components: {
 		GitHubAppSelector,
 		FTabs: Tabs,
-		FormControl
+		FormControl,
+		AlertBanner
+	},
+	props: {
+		group: {
+			type: Object,
+			required: true
+		}
 	},
 	emits: ['app-added'],
 	data() {
@@ -220,12 +222,18 @@ export default {
 	computed: {
 		appOwner() {
 			if (this.tabIndex === 0) {
-				return this.githubAppLink.split('/')[3];
+				const urlParts = this.githubAppLink.split('/');
+				if (urlParts.length < 4) return;
+
+				return urlParts[3];
 			}
 		},
 		appName() {
 			if (this.tabIndex === 0) {
-				return this.githubAppLink.split('/')[4].replace('.git', '');
+				const urlParts = this.githubAppLink.split('/');
+				if (urlParts.length < 5) return;
+
+				return urlParts[4].replace('.git', '');
 			}
 		},
 		branchOptions() {
@@ -233,6 +241,36 @@ export default {
 				label: branch.name,
 				value: branch.name
 			}));
+		},
+		isAppOnBench() {
+			if (!this.app) {
+				return false;
+			}
+
+			for (const app of this.group.apps) {
+				if (app.app == this.app.name) return true;
+			}
+
+			return false;
+		}
+	},
+	methods: {
+		validateApp(data) {
+			this.selectedBranch = {
+				label: data.branch,
+				value: data.branch
+			};
+			this.selectedGithubRepository = data.repository;
+			this.selectedGithubUser = data.selectedGithubUser;
+
+			this.$resources.validateApp.submit({
+				...data,
+				installation: data.selectedGithubUser.value.id
+			});
+		},
+		addAppHandler() {
+			this.$emit('app-added', this.app, this.isAppOnBench);
+			this.show = false;
 		}
 	}
 };
