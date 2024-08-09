@@ -22,21 +22,7 @@
 		<template #body-content>
 			<GitHubAppSelector
 				class="pt-2"
-				@validateApp="
-					data => {
-						selectedBranch = {
-							label: data.branch,
-							value: data.branch
-						};
-						selectedGithubRepository = data.repository;
-						selectedGithubUser = data.selectedGithubUser;
-
-						$resources.validateApp.submit({
-							...data,
-							installation: data.selectedGithubUser.value.id
-						});
-					}
-				"
+				@validateApp="validateApp"
 				@fieldChange="appValidated = false"
 			/>
 			<LinkControl
@@ -140,6 +126,19 @@ export default {
 				error: e => {
 					return e.messages.length ? e.messages.join('\n') : e.message;
 				}
+			});
+		},
+		validateApp(data) {
+			this.selectedBranch = {
+				label: data.branch,
+				value: data.branch
+			};
+			this.selectedGithubRepository = data.repository;
+			this.selectedGithubUser = data.selectedGithubUser;
+
+			this.$resources.validateApp.submit({
+				...data,
+				installation: data.selectedGithubUser.value.id
 			});
 		}
 	}

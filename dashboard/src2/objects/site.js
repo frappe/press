@@ -12,7 +12,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, date, userCurrency } from '../utils/format';
+import { bytes, date, planTitle, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
@@ -288,14 +288,23 @@ export default {
 								}
 
 								return h(
-									Tooltip,
+									'div',
 									{
-										text: 'App has been patched',
-										placement: 'top',
+										title: 'App has been patched',
 										class: 'rounded-full bg-gray-100 p-1'
 									},
-									() => h(icon('alert-circle', 'w-3 h-3'))
+									h(icon('alert-circle', 'w-3 h-3'))
 								);
+							}
+						},
+						{
+							label: 'Plan',
+							width: 0.75,
+							class: 'text-gray-600 text-sm',
+							format(_, row) {
+								const planText = planTitle(row.plan_info);
+								if (planText) return `${planText}/mo`;
+								else return 'Free';
 							}
 						},
 						{

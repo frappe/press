@@ -186,10 +186,16 @@ class AppReleaseApprovalRequest(Document):
 		self.result = json.dumps(result, indent=2)
 
 	def _screen_python_file(self, filename):
+		def is_commented_line(line):
+			stripped_line = line.strip()
+			return stripped_line.startswith("#")
+
 		with open(filename, "r") as ff:
 			lines = ff.read().splitlines()
 		lines_with_issues = []
 		for index, line in enumerate(lines):
+			if is_commented_line(line):
+				continue
 			issues = []
 			configuration = get_configuration()
 			for severity, violations in configuration.items():
