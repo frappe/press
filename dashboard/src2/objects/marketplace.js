@@ -126,6 +126,10 @@ export default {
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
+					onRowClick: (row, context) => {
+						const { listResource: versions, documentResource: app } = context;
+						showReleases(row, app);
+					},
 					fields: [
 						'source.repository_owner as repository_owner',
 						'source.repository as repository',
@@ -259,114 +263,7 @@ export default {
 									prefix: icon('plus')
 								},
 								onClick() {
-									renderDialog(
-										h(
-											GenericDialog,
-											{
-												options: {
-													title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-													size: '4xl'
-												}
-											},
-											{
-												default: () =>
-													h(ObjectList, {
-														options: {
-															label: 'Version',
-															type: 'list',
-															doctype: 'App Release',
-															filters: {
-																app: app.doc.name,
-																source: row.source
-															},
-															fields: ['message', 'tag', 'author', 'status'],
-															orderBy: 'creation desc',
-															columns: [
-																{
-																	label: 'Commit Message',
-																	fieldname: 'message',
-																	class: 'w-64',
-																	width: 0.5
-																},
-																{
-																	label: 'Hash',
-																	fieldname: 'hash',
-																	class: 'w-24',
-																	type: 'Badge',
-																	width: 0.2,
-																	format: value => {
-																		return value.slice(0, 7);
-																	}
-																},
-																{
-																	label: 'Author',
-																	fieldname: 'author',
-																	width: 0.2
-																},
-																{
-																	label: 'Status',
-																	fieldname: 'status',
-																	type: 'Badge',
-																	width: 0.3
-																},
-																{
-																	label: '',
-																	fieldname: '',
-																	align: 'right',
-																	type: 'Button',
-																	width: 0.2,
-																	Button({ row, listResource: releases }) {
-																		let label = '';
-																		let successMessage = '';
-																		let loadingMessage = '';
-
-																		if (row.status === 'Awaiting Approval') {
-																			label = 'Cancel';
-																			successMessage =
-																				'The release has been cancelled';
-																			loadingMessage = 'Cancelling release...';
-																		} else if (row.status === 'Draft') {
-																			label = 'Submit';
-																			loadingMessage =
-																				'Submitting release for approval...';
-																			successMessage =
-																				'The release has been submitted for approval';
-																		}
-
-																		return {
-																			label: label,
-																			onClick() {
-																				toast.promise(
-																					row.status === 'Awaiting Approval'
-																						? app.cancelApprovalRequest.submit({
-																								app_release: row.name
-																						  })
-																						: app.createApprovalRequest.submit({
-																								app_release: row.name
-																						  }),
-																					{
-																						loading: loadingMessage,
-																						success: () => {
-																							releases.reload();
-																							return successMessage;
-																						},
-																						error: e => {
-																							return e.messages.length
-																								? e.messages.join('\n')
-																								: e.message;
-																						}
-																					}
-																				);
-																			}
-																		};
-																	}
-																}
-															]
-														}
-													})
-											}
-										)
-									);
+									showReleases(row, app);
 								}
 							},
 							{
@@ -630,3 +527,112 @@ export default {
 		}
 	}
 };
+
+function showReleases(row, app) {
+	renderDialog(
+		h(
+			GenericDialog,
+			{
+				options: {
+					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
+					size: '4xl'
+				}
+			},
+			{
+				default: () =>
+					h(ObjectList, {
+						options: {
+							label: 'Version',
+							type: 'list',
+							doctype: 'App Release',
+							filters: {
+								app: app.doc.name,
+								source: row.source
+							},
+							fields: ['message', 'tag', 'author', 'status'],
+							orderBy: 'creation desc',
+							columns: [
+								{
+									label: 'Commit Message',
+									fieldname: 'message',
+									class: 'w-64',
+									width: 0.5
+								},
+								{
+									label: 'Hash',
+									fieldname: 'hash',
+									class: 'w-24',
+									type: 'Badge',
+									width: 0.2,
+									format: value => {
+										return value.slice(0, 7);
+									}
+								},
+								{
+									label: 'Author',
+									fieldname: 'author',
+									width: 0.2
+								},
+								{
+									label: 'Status',
+									fieldname: 'status',
+									type: 'Badge',
+									width: 0.3
+								},
+								{
+									label: '',
+									fieldname: '',
+									align: 'right',
+									type: 'Button',
+									width: 0.2,
+									Button({ row, listResource: releases }) {
+										let label = '';
+										let successMessage = '';
+										let loadingMessage = '';
+
+										if (row.status === 'Awaiting Approval') {
+											label = 'Cancel';
+											successMessage = 'The release has been cancelled';
+											loadingMessage = 'Cancelling release...';
+										} else if (row.status === 'Draft') {
+											label = 'Submit';
+											loadingMessage = 'Submitting release for approval...';
+											successMessage =
+												'The release has been submitted for approval';
+										}
+
+										return {
+											label: label,
+											onClick() {
+												toast.promise(
+													row.status === 'Awaiting Approval'
+														? app.cancelApprovalRequest.submit({
+																app_release: row.name
+														  })
+														: app.createApprovalRequest.submit({
+																app_release: row.name
+														  }),
+													{
+														loading: loadingMessage,
+														success: () => {
+															releases.reload();
+															return successMessage;
+														},
+														error: e => {
+															return e.messages.length
+																? e.messages.join('\n')
+																: e.message;
+														}
+													}
+												);
+											}
+										};
+									}
+								}
+							]
+						}
+					})
+			}
+		)
+	);
+}
