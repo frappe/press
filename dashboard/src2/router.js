@@ -243,6 +243,13 @@ router.beforeEach(async (to, from, next) => {
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
+		// identify user in posthog
+		if (window.posthog?.__loaded) {
+			window.posthog.identify($team.doc.user, {
+				app: 'frappe_cloud'
+			});
+		}
+
 		let visitingSiteOrBillingOrSettings =
 			to.name.startsWith('Site') ||
 			to.name.startsWith('Billing') ||

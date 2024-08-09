@@ -18,6 +18,10 @@ export let session = reactive({
 			session.user = getSessionUser();
 			await router.replace({ name: 'Login' });
 			localStorage.removeItem('current_team');
+			// On logout, reset posthog user identity and device id
+			if(window.posthog?.__loaded){
+				posthog.reset(true);
+			}
 			window.location.reload();
 		}
 	}),
