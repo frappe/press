@@ -215,8 +215,8 @@ class Agent:
 	
 	def complete_setup_wizard(self, site, data):
 		return self.create_agent_job(
-			"Completed Setup Wizard",
-			f"benches/{site.bench}/sites/{site.name}/completed-setup-wizard",
+			"Complete Setup Wizard",
+			f"benches/{site.bench}/sites/{site.name}/complete-setup-wizard",
 			data,
 			bench=site.bench,
 			site=site.name,
