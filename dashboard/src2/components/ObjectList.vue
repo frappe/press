@@ -82,7 +82,7 @@
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
-						? row => this.options.onRowClick(row)
+						? row => this.options.onRowClick(row, context)
 						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
