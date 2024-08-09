@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
 import urllib
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
 
@@ -195,44 +196,14 @@ class ProductTrialRequest(Document):
 			return {"progress": current_progress + 0.1}
 
 	def complete_setup_wizard(self):
-		frappe.enqueue_doc(
-			"Product Trial Request",
-			self.name,
-			method="_complete_setup_wizard",
-			timeout=600,
-			enqueue_after_commit=True,
-		)
-
-	def _complete_setup_wizard(self):
-		if (
-			frappe.get_value("Product Trial Request", self.name, "status")
-			!= "Completing Setup Wizard"
-		):
+		if self.status == "Completing Setup Wizard":
 			return
-		data = self.get_setup_wizard_payload()
-		retry = 0
-		# Retry 3 times before failing
-		while True:
-			try:
-				site = frappe.get_doc("Site", self.site)
-				client = site.get_connection_as_admin()
-				response = client.post_api(
-					"frappe.desk.page.setup_wizard.setup_wizard.setup_complete",
-					{"args": json.dumps(data)},
-				)
-				if response["status"] == "ok":
-					frappe.db.set_value("Product Trial Request", self.name, "status", "Site Created")
-					frappe.db.commit()
-					frappe.publish_realtime("product_trial_request_update", {"name": self.name})
-				break
-			except Exception as e:
-				if retry >= 3:
-					frappe.log_error(title="Product Trial Request Setup Wizard Completion Error")
-					frappe.throw(f"Failed to complete Setup Wizard: {e}")
-					break
-			finally:
-				retry += 1
-
+		site = frappe.get_doc("Site", self.site)
+		agent = Agent(site.server)
+		agent.complete_setup_wizard(site, self.get_setup_wizard_payload())
+		self.reload()
+		self.status = "Completing Setup Wizard"
+		self.save(ignore_permissions=True)
 
 def get_app_trial_page_url():
 	referer = frappe.request.headers.get("referer", "")

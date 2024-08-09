@@ -2677,12 +2677,22 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		)
 		if mode != "auto":
 			product_trial_request.status = "Site Created"
-		else:
-			product_trial_request.status = "Completing Setup Wizard"
 			product_trial_request.save(ignore_permissions=True)
-			product_trial_request.reload()
+		else:
 			product_trial_request.complete_setup_wizard()
 	else:
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
+def process_complete_setup_wizard_job_update(job):
+	records = frappe.get_list("Product Trial Request", filters={"site": job.site}, fields=["name"])
+	if not records:
+		return
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+	if job.status == "Success":
+		product_trial_request.status = "Site Created"
+		product_trial_request.save(ignore_permissions=True)
+	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
 
