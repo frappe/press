@@ -1090,6 +1090,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return 22
 		return self.ssh_port or 22
 
+	def get_primary_frappe_public_key(self):
+		if primary_public_key := frappe.db.get_value(
+			self.doctype, self.primary, "frappe_public_key"
+		):
+			return primary_public_key
+
+		primary = frappe.get_doc(self.doctype, self.primary)
+		ansible = Ansible(
+			playbook="fetch_frappe_public_key.yml",
+			server=primary,
+		)
+		play = ansible.run()
+		if play.status == "Success":
+			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1490,12 +1506,11 @@ class Server(BaseServer):
 		self.save()
 
 	def _setup_secondary(self):
-		primary_public_key = frappe.db.get_value("Server", self.primary, "frappe_public_key")
 		try:
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
-				variables={"primary_public_key": primary_public_key},
+				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
 			self.reload()
