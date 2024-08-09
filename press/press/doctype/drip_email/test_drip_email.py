@@ -48,14 +48,18 @@ class TestDripEmail(unittest.TestCase):
 
 		drip_email = create_test_drip_email(0, saas_app=test_marketplace_app.name)
 
-		site1 = create_test_site("site1", standby_for=test_marketplace_app.name)
-		site1.account_request = create_test_account_request(
-			"site1", saas=True, saas_app=test_marketplace_app.name
-		).name
+		site1 = create_test_site(
+			"site1",
+			standby_for=test_marketplace_app.name,
+			account_request=create_test_account_request(
+				"site1", saas=True, saas_app=test_marketplace_app.name
+			).name,
+		)
 		site1.save()
 
-		site2 = create_test_site("site2")
-		site2.account_request = create_test_account_request("site2").name
+		site2 = create_test_site(
+			"site2", account_request=create_test_account_request("site2").name
+		)
 		site2.save()
 
 		create_test_site("site3")  # Note: site is not created

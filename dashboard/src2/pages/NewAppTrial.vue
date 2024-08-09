@@ -1,11 +1,6 @@
 <template>
 	<div v-if="saasProduct">
 		<div class="flex min-h-screen sm:bg-gray-50">
-			<ProductSignupPitch
-				class="order-1 hidden sm:block"
-				v-if="saasProduct"
-				:saasProduct="saasProduct"
-			/>
 			<div
 				class="flex w-full items-start justify-center pt-32"
 				v-if="$resources.getSiteRequest.error"
@@ -17,134 +12,250 @@
 				</div>
 			</div>
 			<div class="relative w-full" v-if="saasProduct">
-				<LoginBox
-					:title="
-						siteRequest?.doc?.status == 'Pending'
-							? `Create your ${saasProduct.title} site`
-							: ''
-					"
-				>
-					<div v-if="completedSites.length">
-						<div>
-							<div class="text-base text-gray-900">
-								{{
-									completedSites.length > 1
-										? 'You have already created the following sites:'
-										: 'You have already created the following site:'
-								}}
-							</div>
-							<ul class="mt-2">
-								<li
-									v-for="site in completedSites"
-									:key="site"
-									class="whitespace-nowrap py-2.5 text-base focus-within:ring focus-within:ring-gray-200"
+				<div class="relative h-full">
+					<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
+						<div class="flex flex-col items-center">
+							<div class="mx-auto flex items-center space-x-2">
+								<FCLogo class="inline-block h-7 w-7" />
+								<span
+									class="select-none text-xl font-semibold tracking-tight text-gray-900"
 								>
-									<a
-										:href="`https://${site.site}`"
-										class="block font-medium text-gray-900 underline focus:outline-none"
-										target="_blank"
-									>
-										{{ site.site }}
-									</a>
-									<div class="mt-1.5 text-base text-gray-600">
-										{{ trialDays(site.trial_end_date) }}
-									</div>
-								</li>
-							</ul>
+									Frappe Cloud
+								</span>
+							</div>
+							<p class="mt-2 text-gray-800">Hassle-free hosting for Frappe apps</p>
 						</div>
-					</div>
-					<div v-if="siteRequest?.doc">
-						<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
-							<FormControl
-								label="Your Email"
-								:modelValue="$team.doc.user"
-								:disabled="true"
-							/>
-							<div class="cursor-pointer" @click.stop="showPlanDialog = true">
-								<label class="text-xs text-gray-600">Choose a plan</label>
-								<Button class="w-full">
-									<span class="text-base text-gray-900" v-if="plan">
-										{{ selectedPlanDescription }}
-									</span>
-									<span class="text-base text-gray-600" v-else>
-										No plan selected
-									</span>
-								</Button>
-								<div class="mt-1 text-xs text-gray-600">
-									{{
-										plan === 'Trial'
-											? ''
-											: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
-									}}
+						<div
+							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-8 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
+						>
+							<div
+								class="mb-6 text-center"
+								v-if="$resources.siteRequest?.doc?.status == 'Pending'"
+							>
+								<span
+									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+								>
+									Create your {{ saasProduct.title }} site
+								</span>
+							</div>
+							<!-- Site Details -->
+							<div v-if="siteRequest?.is_pending === false">
+								<div>
+									<!-- <div class="text-base text-gray-900">
+										You have already created this {{ saasProduct.title }} site :
+									</div> -->
+									<!-- <p
+												v-if="siteRequest?.is_trial_plan"
+												class="ms-1"
+												:class="{
+													'text-red-600': isTrialEnded(
+														siteRequest?.trial_end_date
+													),
+													'text-amber-600': !isTrialEnded(
+														siteRequest?.trial_end_date
+													)
+												}"
+											>
+												{{ trialDays(siteRequest?.trial_end_date) }}
+											</p>
+											<p v-else class="ms-1">
+												{{ siteRequest.site_plan_description }}
+											</p>
+											<Button
+												v-if="
+													!isBillingDetailsSet ||
+													!isPaymentModeSet ||
+													siteRequest?.is_trial_plan
+												"
+												@click="subscribeNow"
+												variant="solid"
+												class="ms-auto"
+											>
+												Subscribe Now
+											</Button> -->
+									<AlertBanner
+										:type="
+											isTrialEnded(siteRequest?.trial_end_date)
+												? `error`
+												: `warning`
+										"
+										class="col-span-1 lg:col-span-2"
+										:title="trialDays(siteRequest?.trial_end_date)"
+										v-if="
+											!isBillingDetailsSet ||
+											!isPaymentModeSet ||
+											siteRequest?.is_trial_plan
+										"
+									>
+										<Button
+											class="ml-auto"
+											variant="outline"
+											@click="subscribeNow"
+										>
+											Subscribe
+										</Button>
+									</AlertBanner>
+									<!-- Site -->
+									<div
+										class="mt-2 overflow-hidden whitespace-nowrap py-2.5 text-base"
+									>
+										<!-- Site name -->
+										<p
+											class="block font-medium text-gray-900 focus:outline-none"
+											target="_blank"
+										>
+											{{ siteRequest?.site }}
+										</p>
+										<!-- Action Buttons -->
+										<div
+											class="mt-3 flex w-full flex-row justify-between gap-2"
+										>
+											<Button
+												class="w-1/2"
+												variant="outline"
+												iconLeft="external-link"
+												:link="`https://${siteRequest?.site}`"
+												:disabled="siteRequest?.site_status !== 'Active'"
+											>
+												Visit Site</Button
+											>
+											<Button
+											class="w-1/2"
+												variant="outline"
+												iconLeft="user"
+												@click="() => loginAsTeam(siteRequest?.site)"
+												:disabled="
+													(loginAsTeamInProgressInSite &&
+														loginAsTeamInProgressInSite !==
+															siteRequest?.site) ||
+													siteRequest?.site_status !== 'Active'
+												"
+												:loading="
+													loginAsTeamInProgressInSite === siteRequest?.site
+												"
+												loadingText="Logging in ..."
+											>
+												Login as team</Button
+											>
+											<!-- <Button
+												variant="outline"
+												iconLeft="info"
+												:link="`/dashboard/sites/${siteRequest?.site}/overview`"
+											>
+												Manage</Button
+											> -->
+										</div>
+									</div>
+									<!-- Redirect to FC -->
+									<Button class="mt-3 w-full" link="/">
+										Visit Frappe Cloud dashboard
+									</Button>
 								</div>
 							</div>
-							<!-- <FormControl
-								class="subdomain mt-2"
-								label="Site Name"
-								v-model="subdomain"
-								@keydown.enter="createSite"
-							>
-								<template #suffix>
-									<div
-										ref="domainSuffix"
-										v-element-size="onResize"
-										class="flex select-none items-center text-base text-gray-600"
+							<!-- Site Creation -->
+							<div v-if="$resources.siteRequest?.doc">
+								<form
+									class="space-y-3"
+									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
+									@submit.prevent="createSite()"
+								>
+									<FormControl
+										label="Your Email"
+										:modelValue="$team.doc.user"
+										:disabled="true"
+									/>
+									<Form
+										v-if="saasProductSignupFields.length > 0"
+										:fields="saasProductSignupFields"
+										v-model="signupValues"
+									/>
+									<ErrorMessage
+										:message="$resources.siteRequest?.createSite?.error"
+									/>
+									<Button
+										class="w-full"
+										variant="solid"
+										:loading="
+											findingClosestServer ||
+											$resources.siteRequest?.createSite?.loading
+										"
 									>
-										.{{ saasProduct.domain || 'frappe.cloud' }}
+										Create
+									</Button>
+								</form>
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Wait for Site' ||
+										$resources.siteRequest?.doc?.status ==
+											'Completing Setup Wizard'
+									"
+								>
+									<Progress
+										label="Creating site"
+										:value="
+											$resources.siteRequest.getProgress.data?.progress || 0
+										"
+										size="md"
+									/>
+									<div class="mt-4 flex flex-row items-center gap-1">
+										<Spinner class="w-3" />
+										<p class="text-sm italic">
+											{{
+												$resources.siteRequest.getProgress.data?.current_step
+													? $resources.siteRequest.getProgress.data
+															?.current_step
+													: !$resources.siteRequest.getProgress.data?.progress
+													? 'Waiting for update'
+													: 'Just a moment'
+											}}
+										</p>
 									</div>
-								</template>
-							</FormControl> -->
-							<ErrorMessage :message="siteRequest.createSite.error" />
-							<Button
-								class="w-full"
-								variant="solid"
-								@click="createSite"
-								:loading="
-									findingClosestServer || siteRequest.createSite.loading
-								"
-							>
-								Create
-							</Button>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
-							<Progress
-								label="Creating site"
-								:value="siteRequest.getProgress.data?.progress || 0"
-								size="md"
-							/>
-							<ErrorMessage class="mt-2" :message="progressError" />
-							<Button
-								class="mt-2"
-								v-if="siteRequest.getProgress.error && progressErrorCount > 9"
-								route="/"
-							>
-								&#8592; Back to Dashboard
-							</Button>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Site Created'">
-							<div class="text-base text-gray-900">
-								Your site
-								<span class="font-semibold text-gray-900">{{
-									siteRequest.doc.site
-								}}</span>
-								is ready.
-							</div>
-							<div class="py-3 text-base text-gray-900">
-								{{
-									siteRequest.getLoginSid.loading
-										? 'Logging in to your site...'
-										: ''
-								}}
-							</div>
-						</div>
-						<div v-else-if="siteRequest.doc.status == 'Error'">
-							<div class="text-p-base text-red-600">
-								There was an error creating your site. Please contact
-								<a class="underline" href="/support">Frappe Cloud Support</a>.
+									<ErrorMessage class="mt-2" :message="progressError" />
+									<Button
+										class="mt-2"
+										v-if="
+											$resources.siteRequest?.getProgress?.error &&
+											progressErrorCount > 9
+										"
+										route="/"
+									>
+										&#8592; Back to Dashboard
+									</Button>
+								</div>
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Site Created'
+									"
+								>
+									<div class="text-base text-gray-900">
+										Your site
+										<span class="font-semibold text-gray-900">{{
+											$resources.siteRequest?.doc?.site
+										}}</span>
+										is ready.
+									</div>
+									<div class="py-3 text-base text-gray-900">
+										{{
+											$resources.siteRequest?.getLoginSid?.loading
+												? 'Logging in to your site...'
+												: ''
+										}}
+									</div>
+								</div>
+								<div v-else-if="$resources.siteRequest?.status == 'Error'">
+									<div class="text-p-base text-red-600">
+										There was an error creating your site. Please contact
+										<a class="underline" href="/support">Frappe Cloud Support</a
+										>.
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
-				</LoginBox>
+					<div class="absolute bottom-4 z-[1] flex w-full justify-center">
+						<FrappeLogo class="h-4" />
+					</div>
+				</div>
 				<div class="absolute bottom-12 left-1/2 -translate-x-1/2">
 					<Dropdown
 						:options="[
@@ -159,80 +270,29 @@
 					</Dropdown>
 				</div>
 			</div>
-			<Dialog
-				:options="{
-					title: 'Choose Plan',
-					size: '4xl',
-					actions: [
-						{
-							label: 'Select plan',
-							variant: 'solid',
-							onClick: () => {
-								this.plan = this.selectedPlan.name;
-								this.showPlanDialog = false;
-							}
-						},
-						{
-							label: 'Cancel',
-							onClick: () => {
-								this.plan = null;
-								this.showPlanDialog = false;
-							}
-						}
-					]
-				}"
-				v-model="showPlanDialog"
-			>
-				<template #body-content>
-					<p class="text-p-base text-gray-900">
-						You won't be charged during the {{ saasProduct.trial_days }}-day
-						trial period. The plan you select here will become active after the
-						trial period.
-					</p>
-					<SitePlansCards v-model="selectedPlan" class="mt-4" />
-				</template>
-				<template #actions>
-					<div class="flex items-center">
-						<Button
-							class="order-1 ml-2"
-							variant="solid"
-							@click="
-								() => {
-									this.plan = this.selectedPlan.name;
-									this.showPlanDialog = false;
-								}
-							"
-						>
-							Select Plan
-						</Button>
-						<Button
-							class="ml-auto"
-							@click="
-								() => {
-									this.plan = null;
-									this.selectedPlan = null;
-									this.showPlanDialog = false;
-								}
-							"
-						>
-							Cancel
-						</Button>
-					</div>
-				</template>
-			</Dialog>
+			<!-- Subscribe Now Dialog -->
+			<AppTrialSubscriptionDialog
+				v-if="showAppTrialSubscriptionDialog"
+				:site="siteRequest?.site"
+				:currentPlan="siteRequest?.site_plan"
+				:trialPlan="$resources.saasProduct?.doc?.trial_plan"
+				v-model="showAppTrialSubscriptionDialog"
+				@success="subscriptionConfirmed"
+			/>
 		</div>
 	</div>
 </template>
 <script>
-import { ErrorMessage, Progress } from 'frappe-ui';
-import LoginBox from '../components/auth/LoginBox.vue';
+import { ErrorMessage, Progress, createResource, Badge } from 'frappe-ui';
+import FCLogo from '@/components/icons/FCLogo.vue';
+import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
-import { validateSubdomain } from '../utils/site';
 import SitePlansCards from '../components/SitePlansCards.vue';
-import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { getPlans } from '../data/plans';
-import { trialDays } from '../utils/site';
-import { DashboardError } from '../utils/error';
+import { trialDays, isTrialEnded } from '../utils/site';
+import AlertBanner from '../components/AlertBanner.vue';
+import { toast } from 'vue-sonner';
+import AppTrialSubscriptionDialog from '../components/AppTrialSubscriptionDialog.vue';
+import Form from '@/components/Form.vue';
 
 export default {
 	name: 'NewAppTrial',
@@ -241,20 +301,36 @@ export default {
 		'element-size': vElementSize
 	},
 	components: {
-		LoginBox,
+		FCLogo,
+		FrappeLogo,
 		SitePlansCards,
-		ProductSignupPitch
+		AlertBanner,
+		AppTrialSubscriptionDialog,
+		Form
+	},
+	mounted() {
+		// Open subscription dialog if hash is #subscription and billing details or payment mode is not set
+		if (
+			this.$route.hash === '#subscription' &&
+			!(this.isBillingDetailsSet && this.isPaymentModeSet)
+		) {
+			this.$resources.getSiteRequest.promise.then(this.subscribeNow);
+		}
 	},
 	data() {
 		return {
-			subdomain: null,
+			siteRequestLoaded: false,
 			plan: null,
 			inputPaddingRight: null,
 			showPlanDialog: false,
 			selectedPlan: null,
 			progressErrorCount: 0,
 			findingClosestServer: false,
-			closestCluster: null
+			closestCluster: null,
+			loginAsTeamInProgressInSite: null,
+			showAppTrialSubscriptionDialog: false,
+			signupValues: {},
+			isCalledRedirection: false
 		};
 	},
 	resources: {
@@ -269,19 +345,23 @@ export default {
 			return {
 				type: 'document',
 				doctype: 'Product Trial',
-				name: this.productId
+				name: this.productId,
+				auto: true
 			};
 		},
 		siteRequest() {
-			if (!this.pendingSiteRequest || this.completedSites.length) return;
+			if (!this.siteRequest?.is_pending) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
-				name: this.pendingSiteRequest,
+				name: this.siteRequest.name,
 				realtime: true,
 				onSuccess(doc) {
-					if (doc.status == 'Wait for Site') {
-						this.siteRequest.getProgress.reload();
+					if (
+						doc.status == 'Wait for Site' ||
+						doc.status == 'Completing Setup Wizard'
+					) {
+						this.$resources.siteRequest.getProgress.reload();
 					}
 				},
 				whitelistedMethods: {
@@ -289,16 +369,17 @@ export default {
 						method: 'create_site',
 						makeParams(params) {
 							let cluster = params?.cluster;
-							return { plan: this.plan, cluster };
-						},
-						validate() {
-							if (!this.plan) {
-								throw new DashboardError('Please select a plan');
-							}
-							// throw new DashboardError(validateSubdomain(this.subdomain));
+							let signup_values = params?.signup_values;
+							return {
+								cluster,
+								signup_values
+							};
 						},
 						onSuccess() {
-							this.siteRequest.getProgress.reload();
+							this.$resources.siteRequest.getProgress.reload();
+						},
+						onerror(e) {
+							console.log(e);
 						}
 					},
 					getProgress: {
@@ -306,21 +387,22 @@ export default {
 						makeParams() {
 							return {
 								current_progress:
-									this.siteRequest.getProgress.data?.progress || 0
+									this.$resources.siteRequest.getProgress.data?.progress || 0
 							};
 						},
 						onSuccess(data) {
 							this.progressErrorCount += 1;
 							if (data.progress == 100) {
-								this.siteRequest.getLoginSid.fetch();
+								this.isCalledRedirection = true;
+								this.$resources.siteRequest.getLoginSid.fetch();
 							} else if (
 								!(
-									this.siteRequest.getProgress.error &&
+									this.$resources.siteRequest.getProgress.error &&
 									this.progressErrorCount <= 10
 								)
 							) {
 								setTimeout(() => {
-									this.siteRequest.getProgress.reload();
+									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
 						}
@@ -328,9 +410,13 @@ export default {
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(data) {
+							if (this.isCalledRedirection) return
 							let sid = data;
-							let loginURL = `https://${this.siteRequest.doc.site}/desk?sid=${sid}`;
-							window.location.href = loginURL;
+							let loginURL = `https://${this.$resources.siteRequest.doc.site}/desk?sid=${sid}`;
+							window.open(loginURL, '_blank');
+							setTimeout(() => {
+								window.location.reload();
+							}, 2000);
 						}
 					}
 				}
@@ -340,7 +426,10 @@ export default {
 	methods: {
 		async createSite() {
 			let cluster = await this.getClosestCluster();
-			return this.siteRequest.createSite.submit({ cluster });
+			return this.$resources.siteRequest.createSite.submit({
+				cluster,
+				signup_values: this.signupValues
+			});
 		},
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
@@ -376,36 +465,54 @@ export default {
 		onResize({ width }) {
 			this.inputPaddingRight = width + 10 + 'px';
 		},
+		loginAsTeam(site_name) {
+			if (this.loginAsTeamInProgressInSite) return;
+			this.loginAsTeamInProgressInSite = site_name;
+			let todo = createResource({
+				url: '/api/method/press.api.client.run_doc_method',
+				params: {
+					dt: 'Site',
+					dn: site_name,
+					method: 'login_as_team'
+				},
+				onSuccess: res => {
+					this.loginAsTeamInProgressInSite = null;
+					if (!res?.message) {
+						toast.error("Couldn't login to the site");
+						return;
+					}
+					window.open(res.message, '_blank');
+				},
+				onError: () => {
+					toast.error("Couldn't login to the site");
+				}
+			});
+			todo.fetch();
+		},
 		goToDashboard() {
 			window.location.reload();
 		},
-		trialDays
+		trialDays,
+		isTrialEnded,
+		subscribeNow() {
+			this.showAppTrialSubscriptionDialog = true;
+		},
+		subscriptionConfirmed() {
+			this.$resources.getSiteRequest.reload();
+		}
 	},
 	computed: {
-		pendingSiteRequest() {
-			return this.$resources.getSiteRequest.data?.pending || null;
-		},
-		completedSites() {
-			return this.$resources.getSiteRequest.data?.completed || [];
-		},
 		siteRequest() {
-			return this.$resources.siteRequest;
+			return this.$resources.getSiteRequest?.data ?? {};
 		},
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
 		},
-		selectedPlanDescription() {
-			if (!this.plan) return;
-			let plan = getPlans().find(plan => plan.name == this.plan);
-			let country = this.$team.doc.country;
-			let pricePerMonth = this.$format.userCurrency(
-				country === 'India' ? plan.price_inr : plan.price_usd,
-				0
-			);
-			return `${pricePerMonth} per month`;
+		saasProductSignupFields() {
+			return this.saasProduct?.signup_fields ?? [];
 		},
 		progressError() {
-			if (!this.siteRequest?.getProgress.data?.error) return;
+			if (!this.$resources.siteRequest?.getProgress?.data?.error) return;
 			if (this.progressErrorCount > 9) {
 				return 'An error occurred. Please contact <a href="/support">Frappe Cloud Support</a>.';
 			}
@@ -413,12 +520,13 @@ export default {
 				return 'An error occurred';
 			}
 			return null;
+		},
+		isBillingDetailsSet() {
+			return Boolean(this.$team.doc.billing_details?.name);
+		},
+		isPaymentModeSet() {
+			return Boolean(this.$team.doc.payment_mode);
 		}
 	}
 };
 </script>
-<style scoped>
-.subdomain :deep(input) {
-	padding-right: v-bind(inputPaddingRight);
-}
-</style>

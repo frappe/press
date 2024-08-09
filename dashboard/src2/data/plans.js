@@ -10,6 +10,10 @@ export function fetchPlans() {
 	plans.fetch();
 }
 
+/**
+ * Get plans
+ * @returns {Array} List of plans
+*/
 export function getPlans() {
 	return plans.data || [];
 }

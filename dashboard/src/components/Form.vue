@@ -79,7 +79,8 @@ export default {
 				Select: 'select',
 				Check: 'checkbox',
 				Password: 'password',
-				Text: 'textarea'
+				Text: 'textarea',
+				Date: 'date'
 			}[field.fieldtype || 'Data'];
 		}
 	}

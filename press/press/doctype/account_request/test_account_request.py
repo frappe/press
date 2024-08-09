@@ -31,6 +31,7 @@ def create_test_account_request(
 				"erpnext": erpnext,
 				"saas": saas,
 				"saas_app": saas_app,
+				"otp": "",
 			}
 		).insert(ignore_if_duplicate=True)
 		account_request.db_set("creation", creation)

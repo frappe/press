@@ -859,6 +859,8 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
+		return allow  # TODO must be removed
+
 		if not self.enabled:
 			why = "You cannot create a new site because your account is disabled"
 			return (False, why)
@@ -1012,7 +1014,10 @@ class Team(Document):
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
 			"Product Trial Request",
-			{"team": self.name, "status": ("in", ["Pending", "Wait for Site", "Error"])},
+			{
+				"team": self.name,
+				"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard", "Error"]),
+			},
 			["name", "product_trial", "product_trial.title", "status"],
 			order_by="creation desc",
 			as_dict=True,

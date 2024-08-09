@@ -817,27 +817,29 @@ def get_site_request(product):
 			"team": team.name,
 			"product_trial": product,
 		},
-		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
+		fields=["name", "status", "site", "site.trial_end_date as trial_end_date", "site.status as site_status", "site.plan as site_plan"],
 		order_by="creation desc",
 	).run(as_dict=1)
-	if not requests:
+	if requests:
+		site_request = requests[0]
+		site_request.is_pending = (not site_request.site) or site_request.status in ["Pending", "Wait for Site", "Completing Setup Wizard" ,"Error"]
+	else:
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return {"pending": site_request.name}
-	else:
-		pending = [
-			d
-			for d in requests
-			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
-		]
-		return {
-			"pending": pending[0].name if pending else None,
-			"completed": [d for d in requests if d.site and d.status == "Site Created"],
-		}
+		site_request.is_pending = True
 
+	if hasattr(site_request, 'site_plan') and site_request.site_plan:
+		record = frappe.get_value("Site Plan", site_request.site_plan, ["is_trial_plan", "price_inr", "price_usd"], as_dict=1)
+		site_request.is_trial_plan = bool(frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan"))
+		if team.currency == "INR":
+			site_request.site_plan_description = f"₹{record.price_inr} / month"
+		else:
+			site_request.site_plan_description = f"${record.price_usd} / month"
+	
+	return site_request
 
 def redirect_to(location):
 	return build_response(

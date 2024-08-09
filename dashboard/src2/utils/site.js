@@ -22,6 +22,12 @@ export function trialDays(_trialEndDate) {
 	}
 }
 
+export function isTrialEnded(_trialEndDate) {
+	let trialEndDate = dayjsLocal(_trialEndDate);
+	let today = dayjsLocal();
+	return trialEndDate.isBefore(today, 'day');
+}
+
 export function validateSubdomain(subdomain) {
 	if (!subdomain) {
 		return 'Subdomain cannot be empty';
