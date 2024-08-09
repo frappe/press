@@ -11,8 +11,6 @@
   "column_break_bqrh",
   "logo",
   "published",
-  "section_break_gogi",
-  "description",
   "section_break_rvnt",
   "domain",
   "release_group",
@@ -128,20 +126,10 @@
    "options": "Product Trial Signup Field"
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Markdown Editor",
-   "label": "Description"
-  },
-  {
    "default": "14",
    "fieldname": "trial_days",
    "fieldtype": "Int",
    "label": "Trial Duration (Days)"
-  },
-  {
-   "fieldname": "section_break_gogi",
-   "fieldtype": "Section Break",
-   "hide_border": 1
   },
   {
    "fieldname": "trial_plan",
@@ -182,7 +170,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-06 13:49:17.360298",
+ "modified": "2024-08-09 14:19:54.069290",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

@@ -3,11 +3,6 @@
 		class="flex h-screen overflow-hidden bg-gray-50"
 		v-if="!$resources.validateRequestKey.loading && email"
 	>
-		<ProductSignupPitch
-			v-if="saasProduct"
-			:saasProduct="saasProduct"
-			class="order-1 hidden sm:block"
-		/>
 		<div class="w-full overflow-auto">
 			<LoginBox>
 				<div
@@ -119,15 +114,13 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
-import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
 		LoginBox,
 		Link,
-		Form,
-		ProductSignupPitch
+		Form
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {

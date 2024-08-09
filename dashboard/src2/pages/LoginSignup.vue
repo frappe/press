@@ -1,10 +1,5 @@
 <template>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50">
-		<ProductSignupPitch
-			v-if="saasProduct"
-			:saasProduct="saasProduct"
-			class="order-1 hidden sm:block"
-		/>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="title"
@@ -213,15 +208,13 @@
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
-import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { toast } from 'vue-sonner';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
-		GoogleIconSolid,
-		ProductSignupPitch
+		GoogleIconSolid
 	},
 	data() {
 		return {
@@ -428,11 +421,15 @@ export default {
 		title() {
 			if (this.hasForgotPassword) {
 				return 'Reset password';
-			} else if (this.saasProduct) {
-				return `Sign in to your account to start using ${this.saasProduct.title}`;
 			} else if (this.isLogin) {
+				if (this.saasProduct) {
+					return `Sign in to your account to start using ${this.saasProduct.title}`;
+				}
 				return 'Sign in to your account';
 			} else {
+				if (this.saasProduct) {
+					return `Sign up to create ${this.saasProduct.title} site`;
+				}
 				return 'Create a new account';
 			}
 		}

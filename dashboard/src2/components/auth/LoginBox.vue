@@ -1,7 +1,7 @@
 <template>
 	<div class="relative h-full">
 		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
-			<div class="flex" @dblclick="redirectForFrappeioAuth">
+			<div class="flex flex-col items-center" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
 						<FCLogo class="inline-block h-7 w-7" />
@@ -11,6 +11,7 @@
 							Frappe Cloud
 						</span>
 					</div>
+					<p class="mt-2 text-base text-gray-800">Hassle-free hosting for Frappe apps</p>
 				</slot>
 			</div>
 			<div

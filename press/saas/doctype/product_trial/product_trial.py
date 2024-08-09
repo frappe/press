@@ -21,7 +21,6 @@ class ProductTrial(Document):
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
 
 		apps: DF.Table[ProductTrialApp]
-		description: DF.MarkdownEditor | None
 		domain: DF.Link
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None

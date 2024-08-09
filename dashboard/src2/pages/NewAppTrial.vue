@@ -1,11 +1,6 @@
 <template>
 	<div v-if="saasProduct">
 		<div class="flex min-h-screen sm:bg-gray-50">
-			<ProductSignupPitch
-				class="order-1 hidden sm:block"
-				v-if="saasProduct"
-				:saasProduct="saasProduct"
-			/>
 			<div
 				class="flex w-full items-start justify-center pt-32"
 				v-if="$resources.getSiteRequest.error"
@@ -19,7 +14,7 @@
 			<div class="relative w-full" v-if="saasProduct">
 				<div class="relative h-full">
 					<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
-						<div class="flex">
+						<div class="flex flex-col items-center">
 							<div class="mx-auto flex items-center space-x-2">
 								<FCLogo class="inline-block h-7 w-7" />
 								<span
@@ -27,21 +22,11 @@
 								>
 									Frappe Cloud
 								</span>
-								<p class="mx-1 text-3xl font-semibold">+</p>
-
-								<img
-									:src="saasProduct.logo"
-									class="inline-block h-7 w-7 rounded-sm"
-								/>
-								<span
-									class="select-none text-xl font-semibold tracking-tight text-gray-900"
-								>
-									{{ saasProduct.title }}
-								</span>
 							</div>
+							<p class="mt-2 text-gray-800">Hassle-free hosting for Frappe apps</p>
 						</div>
 						<div
-							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-6 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
+							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-8 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
 						>
 							<div
 								class="mb-6 text-center"
@@ -303,7 +288,6 @@ import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
 import SitePlansCards from '../components/SitePlansCards.vue';
-import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { trialDays, isTrialEnded } from '../utils/site';
 import AlertBanner from '../components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
@@ -320,7 +304,6 @@ export default {
 		FCLogo,
 		FrappeLogo,
 		SitePlansCards,
-		ProductSignupPitch,
 		AlertBanner,
 		AppTrialSubscriptionDialog,
 		Form
