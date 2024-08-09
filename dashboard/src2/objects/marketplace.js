@@ -569,7 +569,7 @@ export default {
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
 						window.open(
-							'https://frappecloud.com/docs/marketplace/marketpace-guidelines',
+							'https://frappecloud.com/docs/marketplace/marketplace-guidelines',
 							'_blank'
 						);
 					}
