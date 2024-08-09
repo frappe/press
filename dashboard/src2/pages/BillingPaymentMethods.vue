@@ -182,22 +182,22 @@ export default {
 		cardBrandIcon(brand) {
 			let component = {
 				'master-card': defineAsyncComponent(() =>
-					import('@/components/icons/cards/MasterCard.vue')
+					import('../components/icons/cards/MasterCard.vue')
 				),
 				visa: defineAsyncComponent(() =>
-					import('@/components/icons/cards/Visa.vue')
+					import('../components/icons/cards/Visa.vue')
 				),
 				amex: defineAsyncComponent(() =>
-					import('@/components/icons/cards/Amex.vue')
+					import('../components/icons/cards/Amex.vue')
 				),
 				jcb: defineAsyncComponent(() =>
-					import('@/components/icons/cards/JCB.vue')
+					import('../components/icons/cards/JCB.vue')
 				),
 				generic: defineAsyncComponent(() =>
-					import('@/components/icons/cards/Generic.vue')
+					import('../components/icons/cards/Generic.vue')
 				),
 				'union-pay': defineAsyncComponent(() =>
-					import('@/components/icons/cards/UnionPay.vue')
+					import('../components/icons/cards/UnionPay.vue')
 				)
 			}[brand || 'generic'];
 

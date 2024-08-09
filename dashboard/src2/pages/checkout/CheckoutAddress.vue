@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import { indianStates } from '@/utils/billing';
+import { indianStates } from '../../utils/billing';
 
 export default {
 	name: 'CheckoutAddress',

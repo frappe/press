@@ -25,8 +25,8 @@
 </template>
 
 <script>
-import Form from '@/components/Form.vue';
-import { indianStates } from '@/utils/billing.js';
+import Form from './Form.vue';
+import { indianStates } from '../utils/billing';
 import { DashboardError } from '../utils/error';
 
 export default {

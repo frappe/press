@@ -261,7 +261,7 @@ export default {
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../../src/views/site/SiteCharts.vue')
+					import('../components/site/SiteCharts.vue')
 				),
 				props: site => {
 					return { siteName: site.doc?.name };

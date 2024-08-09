@@ -252,7 +252,7 @@
 								/>
 								<div>
 									<span class="text-base font-semibold">{{ app.title }}</span>
-									<p class="line-clamp-1 mt-1 text-sm text-gray-600">
+									<p class="mt-1 line-clamp-1 text-sm text-gray-600">
 										{{ app.description }}
 									</p>
 								</div>
@@ -278,7 +278,7 @@ export default {
 			import('./UpdateBillingDetailsForm.vue')
 		),
 		CardWithDetails: defineAsyncComponent(() =>
-			import('../../src/components/CardWithDetails.vue')
+			import('./billing/CardWithDetails.vue')
 		),
 		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
 			import('./BuyPrepaidCreditsForm.vue')

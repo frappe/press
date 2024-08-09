@@ -1,7 +1,7 @@
 <script setup>
 import { reactive } from 'vue';
 import { createResource } from 'frappe-ui';
-import StarRatingInput from '@/components/StarRatingInput.vue';
+import StarRatingInput from '../StarRatingInput.vue';
 import { getDocResource } from '../../utils/resource';
 import { DashboardError } from '../../utils/error';
 

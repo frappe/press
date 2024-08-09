@@ -117,8 +117,8 @@
 
 <script>
 import LoginBox from '../components/auth/LoginBox.vue';
-import Link from '@/components/Link.vue';
-import Form from '@/components/Form.vue';
+import Link from '../components/Link.vue';
+import Form from '../components/Form.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 
 export default {

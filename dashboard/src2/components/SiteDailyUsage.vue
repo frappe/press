@@ -25,7 +25,7 @@
 </template>
 <script>
 import dayjs from '../utils/dayjs';
-import LineChart from '@/components/charts/LineChart.vue';
+import LineChart from './charts/LineChart.vue';
 
 export default {
 	name: 'CPUUsage',

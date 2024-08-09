@@ -62,7 +62,7 @@
 								>
 									Current Plan
 								</Badge>
-								<CheckCircleIcon
+								<GreenCheckIcon
 									v-else-if="selectedPlan == plan"
 									class="h-5 w-5"
 								/>
@@ -118,8 +118,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { Badge, ErrorMessage, TextInput } from 'frappe-ui';
-import LoginBox from '../partials/LoginBox.vue';
-import CheckCircleIcon from '@/components/icons/CheckCircleIcon.vue';
+import LoginBox from '../../components/auth/LoginBox.vue';
 
 export default {
 	name: 'Subscription',
@@ -128,9 +127,8 @@ export default {
 		LoginBox,
 		Badge,
 		TextInput,
-		CheckCircleIcon,
 		StripeCard: defineAsyncComponent(() =>
-			import('@/components/StripeCard.vue')
+			import('../../components/StripeCard.vue')
 		),
 		ErrorMessage
 	},

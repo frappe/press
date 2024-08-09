@@ -77,7 +77,7 @@
 
 <script>
 import AddressForm from './AddressForm.vue';
-import StripeLogo from '@/components/StripeLogo.vue';
+import StripeLogo from './icons/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'vue-sonner';
 

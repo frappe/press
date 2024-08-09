@@ -33,9 +33,9 @@
 </template>
 
 <script>
-import FCLogo from '@/components/icons/FCLogo.vue';
-import FrappeLogo from '@/components/icons/FrappeLogo.vue';
-import { notify } from '@/utils/toast';
+import FCLogo from '../icons/FCLogo.vue';
+import FrappeLogo from '../icons/FrappeLogo.vue';
+import toast from 'vue-sonner';
 
 export default {
 	name: 'LoginBox',
@@ -48,11 +48,7 @@ export default {
 		const params = new URLSearchParams(window.location.search);
 
 		if (params.get('showRemoteLoginError')) {
-			notify({
-				title: 'Token Invalid or Expired',
-				color: 'red',
-				icon: 'x'
-			});
+			toast.error('Token Invalid or Expired');
 		}
 	},
 	methods: {

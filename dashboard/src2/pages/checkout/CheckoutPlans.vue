@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import FeatureList from '@/components/FeatureList.vue';
+import FeatureList from '../../components/FeatureList.vue';
 
 export default {
 	name: 'Apps',
