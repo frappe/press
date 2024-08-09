@@ -9,8 +9,6 @@ from frappe.utils.safe_exec import safe_exec
 import urllib
 
 from press.api.client import dashboard_whitelist
-from press.press.doctype.site.site import Site
-from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 class ProductTrialRequest(Document):
@@ -113,7 +111,7 @@ class ProductTrialRequest(Document):
 
 	def validate_signup_fields(self):
 		signup_values = json.loads(self.signup_details)
-		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
+		product = frappe.get_doc("Product Trial", self.product_trial)
 		# Validate signup values
 		for field in product.signup_fields:
 			if field.fieldname not in signup_values:
@@ -128,7 +126,7 @@ class ProductTrialRequest(Document):
 			signup_values = {}
 		self.signup_details = json.dumps(signup_values)
 		self.validate_signup_fields()
-		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
+		product = frappe.get_doc("Product Trial", self.product_trial)
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 		self.reload()
@@ -216,7 +214,7 @@ class ProductTrialRequest(Document):
 		# Retry 3 times before failing
 		while True:
 			try:
-				site: "Site" = frappe.get_doc("Site", self.site)
+				site = frappe.get_doc("Site", self.site)
 				client = site.get_connection_as_admin()
 				response = client.post_api(
 					"frappe.desk.page.setup_wizard.setup_wizard.setup_complete",

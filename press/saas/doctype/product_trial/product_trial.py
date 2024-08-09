@@ -5,7 +5,6 @@ import frappe
 from frappe.model.document import Document
 
 import frappe.utils
-from press.press.doctype.site.site import Site
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -64,7 +63,7 @@ class ProductTrial(Document):
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
-		site: "Site" = None
+		site = None
 		agent_job_name = None
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
