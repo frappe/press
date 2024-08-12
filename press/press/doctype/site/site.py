@@ -474,10 +474,15 @@ class Site(Document, TagHelpers):
 		# Telemetry: Send event if first site status changed to Active
 		if self.status == "Active" and self.has_value_changed("status"):
 			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+			if frappe.db.count("Site", {"team": team.name}) <= 1:
 				from press.utils.telemetry import capture
 
-				capture("first_site_status_changed_to_active", "fc_signup", team.user)
+				if team.account_request:
+					account_request = frappe.get_doc("Account Request", team.account_request)
+					if not (
+						account_request.is_saas_signup() or account_request.invited_by_parent_team
+					):
+						capture("first_site_status_changed_to_active", "fc_signup", team.user)
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -670,7 +675,10 @@ class Site(Document, TagHelpers):
 		if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 			from press.utils.telemetry import capture
 
-			capture("created_first_site", "fc_signup", team.user)
+			if team.account_request:
+				account_request = frappe.get_doc("Account Request", team.account_request)
+				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
+					capture("created_first_site", "fc_signup", team.user)
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
@@ -1525,7 +1533,12 @@ class Site(Document, TagHelpers):
 			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
 				from press.utils.telemetry import capture
 
-				capture("first_site_setup_wizard_completed", "fc_signup", team.user)
+				if team.account_request:
+					account_request = frappe.get_doc("Account Request", team.account_request)
+					if not (
+						account_request.is_saas_signup() or account_request.invited_by_parent_team
+					):
+						capture("first_site_setup_wizard_completed", "fc_signup", team.user)
 
 		return setup_complete
 
