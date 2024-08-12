@@ -617,7 +617,10 @@ class Team(Document):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
 		else:
-			capture("added_billing_address", "fc_signup", self.user)
+			if self.account_request:
+				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
+				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
+					capture("added_billing_address", "fc_signup", self.user)
 			address_doc = frappe.new_doc("Address")
 			address_doc.address_title = billing_details.billing_name or self.billing_name
 			address_doc.append(
