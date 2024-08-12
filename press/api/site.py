@@ -17,7 +17,6 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
-
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -39,7 +38,6 @@ from press.utils import (
 
 if TYPE_CHECKING:
 	from frappe.types import DF
-
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -52,6 +50,21 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 def protected(doctypes):
+	"""
+	This decorator is stupid. It works in magical ways. It checks whether the
+	owner of the Doctype (one of `doctypes`) is the same as the current team.
+
+	The stupid magical part of this decorator is how it gets the name of the
+	Doctype (see: `get_protected_doctype_name`); in order of precedence:
+	1. kwargs value with key `name`
+	2. first value in kwargs value with key `filters` i.e. ≈ `kwargs['filters'].values()[0]`
+	3. first value in the args tuple
+	4. kwargs value with key `snake_case(doctypes[0])`
+	"""
+
+	if not isinstance(doctypes, list):
+		doctypes = [doctypes]
+
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
@@ -60,16 +73,11 @@ def protected(doctypes):
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		# name is either name or 1st value from filters dict from kwargs or 1st value from args
-		name = (
-			kwargs.get("name") or next(iter(kwargs.get("filters", {}).values()), None) or args[0]
-		)
+		name = get_protected_doctype_name(args, kwargs, doctypes)
+		if not name:
+			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
+
 		team = get_current_team()
-
-		nonlocal doctypes
-		if not isinstance(doctypes, list):
-			doctypes = [doctypes]
-
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
@@ -79,6 +87,41 @@ def protected(doctypes):
 		frappe.throw("Not Permitted", frappe.PermissionError)
 
 	return wrapper
+
+
+def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
+	# 1. Name from kwargs["name"]
+	if name := kwargs.get("name"):
+		return name
+
+	# 2. Name from first value in filters
+	filters = kwargs.get("filters")
+	if name := get_name_from_filters(filters):
+		return name
+
+	#  3. Name from first value in args
+	if len(args) >= 1 and args[0]:
+		return args[0]
+
+	if len(doctypes) == 0:
+		return None
+
+	# 4. Name from snakecased first `doctypes` name
+	doctype = doctypes[0]
+	key = doctype.lower().replace(" ", "_")
+	return kwargs.get(key)
+
+
+def get_name_from_filters(filters: dict):
+	values = [v for v in filters.values()]
+	if len(values) == 0:
+		return None
+
+	value = values[0]
+	if isinstance(value, (int, str)):
+		return value
+
+	return None
 
 
 def _new(site, server: str = None, ignore_plan_validation: bool = False):
