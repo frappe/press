@@ -99,6 +99,13 @@ export default {
 						step.isOpen =
 							this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
 					}
+
+					// on delivery failure, there'll be no output for any step
+					// so show the job output (error) in the first step
+					if (job.status === 'Delivery Failure') {
+						job.steps[0].output = job.output;
+					}
+
 					return job;
 				},
 				onSuccess() {

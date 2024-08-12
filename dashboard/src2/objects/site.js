@@ -559,7 +559,7 @@ export default {
 							},
 							{
 								label: 'Set Primary',
-								condition: () => !row.primary,
+								condition: () => !row.primary && row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Set Primary Domain`,
@@ -589,7 +589,10 @@ export default {
 							},
 							{
 								label: 'Redirect to Primary',
-								condition: () => !row.primary && !row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									!row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
@@ -619,7 +622,10 @@ export default {
 							},
 							{
 								label: 'Remove Redirect',
-								condition: () => !row.primary && row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,

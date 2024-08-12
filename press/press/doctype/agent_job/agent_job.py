@@ -91,6 +91,7 @@ class AgentJob(Document):
 		"site",
 		"server",
 		"job_id",
+		"output",
 	]
 
 	@staticmethod

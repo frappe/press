@@ -11,6 +11,7 @@ from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.utils.telemetry import capture
 
 
 class StripePaymentMethod(Document):
@@ -102,6 +103,11 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 		if not frappe.db.get_value("Team", self.team, "payment_mode"):
 			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
+			account_request_name = frappe.get_value("Team", self.team, "account_request")
+			if account_request_name:
+				account_request = frappe.get_doc("Account Request", account_request_name)
+				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
+					capture("added_card_or_prepaid_credits", "fc_signup", account_request.email)
 
 	def on_trash(self):
 		self.remove_address_links()
