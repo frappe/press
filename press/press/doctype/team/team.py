@@ -411,7 +411,11 @@ class Team(Document):
 		):
 			old_doc = self.get_doc_before_save()
 			# Validate that the team has no payment method set previously or it was set to Free Credits
-			if (not old_doc.payment_mode) or old_doc.payment_mode == "Free Credits":
+			if (
+				(not old_doc)
+				or (not old_doc.payment_mode)
+				or old_doc.payment_mode == "Free Credits"
+			):
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
 				# Only capture if it's not a saas signup or invited by parent team
 				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
@@ -613,6 +617,7 @@ class Team(Document):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
 		else:
+			capture("added_billing_address", "fc_signup", self.user)
 			address_doc = frappe.new_doc("Address")
 			address_doc.address_title = billing_details.billing_name or self.billing_name
 			address_doc.append(
@@ -1317,6 +1322,10 @@ def handle_payment_intent_succeeded(payment_intent):
 
 	if not team.payment_mode:
 		frappe.db.set_value("Team", team.name, "payment_mode", "Prepaid Credits")
+		if team.account_request:
+			ar: "AccountRequest" = frappe.get_doc("Account Request", team.account_request)
+			if not (ar.is_saas_signup() or ar.invited_by_parent_team):
+				capture("added_card_or_prepaid_credits", "fc_signup", team.user)
 
 	# latest stripe API sets charge id in latest_charge
 	charge = payment_intent.get("latest_charge")
