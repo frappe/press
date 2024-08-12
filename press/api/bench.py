@@ -468,6 +468,9 @@ def all_apps(name):
 		fields=["name", "title", "image", "app"],
 	)
 
+	if not marketplace_apps:
+		return []
+
 	AppSource = frappe.qb.DocType("App Source")
 	AppSourceVersion = frappe.qb.DocType("App Source Version")
 	marketplace_app_sources = (
