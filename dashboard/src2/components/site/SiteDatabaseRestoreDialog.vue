@@ -48,7 +48,8 @@
 	</Dialog>
 </template>
 <script>
-import { DashboardError } from '../utils/error';
+import { DashboardError } from '../../utils/error';
+import BackupFilesUploader from '../BackupFilesUploader.vue';
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -57,6 +58,9 @@ export default {
 			type: String,
 			required: true
 		}
+	},
+	components: {
+		BackupFilesUploader
 	},
 	data() {
 		return {

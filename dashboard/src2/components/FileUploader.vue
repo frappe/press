@@ -24,12 +24,10 @@
 </template>
 
 <script>
-import FileUploader from '@/controllers/fileUploader';
-import S3FileUploader from '@/controllers/s3FileUploader';
-import { trypromise } from '@/utils';
+import FileUploader from '../../src2/controllers/fileUploader';
+import S3FileUploader from '../../src2/controllers/s3FileUploader';
 
 export default {
-	name: 'FileUploader',
 	props: ['fileTypes', 'uploadArgs', 's3', 'type', 'fileValidator'],
 	data() {
 		return {
@@ -57,6 +55,15 @@ export default {
 			this.$refs['input'].click();
 		},
 		async onFileAdd(e) {
+			async function trypromise(promise) {
+				try {
+					let data = await promise;
+					return [null, data];
+				} catch (error) {
+					return [error, null];
+				}
+			}
+
 			this.error = null;
 			this.file = e.target.files[0];
 

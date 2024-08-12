@@ -177,7 +177,7 @@
 
 <script>
 import { TextEditor } from 'frappe-ui';
-import FileUploader from '@/components/FileUploader.vue';
+import FileUploader from './FileUploader.vue';
 import { toast } from 'vue-sonner';
 
 export default {

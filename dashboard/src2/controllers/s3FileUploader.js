@@ -1,4 +1,4 @@
-import call from './call';
+import { frappeRequest } from 'frappe-ui';
 
 export default class S3FileUploader {
 	constructor() {
@@ -68,7 +68,8 @@ export default class S3FileUploader {
 						}
 						let out =
 							r.message ||
-							call('press.api.site.uploaded_backup_info', {
+							frappeRequest({
+								url: 'press.api.site.uploaded_backup_info',
 								file: file.name,
 								path: file_path,
 								type: file.type,

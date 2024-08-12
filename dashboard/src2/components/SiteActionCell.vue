@@ -42,7 +42,7 @@ const site = getCachedDocumentResource('Site', props.siteName);
 function getSiteActionHandler(action) {
 	const actionDialogs = {
 		'Restore with files': defineAsyncComponent(() =>
-			import('./SiteDatabaseRestoreDialog.vue')
+			import('./site/SiteDatabaseRestoreDialog.vue')
 		),
 		'Restore from an existing site': defineAsyncComponent(() =>
 			import('./site/SiteDatabaseRestoreFromURLDialog.vue')

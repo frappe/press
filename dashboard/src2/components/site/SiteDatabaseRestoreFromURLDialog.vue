@@ -62,7 +62,6 @@ import { date } from '../../utils/format';
 import { DashboardError } from '../../utils/error';
 
 export default {
-	name: 'SiteDatabaseRestoreDialog',
 	props: {
 		site: {
 			type: String,

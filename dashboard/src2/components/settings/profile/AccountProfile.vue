@@ -165,7 +165,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import FileUploader from '@/components/FileUploader.vue';
+import FileUploader from '../../FileUploader.vue';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
