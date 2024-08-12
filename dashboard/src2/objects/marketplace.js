@@ -535,7 +535,7 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-					size: '4xl'
+					size: '6xl'
 				}
 			},
 			{
@@ -578,6 +578,12 @@ function showReleases(row, app) {
 									fieldname: 'status',
 									type: 'Badge',
 									width: 0.3
+								},
+								{
+									label: 'Code Screening',
+									fieldname: 'screening_status',
+									type: 'Badge',
+									width: 0.2
 								},
 								{
 									label: '',
