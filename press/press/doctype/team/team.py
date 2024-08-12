@@ -853,7 +853,6 @@ class Team(Document):
 				"email": email,
 				"role": "Press Member",
 				"invited_by": self.user,
-				"new_signup_flow": True,
 				"send_email": True,
 			}
 		)

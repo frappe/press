@@ -31,7 +31,7 @@ from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None, new_signup_flow=False):
+def signup(email, product=None, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -56,7 +56,6 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 				"referrer_id": referrer,
 				"product_trial": product,
 				"send_email": True,
-				"new_signup_flow": new_signup_flow,
 			}
 		).insert()
 
@@ -100,7 +99,6 @@ def setup_account(
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
-	signup_values=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -132,11 +130,6 @@ def setup_account(
 	email = account_request.email
 	role = account_request.role
 	press_roles = account_request.press_roles
-
-	if signup_values:
-		account_request.saas_signup_values = json.dumps(signup_values, separators=(",", ":"))
-		account_request.save(ignore_permissions=True)
-		account_request.reload()
 
 	if is_invitation:
 		# if this is a request from an invitation

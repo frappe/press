@@ -60,11 +60,6 @@
 							v-model="country"
 							required
 						/>
-						<!-- <Form
-							v-if="signupFields.length > 0"
-							:fields="signupFields"
-							v-model="signupValues"
-						/> -->
 						<div class="mt-4 flex items-start">
 							<label class="text-base text-gray-900">
 								<FormControl type="checkbox" v-model="termsAccepted" />
@@ -189,7 +184,6 @@ export default {
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
-					signup_values: this.signupValues
 				},
 				onSuccess() {
 					let path = '/dashboard';
@@ -201,20 +195,6 @@ export default {
 			};
 		}
 	},
-	computed: {
-		signupFields() {
-			let fields = this.saasProduct?.signup_fields || [];
-			return fields.map(df => {
-				if (df.fieldtype == 'Select') {
-					df.options = df.options
-						.split('\n')
-						.map(o => o.trim())
-						.filter(Boolean);
-				}
-				df.required = true;
-				return df;
-			});
-		}
-	}
+
 };
 </script>

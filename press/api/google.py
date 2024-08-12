@@ -103,7 +103,6 @@ def callback(code=None, state=None):
 			first_name=id_info.get("given_name"),
 			last_name=id_info.get("family_name"),
 			phone_number=phone_number,
-			new_signup_flow=1,
 			role="Press Admin",
 		)
 		if product_trial:

@@ -241,8 +241,7 @@ export default {
 				params: {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
-					product: this.$route.query.product,
-					new_signup_flow: true
+					product: this.$route.query.product
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;

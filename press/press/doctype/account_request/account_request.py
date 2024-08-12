@@ -22,9 +22,7 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.account_request_press_role.account_request_press_role import (
-			AccountRequestPressRole,
-		)
+		from press.press.doctype.account_request_press_role.account_request_press_role import AccountRequestPressRole
 
 		agreed_to_partner_consent: DF.Check
 		company: DF.Data | None
@@ -40,7 +38,6 @@ class AccountRequest(Document):
 		ip_address: DF.Data | None
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
-		new_signup_flow: DF.Check
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
@@ -55,7 +52,6 @@ class AccountRequest(Document):
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
-		saas_signup_values: DF.SmallText | None
 		send_email: DF.Check
 		state: DF.Data | None
 		subdomain: DF.Data | None
