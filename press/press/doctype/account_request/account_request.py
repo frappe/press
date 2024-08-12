@@ -90,7 +90,7 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def after_insert(self):
-		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user is already have a team
+		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
 		if not (
 			frappe.db.exists("Team", {"user": self.email})
 			or self.is_saas_signup()
@@ -106,6 +106,9 @@ class AccountRequest(Document):
 
 		if self.send_email:
 			self.send_verification_email()
+		if self.oauth_signup:
+			# Telemetry: simulate verification email sent
+			capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()

@@ -316,7 +316,8 @@ def validate_request_key(key, timezone=None):
 		product_trial_doc = (
 			frappe.get_doc("Product Trial", product_trial) if product_trial else None
 		)
-		capture("clicked_verify_link", "fc_signup", account_request.email)
+		if not account_request.is_saas_signup():
+			capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
 			"email": account_request.email,
 			"first_name": account_request.first_name,

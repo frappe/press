@@ -404,11 +404,18 @@ class Team(Document):
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
 		if (
-			self.has_value_changed("payment_mode") and self.payment_mode and self.account_request
+			self.has_value_changed("payment_mode")
+			and self.payment_mode
+			and self.account_request
+			and self.payment_mode != "Free Credits"
 		):
-			ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
-			if not (ar.is_saas_signup() or ar.invited_by_parent_team):
-				capture("added_card_or_prepaid_credits", "fc_signup", self.user)
+			old_doc = self.get_doc_before_save()
+			# Validate that the team has no payment method set previously or it was set to Free Credits
+			if (not old_doc.payment_mode) or old_doc.payment_mode == "Free Credits":
+				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
+				# Only capture if it's not a saas signup or invited by parent team
+				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
+					capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 
 	def on_update(self):
 		self.validate_payment_mode()
