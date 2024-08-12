@@ -245,9 +245,13 @@ router.beforeEach(async (to, from, next) => {
 
 		// identify user in posthog
 		if (window.posthog?.__loaded) {
-			window.posthog.identify($team.doc.user, {
-				app: 'frappe_cloud'
-			});
+			try {
+				window.posthog.identify($team.doc.user, {
+					app: 'frappe_cloud'
+				});
+			} catch (e) {
+				console.error(e);
+			}
 		}
 
 		let visitingSiteOrBillingOrSettings =
