@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from contextlib import suppress
 import _io
 import json
 import os
@@ -812,14 +813,18 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result):
+	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
 			return
 
+		reason = None
+		with suppress(TypeError, ValueError):
+			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+
 		message = f"""
-			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
-			Response: {getattr(result, 'text', 'Unknown')}
-		"""
+Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Response: {reason or getattr(result, 'text', 'Unknown')}
+"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 
