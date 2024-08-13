@@ -22,7 +22,7 @@ function getCurrentTeam() {
 		document.cookie.includes('user_id=Guest') ||
 		!document.cookie.includes('user_id')
 	) {
-		throw new Error('Not logged in');
+		window.location.href = '/login';
 	}
 	let currentTeam = localStorage.getItem('current_team');
 	if (
