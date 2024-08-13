@@ -24,6 +24,10 @@ class ProductTrial(Document):
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
+		email_account: DF.Link | None
+		email_full_logo: DF.AttachImage | None
+		email_header_content: DF.Code
+		email_subject: DF.Data | None
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
 		published: DF.Check

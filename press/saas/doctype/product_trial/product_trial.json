@@ -26,6 +26,13 @@
   "standby_queue_size",
   "signup_details_tab",
   "signup_fields",
+  "email_section",
+  "email_account",
+  "column_break_gokr",
+  "email_full_logo",
+  "section_break_ncgc",
+  "email_subject",
+  "email_header_content",
   "setup_wizard_tab",
   "setup_wizard_completion_mode",
   "setup_wizard_payload_generator_script"
@@ -156,6 +163,43 @@
    "fieldtype": "Code",
    "label": "Setup Wizard Payload Generator Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "email_section",
+   "fieldtype": "Section Break",
+   "label": "E-mail"
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "Email Account"
+  },
+  {
+   "fieldname": "column_break_gokr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email_subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "email_full_logo",
+   "fieldtype": "Attach Image",
+   "label": "Full Logo"
+  },
+  {
+   "fieldname": "section_break_ncgc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Frappe Cloud!</p>",
+   "fieldname": "email_header_content",
+   "fieldtype": "Code",
+   "label": "Header Content",
+   "options": "html",
+   "reqd": 1
   }
  ],
  "image_field": "logo",
@@ -170,7 +214,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-09 14:19:54.069290",
+ "modified": "2024-08-13 14:25:44.569948",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
