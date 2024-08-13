@@ -184,6 +184,10 @@ class AccountRequest(Document):
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
+		if self.product_trial:
+			return get_url(
+				f"/api/method/press.api.saas.setup_account?key={self.request_key}"
+			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
