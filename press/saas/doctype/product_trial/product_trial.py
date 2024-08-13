@@ -18,16 +18,14 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
-			ProductTrialSignupField,
-		)
+		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
 		email_header_content: DF.Code
-		email_subject: DF.Data | None
+		email_subject: DF.Data
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
 		published: DF.Check

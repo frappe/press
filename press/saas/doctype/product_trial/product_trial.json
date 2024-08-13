@@ -182,7 +182,8 @@
   {
    "fieldname": "email_subject",
    "fieldtype": "Data",
-   "label": "Subject"
+   "label": "Subject",
+   "reqd": 1
   },
   {
    "fieldname": "email_full_logo",
@@ -214,7 +215,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-13 14:25:44.569948",
+ "modified": "2024-08-13 14:28:52.272674",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
