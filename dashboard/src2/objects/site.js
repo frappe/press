@@ -368,7 +368,7 @@ export default {
 						return [
 							{
 								label: 'View in Desk',
-								condition: () => $team.doc.is_desk_user,
+								condition: () => $team.doc?.is_desk_user,
 								onClick() {
 									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
@@ -1495,7 +1495,7 @@ export default {
 						)
 					},
 					condition: () =>
-						$team.doc.is_desk_user && site.doc.team != $team.name,
+						$team.doc?.is_desk_user && site.doc.team !== $team.name,
 					onClick() {
 						switchToTeam(site.doc.team);
 					}
@@ -1517,7 +1517,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: 'external-link',
-							condition: () => $team.doc.is_desk_user,
+							condition: () => $team.doc?.is_desk_user,
 							onClick: () => {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,

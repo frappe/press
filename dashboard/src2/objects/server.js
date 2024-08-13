@@ -150,7 +150,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: icon('external-link'),
-							condition: () => $team.doc.is_desk_user,
+							condition: () => $team.doc?.is_desk_user,
 							onClick() {
 								window.open(
 									`${window.location.protocol}//${
@@ -166,7 +166,7 @@ export default {
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () =>
-								server.doc.status === 'Active' && $team.doc.is_desk_user,
+								server.doc.status === 'Active' && $team.doc?.is_desk_user,
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
 							}

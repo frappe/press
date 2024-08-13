@@ -277,7 +277,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					condition: () => this.$team?.doc.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () =>
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${bench.name}`,

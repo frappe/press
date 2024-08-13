@@ -6,7 +6,7 @@
 	</div>
 
 	<div
-		v-if="!$team.doc.is_desk_user && !$session.hasSiteCreationAccess"
+		v-if="!$team.doc?.is_desk_user && !$session.hasSiteCreationAccess"
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 	>
 		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />

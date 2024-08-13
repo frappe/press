@@ -83,7 +83,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					condition: () => team.doc.is_desk_user,
+					condition: () => team.doc?.is_desk_user,
 					onClick() {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/app-patch/${row.name}`,
