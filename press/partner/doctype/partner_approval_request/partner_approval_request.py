@@ -17,6 +17,8 @@ class PartnerApprovalRequest(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		approved_by_frappe: DF.Check
+		approved_by_partner: DF.Check
 		key: DF.Data | None
 		partner: DF.Link | None
 		requested_by: DF.Link | None
@@ -43,7 +45,7 @@ class PartnerApprovalRequest(Document):
 
 	@dashboard_whitelist()
 	def approve_partner_request(self):
-		if self.status == "Pending":
+		if self.status == "Pending" and self.approved_by_frappe:
 			self.status = "Approved"
 			self.save(ignore_permissions=True)
 
@@ -59,9 +61,16 @@ class PartnerApprovalRequest(Document):
 				customer_team.append("team_members", {"user": partner.user})
 			customer_team.save(ignore_permissions=True)
 			frappe.db.commit()
+		elif self.status == "Pending" and not self.approved_by_frappe:
+			self.approved_by_partner = True
+			self.save(ignore_permissions=True)
 
 	def send_approval_request_email(self):
+		from press.utils.billing import get_frappe_io_connection
+
+		client = get_frappe_io_connection()
 		email = frappe.db.get_value("Team", self.partner, "user")
+		partner_manager = client.get_value("Partner", "success_manager", {"email": email})
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
 		link = get_url(
@@ -70,8 +79,8 @@ class PartnerApprovalRequest(Document):
 
 		frappe.sendmail(
 			subject="Partner Approval Request",
-			recipients=email,
+			recipients=partner_manager,
 			template="partner_approval",
-			args={"link": link, "user": customer},
+			args={"link": link, "user": customer, "partner": email},
 			now=True,
 		)

@@ -10,22 +10,12 @@ def approve_partner_request(key):
 	partner_request_doc = frappe.get_doc("Partner Approval Request", {"key": key})
 
 	if partner_request_doc and partner_request_doc.status == "Pending":
-		partner_request_doc.status = "Approved"
+		if partner_request_doc.approved_by_partner:
+			partner_request_doc.status = "Approved"
+		else:
+			partner_request_doc.approved_by_frappe = True
+
 		partner_request_doc.save(ignore_permissions=True)
-
-		partner = frappe.get_doc("Team", partner_request_doc.partner)
-
-		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
-		customer_team.partner_email = partner.partner_email
-		team_members = [d.user for d in customer_team.team_members]
-		if partner.user not in team_members:
-			customer_team.append("team_members", {"user": partner.user})
-		customer_team.save(ignore_permissions=True)
-
-		frappe.db.commit()
-
-		frappe.response.type = "redirect"
-		frappe.response.location = "/dashboard/settings/partner"
 
 
 @frappe.whitelist()
