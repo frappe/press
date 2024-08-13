@@ -8,6 +8,7 @@ import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
 import { isMobile } from '../utils/device';
+import { Button } from 'frappe-ui';
 
 export default {
 	doctype: 'Marketplace App',
@@ -535,7 +536,7 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-					size: '6xl'
+					size: '8xl'
 				}
 			},
 			{
@@ -582,8 +583,19 @@ function showReleases(row, app) {
 								{
 									label: 'Code Screening',
 									fieldname: 'screening_status',
-									type: 'Badge',
-									width: 0.2
+									type: 'Button',
+									width: 0.2,
+									Button({ row, listResource: releases }) {
+										if (row.status === 'Awaiting Approval') {return {
+											label: "Review",
+											variant:"subtle",
+											theme:"blue",
+											size:"sm",
+											onClick() {
+											}
+										};
+										}
+									}
 								},
 								{
 									label: '',
