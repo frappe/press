@@ -250,7 +250,7 @@ export default {
 						return [
 							{
 								label: 'View in Desk',
-								condition: () => team.doc.is_desk_user,
+								condition: () => team.doc?.is_desk_user,
 								onClick() {
 									window.open(
 										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
@@ -1009,12 +1009,12 @@ export default {
 				},
 				{
 					label: 'Options',
-					condition: () => team.doc.is_desk_user,
+					condition: () => team.doc?.is_desk_user,
 					options: [
 						{
 							label: 'View in Desk',
 							icon: icon('external-link'),
-							condition: () => team.doc.is_desk_user,
+							condition: () => team.doc?.is_desk_user,
 							onClick() {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,

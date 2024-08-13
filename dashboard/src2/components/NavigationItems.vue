@@ -62,7 +62,10 @@ export default {
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
-					disabled: !(this.$team.doc.onboarding.complete || this.$team.doc.onboarding.site_created)
+					disabled: !(
+						this.$team.doc.onboarding.complete ||
+						this.$team.doc.onboarding.site_created
+					)
 				},
 				{
 					name: 'Benches',
@@ -94,7 +97,7 @@ export default {
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
 					condition:
-						this.$team.doc.is_desk_user ||
+						this.$team.doc?.is_desk_user ||
 						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
 					disabled
 				},
@@ -104,7 +107,7 @@ export default {
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
 					condition:
-						this.$team.doc.is_desk_user || this.$session.hasBillingAccess,
+						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
 					disabled
 				},
 				{
