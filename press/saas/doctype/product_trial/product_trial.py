@@ -18,7 +18,9 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
+		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
+			ProductTrialSignupField,
+		)
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
@@ -36,21 +38,31 @@ class ProductTrial(Document):
 		trial_plan: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "logo", "description", "domain", "trial_days", "trial_plan"]
+	dashboard_fields = [
+		"title",
+		"logo",
+		"description",
+		"domain",
+		"trial_days",
+		"trial_plan",
+	]
 
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
-		doc.signup_fields = [{
-			"label": field.label,
-			"fieldname": field.fieldname,
-			"fieldtype": field.fieldtype,
-			"options": [option for option in ((field.options or "").split("\n")) if option],
-			"required": field.required,
-		} for field in self.signup_fields]
+		doc.signup_fields = [
+			{
+				"label": field.label,
+				"fieldname": field.fieldname,
+				"fieldtype": field.fieldtype,
+				"options": [option for option in ((field.options or "").split("\n")) if option],
+				"required": field.required,
+			}
+			for field in self.signup_fields
+		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
-	
+
 	def validate(self):
 		plan = frappe.get_doc("Site Plan", self.trial_plan)
 		if plan.document_type != "Site":
@@ -75,8 +87,10 @@ class ProductTrial(Document):
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
-			if "frappe" not in apps:
+			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
+			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
+			print(apps)
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=self.get_unique_site_name(),
@@ -88,7 +102,7 @@ class ProductTrial(Document):
 				subscription_plan=plan,
 				team=team,
 				apps=apps,
-				trial_end_date=trial_end_date
+				trial_end_date=trial_end_date,
 			)
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
@@ -101,7 +115,9 @@ class ProductTrial(Document):
 					"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
 					"app_trial": self.name,
 				},
-				"app_include_js": ["https://devfc.tanmoysrt.xyz/saas/subscription.js"], # TODO: change this to frappecloud.com
+				"app_include_js": [
+					"https://devfc.tanmoysrt.xyz/saas/subscription.js"
+				],  # TODO: change this to frappecloud.com
 			}
 		)
 		if standby_site:

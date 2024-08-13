@@ -16,14 +16,16 @@
 					<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
 						<div class="flex flex-col items-center">
 							<div class="mx-auto flex items-center space-x-2">
-								<FCLogo class="inline-block h-7 w-7" />
+								<img
+									class="inline-block h-7 w-7 rounded-sm"
+									:src="saasProduct?.logo"
+								/>
 								<span
 									class="select-none text-xl font-semibold tracking-tight text-gray-900"
 								>
-									Frappe Cloud
+									{{ saasProduct?.title }}
 								</span>
 							</div>
-							<p class="mt-2 text-gray-800">Hassle-free hosting for Frappe apps</p>
 						</div>
 						<div
 							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-8 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
@@ -35,45 +37,14 @@
 								<span
 									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 								>
-									Create your {{ saasProduct.title }} site
+									Fill in the details to create your site
 								</span>
 							</div>
 							<!-- Site Details -->
 							<div v-if="siteRequest?.is_pending === false">
 								<div>
-									<!-- <div class="text-base text-gray-900">
-										You have already created this {{ saasProduct.title }} site :
-									</div> -->
-									<!-- <p
-												v-if="siteRequest?.is_trial_plan"
-												class="ms-1"
-												:class="{
-													'text-red-600': isTrialEnded(
-														siteRequest?.trial_end_date
-													),
-													'text-amber-600': !isTrialEnded(
-														siteRequest?.trial_end_date
-													)
-												}"
-											>
-												{{ trialDays(siteRequest?.trial_end_date) }}
-											</p>
-											<p v-else class="ms-1">
-												{{ siteRequest.site_plan_description }}
-											</p>
-											<Button
-												v-if="
-													!isBillingDetailsSet ||
-													!isPaymentModeSet ||
-													siteRequest?.is_trial_plan
-												"
-												@click="subscribeNow"
-												variant="solid"
-												class="ms-auto"
-											>
-												Subscribe Now
-											</Button> -->
 									<AlertBanner
+										:showIcon="false"
 										:type="
 											isTrialEnded(siteRequest?.trial_end_date)
 												? `error`
@@ -97,7 +68,7 @@
 									</AlertBanner>
 									<!-- Site -->
 									<div
-										class="mt-2 overflow-hidden whitespace-nowrap py-2.5 text-base"
+										class="mt-2 flex items-center justify-between overflow-hidden whitespace-nowrap py-2.5 text-base"
 									>
 										<!-- Site name -->
 										<p
@@ -107,49 +78,23 @@
 											{{ siteRequest?.site }}
 										</p>
 										<!-- Action Buttons -->
-										<div
-											class="mt-3 flex w-full flex-row justify-between gap-2"
+										<Button
+											variant="outline"
+											iconLeft="user"
+											@click="() => loginAsTeam(siteRequest?.site)"
+											:disabled="
+												(loginAsTeamInProgressInSite &&
+													loginAsTeamInProgressInSite !== siteRequest?.site) ||
+												siteRequest?.site_status !== 'Active'
+											"
+											:loading="
+												loginAsTeamInProgressInSite === siteRequest?.site
+											"
+											loadingText="Logging in ..."
 										>
-											<Button
-												class="w-1/2"
-												variant="outline"
-												iconLeft="external-link"
-												:link="`https://${siteRequest?.site}`"
-												:disabled="siteRequest?.site_status !== 'Active'"
-											>
-												Visit Site</Button
-											>
-											<Button
-											class="w-1/2"
-												variant="outline"
-												iconLeft="user"
-												@click="() => loginAsTeam(siteRequest?.site)"
-												:disabled="
-													(loginAsTeamInProgressInSite &&
-														loginAsTeamInProgressInSite !==
-															siteRequest?.site) ||
-													siteRequest?.site_status !== 'Active'
-												"
-												:loading="
-													loginAsTeamInProgressInSite === siteRequest?.site
-												"
-												loadingText="Logging in ..."
-											>
-												Login as team</Button
-											>
-											<!-- <Button
-												variant="outline"
-												iconLeft="info"
-												:link="`/dashboard/sites/${siteRequest?.site}/overview`"
-											>
-												Manage</Button
-											> -->
-										</div>
+											Login</Button
+										>
 									</div>
-									<!-- Redirect to FC -->
-									<Button class="mt-3 w-full" link="/">
-										Visit Frappe Cloud dashboard
-									</Button>
 								</div>
 							</div>
 							<!-- Site Creation -->
@@ -179,8 +124,9 @@
 											findingClosestServer ||
 											$resources.siteRequest?.createSite?.loading
 										"
+										loadingText="Creating Site"
 									>
-										Create
+										Create Site
 									</Button>
 								</form>
 								<div
@@ -287,15 +233,15 @@ import { ErrorMessage, Progress, createResource, Badge } from 'frappe-ui';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { vElementSize } from '@vueuse/components';
-import SitePlansCards from '../components/SitePlansCards.vue';
-import { trialDays, isTrialEnded } from '../utils/site';
-import AlertBanner from '../components/AlertBanner.vue';
+import SitePlansCards from '../../components/SitePlansCards.vue';
+import { trialDays, isTrialEnded } from '../../utils/site';
+import AlertBanner from '../../components/AlertBanner.vue';
 import { toast } from 'vue-sonner';
-import AppTrialSubscriptionDialog from '../components/AppTrialSubscriptionDialog.vue';
+import AppTrialSubscriptionDialog from '../../components/AppTrialSubscriptionDialog.vue';
 import Form from '@/components/Form.vue';
 
 export default {
-	name: 'NewAppTrial',
+	name: 'AppTrialSetup',
 	props: ['productId'],
 	directives: {
 		'element-size': vElementSize
@@ -329,8 +275,7 @@ export default {
 			closestCluster: null,
 			loginAsTeamInProgressInSite: null,
 			showAppTrialSubscriptionDialog: false,
-			signupValues: {},
-			isCalledRedirection: false
+			signupValues: {}
 		};
 	},
 	resources: {
@@ -338,7 +283,10 @@ export default {
 			return {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
-				auto: true
+				auto: true,
+				onSuccess() {
+					this.autoCreateIfNoExtraFields();
+				}
 			};
 		},
 		saasProduct() {
@@ -346,7 +294,10 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true
+				auto: true,
+				onSuccess() {
+					this.autoCreateIfNoExtraFields();
+				}
 			};
 		},
 		siteRequest() {
@@ -393,7 +344,6 @@ export default {
 						onSuccess(data) {
 							this.progressErrorCount += 1;
 							if (data.progress == 100) {
-								this.isCalledRedirection = true;
 								this.$resources.siteRequest.getLoginSid.fetch();
 							} else if (
 								!(
@@ -410,13 +360,9 @@ export default {
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(data) {
-							if (this.isCalledRedirection) return
 							let sid = data;
 							let loginURL = `https://${this.$resources.siteRequest.doc.site}/desk?sid=${sid}`;
-							window.open(loginURL, '_blank');
-							setTimeout(() => {
-								window.location.reload();
-							}, 2000);
+							window.open(loginURL, '_self');
 						}
 					}
 				}
@@ -424,6 +370,15 @@ export default {
 		}
 	},
 	methods: {
+		autoCreateIfNoExtraFields() {
+			if (
+				this.saasProductSignupFields.length === 0 &&
+				this.$resources.siteRequest?.doc &&
+				this.$resources.siteRequest?.doc?.status === 'Pending'
+			) {
+				this.createSite();
+			}
+		},
 		async createSite() {
 			let cluster = await this.getClosestCluster();
 			return this.$resources.siteRequest.createSite.submit({

@@ -189,10 +189,24 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppTrial',
-			path: '/app-trial/:productId',
-			component: () => import('./pages/NewAppTrial.vue'),
-			props: true
+			name: 'AppTrial',
+			path: '/app-trial',
+			redirect: { name: 'Home' },
+			children: [
+				{
+					name: 'AppTrialSignup',
+					path: 'signup/:productId',
+					component: () => import('./pages/app_trial/Signup.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'AppTrialSetup',
+					path: 'setup/:productId',
+					component: () => import('./pages/app_trial/Setup.vue'),
+					props: true
+				}
+			]
 		},
 		{
 			name: 'Impersonate',
@@ -257,8 +271,14 @@ router.beforeEach(async (to, from, next) => {
 		let visitingSiteOrBillingOrSettings =
 			to.name.startsWith('Site') ||
 			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
+			to.name.startsWith('AppTrialSetup') ||
 			to.name.startsWith('Settings');
+
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
+		if (to.name == 'AppTrialSignup') {
+			next({ name: 'AppTrialSetup', params: to.params });
+			return;
+		}
 
 		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
 		if (
@@ -279,10 +299,10 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			if (to.name == 'NewAppTrial') {
+			if (to.name == 'AppTrialSetup') {
 				next({
-					name: 'Login',
-					query: { product: to.params.productId }
+					name: 'AppTrialSignup',
+					params: to.params
 				});
 			} else {
 				next({ name: 'Login' });

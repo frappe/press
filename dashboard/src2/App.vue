@@ -6,11 +6,22 @@
 					v-if="!$isMobile"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar v-if="$session.user && $route.name != 'NewAppTrial'" />
+					<AppSidebar
+						v-if="
+							$session.user &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup'
+						"
+					/>
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="$isMobile && $session.user && $route.name != 'NewAppTrial'"
+						v-if="
+							$isMobile &&
+							$session.user &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup'
+						"
 					/>
 					<div
 						v-if="!$session.user && !$route.meta.isLoginPage"

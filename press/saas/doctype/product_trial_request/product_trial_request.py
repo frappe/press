@@ -205,6 +205,7 @@ class ProductTrialRequest(Document):
 		self.status = "Completing Setup Wizard"
 		self.save(ignore_permissions=True)
 
+
 def get_app_trial_page_url():
 	referer = frappe.request.headers.get("referer", "")
 	if not referer:
@@ -220,7 +221,7 @@ def get_app_trial_page_url():
 			# Check site status
 			# site_status = frappe.db.get_value("Site", site, "status")
 			# if site_status in ("Active", "Inactive", "Suspended"):
-			return f"/dashboard/app-trial/{product_trial_name}"
+			return f"/dashboard/app-trial/signup/{product_trial_name}"
 	except Exception as e:
 		frappe.log_error(title="App Trial Page URL Error")
 		return None

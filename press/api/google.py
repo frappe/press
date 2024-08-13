@@ -90,7 +90,7 @@ def callback(code=None, state=None):
 		frappe.local.login_manager.login_as(email)
 		frappe.local.response.type = "redirect"
 		if product_trial:
-			frappe.local.response.location = f"/dashboard/app-trial/{product_trial.name}"
+			frappe.local.response.location = f"/dashboard/app-trial/setup/{product_trial.name}"
 		else:
 			frappe.local.response.location = "/dashboard"
 	elif team_name and not team_enabled:

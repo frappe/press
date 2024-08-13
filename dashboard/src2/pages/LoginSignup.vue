@@ -210,7 +210,10 @@
 				</template>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="mx-auto flex items-center space-x-2">
-						<img class="inline-block h-7 w-7 rounded-sm" :src="saasProduct?.logo" />
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
@@ -362,7 +365,7 @@ export default {
 							onSuccess: res => {
 								let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
 								if (this.$route.query.product) {
-									loginRoute = `/dashboard/app-trial/${this.$route.query.product}`;
+									loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
 								}
 								localStorage.setItem('login_email', this.email);
 								window.location.href = loginRoute;

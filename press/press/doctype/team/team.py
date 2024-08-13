@@ -1027,7 +1027,7 @@ class Team(Document):
 					"Account Request", self.account_request, "product_trial"
 				)
 			if product_trial:
-				return f"/app-trial/{product_trial}"
+				return f"/app-trial/setup/{product_trial}"
 
 		return "/welcome"
 

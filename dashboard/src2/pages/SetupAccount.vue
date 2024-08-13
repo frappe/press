@@ -183,18 +183,17 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
-					oauth_domain: this.oauthDomain,
+					oauth_domain: this.oauthDomain
 				},
 				onSuccess() {
 					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard/app-trial/${this.saasProduct.name}`;
+						path = `/dashboard/app-trial/setup/${this.saasProduct.name}`;
 					}
 					window.location.href = path;
 				}
 			};
 		}
-	},
-
+	}
 };
 </script>
