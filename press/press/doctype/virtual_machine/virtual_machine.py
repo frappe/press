@@ -339,8 +339,10 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
+		if not increment:
+			return
 		volume = self.volumes[0]
-		volume.size += int(increment or 50)
+		volume.size += int(increment)
 		self.disk_size = volume.size
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
