@@ -48,6 +48,7 @@ class MarketplaceApp(WebsiteGenerator):
 		after_install_script: DF.Code | None
 		after_uninstall_script: DF.Code | None
 		app: DF.Link
+		average_rating: DF.Float
 		categories: DF.Table[MarketplaceAppCategories]
 		custom_verify_template: DF.Check
 		description: DF.SmallText

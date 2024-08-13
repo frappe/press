@@ -60,7 +60,9 @@
   "status",
   "dashboard_tab",
   "onboarding_related_section",
-  "show_for_site_creation"
+  "show_for_site_creation",
+  "section_break_tlpw",
+  "average_rating"
  ],
  "fields": [
   {
@@ -367,6 +369,18 @@
    "fieldname": "dashboard_tab",
    "fieldtype": "Tab Break",
    "label": "Dashboard"
+  },
+  {
+   "fieldname": "section_break_tlpw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "average_rating",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Average Rating",
+   "precision": "2"
   }
  ],
  "has_web_view": 1,
@@ -390,7 +404,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2024-07-20 12:10:51.378296",
+ "modified": "2024-08-13 18:46:40.786507",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
