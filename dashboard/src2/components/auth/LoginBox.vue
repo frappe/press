@@ -11,7 +11,6 @@
 							Frappe Cloud
 						</span>
 					</div>
-					<p class="mt-2 text-base text-gray-800">Hassle-free hosting for Frappe apps</p>
 				</slot>
 			</div>
 			<div
