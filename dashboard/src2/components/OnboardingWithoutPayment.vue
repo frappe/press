@@ -50,11 +50,6 @@ export default {
 			window.posthog.startSessionRecording();
 		}
 	},
-	unmounted() {
-		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
-			window.posthog.stopSessionRecording();
-		}
-	},
 	resources: {
 		availableApps() {
 			return {

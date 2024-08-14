@@ -252,7 +252,9 @@ export default {
 				app: 'frappe_cloud',
 				action: 'first_new_site_creation'
 			});
-			window.posthog.startSessionRecording();
+			if (!window.posthog.sessionRecordingStarted()) {
+				window.posthog.startSessionRecording();
+			}
 		}
 	},
 	unmounted() {
