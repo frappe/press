@@ -825,7 +825,7 @@ def submit_user_review(title, rating, app, review):
 		{
 			"doctype": "App User Review",
 			"title": title,
-			"rating": rating / 5,
+			"rating": int(rating) / 5,
 			"app": app,
 			"review": review,
 			"reviewer": frappe.session.user,
