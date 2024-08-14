@@ -239,7 +239,6 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
@@ -254,17 +253,10 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
-			to.name.startsWith('Settings');
-
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+		// if onboarding is incomplete, don't allow access to certain pages
 		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
 		) {
 			next({ name: onboardingRoute });
 			return;

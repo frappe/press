@@ -29,17 +29,13 @@ export default {
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !(
-						this.$team.doc.onboarding.complete &&
-						this.$team.doc.onboarding.site_created
-					)
+					condition: !this.$team.doc.onboarding.complete
 				},
 				{
 					name: 'Notifications',
 					icon: () => h(Notification),
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
-					condition: this.$team.doc.onboarding.complete,
 					badge: () => {
 						if (unreadNotificationsCount.data > 0) {
 							return h(
@@ -52,8 +48,7 @@ export default {
 									: unreadNotificationsCount.data
 							);
 						}
-					},
-					disabled
+					}
 				},
 				{
 					name: 'Sites',
@@ -61,11 +56,7 @@ export default {
 					route: '/sites',
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
-						routeName.startsWith('Site Detail'),
-					disabled: !(
-						this.$team.doc.onboarding.complete ||
-						this.$team.doc.onboarding.site_created
-					)
+						routeName.startsWith('Site Detail')
 				},
 				{
 					name: 'Benches',
@@ -107,8 +98,7 @@ export default {
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
 					condition:
-						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
-					disabled
+						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess
 				},
 				{
 					name: 'Partners',
@@ -124,8 +114,7 @@ export default {
 					name: 'Settings',
 					icon: () => h(Settings),
 					route: '/settings',
-					isActive: routeName.startsWith('Settings'),
-					disabled
+					isActive: routeName.startsWith('Settings')
 				}
 			].filter(item => item.condition !== false);
 		}
