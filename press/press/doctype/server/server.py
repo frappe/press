@@ -3,10 +3,10 @@
 # For license information, please see license.txt
 
 
-from datetime import timedelta
 import json
 import shlex
 import typing
+from datetime import timedelta
 from functools import cached_property
 from typing import List, Union
 
@@ -17,7 +17,6 @@ from frappe.core.utils import find
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
-
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
@@ -477,10 +476,15 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def is_build_server(self) -> bool:
+		# Not a field in all subclasses
+		if getattr(self, "use_for_build", False):
+			return True
+
 		name = frappe.db.get_single_value("Press Settings", "build_server")
 		if name == self.name:
 			return True
 
+		# Whether build_server explicitly set on Release Group
 		count = frappe.db.count(
 			"Release Group",
 			{

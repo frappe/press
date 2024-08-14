@@ -70,6 +70,7 @@ getInitialData().then(() => {
 					/NetworkError when attempting to fetch resource/,
 					/Failed to fetch/,
 					/Load failed/,
+					/frappe is not defined/,
 					/Importing a module script failed./
 				];
 				const ignoreErrorTypes = [
