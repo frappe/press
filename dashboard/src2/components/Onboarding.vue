@@ -108,6 +108,12 @@
 						<span class="text-base font-medium"> Update billing details </span>
 					</div>
 					<div class="pl-7">
+						<!-- Offer -->
+						<p class="my-3 text-p-sm text-gray-800">
+							🎉 You are eligible for
+							<span class="font-medium">{{ free_credits }}</span> worth of free
+							credits. No card required.
+						</p>
 						<UpdateBillingDetailsForm @updated="onBillingAddresUpdateSuccess" />
 					</div>
 				</div>
@@ -252,7 +258,7 @@
 								/>
 								<div>
 									<span class="text-base font-semibold">{{ app.title }}</span>
-									<p class="line-clamp-1 mt-1 text-sm text-gray-600">
+									<p class="mt-1 line-clamp-1 text-sm text-gray-600">
 										{{ app.description }}
 									</p>
 								</div>

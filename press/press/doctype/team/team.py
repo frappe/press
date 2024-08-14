@@ -627,6 +627,7 @@ class Team(Document):
 				"links",
 				{"link_doctype": self.doctype, "link_name": self.name, "link_title": self.name},
 			)
+			self.allocate_free_credits()
 
 		address_doc.update(
 			{
