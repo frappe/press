@@ -1311,7 +1311,6 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
-		proxy_ip = self.get_proxy_ip()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 
 		try:
@@ -1325,7 +1324,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -1351,7 +1350,7 @@ class Server(BaseServer):
 		self.save()
 
 	def get_proxy_ip(self):
-		'''In case of standalone setup proxy will not required'''
+		"""In case of standalone setup proxy will not required"""
 
 		if self.is_standalone:
 			return self.ip
@@ -1435,7 +1434,6 @@ class Server(BaseServer):
 		)
 
 	def _agent_set_proxy_ip(self):
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		agent_password = self.get_password("agent_password")
 
 		try:
@@ -1446,7 +1444,7 @@ class Server(BaseServer):
 				port=self._ssh_port(),
 				variables={
 					"server": self.name,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 				},
@@ -1603,8 +1601,6 @@ class Server(BaseServer):
 		else:
 			kibana_password = None
 
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
-
 		try:
 			ansible = Ansible(
 				playbook="rename.yml",
@@ -1614,7 +1610,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
