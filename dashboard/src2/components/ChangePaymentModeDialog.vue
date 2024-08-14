@@ -46,6 +46,7 @@
 			}
 		"
 	/>
+	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
@@ -64,13 +65,17 @@ export default {
 		),
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
+		),
+		FinalizeInvoicesDialog: defineAsyncComponent(() =>
+			import('./billing/FinalizeInvoicesDialog.vue')
 		)
 	},
 	data() {
 		return {
 			showBillingInformationDialog: false,
 			showPrepaidCreditsDialog: false,
-			paymentMode: this.$team.doc.payment_mode
+			paymentMode: this.$team.doc.payment_mode,
+			showFinalizeInvoicesDialog: false
 		};
 	},
 	watch: {
@@ -87,10 +92,14 @@ export default {
 				params: {
 					mode: this.paymentMode
 				},
-				onSuccess() {
-					this.$emit('update:modelValue', false);
-					this.$resources.changePaymentMode.reset();
-					this.$team.reload();
+				onSuccess(data) {
+					if (data && data == 'Unpaid Invoices') {
+						this.showFinalizeInvoicesDialog = true;
+					} else {
+						this.$emit('update:modelValue', false);
+						this.$resources.changePaymentMode.reset();
+						this.$team.reload();
+					}
 				},
 				validate() {
 					if (

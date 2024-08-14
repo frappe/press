@@ -379,6 +379,13 @@ def unpaid_invoices():
 @frappe.whitelist()
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
+	unpaid_invoices = frappe.get_all(
+		"Invoice",
+		{"team": team.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+	)
+	if unpaid_invoices:
+		return "Unpaid Invoices"
+
 	team.payment_mode = mode
 	if team.partner_email and mode == "Paid By Partner" and not team.billing_team:
 		team.billing_team = frappe.db.get_value(
