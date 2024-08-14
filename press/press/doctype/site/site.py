@@ -672,7 +672,7 @@ class Site(Document, TagHelpers):
 		)
 
 		team = frappe.get_doc("Team", self.team)
-		if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+		if frappe.db.count("Site", {"team": team.name}) <= 1:
 			from press.utils.telemetry import capture
 
 			if team.account_request:
@@ -1530,7 +1530,7 @@ class Site(Document, TagHelpers):
 		# Telemetry: Send event if first site status changed to Active
 		if self.setup_wizard_complete:
 			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name, "status": "Active"}) <= 1:
+			if frappe.db.count("Site", {"team": team.name}) <= 1:
 				from press.utils.telemetry import capture
 
 				if team.account_request:
