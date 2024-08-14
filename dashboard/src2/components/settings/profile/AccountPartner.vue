@@ -60,7 +60,7 @@
 	</Card>
 </template>
 <script>
-import { Card, FormControl, frappeRequest } from 'frappe-ui';
+import { Card, FormControl, frappeRequest, debounce } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AccountPartner',
@@ -105,7 +105,7 @@ export default {
 		}
 	},
 	methods: {
-		async referralCodeChange(e) {
+		referralCodeChange: debounce(async function (e) {
 			let code = e.target.value;
 			this.partnerExists = false;
 
@@ -124,7 +124,7 @@ export default {
 			} else {
 				this.errorMessage = `${code} is Invalid Referral Code`;
 			}
-		}
+		}, 500)
 	},
 	computed: {
 		partner_billing_name() {
