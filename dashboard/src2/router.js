@@ -240,6 +240,7 @@ router.beforeEach(async (to, from, next) => {
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
 		let defaultRoute = 'Site List';
+		let onboardingRoute = 'Welcome';
 
 		// identify user in posthog
 		if (window.posthog?.__loaded) {
@@ -250,6 +251,15 @@ router.beforeEach(async (to, from, next) => {
 			} catch (e) {
 				console.error(e);
 			}
+		}
+
+		// if onboarding is incomplete, don't allow access to certain pages
+		if (
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
+		) {
+			next({ name: onboardingRoute });
+			return;
 		}
 
 		if (goingToLoginPage) {
