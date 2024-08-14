@@ -28,7 +28,6 @@
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
 			/>
-			{{ $resources.changePaymentMode.error }}
 		</template>
 	</Dialog>
 	<BillingInformationDialog
@@ -46,7 +45,10 @@
 			}
 		"
 	/>
-	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
+	<FinalizeInvoicesDialog
+		v-if="showFinalizeInvoicesDialog"
+		v-model="showFinalizeInvoicesDialog"
+	/>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
