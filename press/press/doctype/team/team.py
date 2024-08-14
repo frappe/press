@@ -903,6 +903,10 @@ class Team(Document):
 			else:
 				why = "You have already created trial site in the past"
 
+		# allow user to create their first site without payment method
+		if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+			return allow
+
 		if not self.payment_mode:
 			why = "You cannot create a new site because your account doesn't have a valid payment method."
 			return (False, why)
@@ -1018,6 +1022,7 @@ class Team(Document):
 		return frappe._dict(
 			{
 				"site_created": site_created,
+				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
 			}

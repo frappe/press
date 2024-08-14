@@ -24,7 +24,7 @@ import UpdateBillingDetails from './UpdateBillingDetails.vue';
 
 export default {
 	name: 'AlertAddressDetails',
-	components: { AlertBanner },
+	components: { AlertBanner, UpdateBillingDetails },
 	data() {
 		return {
 			showBillingDetailsDialog: false

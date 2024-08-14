@@ -222,7 +222,7 @@
 				</div>
 			</div>
 			<div
-				v-if="!$team.doc.is_saas_user"
+				v-if="!$team.doc.is_saas_user && !$team.doc.onboarding.site_created"
 				class="rounded-md"
 				:class="{ 'pointer-events-none opacity-50': !$team.doc.payment_mode }"
 			>

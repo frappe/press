@@ -239,9 +239,7 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
-		let onboardingRoute = 'Welcome';
 
 		// identify user in posthog
 		if (window.posthog?.__loaded) {
@@ -252,22 +250,6 @@ router.beforeEach(async (to, from, next) => {
 			} catch (e) {
 				console.error(e);
 			}
-		}
-
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
-			to.name.startsWith('Settings');
-
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
-		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
-		) {
-			next({ name: onboardingRoute });
-			return;
 		}
 
 		if (goingToLoginPage) {
