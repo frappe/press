@@ -1009,6 +1009,7 @@ class Team(Document):
 		return frappe._dict(
 			{
 				"site_created": site_created,
+				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
 			}

@@ -105,11 +105,14 @@
 				<div v-if="!isBillingDetailsSet">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
-						<span class="text-base font-medium"> Update billing details </span>
+						<span class="text-base font-medium"> Update billing address </span>
 					</div>
 					<div class="pl-7">
 						<!-- Offer -->
-						<p class="my-3 text-p-sm text-gray-800">
+						<p
+							class="my-3 text-p-sm text-gray-800"
+							v-if="!$team.doc.onboarding.is_saas_user"
+						>
 							🎉 You are eligible for
 							<span class="font-medium">{{ free_credits }}</span> worth of free
 							credits. No card required.
@@ -173,7 +176,10 @@
 							<!-- Automated Billing Section -->
 							<div v-if="isAutomatedBilling">
 								<!-- Offer -->
-								<p class="my-3 text-p-sm text-gray-800">
+								<p
+									class="my-3 text-p-sm text-gray-800"
+									v-if="!$team.doc.onboarding.is_saas_user"
+								>
 									🎉 You are eligible for
 									<span class="font-medium">{{ free_credits }}</span> worth of
 									free credits for enabling automated billing.
