@@ -452,6 +452,9 @@ def app_details_for_new_public_site():
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
 
+	if not marketplace_app_sources:
+		return []
+
 	AppSource = frappe.qb.DocType("App Source")
 	MarketplaceApp = frappe.qb.DocType("Marketplace App")
 	app_source_details = (
