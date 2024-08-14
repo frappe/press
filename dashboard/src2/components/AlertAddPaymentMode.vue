@@ -3,7 +3,7 @@
 		title="Add a payment mode to start creating sites, benches, and more."
 		type="warning"
 	>
-		<Button class="ml-auto" route="/welcome" variant="outline">
+		<Button class="ml-auto" @click="addPaymentMode" variant="outline">
 			Add payment mode
 		</Button>
 	</AlertBanner>
@@ -13,6 +13,12 @@ import AlertBanner from './AlertBanner.vue';
 
 export default {
 	name: 'AlertAddPaymentMode',
-	components: { AlertBanner }
+	components: { AlertBanner },
+	methods: {
+		addPaymentMode() {
+			this.$team.reload();
+			this.$router.push('/welcome');
+		}
+	}
 };
 </script>
