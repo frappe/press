@@ -383,7 +383,7 @@ def change_payment_mode(mode):
 		"Invoice",
 		{"team": team.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
 	)
-	if unpaid_invoices:
+	if unpaid_invoices and mode == "Paid By Partner":
 		return "Unpaid Invoices"
 
 	team.payment_mode = mode
