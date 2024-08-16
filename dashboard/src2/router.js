@@ -253,7 +253,6 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
@@ -268,23 +267,15 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('AppTrialSetup') ||
-			to.name.startsWith('Settings');
-
-		// If user is logged in and was moving to app trial signup, redirect to app trial setup
+    // If user is logged in and was moving to app trial signup, redirect to app trial setup
 		if (to.name == 'AppTrialSignup') {
 			next({ name: 'AppTrialSetup', params: to.params });
 			return;
 		}
-
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+    
 		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
 		) {
 			next({ name: onboardingRoute });
 			return;

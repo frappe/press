@@ -205,6 +205,16 @@ class Team(Document):
 		if self.payment_mode == "Paid By Partner" and not self.billing_team:
 			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
 
+		has_unpaid_invoices = frappe.get_all(
+			"Invoice",
+			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+		)
+
+		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
+			frappe.throw(
+				"Cannot set payment mode to Paid By Partner. Please finalize and settle the pending invoices first"
+			)
+
 	def delete(self, force=False, workflow=False):
 		if force:
 			return super().delete()
@@ -894,6 +904,10 @@ class Team(Document):
 			else:
 				why = "You have already created trial site in the past"
 
+		# allow user to create their first site without payment method
+		if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+			return allow
+
 		if not self.payment_mode:
 			why = "You cannot create a new site because your account doesn't have a valid payment method."
 			return (False, why)
@@ -1009,6 +1023,7 @@ class Team(Document):
 		return frappe._dict(
 			{
 				"site_created": site_created,
+				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
 			}
