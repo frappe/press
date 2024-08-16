@@ -439,7 +439,7 @@ def signup(full_name, email, country, product, terms_accepted, referrer=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(key):
+def setup_account_product_trial(key):
 	ar = get_account_request_from_key(key)
 	if not ar:
 		frappe.throw("Invalid or Expired Key")
