@@ -40,6 +40,15 @@ class AppReleaseApprovalRequest(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
+	dashboard_fields = [
+		"name",
+		"marketplace_app",
+		"screening_status",
+		"app_release",
+		"status",
+		"result",
+	]
+
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all(

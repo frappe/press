@@ -64,6 +64,7 @@ ALLOWED_DOCTYPES = [
 	"User SSH Key",
 	"Frappe Version",
 	"Dashboard Banner",
+	"App Release Approval Request",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
