@@ -47,6 +47,7 @@ class PartnerApprovalRequest(Document):
 	def approve_partner_request(self):
 		if self.status == "Pending" and self.approved_by_frappe:
 			self.status = "Approved"
+			self.approved_by_partner = True
 			self.save(ignore_permissions=True)
 
 			partner = frappe.db.get_value(
