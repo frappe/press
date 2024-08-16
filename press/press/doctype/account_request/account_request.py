@@ -136,7 +136,7 @@ class AccountRequest(Document):
 			print(f"\nOTP for {self.email}:")
 			print(self.otp)
 			print()
-			# return
+			return
 
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
