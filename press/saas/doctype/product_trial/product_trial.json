@@ -158,7 +158,7 @@
    "options": "manual\nauto"
   },
   {
-   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.",
+   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.\n<br>\n<br>\n<b>Note - </b><br>\na. Use `frappe.utils.decrypt(..)` for <b>password</b> kind of signup fields.",
    "fieldname": "setup_wizard_payload_generator_script",
    "fieldtype": "Code",
    "label": "Setup Wizard Payload Generator Script",
@@ -215,7 +215,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-13 14:28:52.272674",
+ "modified": "2024-08-16 15:25:26.757957",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

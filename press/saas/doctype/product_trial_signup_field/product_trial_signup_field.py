@@ -15,7 +15,7 @@ class ProductTrialSignupField(Document):
 		from frappe.types import DF
 
 		fieldname: DF.Data
-		fieldtype: DF.Literal["Data", "Select", "Check", "Date"]
+		fieldtype: DF.Literal["Data", "Select", "Check", "Date", "Password"]
 		label: DF.Data
 		options: DF.SmallText | None
 		parent: DF.Data
