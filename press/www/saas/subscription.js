@@ -45,7 +45,7 @@ function get_subscription_url() {
 		frappe.boot.subscription_conf &&
 		frappe.boot.subscription_conf.app_trial
 	) {
-		return `https://frappecloud.com/dashboard/app-trial/${frappe.boot.subscription_conf.app_trial}#subscription`;
+		return `https://frappecloud.com/dashboard/app-trial/setup/${frappe.boot.subscription_conf.app_trial}#subscription`;
 	}
 	let sitename = frappe.boot.sitename;
 	return `https://frappecloud.com/dashboard/sites/${sitename}`;
