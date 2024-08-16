@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
+from frappe.utils.password import decrypt as decrypt_password
 import urllib
 
 from press.agent import Agent
@@ -82,6 +83,7 @@ class ProductTrialRequest(Document):
 		team_user = frappe.get_doc("User", team_details.user)
 		try:
 			_locals = {
+				"decrypt_password": decrypt_password,
 				"team": frappe._dict(
 					{
 						"name": team_details.name,
@@ -123,7 +125,7 @@ class ProductTrialRequest(Document):
 					signup_values[field.fieldname] = None
 
 	@dashboard_whitelist()
-	def create_site(self, cluster:str=None, signup_values:dict=None):
+	def create_site(self, cluster: str = None, signup_values: dict = None):
 		if not signup_values:
 			signup_values = {}
 		product = frappe.get_doc("Product Trial", self.product_trial)
