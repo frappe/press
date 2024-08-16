@@ -45,8 +45,8 @@ function get_subscription_url() {
 		frappe.boot.subscription_conf &&
 		frappe.boot.subscription_conf.app_trial
 	) {
-		return `http://fc.local:8080/dashboard/app-trial/${frappe.boot.subscription_conf.app_trial}#subscription`; // #TODOL change this to frappecloud.com
+		return `https://frappecloud.com/dashboard/app-trial/${frappe.boot.subscription_conf.app_trial}#subscription`; // #TODOL change this to frappecloud.com
 	}
 	let sitename = frappe.boot.sitename;
-	return `http://fc.local:8080/dashboard/sites/${sitename}`; // #TODOL change this to frappecloud.com
+	return `https://frappecloud.com/dashboard/sites/${sitename}`; // #TODOL change this to frappecloud.com
 }
