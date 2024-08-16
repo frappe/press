@@ -11,6 +11,7 @@ def approve_partner_request(key):
 
 	if partner_request_doc and partner_request_doc.status == "Pending":
 		if partner_request_doc.approved_by_partner:
+			partner_request_doc.approved_by_frappe = True
 			partner_request_doc.status = "Approved"
 		else:
 			partner_request_doc.approved_by_frappe = True
