@@ -31,7 +31,6 @@ class Subscription(Document):
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link
-		secret_key: DF.Data | None
 		site: DF.Link | None
 		team: DF.Link
 	# end: auto-generated types
