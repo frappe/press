@@ -1,12 +1,15 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+import json
+import urllib.parse
 import frappe
 from frappe.model.document import Document
+from frappe.utils.safe_exec import safe_exec
+import urllib
 
+from press.agent import Agent
 from press.api.client import dashboard_whitelist
-from press.press.doctype.site.site import Site
-from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 class ProductTrialRequest(Document):
@@ -21,37 +24,118 @@ class ProductTrialRequest(Document):
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
 		product_trial: DF.Link | None
+		signup_details: DF.JSON | None
 		site: DF.Link | None
-		status: DF.Literal["Pending", "Wait for Site", "Site Created", "Error", "Expired"]
+		status: DF.Literal[
+			"Pending",
+			"Wait for Site",
+			"Completing Setup Wizard",
+			"Site Created",
+			"Error",
+			"Expired",
+		]
 		team: DF.Link | None
 	# end: auto-generated types
 
 	dashboard_fields = ["site", "status", "product_trial"]
 
-	@dashboard_whitelist()
-	def create_site(self, plan, cluster=None):
-		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
-		site: Site = product.setup_trial_site(self.team, cluster)
-		user = self.get_user_details()
-		agent_job = site.create_user(user.email, user.first_name, user.last_name)
-		self.agent_job = agent_job.name
-		site.create_subscription(plan)
-		site.reload()
-		trial_days = (
-			frappe.db.get_value("Product Trial", self.product_trial, "trial_days") or 14
+	agent_job_step_to_frontend_step = {
+		"New Site": {
+			"New Site": "Building Site",
+			"Install Apps": "Installing Apps",
+			"Update Site Configuration": "Updating Configuration",
+			"Enable Scheduler": "Finalizing Site",
+			"Bench Setup Nginx": "Finalizing Site",
+			"Reload Nginx": "Just a moment",
+		},
+		"Rename Site": {
+			"Enable Maintenance Mode": "Starting",
+			"Wait for Enqueued Jobs": "Starting",
+			"Update Site Configuration": "Preparing Site",
+			"Rename Site": "Preparing Site",
+			"Bench Setup NGINX": "Preparing Site",
+			"Reload NGINX": "Finalizing Site",
+			"Disable Maintenance Mode": "Finalizing Site",
+			"Enable Scheduler": "Just a moment",
+		},
+	}
+
+	@frappe.whitelist()
+	def get_setup_wizard_payload(self):
+		data = frappe.get_value(
+			"Product Trial",
+			self.product_trial,
+			["setup_wizard_completion_mode", "setup_wizard_payload_generator_script"],
+			as_dict=True,
 		)
-		site.trial_end_date = frappe.utils.add_days(None, trial_days)
-		# update_config implicitly calles site.save
-		site.flags.ignore_permissions = True
-		site.update_site_config(
-			{
-				"subscription": {"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d")},
-				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
+		if data.setup_wizard_completion_mode != "auto":
+			frappe.throw(
+				"In manual Setup Wizard Completion Mode, the payload cannot be generated"
+			)
+		if not data.setup_wizard_payload_generator_script:
+			return {}
+		signup_details = json.loads(self.signup_details)
+		team_details = frappe.get_value(
+			"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
+		)
+		team_user = frappe.get_doc("User", team_details.user)
+		try:
+			_locals = {
+				"team": frappe._dict(
+					{
+						"name": team_details.name,
+						"user": frappe._dict(
+							{
+								"email": team_user.email,
+								"full_name": team_user.full_name or "",
+								"first_name": team_user.first_name or "",
+								"last_name": team_user.last_name or "",
+							}
+						),
+						"country": team_details.country,
+						"currency": team_details.currency,
+					}
+				),
+				"signup_details": frappe._dict(signup_details),
+				"payload": frappe._dict(),
 			}
-		)
-		# site.save(ignore_permissions=True)
-		self.site = site.name
+			safe_exec(
+				data.setup_wizard_payload_generator_script,
+				_locals=_locals,
+				restrict_commit_rollback=True,
+			)
+			return frappe._dict(_locals.get("payload", {}))
+
+		except Exception as e:
+			frappe.log_error(title="Product Trial Reqeust Setup Wizard Payload Generation Error")
+			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
+
+	def validate_signup_fields(self):
+		signup_values = json.loads(self.signup_details)
+		product = frappe.get_doc("Product Trial", self.product_trial)
+		# Validate signup values
+		for field in product.signup_fields:
+			if field.fieldname not in signup_values:
+				if field.required:
+					frappe.throw(f"Required field {field.label} is missing")
+				else:
+					signup_values[field.fieldname] = None
+
+	@dashboard_whitelist()
+	def create_site(self, cluster=None, signup_values=None):
+		if not signup_values:
+			signup_values = {}
+		self.signup_details = json.dumps(signup_values)
+		self.validate_signup_fields()
+		product = frappe.get_doc("Product Trial", self.product_trial)
 		self.status = "Wait for Site"
+		self.save(ignore_permissions=True)
+		self.reload()
+		site, agent_job_name, _ = product.setup_trial_site(
+			self.team, product.trial_plan, cluster
+		)
+		self.agent_job = agent_job_name
+		self.site = site.name
 		self.save(ignore_permissions=True)
 
 	def get_user_details(self):
@@ -72,16 +156,19 @@ class ProductTrialRequest(Document):
 			filters = {"name": self.agent_job, "site": self.site}
 		else:
 			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
-		job_name, status = frappe.db.get_value(
+		job_name, status, job_type = frappe.db.get_value(
 			"Agent Job",
 			filters,
-			["name", "status"],
+			["name", "status", "job_type"],
 		)
 		if status == "Success":
-			self.status = "Site Created"
-			self.save(ignore_permissions=True)
-			return {"progress": 100}
+			if self.status == "Site Created":
+				return {"progress": 100}
+			return {"progress": 90, "current_step": self.status}
 		elif status == "Running":
+			mode = frappe.get_value(
+				"Product Trial", self.product_trial, "setup_wizard_completion_mode"
+			)
 			steps = frappe.db.get_all(
 				"Agent Job Step",
 				filters={"agent_job": job_name},
@@ -89,15 +176,52 @@ class ProductTrialRequest(Document):
 				order_by="creation asc",
 			)
 			done = [s for s in steps if s.status in ("Success", "Skipped", "Failure")]
-			progress = len(done) / len(steps) * 100
-			if progress <= current_progress:
-				progress = current_progress + 1
-			return {"progress": progress}
-		elif status == "Failure":
-			self.status = "Error"
-			self.save(ignore_permissions=True)
+			steps_count = len(steps)
+			if mode == "auto":
+				steps_count += 1
+			progress = (len(done) / steps_count) * 100
+			progress = max(progress, current_progress)
+			current_running_step = ""
+			for step in steps:
+				if step.status == "Running":
+					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(
+						step.step_name, step.step_name
+					)
+					break
+			return {"progress": progress + 0.1, "current_step": current_running_step}
+		elif self.status == "Error":
 			return {"progress": current_progress, "error": True}
-		elif status == "Undelivered":
-			return {"progress": current_progress, "error": True}
+		else:
+			# If agent job is undelivered, pending
+			return {"progress": current_progress + 0.1}
 
-		return {"progress": current_progress + 1}
+	def complete_setup_wizard(self):
+		if self.status == "Completing Setup Wizard":
+			return
+		site = frappe.get_doc("Site", self.site)
+		agent = Agent(site.server)
+		agent.complete_setup_wizard(site, self.get_setup_wizard_payload())
+		self.reload()
+		self.status = "Completing Setup Wizard"
+		self.save(ignore_permissions=True)
+
+
+def get_app_trial_page_url():
+	referer = frappe.request.headers.get("referer", "")
+	if not referer:
+		return None
+	try:
+		# parse the referer url
+		site = urllib.parse.urlparse(referer).hostname
+		# check if any product trial request exists for the site
+		product_trial_name = frappe.db.get_value(
+			"Product Trial Request", {"site": site}, "product_trial"
+		)
+		if product_trial_name:
+			# Check site status
+			# site_status = frappe.db.get_value("Site", site, "status")
+			# if site_status in ("Active", "Inactive", "Suspended"):
+			return f"/dashboard/app-trial/signup/{product_trial_name}"
+	except Exception as e:
+		frappe.log_error(title="App Trial Page URL Error")
+		return None

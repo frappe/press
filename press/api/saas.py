@@ -401,6 +401,79 @@ def get_site_url_and_sid(key, app=None):
 	return site.login_as_admin()
 
 
+# SaaS V2
+
+
+@frappe.whitelist(allow_guest=True)
+def signup(full_name, email, country, product, terms_accepted, referrer=None):
+	if not terms_accepted:
+		frappe.throw("Please accept the terms and conditions")
+	frappe.utils.validate_email_address(email, True)
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+	email = email.strip().lower()
+	full_name_parts = full_name.split(" ")
+	first_name = full_name_parts[0] if len(full_name_parts) >= 1 else ""
+	last_name = " ".join(full_name_parts[1:]) if len(full_name_parts) > 1 else ""
+	# validate country
+	all_countries = frappe.db.get_all("Country", pluck="name")
+	country = find(all_countries, lambda x: x.lower() == country.lower())
+	if not country:
+		frappe.throw("Please provide a valid country name")
+	# create account request
+	account_request = frappe.get_doc(
+		{
+			"doctype": "Account Request",
+			"email": email,
+			"first_name": first_name,
+			"last_name": last_name,
+			"country": country,
+			"role": "Press Admin",
+			"referrer_id": referrer,
+			"product_trial": product,
+			"send_email": True,
+		}
+	).insert()
+	frappe.set_user(current_user)
+	return account_request.name
+
+
+@frappe.whitelist(allow_guest=True)
+def setup_account(key):
+	ar = get_account_request_from_key(key)
+	if not ar:
+		frappe.throw("Invalid or Expired Key")
+	if not ar.product_trial:
+		frappe.throw("Invalid Product Trial")
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+	# check if team already exists
+	if frappe.db.exists("Team", {"user": ar.email}):
+		# Update first name and last name
+		team = frappe.get_doc("Team", {"user": ar.email})
+		team.first_name = ar.first_name
+		team.last_name = ar.last_name
+		team.save(ignore_permissions=True)
+	# create team
+	else:
+		# check if user exists
+		is_user_exists = frappe.db.exists("User", ar.email)
+		team = Team.create_new(
+			account_request=ar,
+			first_name=ar.first_name,
+			last_name=ar.last_name,
+			country=ar.country,
+			is_us_eu=ar.is_us_eu,
+			user_exists=is_user_exists,
+		)
+	frappe.db.commit()
+	frappe.set_user(current_user)
+	# login
+	frappe.local.login_manager.login_as(ar.email)
+	frappe.local.response["type"] = "redirect"
+	frappe.local.response["location"] = f"/dashboard/app-trial/setup/{ar.product_trial}"
+
+
 @frappe.whitelist()
 def get_saas_product_info(product=None):
 	team = get_current_team()
@@ -410,7 +483,7 @@ def get_saas_product_info(product=None):
 		filters={
 			"product_trial": product,
 			"team": team,
-			"status": ("in", ["Pending", "Wait for Site"]),
+			"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard"]),
 		},
 		fieldname=["name", "status", "site"],
 		as_dict=1,

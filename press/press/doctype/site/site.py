@@ -543,7 +543,7 @@ class Site(Document, TagHelpers):
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
 			job = agent.rename_site(self, new_name, create_user)
-			self.flags.rename_job = job.name
+			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -768,11 +768,12 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
-			if (self.standby_for_product or self.standby_for) and self.account_request:
-				# if standby site, rename site and create first user for trial signups
-				agent.new_site(self, create_user=self.get_user_details())
+			if (self.standby_for_product or self.standby_for) and not self.is_standby:
+				self.flags.new_site_agent_job_name = agent.new_site(
+					self, create_user=self.get_user_details()
+				).name
 			else:
-				agent.new_site(self)
+				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -1318,7 +1319,7 @@ class Site(Document, TagHelpers):
 	def create_user_with_team_info(self):
 		team_user = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.get_doc("User", team_user)
-		return self.create_user(user.email, user.first_name, user.last_name)
+		return self.create_user(user.email, user.first_name or "", user.last_name or "")
 
 	def create_user(self, email, first_name, last_name, password=None):
 		if self.additional_system_user_created:
@@ -1766,6 +1767,8 @@ class Site(Document, TagHelpers):
 	def set_plan(self, plan):
 		from press.api.site import validate_plan
 
+		print("hello > ", plan)
+
 		validate_plan(self.server, plan)
 		self.change_plan(plan)
 
@@ -1928,8 +1931,8 @@ class Site(Document, TagHelpers):
 			user = frappe.db.get_value(
 				"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
 			)
-			user_first_name = user.first_name
-			user_last_name = user.last_name
+			user_first_name = user.first_name if (user and user.first_name) else ""
+			user_last_name = user.last_name if (user and user.last_name) else ""
 		return {
 			"email": user_email,
 			"first_name": user_first_name or "",
@@ -2677,6 +2680,55 @@ def process_new_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 			frappe.db.commit()
 
+	# Update in product trial request
+	if job.job_type in ("New Site", "Add Site to Upstream") and updated_status in (
+		"Active",
+		"Broken",
+	):
+		update_product_trial_request_status_based_on_site_status(
+			job.site, updated_status == "Active"
+		)
+
+
+def update_product_trial_request_status_based_on_site_status(site, is_site_active):
+	records = frappe.get_list(
+		"Product Trial Request", filters={"site": site}, fields=["name"]
+	)
+	if not records:
+		return
+	product_trial_request = frappe.get_doc(
+		"Product Trial Request", records[0].name, for_update=True
+	)
+	if is_site_active:
+		mode = frappe.get_value(
+			"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
+		)
+		if mode != "auto":
+			product_trial_request.status = "Site Created"
+			product_trial_request.save(ignore_permissions=True)
+		else:
+			product_trial_request.complete_setup_wizard()
+	else:
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
+
+def process_complete_setup_wizard_job_update(job):
+	records = frappe.get_list(
+		"Product Trial Request", filters={"site": job.site}, fields=["name"]
+	)
+	if not records:
+		return
+	product_trial_request = frappe.get_doc(
+		"Product Trial Request", records[0].name, for_update=True
+	)
+	if job.status == "Success":
+		product_trial_request.status = "Site Created"
+		product_trial_request.save(ignore_permissions=True)
+	elif job.status in ("Failure", "Delivery Failure"):
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
 
 def get_remove_step_status(job):
 	remove_step_name = {
@@ -2996,7 +3048,9 @@ def process_restore_tables_job_update(job):
 def process_create_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-		frappe.db.commit()
+		update_product_trial_request_status_based_on_site_status(job.site, True)
+	elif job.status in ("Failure", "Delivery Failure"):
+		update_product_trial_request_status_based_on_site_status(job.site, False)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

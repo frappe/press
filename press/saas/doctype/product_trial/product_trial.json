@@ -1,179 +1,241 @@
 {
-	"actions": [],
-	"allow_rename": 1,
-	"autoname": "prompt",
-	"creation": "2023-08-01 13:11:14.281968",
-	"default_view": "List",
-	"doctype": "DocType",
-	"editable_grid": 1,
-	"engine": "InnoDB",
-	"field_order": [
-		"title",
-		"column_break_bqrh",
-		"logo",
-		"published",
-		"section_break_gogi",
-		"description",
-		"section_break_rvnt",
-		"domain",
-		"trial_days",
-		"column_break_cpkv",
-		"release_group",
-		"section_break_ipmu",
-		"apps",
-		"pooling_tab",
-		"site_pool_section",
-		"enable_pooling",
-		"standby_pool_size",
-		"standby_queue_size",
-		"signup_details_tab",
-		"signup_fields"
-	],
-	"fields": [
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"in_list_view": 1,
-			"label": "Title",
-			"reqd": 1
-		},
-		{
-			"fieldname": "column_break_bqrh",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "0",
-			"fieldname": "published",
-			"fieldtype": "Check",
-			"label": "Published"
-		},
-		{
-			"fieldname": "section_break_ipmu",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "apps",
-			"fieldtype": "Table",
-			"label": "Apps",
-			"options": "Product Trial App",
-			"reqd": 1
-		},
-		{
-			"fieldname": "logo",
-			"fieldtype": "Attach Image",
-			"label": "Logo"
-		},
-		{
-			"fieldname": "section_break_rvnt",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "domain",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"label": "Domain",
-			"options": "Root Domain",
-			"reqd": 1
-		},
-		{
-			"fieldname": "column_break_cpkv",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "release_group",
-			"fieldtype": "Link",
-			"label": "Release Group",
-			"options": "Release Group",
-			"reqd": 1
-		},
-		{
-			"fieldname": "site_pool_section",
-			"fieldtype": "Section Break"
-		},
-		{
-			"default": "0",
-			"fieldname": "enable_pooling",
-			"fieldtype": "Check",
-			"label": "Enable Pooling"
-		},
-		{
-			"default": "10",
-			"fieldname": "standby_pool_size",
-			"fieldtype": "Int",
-			"label": "Standby Pool Size"
-		},
-		{
-			"default": "2",
-			"fieldname": "standby_queue_size",
-			"fieldtype": "Int",
-			"label": "Standby Queue Size"
-		},
-		{
-			"fieldname": "pooling_tab",
-			"fieldtype": "Tab Break",
-			"label": "Pooling"
-		},
-		{
-			"fieldname": "signup_details_tab",
-			"fieldtype": "Tab Break",
-			"label": "Signup Details"
-		},
-		{
-			"fieldname": "signup_fields",
-			"fieldtype": "Table",
-			"label": "Signup Fields",
-			"options": "Product Trial Signup Field"
-		},
-		{
-			"fieldname": "description",
-			"fieldtype": "Markdown Editor",
-			"label": "Description"
-		},
-		{
-			"default": "14",
-			"fieldname": "trial_days",
-			"fieldtype": "Int",
-			"label": "Trial Duration (Days)"
-		},
-		{
-			"fieldname": "section_break_gogi",
-			"fieldtype": "Section Break",
-			"hide_border": 1
-		}
-	],
-	"image_field": "logo",
-	"index_web_pages_for_search": 1,
-	"links": [
-		{
-			"link_doctype": "Site",
-			"link_fieldname": "standby_for_product"
-		},
-		{
-			"link_doctype": "Product Trial Request",
-			"link_fieldname": "product_trial"
-		}
-	],
-	"modified": "2024-06-13 16:42:41.906936",
-	"modified_by": "Administrator",
-	"module": "SaaS",
-	"name": "Product Trial",
-	"naming_rule": "Set by user",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		}
-	],
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": []
+ "actions": [],
+ "autoname": "prompt",
+ "creation": "2023-08-01 13:11:14.281968",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "column_break_bqrh",
+  "logo",
+  "published",
+  "section_break_rvnt",
+  "domain",
+  "release_group",
+  "column_break_cpkv",
+  "trial_days",
+  "trial_plan",
+  "section_break_ipmu",
+  "apps",
+  "pooling_tab",
+  "site_pool_section",
+  "enable_pooling",
+  "standby_pool_size",
+  "standby_queue_size",
+  "signup_details_tab",
+  "signup_fields",
+  "email_section",
+  "email_account",
+  "column_break_gokr",
+  "email_full_logo",
+  "section_break_ncgc",
+  "email_subject",
+  "email_header_content",
+  "setup_wizard_tab",
+  "setup_wizard_completion_mode",
+  "setup_wizard_payload_generator_script"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_bqrh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "section_break_ipmu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Product Trial App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "section_break_rvnt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Domain",
+   "options": "Root Domain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cpkv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "release_group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site_pool_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_pooling",
+   "fieldtype": "Check",
+   "label": "Enable Pooling"
+  },
+  {
+   "default": "10",
+   "fieldname": "standby_pool_size",
+   "fieldtype": "Int",
+   "label": "Standby Pool Size"
+  },
+  {
+   "default": "2",
+   "fieldname": "standby_queue_size",
+   "fieldtype": "Int",
+   "label": "Standby Queue Size"
+  },
+  {
+   "fieldname": "pooling_tab",
+   "fieldtype": "Tab Break",
+   "label": "Pooling"
+  },
+  {
+   "fieldname": "signup_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Signup Details"
+  },
+  {
+   "fieldname": "signup_fields",
+   "fieldtype": "Table",
+   "label": "Signup Fields",
+   "options": "Product Trial Signup Field"
+  },
+  {
+   "default": "14",
+   "fieldname": "trial_days",
+   "fieldtype": "Int",
+   "label": "Trial Duration (Days)"
+  },
+  {
+   "fieldname": "trial_plan",
+   "fieldtype": "Link",
+   "label": "Trial Plan",
+   "options": "Site Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "setup_wizard_tab",
+   "fieldtype": "Tab Break",
+   "label": "Setup Wizard"
+  },
+  {
+   "default": "manual",
+   "fieldname": "setup_wizard_completion_mode",
+   "fieldtype": "Select",
+   "label": "Setup Wizard Completion Mode",
+   "options": "manual\nauto"
+  },
+  {
+   "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.",
+   "fieldname": "setup_wizard_payload_generator_script",
+   "fieldtype": "Code",
+   "label": "Setup Wizard Payload Generator Script",
+   "options": "Python"
+  },
+  {
+   "fieldname": "email_section",
+   "fieldtype": "Section Break",
+   "label": "E-mail"
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "Email Account"
+  },
+  {
+   "fieldname": "column_break_gokr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email_subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_full_logo",
+   "fieldtype": "Attach Image",
+   "label": "Full Logo"
+  },
+  {
+   "fieldname": "section_break_ncgc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Frappe Cloud!</p>",
+   "fieldname": "email_header_content",
+   "fieldtype": "Code",
+   "label": "Header Content",
+   "options": "html",
+   "reqd": 1
+  }
+ ],
+ "image_field": "logo",
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Site",
+   "link_fieldname": "standby_for_product"
+  },
+  {
+   "link_doctype": "Product Trial Request",
+   "link_fieldname": "product_trial"
+  }
+ ],
+ "modified": "2024-08-13 14:28:52.272674",
+ "modified_by": "Administrator",
+ "module": "SaaS",
+ "name": "Product Trial",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }

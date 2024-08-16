@@ -31,7 +31,7 @@ from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None, new_signup_flow=False):
+def signup(email, product=None, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -56,7 +56,6 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 				"referrer_id": referrer,
 				"product_trial": product,
 				"send_email": True,
-				"new_signup_flow": new_signup_flow,
 			}
 		).insert()
 
@@ -69,7 +68,9 @@ def signup(email, product=None, referrer=None, new_signup_flow=False):
 def verify_otp(account_request: str, otp: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}):
+	if not account_request.product_trial and frappe.db.exists(
+		"Team", {"user": account_request.email}
+	):
 		frappe.throw("Invalid OTP. Please try again.")
 	if account_request.otp != otp:
 		frappe.throw("Invalid OTP. Please try again.")
@@ -81,7 +82,9 @@ def verify_otp(account_request: str, otp: str):
 def resend_otp(account_request: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}):
+	if not account_request.product_trial and frappe.db.exists(
+		"Team", {"user": account_request.email}
+	):
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
 	account_request.send_verification_email()
@@ -100,7 +103,6 @@ def setup_account(
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
-	signup_values=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -132,11 +134,6 @@ def setup_account(
 	email = account_request.email
 	role = account_request.role
 	press_roles = account_request.press_roles
-
-	if signup_values:
-		account_request.saas_signup_values = json.dumps(signup_values, separators=(",", ":"))
-		account_request.save(ignore_permissions=True)
-		account_request.reload()
 
 	if is_invitation:
 		# if this is a request from an invitation
@@ -491,7 +488,9 @@ def has_method_permission(doctype, docname, method) -> bool:
 
 
 @frappe.whitelist(allow_guest=True)
-def signup_settings(product=None):
+def signup_settings(product=None, fetch_countries=False, timezone=None):
+	from press.utils.country_timezone import get_country_from_timezone
+
 	settings = frappe.get_single("Press Settings")
 
 	product = frappe.utils.cstr(product)
@@ -504,13 +503,21 @@ def signup_settings(product=None):
 			as_dict=1,
 		)
 
-	return {
+	data = {
 		"enable_google_oauth": settings.enable_google_oauth,
 		"product_trial": product_trial,
 		"oauth_domains": frappe.get_all(
 			"OAuth Domain Mapping", ["email_domain", "social_login_key", "provider_name"]
 		),
 	}
+
+	if fetch_countries:
+		data["countries"] = frappe.db.get_all("Country", pluck="name")
+		data["country"] = get_country_info().get("country") or get_country_from_timezone(
+			timezone
+		)
+
+	return data
 
 
 @frappe.whitelist(allow_guest=True)
@@ -818,26 +825,48 @@ def get_site_request(product):
 			"team": team.name,
 			"product_trial": product,
 		},
-		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
+		fields=[
+			"name",
+			"status",
+			"site",
+			"site.trial_end_date as trial_end_date",
+			"site.status as site_status",
+			"site.plan as site_plan",
+		],
 		order_by="creation desc",
 	).run(as_dict=1)
-	if not requests:
+	if requests:
+		site_request = requests[0]
+		site_request.is_pending = (not site_request.site) or site_request.status in [
+			"Pending",
+			"Wait for Site",
+			"Completing Setup Wizard",
+			"Error",
+		]
+	else:
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return {"pending": site_request.name}
-	else:
-		pending = [
-			d
-			for d in requests
-			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
-		]
-		return {
-			"pending": pending[0].name if pending else None,
-			"completed": [d for d in requests if d.site and d.status == "Site Created"],
-		}
+		site_request.is_pending = True
+
+	if hasattr(site_request, "site_plan") and site_request.site_plan:
+		record = frappe.get_value(
+			"Site Plan",
+			site_request.site_plan,
+			["is_trial_plan", "price_inr", "price_usd"],
+			as_dict=1,
+		)
+		site_request.is_trial_plan = bool(
+			frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan")
+		)
+		if team.currency == "INR":
+			site_request.site_plan_description = f"₹{record.price_inr} / month"
+		else:
+			site_request.site_plan_description = f"${record.price_usd} / month"
+
+	return site_request
 
 
 def redirect_to(location):

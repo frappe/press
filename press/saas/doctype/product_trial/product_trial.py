@@ -4,29 +4,127 @@
 import frappe
 from frappe.model.document import Document
 
+import frappe.utils
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
 class ProductTrial(Document):
-	dashboard_fields = ["title", "logo", "description", "domain", "trial_days"]
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
+		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
+
+		apps: DF.Table[ProductTrialApp]
+		domain: DF.Link
+		email_account: DF.Link | None
+		email_full_logo: DF.AttachImage | None
+		email_header_content: DF.Code
+		email_subject: DF.Data
+		enable_pooling: DF.Check
+		logo: DF.AttachImage | None
+		published: DF.Check
+		release_group: DF.Link
+		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
+		setup_wizard_payload_generator_script: DF.Code | None
+		signup_fields: DF.Table[ProductTrialSignupField]
+		standby_pool_size: DF.Int
+		standby_queue_size: DF.Int
+		title: DF.Data
+		trial_days: DF.Int
+		trial_plan: DF.Link
+	# end: auto-generated types
+
+	dashboard_fields = [
+		"title",
+		"logo",
+		"description",
+		"domain",
+		"trial_days",
+		"trial_plan",
+	]
 
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
+		doc.signup_fields = [
+			{
+				"label": field.label,
+				"fieldname": field.fieldname,
+				"fieldtype": field.fieldtype,
+				"options": [option for option in ((field.options or "").split("\n")) if option],
+				"required": field.required,
+			}
+			for field in self.signup_fields
+		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
-	def setup_trial_site(self, team, cluster=None):
-		standby_site = self.get_standby_site(cluster)
-		if not standby_site:
-			frappe.throw("Cannot set up trial site. Please try after some time.")
+	def validate(self):
+		plan = frappe.get_doc("Site Plan", self.trial_plan)
+		if plan.document_type != "Site":
+			frappe.throw("Selected plan is not for site")
+		if not plan.is_trial_plan:
+			frappe.throw("Selected plan is not a trial plan")
 
-		site = frappe.get_doc("Site", standby_site)
-		site.is_standby = False
-		site.team = team
-		site.save(ignore_permissions=True)
-		return site
+	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str, bool]:
+		standby_site = self.get_standby_site(cluster)
+		team_record = frappe.get_doc("Team", team)
+		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
+		site = None
+		agent_job_name = None
+		if standby_site:
+			site = frappe.get_doc("Site", standby_site)
+			site.is_standby = False
+			site.team = team_record.name
+			site.trial_end_date = trial_end_date
+			site.save(ignore_permissions=True)
+			agent_job_name = None
+			site.create_subscription(plan)
+		else:
+			# Create a site in the cluster, if standby site is not available
+			apps = [{"app": d.app} for d in self.apps]
+			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
+			if not is_frappe_app_present:
+				apps.insert(0, {"app": "frappe"})
+			print(apps)
+			site = frappe.get_doc(
+				doctype="Site",
+				subdomain=self.get_unique_site_name(),
+				domain=self.domain,
+				group=self.release_group,
+				cluster=cluster,
+				is_standby=False,
+				standby_for_product=self.name,
+				subscription_plan=plan,
+				team=team,
+				apps=apps,
+				trial_end_date=trial_end_date,
+			)
+			site.insert(ignore_permissions=True)
+			agent_job_name = site.flags.get("new_site_agent_job_name", None)
+
+		site.reload()
+		site.flags.ignore_permissions = True
+		site.update_site_config(
+			{
+				"subscription": {
+					"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
+					"app_trial": self.name,
+				},
+				"app_include_js": [
+					"https://devfc.tanmoysrt.xyz/saas/subscription.js"
+				],  # TODO: change this to frappecloud.com
+			}
+		)
+		if standby_site:
+			agent_job_name = site.create_user_with_team_info()
+		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
 		clusters = self.get_available_clusters()
@@ -110,6 +208,9 @@ class ProductTrial(Document):
 
 	def create_standby_site(self, cluster):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
+		apps = [{"app": d.app} for d in self.apps]
+		if "frappe" not in apps:
+			apps.insert(0, {"app": "frappe"})
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
@@ -119,9 +220,9 @@ class ProductTrial(Document):
 			is_standby=True,
 			standby_for_product=self.name,
 			team=administrator,
-			apps=[{"app": d.app} for d in self.apps],
+			apps=apps,
 		)
-		site.insert()
+		site.insert(ignore_permissions=True)
 
 	def get_standby_sites_count(self, cluster):
 		active_standby_sites = frappe.db.count(
