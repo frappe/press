@@ -9,6 +9,7 @@ import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
 import { isMobile } from '../utils/device';
 import { Button, Badge } from 'frappe-ui';
+import CodeReview from '../components/marketplace/CodeReview.vue';
 
 export default {
 	doctype: 'Marketplace App',
@@ -594,7 +595,7 @@ function showReleases(row, app) {
 												variant: 'subtle',
 												theme: 'blue',
 												size: 'sm',
-												onClick: () => console.log('Hello')
+												onClick: () => codeReview(row)
 											});
 										}
 										return h(Badge, {
@@ -657,5 +658,13 @@ function showReleases(row, app) {
 					})
 			}
 		)
+	);
+}
+
+function codeReview(row) {
+	renderDialog(
+		h(CodeReview, {
+			row: row
+		})
 	);
 }
