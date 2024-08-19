@@ -102,7 +102,7 @@
 										</p>
 									</div>
 									<ErrorMessage class="mt-2" :message="progressError" />
-									<div class="mt-2 text-p-base text-red-600">
+									<div class="mt-2 text-p-base text-red-600" v-if="progressError">
 										There was an error creating your site. Please contact
 										<a class="underline" href="/support">Frappe Cloud Support</a
 										>.
