@@ -153,8 +153,12 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_login_sid(self):
-		email = frappe.db.get_value("Team", self.team, "user")
-		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		is_secondary_user_created = frappe.db.get_value("Site", self.site, "additional_system_user_created")
+		if is_secondary_user_created:
+			email = frappe.db.get_value("Team", self.team, "user")
+			return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		else:
+			return frappe.get_doc("Site", self.site).get_login_sid()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):
