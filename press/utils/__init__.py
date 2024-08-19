@@ -113,6 +113,10 @@ def get_current_team(get_doc=False):
 
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
+	if team is None:
+		# check if `team` is available in frappe.local
+		# `team` getting injected by press.saas.api.whitelist_saas_api decorator
+		team = getattr(frappe.local, "team", None)
 
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}

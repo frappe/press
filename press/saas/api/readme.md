@@ -32,6 +32,9 @@ X-Site-Token: 319f41d07d430ed77df3d41a82787f4edff1440f12e43784a7ce8b4e
   ```python
   @whitelist_saas_api
   def hello():
+      print(frappe.local.site)
+      print(frappe.local.get_site())
+      print(frappe.local.team)
       print(frappe.local.get_team())
       return f"👋 Hi! {frappe.local.site} is authenticated"
   ```
