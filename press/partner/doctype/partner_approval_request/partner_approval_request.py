@@ -80,7 +80,7 @@ class PartnerApprovalRequest(Document):
 
 		frappe.sendmail(
 			subject="Partner Approval Request",
-			recipients=partner_manager,
+			recipients=partner_manager['success_manager'],
 			template="partner_approval",
 			args={"link": link, "user": customer, "partner": email},
 			now=True,
