@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
+import pytz
 from typing import Any, Dict, List
 from contextlib import suppress
 
@@ -1457,6 +1458,14 @@ class Site(Document, TagHelpers):
 		:timezone: Timezone passed in part of the agent info response
 		:returns: True if value has changed
 		"""
+		# Validate timezone string
+		# Empty string is fine, since we default to IST
+		if timezone:
+			try:
+				pytz.timezone(timezone)
+			except pytz.exceptions.UnknownTimeZoneError:
+				return False
+
 		if self.timezone != timezone:
 			self.timezone = timezone
 			return True
