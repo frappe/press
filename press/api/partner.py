@@ -17,6 +17,9 @@ def approve_partner_request(key):
 			partner_request_doc.approved_by_frappe = True
 
 		partner_request_doc.save(ignore_permissions=True)
+	
+	frappe.response.type = "redirect"
+	frappe.response.location = f"/app/partner-approval-request/{partner_request_doc.name}"
 
 
 @frappe.whitelist()
