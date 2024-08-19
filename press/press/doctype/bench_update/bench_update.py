@@ -5,7 +5,6 @@ import frappe
 from frappe.model.document import Document
 
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.utils import log_error
 
 
 class BenchUpdate(Document):
@@ -93,10 +92,10 @@ class BenchUpdate(Document):
 					)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
-				except Exception as e:
+				except Exception:
 					# Rollback the failed attempt and set status to Failure
 					# So, we don't try again
-					log_error("Bench Update: Failed to create Site Update", exception=e)
+					# TODO: Add Notifications
 					frappe.db.rollback()
 					frappe.db.set_value("Bench Site Update", row.name, "status", "Failure")
 					traceback = frappe.get_traceback(with_context=True)
