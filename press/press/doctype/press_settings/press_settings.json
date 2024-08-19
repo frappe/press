@@ -16,6 +16,8 @@
   "column_break_cpry",
   "micro_debit_charge_usd",
   "micro_debit_charge_inr",
+  "column_break_wrqp",
+  "usage_record_creation_batch_size",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
@@ -1215,11 +1217,21 @@
   {
    "fieldname": "column_break_cpry",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wrqp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "500",
+   "fieldname": "usage_record_creation_batch_size",
+   "fieldtype": "Int",
+   "label": "Usage Record Creation Batch Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-08-19 17:43:33.940230",
+ "modified": "2024-08-19 17:47:53.603250",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

@@ -245,6 +245,7 @@ def create_usage_records():
 	Creates daily usage records for paid Subscriptions
 	"""
 	free_sites = sites_with_free_hosting()
+	settings = frappe.get_single("Press Settings")
 	subscriptions = frappe.db.get_all(
 		"Subscription",
 		filters={
@@ -255,8 +256,9 @@ def create_usage_records():
 		},
 		pluck="name",
 		order_by=None,
-		limit=2000,
+		limit=settings.usage_record_creation_batch_size or 500,
 		ignore_ifnull=True,
+		debug=True,
 	)
 	for name in subscriptions:
 		subscription = frappe.get_cached_doc("Subscription", name)
