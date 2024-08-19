@@ -129,13 +129,12 @@
 										}}
 									</div>
 								</div>
-								<!-- Site request faced error -->
-								<div v-else-if="$resources.siteRequest?.status == 'Error'">
-									<div class="text-p-base text-red-600">
-										There was an error creating your site. Please contact
-										<a class="underline" href="/support">Frappe Cloud Support</a
-										>.
-									</div>
+							</div>
+							<!-- Site request faced error -->
+							<div v-if="siteRequest?.status == 'Error'">
+								<div class="text-p-base text-red-600">
+									There was an error creating your site. Please contact
+									<a class="underline" href="/support">Frappe Cloud Support</a>.
 								</div>
 							</div>
 							<!-- Site Details (Site creation done already) -->
@@ -280,7 +279,7 @@ export default {
 			return {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
-				auto: true,
+				auto: true
 			};
 		},
 		saasProduct() {
@@ -292,7 +291,7 @@ export default {
 			};
 		},
 		siteRequest() {
-			if(!this.siteRequest && !this.siteRequest.is_pending) return;
+			if (!this.siteRequest && !this.siteRequest.is_pending) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
