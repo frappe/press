@@ -111,7 +111,8 @@
 								<!-- Site created -->
 								<div
 									v-else-if="
-										$resources.siteRequest?.doc?.status == 'Site Created'
+										$resources.siteRequest?.doc?.status == 'Site Created' &&
+										siteRequest?.is_pending === true
 									"
 								>
 									<div class="text-base text-gray-900">
@@ -121,12 +122,11 @@
 										}}</span>
 										is ready.
 									</div>
-									<div class="py-3 text-base text-gray-900">
-										{{
-											$resources.siteRequest?.getLoginSid?.loading
-												? 'Logging in to your site...'
-												: ''
-										}}
+									<div
+										class="py-3 text-base text-gray-900"
+										v-if="$resources.siteRequest?.getLoginSid?.loading"
+									>
+										Logging in to your site...
 									</div>
 								</div>
 							</div>
@@ -147,7 +147,7 @@
 												? `error`
 												: `warning`
 										"
-										class="col-span-1 lg:col-span-2"
+										class="col-span-1 lg:col-span-2 mb-4"
 										:title="trialDays(siteRequest?.trial_end_date)"
 										v-if="
 											!isBillingDetailsSet ||
@@ -165,7 +165,7 @@
 									</AlertBanner>
 									<!-- Site -->
 									<div
-										class="mt-2 flex flex-col items-center justify-between overflow-hidden whitespace-nowrap py-2.5 text-base"
+										class="flex flex-col items-center justify-between overflow-hidden whitespace-nowrap py-2.5 gap-2.5 text-base"
 									>
 										<!-- Site name -->
 										<p
@@ -176,6 +176,7 @@
 										</p>
 										<!-- Action Buttons -->
 										<Button
+											class="w-full"
 											variant="outline"
 											iconLeft="user"
 											@click="() => loginAsTeam(siteRequest?.site)"
@@ -189,7 +190,7 @@
 											"
 											loadingText="Logging in ..."
 										>
-											Login</Button
+											Login to site</Button
 										>
 									</div>
 								</div>
