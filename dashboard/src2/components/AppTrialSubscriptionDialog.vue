@@ -191,7 +191,7 @@
 								<div class="flex items-center space-x-2">
 									<TextInsideCircle>4</TextInsideCircle>
 									<div class="text-base font-medium">
-										Subscription Confirmation
+										Subscription confirmation
 									</div>
 								</div>
 							</div>

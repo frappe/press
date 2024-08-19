@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
 from frappe.utils.password import decrypt as decrypt_password
+from frappe.utils.password_strength import test_password_strength
 import urllib
 
 from press.agent import Agent
@@ -131,7 +132,13 @@ class ProductTrialRequest(Document):
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		for field in product.signup_fields:
 			if field.fieldtype == "Password" and field.fieldname in signup_values:
+				password_analysis = test_password_strength(signup_values[field.fieldname])
+				if int(field.min_password_score) > password_analysis["score"]:
+					suggestions = password_analysis["feedback"]["suggestions"]
+					suggestion = suggestions[0] if suggestions else ""
+					frappe.throw(f"{field.label} is easy to guess.\n{suggestion}")
 				signup_values[field.fieldname] = encrypt_password(signup_values[field.fieldname])
+
 		self.signup_details = json.dumps(signup_values)
 		self.validate_signup_fields()
 		product = frappe.get_doc("Product Trial", self.product_trial)
@@ -153,8 +160,14 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_login_sid(self):
-		email = frappe.db.get_value("Team", self.team, "user")
-		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		is_secondary_user_created = frappe.db.get_value(
+			"Site", self.site, "additional_system_user_created"
+		)
+		if is_secondary_user_created:
+			email = frappe.db.get_value("Team", self.team, "user")
+			return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		else:
+			return frappe.get_doc("Site", self.site).get_login_sid()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):
