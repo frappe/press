@@ -30,17 +30,115 @@
 						<div
 							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-8 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
 						>
-							<div
-								class="mb-6 text-center"
-								v-if="$resources.siteRequest?.doc?.status == 'Pending'"
-							>
-								<span
-									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+							<!-- Site Creation -->
+							<div v-if="$resources.siteRequest && $resources.siteRequest?.doc">
+								<!-- Site Creation Form (Site creation is yet not initiated) -->
+								<div
+									class="mb-6 text-center"
+									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
 								>
-									Fill in the details to create your site
-								</span>
+									<span
+										class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+									>
+										Fill in the details to create your site
+									</span>
+								</div>
+								<form
+									class="space-y-3"
+									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
+									@submit.prevent="createSite()"
+								>
+									<FormControl
+										label="Your Email"
+										:modelValue="$team.doc.user"
+										:disabled="true"
+									/>
+									<Form
+										v-if="saasProductSignupFields.length > 0"
+										:fields="saasProductSignupFields"
+										v-model="signupValues"
+									/>
+									<ErrorMessage
+										:message="$resources.siteRequest?.createSite?.error"
+									/>
+									<Button
+										class="w-full"
+										variant="solid"
+										:loading="
+											findingClosestServer ||
+											$resources.siteRequest?.createSite?.loading
+										"
+										loadingText="Creating Site"
+									>
+										Create Site
+									</Button>
+								</form>
+								<!-- Site creation has been initiated but hasn't created till now -->
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Wait for Site' ||
+										$resources.siteRequest?.doc?.status ==
+											'Completing Setup Wizard'
+									"
+								>
+									<Progress
+										label="Creating site"
+										:value="
+											$resources.siteRequest.getProgress.data?.progress || 0
+										"
+										size="md"
+									/>
+									<div class="mt-4 flex flex-row items-center gap-1">
+										<Spinner class="w-3" />
+										<p class="text-sm italic">
+											{{
+												$resources.siteRequest.getProgress.data?.current_step
+													? $resources.siteRequest.getProgress.data
+															?.current_step
+													: !$resources.siteRequest.getProgress.data?.progress
+													? 'Waiting for update'
+													: 'Just a moment'
+											}}
+										</p>
+									</div>
+									<ErrorMessage class="mt-2" :message="progressError" />
+									<div class="mt-2 text-p-base text-red-600">
+										There was an error creating your site. Please contact
+										<a class="underline" href="/support">Frappe Cloud Support</a
+										>.
+									</div>
+								</div>
+								<!-- Site created -->
+								<div
+									v-else-if="
+										$resources.siteRequest?.doc?.status == 'Site Created'
+									"
+								>
+									<div class="text-base text-gray-900">
+										Your site
+										<span class="font-semibold text-gray-900">{{
+											$resources.siteRequest?.doc?.site
+										}}</span>
+										is ready.
+									</div>
+									<div class="py-3 text-base text-gray-900">
+										{{
+											$resources.siteRequest?.getLoginSid?.loading
+												? 'Logging in to your site...'
+												: ''
+										}}
+									</div>
+								</div>
+								<!-- Site request faced error -->
+								<div v-else-if="$resources.siteRequest?.status == 'Error'">
+									<div class="text-p-base text-red-600">
+										There was an error creating your site. Please contact
+										<a class="underline" href="/support">Frappe Cloud Support</a
+										>.
+									</div>
+								</div>
 							</div>
-							<!-- Site Details -->
+							<!-- Site Details (Site creation done already) -->
 							<div v-if="siteRequest?.is_pending === false">
 								<div>
 									<AlertBanner
@@ -94,105 +192,6 @@
 										>
 											Login</Button
 										>
-									</div>
-								</div>
-							</div>
-							<!-- Site Creation -->
-							<div v-if="$resources.siteRequest?.doc">
-								<form
-									class="space-y-3"
-									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
-									@submit.prevent="createSite()"
-								>
-									<FormControl
-										label="Your Email"
-										:modelValue="$team.doc.user"
-										:disabled="true"
-									/>
-									<Form
-										v-if="saasProductSignupFields.length > 0"
-										:fields="saasProductSignupFields"
-										v-model="signupValues"
-									/>
-									<ErrorMessage
-										:message="$resources.siteRequest?.createSite?.error"
-									/>
-									<Button
-										class="w-full"
-										variant="solid"
-										:loading="
-											findingClosestServer ||
-											$resources.siteRequest?.createSite?.loading
-										"
-										loadingText="Creating Site"
-									>
-										Create Site
-									</Button>
-								</form>
-								<div
-									v-else-if="
-										$resources.siteRequest?.doc?.status == 'Wait for Site' ||
-										$resources.siteRequest?.doc?.status ==
-											'Completing Setup Wizard'
-									"
-								>
-									<Progress
-										label="Creating site"
-										:value="
-											$resources.siteRequest.getProgress.data?.progress || 0
-										"
-										size="md"
-									/>
-									<div class="mt-4 flex flex-row items-center gap-1">
-										<Spinner class="w-3" />
-										<p class="text-sm italic">
-											{{
-												$resources.siteRequest.getProgress.data?.current_step
-													? $resources.siteRequest.getProgress.data
-															?.current_step
-													: !$resources.siteRequest.getProgress.data?.progress
-													? 'Waiting for update'
-													: 'Just a moment'
-											}}
-										</p>
-									</div>
-									<ErrorMessage class="mt-2" :message="progressError" />
-									<Button
-										class="mt-2"
-										v-if="
-											$resources.siteRequest?.getProgress?.error &&
-											progressErrorCount > 9
-										"
-										route="/"
-									>
-										&#8592; Back to Dashboard
-									</Button>
-								</div>
-								<div
-									v-else-if="
-										$resources.siteRequest?.doc?.status == 'Site Created'
-									"
-								>
-									<div class="text-base text-gray-900">
-										Your site
-										<span class="font-semibold text-gray-900">{{
-											$resources.siteRequest?.doc?.site
-										}}</span>
-										is ready.
-									</div>
-									<div class="py-3 text-base text-gray-900">
-										{{
-											$resources.siteRequest?.getLoginSid?.loading
-												? 'Logging in to your site...'
-												: ''
-										}}
-									</div>
-								</div>
-								<div v-else-if="$resources.siteRequest?.status == 'Error'">
-									<div class="text-p-base text-red-600">
-										There was an error creating your site. Please contact
-										<a class="underline" href="/support">Frappe Cloud Support</a
-										>.
 									</div>
 								</div>
 							</div>
