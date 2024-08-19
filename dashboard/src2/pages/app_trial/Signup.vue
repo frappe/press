@@ -170,7 +170,7 @@ export default {
 					otp: this.otp
 				},
 				onSuccess(key) {
-					window.location.href = `/api/method/press.api.saas.setup_account_product_trial?key=${key}`;
+					window.open(`/api/method/press.api.saas.setup_account_product_trial?key=${key}`, "_self");
 				}
 			};
 		},

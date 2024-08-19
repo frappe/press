@@ -166,7 +166,7 @@
 									</AlertBanner>
 									<!-- Site -->
 									<div
-										class="mt-2 flex items-center justify-between overflow-hidden whitespace-nowrap py-2.5 text-base"
+										class="mt-2 flex flex-col items-center justify-between overflow-hidden whitespace-nowrap py-2.5 text-base"
 									>
 										<!-- Site name -->
 										<p
@@ -264,9 +264,7 @@ export default {
 	},
 	data() {
 		return {
-			siteRequestLoaded: false,
 			plan: null,
-			inputPaddingRight: null,
 			showPlanDialog: false,
 			selectedPlan: null,
 			progressErrorCount: 0,
@@ -283,9 +281,6 @@ export default {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
 				auto: true,
-				onSuccess() {
-					this.autoCreateIfNoExtraFields();
-				}
 			};
 		},
 		saasProduct() {
@@ -293,19 +288,17 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true,
-				onSuccess() {
-					this.autoCreateIfNoExtraFields();
-				}
+				auto: true
 			};
 		},
 		siteRequest() {
-			if (!this.siteRequest?.is_pending) return;
+			if(!this.siteRequest && !this.siteRequest.is_pending) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
 				name: this.siteRequest.name,
 				realtime: true,
+				auto: true,
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
@@ -369,15 +362,6 @@ export default {
 		}
 	},
 	methods: {
-		autoCreateIfNoExtraFields() {
-			if (
-				this.saasProductSignupFields.length === 0 &&
-				this.$resources.siteRequest?.doc &&
-				this.$resources.siteRequest?.doc?.status === 'Pending'
-			) {
-				this.createSite();
-			}
-		},
 		async createSite() {
 			let cluster = await this.getClosestCluster();
 			return this.$resources.siteRequest.createSite.submit({
@@ -415,9 +399,6 @@ export default {
 				console.warn(error);
 			}
 			return { server, pingTime };
-		},
-		onResize({ width }) {
-			this.inputPaddingRight = width + 10 + 'px';
 		},
 		loginAsTeam(site_name) {
 			if (this.loginAsTeamInProgressInSite) return;
