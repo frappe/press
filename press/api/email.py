@@ -178,6 +178,9 @@ def event_log():
 	if "delivery-status" not in event_data:
 		return
 
+	if "message" not in event_data["delivery-status"]:
+		return
+
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
 		headers = event_data["message"]["headers"]
