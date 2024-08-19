@@ -17,6 +17,7 @@ class ProductTrialSignupField(Document):
 		fieldname: DF.Data
 		fieldtype: DF.Literal["Data", "Select", "Check", "Date", "Password"]
 		label: DF.Data
+		min_password_score: DF.Literal["2", "3", "4"]
 		options: DF.SmallText | None
 		parent: DF.Data
 		parentfield: DF.Data
