@@ -5,6 +5,7 @@
 
 import typing
 
+import rq
 import frappe
 from frappe.model.document import Document
 
@@ -94,5 +95,8 @@ def poll_new_releases():
 			source = frappe.get_doc("App Source", source.name)
 			source.create_release()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
 		except Exception:
 			frappe.db.rollback()
