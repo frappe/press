@@ -33,7 +33,7 @@
 							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
-					<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+					<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 						<template v-slot="{ open }">
 							<Button>
 								<template #icon>
