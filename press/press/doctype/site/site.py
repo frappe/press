@@ -498,7 +498,7 @@ class Site(Document, TagHelpers):
 				self.update_site_config(config)
 			else:
 				self._update_configuration(config=config, save=True)
-	
+
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
