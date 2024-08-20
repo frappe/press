@@ -203,6 +203,9 @@ class TLSCertificate(Document):
 			if self.certificate and self.intermediate_chain:
 				self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
+			if not self.intermediate_chain:
+				self.full_chain = self.certificate
+
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)
 		self.decoded_certificate = OpenSSL.crypto.dump_certificate(
