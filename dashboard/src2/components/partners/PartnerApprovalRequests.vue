@@ -36,6 +36,14 @@ export default {
 						}
 					},
 					{
+						label: 'Approval By Frappe',
+						fieldname: 'approved_by_frappe',
+						type: 'Badge',
+						format(value) {
+							return value ? 'Approved' : 'Pending';
+						}
+					},
+					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge'
