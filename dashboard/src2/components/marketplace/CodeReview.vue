@@ -39,15 +39,21 @@
 									</div>
 									<div class="bg-gray-50 border border-gray-400 p-2 rounded-md">
 										<div
-											v-for="(lineText, index) in line.context.lines"
-											:key="index"
+											v-for="(lineText, i) in line.context.lines"
+											:key="i"
 											:class="{
-												'bg-yellow-200': lineText.includes(issue.match)
+												'bg-yellow-200':
+													lineText.includes(issue.match) &&
+													line.context.line_range[i] ===
+														line.context.line_number
 											}"
 										>
-											<code class="p-2 text-sm whitespace-pre-wrap">{{
-												lineText
-											}}</code>
+											<code class="p-2 text-sm whitespace-pre-wrap">
+												<span class="text-gray-500"
+													>{{ line.context.line_range[i] }}:</span
+												>
+												{{ lineText }}
+											</code>
 										</div>
 									</div>
 								</div>
