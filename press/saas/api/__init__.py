@@ -39,15 +39,15 @@ def whitelist_saas_api(func):
 			frappe.throw("Sorry, this is not SaaS site", frappe.AuthenticationError)
 
 		# set site name in context
-		frappe.local.site = headers["x-site"]
-		frappe.local.team = site.team
+		frappe.local.site_name = headers["x-site"]
+		frappe.local.team_name = site.team
 
 		# set team user as current user
 		frappe.set_user(frappe.get_value("Team", site.team, "user"))
 
 		# set utility function to get team and site info
-		frappe.local.get_site = lambda: frappe.get_doc("Site", frappe.local.site)
-		frappe.local.get_team = lambda: frappe.get_doc("Team", frappe.local.team)
+		frappe.local.get_site = lambda: frappe.get_doc("Site", frappe.local.site_name)
+		frappe.local.get_team = lambda: frappe.get_doc("Team", frappe.local.team_name)
 		return func()
 
 	return whitelist_wrapper(auth_wrapper)

@@ -23,8 +23,8 @@ X-Site-Token: 319f41d07d430ed77df3d41a82787f4edff1440f12e43784a7ce8b4e
 - `@whitelist_saas_api` also add couple of variable and functions to `frappe.local`.
   | Type | Name | Description |
   | ---- | ---- | ----------- |
-  | Variable | frappe.local.site | Site name |
-  | Variable | frappe.local.team | Current team name |
+  | Variable | frappe.local.site_name | Site name |
+  | Variable | frappe.local.team_name | Current team name |
   | Function | frappe.local.get_site() -> Site | Fetch current site doctype record |
   | Function | frappe.local.get_team() -> Team | Fetch current team doctype record |
   | Variable (Additional) | frappe.session.user | Logged in user name, This will be also available as we have set `team.user` to logged in user |
@@ -32,9 +32,9 @@ X-Site-Token: 319f41d07d430ed77df3d41a82787f4edff1440f12e43784a7ce8b4e
   ```python
   @whitelist_saas_api
   def hello():
-      print(frappe.local.site)
+      print(frappe.local.site_name)
       print(frappe.local.get_site())
-      print(frappe.local.team)
+      print(frappe.local.team_name)
       print(frappe.local.get_team())
-      return f"👋 Hi! {frappe.local.site} is authenticated"
+      return f"👋 Hi! {frappe.local.site_name} is authenticated"
   ```
