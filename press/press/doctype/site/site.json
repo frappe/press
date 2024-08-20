@@ -79,7 +79,7 @@
   "standby_for_product",
   "column_break_63",
   "hybrid_saas_pool",
-  "saas_fc_communication_secret",
+  "saas_communication_secret",
   "backups_section",
   "backup_time",
   "column_break_zgig",
@@ -600,9 +600,9 @@
   },
   {
    "description": "This key will be used to validate requests from saas site for billing & configuration purpose",
-   "fieldname": "saas_fc_communication_secret",
+   "fieldname": "saas_communication_secret",
    "fieldtype": "Data",
-   "label": "SaaS FC Communication Secret"
+   "label": "SaaS Communication Secret"
   }
  ],
  "links": [
@@ -667,7 +667,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-08-19 17:00:42.254457",
+ "modified": "2024-08-20 10:01:59.838341",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

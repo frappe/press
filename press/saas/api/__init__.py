@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 import frappe
-from press.utils import get_current_team
 
 
 def whitelist_saas_api(func):
@@ -27,14 +26,14 @@ def whitelist_saas_api(func):
 				"team",
 				"is_standby",
 				"standby_for_product",
-				"saas_fc_communication_secret",
+				"saas_communication_secret",
 			],
 			as_dict=True,
 			ignore=True,
 		)
 		if not site:
 			frappe.throw("Invalid site", frappe.AuthenticationError)
-		if site.saas_fc_communication_secret != headers["x-site-token"]:
+		if site.saas_communication_secret != headers["x-site-token"]:
 			frappe.throw("Invalid token", frappe.AuthenticationError)
 		if site.is_standby is None and site.standby_for_product is None:
 			frappe.throw("Sorry, this is not SaaS site", frappe.AuthenticationError)
