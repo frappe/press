@@ -108,8 +108,8 @@ class ProductTrial(Document):
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
-		site.generate_saas_communication_secret()
 		site.reload()
+		site.generate_saas_communication_secret()
 		site.flags.ignore_permissions = True
 		site.update_site_config(
 			{
