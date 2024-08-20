@@ -281,5 +281,3 @@ def delete_s3_files(buckets):
 			frappe.get_doc(
 				doctype="Remote Operation Log", operation_type="Delete Files", response=response
 			).insert()
-
-	return response
