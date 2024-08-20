@@ -76,29 +76,27 @@ export default {
 	},
 	computed: {
 		getResults() {
-			const results = JSON.parse(this.$resources.codeScreening.data[0].result);
-			return results;
+			if (this.$resources.codeScreening.doc) {
+				const results = JSON.parse(this.$resources.codeScreening.doc.result);
+				return results;
+			}
 		}
 	},
 	resources: {
 		codeScreening() {
 			return {
-				type: 'list',
+				type: 'document',
 				doctype: 'App Release Approval Request',
+				name: this.row.approval_request_name,
 				fields: [
 					'name',
 					'marketplace_app',
 					'screening_status',
 					'app_release',
 					'status',
-					'result'
+					'result',
+					'code_comments'
 				],
-				filters: {
-					app_release: this.row.name,
-					status: 'Open'
-				},
-				orderBy: 'creation desc',
-				start: 0,
 				auto: true
 			};
 		}

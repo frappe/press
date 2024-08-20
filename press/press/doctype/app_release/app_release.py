@@ -74,9 +74,20 @@ class AppRelease(Document):
 			.limit(1)
 		)
 
-		# Main query that selects app_release fields and the latest screening_status
+		# Subquery to get the latest name for each app_release
+		approval_request_name = (
+			frappe.qb.from_(release_approve_request)
+			.select(release_approve_request.name)
+			.where(release_approve_request.app_release == app_release.name)
+			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
+			.limit(1)
+		)
+
+		# Main query that selects app_release fields and the latest screening_status and name
 		query = query.select(
-			app_release.name, latest_approval_request.as_("screening_status")
+			app_release.name,
+			latest_approval_request.as_("screening_status"),
+			approval_request_name.as_("approval_request_name"),
 		)
 
 		return query
