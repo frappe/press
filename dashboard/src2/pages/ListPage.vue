@@ -10,7 +10,7 @@
 		<div class="p-5">
 			<AlertAddPaymentMode
 				class="mb-5"
-				v-if="$team.doc && !$team.doc.payment_mode && !$team.doc.parent_team"
+				v-if="$team?.doc && !$team.doc.payment_mode && !$team.doc.parent_team"
 			/>
 			<AlertCardExpired
 				class="mb-5"
