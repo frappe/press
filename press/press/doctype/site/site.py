@@ -2404,7 +2404,7 @@ class Site(Document, TagHelpers):
 		return frappe.get_all(
 			"Site Backup",
 			{
-				"creation": (">=", interval_hrs_ago),
+				"creation": (">", interval_hrs_ago),
 				"status": ("!=", "Failure"),
 				"owner": "Administrator",
 			},
