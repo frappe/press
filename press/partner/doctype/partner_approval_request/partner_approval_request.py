@@ -26,7 +26,7 @@ class PartnerApprovalRequest(Document):
 		status: DF.Literal["Pending", "Approved", "Rejected"]
 	# end: auto-generated types
 
-	dashboard_fields = ["requested_by", "partner", "status"]
+	dashboard_fields = ["requested_by", "partner", "status", "approved_by_frappe"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -70,8 +70,10 @@ class PartnerApprovalRequest(Document):
 		from press.utils.billing import get_frappe_io_connection
 
 		client = get_frappe_io_connection()
-		email = frappe.db.get_value("Team", self.partner, "user")
+		email = frappe.db.get_value("Team", self.partner, "partner_email")
 		partner_manager = client.get_value("Partner", "success_manager", {"email": email})
+		if not partner_manager:
+			frappe.throw("Failed to create approval request. Please contact support.")
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
 		link = get_url(
@@ -80,7 +82,7 @@ class PartnerApprovalRequest(Document):
 
 		frappe.sendmail(
 			subject="Partner Approval Request",
-			recipients=partner_manager['success_manager'],
+			recipients=partner_manager["success_manager"],
 			template="partner_approval",
 			args={"link": link, "user": customer, "partner": email},
 			now=True,

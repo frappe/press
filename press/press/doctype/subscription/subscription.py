@@ -5,6 +5,7 @@
 
 from typing import List
 
+import rq
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder.functions import Coalesce, Count
@@ -265,6 +266,12 @@ def create_usage_records():
 		try:
 			subscription.create_usage_record()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			# This job took too long to execute
+			# We need to rollback the transaction
+			# Try again in the next job
+			frappe.db.rollback()
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Create Usage Record Error", name=name)
