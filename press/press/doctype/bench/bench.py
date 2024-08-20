@@ -28,6 +28,8 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
+	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
+
 	SupervisorctlActions = Literal[
 		"start",
 		"stop",
@@ -619,6 +621,9 @@ class Bench(Document):
 		output = result["output"]
 		processes = parse_supervisor_status(output)
 		return sort_supervisor_processes(processes)
+
+	def update_inplace(self, apps: "list[BenchUpdateApp]") -> str:
+		pass
 
 
 class StagingSite(Site):

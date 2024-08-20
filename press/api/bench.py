@@ -30,10 +30,10 @@ from press.utils import (
 	get_current_team,
 	unique,
 )
+from press.press.doctype.bench_update.bench_update import get_bench_update
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.bench_update.bench_update import BenchUpdate
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
@@ -731,45 +731,37 @@ def deploy(name, apps):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
-	if sites is None:
-		sites = []
+def deploy_and_update(
+	name: str,
+	apps: list,
+	sites: str | list[str] | None = None,
+	run_will_fail_check: bool = True,
+):
+	# Returns name of the Deploy Candidate that is running the build
+	return get_bench_update(name, apps, sites, False).deploy(run_will_fail_check)
 
-	team = get_current_team(True)
-	rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != team.name:
-		frappe.throw(
-			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
-		)
-	bench_update: "BenchUpdate" = frappe.get_doc(
-		{
-			"doctype": "Bench Update",
-			"group": name,
-			"apps": apps,
-			"sites": [
-				{
-					"site": site["name"],
-					"server": site["server"],
-					"skip_failing_patches": site["skip_failing_patches"],
-					"skip_backups": site["skip_backups"],
-					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
-				}
-				for site in sites
-			],
-			"status": "Pending",
-		}
-	).insert(ignore_permissions=True)
-	return bench_update.deploy(run_will_fail_check)
+@frappe.whitelist()
+@protected("Release Group")
+def update_inplace(
+	name: str,
+	apps: list,
+	sites: str | list[str] | None = None,
+):
+	# Returns name of the Agent Job name that runs the inplace update
+	return get_bench_update(
+		name,
+		apps,
+		sites,
+		True,
+	).update_inplace()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def create_deploy_candidate(name, apps_to_ignore=[]):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	candidate = rg.create_deploy_candidate(apps_to_ignore)
-
-	return candidate
+	return rg.create_deploy_candidate(apps_to_ignore)
 
 
 @frappe.whitelist()

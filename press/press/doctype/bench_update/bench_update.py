@@ -2,9 +2,13 @@
 # For license information, please see license.txt
 
 import frappe
+from typing import TYPE_CHECKING
+from press.utils import get_current_team
 from frappe.model.document import Document
-
 from press.press.doctype.release_group.release_group import ReleaseGroup
+
+if TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 
 
 class BenchUpdate(Document):
@@ -15,13 +19,14 @@ class BenchUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 
 		apps: DF.Table[BenchUpdateApp]
+		bench: DF.Link | None
 		candidate: DF.Link | None
 		group: DF.Link
+		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
 		status: DF.Literal["Pending", "Running", "Build Successful", "Failure", "Success"]
 	# end: auto-generated types
@@ -32,6 +37,16 @@ class BenchUpdate(Document):
 
 		self.validate_pending_updates()
 		self.validate_pending_site_updates()
+
+		if self.is_inplace_update:
+			self.validate_inplace_update()
+
+	def before_save(self):
+		if not self.is_inplace_update:
+			return
+
+		site = self.sites[0].site  # validation should throw if no sites
+		self.bench = frappe.get_value("Site", site, "bench")
 
 	def validate_pending_updates(self):
 		if frappe.get_doc("Release Group", self.group).deploy_in_progress:
@@ -47,7 +62,27 @@ class BenchUpdate(Document):
 			):
 				frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
-	def deploy(self, run_will_fail_check=False):
+	def validate_inplace_update(self):
+		sites = [s.site for s in self.sites if s.site]
+		if len(sites) == 0:
+			frappe.throw(
+				"In place update cannot be run without a site being selected",
+			)
+
+		benches = frappe.get_all(
+			"Site",
+			fields=["bench"],
+			filters={"name": ["in", sites]},
+			pluck="bench",
+		)
+
+		if len(set(benches)) > 1:
+			frappe.throw(
+				"In place update can be used only to update single benches",
+				frappe.ValidationError,
+			)
+
+	def deploy(self, run_will_fail_check=False) -> str:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		candidate.schedule_build_and_deploy()
@@ -55,7 +90,23 @@ class BenchUpdate(Document):
 		self.status = "Running"
 		self.candidate = candidate.name
 		self.save()
+
+		if not isinstance(candidate.name, str):
+			raise Exception(
+				f"Invalid name found for deploy candidate '{candidate.name}' of type {type(candidate.name)}"
+			)
+
 		return candidate.name
+
+	def update_inplace(self) -> str:
+		if not self.is_inplace_update:
+			raise Exception("In place update flag is not set, aborting in place update.")
+
+		self.status = "Running"
+		self.save()
+
+		bench: "Bench" = frappe.get_doc("Bench", self.bench)
+		return bench.update_inplace(self.apps)
 
 	def update_sites_on_server(self, bench, server):
 		# This method gets called multiple times concurrently when a new candidate is deployed
@@ -102,3 +153,42 @@ class BenchUpdate(Document):
 					comment = f"Failed to schedule update for {row.site} <br><br><pre><code>{traceback}</pre></code>"
 					self.add_comment(text=comment)
 					frappe.db.commit()
+
+
+def get_bench_update(
+	name: str,
+	apps: list,
+	sites: str | list[str] | None = None,
+	is_inplace_update: bool = False,
+) -> BenchUpdate:
+	if sites is None:
+		sites = []
+
+	team = get_current_team(True)
+	rg_team = frappe.db.get_value("Release Group", name, "team")
+
+	if rg_team != team.name:
+		frappe.throw(
+			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
+		)
+
+	bench_update: "BenchUpdate" = frappe.get_doc(
+		{
+			"doctype": "Bench Update",
+			"group": name,
+			"apps": apps,
+			"sites": [
+				{
+					"site": site["name"],
+					"server": site["server"],
+					"skip_failing_patches": site["skip_failing_patches"],
+					"skip_backups": site["skip_backups"],
+					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
+				}
+				for site in sites
+			],
+			"status": "Pending",
+			"is_inplace_update": is_inplace_update,
+		}
+	).insert(ignore_permissions=True)
+	return bench_update
