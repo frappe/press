@@ -79,6 +79,7 @@
   "standby_for_product",
   "column_break_63",
   "hybrid_saas_pool",
+  "saas_communication_secret",
   "backups_section",
   "backup_time",
   "column_break_zgig",
@@ -596,6 +597,12 @@
    "fieldname": "additional_system_user_created",
    "fieldtype": "Check",
    "label": "Additional System User Created"
+  },
+  {
+   "description": "This key will be used to validate requests from saas site for billing & configuration purpose",
+   "fieldname": "saas_communication_secret",
+   "fieldtype": "Data",
+   "label": "SaaS Communication Secret"
   }
  ],
  "links": [
@@ -660,7 +667,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-08-05 09:14:28.209647",
+ "modified": "2024-08-20 10:01:59.838341",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

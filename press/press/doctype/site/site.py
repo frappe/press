@@ -134,6 +134,7 @@ class Site(Document, TagHelpers):
 		remote_database_file: DF.Link | None
 		remote_private_file: DF.Link | None
 		remote_public_file: DF.Link | None
+		saas_communication_secret: DF.Data | None
 		server: DF.Link
 		setup_wizard_complete: DF.Check
 		skip_auto_updates: DF.Check
@@ -484,6 +485,19 @@ class Site(Document, TagHelpers):
 						account_request.is_saas_signup() or account_request.invited_by_parent_team
 					):
 						capture("first_site_status_changed_to_active", "fc_signup", team.user)
+
+	def generate_saas_communication_secret(self, create_agent_job=False):
+		if not self.standby_for and not self.standby_for_product:
+			return
+		if not self.saas_communication_secret:
+			self.saas_communication_secret = frappe.generate_hash(length=32)
+			config = {
+				"fc_communication_secret": self.saas_communication_secret,
+			}
+			if create_agent_job:
+				self.update_site_config(config)
+			else:
+				self._update_configuration(config=config, save=True)
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")

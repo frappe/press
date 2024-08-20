@@ -92,7 +92,6 @@ class ProductTrial(Document):
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
-			print(apps)
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=self.get_unique_site_name(),
@@ -110,6 +109,7 @@ class ProductTrial(Document):
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		site.reload()
+		site.generate_saas_communication_secret()
 		site.flags.ignore_permissions = True
 		site.update_site_config(
 			{
@@ -118,8 +118,8 @@ class ProductTrial(Document):
 					"app_trial": self.name,
 				},
 				"app_include_js": [
-					"https://devfc.tanmoysrt.xyz/saas/subscription.js"
-				],  # TODO: change this to frappecloud.com
+					"https://frappecloud.com/saas/subscription.js"
+				]
 			}
 		)
 		if standby_site:
