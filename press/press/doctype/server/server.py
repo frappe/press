@@ -1316,6 +1316,30 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
+	def get_certificate(self):
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+
+		if not certificate_name:
+			if hasattr(self, "is_self_hosted") and self.is_self_hosted:
+				certificate_name = frappe.db.get_value(
+					"TLS Certificate", {"domain": {self.name}}, "name"
+				)
+
+				if not certificate_name:
+					self_hosted_server = frappe.db.get_value(
+						"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
+					)
+
+					certificate_name = frappe.db.get_value(
+						"TLS Certificate",
+						{"domain": f"{self_hosted_server.hostname}.{self_hosted_server.domain}"},
+						"name",
+					)
+
+		return frappe.get_doc("TLS Certificate", certificate_name)
+
 
 class Server(BaseServer):
 	# begin: auto-generated types

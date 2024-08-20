@@ -390,11 +390,7 @@ class DatabaseServer(BaseServer):
 		self.save()
 
 	def _get_config(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
+		certificate = self.get_certificate()
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
 			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
