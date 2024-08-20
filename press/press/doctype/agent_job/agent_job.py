@@ -883,6 +883,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 	try:
 		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
+			Bench,
 			process_add_ssh_user_job_update,
 			process_archive_bench_job_update,
 			process_new_bench_job_update,
@@ -1034,6 +1035,8 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			delete_all_occurences_of_mariadb_analyze_query(job)
 		elif job.job_type == "Complete Setup Wizard":
 			process_complete_setup_wizard_job_update(job)
+		elif job.job_type == "Process Update Bench In Place":
+			Bench.process_update_inplace(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

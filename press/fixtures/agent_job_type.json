@@ -1,47 +1,5 @@
 [
  {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
-  "modified": "2024-08-20 12:32:56.100866",
-  "name": "Update In Place",
-  "request_method": "POST",
-  "request_path": "/bench/{bench}/update_inplace",
-  "steps": [
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Pull App Changes"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Migrate Sites"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Rebuild Bench Assets"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Commit Container Changes"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Restart"
-   }
-  ]
- },
- {
   "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
@@ -2126,6 +2084,48 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-08-20 12:51:05.293373",
+  "name": "Update Bench In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/update_inplace",
+  "steps": [
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Pull App Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Sites"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Commit Container Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
    }
   ]
  }

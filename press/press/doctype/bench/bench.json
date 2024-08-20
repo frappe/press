@@ -9,13 +9,17 @@
   "server",
   "database_server",
   "managed_database_service",
-  "cluster",
   "column_break_3",
   "staging",
   "group",
   "team",
+  "cluster",
+  "deploy_section",
   "candidate",
+  "updated_inplace",
+  "column_break_gxqm",
   "docker_image",
+  "inplace_update_docker_image",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -103,7 +107,8 @@
   },
   {
    "fieldname": "section_break_6",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Apps"
   },
   {
    "default": "2",
@@ -324,10 +329,34 @@
    "fieldtype": "Link",
    "label": "Managed Database Service",
    "options": "Managed Database Service"
+  },
+  {
+   "fieldname": "deploy_section",
+   "fieldtype": "Section Break",
+   "label": "Deploy"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.updated_inplace",
+   "description": "Running container associated with this Bench was updated instead of creating a new Bench.",
+   "fieldname": "updated_inplace",
+   "fieldtype": "Check",
+   "label": "Updated In Place"
+  },
+  {
+   "fieldname": "column_break_gxqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.inplace_update_docker_image",
+   "description": "New image created when running an in place update.",
+   "fieldname": "inplace_update_docker_image",
+   "fieldtype": "Data",
+   "label": "In Place Update Docker Image"
   }
  ],
  "links": [],
- "modified": "2024-05-29 17:26:13.628527",
+ "modified": "2024-08-20 12:07:09.284518",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

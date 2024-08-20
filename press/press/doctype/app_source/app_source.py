@@ -193,6 +193,17 @@ class AppSource(Document):
 
 		return frappe.get_value("Press Settings", None, "github_access_token")
 
+	def get_repo_url(self) -> str:
+		if not self.github_installation_id:
+			return self.repository_url
+
+		token = get_access_token(self.github_installation_id)
+		if token is None:
+			# Do not edit without updating deploy_notifications.py
+			raise Exception("App installation token could not be fetched", self.app)
+
+		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
+
 
 def create_app_source(
 	app: str, repository_url: str, branch: str, versions: List[str]

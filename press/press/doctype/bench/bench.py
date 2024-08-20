@@ -29,6 +29,8 @@ FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.app_source.app_source import AppSource
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -65,6 +67,7 @@ class Bench(Document):
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
 		gunicorn_workers: DF.Int
+		inplace_update_docker_image: DF.Data | None
 		is_code_server_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
@@ -81,6 +84,7 @@ class Bench(Document):
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link
+		updated_inplace: DF.Check
 		use_rq_workerpool: DF.Check
 		vcpu: DF.Int
 	# end: auto-generated types
@@ -623,7 +627,61 @@ class Bench(Document):
 		return sort_supervisor_processes(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]") -> str:
-		pass
+		self.inplace_update_docker_image = self.get_next_inplace_update_docker_image()
+		self.save()
+
+		job = Agent(self.server).create_agent_job(
+			"Update Bench In Place",
+			path=f"benches/{self.name}/update_inplace",
+			bench=self.name,
+			data={
+				"apps": self.get_inplace_update_apps(apps),
+				"image": self.inplace_update_docker_image,
+			},
+		)
+		return job.name
+
+	def get_inplace_update_apps(self, apps: "list[BenchUpdateApp]"):
+		inplace_update_apps = []
+		for app in apps:
+			source: "AppSource" = frappe.get_doc("AppSource", app.source)
+			inplace_update_apps.append(
+				{
+					"app": app.app,
+					"url": source.get_repo_url(),
+					"hash": app.hash,
+				}
+			)
+		return inplace_update_apps
+
+	def get_next_inplace_update_docker_image(self):
+		sep = "-inplace-"
+		default = self.docker_image + sep + "01"
+		if not self.inplace_update_docker_image:
+			return default
+
+		splits = self.inplace_update_docker_image.split(sep)
+		if len(splits) != 2:
+			return default
+
+		try:
+			count = int(splits[1]) + 1
+		except ValueError:
+			return default
+
+		return self.docker_image + f"{sep}{count:02}"
+
+	@staticmethod
+	def process_update_inplace(job: "AgentJob"):
+		request_data = json.loads(job.request_data)
+		bench: "Bench" = frappe.get_doc(
+			"Bench",
+			request_data["bench"],
+		)
+		bench._process_update_inplace()
+
+	def _process_update_inplace(self):
+		...
 
 
 class StagingSite(Site):
