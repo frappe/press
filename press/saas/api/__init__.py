@@ -38,7 +38,7 @@ def whitelist_saas_api(func):
 		if site.is_standby is None and site.standby_for_product is None:
 			frappe.throw("Sorry, this is not SaaS site", frappe.AuthenticationError)
 
-		# set site name in context
+		# set site and team name in context
 		frappe.local.site_name = headers["x-site"]
 		frappe.local.team_name = site.team
 
