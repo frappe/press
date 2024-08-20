@@ -53,7 +53,6 @@
 					<div v-if="partnerExists" class="text-sm text-green-600" role="alert">
 						Referral Code {{ code }} belongs to {{ partner }}
 					</div>
-					<ErrorMessage class="mt-2" :message="errorMessage" />
 				</div>
 			</template>
 		</Dialog>
@@ -61,6 +60,7 @@
 </template>
 <script>
 import { Card, FormControl, frappeRequest, debounce } from 'frappe-ui';
+import { DashboardError } from '../../../utils/error';
 import { toast } from 'vue-sonner';
 export default {
 	name: 'AccountPartner',
@@ -90,7 +90,11 @@ export default {
 					toast.success('Approval Request has been sent to Partner');
 				},
 				onError(res) {
-					this.errorMessage = 'Partner with code not found';
+					if (res) {
+						throw new DashboardError(res.message);
+					} else {
+						throw new DashboardError('Error while adding partner');
+					}
 				}
 			};
 		},
