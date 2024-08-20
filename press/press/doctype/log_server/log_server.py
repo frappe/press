@@ -54,10 +54,8 @@ class LogServer(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		kibana_password = self.get_password("kibana_password")
 		monitoring_password = self.get_password("monitoring_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		certificate = self.get_certificate()
+
 		try:
 			ansible = Ansible(
 				playbook="log.yml",

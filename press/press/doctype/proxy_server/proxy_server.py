@@ -103,10 +103,8 @@ class ProxyServer(BaseServer):
 			if domain.domain == self.domain:
 				# self.domain certs are symlinks
 				continue
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
-			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate = self.get_certificate()
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,

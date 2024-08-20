@@ -61,10 +61,8 @@ class RegistryServer(BaseServer):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		monitoring_password = self.get_password("monitoring_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		certificate = self.get_certificate()
+
 		try:
 			ansible = Ansible(
 				playbook="registry.yml",
