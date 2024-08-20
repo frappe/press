@@ -73,6 +73,7 @@ class LogServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"certificate_file_mapper": certificate.tls_file_mapper,
 				},
 			)
 			play = ansible.run()

@@ -272,6 +272,24 @@ class TLSCertificate(Document):
 			self.trigger_server_tls_setup_callback()
 			self._update_secondary_wildcard_domains()
 
+	@property
+	def tls_file_mapper(self):
+		if self.intermediate_chain:
+			return """
+			{
+				"ssl_certificate": "fullchain.pem",
+				"ssl_certificate_key": "privkey.pem",
+				"ssl_trusted_certificate": "chain.pem"
+			}
+			"""
+		else:
+			return """
+			{
+				"ssl_certificate": "cert.pem",
+				"ssl_certificate_key": "privkey.pem"
+			}
+			"""
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")
 
