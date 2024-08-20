@@ -1,7 +1,7 @@
 <template>
 	<div class="flex h-screen w-screen justify-center items-center" v-if="$resources.signupSettings.loading">
 		<Spinner class="w-4 mr-2" />
-		<p class="text-gray-800">Just a second</p>
+		<p class="text-gray-800">Loading</p>
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
