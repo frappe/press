@@ -59,6 +59,7 @@
 										v-model="signupValues"
 									/>
 									<ErrorMessage
+										class="sm:max-w-[23rem]"
 										:message="$resources.siteRequest?.createSite?.error"
 									/>
 									<Button
@@ -101,7 +102,7 @@
 											}}
 										</p>
 									</div>
-									<ErrorMessage class="mt-2" :message="progressError" />
+									<ErrorMessage class="mt-2 sm:max-w-[23rem]" :message="progressError" />
 									<div class="mt-2 text-p-base text-red-600" v-if="progressError">
 										There was an error creating your site. Please contact
 										<a class="underline" href="/support">Frappe Cloud Support</a
