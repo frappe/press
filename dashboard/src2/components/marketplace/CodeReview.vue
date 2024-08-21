@@ -38,23 +38,26 @@
 										>
 									</div>
 									<div class="border border-gray-400 p-2 rounded-md">
-									<div style="background-color: #d1f8d9;">
 										<div
-											v-for="(lineText, i) in line.context.lines"
-											:key="i"
-											:class="{
-												'bg-blue-200':
-													lineText.includes(issue.match) &&
-													line.context.line_range[i] ===
-														line.context.line_number
-											}"
+											style="background-color: #d1f8d9"
+											class="border rounded-md"
 										>
-											<code class="p-2 text-sm whitespace-pre-wrap">
-												<span>{{ line.context.line_range[i] }}:</span>
-												{{ lineText }}
-											</code>
+											<div
+												v-for="(lineText, i) in line.context.lines"
+												:key="i"
+												:class="{
+													'bg-yellow-200 border rounded-md':
+														lineText.includes(issue.match) &&
+														line.context.line_range[i] ===
+															line.context.line_number
+												}"
+											>
+												<code class="p-2 text-sm whitespace-pre-wrap">
+													<span>{{ line.context.line_range[i] }}:</span>
+													{{ lineText }}
+												</code>
+											</div>
 										</div>
-									</div>
 										<div
 											v-if="
 												getCommentsForLine(file.name, line.context.line_number)

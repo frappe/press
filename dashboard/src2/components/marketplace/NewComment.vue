@@ -49,10 +49,7 @@ export default {
 		addComment() {
 			return {
 				url: 'press.api.marketplace.add_code_review_comment',
-				method: 'POST',
-				onSuccess(data) {
-					this.$resources.codeScreening.reload();
-				}
+				method: 'POST'
 			};
 		}
 	}
