@@ -13,7 +13,6 @@ from frappe.utils import (
 	add_days,
 	cint,
 	convert_utc_to_system_timezone,
-	create_batch,
 	cstr,
 	get_datetime,
 	now_datetime,
@@ -545,9 +544,10 @@ def poll_pending_jobs():
 
 def fail_old_jobs():
 	def update_status(jobs: list[str], status: str):
-		for batch in create_batch(jobs or [], 100):
-			frappe.db.set_value("Agent Job", {"name": ("in", batch)}, "status", status)
-			frappe.db.commit()
+		for job in jobs:
+			update_job_and_step_status(job, status)
+			process_job_updates(job)
+		frappe.db.commit()
 
 	failed_jobs = frappe.db.get_values(
 		"Agent Job",
@@ -557,6 +557,7 @@ def fail_old_jobs():
 			"creation": ("<", add_days(None, -2)),
 		},
 		"name",
+		limit=100,
 		pluck=True,
 	)
 	update_status(failed_jobs, "Failure")
@@ -569,6 +570,7 @@ def fail_old_jobs():
 			"status": ("!=", "Delivery Failure"),
 		},
 		"name",
+		limit=100,
 		pluck=True,
 	)
 
@@ -759,7 +761,7 @@ def retry_undelivered_jobs(server):
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
 				job_doc.retry_in_place()
 			else:
-				update_job_and_step_status(job)
+				update_job_and_step_status(job, "Delivery Failure")
 				process_job_updates(job)
 
 
@@ -794,14 +796,14 @@ def is_auto_retry_disabled(server):
 	return _auto_retry_disabled
 
 
-def update_job_and_step_status(job):
+def update_job_and_step_status(job: str, status: str):
 	agent_job = frappe.qb.DocType("Agent Job")
-	frappe.qb.update(agent_job).set(agent_job.status, "Delivery Failure").where(
+	frappe.qb.update(agent_job).set(agent_job.status, status).where(
 		agent_job.name == job
 	).run()
 
 	agent_job_step = frappe.qb.DocType("Agent Job Step")
-	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
+	frappe.qb.update(agent_job_step).set(agent_job_step.status, status).where(
 		agent_job_step.agent_job == job
 	).run()
 
@@ -877,7 +879,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name, response_data: "Optional[dict]" = None):
+def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 
 	try:
