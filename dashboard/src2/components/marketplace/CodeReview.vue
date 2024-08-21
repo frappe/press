@@ -81,7 +81,7 @@
 														size="md"
 													/>
 
-													<strong class="text-gray-900 pl-2 pr-1 text-lg">
+													<strong class="text-gray-900 pl-2 pr-2 text-lg">
 														{{ comment.commented_by }}
 													</strong>
 													<Tooltip
@@ -89,7 +89,7 @@
 														:placement="'top'"
 													>
 														<span class="text-gray-600 text-sm">
-															({{ $dayjs(comment.time).fromNow() }})
+															{{ $dayjs(comment.time).fromNow() }}
 														</span>
 													</Tooltip>
 												</div>
