@@ -37,7 +37,7 @@
 											- {{ issue.match }}</span
 										>
 									</div>
-									<div class="bg-gray-50 border border-gray-400 p-2 rounded-md">
+									<div class="border border-gray-400 p-2 rounded-md">
 										<div
 											v-for="(lineText, i) in line.context.lines"
 											:key="i"
@@ -49,12 +49,41 @@
 											}"
 										>
 											<code class="p-2 text-sm whitespace-pre-wrap">
-												<span class="text-gray-500"
+												<span class="text-gray-300"
 													>{{ line.context.line_range[i] }}:</span
 												>
 												{{ lineText }}
 											</code>
 										</div>
+										<div
+											v-if="
+												getCommentsForLine(file.name, line.context.line_number)
+													.length
+											"
+										>
+											<hr class="h-1 mt-2" />
+											<div
+												class="comment-item mt-2 p-2"
+												v-for="comment in getCommentsForLine(
+													file.name,
+													line.context.line_number
+												)"
+												:key="comment.name"
+											>
+												<strong class="pr-1">
+													{{ comment.commented_by }} </strong
+												>({{ formatTime(comment.time) }})
+												<p>
+													{{ comment.comment }}
+												</p>
+											</div>
+										</div>
+										<NewComment
+											:approval_request_name="row.approval_request_name"
+											:filename="file.name"
+											:line_number="line.context.line_number"
+											@comment-submitted="handleCommentSubmitted"
+										/>
 									</div>
 								</div>
 							</div>
@@ -67,8 +96,13 @@
 </template>
 
 <script>
+import NewComment from './NewComment.vue';
+
 export default {
-	props: ['row'],
+	components: {
+		NewComment
+	},
+	props: ['row', 'app'],
 	data() {
 		return {
 			show: true
@@ -80,6 +114,44 @@ export default {
 				const results = JSON.parse(this.$resources.codeScreening.doc.result);
 				return results;
 			}
+		},
+		getComments() {
+			if (this.$resources.codeScreening.doc) {
+				const results = this.$resources.codeScreening.doc.code_comments;
+				return results;
+			}
+		},
+		user() {
+			return this.$team?.doc?.user_info;
+		}
+	},
+	methods: {
+		getCommentsForLine(filename, lineNumber) {
+			// Filter comments by matching filename and line number
+			let filteredComments = this.getComments.filter(
+				comment =>
+					comment.filename === filename && comment.line_number === lineNumber
+			);
+
+			// Sort comments by time in descending order (latest first)
+			filteredComments.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+			return filteredComments;
+		},
+		formatTime(time) {
+			const date = new Date(time);
+			return date.toLocaleString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+				hour12: true
+			});
+		},
+		handleCommentSubmitted() {
+			this.$resources.codeScreening.reload();
 		}
 	},
 	resources: {

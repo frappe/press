@@ -14,6 +14,7 @@ class AppReleaseApprovalCodeComments(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		comment: DF.SmallText
 		commented_by: DF.Link
 		filename: DF.SmallText
 		line_number: DF.Int
