@@ -84,9 +84,14 @@
 													<strong class="text-gray-900 pl-2 pr-1 text-lg">
 														{{ comment.commented_by }}
 													</strong>
-													<span class="text-gray-600 text-sm">
-														({{ formatTime(comment.time) }})
-													</span>
+													<Tooltip
+														:text="formatTime(comment.time)"
+														:placement="'top'"
+													>
+														<span class="text-gray-600 text-sm">
+															({{ $dayjs(comment.time).fromNow() }})
+														</span>
+													</Tooltip>
 												</div>
 												<p class="text-gray-800 text-base p-2 ml-6">
 													{{ comment.comment }}
