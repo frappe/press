@@ -167,7 +167,9 @@ export default {
 			});
 		},
 		handleCommentSubmitted() {
-			this.$resources.codeScreening.reload();
+			setTimeout(() => {
+				this.$resources.codeScreening.reload();
+			}, 1500);
 		}
 	},
 	resources: {
