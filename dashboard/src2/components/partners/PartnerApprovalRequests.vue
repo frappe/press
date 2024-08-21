@@ -52,7 +52,7 @@ export default {
 						label: '',
 						type: 'Button',
 						Button: ({ row, listResource }) => {
-							if (row.status === 'Pending') {
+							if (row.status === 'Pending' && row.approved_by_partner === 0) {
 								return {
 									label: 'Approve',
 									type: 'primary',

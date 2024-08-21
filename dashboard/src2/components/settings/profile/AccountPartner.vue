@@ -86,7 +86,9 @@ export default {
 				},
 				onSuccess(res) {
 					this.showAddPartnerCodeDialog = false;
-					this.$team.doc.partner_referral_code = res.partner_referral_code;
+					if (res) {
+						this.$team.doc.partner_referral_code = res.partner_referral_code;
+					}
 					toast.success('Approval Request has been sent to Partner');
 				},
 				onError(res) {
