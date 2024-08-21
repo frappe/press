@@ -52,6 +52,15 @@ let router = createRouter({
 			}
 		},
 		{
+			path: '/in-desk-checkout/:site/:secretKey',
+			name: 'In-Desk Checkout',
+			component: () => import('./pages/app_trial/InDeskCheckout.vue'),
+			props: true,
+			meta: {
+				isLoginPage: true
+			}
+		},
+		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
@@ -267,12 +276,12 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 
-    // If user is logged in and was moving to app trial signup, redirect to app trial setup
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
 		if (to.name == 'AppTrialSignup') {
 			next({ name: 'AppTrialSetup', params: to.params });
 			return;
 		}
-    
+
 		if (
 			!onboardingComplete &&
 			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))

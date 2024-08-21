@@ -4,6 +4,7 @@
 
 import frappe
 from press.saas.api import whitelist_saas_api
+from press.api import site as site_api
 
 
 @whitelist_saas_api
@@ -17,5 +18,11 @@ def current_plan():
 
 
 @whitelist_saas_api
-def change_plan(plan: str):
-	pass
+def set_plan(plan: str):
+	site = frappe.local.get_site()
+	site.set_plan(plan)
+
+
+@whitelist_saas_api
+def get_site_plans():
+	return site_api.get_site_plans()
