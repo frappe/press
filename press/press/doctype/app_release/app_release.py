@@ -389,7 +389,7 @@ def get_prepared_clone_directory(
 	exists = os.path.exists(hash_directory)
 
 	if exists and delete_if_exists:
-		shutil.rmtree(exists)
+		shutil.rmtree(hash_directory)
 		exists = False
 
 	if not exists:
