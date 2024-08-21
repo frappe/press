@@ -25,12 +25,7 @@
 
 <script>
 export default {
-	props: [
-		'approval_request_name',
-		'filename',
-		'line_number',
-		'onCommentSubmitted'
-	],
+	props: ['approval_request_name', 'filename', 'line_number'],
 	data() {
 		return {
 			show: true,

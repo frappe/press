@@ -49,9 +49,7 @@
 											}"
 										>
 											<code class="p-2 text-sm whitespace-pre-wrap">
-												<span class="text-gray-300"
-													>{{ line.context.line_range[i] }}:</span
-												>
+												<span>{{ line.context.line_range[i] }}:</span>
 												{{ lineText }}
 											</code>
 										</div>
@@ -61,7 +59,7 @@
 													.length
 											"
 										>
-											<hr class="h-1 mt-2" />
+											<hr class="h-2 mt-2" />
 											<div
 												class="comment-item mt-2 p-2"
 												v-for="comment in getCommentsForLine(
@@ -70,14 +68,27 @@
 												)"
 												:key="comment.name"
 											>
-												<strong class="pr-1">
-													{{ comment.commented_by }} </strong
-												>({{ formatTime(comment.time) }})
-												<p>
+												<div class="flex items-center">
+													<Avatar
+														:shape="'circle'"
+														:image="null"
+														:label="comment.commented_by"
+														size="md"
+													/>
+
+													<strong class="text-gray-900 pl-2 pr-1 text-lg">
+														{{ comment.commented_by }}
+													</strong>
+													<span class="text-gray-600 text-sm">
+														({{ formatTime(comment.time) }})
+													</span>
+												</div>
+												<p class="text-gray-800 text-base p-2 ml-6">
 													{{ comment.comment }}
 												</p>
 											</div>
 										</div>
+										<hr class="h-2 mt-2" />
 										<NewComment
 											:approval_request_name="row.approval_request_name"
 											:filename="file.name"
