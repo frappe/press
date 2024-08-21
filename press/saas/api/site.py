@@ -16,13 +16,11 @@ def current_plan():
 		),
 	}
 
-
 @whitelist_saas_api
 def set_plan(plan: str):
 	site = frappe.local.get_site()
 	site.set_plan(plan)
 
-
 @whitelist_saas_api
-def get_site_plans():
+def get_plans():
 	return site_api.get_site_plans()

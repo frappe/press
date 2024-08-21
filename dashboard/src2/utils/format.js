@@ -42,10 +42,13 @@ export function plural(number, singular, plural) {
 	return plural;
 }
 
-export function planTitle(plan) {
+export function planTitle(plan, teamCurrency = null) {
 	if (plan === undefined) return;
-	let $team = getTeam();
-	let india = $team.doc.currency == 'INR';
+	if (!teamCurrency) {
+		let $team = getTeam();
+		teamCurrency = $team.doc.currency;
+	}
+	let india = teamCurrency == 'INR';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =
 		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];

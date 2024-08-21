@@ -28,7 +28,7 @@
 									{{ plan.label }}
 								</template>
 								<template v-else>
-									{{ $format.planTitle(plan) }}
+									{{ $format.planTitle(plan, this.teamCurrency) }}
 									<span v-if="plan.price_inr" class="text-gray-700"> / mo</span>
 								</template>
 							</span>
@@ -78,7 +78,7 @@
 import { icon } from '../utils/components';
 
 export default {
-	props: ['plans', 'modelValue'],
+	props: ['plans', 'modelValue', 'teamCurrency'], // teamCurrency is optional
 	methods: {
 		_icon(iconName, classes) {
 			return icon(iconName, classes);

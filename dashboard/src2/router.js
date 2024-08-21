@@ -52,7 +52,7 @@ let router = createRouter({
 			}
 		},
 		{
-			path: '/in-desk-checkout/:site/:secretKey',
+			path: '/in-desk-checkout',
 			name: 'In-Desk Checkout',
 			component: () => import('./pages/app_trial/InDeskCheckout.vue'),
 			props: true,
