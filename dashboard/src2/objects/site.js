@@ -765,7 +765,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> in your site to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess() {
