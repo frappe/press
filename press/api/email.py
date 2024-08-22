@@ -115,7 +115,6 @@ def validate_plan(secret_key):
 			"Mail Log",
 			filters={
 				"site": subscription["site"],
-				"status": ("in", ["delivered", "failed"]),
 				"creation": (">=", first_day),
 				"subscription_key": secret_key,
 			},
