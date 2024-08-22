@@ -110,12 +110,12 @@ def validate_plan(secret_key):
 
 	if subscription["enabled"]:
 		# TODO: add a date filter(use start date from plan)
-		first_day = str(datetime.now().replace(day=1).date())
+		first_day = str(frappe.utils.now_datetime().replace(day=1).date())
 		count = frappe.db.count(
 			"Mail Log",
 			filters={
 				"site": subscription["site"],
-				"status": "delivered",
+				"status": ("in", ["delivered", "failed"]),
 				"creation": (">=", first_day),
 				"subscription_key": secret_key,
 			},
