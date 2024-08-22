@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 import frappe.utils
+from frappe.utils.momentjs import get_all_timezones
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -18,7 +19,9 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import ProductTrialSignupField
+		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
+			ProductTrialSignupField,
+		)
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
@@ -52,12 +55,22 @@ class ProductTrial(Document):
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
+
+		def _parse_options(field):
+			if field.fieldtype != "Select":
+				return []
+			if field.fieldname.endswith("_tz"):
+				return get_all_timezones()
+			if not field.options:
+				return []
+			return [option for option in ((field.options or "").split("\n")) if option]
+
 		doc.signup_fields = [
 			{
 				"label": field.label,
 				"fieldname": field.fieldname,
 				"fieldtype": field.fieldtype,
-				"options": [option for option in ((field.options or "").split("\n")) if option],
+				"options": _parse_options(field),
 				"required": field.required,
 			}
 			for field in self.signup_fields
@@ -117,9 +130,7 @@ class ProductTrial(Document):
 					"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
 					"app_trial": self.name,
 				},
-				"app_include_js": [
-					"https://frappecloud.com/saas/subscription.js"
-				]
+				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
 			}
 		)
 		if standby_site:
@@ -209,8 +220,6 @@ class ProductTrial(Document):
 	def create_standby_site(self, cluster):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
-		if "frappe" not in apps:
-			apps.insert(0, {"app": "frappe"})
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),

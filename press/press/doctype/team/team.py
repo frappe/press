@@ -1101,13 +1101,33 @@ class Team(Document):
 			pluck="name",
 		)
 
+	def reallocate_workers_if_needed(
+		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
+	):
+		for before, after in zip(workloads_before, workloads_after):
+			if after[1] - before[1] >= 8:  # 100 USD equivalent
+				frappe.enqueue_doc(
+					"Server",
+					before[2],
+					method="auto_scale_workers",
+					job_id=f"auto_scale_workers:{before[2]}",
+					deduplicate=True,
+					enqueue_after_commit=True,
+				)
+
 	@frappe.whitelist()
 	def unsuspend_sites(self, reason=None):
+		from press.press.doctype.bench.bench import Bench
+
 		suspended_sites = [
 			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})
 		]
+		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
+		workloads_after = list(Bench.get_workloads(suspended_sites))
+		self.reallocate_workers_if_needed(workloads_before, workloads_after)
+
 		return suspended_sites
 
 	def remove_subscription_config_in_trial_sites(self):

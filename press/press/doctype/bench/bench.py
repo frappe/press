@@ -6,7 +6,7 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 from itertools import groupby
-from typing import TYPE_CHECKING, Iterable, Literal, Optional
+from typing import TYPE_CHECKING, Generator, Iterable, Literal, Optional
 
 import frappe
 import pytz
@@ -83,6 +83,7 @@ class Bench(Document):
 		vcpu: DF.Int
 	# end: auto-generated types
 
+	DOCTYPE = "Bench"
 	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
 
 	@staticmethod
@@ -619,6 +620,17 @@ class Bench(Document):
 		output = result["output"]
 		processes = parse_supervisor_status(output)
 		return sort_supervisor_processes(processes)
+
+	@classmethod
+	def get_workloads(
+		cls, sites: list[str]
+	) -> Generator[tuple[str, float, str], None, None]:
+		benches = frappe.get_all(
+			"Site", filters={"name": ["in", sites]}, pluck="bench", order_by="bench"
+		)
+		for bench_name in benches:
+			bench = cls(cls.DOCTYPE, bench_name)
+			yield bench.name, bench.workload, bench.server
 
 
 class StagingSite(Site):

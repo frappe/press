@@ -5,6 +5,7 @@ import json
 import urllib.parse
 import frappe
 from frappe.model.document import Document
+from frappe.utils.momentjs import get_all_timezones
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
 from frappe.utils.password import decrypt as decrypt_password
@@ -124,6 +125,22 @@ class ProductTrialRequest(Document):
 					frappe.throw(f"Required field {field.label} is missing")
 				else:
 					signup_values[field.fieldname] = None
+
+			# validate select field
+			if (
+				field.fieldtype == "Select"
+				and field.fieldname.endswith("_tz")
+				and signup_values[field.fieldname] is not None
+			):
+				# validate timezone specific select field
+				if field.fieldname.endswith("_tz"):
+					if signup_values[field.fieldname] not in get_all_timezones():
+						frappe.throw(f"Invalid timezone {signup_values[field.fieldname]}")
+				# validate generic select field
+				else:
+					options = [option for option in ((field.options or "").split("\n")) if option]
+					if signup_values[field.fieldname] not in options:
+						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
 	def create_site(self, cluster: str = None, signup_values: dict = None):
