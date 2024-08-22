@@ -6,6 +6,7 @@ import json
 from typing import Union
 
 import frappe
+import pyotp
 from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
@@ -15,19 +16,21 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import get_url
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
+from frappe.utils.password import get_decrypted_password
 from frappe.website.utils import build_response
+from pypika.terms import ValueWrapper
+
 from press.api.site import protected
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
 	get_team_members,
-	has_unsettled_invoices,
 	has_active_servers,
+	has_unsettled_invoices,
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture
-from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1161,3 +1164,78 @@ def get_user_ssh_keys():
 		["name", "ssh_fingerprint", "creation", "is_default"],
 		order_by="creation desc",
 	)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
+def is_2fa_enabled(user):
+	return frappe.db.get_value("User 2FA", user, "enabled")
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
+def verify_2fa(user, totp_code):
+	user_totp_secret = get_decrypted_password("User 2FA", user, "totp_secret")
+	verified = pyotp.TOTP(user_totp_secret).verify(totp_code)
+
+	if verified:
+		return verified
+	else:
+		frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
+
+
+@frappe.whitelist()
+def get_2fa_qr_code_url():
+	"""Get the QR code URL for 2FA provisioning"""
+
+	if frappe.db.exists("User 2FA", frappe.session.user):
+		user_totp_secret = get_decrypted_password(
+			"User 2FA", frappe.session.user, "totp_secret"
+		)
+	else:
+		user_totp_secret = pyotp.random_base32()
+		frappe.get_doc(
+			{
+				"doctype": "User 2FA",
+				"user": frappe.session.user,
+				"totp_secret": user_totp_secret,
+			}
+		).insert()
+
+	return pyotp.totp.TOTP(user_totp_secret).provisioning_uri(
+		name=frappe.session.user, issuer_name="Frappe Cloud"
+	)
+
+
+@frappe.whitelist()
+def enable_2fa(totp_code):
+	"""Enable 2FA for the user after verifying the TOTP code"""
+
+	if frappe.db.exists("User 2FA", frappe.session.user):
+		user_totp_secret = get_decrypted_password(
+			"User 2FA", frappe.session.user, "totp_secret"
+		)
+	else:
+		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+
+	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
+		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 1)
+	else:
+		frappe.throw("Invalid TOTP code")
+
+
+@frappe.whitelist()
+def disable_2fa(totp_code):
+	"""Disable 2FA for the user after verifying the TOTP code"""
+
+	if frappe.db.exists("User 2FA", frappe.session.user):
+		user_totp_secret = get_decrypted_password(
+			"User 2FA", frappe.session.user, "totp_secret"
+		)
+	else:
+		frappe.throw(f"2FA is not enabled for {frappe.session.user}")
+
+	if pyotp.totp.TOTP(user_totp_secret).verify(totp_code):
+		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
+	else:
+		frappe.throw("Invalid TOTP code")
