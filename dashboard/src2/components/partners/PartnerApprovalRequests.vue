@@ -15,6 +15,7 @@ export default {
 		options() {
 			return {
 				doctype: 'Partner Approval Request',
+				fields: ['approved_by_partner'],
 				columns: [
 					{
 						label: 'Customer Email',
