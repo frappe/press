@@ -451,6 +451,7 @@ export default {
 									two_factor: undefined
 								}
 							});
+							this.twoFactorCode = '';
 						}
 					}
 				}
