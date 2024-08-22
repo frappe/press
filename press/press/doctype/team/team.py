@@ -1147,7 +1147,7 @@ class Team(Document):
 			except Exception:
 				log_error("Failed to remove subscription config in trial sites")
 
-	def get_upcoming_invoice(self):
+	def get_upcoming_invoice(self, for_update=False):
 		# get the current period's invoice
 		today = frappe.utils.today()
 		result = frappe.db.get_all(
@@ -1164,7 +1164,7 @@ class Team(Document):
 			pluck="name",
 		)
 		if result:
-			return frappe.get_doc("Invoice", result[0])
+			return frappe.get_doc("Invoice", result[0], for_update=for_update)
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
