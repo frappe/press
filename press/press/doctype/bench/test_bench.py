@@ -28,9 +28,11 @@ from press.press.doctype.server.server import scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
+from press.press.doctype.team.team import Team
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
+from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
@@ -286,6 +288,34 @@ class TestBench(FrappeTestCase):
 		self.assertFalse(bench2.memory_high)
 		self.assertFalse(bench2.memory_max)
 		self.assertFalse(bench2.memory_swap)
+
+	@patch("press.press.doctype.team.team.frappe.enqueue_doc", new=foreground_enqueue_doc)
+	def test_workers_reallocated_on_site_unsuspend(self):
+		bench1 = self._create_bench_with_n_sites_with_cpu_time(3, 5)  # current team
+		bench2 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+
+		frappe.db.set_value("Site", {"name": ("is", "set")}, "status", "Suspended")
+		frappe.db.set_value("Server", bench1.server, "ram", 32000)
+
+		scale_workers()
+
+		self.assertEqual(bench1.workload, 0)
+		self.assertEqual(bench2.workload, 0)
+		self.assertEqual(bench1.gunicorn_workers, 2)
+		self.assertEqual(bench2.gunicorn_workers, 2)
+
+		team: Team = get_current_team(get_doc=True)
+		team.unsuspend_sites()
+
+		del bench1.workload  # cached properties
+		del bench2.workload
+		bench1.reload()
+		bench2.reload()
+
+		self.assertEqual(bench1.workload, 15)
+		self.assertEqual(bench2.workload, 15)
+		self.assertGreater(bench1.gunicorn_workers, 2)
+		self.assertGreater(bench2.gunicorn_workers, 2)
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
