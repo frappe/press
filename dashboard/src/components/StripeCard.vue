@@ -56,7 +56,7 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from '../../src2/components/AddressForm.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -268,7 +268,7 @@ export default {
 	computed: {
 		formattedMicroChargeAmount() {
 			const isINR = this.$account.team.currency === 'INR';
-			return isINR ? '₹50' : '$0.5';
+			return isINR ? '₹100' : '$1';
 		},
 		browserTimezone() {
 			if (!window.Intl) {

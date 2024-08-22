@@ -16,6 +16,7 @@ class ReleaseGroupDependency(Document):
 		from frappe.types import DF
 
 		dependency: DF.Data
+		is_custom: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
@@ -24,16 +25,23 @@ class ReleaseGroupDependency(Document):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
+		if not filters or not (group := filters.get("parent")):
+			return
+		is_owned_by_team("Release Group", group, raise_exception=True)
+
 		RGDependency = frappe.qb.DocType("Release Group Dependency")
 		BenchDependency = frappe.qb.DocType("Bench Dependency")
-		group = filters.get("parent") if filters else None
-		if group:
-			is_owned_by_team("Release Group", group, raise_exception=True)
-			query = (
-				query.join(BenchDependency)
-				.on(BenchDependency.name == RGDependency.dependency)
-				.where(BenchDependency.internal == 0)
-				.select(RGDependency.dependency, RGDependency.version, BenchDependency.title)
+
+		query = (
+			query.join(BenchDependency)
+			.on(BenchDependency.name == RGDependency.dependency)
+			.where(BenchDependency.internal == 0)
+			.select(
+				RGDependency.dependency,
+				RGDependency.version,
+				BenchDependency.title,
+				RGDependency.is_custom,
 			)
-			dependencies = query.run(as_dict=True)
-			return dependencies
+		)
+		dependencies = query.run(as_dict=True)
+		return dependencies

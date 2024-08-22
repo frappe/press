@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from contextlib import suppress
+import _io
 import json
 import os
-import typing
 from datetime import date
-from typing import List
+from typing import TYPE_CHECKING, List
 
-import _io
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
+
 from press.utils import log_error, sanitize_config
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
 	from io import BufferedReader
 
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
@@ -21,6 +22,13 @@ if typing.TYPE_CHECKING:
 
 
 class Agent:
+	if TYPE_CHECKING:
+		from typing import Optional
+
+		from requests import Response
+
+		response: "Optional[Response]"
+
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
@@ -62,12 +70,6 @@ class Agent:
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
 		)
 
-	def restart_nginx(self):
-		return self.create_agent_job(
-			"Reload NGINX",
-			"server/reload",
-		)
-
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
 			"Bench Restart",
@@ -92,30 +94,61 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
-	def new_site(self, site):
+	def _get_mariadb_root_password(self, site):
+		database_server, managed_database_service = frappe.get_cached_value(
+			"Bench", site.bench, ["database_server", "managed_database_service"]
+		)
+
+		if database_server:
+			doctype = "Database Server"
+			name = database_server
+			field = "mariadb_root_password"
+		else:
+			doctype = "Managed Database Service"
+			name = managed_database_service
+			field = "root_user_password"
+
+		return get_decrypted_password(doctype, name, field)
+
+	def _get_managed_db_config(self, site):
+		managed_database_service = frappe.get_cached_value(
+			"Bench", site.bench, "managed_database_service"
+		)
+
+		if not managed_database_service:
+			return {}
+
+		return frappe.get_cached_value(
+			"Managed Database Service",
+			managed_database_service,
+			["database_host", "database_root_user", "port"],
+			as_dict=1,
+		)
+
+	def new_site(self, site, create_user: dict = None):
 		apps = [app.app for app in site.apps]
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
+			"managed_database_config": self._get_managed_db_config(site),
 		}
+
+		if create_user:
+			data["create_user"] = create_user
 
 		return self.create_agent_job(
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
 	def reinstall_site(self, site):
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -129,22 +162,21 @@ class Agent:
 	def restore_site(self, site: "Site", skip_failing_patches=False):
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+
 		data = {
 			"apps": apps,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -162,6 +194,30 @@ class Agent:
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def create_user(self, site, email, first_name, last_name, password=None):
+		data = {
+			"email": email,
+			"first_name": first_name,
+			"last_name": last_name,
+			"password": password,
+		}
+		return self.create_agent_job(
+			"Create User",
+			f"benches/{site.bench}/sites/{site.name}/create-user",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+	
+	def complete_setup_wizard(self, site, data):
+		return self.create_agent_job(
+			"Complete Setup Wizard",
+			f"benches/{site.bench}/sites/{site.name}/complete-setup-wizard",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -206,7 +262,6 @@ class Agent:
 
 			return json.dumps(sanitized_config)
 
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
 
 		if site.remote_public_file:
@@ -218,15 +273,14 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -437,7 +491,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain):
+	def new_host(self, domain, skip_reload=False):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -447,6 +501,7 @@ class Agent:
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
+			"skip_reload": skip_reload,
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
@@ -655,6 +710,8 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.raise_if_past_requests_have_failed()
+		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
 		url = None
@@ -681,21 +738,21 @@ class Agent:
 					for key, value in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, files=file_objects, verify=verify
 				)
 			else:
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
 				)
 			json_response = None
 			try:
-				json_response = result.json()
+				json_response = self.response.json()
 				if raises:
-					result.raise_for_status()
+					self.response.raise_for_status()
 				return json_response
 			except Exception:
-				self.handle_request_failure(agent_job, result)
+				self.handle_request_failure(agent_job, self.response)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -703,11 +760,12 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=json_response or result.text,
+					result=json_response or self.response.text,
 					doc=agent_job,
 				)
 		except Exception as exc:
 			self.handle_exception(agent_job, exc)
+			self.log_request_failure(exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -718,14 +776,64 @@ class Agent:
 				doc=agent_job,
 			)
 
-	def handle_request_failure(self, agent_job, result):
+	def raise_if_past_requests_have_failed(self):
+		failures = frappe.db.get_value(
+			"Agent Request Failure", {"server": self.server}, "failure_count"
+		)
+		if failures:
+			raise AgentRequestSkippedException(
+				f"Previous {failures} requests have failed. Try again later."
+			)
+
+	def log_request_failure(self, exc):
+		filters = {
+			"server": self.server,
+		}
+		failure = frappe.db.get_value(
+			"Agent Request Failure", filters, ["name", "failure_count"], as_dict=True
+		)
+		if failure:
+			frappe.db.set_value(
+				"Agent Request Failure", failure.name, "failure_count", failure.failure_count + 1
+			)
+		else:
+			fields = filters
+			fields.update(
+				{
+					"server_type": self.server_type,
+					"traceback": frappe.get_traceback(with_context=True),
+					"error": repr(exc),
+					"failure_count": 1,
+				}
+			)
+			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
+
+	def raw_request(self, method, path, data=None, raises=True, timeout=None):
+		url = f"https://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		timeout = timeout or (10, 30)
+		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
+		json_response = response.json()
+		if raises:
+			response.raise_for_status()
+		return json_response
+
+	def should_skip_requests(self):
+		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
+
+	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
 			return
 
+		reason = None
+		with suppress(TypeError, ValueError):
+			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+
 		message = f"""
-			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
-			Response: {getattr(result, 'text', 'Unknown')}
-		"""
+Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Response: {reason or getattr(result, 'text', 'Unknown')}
+"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 
@@ -754,7 +862,6 @@ class Agent:
 		reference_doctype=None,
 		reference_name=None,
 	):
-
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
 		don't add new job until its gets comleted
@@ -850,16 +957,20 @@ class Agent:
 			result = self.post(f"benches/{site.bench}/sites/{site.name}/sid", data=data)
 		else:
 			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
-		return result.get("sid")
+		return result and result.get("sid")
 
 	def get_site_info(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+		if result:
+			return result["data"]
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_site_analytics(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/analytics")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
+		if result:
+			return result["data"]
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
@@ -873,10 +984,12 @@ class Agent:
 
 	def add_database_index(self, site, doctype, columns):
 		data = {"doctype": doctype, "columns": list(columns)}
-		return self.post(
+		return self.create_agent_job(
+			"Add Database Index",
 			f"benches/{site.bench}/sites/{site.name}/add-database-index",
-			data=data,
-		)["data"]
+			data,
+			site=site.name,
+		)
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
@@ -892,7 +1005,8 @@ class Agent:
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
-		return self.post("update", data={"url": url})
+		branch = frappe.get_doc(self.server_type, self.server).get_agent_repository_branch()
+		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
 		return self.get("ping")["message"]
@@ -975,7 +1089,7 @@ class Agent:
 
 		return None
 
-	def run_remote_builder(self, data: dict):
+	def run_build(self, data: dict):
 		reference_name = data.get("deploy_candidate")
 		return self.create_agent_job(
 			"Run Remote Builder",
@@ -991,3 +1105,44 @@ class Agent:
 			f"/benches/{bench}/supervisorctl",
 			data={"command": action, "programs": programs},
 		)
+
+	def run_command_in_docker_cache(
+		self,
+		command: str = "ls -A",
+		cache_target: str = "/home/frappe/.cache",
+		remove_image: bool = True,
+	):
+		data = dict(
+			command=command,
+			cache_target=cache_target,
+			remove_image=remove_image,
+		)
+		return self.request(
+			"POST",
+			"docker_cache_utils/run_command_in_docker_cache",
+			data=data,
+		)
+
+	def get_cached_apps(self):
+		return self.request(
+			"POST",
+			"docker_cache_utils/get_cached_apps",
+			data={},
+		)
+
+	def get_site_apps(self, site):
+		raw_apps_list = self.get(
+			f"benches/{site.bench}/sites/{site.name}/apps",
+		)
+		apps: list[str] = [
+			line.split()[0] for line in raw_apps_list["data"].splitlines() if line
+		]
+		return apps
+
+
+class AgentCallbackException(Exception):
+	pass
+
+
+class AgentRequestSkippedException(Exception):
+	pass

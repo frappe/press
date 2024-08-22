@@ -6,7 +6,7 @@
 <script>
 import { defineAsyncComponent, h } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
-import { Badge } from 'frappe-ui';
+import { Badge, FeatherIcon, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
 
@@ -20,7 +20,14 @@ export default {
 		options() {
 			return {
 				doctype: 'Stripe Payment Method',
-				fields: ['name', 'is_default', 'expiry_month', 'expiry_year', 'brand'],
+				fields: [
+					'name',
+					'is_default',
+					'expiry_month',
+					'expiry_year',
+					'brand',
+					'stripe_mandate_id'
+				],
 				columns: [
 					{
 						label: 'Name on Card',
@@ -29,28 +36,64 @@ export default {
 					{
 						label: 'Card',
 						fieldname: 'last_4',
+						width: 1.5,
 						format(value) {
 							return `•••• ${value}`;
 						},
 						prefix: row => {
 							return this.cardBrandIcon(row.brand);
 						},
-						suffix: row => {
-							return row.is_default
-								? h(
-										Badge,
-										{
-											theme: 'green'
-										},
-										() => 'Default'
-								  )
-								: null;
+						suffix(row) {
+							if (row.is_default) {
+								return h(
+									Badge,
+									{
+										theme: 'green'
+									},
+									() => 'Default'
+								);
+							}
 						}
 					},
 					{
 						label: 'Expiry',
+						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
+						}
+					},
+					{
+						label: 'Mandated',
+						type: 'Component',
+						width: 1,
+						align: 'center',
+						component({ row }) {
+							if (row.stripe_mandate_id) {
+								return h(FeatherIcon, {
+									name: 'check-circle',
+									class: 'h-4 w-4 text-green-600'
+								});
+							}
+						}
+					},
+					{
+						label: '',
+						type: 'Component',
+						align: 'right',
+						component({ row }) {
+							if (row.is_default && row.stripe_payment_method) {
+								return h(
+									Tooltip,
+									{
+										text: 'The last payment failed on this card. Please use a different card.'
+									},
+									() =>
+										h(FeatherIcon, {
+											name: 'alert-circle',
+											class: 'h-4 w-4 text-red-600'
+										})
+								);
+							}
 						}
 					},
 					{
@@ -60,7 +103,7 @@ export default {
 						align: 'right'
 					}
 				],
-				rowActions({ listResource, row }) {
+				rowActions: ({ listResource, row }) => {
 					return [
 						{
 							label: 'Set as default',
@@ -82,7 +125,7 @@ export default {
 						{
 							label: 'Remove',
 							onClick: () => {
-								if (row.is_default) {
+								if (row.is_default && this.$team.doc.payment_mode === 'Card') {
 									toast.error('Cannot remove default card');
 									return;
 								}
@@ -99,7 +142,10 @@ export default {
 											{
 												loading: 'Removing card...',
 												success: 'Card removed',
-												error: 'Could not remove card'
+												error: error =>
+													error.messages?.length
+														? error.messages.join('\n')
+														: error.message || 'Could not remove card'
 											}
 										);
 									}

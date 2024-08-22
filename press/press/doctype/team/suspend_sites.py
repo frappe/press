@@ -15,10 +15,10 @@ Defaulters are identified based on the following conditions:
 The `execute` method is the main method which is run by the scheduler on every day of the month.
 """
 
-
 import frappe
+from frappe.utils import add_days, get_first_day, get_last_day, getdate
+
 from press.utils import log_error
-from frappe.utils import getdate, add_days, get_first_day, get_last_day
 
 
 def execute():
@@ -33,9 +33,6 @@ def execute():
 
 	for d in teams_with_unpaid_invoices[:30]:
 		team = frappe.get_doc("Team", d.team)
-
-		if team.payment_mode == "Partner Credits":
-			continue
 
 		# suspend sites
 		suspend_sites_and_send_email(team)

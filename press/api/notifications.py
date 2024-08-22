@@ -1,25 +1,58 @@
 import frappe
+
+from press.press.doctype.press_role.press_role import check_role_permissions
 from press.utils import get_current_team
 
 
 @frappe.whitelist()
-def get_notifications(filters=None):
+def get_notifications(
+	filters=None, order_by="creation desc", limit_start=None, limit_page_length=None
+):
 	if not filters:
 		filters = {}
-	notifications = frappe.get_all(
-		"Press Notification",
-		filters=filters,
-		fields=[
-			"name",
-			"type",
-			"message",
-			"creation",
-			"read",
-			"document_type",
-			"document_name",
-		],
-		order_by="creation desc",
+
+	PressNotification = frappe.qb.DocType("Press Notification")
+	query = (
+		frappe.qb.from_(PressNotification)
+		.select(
+			PressNotification.name,
+			PressNotification.type,
+			PressNotification.read,
+			PressNotification.title,
+			PressNotification.message,
+			PressNotification.creation,
+			PressNotification.is_addressed,
+			PressNotification.is_actionable,
+			PressNotification.document_type,
+			PressNotification.document_name,
+		)
+		.where(PressNotification.team == filters.get("team") or get_current_team())
+		.orderby(PressNotification.creation, order=frappe.qb.desc)
+		.limit(limit_page_length)
+		.offset(limit_start)
 	)
+
+	if roles := set(
+		check_role_permissions("Site") + check_role_permissions("Release Group")
+	):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				(
+					(PressRolePermission.site == PressNotification.reference_name)
+					| (PressRolePermission.release_group == PressNotification.reference_name)
+				)
+				& PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	if filters.get("read") == "Unread":
+		query = query.where(PressNotification.read == 0)
+
+	notifications = query.run(as_dict=True)
 
 	for notification in notifications:
 		if notification.document_type == "Deploy Candidate":
@@ -41,6 +74,13 @@ def get_notifications(filters=None):
 @frappe.whitelist()
 def mark_notification_as_read(name):
 	frappe.db.set_value("Press Notification", name, "read", True)
+
+
+@frappe.whitelist()
+def mark_all_notifications_as_read():
+	frappe.db.set_value(
+		"Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False
+	)
 
 
 @frappe.whitelist()

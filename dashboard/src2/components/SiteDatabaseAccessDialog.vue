@@ -119,7 +119,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
-import ClickToCopyField from '../../src/components/ClickToCopyField.vue';
+import ClickToCopyField from './ClickToCopyField.vue';
 import { pollJobStatus } from '../utils/agentJob';
 import { getPlan } from '../data/plans';
 
@@ -171,6 +171,13 @@ export default {
 		}
 	},
 	computed: {
+		dbAccessCommand() {
+			if (this.databaseCredentials) {
+				const credentials = this.databaseCredentials;
+				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
+			}
+			return null;
+		},
 		databaseCredentials() {
 			return this.$site.getDatabaseCredentials.data;
 		},

@@ -11,11 +11,13 @@
   "site",
   "team",
   "domain",
-  "ssl",
-  "dns_type",
+  "column_break_faqy",
   "tls_certificate",
   "retry_count",
-  "redirect_to_primary"
+  "redirect_to_primary",
+  "dns_section",
+  "dns_type",
+  "dns_response"
  ],
  "fields": [
   {
@@ -37,14 +39,6 @@
    "read_only": 1,
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "ssl",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "SSL",
-   "read_only": 1
   },
   {
    "default": "CNAME",
@@ -95,13 +89,29 @@
    "options": "Team",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_faqy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dns_section",
+   "fieldtype": "Section Break",
+   "label": "DNS"
+  },
+  {
+   "fieldname": "dns_response",
+   "fieldtype": "Code",
+   "label": "DNS Response",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-02-15 20:09:39.409924",
+ "modified": "2024-06-21 15:19:41.758948",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -118,12 +128,14 @@
   },
   {
    "create": 1,
+   "delete": 1,
    "read": 1,
    "role": "Press Admin",
    "write": 1
   },
   {
    "create": 1,
+   "delete": 1,
    "read": 1,
    "role": "Press Member",
    "write": 1
@@ -131,6 +143,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "domain",
  "track_changes": 1
 }

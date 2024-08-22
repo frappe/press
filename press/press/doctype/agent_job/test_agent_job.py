@@ -4,21 +4,19 @@
 
 
 import json
-from typing import Callable, Literal
-from contextlib import contextmanager
-import frappe
 import unittest
-from unittest.mock import patch, Mock
+from contextlib import contextmanager
+from typing import Callable, Literal
+from unittest.mock import Mock, patch
 
+import frappe
+import responses
 from frappe.model.naming import make_autoname
+
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
-
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.agent import Agent
-
-import responses
-
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
@@ -30,7 +28,8 @@ def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
 	return new_before_insert
 
 
-before_insert: Callable = lambda self: None
+def before_insert(self):
+	return None
 
 
 def fake_agent_job_req(
@@ -173,6 +172,8 @@ class TestAgentJob(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -212,6 +213,7 @@ class TestAgentJob(unittest.TestCase):
 		Site > Bench > Server
 		"""
 		site = create_test_site()  # creates job
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertIsNone(doc_name)
@@ -243,6 +245,7 @@ class TestAgentJob(unittest.TestCase):
 
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
@@ -254,6 +257,7 @@ class TestAgentJob(unittest.TestCase):
 
 	def test_get_similar_in_execution_job(self):
 		site = create_test_site()
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)

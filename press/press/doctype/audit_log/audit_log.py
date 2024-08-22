@@ -5,7 +5,7 @@
 import frappe
 from frappe.model.document import Document
 
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
 class AuditLog(Document):
@@ -49,5 +49,4 @@ class AuditLog(Document):
 
 		topic = self.telegram_topic or "Errors"
 		group = self.telegram_group
-		telegram = Telegram(topic=topic, group=group)
-		telegram.send(message)
+		TelegramMessage.enqueue(message=message, topic=topic, group=group)

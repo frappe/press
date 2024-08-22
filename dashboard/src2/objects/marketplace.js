@@ -1,13 +1,15 @@
 import { defineAsyncComponent, h } from 'vue';
-import { icon, renderDialog } from '../utils/components';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import NewAppDialog from '../components/NewAppDialog.vue';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { toast } from 'vue-sonner';
 import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { isMobile } from '../utils/device';
+import { Button, Badge } from 'frappe-ui';
+import CodeReview from '../components/marketplace/CodeReview.vue';
 
 export default {
 	doctype: 'Marketplace App',
@@ -17,11 +19,12 @@ export default {
 		siteInstalls: 'site_installs',
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
-		updateListing: 'update_listing'
+		updateListing: 'update_listing',
+		markAppReadyForReview: 'mark_app_ready_for_review'
 	},
 	list: {
 		route: '/apps',
-		title: 'Apps',
+		title: 'Marketplace',
 		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
@@ -58,7 +61,7 @@ export default {
 				width: 1.0
 			}
 		],
-		primaryAction({ listResource: apps }) {
+		primaryAction() {
 			return {
 				label: 'New App',
 				variant: 'solid',
@@ -66,28 +69,11 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					renderDialog(
-						h(NewAppDialog, {
-							showVersionSelector: true,
-							onAppAdded(app) {
-								toast.promise(apps.insert.submit(app), apps.reload(), {
-									loading: 'Adding new app...',
-									success: () => {
-										router.push({
-											name: 'Marketplace App Detail Listing',
-											params: { name: app.name }
-										});
-										return 'New app added';
-									},
-									error: e => {
-										return e.messages.length
-											? e.messages.join('\n')
-											: e.message;
-									}
-								});
-							}
-						})
+					const NewMarketplaceAppDialog = defineAsyncComponent(() =>
+						import('../components/marketplace/NewMarketplaceAppDialog.vue')
 					);
+
+					renderDialog(h(NewMarketplaceAppDialog));
 				}
 			};
 		}
@@ -142,7 +128,15 @@ export default {
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					fields: ['name', 'version', 'source'],
+					onRowClick: (row, context) => {
+						const { listResource: versions, documentResource: app } = context;
+						showReleases(row, app);
+					},
+					fields: [
+						'source.repository_owner as repository_owner',
+						'source.repository as repository',
+						'source.branch as branch'
+					],
 					columns: [
 						{
 							label: 'Version',
@@ -156,10 +150,9 @@ export default {
 						},
 						{
 							label: 'Repository',
-							fieldname: 'repository_owner',
 							width: 0.5,
 							format: (value, row) => {
-								return `${value}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`;
 							}
 						},
 						{
@@ -181,8 +174,8 @@ export default {
 										GenericDialog,
 										{
 											options: {
-												title: `Add version support for ${app.doc.name}`,
-												size: '2xl'
+												title: `Add version support for ${app.doc.title}`,
+												size: '4xl'
 											}
 										},
 										{
@@ -251,8 +244,7 @@ export default {
 															return {
 																url: 'press.api.marketplace.options_for_version',
 																params: {
-																	name: app.doc.name,
-																	source: versions.data[0].source
+																	name: app.doc.name
 																},
 																auto: true
 															};
@@ -273,113 +265,7 @@ export default {
 									prefix: icon('plus')
 								},
 								onClick() {
-									renderDialog(
-										h(
-											GenericDialog,
-											{
-												options: {
-													title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-													size: '4xl'
-												}
-											},
-											{
-												default: () =>
-													h(ObjectList, {
-														options: {
-															label: 'Version',
-															type: 'list',
-															doctype: 'App Release',
-															filters: {
-																app: app.doc.name,
-																source: row.source
-															},
-															fields: ['message', 'tag', 'author', 'status'],
-															columns: [
-																{
-																	label: 'Commit Message',
-																	fieldname: 'message',
-																	class: 'w-64',
-																	width: 0.5
-																},
-																{
-																	label: 'Hash',
-																	fieldname: 'hash',
-																	class: 'w-24',
-																	type: 'Badge',
-																	width: 0.2,
-																	format: value => {
-																		return value.slice(0, 7);
-																	}
-																},
-																{
-																	label: 'Author',
-																	fieldname: 'author',
-																	width: 0.2
-																},
-																{
-																	label: 'Status',
-																	fieldname: 'status',
-																	type: 'Badge',
-																	width: 0.3
-																},
-																{
-																	label: '',
-																	fieldname: '',
-																	align: 'right',
-																	type: 'Button',
-																	width: 0.2,
-																	Button({ row, listResource: releases }) {
-																		let label = '';
-																		let successMessage = '';
-																		let loadingMessage = '';
-
-																		if (row.status === 'Awaiting Approval') {
-																			label = 'Cancel';
-																			successMessage =
-																				'The release has been cancelled';
-																			loadingMessage = 'Cancelling release...';
-																		} else if (row.status === 'Draft') {
-																			label = 'Submit';
-																			loadingMessage =
-																				'Submitting release for approval...';
-																			successMessage =
-																				'The release has been submitted for approval';
-																		}
-
-																		return {
-																			label: label,
-																			onClick() {
-																				toast.promise(
-																					row.status === 'Awaiting Approval'
-																						? app.cancelApprovalRequest.submit({
-																								app_release: row.name
-																						  })
-																						: app.createApprovalRequest.submit({
-																								app_release: row.name
-																						  }),
-																					{
-																						loading: loadingMessage,
-																						success: () => {
-																							releases.reload();
-																							return successMessage;
-																						},
-																						error: e => {
-																							return e.messages.length
-																								? e.messages.join('\n')
-																								: e.message;
-																						}
-																					}
-																				);
-																			}
-																		};
-																	}
-																}
-															]
-														}
-													})
-											}
-										)
-									);
+									showReleases(row, app);
 								}
 							},
 							{
@@ -401,18 +287,21 @@ export default {
 							{
 								label: 'Remove Version',
 								onClick() {
-									toast.promise(app.removeVersion.submit(row.version), {
-										loading: 'Removing version...',
-										success: () => {
-											versions.reload();
-											return 'Version removed successfully';
-										},
-										error: e => {
-											return e.messages.length
-												? e.messages.join('\n')
-												: e.message;
+									toast.promise(
+										app.removeVersion.submit({ version: row.version }),
+										{
+											loading: 'Removing version...',
+											success: () => {
+												versions.reload();
+												return 'Version removed successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
 										}
-									});
+									);
 								}
 							}
 						];
@@ -510,6 +399,17 @@ export default {
 						};
 					},
 					fields: ['site', 'enabled', 'team'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								class: !isMobile() ? 'w-24' : '',
+								fieldname: 'enabled',
+								options: ['', 'Active', 'Disabled']
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Site',
@@ -545,9 +445,7 @@ export default {
 				}
 			}
 		],
-		actions(context) {
-			let { documentResource: app } = context;
-
+		actions({ documentResource: app }) {
 			return [
 				{
 					label: 'View in Marketplace',
@@ -563,6 +461,19 @@ export default {
 					}
 				},
 				{
+					label: 'Guidelines',
+					slots: {
+						icon: icon('help-circle')
+					},
+					condition: () => app.doc.status === 'Draft',
+					onClick() {
+						window.open(
+							'https://frappecloud.com/docs/marketplace/marketplace-guidelines',
+							'_blank'
+						);
+					}
+				},
+				{
 					label: 'Complete Listing',
 					variant: 'solid',
 					slots: {
@@ -570,75 +481,190 @@ export default {
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
-						renderDialog(
-							h(
-								GenericDialog,
-								{
-									options: {
-										title: 'Steps to complete before the app can be published',
-										size: '2xl',
-										message:
-											'Please complete the following steps before publishing the app. Once all steps are completed, the app will be reviewed and published.'
-									}
-								},
-								{
-									default: () =>
-										h(ObjectList, {
-											options: {
-												label: 'Steps',
-												fieldname: 'steps',
-												fieldtype: 'ListSelection',
-												hideControls: true,
-												columns: [
-													{
-														label: 'Step',
-														fieldname: 'step',
-														width: 0.8
-													},
-													{
-														label: 'Completed',
-														fieldname: 'completed',
-														type: 'Icon',
-														width: 0.3,
-														Icon(value) {
-															return value ? 'check' : '';
-														}
-													},
-													{
-														label: 'Update Now',
-														type: 'Button',
-														width: 0.2,
-														Button({ row }) {
-															let route = `/apps/${app.doc.name}/`;
-															route += row.step.includes('Publish')
-																? 'versions'
-																: 'listing';
+						let AppListingStepsDialog = defineAsyncComponent(() =>
+							import('../components/marketplace/AppListingStepsDialog.vue')
+						);
 
-															return {
-																label: 'View',
-																variant: 'ghost',
-																route
-															};
-														}
-													}
-												],
-												resource() {
-													return {
-														url: 'press.api.marketplace.review_steps',
-														params: {
-															name: app.doc.name
-														},
-														auto: true
-													};
-												}
-											}
-										})
-								}
-							)
+						renderDialog(
+							h(AppListingStepsDialog, {
+								app: app.doc.name
+							})
 						);
 					}
+				},
+				,
+				{
+					label: 'Options',
+					condition: () => app.doc.status === 'Draft',
+					options: [
+						{
+							label: 'Delete',
+							icon: icon('trash-2'),
+							condition: () => app.doc.status === 'Draft',
+							onClick() {
+								confirmDialog({
+									title: `Delete App ${app.doc.title}`,
+									message: 'Are you sure you want to delete this app?',
+									onSuccess({ hide }) {
+										toast.promise(app.delete.submit(), {
+											loading: 'Deleting app...',
+											success: () => {
+												hide();
+												router.push({ name: 'Marketplace App List' });
+												return 'App deleted successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
+										});
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}
 	}
 };
+
+function showReleases(row, app) {
+	renderDialog(
+		h(
+			GenericDialog,
+			{
+				options: {
+					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
+					size: '8xl'
+				}
+			},
+			{
+				default: () =>
+					h(ObjectList, {
+						options: {
+							label: 'Version',
+							type: 'list',
+							doctype: 'App Release',
+							filters: {
+								app: app.doc.name,
+								source: row.source
+							},
+							fields: ['message', 'tag', 'author', 'status'],
+							orderBy: 'creation desc',
+							columns: [
+								{
+									label: 'Commit Message',
+									fieldname: 'message',
+									class: 'w-64',
+									width: 0.5
+								},
+								{
+									label: 'Hash',
+									fieldname: 'hash',
+									class: 'w-24',
+									type: 'Badge',
+									width: 0.2,
+									format: value => {
+										return value.slice(0, 7);
+									}
+								},
+								{
+									label: 'Author',
+									fieldname: 'author',
+									width: 0.2
+								},
+								{
+									label: 'Status',
+									fieldname: 'status',
+									type: 'Badge',
+									width: 0.3
+								},
+								{
+									label: 'Code Screening',
+									type: 'Component',
+									width: 0.2,
+									component: ({ row, listResource: releases }) => {
+										if (
+											row.status === 'Awaiting Approval' &&
+											row.screening_status === 'Complete'
+										) {
+											return h(Button, {
+												label: 'Review',
+												variant: 'subtle',
+												theme: 'blue',
+												size: 'sm',
+												onClick: () => codeReview(row)
+											});
+										}
+										return h(Badge, {
+											label: row.screening_status || 'Not Started'
+										});
+									}
+								},
+								{
+									label: '',
+									fieldname: '',
+									align: 'right',
+									type: 'Button',
+									width: 0.2,
+									Button({ row, listResource: releases }) {
+										let label = '';
+										let successMessage = '';
+										let loadingMessage = '';
+
+										if (row.status === 'Awaiting Approval') {
+											label = 'Cancel';
+											successMessage = 'The release has been cancelled';
+											loadingMessage = 'Cancelling release...';
+										} else if (row.status === 'Draft') {
+											label = 'Submit';
+											loadingMessage = 'Submitting release for approval...';
+											successMessage =
+												'The release has been submitted for approval';
+										}
+
+										return {
+											label: label,
+											onClick() {
+												toast.promise(
+													row.status === 'Awaiting Approval'
+														? app.cancelApprovalRequest.submit({
+																app_release: row.name
+														  })
+														: app.createApprovalRequest.submit({
+																app_release: row.name
+														  }),
+													{
+														loading: loadingMessage,
+														success: () => {
+															releases.reload();
+															return successMessage;
+														},
+														error: e => {
+															return e.messages.length
+																? e.messages.join('\n')
+																: e.message;
+														}
+													}
+												);
+											}
+										};
+									}
+								}
+							]
+						}
+					})
+			}
+		)
+	);
+}
+
+function codeReview(row) {
+	renderDialog(
+		h(CodeReview, {
+			row: row
+		})
+	);
+}

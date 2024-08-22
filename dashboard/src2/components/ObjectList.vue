@@ -1,8 +1,18 @@
 <template>
 	<div>
-		<div v-if="hideControls" class="flex items-center justify-between">
+		<!-- Banners -->
+		<component
+			:is="banner.dismissable ? 'DismissableBanner' : 'AlertBanner'"
+			v-if="banner"
+			v-bind="banner"
+			class="mb-4"
+		>
+			<Button v-if="banner.button" v-bind="banner.button" class="ml-auto" />
+		</component>
+
+		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
-				<div class="flex items-center space-x-2">
+				<div v-if="showControls" class="flex items-center space-x-2">
 					<TextInput
 						placeholder="Search"
 						class="max-w-[20rem]"
@@ -24,6 +34,7 @@
 						@update:filter="onFilterControlChange"
 					/>
 				</div>
+				<div v-else></div>
 			</slot>
 			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
@@ -42,13 +53,24 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Tooltip text="Refresh" v-if="$list">
-					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
-						<template #icon>
+				<Button
+					label="Refresh"
+					v-if="$list"
+					@click="$list.reload()"
+					:loading="isLoading"
+				>
+					<template #icon>
+						<Tooltip text="Refresh">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-						</template>
-					</Button>
-				</Tooltip>
+						</Tooltip>
+					</template>
+				</Button>
+				<ActionButton
+					v-for="button in actions"
+					v-bind="button"
+					:key="button.label"
+					:context="context"
+				/>
 				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
@@ -60,14 +82,16 @@
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
-						? row => this.options.onRowClick(row)
+						? row => this.options.onRowClick(row, context)
 						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
 						: null,
+					rowHeight: this.options.rowHeight,
 					emptyState: {}
 				}"
 				row-key="name"
+				@update:selections="e => this.$emit('update:selections', e)"
 			>
 				<template v-if="options.groupHeader" #group-header="{ group }">
 					<component :is="options.groupHeader({ ...context, group })" />
@@ -94,7 +118,7 @@
 					<ErrorMessage :message="$list.list.error" />
 				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
-					No results found
+					{{ emptyStateMessage }}
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right" v-if="$list">
@@ -111,18 +135,16 @@
 </template>
 <script>
 import { reactive } from 'vue';
+import { throttle } from '../utils/throttle';
+import DismissableBanner from './DismissableBanner.vue';
+import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	Dropdown,
 	ListView,
 	ListHeader,
-	ListHeaderItem,
-	ListRows,
 	ListRow,
-	ListRowItem,
-	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
 	Tooltip,
@@ -134,18 +156,16 @@ let subscribed = {};
 export default {
 	name: 'ObjectList',
 	props: ['options'],
+	emits: ['update:selections'],
 	components: {
+		AlertBanner,
+		DismissableBanner,
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
-		Dropdown,
 		ListView,
 		ListHeader,
-		ListHeaderItem,
-		ListRows,
 		ListRow,
-		ListRowItem,
-		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
 		Tooltip,
@@ -153,7 +173,6 @@ export default {
 	},
 	data() {
 		return {
-			lastRefreshed: null,
 			searchQuery: ''
 		};
 	},
@@ -208,9 +227,6 @@ export default {
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
 				auto: true,
-				onSuccess: () => {
-					this.lastRefreshed = new Date();
-				},
 				onError: e => {
 					if (this.$list.data) {
 						this.$list.data = [];
@@ -232,33 +248,29 @@ export default {
 	mounted() {
 		if (this.options.data) return;
 		if (this.options.list) {
-			let resource = this.$list.list || this.$list;
+			const resource = this.$list.list || this.$list;
 			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
 			this.$socket.emit('doctype_subscribe', doctype);
 			subscribed[doctype] = true;
 
+			const throttledReload = throttle(this.$list.reload, 5000);
 			this.$socket.on('list_update', data => {
-				let names = (this.$list.data || []).map(d => d.name);
-				if (
-					data.doctype === doctype &&
-					names.includes(data.name) &&
-					// update list if last refreshed is more than 5 seconds ago
-					new Date() - this.lastRefreshed > 5000
-				) {
-					this.$list.reload();
+				const names = (this.$list.data || []).map(d => d.name);
+				if (data.doctype === doctype && names.includes(data.name)) {
+					throttledReload();
 				}
 			});
 		}
 	},
 	beforeUnmount() {
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			this.$socket.emit('doctype_unsubscribe', doctype);
 			subscribed[doctype] = false;
 		}
@@ -310,10 +322,16 @@ export default {
 				.map(row => {
 					if (row.rows && row.group) {
 						// group
-						return {
-							...row,
-							rows: row.rows.filter(row => this.filterRow(query, row))
-						};
+						let filteredRows = row.rows.filter(row =>
+							this.filterRow(query, row)
+						);
+
+						if (filteredRows.length) {
+							return {
+								...row,
+								rows: row.rows.filter(row => this.filterRow(query, row))
+							};
+						}
 					}
 					if (this.filterRow(query, row)) {
 						return row;
@@ -352,6 +370,16 @@ export default {
 					return reactive({ ...control, value: control.default || undefined });
 				});
 		},
+		actions() {
+			if (!this.options.actions) return [];
+			let actions = this.options.actions(this.context);
+			return actions.filter(action => {
+				if (action.condition) {
+					return action.condition(this.context);
+				}
+				return true;
+			});
+		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
@@ -374,8 +402,21 @@ export default {
 			if (this.options.data) return false;
 			return this.$list.list?.loading || this.$list.loading;
 		},
-		hideControls() {
-			return !this.options.hideControls;
+		showControls() {
+			return (
+				(this.searchQuery ||
+					this.rows.length > 5 ||
+					this.filterControls.length) &&
+				!this.options.hideControls
+			);
+		},
+		emptyStateMessage() {
+			return this.options.emptyStateMessage || 'No results found';
+		},
+		banner() {
+			if (this.options.banner) {
+				return this.options.banner(this.context);
+			}
 		}
 	},
 	methods: {

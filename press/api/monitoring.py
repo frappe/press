@@ -3,8 +3,10 @@
 # For license information, please see license.txt
 
 
-import frappe
 from itertools import groupby
+
+import frappe
+
 from press.utils import log_error
 
 
@@ -68,7 +70,7 @@ def targets(token):
 						cluster["jobs"].setdefault(job, []).append(server.name)
 
 	domains = frappe.get_all(
-		"Site Domain", ["name", "site"], {"dns_type": "CNAME"}, order_by="name"
+		"Site Domain", ["name", "site"], {"tls_certificate": ("is", "set")}, order_by="name"
 	)
 
 	tls = []

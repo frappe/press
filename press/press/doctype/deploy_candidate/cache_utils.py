@@ -12,7 +12,7 @@ from typing import Tuple, TypedDict
 
 CommandOutput = TypedDict(
 	"CommandOutput",
-	cwd=Path,
+	cwd=str,
 	image_tag=str,
 	returncode=int,
 	output=str,
@@ -183,7 +183,7 @@ def run_build_command(df_path: Path, remove_image: bool) -> CommandOutput:
 	if remove_image:
 		run_image_rm(image_tag)
 	return dict(
-		cwd=df_path.parent,
+		cwd=df_path.parent.absolute().as_posix(),
 		image_tag=image_tag,
 		returncode=output.returncode,
 		output=strip_build_output(output.stdout),

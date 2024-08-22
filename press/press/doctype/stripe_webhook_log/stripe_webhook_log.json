@@ -7,10 +7,13 @@
  "engine": "InnoDB",
  "field_order": [
   "event_type",
-  "customer_id",
-  "invoice_id",
   "invoice",
   "team",
+  "column_break_hywj",
+  "customer_id",
+  "invoice_id",
+  "stripe_payment_method",
+  "section_break_ecbt",
   "payload"
  ],
  "fields": [
@@ -48,10 +51,26 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "column_break_hywj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "This is only shown when a payment intent fails",
+   "fieldname": "stripe_payment_method",
+   "fieldtype": "Link",
+   "label": "Stripe Payment Method",
+   "options": "Stripe Payment Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ecbt",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2023-11-14 17:27:20.550107",
+ "modified": "2024-06-12 14:53:14.051698",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",

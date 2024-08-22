@@ -5,26 +5,18 @@
 </template>
 
 <script setup>
-import { computed, h, inject, ref } from 'vue';
+import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
 import { confirmDialog, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
-import AddTeamMemberDialog from './AddTeamMemberDialog.vue';
-import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';
-import PermissionGroupUserCell from './PermissionGroupUserCell.vue';
-
-const breadcrumbs = inject('breadcrumbs');
-breadcrumbs.value = [
-	{ label: 'Settings', route: '/settings' },
-	{ label: 'Team', route: '/settings/team' }
-];
 
 const team = getTeam();
 team.getTeamMembers.submit();
 const teamMembersListOptions = ref({
 	onRowClick: () => {},
+	rowHeight: 50,
 	list: team.getTeamMembers,
 	columns: [
 		{
@@ -73,23 +65,18 @@ const teamMembersListOptions = ref({
 			}
 		];
 	},
-	primaryAction({ listResource }) {
+	primaryAction() {
 		return {
 			label: 'Add Member',
 			variant: 'solid',
 			iconLeft: 'plus',
 			onClick() {
-				handleNewMemberClick(listResource);
+				const InviteTeamMemberDialog = defineAsyncComponent(() =>
+					import('./InviteTeamMemberDialog.vue')
+				);
+				renderDialog(h(InviteTeamMemberDialog));
 			}
 		};
 	}
 });
-
-function handleNewMemberClick(membersListResource) {
-	renderDialog(
-		h(AddTeamMemberDialog, {
-			onMemberAdded: () => membersListResource.reload()
-		})
-	);
-}
 </script>

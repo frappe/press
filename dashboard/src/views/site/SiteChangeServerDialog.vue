@@ -51,7 +51,7 @@
 						})
 				"
 			/>
-			<div v-if="$resources.isServerAddedInGroup.data" class="space-y-4">
+			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
 				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
 				<FormControl
 					label="Skip failing patches if any"
@@ -109,10 +109,10 @@ export default {
 		},
 		errorMessage() {
 			return (
-				this.$resources.versionUpgrade.error ||
-				this.$resources.validateGroupforUpgrade.error ||
 				this.$resources.addServerToReleaseGroup.error ||
-				this.$resources.getPrivateGroups.error
+				this.$resources.isServerAddedInGroup.error ||
+				this.$resources.changeServerOptions.error ||
+				this.$resources.changeServer.error
 			);
 		},
 		datetimeInIST() {

@@ -92,7 +92,7 @@ export default {
 	},
 	async mounted() {
 		if (this.config) {
-			await this.$resources.standardKeys.list.promise;
+			await this.$resources.standardKeys.promise;
 			this.selectedConfig = this.keyOptions.find(
 				option => this.config.key === option.value
 			);
@@ -112,12 +112,9 @@ export default {
 	resources: {
 		standardKeys() {
 			return {
-				type: 'list',
-				doctype: 'Site Config Key',
-				fields: ['name', 'key', 'title', 'description', 'type'],
-				filters: { internal: false },
-				orderBy: 'title asc',
-				pageLength: 1000,
+				url: 'press.api.site.get_site_config_standard_keys',
+				cache: 'Site Config Standard Keys',
+				initialData: [],
 				auto: true
 			};
 		}
@@ -174,13 +171,11 @@ export default {
 				label: 'Custom Key',
 				value: '__custom_key'
 			};
-			let standardKeyOptions = (this.$resources.standardKeys.data || []).map(
-				key => ({
-					label: key.title,
-					value: key.key,
-					type: key.type
-				})
-			);
+			let standardKeyOptions = this.$resources.standardKeys.data.map(key => ({
+				label: key.title,
+				value: key.key,
+				type: key.type
+			}));
 			return [customKeyOption, ...standardKeyOptions];
 		},
 		valueInputProps() {

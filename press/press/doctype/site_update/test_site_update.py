@@ -4,24 +4,25 @@
 
 
 import json
+from unittest.mock import MagicMock, Mock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
-from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
+	create_test_deploy_candidate_differences,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
-
-from unittest.mock import patch, Mock, MagicMock
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import SiteUpdate
-
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
@@ -34,7 +35,6 @@ def create_test_site_update(site: str, destination_group: str, status: str):
 	).insert(ignore_if_duplicate=True)
 
 
-@patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())
 class TestSiteUpdate(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -54,7 +54,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
@@ -79,7 +81,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
@@ -105,7 +109,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2.apps.pop()
 		bench2.save()
 
-		create_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 
@@ -127,7 +133,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		plan = create_test_plan(site.doctype, cpu_time=8)

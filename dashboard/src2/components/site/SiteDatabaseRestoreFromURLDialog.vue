@@ -6,6 +6,7 @@
 				{
 					label: 'Restore',
 					variant: 'solid',
+					theme: 'red',
 					loading: $resources.restoreBackup.loading,
 					disabled: !$resources.getBackupLinks.data,
 					onClick: () => $resources.restoreBackup.submit()
@@ -15,6 +16,15 @@
 		v-model="showRestoreDialog"
 	>
 		<template #body-content>
+			<div
+				class="mb-6 flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+			>
+				<i-lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+				<div>
+					This operation will replace the current <b>data</b> & <b>apps</b> in
+					your site with those from the backup
+				</div>
+			</div>
 			<div class="space-y-4">
 				<FormControl label="Site URL" v-model="siteURL" />
 				<FormControl label="Email" v-model="email" />
@@ -49,6 +59,7 @@
 </template>
 <script>
 import { date } from '../../utils/format';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -83,13 +94,13 @@ export default {
 				},
 				validate() {
 					if (!this.siteURL) {
-						return 'Site URL is required';
+						throw new DashboardError('Site URL is required');
 					}
 					if (!this.email) {
-						return 'Email is required';
+						throw new DashboardError('Email is required');
 					}
 					if (!this.password) {
-						return 'Password is required';
+						throw new DashboardError('Password is required');
 					}
 				},
 				onSuccess(remoteFiles) {
@@ -109,7 +120,9 @@ export default {
 				},
 				validate() {
 					if (!this.selectedFiles.database) {
-						return 'Something went wrong while fetching the backups from the site';
+						throw new DashboardError(
+							'Something went wrong while fetching the backups from the site'
+						);
 					}
 				},
 				onSuccess() {

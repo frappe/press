@@ -29,7 +29,7 @@
 	<div>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
-			:tabs="object.detail.tabs"
+			:tabs="tabs"
 		>
 			<template #tab-content="{ tab }">
 				<!-- this div is required for some reason -->
@@ -42,24 +42,22 @@
 			</template>
 		</TabsWithRouter>
 		<div
-			v-else-if="
-				$resources.document.get.error?.message?.includes('DoesNotExistError')
-			"
-			class="mx-auto mt-60 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+			v-else-if="$resources.document.get.error"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 		>
-			<LucideFrown class="mx-auto mb-4 h-8 w-8" />
-			{{ $resources.document.doctype }} not found
+			<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+			<ErrorMessage :message="$resources.document.get.error" />
 		</div>
 	</div>
 </template>
 
 <script>
-import LucideFrown from '~icons/lucide/frown';
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 let subscribed = {};
 
@@ -78,7 +76,6 @@ export default {
 	},
 	components: {
 		Header,
-		LucideFrown,
 		ActionButton,
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
@@ -122,6 +119,16 @@ export default {
 	computed: {
 		object() {
 			return getObject(this.objectType);
+		},
+		tabs() {
+			return this.object.detail.tabs.filter(tab => {
+				if (tab.condition) {
+					return tab.condition({
+						documentResource: this.$resources.document
+					});
+				}
+				return true;
+			});
 		},
 		title() {
 			let doc = this.$resources.document?.doc;
@@ -171,6 +178,14 @@ export default {
 					items = result;
 				}
 			}
+
+			// add ellipsis if breadcrumbs too long
+			for (let i = 0; i < items.length; i++) {
+				if (items[i].label.length > 30 && i !== items.length - 1) {
+					items[i].label = items[i].label.slice(0, 30) + '...';
+				}
+			}
+
 			return items;
 		}
 	}

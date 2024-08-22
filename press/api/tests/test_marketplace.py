@@ -5,28 +5,29 @@
 
 import unittest
 from unittest.mock import Mock, patch
-import responses
 
 import frappe
+import responses
+
 from press.api.marketplace import (
 	add_app,
 	add_version,
 	become_publisher,
 	branches,
 	change_app_plan,
+	change_branch,
 	create_app_plan,
 	create_approval_request,
-	developer_toggle_allowed,
-	get_apps,
 	get_app,
+	get_apps,
+	get_apps_with_plans,
 	get_latest_approval_request,
 	get_marketplace_subscriptions_for_site,
 	get_publisher_profile_info,
 	get_subscriptions_list,
-	get_apps_with_plans,
 	new_app,
 	options_for_quick_install,
-	change_branch,
+	releases,
 	remove_version,
 	reset_features_for_plan,
 	subscriptions,
@@ -35,7 +36,6 @@ from press.api.marketplace import (
 	update_app_plan,
 	update_app_summary,
 	update_app_title,
-	releases,
 	update_publisher_profile,
 )
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
@@ -51,11 +51,11 @@ from press.press.doctype.app_source.test_app_source import create_test_app_sourc
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
 )
-from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.team.test_team import create_test_press_admin_team
 
 PAYLOAD = [
 	{
@@ -234,12 +234,6 @@ class TestAPIMarketplace(unittest.TestCase):
 		become_publisher()
 		self.team.reload()
 		self.assertTrue(self.team.is_developer)
-
-	def test_developer_toggle_allowed(self):
-		is_developer = self.team.is_developer
-
-		allowed = developer_toggle_allowed()
-		self.assertEqual(not allowed, is_developer == 0)
 
 	def test_get_apps(self):
 		frappe.set_user(self.team.user)

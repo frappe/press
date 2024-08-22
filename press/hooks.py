@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
 
+
 from . import __version__ as app_version
 
 app_name = "press"
@@ -67,11 +68,14 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
-	{"from_route": "/dashboard-beta/<path:app_path>", "to_route": "dashboard-beta"},
 ]
 
 website_redirects = [
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
+	{
+		"source": "/suspended-site",
+		"target": "/api/method/press.api.handle_suspended_site_redirection",
+	},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
 ]
@@ -170,9 +174,13 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+	"weekly_long": [
+		"press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"
+	],
 	"daily": [
-		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
+		"press.press.doctype.log_counter.log_counter.record_counts",
+		"press.press.doctype.incident.incident.notify_ignored_servers",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -186,12 +194,17 @@ scheduler_events = {
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
+		"press.press.doctype.site_domain.site_domain.update_dns_type",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
+		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 	],
 	"hourly_long": [
+		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
@@ -201,11 +214,14 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
+		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 	],
 	"all": [
 		"press.auth.flush",
+		"press.press.doctype.site.sync.sync_setup_wizard_status",
+		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 	],
 	"cron": {
 		"1-59/2 * * * *": [
@@ -223,6 +239,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
@@ -236,7 +253,6 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
-			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
@@ -245,12 +261,14 @@ scheduler_events = {
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
+			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
 		],
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
+			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
+			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [
@@ -273,6 +291,7 @@ scheduler_events = {
 		],
 		"0 6 * * *": [
 			"press.press.audit.suspend_sites_with_disabled_team",
+			"press.press.doctype.tls_certificate.tls_certificate.retrigger_failed_wildcard_tls_callbacks",
 		],
 	},
 }
@@ -289,6 +308,7 @@ fixtures = [
 	"Site Config Key Blacklist",
 	"Press Method Permission",
 	"Bench Dependency",
+	"Server Storage Plan",
 ]
 # Testing
 # -------
@@ -314,6 +334,7 @@ on_session_creation = "press.overrides.on_session_creation"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
+after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 

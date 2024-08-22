@@ -3,7 +3,6 @@
 
 import frappe
 
-
 from press.api.server import prometheus_query
 
 

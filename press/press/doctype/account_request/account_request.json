@@ -8,37 +8,37 @@
   "request_key",
   "team",
   "email",
-  "password",
   "oauth_signup",
+  "send_email",
+  "otp",
   "column_break_4",
   "role",
   "invited_by",
   "ip_address",
   "invited_by_parent_team",
+  "press_roles",
+  "saas_sign_up_section",
+  "saas",
+  "saas_app",
+  "product_trial",
+  "column_break_eaxp",
+  "first_name",
+  "last_name",
+  "country",
   "section_break_8",
   "erpnext",
   "subdomain",
   "plan",
-  "first_name",
-  "last_name",
   "phone_number",
+  "company",
   "designation",
   "column_break_14",
-  "company",
   "no_of_users",
   "no_of_employees",
   "industry",
-  "country",
   "state",
   "is_us_eu",
   "agreed_to_partner_consent",
-  "saas_sign_up_section",
-  "send_email",
-  "saas",
-  "saas_product",
-  "saas_app",
-  "saas_signup_values",
-  "new_signup_flow",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -198,12 +198,6 @@
    "label": "Saas Sign Up"
   },
   {
-   "fieldname": "password",
-   "fieldtype": "Password",
-   "label": "Password",
-   "read_only": 1
-  },
-  {
    "collapsible": 1,
    "fieldname": "section_break_31",
    "fieldtype": "Section Break"
@@ -244,32 +238,36 @@
    "label": "Oauth Signup"
   },
   {
-   "fieldname": "saas_product",
-   "fieldtype": "Link",
-   "label": "SaaS Product",
-   "options": "SaaS Product"
-  },
-  {
-   "fieldname": "saas_signup_values",
-   "fieldtype": "Small Text",
-   "label": "SaaS Signup Values"
-  },
-  {
    "fieldname": "saas_app",
    "fieldtype": "Link",
    "label": "Saas App",
    "options": "Marketplace App"
   },
   {
-   "default": "0",
-   "fieldname": "new_signup_flow",
-   "fieldtype": "Check",
-   "label": "New Signup Flow"
+   "fieldname": "product_trial",
+   "fieldtype": "Link",
+   "label": "Product Trial (New)",
+   "options": "Product Trial"
+  },
+  {
+   "fieldname": "press_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Press Roles",
+   "options": "Account Request Press Role"
+  },
+  {
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP"
+  },
+  {
+   "fieldname": "column_break_eaxp",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 23:05:20.520049",
+ "modified": "2024-08-12 16:39:05.101313",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

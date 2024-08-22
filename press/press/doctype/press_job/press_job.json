@@ -65,8 +65,9 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "duration",
-   "fieldtype": "Time",
+   "fieldtype": "Duration",
    "in_list_view": 1,
    "label": "Duration",
    "read_only": 1
@@ -114,7 +115,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2022-11-01 18:37:24.481326",
+ "modified": "2024-08-05 16:56:38.861601",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

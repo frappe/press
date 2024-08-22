@@ -3,11 +3,13 @@
 # For license information, please see license.txt
 
 
+import json
+import re
+
 import frappe
 from frappe.model.document import Document
-import re
-import json
 from github import Github
+
 from press.api.github import get_access_token
 
 
@@ -31,7 +33,7 @@ class AppReleaseDifference(Document):
 		source_release: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["github_diff_url"]
+	dashboard_fields = ["github_diff_url", "source_hash", "destination_hash"]
 
 	def validate(self):
 		if self.source_release == self.destination_release:

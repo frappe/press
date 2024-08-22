@@ -3,41 +3,52 @@
 # For license information, please see license.txt
 
 import re
-import jwt
-import frappe
-import requests
-
-from pathlib import Path
 from base64 import b64decode
 from datetime import datetime, timedelta
-from press.utils import get_current_team, log_error
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+import frappe
+import jwt
+import requests
+
+from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
 	from typing import Optional
 
+	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
+
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def hook(*args, **kwargs):
-	try:
-		user = frappe.session.user
-		# set user to Administrator, to not have to do ignore_permissions everywhere
-		frappe.set_user("Administrator")
+	user = frappe.session.user
+	# set user to Administrator, to not have to do ignore_permissions everywhere
+	frappe.set_user("Administrator")
+	headers = frappe.request.headers
+	doc: "GitHubWebhookLog" = frappe.get_doc(
+		{
+			"doctype": "GitHub Webhook Log",
+			"name": headers.get("X-Github-Delivery"),
+			"event": headers.get("X-Github-Event"),
+			"signature": headers.get("X-Hub-Signature").split("=")[1],
+			"payload": frappe.request.get_data().decode(),
+		}
+	)
 
-		headers = frappe.request.headers
-		doc = frappe.get_doc(
-			{
-				"doctype": "GitHub Webhook Log",
-				"name": headers.get("X-Github-Delivery"),
-				"event": headers.get("X-Github-Event"),
-				"signature": headers.get("X-Hub-Signature").split("=")[1],
-				"payload": frappe.request.get_data().decode(),
-			}
-		)
+	try:
 		doc.insert()
+		frappe.db.commit()
 	except Exception:
 		frappe.set_user(user)
-		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
+		log_error("GitHub Webhook Insert Error", args=args, kwargs=kwargs)
+		raise Exception
+
+	try:
+		doc.handle_events()
+	except Exception:
+		frappe.set_user(user)
+		log_error("GitHub Webhook Error", doc=doc)
 		raise Exception
 
 
@@ -89,13 +100,10 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	versions = frappe.get_all("Frappe Version", filters={"public": True})
-
 	options = {
 		"authorized": bool(token),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
-		"versions": versions,
 	}
 	return options
 
@@ -196,10 +204,15 @@ def repository(owner, name, installation=None):
 @frappe.whitelist()
 def app(owner, repository, branch, installation=None):
 	headers = get_auth_headers(installation)
-	branch_info = requests.get(
+	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
 		headers=headers,
-	).json()
+	)
+
+	if not response.ok:
+		frappe.throw(f"Could not fetch branch ({branch}) info for repo {owner}/{repository}")
+
+	branch_info = response.json()
 	sha = branch_info["commit"]["commit"]["tree"]["sha"]
 	contents = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/git/trees/{sha}",

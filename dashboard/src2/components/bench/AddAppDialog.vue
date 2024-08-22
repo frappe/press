@@ -125,7 +125,11 @@
 			</div>
 		</template>
 	</Dialog>
-	<NewAppDialog v-if="showNewAppDialog" @app-added="addAppFromGithub" />
+	<NewAppDialog
+		v-if="showNewAppDialog"
+		@app-added="addAppFromGithub"
+		:group="group"
+	/>
 </template>
 
 <script>
@@ -146,7 +150,12 @@ import NewAppDialog from '../NewAppDialog.vue';
 
 export default {
 	name: 'AddAppDialog',
-	props: ['groupName', 'groupVersion'],
+	props: {
+		group: {
+			type: Object,
+			required: true
+		}
+	},
 	components: {
 		ListView,
 		ListHeader,
@@ -157,7 +166,7 @@ export default {
 		TextInput,
 		NewAppDialog
 	},
-	emits: ['appAdd', 'new-app'],
+	emits: ['appAdd', 'newApp'],
 	data() {
 		return {
 			searchQuery: '',
@@ -181,7 +190,7 @@ export default {
 			return {
 				url: 'press.api.bench.all_apps',
 				params: {
-					name: this.groupName
+					name: this.group.name
 				},
 				transform(data) {
 					return data.map(app => {
@@ -191,6 +200,7 @@ export default {
 					});
 				},
 				auto: true,
+				cache: 'benchInstallableApps',
 				initialData: []
 			};
 		}
@@ -314,9 +324,9 @@ export default {
 		}
 	},
 	methods: {
-		addAppFromGithub(app) {
-			app.group = this.groupName;
-			this.$emit('new-app', app);
+		addAppFromGithub(app, isUpdate) {
+			app.group = this.group.name;
+			this.$emit('newApp', app, isUpdate);
 		},
 		addApp(row) {
 			if (!this.selectedAppSources.includes(row))
@@ -326,7 +336,7 @@ export default {
 
 			this.$resources.addApp
 				.submit({
-					name: this.groupName,
+					name: this.group.name,
 					source: app.source.name,
 					app: app.name
 				})

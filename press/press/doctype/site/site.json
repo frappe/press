@@ -11,13 +11,13 @@
   "status",
   "status_before_update",
   "server",
-  "skip_auto_updates",
   "archive_failed",
   "column_break_3",
-  "admin_password",
   "bench",
   "group",
   "cluster",
+  "admin_password",
+  "additional_system_user_created",
   "config_tab",
   "hide_config",
   "host_name",
@@ -57,7 +57,8 @@
   "notifications_section",
   "notify_email",
   "auto_updates_section",
-  "auto_updates_scheduled",
+  "skip_auto_updates",
+  "only_update_at_specified_time",
   "auto_update_last_triggered_on",
   "column_break_53",
   "update_trigger_frequency",
@@ -78,7 +79,10 @@
   "standby_for_product",
   "column_break_63",
   "hybrid_saas_pool",
+  "saas_communication_secret",
   "backups_section",
+  "backup_time",
+  "column_break_zgig",
   "skip_scheduled_backups",
   "tags_section",
   "tags"
@@ -259,8 +263,7 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain",
-   "set_only_once": 1
+   "options": "Root Domain"
   },
   {
    "fieldname": "_site_usages",
@@ -430,12 +433,6 @@
    "label": "Update Trigger Time"
   },
   {
-   "default": "0",
-   "fieldname": "auto_updates_scheduled",
-   "fieldtype": "Check",
-   "label": "Auto Updates Scheduled"
-  },
-  {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
   },
@@ -578,7 +575,34 @@
    "fieldname": "standby_for_product",
    "fieldtype": "Link",
    "label": "Standby for Product",
-   "options": "SaaS Product"
+   "options": "Product Trial"
+  },
+  {
+   "fieldname": "backup_time",
+   "fieldtype": "Time",
+   "label": "Backup Time"
+  },
+  {
+   "fieldname": "column_break_zgig",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "only_update_at_specified_time",
+   "fieldtype": "Check",
+   "label": "Only update at specified time"
+  },
+  {
+   "default": "0",
+   "fieldname": "additional_system_user_created",
+   "fieldtype": "Check",
+   "label": "Additional System User Created"
+  },
+  {
+   "description": "This key will be used to validate requests from saas site for billing & configuration purpose",
+   "fieldname": "saas_communication_secret",
+   "fieldtype": "Data",
+   "label": "SaaS Communication Secret"
   }
  ],
  "links": [
@@ -643,7 +667,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-02-05 23:05:21.073454",
+ "modified": "2024-08-20 10:01:59.838341",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -672,6 +696,15 @@
    "read": 1,
    "role": "Press Member",
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Support Agent",
+   "share": 1
   }
  ],
  "sort_field": "creation",

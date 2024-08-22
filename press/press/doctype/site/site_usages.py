@@ -1,7 +1,10 @@
-import frappe
 import functools
-from press.press.doctype.site_plan.site_plan import get_plan_config
+
+import rq
+import frappe
+
 from press.api.analytics import get_current_cpu_usage
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import log_error
 
 
@@ -39,19 +42,22 @@ def update_cpu_usages():
 	)
 
 	for site in sites:
-		cpu_usage = get_cpu_counter(site.name)
-		cpu_limit = get_cpu_limits(site.plan)
-		latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
+		try:
+			cpu_usage = get_cpu_counter(site.name)
+			cpu_limit = get_cpu_limits(site.plan)
+			latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
 
-		if site.current_cpu_usage != latest_cpu_usage:
-			try:
+			if site.current_cpu_usage != latest_cpu_usage:
 				site_doc = frappe.get_doc("Site", site.name)
 				site_doc.current_cpu_usage = latest_cpu_usage
 				site_doc.save()
 				frappe.db.commit()
-			except Exception():
-				log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
-				frappe.db.rollback()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
+			frappe.db.rollback()
 
 
 def update_disk_usages():
@@ -112,11 +118,13 @@ def update_disk_usages():
 
 	for usage in latest_disk_usages:
 		try:
-			site = frappe.get_doc("Site", usage.site)
+			site = frappe.get_doc("Site", usage.site, for_update=True)
 			site.current_database_usage = usage.latest_database_usage
 			site.current_disk_usage = usage.latest_disk_usage
 			site.save()
 			frappe.db.commit()
+		except frappe.DoesNotExistError:
+			frappe.db.rollback()
 		except Exception:
 			log_error("Site Disk Usage Update Error", usage=usage)
 			frappe.db.rollback()

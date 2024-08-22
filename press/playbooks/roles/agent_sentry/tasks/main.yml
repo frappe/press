@@ -1,0 +1,7 @@
+---
+- name: Setup Agent Sentry
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent setup sentry --sentry-dsn {{ agent_sentry_dsn }}'
+  args:
+    chdir: /home/frappe/agent

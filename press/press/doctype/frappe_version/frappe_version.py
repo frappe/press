@@ -13,7 +13,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "NODE_VERSION", "version": "18.16.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.11"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
-	{"dependency": "BENCH_VERSION", "version": "5.22.1"},
+	{"dependency": "BENCH_VERSION", "version": "5.22.6"},
 ]
 
 
@@ -25,6 +25,7 @@ class FrappeVersion(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.frappe_version_dependency.frappe_version_dependency import (
 			FrappeVersionDependency,
 		)

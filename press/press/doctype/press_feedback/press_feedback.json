@@ -7,7 +7,10 @@
  "field_order": [
   "team",
   "message",
-  "route"
+  "route",
+  "column_break_vcbh",
+  "rating",
+  "note"
  ],
  "fields": [
   {
@@ -20,7 +23,7 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Message",
    "reqd": 1
@@ -29,11 +32,25 @@
    "fieldname": "route",
    "fieldtype": "Data",
    "label": "Route"
+  },
+  {
+   "fieldname": "column_break_vcbh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Rating",
+   "label": "Rating"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-16 11:00:09.510599",
+ "modified": "2024-07-02 20:07:21.508212",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Feedback",
@@ -63,6 +80,7 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }

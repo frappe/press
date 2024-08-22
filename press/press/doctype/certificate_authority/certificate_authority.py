@@ -11,10 +11,10 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-import OpenSSL
-
 import frappe
+import OpenSSL
 from frappe.model.document import Document
+
 from press.utils import developer_mode_only
 
 

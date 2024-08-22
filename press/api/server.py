@@ -1,19 +1,20 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import datetime
+from datetime import timezone as tz
+
 import frappe
 import requests
+from frappe.utils import convert_utc_to_timezone, flt
+from frappe.utils.password import get_decrypted_password
+
+from press.api.bench import all as all_benches
+from press.api.site import protected
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.site_plan.plan import Plan
-
-from press.utils import get_current_team
-from press.api.site import protected
-from press.api.bench import all as all_benches
-from frappe.utils import convert_utc_to_timezone
-from frappe.utils.password import get_decrypted_password
-from datetime import datetime, timezone as tz
-from frappe.utils import flt
 from press.press.doctype.team.team import get_child_team_members
+from press.utils import get_current_team
 
 
 def poly_get_doc(doctypes, name):
@@ -173,7 +174,9 @@ def new(server):
 	)
 
 	proxy_server = frappe.get_all(
-		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
+		"Proxy Server",
+		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		limit=1,
 	)[0]
 
 	# to be used by app server

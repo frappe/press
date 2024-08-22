@@ -4,6 +4,8 @@
 
 
 import frappe
+
+from press.press.doctype.deploy_candidate.deploy_candidate import toggle_builds
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
@@ -93,3 +95,8 @@ class RegistryServer(BaseServer):
 			self.status = "Broken"
 			log_error("Registry Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def _prune_docker_system(self):
+		toggle_builds(False)
+		super()._prune_docker_system()
+		toggle_builds(True)

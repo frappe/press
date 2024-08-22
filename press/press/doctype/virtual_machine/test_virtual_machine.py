@@ -2,15 +2,15 @@
 # See license.txt
 
 
+from unittest.mock import MagicMock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from unittest.mock import MagicMock, patch
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-
-from press.press.doctype.cluster.cluster import Cluster
 
 
 @patch.object(VirtualMachine, "client", new=MagicMock())

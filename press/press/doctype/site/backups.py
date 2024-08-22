@@ -6,7 +6,9 @@
 import functools
 from collections import deque
 from datetime import datetime, timedelta
+from functools import wraps
 from itertools import groupby
+from time import time
 from typing import Dict, List
 
 import frappe
@@ -18,9 +20,6 @@ from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
-
-from functools import wraps
-from time import time
 
 
 def timing(f):
@@ -277,6 +276,22 @@ class ScheduledBackupJob:
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
+
+
+def schedule_for_sites_with_backup_time():
+	"""
+	Schedule backups for sites with backup time.
+
+	Run this hourly only
+	"""
+	sites = Site.get_sites_with_backup_time()
+	now = frappe.utils.now_datetime()
+	for site in sites:
+		if now.hour != site.backup_time.total_seconds() // 3600:
+			continue
+		site_doc = frappe.get_doc("Site", site.name)
+		site_doc.backup(with_files=True, offsite=True)
+		frappe.db.commit()
 
 
 def schedule():

@@ -51,23 +51,27 @@
   {
    "fieldname": "total_amount",
    "fieldtype": "Currency",
-   "label": "Total Amount"
+   "label": "Total Amount",
+   "options": "currency"
   },
   {
    "fieldname": "tax",
    "fieldtype": "Currency",
-   "label": "Tax"
+   "label": "Tax",
+   "options": "currency"
   },
   {
    "fieldname": "gateway_fee",
    "fieldtype": "Currency",
-   "label": "Gateway Fee"
+   "label": "Gateway Fee",
+   "options": "currency"
   },
   {
    "fieldname": "net_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Net Amount"
+   "label": "Net Amount",
+   "options": "currency"
   },
   {
    "fieldname": "column_break_5",
@@ -76,7 +80,8 @@
   {
    "fieldname": "commission",
    "fieldtype": "Currency",
-   "label": "Commission"
+   "label": "Commission",
+   "options": "currency"
   },
   {
    "fieldname": "section_break_10",
@@ -91,7 +96,7 @@
    "fieldname": "rate",
    "fieldtype": "Currency",
    "label": "Rate",
-   "reqd": 1
+   "options": "currency"
   },
   {
    "fieldname": "currency",
@@ -119,14 +124,13 @@
    "fieldname": "invoice_item",
    "fieldtype": "Link",
    "label": "Invoice Item",
-   "options": "Invoice Item",
-   "reqd": 1
+   "options": "Invoice Item"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-10-31 00:19:23.739873",
+ "modified": "2024-07-05 10:28:46.559419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order Item",

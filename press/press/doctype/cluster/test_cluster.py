@@ -3,19 +3,17 @@
 # See license.txt
 
 
+import unittest
+from unittest.mock import MagicMock, patch
+
 import boto3
 import frappe
-import unittest
-from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
-
-from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
+from moto import mock_aws
 
 from press.press.doctype.cluster.cluster import Cluster
-
-from unittest.mock import MagicMock, patch
-from moto import mock_ec2, mock_ssm, mock_iam
-
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
@@ -58,8 +56,7 @@ def create_test_cluster(
 
 
 class TestCluster(unittest.TestCase):
-	@mock_ec2
-	@mock_ssm
+	@mock_aws
 	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
@@ -111,10 +108,8 @@ class TestCluster(unittest.TestCase):
 )
 @patch("press.press.doctype.cluster.cluster.frappe.db.commit", new=MagicMock())
 class TestPrivateCluster(TestCluster):
-	@mock_ec2
-	@mock_ssm
+	@mock_aws
 	def test_add_images_copies_VMIs_from_other_region(self):
-
 		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
@@ -133,8 +128,7 @@ class TestPrivateCluster(TestCluster):
 		self._setup_fake_vmis(["m", "f"], cluster=cluster)  # n is missing
 		self.assertRaises(Exception, cluster.add_images)
 
-	@mock_ec2
-	@mock_ssm
+	@mock_aws
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
 		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
@@ -143,9 +137,7 @@ class TestPrivateCluster(TestCluster):
 		self.assertNotEqual(vmi_count_before, 0)
 		self.assertEqual(vmi_count_after, vmi_count_before)
 
-	@mock_ec2
-	@mock_ssm
-	@mock_iam
+	@mock_aws
 	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
 		self,
 	):
@@ -193,8 +185,7 @@ class TestPrivateCluster(TestCluster):
 )
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 class TestPublicCluster(TestCluster):
-	@mock_ec2
-	@mock_ssm
+	@mock_aws
 	@patch.object(ProxyServer, "validate", new=MagicMock())
 	def test_create_servers_without_vmis_throws_err(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
@@ -212,8 +203,7 @@ class TestPublicCluster(TestCluster):
 		self.assertEqual(database_server_count_after, database_server_count_before)
 		self.assertEqual(proxy_server_count_after, proxy_server_count_before)
 
-	@mock_ec2
-	@mock_ssm
+	@mock_aws
 	def test_add_images_in_public_cluster_only_adds_3_vms(self):
 		self._setup_fake_vmis(["m", "f", "n", "p", "e"])
 		vm_count_before = frappe.db.count("Virtual Machine Image")
@@ -223,10 +213,9 @@ class TestPublicCluster(TestCluster):
 		self.assertNotEqual(vm_count_before, 0)
 		self.assertEqual(vm_count_after, vm_count_before + 3)
 
-	@mock_ec2
+	@mock_aws
 	@patch.object(ProxyServer, "validate", new=MagicMock())
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
-
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 		self._setup_fake_vmis(["m", "f", "n"])
@@ -246,7 +235,7 @@ class TestPublicCluster(TestCluster):
 		self.assertEqual(database_server_count_after, database_server_count_before + 1)
 		self.assertEqual(proxy_server_count_after, proxy_server_count_before + 1)
 
-	@mock_iam
+	@mock_aws
 	@patch.object(Cluster, "after_insert", new=MagicMock())  # don't create vms/servers
 	def test_creation_of_public_cluster_uses_keys_from_press_settings(self):
 		from press.press.doctype.press_settings.test_press_settings import (

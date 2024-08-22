@@ -8,6 +8,12 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Ping Ansible'), 'ping_ansible', true],
 			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
+			[
+				__('Update Agent Ansible'),
+				'update_agent_ansible',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[

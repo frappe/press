@@ -2,7 +2,6 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
-
 from itertools import groupby
 
 import frappe

@@ -374,7 +374,7 @@ export default {
 
 		switchToNewPlan() {
 			if (!this.$account.hasBillingInfo) {
-				window.location = '/dashboard/billing';
+				window.location = '/dashboard-old/billing';
 			}
 			if (this.currentAppPlan !== this.newAppPlan) {
 				this.$resources.changePlan.submit({

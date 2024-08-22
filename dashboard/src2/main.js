@@ -10,6 +10,10 @@ import router from './router';
 import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
+import * as Sentry from '@sentry/vue';
+import { session } from './data/session.js';
+import { toast } from 'vue-sonner';
+import './vendor/posthog.js';
 
 let request = options => {
 	let _options = options || {};
@@ -41,7 +45,75 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
-	fetchPlans();
+	if (session.isLoggedIn) {
+		fetchPlans();
+		session.roles.fetch();
+	}
+
+	if (window.press_dashboard_sentry_dsn.includes('https://')) {
+		Sentry.init({
+			app,
+			dsn: window.press_dashboard_sentry_dsn,
+			integrations: [
+				Sentry.browserTracingIntegration({ router }),
+				Sentry.replayIntegration({
+					maskAllText: false,
+					blockAllMedia: false
+				})
+			],
+			replaysSessionSampleRate: 0.1,
+			replaysOnErrorSampleRate: 1.0,
+			beforeSend(event, hint) {
+				const ignoreErrors = [
+					/api\/method\/press.api.client/,
+					/dynamically imported module/,
+					/NetworkError when attempting to fetch resource/,
+					/Failed to fetch/,
+					/Load failed/,
+					/frappe is not defined/,
+					/Importing a module script failed./
+				];
+				const ignoreErrorTypes = [
+					'BuildValidationError',
+					'ValidationError',
+					'PermissionError',
+					'SecurityException',
+					'AuthenticationError'
+				];
+				const error = hint.originalException;
+
+				if (
+					error?.name === 'DashboardError' ||
+					ignoreErrorTypes.includes(error?.exc_type) ||
+					(error?.message && ignoreErrors.some(re => re.test(error.message)))
+				) {
+					return null;
+				}
+
+				return event;
+			},
+			logErrors: true
+		});
+	}
+
+	if (
+		window.press_frontend_posthog_project_id &&
+		window.press_frontend_posthog_host &&
+		window.posthog
+	) {
+		window.posthog.init(window.press_frontend_posthog_project_id, {
+			api_host: window.press_frontend_posthog_host,
+			person_profiles: 'identified_only',
+			autocapture: false,
+			disable_session_recording: true,
+			session_recording: {
+				maskAllInputs: true
+			}
+		});
+	} else {
+		// unset posthog if not configured
+		window.posthog = undefined;
+	}
 
 	importGlobals().then(() => {
 		app.mount('#app');

@@ -1,9 +1,11 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from typing import List
+
+import frappe
+from frappe import cint
+
 from press.press.doctype.site_plan.plan import Plan
 
 
@@ -18,9 +20,24 @@ class MarketplaceAppPlan(Plan):
 
 		return plans
 
+	def after_insert(self):
+		self.update_marketplace_app_subscription_type()
+
+	def on_update(self):
+		self.update_marketplace_app_subscription_type()
+
+	def update_marketplace_app_subscription_type(self):
+		if cint(self.price_inr) > 0 or cint(self.price_usd) > 0:
+			frappe.db.set_value(
+				"Marketplace App",
+				self.app,
+				"subscription_type",
+				"Paid",
+			)
+
 	@staticmethod
 	def create_marketplace_app_subscription(
-		site_name, app_name, plan_name, while_site_creation=False
+		site_name, app_name, plan_name, team_name, while_site_creation=False
 	):
 		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
 		subscription = frappe.db.exists(
@@ -55,7 +72,7 @@ class MarketplaceAppPlan(Plan):
 				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"site": site_name,
-				"team": frappe.local.team().name,
+				"team": team_name,
 			}
 		).insert(ignore_permissions=True)
 

@@ -85,7 +85,7 @@ import { confirmDialog, icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
-import ClickToCopyField from '../../../src/components/ClickToCopyField.vue';
+import ClickToCopyField from '../ClickToCopyField.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);
@@ -105,6 +105,13 @@ const addSSHKey = createResource({
 	url: 'press.api.client.insert',
 	onSuccess() {
 		toast.success('SSH Key added successfully');
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'SSH Key could not be added'
+		);
 	}
 });
 
@@ -112,6 +119,13 @@ const makeKeyDefault = createResource({
 	url: 'press.api.account.mark_key_as_default',
 	onSuccess() {
 		toast.success('SSH Key updated successfully');
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'SSH Key could not be marked as default'
+		);
 	}
 });
 
@@ -119,16 +133,24 @@ const deleteSSHKey = createResource({
 	url: 'press.api.client.delete',
 	onSuccess() {
 		toast.success('SSH Key deleted successfully');
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'SSH Key could not be deleted'
+		);
 	}
 });
 
 const sshKeyListOptions = computed(() => ({
-	doctype: 'User SSH Key',
-	filters: {
-		user: $team.doc.user_info.name
+	resource() {
+		return {
+			url: 'press.api.account.get_user_ssh_keys',
+			initialData: [],
+			auto: true
+		};
 	},
-	fields: ['name', 'ssh_fingerprint', 'creation', 'is_default'],
-	orderBy: 'creation desc',
 	columns: [
 		{
 			label: 'SSH Fingerprint',

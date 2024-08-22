@@ -6,6 +6,13 @@
   args:
     chdir: /home/frappe/agent/repo
 
+- name: Checkout Agent Repository Branch
+  become: yes
+  become_user: frappe
+  command: 'git checkout {{ agent_repository_branch }}'
+  args:
+    chdir: /home/frappe/agent/repo
+
 - name: Update Agent
   become: yes
   become_user: frappe

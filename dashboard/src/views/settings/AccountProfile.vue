@@ -237,17 +237,6 @@ export default {
 				this.showEnableAccountDialog = false;
 			}
 		},
-		isDeveloperAccountAllowed() {
-			return {
-				url: 'press.api.marketplace.developer_toggle_allowed',
-				auto: true,
-				onSuccess(data) {
-					if (data) {
-						this.showBecomePublisherButton = true;
-					}
-				}
-			};
-		},
 		becomePublisher() {
 			return {
 				url: 'press.api.marketplace.become_publisher',

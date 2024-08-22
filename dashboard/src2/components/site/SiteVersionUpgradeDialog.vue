@@ -1,0 +1,227 @@
+<template>
+	<Dialog
+		v-model="show"
+		@close="resetValues"
+		:options="{ title: 'Upgrade Site Version' }"
+	>
+		<template #body-content>
+			<div class="space-y-4">
+				<p v-if="$site.doc?.group_public && nextVersion" class="text-base">
+					The site <b>{{ $site.doc.host_name }}</b> will be upgraded to
+					<b>{{ nextVersion }}</b>
+				</p>
+				<FormControl
+					v-else-if="privateReleaseGroups.length > 0 && nextVersion"
+					variant="outline"
+					:label="`Please select a ${nextVersion} bench to upgrade your site from ${$site.doc.version}`"
+					class="w-full"
+					type="select"
+					:options="privateReleaseGroups"
+					v-model="privateReleaseGroup"
+					@change="
+						value =>
+							$resources.validateGroupforUpgrade.submit({
+								name: site,
+								group_name: value.target.value
+							})
+					"
+				/>
+				<DateTimeControl
+					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
+					v-model="targetDateTime"
+					label="Schedule Time"
+				/>
+				<FormControl
+					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
+					label="Skip failing patches if any"
+					type="checkbox"
+					v-model="skipFailingPatches"
+				/>
+				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
+					{{ message }}
+				</p>
+				<ErrorMessage :message="errorMessage" />
+			</div>
+		</template>
+		<template
+			v-if="$site.doc?.group_public || privateReleaseGroups.length"
+			#actions
+		>
+			<Button
+				v-if="!$site.doc.group_public"
+				class="mb-2 w-full"
+				:disabled="benchHasCommonServer || !privateReleaseGroup || !nextVersion"
+				label="Add Server to Bench"
+				@click="$resources.addServerToReleaseGroup.submit()"
+				:loading="
+					$resources.addServerToReleaseGroup.loading ||
+					$resources.validateGroupforUpgrade.loading
+				"
+			/>
+			<Button
+				class="w-full"
+				variant="solid"
+				label="Upgrade"
+				:disabled="
+					((!benchHasCommonServer || !privateReleaseGroup) &&
+						!$site.doc.group_public) ||
+					!nextVersion
+				"
+				:loading="
+					$resources.versionUpgrade.loading ||
+					$resources.validateGroupforUpgrade.loading
+				"
+				@click="$resources.versionUpgrade.submit()"
+			/>
+		</template>
+	</Dialog>
+</template>
+
+<script>
+import { getCachedDocumentResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
+import DateTimeControl from '../DateTimeControl.vue';
+
+export default {
+	name: 'SiteVersionUpgradeDialog',
+	props: ['site'],
+	components: { DateTimeControl },
+	data() {
+		return {
+			show: true,
+			targetDateTime: null,
+			privateReleaseGroup: '',
+			skipFailingPatches: false,
+			benchHasCommonServer: false
+		};
+	},
+	computed: {
+		nextVersion() {
+			const nextNumber = Number(this.$site.doc?.version.split(' ')[1]);
+			if (
+				isNaN(nextNumber) ||
+				this.$site.doc?.version === this.$site.doc?.latest_frappe_version
+			)
+				return null;
+
+			return `Version ${nextNumber + 1}`;
+		},
+		privateReleaseGroups() {
+			return this.$resources.getPrivateGroups.data;
+		},
+		message() {
+			if (this.$site.doc?.version === this.$site.doc?.latest_frappe_version) {
+				return 'This site is already on the latest version.';
+			} else if (this.$site.doc?.version === 'Nightly') {
+				return "This site is on a nightly version and doesn't need to be upgraded.";
+			} else if (
+				!this.$site.doc?.group_public &&
+				this.privateReleaseGroups.length === 0
+			)
+				return `Your team doesn't own any private benches available to upgrade this site to ${this.nextVersion}.`;
+			else if (!this.privateReleaseGroup) {
+				return '';
+			} else if (!this.$site.doc?.group_public && !this.benchHasCommonServer)
+				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
+			else if (!this.$site.doc?.group_public && this.benchHasCommonServer)
+				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
+			else return '';
+		},
+		datetimeInIST() {
+			if (!this.targetDateTime) return null;
+			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
+				'YYYY-MM-DDTHH:mm'
+			);
+
+			return datetimeInIST;
+		},
+		errorMessage() {
+			return (
+				this.$resources.versionUpgrade.error ||
+				this.$resources.validateGroupforUpgrade.error ||
+				this.$resources.addServerToReleaseGroup.error ||
+				this.$resources.getPrivateGroups.error
+			);
+		},
+		$site() {
+			return getCachedDocumentResource('Site', this.site);
+		}
+	},
+	resources: {
+		versionUpgrade() {
+			return {
+				url: 'press.api.site.version_upgrade',
+				params: {
+					name: this.site,
+					destination_group: this.privateReleaseGroup,
+					skip_failing_patches: this.skipFailingPatches,
+					scheduled_datetime: this.datetimeInIST
+				},
+				onSuccess() {
+					toast.success("Site's version upgrade has been scheduled.");
+					this.show = false;
+				}
+			};
+		},
+		getPrivateGroups() {
+			return {
+				url: 'press.api.site.get_private_groups_for_upgrade',
+				params: {
+					name: this.site,
+					version: this.$site.doc?.version
+				},
+				auto:
+					this.$site.doc?.version &&
+					!this.$site.doc?.group_public &&
+					this.$site.doc?.version !== 'Nightly',
+				transform(data) {
+					return data.map(group => ({
+						label: group.title || group.name,
+						value: group.name
+					}));
+				},
+				initialData: []
+			};
+		},
+		addServerToReleaseGroup() {
+			return {
+				url: 'press.api.site.add_server_to_release_group',
+				params: {
+					name: this.site,
+					group_name: this.privateReleaseGroup
+				},
+				onSuccess(data) {
+					toast.success('Server Added to the Bench', {
+						description: `Added a server to ${this.privateReleaseGroup} bench. Please wait for the bench to complete the deploy.`
+					});
+					this.$router.push({
+						name: 'Bench Job',
+						params: {
+							name: this.privateReleaseGroup,
+							id: data
+						}
+					});
+					this.resetValues();
+					this.show = false;
+				}
+			};
+		},
+		validateGroupforUpgrade() {
+			return {
+				url: 'press.api.site.validate_group_for_upgrade',
+				onSuccess(data) {
+					this.benchHasCommonServer = data;
+				}
+			};
+		}
+	},
+	methods: {
+		resetValues() {
+			this.targetDateTime = null;
+			this.privateReleaseGroup = '';
+			this.benchHasCommonServer = false;
+			this.$resources.getPrivateGroups.reset();
+		}
+	}
+};
+</script>

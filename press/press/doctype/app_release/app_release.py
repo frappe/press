@@ -47,6 +47,8 @@ class AppRelease(Document):
 		cloned: DF.Check
 		code_server_url: DF.Text | None
 		hash: DF.Data
+		invalid_release: DF.Check
+		invalidation_reason: DF.Code | None
 		message: DF.Code | None
 		output: DF.Code | None
 		public: DF.Check
@@ -57,6 +59,27 @@ class AppRelease(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		app_release = frappe.qb.DocType("App Release")
+		release_approve_request = frappe.qb.DocType("App Release Approval Request")
+
+		# Subquery to get the latest screening_status for each app_release
+		latest_approval_request = (
+			frappe.qb.from_(release_approve_request)
+			.select(release_approve_request.screening_status)
+			.where(release_approve_request.app_release == app_release.name)
+			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
+			.limit(1)
+		)
+
+		# Main query that selects app_release fields and the latest screening_status
+		query = query.select(
+			app_release.name, latest_approval_request.as_("screening_status")
+		)
+
+		return query
 
 	def validate(self):
 		if not self.clone_directory:
@@ -86,15 +109,33 @@ class AppRelease(Document):
 	def clone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
-	def _clone(self):
-		if self.cloned:
+	def _clone(self, force: bool = False):
+		if self.cloned and not force:
 			return
 
-		self._set_prepared_clone_directory()
+		self._set_prepared_clone_directory(self.cloned and force)
 		self._set_code_server_url()
 		self._clone_repo()
 		self.cloned = True
+		self.validate_repo()
 		self.save(ignore_permissions=True)
+
+	def validate_repo(self):
+		if (
+			self.invalid_release
+			or not self.clone_directory
+			or not os.path.isdir(self.clone_directory)
+		):
+			return
+
+		if syntax_error := check_python_syntax(self.clone_directory):
+			self.set_invalid(syntax_error)
+		elif syntax_error := check_pyproject_syntax(self.clone_directory):
+			self.set_invalid(syntax_error)
+
+	def set_invalid(self, reason: str):
+		self.invalid_release = True
+		self.invalidation_reason = reason
 
 	def run(self, command):
 		try:
@@ -105,8 +146,7 @@ class AppRelease(Document):
 				"App Release Command Exception",
 				command=command,
 				output=e.output.decode(),
-				reference_doctype="App Release",
-				reference_name=self.name,
+				doc=self,
 			)
 			raise e
 
@@ -116,8 +156,13 @@ class AppRelease(Document):
 			clone_directory, self.app, self.source, self.hash[:10]
 		)
 
-	def _set_prepared_clone_directory(self):
-		self.clone_directory = get_prepared_clone_directory(self.app, self.source, self.hash)
+	def _set_prepared_clone_directory(self, delete_if_exists: bool = False):
+		self.clone_directory = get_prepared_clone_directory(
+			self.app,
+			self.source,
+			self.hash,
+			delete_if_exists,
+		)
 
 	def _set_code_server_url(self) -> None:
 		code_server = frappe.db.get_single_value("Press Settings", "code_server")
@@ -142,10 +187,24 @@ class AppRelease(Document):
 			self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		except subprocess.CalledProcessError as e:
 			stdout = e.stdout.decode("utf-8")
-			if "Repository not found." not in stdout:
+
+			if not (
+				"fatal: could not read Username for 'https://github.com'" in stdout
+				or "Repository not found." in stdout
+			):
 				raise e
 
-			# Do not edit without updating deploy_notifications.py
+			"""
+			Do not edit without updating deploy_notifications.py
+
+			If this is thrown, and the linked App Source has github_installation_id
+			set, manual attention might be required, because:
+			- Installation Id is set
+			- Installation Id is used to fetch token
+			- If token cannot be fetched, GitHub responds with an error
+			- If token is not received _get_repo_url throws
+			- Hence token was received, but app still cannot be cloned
+			"""
 			raise Exception("Repository could not be fetched", self.app)
 
 		self.output += self.run(f"git checkout {self.hash}")
@@ -219,7 +278,7 @@ class AppRelease(Document):
 			apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
 			candidate = group.create_deploy_candidate(apps)
 			if candidate:
-				candidate.deploy_to_production()
+				candidate.schedule_build_and_deploy()
 
 
 def cleanup_unused_releases():
@@ -248,7 +307,6 @@ def cleanup_unused_releases():
 			order_by="creation ASC",
 		)
 		for index, release in enumerate(releases):
-
 			if deleted > 2000:
 				return
 
@@ -309,7 +367,12 @@ def has_permission(doc, ptype, user):
 	return False
 
 
-def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
+def get_prepared_clone_directory(
+	app: str,
+	source: str,
+	hash: str,
+	delete_if_exists: bool = False,
+) -> str:
 	clone_directory: str = frappe.db.get_single_value("Press Settings", "clone_directory")
 	if not os.path.exists(clone_directory):
 		os.mkdir(clone_directory)
@@ -322,11 +385,17 @@ def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
 	if not os.path.exists(source_directory):
 		os.mkdir(source_directory)
 
-	clone_directory = os.path.join(clone_directory, app, source, hash[:10])
-	if not os.path.exists(clone_directory):
-		os.mkdir(clone_directory)
+	hash_directory = os.path.join(clone_directory, app, source, hash[:10])
+	exists = os.path.exists(hash_directory)
 
-	return clone_directory
+	if exists and delete_if_exists:
+		shutil.rmtree(hash_directory)
+		exists = False
+
+	if not exists:
+		os.mkdir(hash_directory)
+
+	return hash_directory
 
 
 def get_changed_files_between_hashes(
@@ -412,3 +481,48 @@ def run(command, cwd):
 	return subprocess.check_output(
 		shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd
 	).decode()
+
+
+def check_python_syntax(dirpath: str) -> str:
+	"""
+	Script `compileall` will compile all the Python files
+	in the given directory.
+
+	If there are errors then return code will be non-zero.
+
+	Flags:
+	- -q: quiet, only print errors (stdout)
+	- -o: optimize level, 0 is no optimization
+	"""
+
+	command = f"python3 -m compileall -q -o 0 {dirpath}"
+	proc = subprocess.run(
+		shlex.split(command),
+		text=True,
+		capture_output=True,
+	)
+	if proc.returncode == 0:
+		return ""
+
+	if not proc.stdout:
+		return proc.stderr
+
+	return proc.stdout
+
+
+def check_pyproject_syntax(dirpath: str) -> str:
+	# tomllib does not report errors as expected
+	# instead returns empty dict
+	from tomli import TOMLDecodeError, load
+
+	pyproject_path = os.path.join(dirpath, "pyproject.toml")
+	if not os.path.isfile(pyproject_path):
+		return ""
+
+	with open(pyproject_path, "rb") as f:
+		try:
+			load(f)
+		except TOMLDecodeError as err:
+			return "Invalid pyproject.toml at project root\n" + "\n".join(err.args)
+
+	return ""

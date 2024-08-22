@@ -331,18 +331,6 @@ const routes = [
 		props: true
 	},
 	{
-		path: '/user-review/:marketplaceApp',
-		name: 'ReviewMarketplaceApp',
-		component: () => import('@/views/marketplace/ReviewMarketplaceApp.vue'),
-		props: true
-	},
-	{
-		path: '/developer-reply/:marketplaceApp/:reviewId',
-		name: 'ReplyMarketplaceApp',
-		component: () => import('@/views/marketplace/ReplyMarketplaceApp.vue'),
-		props: true
-	},
-	{
 		path: '/marketplace',
 		name: 'Marketplace',
 		component: () => import('../views/marketplace/Marketplace.vue'),
@@ -571,7 +559,7 @@ const routes = [
 ];
 
 const router = createRouter({
-	history: createWebHistory('/dashboard/'),
+	history: createWebHistory('/dashboard-old/'),
 	routes
 });
 

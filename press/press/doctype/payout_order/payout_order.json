@@ -7,7 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "recipient",
+  "team",
   "recipient_currency",
   "period_start",
   "due_date",
@@ -25,20 +25,15 @@
   "items",
   "section_break_14",
   "net_total_inr",
+  "currency_inr",
+  "total_amount",
   "column_break_15",
   "net_total_usd",
+  "currency_usd",
   "section_break_21",
   "ignore_commission"
  ],
  "fields": [
-  {
-   "fieldname": "recipient",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Recipient",
-   "options": "Team",
-   "reqd": 1
-  },
   {
    "fieldname": "due_date",
    "fieldtype": "Date",
@@ -109,12 +104,14 @@
    "fieldname": "net_total_inr",
    "fieldtype": "Currency",
    "label": "Net Total INR",
+   "options": "currency_inr",
    "read_only": 1
   },
   {
    "fieldname": "net_total_usd",
    "fieldtype": "Currency",
    "label": "Net Total USD",
+   "options": "currency_usd",
    "read_only": 1
   },
   {
@@ -139,7 +136,7 @@
    "fetch_from": "recipient.currency",
    "fieldname": "recipient_currency",
    "fieldtype": "Data",
-   "label": "Recipient Currency"
+   "label": "Currency"
   },
   {
    "fieldname": "section_break_21",
@@ -151,12 +148,41 @@
    "fieldtype": "Check",
    "label": "Ignore Commission",
    "options": "0"
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency_inr",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Currency INR"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency_usd",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Currency USD"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "options": "recipient_currency",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-04-30 12:41:38.091177",
+ "modified": "2024-07-15 18:03:18.004496",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

@@ -2,12 +2,12 @@ import time
 
 import frappe
 from dns.resolver import Resolver
+from frappe.utils import strip
 
 from press.api.server import plans
+from press.api.site import NAMESERVERS
 from press.runner import Ansible
 from press.utils import get_current_team
-from press.api.site import NAMESERVERS
-from frappe.utils import strip
 
 
 @frappe.whitelist()
@@ -39,7 +39,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 				"plan": server_details.plan["name"],
 				"database_plan": server_details.plan["name"],
 				"new_server": True,
-			}
+			},
 		).insert()
 	except frappe.DuplicateEntryError as e:
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')

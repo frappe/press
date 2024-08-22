@@ -37,9 +37,10 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm.vue';
+import AddressForm from '../../../src2/components/AddressForm.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import { frappeRequest } from 'frappe-ui';
 
 export default {
 	name: 'StripeCard',
@@ -73,10 +74,10 @@ export default {
 	},
 	methods: {
 		async setupCard() {
-			let result = await this.$call(
-				'press.api.developer.marketplace.get_publishable_key_and_setup_intent',
-				{ secret_key: this.secretKey }
-			);
+			let result = await frappeRequest({
+				url: 'press.api.developer.marketplace.get_publishable_key_and_setup_intent',
+				params: { secret_key: this.secretKey }
+			});
 			//window.posthog.capture('init_client_add_card', 'fc_signup');
 			let { publishable_key, setup_intent } = result;
 			this.setupIntent = setup_intent;
@@ -159,23 +160,23 @@ export default {
 			} else {
 				if (setupIntent.status === 'succeeded') {
 					try {
-						const { payment_method_name } = await this.$call(
-							'press.api.developer.marketplace.setup_intent_success',
-							{
+						const { payment_method_name } = await frappeRequest({
+							url: 'press.api.developer.marketplace.setup_intent_success',
+							params: {
 								secret_key: this.secretKey,
 								setup_intent: setupIntent
 							}
-						);
+						});
 
 						this.addingCard = false;
 
-						await this.$call(
-							'press.api.developer.marketplace.change_site_plan',
-							{
+						await frappeRequest({
+							url: 'press.api.developer.marketplace.change_site_plan',
+							params: {
 								secret_key: this.secretKey,
 								plan: this.selectedPlan.name
 							}
-						);
+						});
 						this.$emit('update:step', 4);
 					} catch (error) {
 						console.error(error);

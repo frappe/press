@@ -3,11 +3,15 @@
 # For license information, please see license.txt
 
 
-import frappe
-from frappe.utils import cint
-from frappe.handler import is_whitelisted
 from functools import partial
+
+import frappe
+from ansible.utils.path import cleanup_tmp_file
 from frappe.core.doctype.user.user import User
+from frappe.handler import is_whitelisted
+from frappe.utils import cint
+
+from press.runner import constants
 from press.utils import _get_current_team, _system_user
 
 
@@ -84,15 +88,24 @@ def before_request():
 	frappe.local.system_user = _system_user
 
 
+def cleanup_ansible_tmp_files():
+	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+
+
+def after_job():
+	cleanup_ansible_tmp_files()
+
+
 def update_website_context(context):
-	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(
-		"Press Settings", "publish_docs"
-	):
+	if (
+		frappe.request and frappe.request.path.startswith("/docs")
+	) and not frappe.db.get_single_value("Press Settings", "publish_docs"):
 		raise frappe.DoesNotExistError
 
 
 def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
+	from press.utils import get_current_team, has_role
 
 	if not user:
 		user = frappe.session.user
@@ -102,6 +115,9 @@ def has_permission(doc, ptype, user):
 		return True
 
 	if ptype == "create":
+		return True
+
+	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
 	team = get_current_team(True)
@@ -134,6 +150,15 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
+	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+
+	@staticmethod
+	def get_list_query(query):
+		team = frappe.local.team()
+		allowed_users = [d.user for d in team.team_members]
+		User = frappe.qb.DocType("User")
+		return query.where(User.name.isin(allowed_users))
+
 	def after_rename(self, old_name, new_name, merge=False):
 		"""
 		Changes:

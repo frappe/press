@@ -3,8 +3,10 @@
 # For license information, please see license.txt
 
 
-import frappe
 import typing
+
+import rq
+import frappe
 from frappe.model.document import Document
 
 if typing.TYPE_CHECKING:
@@ -79,7 +81,7 @@ class App(Document):
 
 
 def new_app(name, title):
-	app = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
+	app: "App" = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
 	return app
 
 
@@ -93,5 +95,8 @@ def poll_new_releases():
 			source = frappe.get_doc("App Source", source.name)
 			source.create_release()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
 		except Exception:
 			frappe.db.rollback()

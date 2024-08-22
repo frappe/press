@@ -49,6 +49,7 @@
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'vue-sonner';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'BuyPrepaidCreditsStripe',
@@ -80,8 +81,13 @@ export default {
 					amount: this.amount
 				},
 				validate() {
-					if (this.amount < this.minimumAmount) {
-						return `Amount must be greater than ${this.minimumAmount}`;
+					if (
+						this.amount < this.minimumAmount &&
+						!this.$team.doc.erpnext_partner
+					) {
+						throw new DashboardError(
+							`Amount must be greater than ${this.minimumAmount}`
+						);
 					}
 				},
 				async onSuccess(data) {

@@ -8,6 +8,13 @@
     url: https://mariadb.org/mariadb_release_signing_key.pgp
     state: present
 
+# This seems to be breaking on some database servers
+# TODO: Move to container deployments
+- name: Add NGINX Repository Key
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+
 - name: Add MariaDB Repository
   apt_repository:
     repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main

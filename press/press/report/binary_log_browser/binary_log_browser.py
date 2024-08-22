@@ -4,13 +4,14 @@
 import frappe
 import pytz
 import sqlparse
-from press.agent import Agent
+from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import (
 	get_datetime,
 	get_datetime_str,
 	get_system_timezone,
 )
-from frappe.core.doctype.access_log.access_log import make_access_log
+
+from press.agent import Agent
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone

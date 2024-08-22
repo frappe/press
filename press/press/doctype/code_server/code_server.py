@@ -7,7 +7,7 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.agent import Agent
 from press.utils import log_error
-from press.utils.dns import create_dns_record, _change_dns_record
+from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class CodeServer(Document):

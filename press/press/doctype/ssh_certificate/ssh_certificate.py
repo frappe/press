@@ -8,11 +8,10 @@ import os
 import re
 import shlex
 import subprocess
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
-
-from typing import TYPE_CHECKING
 
 from press.utils import log_error
 

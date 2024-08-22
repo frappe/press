@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard-beta/'),
+	history: createWebHistory('/dashboard/'),
 	routes: [
 		{
 			path: '/',
@@ -41,6 +41,24 @@ let router = createRouter({
 			component: () => import('./pages/ResetPassword.vue'),
 			props: true,
 			meta: { isLoginPage: true }
+		},
+		{
+			path: '/checkout/:secretKey',
+			name: 'Checkout',
+			component: () => import('../src/views/checkout/Checkout.vue'),
+			props: true,
+			meta: {
+				isLoginPage: true
+			}
+		},
+		{
+			path: '/subscription/:site?',
+			name: 'Subscription',
+			component: () => import('../src/views/checkout/Subscription.vue'),
+			props: true,
+			meta: {
+				hideSidebar: true
+			}
 		},
 		{
 			name: 'New Site',
@@ -127,20 +145,19 @@ let router = createRouter({
 					name: 'SettingsPermission',
 					path: 'permissions',
 					component: () =>
-						import('./components/settings/PermissionsSettings.vue'),
-					redirect: { name: 'SettingsPermissionGroupList' },
+						import('./components/settings/SettingsPermissions.vue'),
+					redirect: { name: 'SettingsPermissionRoles' },
 					children: [
 						{
-							path: 'groups',
-							name: 'SettingsPermissionGroupList',
-							component: () =>
-								import('./components/settings/PermissionGroupList.vue')
+							path: 'roles',
+							name: 'SettingsPermissionRoles',
+							component: () => import('./components/settings/RoleList.vue')
 						},
 						{
-							name: 'SettingsPermissionGroupPermissions',
-							path: 'groups/:groupId',
+							name: 'SettingsPermissionRolePermissions',
+							path: 'roles/:roleId',
 							component: () =>
-								import('./components/settings/PermissionGroupPermissions.vue'),
+								import('./components/settings/RolePermissions.vue'),
 							props: true
 						}
 					]
@@ -172,15 +189,49 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppTrial',
-			path: '/app-trial/:productId',
-			component: () => import('./pages/NewAppTrial.vue'),
-			props: true
+			name: 'AppTrial',
+			path: '/app-trial',
+			redirect: { name: 'Home' },
+			children: [
+				{
+					name: 'AppTrialSignup',
+					path: 'signup/:productId',
+					component: () => import('./pages/app_trial/Signup.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'AppTrialSetup',
+					path: 'setup/:productId',
+					component: () => import('./pages/app_trial/Setup.vue'),
+					props: true
+				}
+			]
 		},
 		{
 			name: 'Impersonate',
 			path: '/impersonate/:teamId',
 			component: () => import('./pages/Impersonate.vue'),
+			props: true
+		},
+		{
+			name: 'InstallApp',
+			path: '/install-app/:app',
+			component: () => import('./pages/InstallApp.vue'),
+			props: true
+		},
+		{
+			path: '/user-review/:marketplaceApp',
+			name: 'ReviewMarketplaceApp',
+			component: () =>
+				import('./components/marketplace/ReviewMarketplaceApp.vue'),
+			props: true
+		},
+		{
+			path: '/developer-reply/:marketplaceApp/:reviewId',
+			name: 'ReplyMarketplaceApp',
+			component: () =>
+				import('./components/marketplace/ReplyMarketplaceApp.vue'),
 			props: true
 		},
 		...generateRoutes(),
@@ -195,28 +246,36 @@ let router = createRouter({
 router.beforeEach(async (to, from, next) => {
 	let isLoggedIn =
 		document.cookie.includes('user_id') &&
-		!document.cookie.includes('user_id=Guest;');
+		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
 	if (isLoggedIn) {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
-			to.name.startsWith('Settings');
+		// identify user in posthog
+		if (window.posthog?.__loaded) {
+			try {
+				window.posthog.identify($team.doc.user, {
+					app: 'frappe_cloud'
+				});
+			} catch (e) {
+				console.error(e);
+			}
+		}
 
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+    // If user is logged in and was moving to app trial signup, redirect to app trial setup
+		if (to.name == 'AppTrialSignup') {
+			next({ name: 'AppTrialSetup', params: to.params });
+			return;
+		}
+    
 		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
 		) {
 			next({ name: onboardingRoute });
 			return;
@@ -231,7 +290,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			next({ name: 'Login' });
+			if (to.name == 'AppTrialSetup') {
+				next({
+					name: 'AppTrialSignup',
+					params: to.params
+				});
+			} else {
+				next({ name: 'Login' });
+			}
 		}
 	}
 });

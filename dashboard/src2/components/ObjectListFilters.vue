@@ -26,6 +26,7 @@
 						:label="
 							$isMobile || control.type == 'checkbox' ? control.label : null
 						"
+						:class="control.class"
 						:type="control.type"
 						:options="control.options"
 						:placeholder="

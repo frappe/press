@@ -2,14 +2,10 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				v-if="dbServerName"
-				class="w-48"
+				class="w-40"
 				label="Server"
 				type="select"
-				:options="[
-					{ label: 'Application Server', value: serverName },
-					{ label: 'Database Server', value: dbServerName }
-				]"
+				:options="serverOptions"
 				v-model="chosenServer"
 			/>
 			<FormControl
@@ -105,20 +101,30 @@
 
 <script>
 import { DateTime } from 'luxon';
+import { getCachedDocumentResource } from 'frappe-ui';
 import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
-	props: ['serverName', 'dbServerName'],
+	props: ['serverName'],
 	components: {
 		LineChart
 	},
 	data() {
 		return {
 			duration: '1 Hour',
-			chosenServer: this.serverName,
+			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days']
 		};
+	},
+	watch: {
+		chosenServer() {
+			this.$router.push({
+				query: {
+					server: this.chosenServer
+				}
+			});
+		}
 	},
 	resources: {
 		loadavg() {
@@ -201,6 +207,25 @@ export default {
 		}
 	},
 	computed: {
+		$server() {
+			return getCachedDocumentResource('Server', this.serverName);
+		},
+		serverOptions() {
+			return [
+				{
+					label: 'Application Server',
+					value: this.$server.doc.name
+				},
+				{
+					label: 'Database Server',
+					value: this.$server.doc.database_server
+				},
+				{
+					label: 'Replication Server',
+					value: this.$server.doc.replication_server
+				}
+			].filter(v => v.value);
+		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;

@@ -7,6 +7,12 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
+		<AlertBanner
+			v-if="alertMessage && !error"
+			:title="alertMessage"
+			type="warning"
+			class="mb-5"
+		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
@@ -18,15 +24,25 @@
 			<div class="flex w-full items-center">
 				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<Button
-					class="ml-auto"
-					@click="$resources.deploy.reload()"
-					:loading="$resources.deploy.loading"
-				>
-					<template #icon>
-						<i-lucide-refresh-ccw class="h-4 w-4" />
-					</template>
-				</Button>
+				<div class="ml-auto space-x-2">
+					<Button
+						@click="$resources.deploy.reload()"
+						:loading="$resources.deploy.loading"
+					>
+						<template #icon>
+							<i-lucide-refresh-ccw class="h-4 w-4" />
+						</template>
+					</Button>
+					<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
+						<template v-slot="{ open }">
+							<Button>
+								<template #icon>
+									<i-lucide-more-horizontal class="h-4 w-4" />
+								</template>
+							</Button>
+						</template>
+					</Dropdown>
+				</div>
 			</div>
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -68,7 +84,8 @@
 			</div>
 		</div>
 
-		<div class="mt-8 space-y-4">
+		<!-- Build Steps -->
+		<div :class="deploy.build_error ? 'mt-4' : 'mt-8'" class="space-y-4">
 			<JobStep
 				v-for="step in deploy.build_steps"
 				:step="step"
@@ -78,16 +95,20 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { createResource, getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
+import AlertBanner from '../components/AlertBanner.vue';
+import dayjs from 'dayjs';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,
+		AlertBanner,
 		AlertAddressableError
 	},
 	resources: {
@@ -110,7 +131,6 @@ export default {
 					document_type: 'Deploy Candidate',
 					document_name: this.id,
 					is_actionable: true,
-					is_addressed: false,
 					class: 'Error'
 				},
 				limit: 1
@@ -129,10 +149,11 @@ export default {
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
 			let rgDoc = getCachedDocumentResource(
 				'Release Group',
-				this.$resources.deploy.doc.group
+				this.$resources.deploy.doc?.group
 			);
-			this.$resources.deploy.reload();
 			rgDoc.reload();
+			this.$resources.deploy.reload();
+			this.$resources.errors.reload();
 		});
 	},
 	beforeUnmount() {
@@ -148,6 +169,47 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		alertMessage() {
+			if (!this.deploy) {
+				return null;
+			}
+
+			if (this.deploy.retry_count > 0 && this.deploy.status === 'Scheduled') {
+				return 'Previous deploy failed, re-deploy will be attempted soon';
+			}
+			return null;
+		},
+		dropdownOptions() {
+			return [
+				{
+					label: 'View in Desk',
+					icon: 'external-link',
+					condition: () => this.$team.doc?.is_desk_user,
+					onClick: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
+							'_blank'
+						);
+					}
+				},
+				{
+					label: 'Fail and Redeploy',
+					icon: 'repeat',
+					condition: () => this.showFailAndRedeploy,
+					onClick: () => this.failAndRedeploy()
+				}
+			].filter(option => option.condition?.() ?? true);
+		},
+		showFailAndRedeploy() {
+			if (!this.deploy || this.deploy.status !== 'Running') {
+				return false;
+			}
+
+			const start = dayjs(this.deploy.build_start);
+			const now = dayjs(new Date());
+
+			return now.diff(start, 'hours') > 2;
 		}
 	},
 	methods: {
@@ -172,6 +234,28 @@ export default {
 					: null;
 			}
 			return deploy;
+		},
+		failAndRedeploy() {
+			if (!this.deploy) {
+				return;
+			}
+
+			const group = this.deploy.group;
+			const onError = () => toast.error('Could not fail and redeploy');
+			const router = this.$router;
+
+			createResource({
+				url: 'press.api.bench.fail_and_redeploy',
+				params: { name: group, dc_name: this.deploy.name },
+				onSuccess(name) {
+					if (!name) {
+						onError();
+					} else {
+						router.push(`/benches/${group}/deploys/${name}`);
+					}
+				},
+				onError
+			}).fetch();
 		}
 	}
 };

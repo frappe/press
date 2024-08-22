@@ -4,6 +4,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.utils import ttl_cache
 
 
@@ -15,6 +16,7 @@ class AgentJobType(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.agent_job_type_step.agent_job_type_step import (
 			AgentJobTypeStep,
 		)

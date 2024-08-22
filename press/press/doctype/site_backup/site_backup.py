@@ -10,6 +10,7 @@ from typing import Dict
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
+
 from press.agent import Agent
 
 
@@ -46,6 +47,7 @@ class SiteBackup(Document):
 		site: DF.Link
 		size: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		team: DF.Link | None
 		url: DF.Data | None
 		with_files: DF.Check
 	# end: auto-generated types
@@ -63,6 +65,10 @@ class SiteBackup(Document):
 		"with_files",
 		"offsite",
 		"files_availability",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
+		"remote_config_file",
 	]
 
 	def before_insert(self):
@@ -154,7 +160,11 @@ def process_backup_site_job_update(job):
 		return
 	backup = backups[0]
 	if job.status != backup.status:
-		frappe.db.set_value("Site Backup", backup.name, "status", job.status)
+		status = job.status
+		if job.status == "Delivery Failure":
+			status = "Failure"
+
+		frappe.db.set_value("Site Backup", backup.name, "status", status)
 		if job.status == "Success":
 			job_data = json.loads(job.data)
 			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]

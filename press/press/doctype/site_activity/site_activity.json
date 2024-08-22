@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "team",
   "action",
   "reason"
  ],
@@ -36,11 +37,18 @@
    "fieldname": "reason",
    "fieldtype": "Small Text",
    "label": "Reason"
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-28 18:55:41.364129",
+ "modified": "2024-05-15 12:25:18.275599",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

@@ -1,19 +1,20 @@
+from unittest import TestCase
+
 import frappe
 
-from unittest import TestCase
 from press.press.doctype.site_update.scheduled_auto_updates import (
 	should_update_trigger_for_daily,
 	should_update_trigger_for_monthly,
 	should_update_trigger_for_weekly,
 )
 from press.tests.test_data.auto_update_fixtures import (
-	TEST_DATA_DAILY_TRUE,
 	TEST_DATA_DAILY_FALSE,
-	TEST_DATA_WEEKLY_TRUE,
-	TEST_DATA_WEEKLY_FALSE,
-	TEST_DATA_MONTHLY_TRUE,
+	TEST_DATA_DAILY_TRUE,
 	TEST_DATA_MONTHLY_FALSE,
 	TEST_DATA_MONTHLY_MONTH_END,
+	TEST_DATA_MONTHLY_TRUE,
+	TEST_DATA_WEEKLY_FALSE,
+	TEST_DATA_WEEKLY_TRUE,
 )
 
 

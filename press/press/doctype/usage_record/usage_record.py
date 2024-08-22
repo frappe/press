@@ -5,6 +5,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.utils import log_error
 
 
@@ -24,13 +25,13 @@ class UsageRecord(Document):
 		document_name: DF.DynamicLink | None
 		document_type: DF.Link | None
 		interval: DF.Data | None
-		invoice: DF.Data | None
+		invoice: DF.Link | None
 		payout: DF.Data | None
 		plan: DF.DynamicLink | None
 		plan_type: DF.Link | None
 		remark: DF.SmallText | None
 		site: DF.Link | None
-		subscription: DF.Data | None
+		subscription: DF.Link | None
 		team: DF.Link | None
 		time: DF.Time | None
 	# end: auto-generated types

@@ -21,7 +21,6 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
-  "default_to_new_dashboard",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -55,6 +54,7 @@
   "skip_backups",
   "column_break_31",
   "database_access_enabled",
+  "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
@@ -201,7 +201,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPartner Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -413,10 +413,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "default_to_new_dashboard",
+   "default": "false",
+   "fieldname": "enable_performance_tuning",
    "fieldtype": "Check",
-   "label": "Default to New Dashboard"
+   "label": "Enable Performance Tuning"
   }
  ],
  "links": [
@@ -469,9 +469,14 @@
    "group": "Marketplace",
    "link_doctype": "Marketplace Publisher Profile",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Stripe Payment Method",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2024-03-23 14:15:04.526141",
+ "modified": "2024-08-02 10:33:18.861721",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

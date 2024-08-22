@@ -7,10 +7,10 @@ import boto3
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
-from tenacity import retry, stop_after_attempt, wait_fixed
-from tenacity.retry import retry_if_result
 from oci.core import ComputeClient
 from oci.core.models import CreateImageDetails
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_result
 
 
 class VirtualMachineImage(Document):
@@ -28,6 +28,7 @@ class VirtualMachineImage(Document):
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
 		platform: DF.Data | None
+		public: DF.Check
 		region: DF.Link
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
 		size: DF.Int
@@ -170,6 +171,7 @@ class VirtualMachineImage(Document):
 			frappe.qb.from_(images)
 			.select("name")
 			.where(images.status == "Available")
+			.where(images.public == 1)
 			.where(
 				images.series == series,
 			)

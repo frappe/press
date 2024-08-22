@@ -1,11 +1,11 @@
 <template>
-	<div class="p-5">
-		<ObjectList :options="options" />
+	<div class="p-4">
+		<ObjectList :options="partnerCustomerList" />
 		<Dialog
 			v-model="contributionDialog"
 			:options="{
 				size: '3xl',
-				title: 'Last Month + Current Month\'s Contribution '
+				title: 'Last 6 Month\'s Contribution'
 			}"
 		>
 			<template #body-content>
@@ -16,17 +16,19 @@
 					>
 						Nothing to show
 					</div>
-					<PartnerCustomerInvoices :customerTeam="showInvoice.name" />
+					<PartnerCustomerInvoices
+						:customerTeam="showInvoice.name"
+						:customerCurrency="showInvoice.currency"
+					/>
 				</template>
 			</template>
 		</Dialog>
 		<Dialog
 			v-model="transferCreditsDialog"
-			:modelValue="true"
 			:options="{ title: 'Transfer Credits' }"
 		>
 			<template #body-content>
-				<p class="text-p-base pb-3">
+				<p class="pb-3 text-p-base">
 					Enter the equivalent amount of credits (in {{ $team.doc.currency }})
 					you wish to transfer.
 				</p>
@@ -56,7 +58,6 @@
 		</Dialog>
 		<Dialog
 			v-model="showConfirmationDialog"
-			:modelValue="false"
 			:options="{ title: 'Credits Transferred Successfully' }"
 		>
 			<template #body-content>
@@ -64,7 +65,7 @@
 					{{ formatCurrency(amount) }} credits have been transferred to
 					<strong>{{ customerTeam.billing_name }}</strong>
 				</p>
-				<span class="text-base text-gray-700 font-medium"
+				<span class="text-base font-medium text-gray-700"
 					>Credits available: {{ creditBalance() }}</span
 				>
 			</template>
@@ -72,18 +73,19 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
+import ObjectList from '../ObjectList.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
+
 export default {
 	name: 'PartnerCustomers',
 	components: {
-		ObjectList,
 		PartnerCustomerInvoices,
 		Dialog,
-		ErrorMessage
+		ErrorMessage,
+		ObjectList
 	},
 	data() {
 		return {
@@ -98,8 +100,9 @@ export default {
 	resources: {
 		transferCredits() {
 			return {
-				url: 'press.api.account.transfer_credits',
-				onSuccess() {
+				url: 'press.api.partner.transfer_credits',
+				onSuccess(data) {
+					this.amount = data;
 					this.transferCreditsDialog = false;
 					this.showConfirmationDialog = true;
 					toast.success('Credits Transferred');
@@ -112,10 +115,26 @@ export default {
 		}
 	},
 	computed: {
-		options() {
+		partnerCustomerList() {
 			return {
-				doctype: 'Team',
-				fields: ['user', 'billing_name', 'payment_mode', 'currency', 'name'],
+				resource() {
+					return {
+						url: 'press.api.partner.get_partner_customers',
+						transform(data) {
+							return data.map(d => {
+								return {
+									email: d.user,
+									billing_name: d.billing_name || '',
+									payment_mode: d.payment_mode || '',
+									currency: d.currency,
+									name: d.name
+								};
+							});
+						},
+						initialData: [],
+						auto: true
+					};
+				},
 				columns: [
 					{
 						label: 'Name',
@@ -123,7 +142,7 @@ export default {
 					},
 					{
 						label: 'Email',
-						fieldname: 'user'
+						fieldname: 'email'
 					},
 					{
 						label: 'Payment Mode',
@@ -131,32 +150,41 @@ export default {
 					},
 					{
 						label: 'Currency',
-						fieldname: 'currency'
-					}
-				],
-				rowActions: ({ row, listResource }) => {
-					return [
-						{
-							label: 'Transfer Credits',
-							onClick: () => {
-								this.transferCreditsDialog = true;
-								this.customerTeam = row;
-							}
-						},
-						{
-							label: 'View Contributions',
-							onClick: () => {
-								this.showInvoice = row;
-								this.contributionDialog = true;
-							}
+						fieldname: 'currency',
+						width: 0.5
+					},
+					{
+						label: 'Contributions',
+						type: 'Button',
+						width: 0.5,
+						align: 'center',
+						Button: ({ row }) => {
+							return {
+								label: 'View',
+								onClick: () => {
+									this.showInvoice = row;
+									this.contributionDialog = true;
+								}
+							};
 						}
-					];
-				},
-				filters: {
-					enabled: 1,
-					partner_email: this.$team.doc.partner_email,
-					erpnext_partner: 0
-				}
+					},
+					{
+						label: '',
+						type: 'Button',
+						width: 0.8,
+						align: 'right',
+						key: 'actions',
+						Button: ({ row }) => {
+							return {
+								label: 'Transfer Credits',
+								onClick: () => {
+									this.transferCreditsDialog = true;
+									this.customerTeam = row;
+								}
+							};
+						}
+					}
+				]
 			};
 		}
 	},

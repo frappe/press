@@ -1,11 +1,11 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
-import frappe
 import os
 import time
-from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
+import frappe
+from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
 ADMIN_EMAIL = ""
 HOME_DIRECTORY = ""

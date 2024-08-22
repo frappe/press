@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 
 class PressNotification(Document):
 	# begin: auto-generated types
@@ -21,6 +23,8 @@ class PressNotification(Document):
 		is_addressed: DF.Check
 		message: DF.LongText | None
 		read: DF.Check
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		team: DF.Link
 		title: DF.SmallText | None
 		traceback: DF.Code | None
@@ -49,8 +53,6 @@ class PressNotification(Document):
 		"assistance_url",
 	]
 
-	dashboard_actions = ["mark_as_addressed"]
-
 	def after_insert(self):
 		if frappe.local.dev_server:
 			return
@@ -71,21 +73,35 @@ class PressNotification(Document):
 			subject=f"Bench Deploy Failed - {rg_title}",
 			template="bench_deploy_failure",
 			args={
-				"message": self.message,
+				"message": self.title,
 				"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
 			},
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def mark_as_addressed(self):
 		self.read = True
 		self.is_addressed = True
 		self.save()
 		frappe.db.commit()
 
+	@dashboard_whitelist()
+	def mark_as_read(self):
+		self.db_set("read", True)
+
 
 def create_new_notification(team, type, document_type, document_name, message):
 	if not frappe.db.exists("Press Notification", {"document_name": document_name}):
+		if document_type == "Agent Job":
+			reference_doctype = "Site"
+			reference_doc = frappe.db.get_value("Agent Job", document_name, "site")
+			if not reference_doc:
+				reference_doctype = "Server"
+				reference_doc = frappe.db.get_value("Agent Job", document_name, "server")
+		elif document_type == "Deploy Candidate":
+			reference_doctype = "Release Group"
+			reference_doc = frappe.db.get_value("Deploy Candidate", document_name, "group")
+
 		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
@@ -94,6 +110,8 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"document_type": document_type,
 				"document_name": document_name or 0,
 				"message": message,
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_doc,
 			}
 		).insert()
 		frappe.publish_realtime(

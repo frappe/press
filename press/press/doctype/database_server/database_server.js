@@ -148,6 +148,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.virtual_machine,
 			],
+			[
+				__('Setup Essentials'),
+				'setup_essentials',
+				true,
+				frm.doc.is_self_hosted,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -205,6 +211,67 @@ frappe.ui.form.on('Database Server', {
 					dialog.show();
 				},
 				__('Actions'),
+			);
+			frm.add_custom_button(
+				__('Perform Physical Backup'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Perform Physical Backup'),
+						fields: [
+							{
+								fieldtype: 'Data',
+								label: __('Backup Path'),
+								description: __('Absolute path to store the backup'),
+								default: '/tmp/replica',
+								fieldname: 'path',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Backup'), (args) => {
+						frm.call('perform_physical_backup', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
+			frm.add_custom_button(
+				__('Update Memory Allocator'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Update Memory Allocator'),
+						fields: [
+							{
+								fieldtype: 'Select',
+								label: __('Memory Allocator'),
+								options: ['System', 'jemalloc', 'TCMalloc']
+									.filter((option) => option !== frm.doc.memory_allocator)
+									.join('\n'),
+								fieldname: 'memory_allocator',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Update'), (args) => {
+						frm.call({
+							method: 'update_memory_allocator',
+							doc: frm.doc,
+							args: args,
+							freeze: true,
+							callback: () => {
+								dialog.hide();
+								frm.refresh();
+							},
+						});
+					});
+					dialog.show();
+				},
+				__('Dangerous Actions'),
 			);
 		}
 	},

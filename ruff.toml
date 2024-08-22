@@ -1,0 +1,17 @@
+indent-width = 1
+
+[format]
+indent-style = "tab"
+
+[lint]
+select = [
+    "F",
+    "E",
+    "W",
+    "I",
+]
+ignore = [
+    "E501", # line too long
+    "W191", # indentation contains tabs
+]
+typing-modules = ["frappe.types.DF"]

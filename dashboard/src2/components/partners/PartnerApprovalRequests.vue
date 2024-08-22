@@ -36,6 +36,14 @@ export default {
 						}
 					},
 					{
+						label: 'Approval By Frappe',
+						fieldname: 'approved_by_frappe',
+						type: 'Badge',
+						format(value) {
+							return value ? 'Approved' : 'Pending';
+						}
+					},
+					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge'
@@ -44,7 +52,7 @@ export default {
 						label: '',
 						type: 'Button',
 						Button: ({ row, listResource }) => {
-							if (row.status === 'Pending') {
+							if (row.status === 'Pending' && row.approved_by_partner === 0) {
 								return {
 									label: 'Approve',
 									type: 'primary',

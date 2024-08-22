@@ -11,14 +11,14 @@
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
 					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
-					<div class="flex flex-col space-y-4">
+					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
 							v-model="skipFailingPatches"
 						/>
 						<FormControl
-							label="Skip taking backup for this update"
+							label="Skip taking backup for this update (If the update fails, rollback will not occur)"
 							type="checkbox"
 							v-model="skipBackups"
 						/>
@@ -98,7 +98,9 @@ export default {
 		},
 		listOptions() {
 			return {
-				data: this.updatableApps,
+				data: this.updatableApps.filter(
+					app => app.current_hash !== app.next_hash
+				),
 				columns: [
 					{
 						label: 'App',

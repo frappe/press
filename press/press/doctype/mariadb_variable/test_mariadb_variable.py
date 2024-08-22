@@ -14,7 +14,6 @@ class TestMariaDBVariable(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_set_on_all_servers_sets_on_all_servers(self):
-
 		db_1 = create_test_database_server()
 		db_2 = create_test_database_server()
 		db_1.add_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
