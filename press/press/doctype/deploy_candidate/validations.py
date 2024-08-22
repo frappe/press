@@ -34,8 +34,8 @@ class PreBuildValidations:
 
 	def _validate_repos(self):
 		for app in self.dc.apps:
-			if frappe.get_value(app.release, "invalid_release"):
-				reason = frappe.get_value(app.release, "invalidation_reason")
+			if frappe.get_value("App Release", app.release, "invalid_release"):
+				reason = frappe.get_value("App Release", app.release, "invalidation_reason")
 
 				# Do not change message without updating deploy_notifications.py
 				raise Exception(
