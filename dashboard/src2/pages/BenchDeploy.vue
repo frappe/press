@@ -185,7 +185,7 @@ export default {
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					condition: () => this.$team.doc?.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
