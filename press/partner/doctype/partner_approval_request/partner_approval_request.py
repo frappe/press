@@ -26,7 +26,7 @@ class PartnerApprovalRequest(Document):
 		status: DF.Literal["Pending", "Approved", "Rejected"]
 	# end: auto-generated types
 
-	dashboard_fields = ["requested_by", "partner", "status", "approved_by_frappe"]
+	dashboard_fields = ["requested_by", "partner", "status", "approved_by_frappe", "approved_by_partner"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
