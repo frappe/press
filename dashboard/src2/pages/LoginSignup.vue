@@ -78,7 +78,7 @@
 							</template>
 
 							<!-- 2FA Section -->
-							<template v-else-if="is2FA">
+							<template v-else-if="isLogin && is2FA">
 								<FormControl
 									label="2FA Code from your Authenticator App"
 									placeholder="123456"
