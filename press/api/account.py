@@ -1167,11 +1167,13 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def is_2fa_enabled(user):
 	return frappe.db.get_value("User 2FA", user, "enabled")
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def verify_2fa(user, totp_code):
 	user_totp_secret = get_decrypted_password("User 2FA", user, "totp_secret")
 	verified = pyotp.TOTP(user_totp_secret).verify(totp_code)
