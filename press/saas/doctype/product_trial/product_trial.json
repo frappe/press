@@ -25,6 +25,7 @@
   "standby_pool_size",
   "standby_queue_size",
   "signup_details_tab",
+  "column_break_cdhw",
   "signup_fields",
   "email_section",
   "email_account",
@@ -127,6 +128,7 @@
    "label": "Signup Details"
   },
   {
+   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. ",
    "fieldname": "signup_fields",
    "fieldtype": "Table",
    "label": "Signup Fields",
@@ -201,6 +203,10 @@
    "label": "Header Content",
    "options": "html",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cdhw",
+   "fieldtype": "Column Break"
   }
  ],
  "image_field": "logo",
@@ -215,7 +221,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-16 15:49:35.742767",
+ "modified": "2024-08-22 11:20:54.136031",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
