@@ -106,7 +106,9 @@ class BenchUpdate(Document):
 		self.save()
 
 		bench: "Bench" = frappe.get_doc("Bench", self.bench)
-		return bench.update_inplace(self.apps)
+		sites = [s.site for s in self.sites]
+
+		return bench.update_inplace(self.apps, sites)
 
 	def update_sites_on_server(self, bench, server):
 		# This method gets called multiple times concurrently when a new candidate is deployed

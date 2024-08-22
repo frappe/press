@@ -626,7 +626,7 @@ class Bench(Document):
 		processes = parse_supervisor_status(output)
 		return sort_supervisor_processes(processes)
 
-	def update_inplace(self, apps: "list[BenchUpdateApp]") -> str:
+	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
 		self.inplace_update_docker_image = self.get_next_inplace_update_docker_image()
 		self.save()
 
@@ -635,6 +635,7 @@ class Bench(Document):
 			path=f"benches/{self.name}/update_inplace",
 			bench=self.name,
 			data={
+				"sites": sites,
 				"apps": self.get_inplace_update_apps(apps),
 				"image": self.inplace_update_docker_image,
 			},
