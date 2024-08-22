@@ -74,15 +74,22 @@
 								class="underline"
 								href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
 							>
-								Google Authenticator
-							</a>
+								Google Authenticator</a
+							>
 							or
 							<a
 								class="underline"
 								href="https://github.com/beemdevelopment/Aegis"
 							>
-								Aegis
-							</a>
+								Aegis</a
+							>
+							or use a browser extension like
+							<a
+								class="underline"
+								href="https://support.1password.com/one-time-passwords/"
+							>
+								1Password</a
+							>
 						</li>
 						<li>Scan the QR code</li>
 						<li>
@@ -91,8 +98,8 @@
 								class="cursor-pointer underline"
 								@click="showSetupKey = true"
 							>
-								setup key
-							</span>
+								setup key</span
+							>
 							to manually configure your authenticator app.
 						</li>
 						<li>Enter the code from the authenticator app below</li>
