@@ -26,7 +26,13 @@ class PartnerApprovalRequest(Document):
 		status: DF.Literal["Pending", "Approved", "Rejected"]
 	# end: auto-generated types
 
-	dashboard_fields = ["requested_by", "partner", "status", "approved_by_frappe", "approved_by_partner"]
+	dashboard_fields = [
+		"requested_by",
+		"partner",
+		"status",
+		"approved_by_frappe",
+		"approved_by_partner",
+	]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -39,32 +45,13 @@ class PartnerApprovalRequest(Document):
 	def before_insert(self):
 		self.key = frappe.generate_hash(15)
 
-	def after_insert(self):
-		if self.send_mail:
-			self.send_approval_request_email()
-
 	@dashboard_whitelist()
 	def approve_partner_request(self):
-		if self.status == "Pending" and self.approved_by_frappe:
-			self.status = "Approved"
+		if self.status == "Pending" and not self.approved_by_frappe:
 			self.approved_by_partner = True
 			self.save(ignore_permissions=True)
-
-			partner = frappe.db.get_value(
-				"Team", self.partner, ["partner_email", "user"], as_dict=True
-			)
-
-			customer_team = frappe.get_doc("Team", self.requested_by)
-			customer_team.partner_email = partner.partner_email
-			customer_team.partnership_date = frappe.utils.getdate()
-			team_members = [d.user for d in customer_team.team_members]
-			if partner.user not in team_members:
-				customer_team.append("team_members", {"user": partner.user})
-			customer_team.save(ignore_permissions=True)
-			frappe.db.commit()
-		elif self.status == "Pending" and not self.approved_by_frappe:
-			self.approved_by_partner = True
-			self.save(ignore_permissions=True)
+			self.reload()
+			self.send_approval_request_email()
 
 	def send_approval_request_email(self):
 		from press.utils.billing import get_frappe_io_connection
