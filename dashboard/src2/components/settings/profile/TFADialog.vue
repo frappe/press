@@ -72,12 +72,14 @@
 							Download an authenticator app on your phone, such as
 							<a
 								class="underline"
+								target="_blank"
 								href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
 							>
 								Google Authenticator</a
 							>
 							or
 							<a
+								target="_blank"
 								class="underline"
 								href="https://github.com/beemdevelopment/Aegis"
 							>
@@ -86,6 +88,7 @@
 							or use a browser extension like
 							<a
 								class="underline"
+								target="_blank"
 								href="https://support.1password.com/one-time-passwords/"
 							>
 								1Password</a
