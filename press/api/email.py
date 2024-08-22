@@ -94,12 +94,6 @@ def validate_plan(secret_key):
 	#TODO: get activation date
 	"""
 
-	if not secret_key or not isinstance(secret_key, str):
-		frappe.throw("Invalid Secret Key")
-
-	if frappe.db.exists("Subscription", {"secret_key": secret_key}):
-		return True
-
 	# TODO: replace this with plan attributes
 	plan_label_map = frappe.conf.email_plans
 
