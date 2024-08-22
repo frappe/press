@@ -70,19 +70,43 @@
 					<ol class="mt-2 list-disc pl-2 text-sm">
 						<li>
 							Download an authenticator app on your phone, such as
-							<Link
+							<a
+								class="underline"
 								href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
 							>
 								Google Authenticator
-							</Link>
+							</a>
 							or
-							<Link href="https://github.com/beemdevelopment/Aegis">
+							<a
+								class="underline"
+								href="https://github.com/beemdevelopment/Aegis"
+							>
 								Aegis
-							</Link>
+							</a>
 						</li>
 						<li>Scan the QR code</li>
+						<li>
+							Unable to scan? You can use the
+							<span
+								class="cursor-pointer underline"
+								@click="showSetupKey = true"
+							>
+								setup key
+							</span>
+							to manually configure your authenticator app.
+						</li>
 						<li>Enter the code from the authenticator app below</li>
 					</ol>
+				</div>
+
+				<div
+					v-if="showSetupKey"
+					class="rounded border border-gray-200 bg-gray-50 p-4"
+				>
+					<h3 class="text-lg font-semibold">Setup Key</h3>
+					<p class="mt-2 text-sm">
+						{{ setupKey }}
+					</p>
 				</div>
 
 				<FormControl
@@ -109,7 +133,8 @@ export default {
 	data() {
 		return {
 			qrUrl: '', // not storing as computed property to avoid re-fetching on dialog close
-			totpCode: ''
+			totpCode: '',
+			showSetupKey: false
 		};
 	},
 	components: {
@@ -126,6 +151,7 @@ export default {
 					loading: 'Enabling 2FA...',
 					success: () => {
 						this.show = false;
+						this.totpCode = '';
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
@@ -157,6 +183,7 @@ export default {
 					loading: 'Disabling 2FA...',
 					success: () => {
 						this.show = false;
+						this.totpCode = '';
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
@@ -202,6 +229,10 @@ export default {
 		}
 	},
 	computed: {
+		setupKey() {
+			if (!this.qrUrl) return null;
+			return this.qrUrl.match(/secret=(.*?)&issuer/)[1];
+		},
 		is2FAEnabled() {
 			return this.$team.doc?.user_info?.is_2fa_enabled;
 		},
