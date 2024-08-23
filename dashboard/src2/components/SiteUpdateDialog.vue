@@ -61,6 +61,7 @@ import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
 import { getDocResource } from '../utils/resource';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -222,18 +223,25 @@ export default {
 			);
 		},
 		editUpdate() {
-			this.$site.editScheduledUpdate.submit(
-				{
+			toast.promise(
+				this.$site.editScheduledUpdate.submit({
 					name: this.existingUpdate,
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
 					scheduled_time: this.scheduledTimeInIST
-				},
+				}),
 				{
-					onSuccess: () => {
+					loading: 'Editing scheduled update...',
+					success: () => {
 						this.show = false;
 						this.$site.reload();
 						this.existingUpdateDoc.reload();
+						return 'Scheduled update edited successfully';
+					},
+					error: err => {
+						return err.messages.length
+							? err.messages[0]
+							: err.message || 'Failed to edit scheduled update';
 					}
 				}
 			);
