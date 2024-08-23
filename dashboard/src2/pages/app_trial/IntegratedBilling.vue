@@ -62,8 +62,7 @@ export default {
 		let request = options => {
 			let _options = options || {};
 			_options.headers = options.headers || {};
-			_options.headers['x-site'] = this.$route.query['x-site'];
-			_options.headers['x-site-token'] = this.$route.query['x-site-token'];
+			_options.headers['x-site-access-token'] = this.$route.params.accessToken;
 			return frappeRequest(_options);
 		};
 		setConfig('resourceFetcher', request);
@@ -71,8 +70,8 @@ export default {
 	data() {
 		return {
 			selectedPlan: {
-                "name": "",
-            },
+				name: ''
+			},
 			step: 1
 		};
 	},

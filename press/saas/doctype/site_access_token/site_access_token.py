@@ -31,6 +31,7 @@ class SiteAccessToken(Document):
 
 
 def cleanup_expired_access_tokens():
+	return # TODO: remove this line after testing
 	# cleanup expired tokens
 	frappe.db.sql(
 		"""

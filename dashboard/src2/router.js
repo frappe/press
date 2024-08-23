@@ -52,9 +52,9 @@ let router = createRouter({
 			}
 		},
 		{
-			path: '/in-desk-checkout',
-			name: 'In-Desk Checkout',
-			component: () => import('./pages/app_trial/InDeskCheckout.vue'),
+			path: '/integrated-billing/:accessToken',
+			name: 'Integrated Billing',
+			component: () => import('./pages/app_trial/IntegratedBilling.vue'),
 			props: true,
 			meta: {
 				isLoginPage: true
