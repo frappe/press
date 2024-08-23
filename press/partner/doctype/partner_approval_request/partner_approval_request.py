@@ -45,6 +45,20 @@ class PartnerApprovalRequest(Document):
 	def before_insert(self):
 		self.key = frappe.generate_hash(15)
 
+	def before_save(self):
+		if self.status == "Pending" and self.approved_by_partner and self.approved_by_frappe:
+			self.status = "Approved"
+
+			customer = frappe.get_doc("Team", self.requested_by)
+			if not customer.partner_email:
+				partner = frappe.get_doc("Team", self.partner)
+				customer.partner_email = partner.partner_email
+				customer.partnership_date = self.creation
+				team_members = [d.user for d in customer.team_members]
+				if partner.user not in team_members:
+					customer.append("team_members", {"user": partner.user})
+				customer.save(ignore_permissions=True)
+
 	@dashboard_whitelist()
 	def approve_partner_request(self):
 		if self.status == "Pending" and not self.approved_by_frappe:
