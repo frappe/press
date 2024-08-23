@@ -587,7 +587,8 @@ function showReleases(row, app) {
 									width: 0.2,
 									component: ({ row, listResource: releases, app }) => {
 										if (
-											row.status === 'Awaiting Approval' &&
+											(row.status === 'Awaiting Approval' ||
+												row.status === 'Rejected') &&
 											row.screening_status === 'Complete'
 										) {
 											return h(Button, {
@@ -595,7 +596,8 @@ function showReleases(row, app) {
 												variant: 'subtle',
 												theme: 'blue',
 												size: 'sm',
-												onClick: () => codeReview(row, app)
+												onClick: () =>
+													codeReview(row, app, window.is_system_user)
 											});
 										}
 										return h(Badge, {
@@ -661,11 +663,12 @@ function showReleases(row, app) {
 	);
 }
 
-function codeReview(row, app) {
+function codeReview(row, app, isSystemUser) {
 	renderDialog(
 		h(CodeReview, {
 			row: row,
-			app: app
+			app: app,
+			isSystemUser: isSystemUser
 		})
 	);
 }

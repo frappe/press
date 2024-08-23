@@ -7,8 +7,74 @@
 		}"
 	>
 		<template v-if="getResults" #body-content>
-			<div class="container mx-auto px-4 py-3">
+			<div class="container mx-auto px-4">
 				<div class="grid gap-3">
+					<div class="flex items-center mb-2">
+						<Button
+							v-if="
+								isSystemUser && $resources.codeScreening.doc.status == 'Open'
+							"
+							:variant="'subtle'"
+							theme="green"
+							size="sm"
+							class="mr-4"
+							@click="approveRelease"
+						>
+							Approve Release
+						</Button>
+						<Button
+							v-if="
+								isSystemUser && $resources.codeScreening.doc.status == 'Open'
+							"
+							:variant="'subtle'"
+							theme="red"
+							size="sm"
+							class="mr-4"
+							@click="showRejectReleaseDialog = true"
+						>
+							Reject Release
+						</Button>
+						<div class="flex items-center ml-auto">
+							<span class="text-lg font-medium text-gray-700 mr-2"
+								>Status:</span
+							>
+							<Badge
+								:variant="'subtle'"
+								size="lg"
+								:label="$resources.codeScreening.doc.status"
+								:theme="getBadgeTheme"
+							/>
+						</div>
+					</div>
+					<Dialog
+						v-model="showRejectReleaseDialog"
+						:options="{
+							title: 'Confirm',
+							size: 'xl'
+						}"
+					>
+						<template #body-content>
+							<FormControl
+								:type="'textarea'"
+								size="sm"
+								variant="subtle"
+								placeholder="Enter your reasons for rejection"
+								:disabled="false"
+								v-model="rejectionReason"
+							/>
+							<div class="flex justify-end mt-4">
+								<Button
+									:variant="'solid'"
+									theme="gray"
+									size="sm"
+									@click="rejectRelease"
+								>
+									Reject Release
+								</Button>
+							</div>
+						</template>
+					</Dialog>
+
 					<div
 						class="card bg-white shadow-md rounded-md overflow-hidden"
 						v-for="file in getResults"
@@ -100,6 +166,7 @@
 										</div>
 										<hr class="h-2 mt-2" />
 										<NewComment
+											v-if="$resources.codeScreening.doc.status == 'Open'"
 											:approval_request_name="row.approval_request_name"
 											:filename="file.name"
 											:line_number="line.context.line_number"
@@ -118,15 +185,18 @@
 
 <script>
 import NewComment from './NewComment.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	components: {
 		NewComment
 	},
-	props: ['row', 'app'],
+	props: ['row', 'app', 'isSystemUser'],
 	data() {
 		return {
-			show: true
+			show: true,
+			showRejectReleaseDialog: false,
+			rejectionReason: ''
 		};
 	},
 	computed: {
@@ -142,8 +212,15 @@ export default {
 				return results;
 			}
 		},
-		user() {
-			return this.$team?.doc?.user_info;
+		getBadgeTheme() {
+			const status = this.$resources.codeScreening.doc.status.toLowerCase();
+			if (status === 'open') {
+				return 'blue';
+			} else if (status === 'approved') {
+				return 'green';
+			} else {
+				return 'red';
+			}
 		}
 	},
 	methods: {
@@ -172,9 +249,30 @@ export default {
 			});
 		},
 		handleCommentSubmitted() {
+			// DB write takes sometime. Instant reload wont be able to reflect changes so quickly. Ideally the cache should be updadted client side
 			setTimeout(() => {
 				this.$resources.codeScreening.reload();
-			}, 1500);
+			}, 1200);
+		},
+		approveRelease() {
+			this.$resources.codeScreening.setValue.submit({
+				status: 'Approved',
+				reviewed_by: $team?.doc?.user
+			});
+		},
+		rejectRelease() {
+			// Check if the rejection reason is empty
+			if (!this.rejectionReason) {
+				toast.error('Reason for rejection is mandatory');
+				return;
+			}
+			// Proceed with the rejection if the reason is provided
+			this.$resources.codeScreening.setValue.submit({
+				status: 'Rejected',
+				reason_for_rejection: this.rejectionReason,
+				reviewed_by: this.$team?.doc?.user
+			});
+			this.showRejectReleaseDialog = false;
 		}
 	},
 	resources: {
