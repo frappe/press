@@ -5,9 +5,11 @@ import json
 import urllib.parse
 import frappe
 from frappe.model.document import Document
+from frappe.utils.momentjs import get_all_timezones
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
 from frappe.utils.password import decrypt as decrypt_password
+from frappe.utils.password_strength import test_password_strength
 import urllib
 
 from press.agent import Agent
@@ -124,6 +126,22 @@ class ProductTrialRequest(Document):
 				else:
 					signup_values[field.fieldname] = None
 
+			# validate select field
+			if (
+				field.fieldtype == "Select"
+				and field.fieldname.endswith("_tz")
+				and signup_values[field.fieldname] is not None
+			):
+				# validate timezone specific select field
+				if field.fieldname.endswith("_tz"):
+					if signup_values[field.fieldname] not in get_all_timezones():
+						frappe.throw(f"Invalid timezone {signup_values[field.fieldname]}")
+				# validate generic select field
+				else:
+					options = [option for option in ((field.options or "").split("\n")) if option]
+					if signup_values[field.fieldname] not in options:
+						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
+
 	@dashboard_whitelist()
 	def create_site(self, cluster: str = None, signup_values: dict = None):
 		if not signup_values:
@@ -131,7 +149,13 @@ class ProductTrialRequest(Document):
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		for field in product.signup_fields:
 			if field.fieldtype == "Password" and field.fieldname in signup_values:
+				password_analysis = test_password_strength(signup_values[field.fieldname])
+				if int(field.min_password_score) > password_analysis["score"]:
+					suggestions = password_analysis["feedback"]["suggestions"]
+					suggestion = suggestions[0] if suggestions else ""
+					frappe.throw(f"{field.label} is easy to guess.\n{suggestion}")
 				signup_values[field.fieldname] = encrypt_password(signup_values[field.fieldname])
+
 		self.signup_details = json.dumps(signup_values)
 		self.validate_signup_fields()
 		product = frappe.get_doc("Product Trial", self.product_trial)
@@ -153,8 +177,14 @@ class ProductTrialRequest(Document):
 
 	@dashboard_whitelist()
 	def get_login_sid(self):
-		email = frappe.db.get_value("Team", self.team, "user")
-		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		is_secondary_user_created = frappe.db.get_value(
+			"Site", self.site, "additional_system_user_created"
+		)
+		if is_secondary_user_created:
+			email = frappe.db.get_value("Team", self.team, "user")
+			return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+		else:
+			return frappe.get_doc("Site", self.site).get_login_sid()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):

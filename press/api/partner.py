@@ -8,15 +8,26 @@ from press.utils import get_current_team
 @frappe.whitelist()
 def approve_partner_request(key):
 	partner_request_doc = frappe.get_doc("Partner Approval Request", {"key": key})
-
 	if partner_request_doc and partner_request_doc.status == "Pending":
 		if partner_request_doc.approved_by_partner:
 			partner_request_doc.approved_by_frappe = True
 			partner_request_doc.status = "Approved"
-		else:
-			partner_request_doc.approved_by_frappe = True
+			partner_request_doc.save(ignore_permissions=True)
+			partner_request_doc.reload()
 
-		partner_request_doc.save(ignore_permissions=True)
+			partner = frappe.get_doc("Team", partner_request_doc.partner)
+			customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
+			customer_team.partner_email = partner.partner_email
+			customer_team.partnership_date = frappe.utils.getdate(partner_request_doc.creation)
+			team_members = [d.user for d in customer_team.team_members]
+			if partner.user not in team_members:
+				customer_team.append("team_members", {"user": partner.user})
+			customer_team.save(ignore_permissions=True)
+
+		frappe.db.commit()
+
+	frappe.response.type = "redirect"
+	frappe.response.location = f"/app/partner-approval-request/{partner_request_doc.name}"
 
 
 @frappe.whitelist()
@@ -136,6 +147,12 @@ def get_partner_contribution(partner_email):
 def add_partner(referral_code: str):
 	team = get_current_team(get_doc=True)
 	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
+	if frappe.db.exists(
+		"Partner Approval Request",
+		{"partner": partner, "requested_by": team.name, "status": "Pending"},
+	):
+		return "Request already sent"
+
 	doc = frappe.get_doc(
 		{
 			"doctype": "Partner Approval Request",

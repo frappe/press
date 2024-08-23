@@ -831,6 +831,8 @@ class DatabaseServer(BaseServer):
 		return result
 
 	def get_stalk(self, name):
+		if self.agent.should_skip_requests():
+			return {}
 		return self.agent.get(f"database/stalks/{name}")
 
 	def _rename_server(self):

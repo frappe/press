@@ -1,5 +1,9 @@
 <template>
-	<div class="flex h-screen overflow-hidden sm:bg-gray-50">
+	<div class="flex h-screen w-screen justify-center items-center" v-if="$resources.signupSettings.loading">
+		<Spinner class="w-4 mr-2" />
+		<p class="text-gray-800">Loading</p>
+	</div>
+	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="`Get started with ${saasProduct?.title}`"
@@ -113,6 +117,7 @@
 	</div>
 </template>
 <script>
+import { Spinner } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
 import { toast } from 'vue-sonner';
 
@@ -120,7 +125,8 @@ export default {
 	name: 'AppTrialSignup',
 	props: ['productId'],
 	components: {
-		LoginBox
+		LoginBox,
+		Spinner
 	},
 	data() {
 		return {
@@ -164,7 +170,7 @@ export default {
 					otp: this.otp
 				},
 				onSuccess(key) {
-					window.location.href = `/api/method/press.api.saas.setup_account_product_trial?key=${key}`;
+					window.open(`/api/method/press.api.saas.setup_account_product_trial?key=${key}`, "_self");
 				}
 			};
 		},

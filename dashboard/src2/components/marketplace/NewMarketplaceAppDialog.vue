@@ -83,7 +83,7 @@ export default {
 					}
 
 					const repo_owner = this.selectedGithubUser?.label;
-					const repo = data.name;
+					const repo = this.selectedGithubRepository || data.name;
 					const repository_url = `https://github.com/${repo_owner}/${repo}`;
 
 					this.app = {

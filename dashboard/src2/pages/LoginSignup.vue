@@ -38,7 +38,7 @@
 							</template>
 
 							<!-- Login Section -->
-							<template v-else-if="isLogin">
+							<template v-else-if="isLogin && !is2FA">
 								<FormControl
 									label="Email"
 									placeholder="johndoe@mail.com"
@@ -77,6 +77,35 @@
 								<ErrorMessage class="mt-2" :message="$session.login.error" />
 							</template>
 
+							<!-- 2FA Section -->
+							<template v-else-if="isLogin && is2FA">
+								<FormControl
+									label="2FA Code from your Authenticator App"
+									placeholder="123456"
+									v-model="twoFactorCode"
+									required
+								/>
+								<Button
+									class="mt-4"
+									:loading="
+										$resources.verify2FA.loading || $session.login.loading
+									"
+									variant="solid"
+									@click="
+										$resources.verify2FA.submit({
+											user: email,
+											totp_code: twoFactorCode
+										})
+									"
+								>
+									Verify
+								</Button>
+								<ErrorMessage
+									class="mt-2"
+									:message="$resources.verify2FA.error"
+								/>
+							</template>
+
 							<!-- Signup Section -->
 							<template v-else>
 								<FormControl
@@ -100,7 +129,7 @@
 						</form>
 						<div
 							class="flex flex-col"
-							v-if="!hasForgotPassword && !isOauthLogin"
+							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
 							<div class="-mb-2 mt-6 border-t text-center">
 								<div class="-translate-y-1/2 transform">
@@ -243,6 +272,7 @@ export default {
 			account_request: '',
 			accountRequestCreated: false,
 			otp: '',
+			twoFactorCode: '',
 			password: null,
 			resetPasswordEmailSent: false
 		};
@@ -335,6 +365,19 @@ export default {
 				},
 				auto: true
 			};
+		},
+		is2FAEnabled() {
+			return {
+				url: 'press.api.account.is_2fa_enabled'
+			};
+		},
+		verify2FA() {
+			return {
+				url: 'press.api.account.verify_2fa',
+				onSuccess: async () => {
+					await this.login();
+				}
+			};
 		}
 	},
 	methods: {
@@ -356,19 +399,20 @@ export default {
 						provider: this.socialLoginKey
 					});
 				} else if (this.email && this.password) {
-					await this.$session.login.submit(
+					await this.$resources.is2FAEnabled.submit(
+						{ user: this.email },
 						{
-							email: this.email,
-							password: this.password
-						},
-						{
-							onSuccess: res => {
-								let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-								if (this.$route.query.product) {
-									loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
+							onSuccess: async two_factor_enabled => {
+								if (two_factor_enabled) {
+									this.$router.push({
+										name: 'Login',
+										query: {
+											two_factor: true
+										}
+									});
+								} else {
+									await this.login();
 								}
-								localStorage.setItem('login_email', this.email);
-								window.location.href = loginRoute;
 							}
 						}
 					);
@@ -383,6 +427,35 @@ export default {
 			const params = location.search;
 			const searchParams = new URLSearchParams(params);
 			return searchParams.get('referrer');
+		},
+		async login() {
+			await this.$session.login.submit(
+				{
+					email: this.email,
+					password: this.password
+				},
+				{
+					onSuccess: res => {
+						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
+						if (this.$route.query.product) {
+							loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
+						}
+						localStorage.setItem('login_email', this.email);
+						window.location.href = loginRoute;
+					},
+					onError: err => {
+						if (this.$route.name === 'Login' && this.$route.query.two_factor) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									two_factor: undefined
+								}
+							});
+							this.twoFactorCode = '';
+						}
+					}
+				}
+			);
 		}
 	},
 	computed: {
@@ -403,6 +476,9 @@ export default {
 		},
 		hasForgotPassword() {
 			return this.$route.name == 'Login' && this.$route.query.forgot;
+		},
+		is2FA() {
+			return this.$route.name == 'Login' && this.$route.query.two_factor;
 		},
 		emailDomain() {
 			return this.email?.includes('@') ? this.email?.split('@').pop() : '';

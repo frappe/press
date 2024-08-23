@@ -11,27 +11,31 @@
   "column_break_2",
   "bench_configuration",
   "billing_tab",
+  "free_credits_usd",
+  "free_credits_inr",
+  "column_break_cpry",
+  "micro_debit_charge_usd",
+  "micro_debit_charge_inr",
+  "column_break_wrqp",
+  "usage_record_creation_batch_size",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
   "column_break_qfwx",
   "print_format",
   "stripe_settings_section",
-  "stripe_inr_plan_id",
   "stripe_publishable_key",
+  "stripe_secret_key",
+  "column_break_26",
   "create_stripe_plans",
   "stripe_product_id",
   "stripe_usd_plan_id",
+  "stripe_inr_plan_id",
+  "column_break_yhwz",
   "create_stripe_webhook",
   "stripe_webhook_endpoint_id",
   "stripe_webhook_secret",
-  "column_break_26",
-  "stripe_secret_key",
-  "free_credits_inr",
-  "free_credits_usd",
   "ngrok_auth_token",
-  "micro_debit_charge_inr",
-  "micro_debit_charge_usd",
   "razorpay_settings_section",
   "razorpay_key_id",
   "razorpay_webhook_secret",
@@ -231,6 +235,7 @@
    "label": "Billing"
   },
   {
+   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -1204,11 +1209,29 @@
    "fieldname": "branch",
    "fieldtype": "Data",
    "label": "Branch"
+  },
+  {
+   "fieldname": "column_break_yhwz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_cpry",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wrqp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "500",
+   "fieldname": "usage_record_creation_batch_size",
+   "fieldtype": "Int",
+   "label": "Usage Record Creation Batch Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-07-18 16:26:48.824438",
+ "modified": "2024-08-19 17:47:53.603250",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

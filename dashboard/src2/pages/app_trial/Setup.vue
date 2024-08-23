@@ -30,75 +30,19 @@
 						<div
 							class="mx-auto !w-full bg-white px-4 py-8 sm:mt-8 sm:min-w-[24rem] sm:rounded-lg sm:px-8 sm:shadow-xl"
 						>
-							<div
-								class="mb-6 text-center"
-								v-if="$resources.siteRequest?.doc?.status == 'Pending'"
-							>
-								<span
-									class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
-								>
-									Fill in the details to create your site
-								</span>
-							</div>
-							<!-- Site Details -->
-							<div v-if="siteRequest?.is_pending === false">
-								<div>
-									<AlertBanner
-										:showIcon="false"
-										:type="
-											isTrialEnded(siteRequest?.trial_end_date)
-												? `error`
-												: `warning`
-										"
-										class="col-span-1 lg:col-span-2"
-										:title="trialDays(siteRequest?.trial_end_date)"
-										v-if="
-											!isBillingDetailsSet ||
-											!isPaymentModeSet ||
-											siteRequest?.is_trial_plan
-										"
-									>
-										<Button
-											class="ml-auto"
-											variant="outline"
-											@click="subscribeNow"
-										>
-											Subscribe
-										</Button>
-									</AlertBanner>
-									<!-- Site -->
-									<div
-										class="mt-2 flex items-center justify-between overflow-hidden whitespace-nowrap py-2.5 text-base"
-									>
-										<!-- Site name -->
-										<p
-											class="block font-medium text-gray-900 focus:outline-none"
-											target="_blank"
-										>
-											{{ siteRequest?.site }}
-										</p>
-										<!-- Action Buttons -->
-										<Button
-											variant="outline"
-											iconLeft="user"
-											@click="() => loginAsTeam(siteRequest?.site)"
-											:disabled="
-												(loginAsTeamInProgressInSite &&
-													loginAsTeamInProgressInSite !== siteRequest?.site) ||
-												siteRequest?.site_status !== 'Active'
-											"
-											:loading="
-												loginAsTeamInProgressInSite === siteRequest?.site
-											"
-											loadingText="Logging in ..."
-										>
-											Login</Button
-										>
-									</div>
-								</div>
-							</div>
 							<!-- Site Creation -->
-							<div v-if="$resources.siteRequest?.doc">
+							<div v-if="$resources.siteRequest && $resources.siteRequest?.doc">
+								<!-- Site Creation Form (Site creation is yet not initiated) -->
+								<div
+									class="mb-6 text-center"
+									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
+								>
+									<span
+										class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+									>
+										Fill in the details to create your site
+									</span>
+								</div>
 								<form
 									class="space-y-3"
 									v-if="$resources.siteRequest?.doc?.status == 'Pending'"
@@ -115,6 +59,7 @@
 										v-model="signupValues"
 									/>
 									<ErrorMessage
+										class="sm:max-w-[23rem]"
 										:message="$resources.siteRequest?.createSite?.error"
 									/>
 									<Button
@@ -129,6 +74,7 @@
 										Create Site
 									</Button>
 								</form>
+								<!-- Site creation has been initiated but hasn't created till now -->
 								<div
 									v-else-if="
 										$resources.siteRequest?.doc?.status == 'Wait for Site' ||
@@ -156,21 +102,24 @@
 											}}
 										</p>
 									</div>
-									<ErrorMessage class="mt-2" :message="progressError" />
-									<Button
-										class="mt-2"
-										v-if="
-											$resources.siteRequest?.getProgress?.error &&
-											progressErrorCount > 9
-										"
-										route="/"
+									<ErrorMessage
+										class="mt-2 sm:max-w-[23rem]"
+										:message="progressError"
+									/>
+									<div
+										class="mt-2 text-p-base text-red-600"
+										v-if="progressError"
 									>
-										&#8592; Back to Dashboard
-									</Button>
+										There was an error creating your site. Please contact
+										<a class="underline" href="/support">Frappe Cloud Support</a
+										>.
+									</div>
 								</div>
+								<!-- Site created -->
 								<div
 									v-else-if="
-										$resources.siteRequest?.doc?.status == 'Site Created'
+										$resources.siteRequest?.doc?.status == 'Site Created' &&
+										siteRequest?.is_pending === true
 									"
 								>
 									<div class="text-base text-gray-900">
@@ -180,19 +129,76 @@
 										}}</span>
 										is ready.
 									</div>
-									<div class="py-3 text-base text-gray-900">
-										{{
-											$resources.siteRequest?.getLoginSid?.loading
-												? 'Logging in to your site...'
-												: ''
-										}}
+									<div
+										class="py-3 text-base text-gray-900"
+										v-if="$resources.siteRequest?.getLoginSid?.loading"
+									>
+										Logging in to your site...
 									</div>
 								</div>
-								<div v-else-if="$resources.siteRequest?.status == 'Error'">
-									<div class="text-p-base text-red-600">
-										There was an error creating your site. Please contact
-										<a class="underline" href="/support">Frappe Cloud Support</a
-										>.
+							</div>
+							<!-- Site request faced error -->
+							<div v-if="siteRequest?.status == 'Error'">
+								<div class="text-p-base text-red-600">
+									There was an error creating your site. Please contact
+									<a class="underline" href="/support">Frappe Cloud Support</a>.
+								</div>
+							</div>
+							<!-- Site Details (Site creation done already) -->
+							<div v-if="siteRequest?.is_pending === false">
+								<div>
+									<AlertBanner
+										:showIcon="false"
+										:type="
+											isTrialEnded(siteRequest?.trial_end_date)
+												? `error`
+												: `warning`
+										"
+										class="col-span-1 mb-4 lg:col-span-2"
+										:title="trialDays(siteRequest?.trial_end_date)"
+										v-if="
+											!isBillingDetailsSet ||
+											!isPaymentModeSet ||
+											siteRequest?.is_trial_plan
+										"
+									>
+										<Button
+											class="ml-auto"
+											variant="outline"
+											@click="subscribeNow"
+										>
+											Subscribe
+										</Button>
+									</AlertBanner>
+									<!-- Site -->
+									<div
+										class="flex flex-col items-center justify-between gap-2.5 overflow-hidden whitespace-nowrap py-2.5 text-base"
+									>
+										<!-- Site name -->
+										<p
+											class="block font-medium text-gray-900 focus:outline-none"
+											target="_blank"
+										>
+											{{ siteRequest?.site }}
+										</p>
+										<!-- Action Buttons -->
+										<Button
+											class="w-full"
+											variant="outline"
+											iconLeft="user"
+											@click="() => loginAsTeam(siteRequest?.site)"
+											:disabled="
+												(loginAsTeamInProgressInSite &&
+													loginAsTeamInProgressInSite !== siteRequest?.site) ||
+												siteRequest?.site_status !== 'Active'
+											"
+											:loading="
+												loginAsTeamInProgressInSite === siteRequest?.site
+											"
+											loadingText="Logging in ..."
+										>
+											Login to site</Button
+										>
 									</div>
 								</div>
 							</div>
@@ -265,9 +271,7 @@ export default {
 	},
 	data() {
 		return {
-			siteRequestLoaded: false,
 			plan: null,
-			inputPaddingRight: null,
 			showPlanDialog: false,
 			selectedPlan: null,
 			progressErrorCount: 0,
@@ -283,10 +287,7 @@ export default {
 			return {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
-				auto: true,
-				onSuccess() {
-					this.autoCreateIfNoExtraFields();
-				}
+				auto: true
 			};
 		},
 		saasProduct() {
@@ -294,19 +295,17 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true,
-				onSuccess() {
-					this.autoCreateIfNoExtraFields();
-				}
+				auto: true
 			};
 		},
 		siteRequest() {
-			if (!this.siteRequest?.is_pending) return;
+			if (!this.siteRequest && !this.siteRequest.is_pending) return;
 			return {
 				type: 'document',
 				doctype: 'Product Trial Request',
 				name: this.siteRequest.name,
 				realtime: true,
+				auto: true,
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
@@ -370,15 +369,6 @@ export default {
 		}
 	},
 	methods: {
-		autoCreateIfNoExtraFields() {
-			if (
-				this.saasProductSignupFields.length === 0 &&
-				this.$resources.siteRequest?.doc &&
-				this.$resources.siteRequest?.doc?.status === 'Pending'
-			) {
-				this.createSite();
-			}
-		},
 		async createSite() {
 			let cluster = await this.getClosestCluster();
 			return this.$resources.siteRequest.createSite.submit({
@@ -416,9 +406,6 @@ export default {
 				console.warn(error);
 			}
 			return { server, pingTime };
-		},
-		onResize({ width }) {
-			this.inputPaddingRight = width + 10 + 'px';
 		},
 		loginAsTeam(site_name) {
 			if (this.loginAsTeamInProgressInSite) return;
