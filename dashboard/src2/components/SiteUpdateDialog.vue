@@ -89,7 +89,7 @@ export default {
 					doctype: 'Site Update',
 					name: this.existingUpdate
 				},
-				auto: true,
+				auto: !!this.existingUpdate,
 				onSuccess: doc => {
 					this.initializeValues(doc);
 				}
