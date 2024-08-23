@@ -150,6 +150,12 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
+		doc.hide_sidebar = (
+			not doc.onboarding.site_created
+			and len(doc.valid_teams) == 1
+			and not doc.onboarding.is_payment_mode_set
+			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
+		)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -1028,6 +1034,7 @@ class Team(Document):
 				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
+				"is_payment_mode_set": is_payment_mode_set,
 			}
 		)
 

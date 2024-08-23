@@ -3,7 +3,7 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!$isMobile"
+					v-if="!$isMobile && !$team?.doc?.hide_sidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar
@@ -18,6 +18,7 @@
 					<MobileNav
 						v-if="
 							$isMobile &&
+							!$team?.doc?.hide_sidebar &&
 							$session.user &&
 							$route.name != 'AppTrialSignup' &&
 							$route.name != 'AppTrialSetup'
