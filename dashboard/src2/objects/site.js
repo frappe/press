@@ -1501,13 +1501,26 @@ export default {
 					}
 				},
 				{
-					label: 'Visit Site',
+					label: site.doc?.setup_wizard_complete ? 'Visit Site' : 'Setup Site',
 					slots: {
 						prefix: icon('external-link')
 					},
+					variant: site.doc?.setup_wizard_complete ? 'subtle' : 'solid',
 					condition: () => site.doc.status !== 'Archived',
 					onClick() {
-						window.open(`https://${site.name}`, '_blank');
+						if (site.doc?.setup_wizard_complete) {
+							window.open(`https://${site.name}`, '_blank');
+						} else {
+							if (site.doc?.additional_system_user_created) {
+								site.loginAsTeam
+									.submit({ reason: '' })
+									.then(url => window.open(url, '_blank'));
+							} else {
+								site.loginAsAdmin
+									.submit({ reason: '' })
+									.then(url => window.open(url, '_blank'));
+							}
+						}
 					}
 				},
 				{
