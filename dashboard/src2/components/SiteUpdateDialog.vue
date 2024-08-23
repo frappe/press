@@ -176,10 +176,7 @@ export default {
 			return this.$resources.siteUpdate;
 		},
 		dialogTitle() {
-			if (this.existingUpdate)
-				return `Update scheduled for ${dayjs(
-					this.siteUpdate.doc?.scheduled_time
-				).format('DD MMM YYYY, hh:mm A')}`;
+			if (this.existingUpdate) return 'Edit Scheduled Update';
 			else return 'Updates Available';
 		}
 	},
