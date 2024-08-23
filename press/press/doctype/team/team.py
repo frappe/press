@@ -209,7 +209,7 @@ class Team(Document):
 
 		has_unpaid_invoices = frappe.get_all(
 			"Invoice",
-			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription", "total": (">", 0)},
 		)
 
 		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
