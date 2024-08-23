@@ -60,6 +60,38 @@ class AppRelease(Document):
 
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		app_release = frappe.qb.DocType("App Release")
+		release_approve_request = frappe.qb.DocType("App Release Approval Request")
+
+		# Subquery to get the latest screening_status for each app_release
+		latest_approval_request = (
+			frappe.qb.from_(release_approve_request)
+			.select(release_approve_request.screening_status)
+			.where(release_approve_request.app_release == app_release.name)
+			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
+			.limit(1)
+		)
+
+		# Subquery to get the latest name for each app_release
+		approval_request_name = (
+			frappe.qb.from_(release_approve_request)
+			.select(release_approve_request.name)
+			.where(release_approve_request.app_release == app_release.name)
+			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
+			.limit(1)
+		)
+
+		# Main query that selects app_release fields and the latest screening_status and name
+		query = query.select(
+			app_release.name,
+			latest_approval_request.as_("screening_status"),
+			approval_request_name.as_("approval_request_name"),
+		)
+
+		return query
+
 	def validate(self):
 		if not self.clone_directory:
 			self.set_clone_directory()
