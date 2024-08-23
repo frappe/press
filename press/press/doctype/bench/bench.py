@@ -647,7 +647,7 @@ class Bench(Document):
 	def get_inplace_update_apps(self, apps: "list[BenchUpdateApp]"):
 		inplace_update_apps = []
 		for app in apps:
-			source: "AppSource" = frappe.get_doc("AppSource", app.source)
+			source: "AppSource" = frappe.get_doc("App Source", app.source)
 			inplace_update_apps.append(
 				{
 					"app": app.app,
