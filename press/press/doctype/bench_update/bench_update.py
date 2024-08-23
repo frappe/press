@@ -28,7 +28,6 @@ class BenchUpdate(Document):
 		group: DF.Link
 		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
-		status: DF.Literal["Pending", "Running", "Build Successful", "Failure", "Success"]
 	# end: auto-generated types
 
 	def validate(self):
@@ -87,7 +86,6 @@ class BenchUpdate(Document):
 		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		candidate.schedule_build_and_deploy()
 
-		self.status = "Running"
 		self.candidate = candidate.name
 		self.save()
 

@@ -3,7 +3,7 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!$isMobile"
+					v-if="!$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar
@@ -18,6 +18,7 @@
 					<MobileNav
 						v-if="
 							$isMobile &&
+							!isHideSidebar &&
 							$session.user &&
 							$route.name != 'AppTrialSignup' &&
 							$route.name != 'AppTrialSetup'
@@ -41,15 +42,24 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed } from 'vue';
+import { defineAsyncComponent, computed, watch } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
+import { useRoute } from 'vue-router';
+import { getTeam } from './data/team';
 
 const AppSidebar = defineAsyncComponent(() =>
 	import('./components/AppSidebar.vue')
 );
 const MobileNav = defineAsyncComponent(() =>
 	import('./components/MobileNav.vue')
+);
+
+const route = useRoute();
+const team = getTeam();
+
+const isHideSidebar = computed(
+	() => route.name == 'Welcome' && team?.doc?.hide_sidebar === true
 );
 </script>
 

@@ -150,6 +150,13 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
+		doc.hide_sidebar = (
+			not self.parent_team
+			and not doc.onboarding.site_created
+			and len(doc.valid_teams) == 1
+			and not self.is_payment_mode_set()
+			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
+		)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -209,7 +216,12 @@ class Team(Document):
 
 		has_unpaid_invoices = frappe.get_all(
 			"Invoice",
-			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription", "total": (">", 0)},
+			{
+				"team": self.name,
+				"status": ("in", ["Draft", "Unpaid"]),
+				"type": "Subscription",
+				"total": (">", 0),
+			},
 		)
 
 		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
@@ -1028,6 +1040,7 @@ class Team(Document):
 				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
+				"is_payment_mode_set": is_payment_mode_set,
 			}
 		)
 

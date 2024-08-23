@@ -738,7 +738,12 @@ def deploy_and_update(
 	run_will_fail_check: bool = True,
 ):
 	# Returns name of the Deploy Candidate that is running the build
-	return get_bench_update(name, apps, sites, False).deploy(run_will_fail_check)
+	return get_bench_update(
+		name,
+		apps,
+		sites,
+		False,
+	).deploy(run_will_fail_check)
 
 
 @frappe.whitelist()

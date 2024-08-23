@@ -706,7 +706,6 @@ class DeployCandidate(Document):
 		self._fail_last_running_step()
 		self._set_build_duration()
 		self.save(ignore_permissions=True)
-		self._update_bench_status()
 		if commit:
 			frappe.db.commit()
 
@@ -716,27 +715,8 @@ class DeployCandidate(Document):
 		self.build_error = None
 		self._set_build_duration()
 		self.save(ignore_permissions=True)
-		self._update_bench_status()
 		if commit:
 			frappe.db.commit()
-
-	def _update_bench_status(self):
-		if self.status == "Failure":
-			status = "Failure"
-		elif self.status == "Success":
-			status = "Build Successful"
-		else:
-			return
-
-		bench_update = frappe.get_all(
-			"Bench Update",
-			{"status": "Running", "candidate": self.name},
-			pluck="name",
-		)
-		if not bench_update:
-			return
-
-		frappe.db.set_value("Bench Update", bench_update[0], "status", status)
 
 	def _set_build_duration(self):
 		self.build_end = now()
