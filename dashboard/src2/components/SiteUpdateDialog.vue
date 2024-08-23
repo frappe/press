@@ -10,21 +10,17 @@
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
-					<DateTimeControl
-						v-if="existingUpdate ? existingUpdateDoc.doc : true"
-						v-model="_scheduledTime"
-						label="Schedule Time"
-					/>
+					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
 					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
-							v-model="_skipFailingPatches"
+							v-model="skipFailingPatches"
 						/>
 						<FormControl
 							label="Skip taking backup for this update (If the update fails, rollback will not occur)"
 							type="checkbox"
-							v-model="_skipBackups"
+							v-model="skipBackups"
 						/>
 					</div>
 				</div>
@@ -60,7 +56,6 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
-import { getDocResource } from '../utils/resource';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -84,37 +79,24 @@ export default {
 			skipBackups: false
 		};
 	},
-	computed: {
-		_scheduledTime: {
-			get() {
-				if (this.existingUpdate) {
-					return dayjs(this.existingUpdateDoc?.doc?.scheduled_time).format(
-						'YYYY-MM-DDTHH:mm'
-					);
-				} else {
-					return '';
+	resources: {
+		siteUpdate() {
+			return {
+				// for some reason, type: document won't work after the first time
+				// TODO: investigate why
+				url: 'press.api.client.get',
+				params: {
+					doctype: 'Site Update',
+					name: this.existingUpdate
+				},
+				auto: true,
+				onSuccess: doc => {
+					this.initializeValues(doc);
 				}
-			},
-			set(value) {
-				this.scheduledTime = value;
-			}
-		},
-		_skipFailingPatches: {
-			get() {
-				return !!this.existingUpdateDoc?.doc?.skipped_failing_patches || false;
-			},
-			set(value) {
-				this.skipFailingPatches = value;
-			}
-		},
-		_skipBackups: {
-			get() {
-				return !!this.existingUpdateDoc?.doc?.skipped_backups || false;
-			},
-			set(value) {
-				this.skipBackups = value;
-			}
-		},
+			};
+		}
+	},
+	computed: {
 		scheduledTimeInIST() {
 			if (!this.scheduledTime) return;
 			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
@@ -190,17 +172,13 @@ export default {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
 		},
-		existingUpdateDoc() {
-			if (!this.existingUpdate) return;
-			return getDocResource({
-				doctype: 'Site Update',
-				name: this.existingUpdate
-			});
+		siteUpdate() {
+			return this.$resources.siteUpdate;
 		},
 		dialogTitle() {
 			if (this.existingUpdate)
 				return `Update scheduled for ${dayjs(
-					this.existingUpdateDoc.doc?.scheduled_time
+					this.siteUpdate.doc?.scheduled_time
 				).format('DD MMM YYYY, hh:mm A')}`;
 			else return 'Updates Available';
 		}
@@ -235,7 +213,7 @@ export default {
 					success: () => {
 						this.show = false;
 						this.$site.reload();
-						this.existingUpdateDoc.reload();
+						this.siteUpdate.reload();
 						return 'Scheduled update edited successfully';
 					},
 					error: err => {
@@ -245,6 +223,11 @@ export default {
 					}
 				}
 			);
+		},
+		initializeValues(doc) {
+			this.skipFailingPatches = doc.skipped_failing_patches;
+			this.skipBackups = doc.skipped_backups;
+			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm');
 		}
 	}
 };
