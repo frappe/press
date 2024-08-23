@@ -15,15 +15,15 @@ class BenchUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 
 		apps: DF.Table[BenchUpdateApp]
+		bench: DF.Link | None
 		candidate: DF.Link | None
 		group: DF.Link
+		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
-		status: DF.Literal["Pending", "Running", "Build Successful", "Failure", "Success"]
 	# end: auto-generated types
 
 	def validate(self):
@@ -52,7 +52,6 @@ class BenchUpdate(Document):
 		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		candidate.schedule_build_and_deploy()
 
-		self.status = "Running"
 		self.candidate = candidate.name
 		self.save()
 		return candidate.name
