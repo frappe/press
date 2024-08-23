@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Updates Available',
+			title: dialogTitle,
 			size: '2xl'
 		}"
 	>
@@ -10,17 +10,21 @@
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
-					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
+					<DateTimeControl
+						v-if="existingUpdate ? existingUpdateDoc.doc : true"
+						v-model="_scheduledTime"
+						label="Schedule Time"
+					/>
 					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
-							v-model="skipFailingPatches"
+							v-model="_skipFailingPatches"
 						/>
 						<FormControl
 							label="Skip taking backup for this update (If the update fails, rollback will not occur)"
 							type="checkbox"
-							v-model="skipBackups"
+							v-model="_skipBackups"
 						/>
 					</div>
 				</div>
@@ -32,28 +36,21 @@
 		</template>
 		<template #actions>
 			<Button
+				v-if="existingUpdate"
+				class="w-full"
+				variant="solid"
+				label="Edit Update"
+				@click="editUpdate"
+			/>
+			<Button
+				v-else
 				class="w-full"
 				variant="solid"
 				:loading="$site.scheduleUpdate.loading"
 				:label="`Update ${
 					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'
 				}`"
-				@click="
-					$site.scheduleUpdate.submit(
-						{
-							skip_failing_patches: skipFailingPatches,
-							skip_backups: skipBackups,
-							scheduled_time: scheduledTimeInIST
-						},
-						{
-							onSuccess: () => {
-								$site.reload();
-								show = false;
-								$router.push({ name: 'Site Detail Updates' });
-							}
-						}
-					)
-				"
+				@click="scheduleUpdate"
 			/>
 		</template>
 	</Dialog>
@@ -63,10 +60,17 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
+import { getDocResource } from '../utils/resource';
 
 export default {
 	name: 'SiteUpdateDialog',
-	props: ['site'],
+	props: {
+		site: {
+			type: String,
+			required: true
+		},
+		existingUpdate: String
+	},
 	components: {
 		GenericList,
 		DateTimeControl
@@ -79,16 +83,37 @@ export default {
 			skipBackups: false
 		};
 	},
-	methods: {
-		twoseconds() {
-			return new Promise(resolve => {
-				setTimeout(() => {
-					resolve();
-				}, 2000);
-			});
-		}
-	},
 	computed: {
+		_scheduledTime: {
+			get() {
+				if (this.existingUpdate) {
+					return dayjs(this.existingUpdateDoc?.doc?.scheduled_time).format(
+						'YYYY-MM-DDTHH:mm'
+					);
+				} else {
+					return '';
+				}
+			},
+			set(value) {
+				this.scheduledTime = value;
+			}
+		},
+		_skipFailingPatches: {
+			get() {
+				return !!this.existingUpdateDoc?.doc?.skipped_failing_patches || false;
+			},
+			set(value) {
+				this.skipFailingPatches = value;
+			}
+		},
+		_skipBackups: {
+			get() {
+				return !!this.existingUpdateDoc?.doc?.skipped_backups || false;
+			},
+			set(value) {
+				this.skipBackups = value;
+			}
+		},
 		scheduledTimeInIST() {
 			if (!this.scheduledTime) return;
 			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
@@ -163,6 +188,55 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		existingUpdateDoc() {
+			if (!this.existingUpdate) return;
+			return getDocResource({
+				doctype: 'Site Update',
+				name: this.existingUpdate
+			});
+		},
+		dialogTitle() {
+			if (this.existingUpdate)
+				return `Update scheduled for ${dayjs(
+					this.existingUpdateDoc.doc?.scheduled_time
+				).format('DD MMM YYYY, hh:mm A')}`;
+			else return 'Updates Available';
+		}
+	},
+	methods: {
+		scheduleUpdate() {
+			this.$site.scheduleUpdate.submit(
+				{
+					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
+					scheduled_time: this.scheduledTimeInIST
+				},
+				{
+					onSuccess: () => {
+						this.$site.reload();
+						this.show = false;
+						this.$router.push({ name: 'Site Detail Updates' });
+					}
+				}
+			);
+		},
+		editUpdate() {
+			this.$site.editScheduledUpdate.submit(
+				{
+					name: this.existingUpdate,
+					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
+					scheduled_time: this.scheduledTimeInIST
+				},
+				{
+					onSuccess: () => {
+						this.show = false;
+						this.$site.reload();
+						this.existingUpdateDoc.reload();
+					}
+				}
+			);
 		}
 	}
 };

@@ -52,6 +52,7 @@ export default {
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
+		editScheduledUpdate: 'edit_scheduled_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -1158,6 +1159,24 @@ export default {
 					],
 					rowActions({ row, documentResource: site }) {
 						return [
+							{
+								label: 'Edit Scheduled Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let SiteUpdateDialog = defineAsyncComponent(() =>
+										import('../components/SiteUpdateDialog.vue')
+									);
+									renderDialog(
+										h(SiteUpdateDialog, {
+											site: site.doc?.name,
+											existingUpdate: row.name,
+											onSuccess() {
+												updates.reload();
+											}
+										})
+									);
+								}
+							},
 							{
 								label: 'View Job',
 								onClick() {

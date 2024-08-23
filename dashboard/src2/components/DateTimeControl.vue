@@ -39,10 +39,10 @@ export default {
 		return {
 			scheduledDate: this.modelValue ? this.modelValue.split('T')[0] : '',
 			scheduledHour: this.modelValue
-				? this.modelValue.split('T')[1].split(':')[0]
+				? Number(this.modelValue.split('T')[1].split(':')[0])
 				: '',
 			scheduledMinute: this.modelValue
-				? this.modelValue.split('T')[1].split(':')[1]
+				? Number(this.modelValue.split('T')[1].split(':')[1])
 				: ''
 		};
 	},
