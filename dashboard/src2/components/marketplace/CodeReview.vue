@@ -257,7 +257,7 @@ export default {
 		approveRelease() {
 			this.$resources.codeScreening.setValue.submit({
 				status: 'Approved',
-				reviewed_by: $team?.doc?.user
+				reviewed_by: this.$team?.doc?.user
 			});
 		},
 		rejectRelease() {
