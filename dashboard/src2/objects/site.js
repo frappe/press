@@ -1169,10 +1169,7 @@ export default {
 									renderDialog(
 										h(SiteUpdateDialog, {
 											site: site.doc?.name,
-											existingUpdate: row.name,
-											onSuccess() {
-												updates.reload();
-											}
+											existingUpdate: row.name
 										})
 									);
 								}
