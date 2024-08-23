@@ -700,6 +700,7 @@ def process_new_bench_job_update(job):
 			)
 			bench.add_ssh_user()
 
+			# TODO: Remove this call
 			bench_update = frappe.get_all(
 				"Bench Update",
 				{"candidate": bench.candidate, "status": "Build Successful"},

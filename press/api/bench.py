@@ -757,7 +757,6 @@ def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
 				}
 				for site in sites
 			],
-			"status": "Pending",
 		}
 	).insert(ignore_permissions=True)
 	return bench_update.deploy(run_will_fail_check)
