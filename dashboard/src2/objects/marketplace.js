@@ -537,7 +537,7 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-					size: '8xl'
+					size: '6xl'
 				}
 			},
 			{

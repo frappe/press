@@ -10,31 +10,7 @@
 			<div class="container mx-auto px-4">
 				<div class="grid gap-3">
 					<div class="flex items-center mb-2">
-						<Button
-							v-if="
-								isSystemUser && $resources.codeScreening.doc.status == 'Open'
-							"
-							:variant="'subtle'"
-							theme="green"
-							size="sm"
-							class="mr-4"
-							@click="approveRelease"
-						>
-							Approve Release
-						</Button>
-						<Button
-							v-if="
-								isSystemUser && $resources.codeScreening.doc.status == 'Open'
-							"
-							:variant="'subtle'"
-							theme="red"
-							size="sm"
-							class="mr-4"
-							@click="showRejectReleaseDialog = true"
-						>
-							Reject Release
-						</Button>
-						<div class="flex items-center ml-auto">
+						<div class="flex items-center">
 							<span class="text-lg font-medium text-gray-700 mr-2"
 								>Status:</span
 							>
@@ -45,12 +21,45 @@
 								:theme="getBadgeTheme"
 							/>
 						</div>
+						<Button
+							iconLeft="check"
+							v-if="
+								isSystemUser && $resources.codeScreening.doc.status == 'Open'
+							"
+							:variant="'subtle'"
+							theme="gray"
+							size="sm"
+							class="mr-4 ml-auto"
+							@click="approveRelease"
+						>
+							Approve Release
+						</Button>
+						<Button
+							iconLeft="x"
+							v-if="
+								isSystemUser && $resources.codeScreening.doc.status == 'Open'
+							"
+							:variant="'subtle'"
+							theme="gray"
+							size="sm"
+							class="mr-4"
+							@click="showRejectReleaseDialog = true"
+						>
+							Reject Release
+						</Button>
 					</div>
 					<Dialog
 						v-model="showRejectReleaseDialog"
 						:options="{
 							title: 'Confirm',
-							size: 'xl'
+							size: 'xl',
+							actions: [
+								{
+									label: 'Reject Release',
+									variant: 'solid',
+									onClick: rejectRelease
+								}
+							]
 						}"
 					>
 						<template #body-content>
@@ -62,16 +71,6 @@
 								:disabled="false"
 								v-model="rejectionReason"
 							/>
-							<div class="flex justify-end mt-4">
-								<Button
-									:variant="'solid'"
-									theme="gray"
-									size="sm"
-									@click="rejectRelease"
-								>
-									Reject Release
-								</Button>
-							</div>
 						</template>
 					</Dialog>
 
