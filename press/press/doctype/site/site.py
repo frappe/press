@@ -999,6 +999,8 @@ class Site(Document, TagHelpers):
 		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
 	def reset_previous_status(self, fix_broken=False):
+		if self.status == "Archived":
+			return
 		self.status = self.status_before_update
 		self.status_before_update = None
 		if not self.status or (self.status == "Broken" and fix_broken):
