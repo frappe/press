@@ -151,9 +151,10 @@ class Team(Document):
 			as_dict=True,
 		)
 		doc.hide_sidebar = (
-			not doc.onboarding.site_created
+			not self.parent_team
+			and not doc.onboarding.site_created
 			and len(doc.valid_teams) == 1
-			and not doc.onboarding.is_payment_mode_set
+			and not self.is_payment_mode_set()
 			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
 		)
 
