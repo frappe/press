@@ -67,12 +67,7 @@ class AgentJob(Document):
 		site: DF.Link | None
 		start: DF.Datetime | None
 		status: DF.Literal[
-			"Undelivered",
-			"Pending",
-			"Running",
-			"Success",
-			"Failure",
-			"Delivery Failure",
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"
 		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
