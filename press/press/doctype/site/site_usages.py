@@ -3,7 +3,7 @@ import functools
 import rq
 import frappe
 
-from press.api.analytics import get_current_cpu_usage
+from press.api.analytics import get_current_cpu_usage_for_sites_on_server
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.utils import log_error
 
@@ -30,34 +30,38 @@ def get_config(plan):
 	return get_plan_config(plan)
 
 
-def get_cpu_counter(site):
-	cpu_usage = get_current_cpu_usage(site)
-	return cpu_usage
-
-
 def update_cpu_usages():
 	"""Update CPU Usages field Site.current_cpu_usage across all Active sites from Site Request Log"""
-	sites = frappe.get_all(
-		"Site", filters={"status": "Active"}, fields=["name", "plan", "current_cpu_usage"]
+	servers = frappe.get_all(
+		"Server", filters={"status": "Active", "is_primary": True}, pluck="name"
 	)
+	for server in servers:
+		usage = get_current_cpu_usage_for_sites_on_server(server)
+		sites = frappe.get_all(
+			"Site",
+			filters={"status": "Active", "server": server},
+			fields=["name", "plan", "current_cpu_usage"],
+		)
 
-	for site in sites:
-		try:
-			cpu_usage = get_cpu_counter(site.name)
-			cpu_limit = get_cpu_limits(site.plan)
-			latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
+		for site in sites:
+			if site.name not in usage:
+				continue
+			try:
+				cpu_usage = usage[site.name]
+				cpu_limit = get_cpu_limits(site.plan)
+				latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
 
-			if site.current_cpu_usage != latest_cpu_usage:
-				site_doc = frappe.get_doc("Site", site.name)
-				site_doc.current_cpu_usage = latest_cpu_usage
-				site_doc.save()
-				frappe.db.commit()
-		except rq.timeouts.JobTimeoutException:
-			frappe.db.rollback()
-			return
-		except Exception:
-			log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
-			frappe.db.rollback()
+				if site.current_cpu_usage != latest_cpu_usage:
+					site_doc = frappe.get_doc("Site", site.name)
+					site_doc.current_cpu_usage = latest_cpu_usage
+					site_doc.save()
+					frappe.db.commit()
+			except rq.timeouts.JobTimeoutException:
+				frappe.db.rollback()
+				return
+			except Exception:
+				log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
+				frappe.db.rollback()
 
 
 def update_disk_usages():
