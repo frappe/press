@@ -35,30 +35,49 @@ import dayjs from '../utils/dayjs';
 export default {
 	props: ['modelValue', 'label'],
 	emits: ['update:modelValue'],
-	data() {
-		return {
-			scheduledDate: '',
-			scheduledHour: '',
-			scheduledMinute: ''
-		};
-	},
-	watch: {
-		scheduledTime() {
-			this.$emit('update:modelValue', this.scheduledTime);
-		}
-	},
-	updated() {
-		// put in updated to ensure hook to ensure data from backend
-		// is reflected here right after it's fetched
-		this.scheduledDate = this.modelValue ? this.modelValue.split('T')[0] : '';
-		this.scheduledHour = this.modelValue
-			? Number(this.modelValue.split('T')[1].split(':')[0])
-			: '';
-		this.scheduledMinute = this.modelValue
-			? Number(this.modelValue.split('T')[1].split(':')[1])
-			: '';
-	},
 	computed: {
+		scheduledDate: {
+			get() {
+				return this.modelValue ? this.modelValue.split('T')[0] : '';
+			},
+			set(value) {
+				this.$emit(
+					'update:modelValue',
+					`${value}T${this.scheduledHour}:${this.scheduledMinute}`
+				);
+			}
+		},
+		scheduledHour: {
+			get() {
+				return this.modelValue
+					? Number(this.modelValue.split('T')[1].split(':')[0])
+					: '';
+			},
+			set(value) {
+				this.$emit(
+					'update:modelValue',
+					`${this.scheduledDate}T${value.padStart(2, '0')}:${
+						this.scheduledMinute
+					}`
+				);
+			}
+		},
+		scheduledMinute: {
+			get() {
+				return this.modelValue
+					? Number(this.modelValue.split('T')[1].split(':')[1])
+					: '';
+			},
+			set(value) {
+				this.$emit(
+					'update:modelValue',
+					`${this.scheduledDate}T${this.scheduledHour}:${value.padStart(
+						2,
+						'0'
+					)}`
+				);
+			}
+		},
 		dayOptions() {
 			let days = [];
 			for (let i = 0; i < 7; i++) {
@@ -102,14 +121,6 @@ export default {
 			}
 
 			return options;
-		},
-		scheduledTime() {
-			if (!this.scheduledDate || !this.scheduledHour || !this.scheduledMinute)
-				return null;
-
-			return dayjs(
-				`${this.scheduledDate} ${this.scheduledHour}:${this.scheduledMinute}`
-			).format('YYYY-MM-DDTHH:mm');
 		}
 	}
 };
