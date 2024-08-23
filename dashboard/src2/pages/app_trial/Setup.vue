@@ -59,6 +59,7 @@
 										v-model="signupValues"
 									/>
 									<ErrorMessage
+										class="sm:max-w-[23rem]"
 										:message="$resources.siteRequest?.createSite?.error"
 									/>
 									<Button
@@ -101,8 +102,14 @@
 											}}
 										</p>
 									</div>
-									<ErrorMessage class="mt-2" :message="progressError" />
-									<div class="mt-2 text-p-base text-red-600" v-if="progressError">
+									<ErrorMessage
+										class="mt-2 sm:max-w-[23rem]"
+										:message="progressError"
+									/>
+									<div
+										class="mt-2 text-p-base text-red-600"
+										v-if="progressError"
+									>
 										There was an error creating your site. Please contact
 										<a class="underline" href="/support">Frappe Cloud Support</a
 										>.
@@ -147,7 +154,7 @@
 												? `error`
 												: `warning`
 										"
-										class="col-span-1 lg:col-span-2 mb-4"
+										class="col-span-1 mb-4 lg:col-span-2"
 										:title="trialDays(siteRequest?.trial_end_date)"
 										v-if="
 											!isBillingDetailsSet ||
@@ -165,7 +172,7 @@
 									</AlertBanner>
 									<!-- Site -->
 									<div
-										class="flex flex-col items-center justify-between overflow-hidden whitespace-nowrap py-2.5 gap-2.5 text-base"
+										class="flex flex-col items-center justify-between gap-2.5 overflow-hidden whitespace-nowrap py-2.5 text-base"
 									>
 										<!-- Site name -->
 										<p

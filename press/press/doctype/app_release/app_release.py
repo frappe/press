@@ -60,27 +60,6 @@ class AppRelease(Document):
 
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
 
-	@staticmethod
-	def get_list_query(query, filters=None, **list_args):
-		app_release = frappe.qb.DocType("App Release")
-		release_approve_request = frappe.qb.DocType("App Release Approval Request")
-
-		# Subquery to get the latest screening_status for each app_release
-		latest_approval_request = (
-			frappe.qb.from_(release_approve_request)
-			.select(release_approve_request.screening_status)
-			.where(release_approve_request.app_release == app_release.name)
-			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
-			.limit(1)
-		)
-
-		# Main query that selects app_release fields and the latest screening_status
-		query = query.select(
-			app_release.name, latest_approval_request.as_("screening_status")
-		)
-
-		return query
-
 	def validate(self):
 		if not self.clone_directory:
 			self.set_clone_directory()
@@ -109,11 +88,11 @@ class AppRelease(Document):
 	def clone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
-	def _clone(self):
-		if self.cloned:
+	def _clone(self, force: bool = False):
+		if self.cloned and not force:
 			return
 
-		self._set_prepared_clone_directory()
+		self._set_prepared_clone_directory(self.cloned and force)
 		self._set_code_server_url()
 		self._clone_repo()
 		self.cloned = True
@@ -156,8 +135,13 @@ class AppRelease(Document):
 			clone_directory, self.app, self.source, self.hash[:10]
 		)
 
-	def _set_prepared_clone_directory(self):
-		self.clone_directory = get_prepared_clone_directory(self.app, self.source, self.hash)
+	def _set_prepared_clone_directory(self, delete_if_exists: bool = False):
+		self.clone_directory = get_prepared_clone_directory(
+			self.app,
+			self.source,
+			self.hash,
+			delete_if_exists,
+		)
 
 	def _set_code_server_url(self) -> None:
 		code_server = frappe.db.get_single_value("Press Settings", "code_server")
@@ -362,7 +346,12 @@ def has_permission(doc, ptype, user):
 	return False
 
 
-def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
+def get_prepared_clone_directory(
+	app: str,
+	source: str,
+	hash: str,
+	delete_if_exists: bool = False,
+) -> str:
 	clone_directory: str = frappe.db.get_single_value("Press Settings", "clone_directory")
 	if not os.path.exists(clone_directory):
 		os.mkdir(clone_directory)
@@ -375,11 +364,17 @@ def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
 	if not os.path.exists(source_directory):
 		os.mkdir(source_directory)
 
-	clone_directory = os.path.join(clone_directory, app, source, hash[:10])
-	if not os.path.exists(clone_directory):
-		os.mkdir(clone_directory)
+	hash_directory = os.path.join(clone_directory, app, source, hash[:10])
+	exists = os.path.exists(hash_directory)
 
-	return clone_directory
+	if exists and delete_if_exists:
+		shutil.rmtree(hash_directory)
+		exists = False
+
+	if not exists:
+		os.mkdir(hash_directory)
+
+	return hash_directory
 
 
 def get_changed_files_between_hashes(

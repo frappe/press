@@ -309,7 +309,6 @@ class BillingAudit(Audit):
 		)
 		audits = {
 			"Subscriptions with no usage records created": self.subscriptions_without_usage_record,
-			"Teams with active sites that don't have payment method set": self.teams_without_payment_method,
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
 			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
@@ -343,29 +342,6 @@ class BillingAudit(Audit):
 			},
 			pluck="name",
 		)
-
-	def teams_without_payment_method(self):
-		teams_with_no_card = frappe.get_all(
-			"Team",
-			{
-				"free_account": False,
-				"name": ("in", self.teams_with_paid_sites),
-				"payment_mode": "Card",
-				"default_payment_method": ("is", "not set"),
-			},
-			pluck="name",
-		)
-		teams_with_no_payment_method = frappe.get_all(
-			"Team",
-			{
-				"free_account": False,
-				"name": ("in", self.teams_with_paid_sites),
-				"payment_mode": ("is", "not set"),
-			},
-			pluck="name",
-		)
-
-		return teams_with_no_card + teams_with_no_payment_method
 
 	def disabled_teams_with_active_sites(self):
 		return frappe.get_all(

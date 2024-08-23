@@ -34,6 +34,7 @@ class Team(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import (
 			CommunicationEmail,
@@ -125,6 +126,7 @@ class Team(Document):
 			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
+		user.is_2fa_enabled = frappe.db.get_value("User 2FA", {"user": user.name}, "enabled")
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
@@ -207,7 +209,7 @@ class Team(Document):
 
 		has_unpaid_invoices = frappe.get_all(
 			"Invoice",
-			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription", "total": (">", 0)},
 		)
 
 		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
@@ -1101,13 +1103,33 @@ class Team(Document):
 			pluck="name",
 		)
 
+	def reallocate_workers_if_needed(
+		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
+	):
+		for before, after in zip(workloads_before, workloads_after):
+			if after[1] - before[1] >= 8:  # 100 USD equivalent
+				frappe.enqueue_doc(
+					"Server",
+					before[2],
+					method="auto_scale_workers",
+					job_id=f"auto_scale_workers:{before[2]}",
+					deduplicate=True,
+					enqueue_after_commit=True,
+				)
+
 	@frappe.whitelist()
 	def unsuspend_sites(self, reason=None):
+		from press.press.doctype.bench.bench import Bench
+
 		suspended_sites = [
 			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})
 		]
+		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
+		workloads_after = list(Bench.get_workloads(suspended_sites))
+		self.reallocate_workers_if_needed(workloads_before, workloads_after)
+
 		return suspended_sites
 
 	def remove_subscription_config_in_trial_sites(self):
@@ -1125,7 +1147,7 @@ class Team(Document):
 			except Exception:
 				log_error("Failed to remove subscription config in trial sites")
 
-	def get_upcoming_invoice(self):
+	def get_upcoming_invoice(self, for_update=False):
 		# get the current period's invoice
 		today = frappe.utils.today()
 		result = frappe.db.get_all(
@@ -1142,7 +1164,7 @@ class Team(Document):
 			pluck="name",
 		)
 		if result:
-			return frappe.get_doc("Invoice", result[0])
+			return frappe.get_doc("Invoice", result[0], for_update=for_update)
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
