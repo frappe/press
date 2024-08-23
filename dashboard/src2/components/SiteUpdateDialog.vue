@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Updates Available',
+			title: dialogTitle,
 			size: '2xl'
 		}"
 	>
@@ -32,28 +32,21 @@
 		</template>
 		<template #actions>
 			<Button
+				v-if="existingUpdate"
+				class="w-full"
+				variant="solid"
+				label="Edit Update"
+				@click="editUpdate"
+			/>
+			<Button
+				v-else
 				class="w-full"
 				variant="solid"
 				:loading="$site.scheduleUpdate.loading"
 				:label="`Update ${
 					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'
 				}`"
-				@click="
-					$site.scheduleUpdate.submit(
-						{
-							skip_failing_patches: skipFailingPatches,
-							skip_backups: skipBackups,
-							scheduled_time: scheduledTimeInIST
-						},
-						{
-							onSuccess: () => {
-								$site.reload();
-								show = false;
-								$router.push({ name: 'Site Detail Updates' });
-							}
-						}
-					)
-				"
+				@click="scheduleUpdate"
 			/>
 		</template>
 	</Dialog>
@@ -63,10 +56,17 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'SiteUpdateDialog',
-	props: ['site'],
+	props: {
+		site: {
+			type: String,
+			required: true
+		},
+		existingUpdate: String
+	},
 	components: {
 		GenericList,
 		DateTimeControl
@@ -79,13 +79,21 @@ export default {
 			skipBackups: false
 		};
 	},
-	methods: {
-		twoseconds() {
-			return new Promise(resolve => {
-				setTimeout(() => {
-					resolve();
-				}, 2000);
-			});
+	resources: {
+		siteUpdate() {
+			return {
+				// for some reason, type: document won't work after the first time
+				// TODO: investigate why
+				url: 'press.api.client.get',
+				params: {
+					doctype: 'Site Update',
+					name: this.existingUpdate
+				},
+				auto: !!this.existingUpdate,
+				onSuccess: doc => {
+					this.initializeValues(doc);
+				}
+			};
 		}
 	},
 	computed: {
@@ -163,6 +171,60 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		siteUpdate() {
+			return this.$resources.siteUpdate;
+		},
+		dialogTitle() {
+			if (this.existingUpdate) return 'Edit Scheduled Update';
+			else return 'Updates Available';
+		}
+	},
+	methods: {
+		scheduleUpdate() {
+			this.$site.scheduleUpdate.submit(
+				{
+					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
+					scheduled_time: this.scheduledTimeInIST
+				},
+				{
+					onSuccess: () => {
+						this.$site.reload();
+						this.show = false;
+						this.$router.push({ name: 'Site Detail Updates' });
+					}
+				}
+			);
+		},
+		editUpdate() {
+			toast.promise(
+				this.$site.editScheduledUpdate.submit({
+					name: this.existingUpdate,
+					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
+					scheduled_time: this.scheduledTimeInIST
+				}),
+				{
+					loading: 'Editing scheduled update...',
+					success: () => {
+						this.show = false;
+						this.$site.reload();
+						this.siteUpdate.reload();
+						return 'Scheduled update edited successfully';
+					},
+					error: err => {
+						return err.messages.length
+							? err.messages[0]
+							: err.message || 'Failed to edit scheduled update';
+					}
+				}
+			);
+		},
+		initializeValues(doc) {
+			this.skipFailingPatches = doc.skipped_failing_patches;
+			this.skipBackups = doc.skipped_backups;
+			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm');
 		}
 	}
 };

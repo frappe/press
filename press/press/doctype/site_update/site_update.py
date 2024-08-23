@@ -63,6 +63,8 @@ class SiteUpdate(Document):
 		"update_job",
 		"scheduled_time",
 		"creation",
+		"skipped_backups",
+		"skipped_failing_patches",
 	]
 
 	@staticmethod

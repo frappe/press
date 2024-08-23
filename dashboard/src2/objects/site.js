@@ -52,6 +52,8 @@ export default {
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
+		editScheduledUpdate: 'edit_scheduled_update',
+		cancelUpdate: 'cancel_scheduled_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -1159,7 +1161,51 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						return [
 							{
+								label: 'Edit Scheduled Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let SiteUpdateDialog = defineAsyncComponent(() =>
+										import('../components/SiteUpdateDialog.vue')
+									);
+									renderDialog(
+										h(SiteUpdateDialog, {
+											site: site.doc?.name,
+											existingUpdate: row.name
+										})
+									);
+								}
+							},
+							{
+								label: 'Cancel Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									confirmDialog({
+										title: 'Cancel Update',
+										message: `Are you sure you want to cancel the scheduled update?`,
+										onSuccess({ hide }) {
+											if (site.cancelUpdate.loading) return;
+											toast.promise(
+												site.cancelUpdate.submit({ site_update: row.name }),
+												{
+													loading: 'Cancelling update...',
+													success: () => {
+														hide();
+														return 'Update cancelled';
+													},
+													error: e => {
+														return e.messages?.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
 								label: 'View Job',
+								condition: () => row.status !== 'Scheduled',
 								onClick() {
 									router.push({
 										name: 'Site Job',
@@ -1467,7 +1513,7 @@ export default {
 				},
 				{
 					label: 'Update Available',
-					variant: 'solid',
+					variant: site.doc?.setup_wizard_complete ? 'solid' : 'subtle',
 					slots: {
 						prefix: icon('alert-circle')
 					},
