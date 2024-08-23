@@ -100,9 +100,6 @@ class BenchUpdate(Document):
 		if not self.is_inplace_update:
 			raise Exception("In place update flag is not set, aborting in place update.")
 
-		self.status = "Running"
-		self.save()
-
 		bench: "Bench" = frappe.get_doc("Bench", self.bench)
 		sites = [s.site for s in self.sites]
 
@@ -187,7 +184,6 @@ def get_bench_update(
 				}
 				for site in sites
 			],
-			"status": "Pending",
 			"is_inplace_update": is_inplace_update,
 		}
 	).insert(ignore_permissions=True)
