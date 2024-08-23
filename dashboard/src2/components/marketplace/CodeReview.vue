@@ -21,7 +21,7 @@
 								:theme="getBadgeTheme"
 							/>
 						</div>
-						<Button
+						<!-- <Button
 							iconLeft="check"
 							v-if="
 								isSystemUser && $resources.codeScreening.doc.status == 'Open'
@@ -46,7 +46,7 @@
 							@click="showRejectReleaseDialog = true"
 						>
 							Reject Release
-						</Button>
+						</Button> -->
 					</div>
 					<Dialog
 						v-model="showRejectReleaseDialog"
