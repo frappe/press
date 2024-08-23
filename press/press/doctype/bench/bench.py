@@ -28,6 +28,8 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
+	from press.press.doctype.bench_update.bench_update import BenchUpdate
+
 	SupervisorctlActions = Literal[
 		"start",
 		"stop",
@@ -686,30 +688,39 @@ def process_new_bench_job_update(job):
 		"Failure": "Broken",
 		"Delivery Failure": "Broken",
 	}[job.status]
+	if updated_status == bench.status:
+		return
 
-	if updated_status != bench.status:
-		frappe.db.set_value("Bench", job.bench, "status", updated_status)
-		if updated_status == "Active":
-			StagingSite.create_if_needed(bench)
-			bench = frappe.get_doc("Bench", job.bench)
-			frappe.enqueue(
-				"press.press.doctype.bench.bench.archive_obsolete_benches",
-				enqueue_after_commit=True,
-				group=bench.group,
-				server=bench.server,
-			)
-			bench.add_ssh_user()
+	frappe.db.set_value("Bench", job.bench, "status", updated_status)
+	if updated_status != "Active":
+		return
 
-			# TODO: Remove this call
-			bench_update = frappe.get_all(
-				"Bench Update",
-				{"candidate": bench.candidate, "status": "Build Successful"},
-				pluck="name",
-			)
-			if bench_update:
-				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(
-					job.bench, bench.server
-				)
+	StagingSite.create_if_needed(bench)
+	bench = frappe.get_doc("Bench", job.bench)
+	frappe.enqueue(
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		enqueue_after_commit=True,
+		group=bench.group,
+		server=bench.server,
+	)
+	bench.add_ssh_user()
+
+	dc_status = frappe.get_value("Deploy Candidate", bench.candidate, "status")
+	if dc_status != "Success":
+		return
+
+	bench_updates = frappe.get_all(
+		"Bench Update",
+		{"candidate": bench.candidate},
+		pluck="name",
+		limit=1,
+	)
+	if len(bench_updates) != 0:
+		bench_update: "BenchUpdate" = frappe.get_doc(
+			"Bench Update",
+			bench_updates[0],
+		)
+		bench_update.update_sites_on_server(job.bench, bench.server)
 
 
 def process_archive_bench_job_update(job):
