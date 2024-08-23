@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 
-import json
 from datetime import datetime, timedelta
 
 import frappe
@@ -537,57 +536,74 @@ def get_current_cpu_usage(site):
 		return 0
 
 
-def multi_get_current_cpu_usage(sites):
+def get_current_cpu_usage_for_sites_on_server(server):
+	result = {}
 	try:
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not log_server:
-			return [0] * len(sites)
+			return result
 
-		url = f"https://{log_server}/elasticsearch/filebeat-*/_msearch"
+		url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 		password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
-		headers = ["{}"] * len(sites)
-		bodies = [
-			json.dumps(
-				{
-					"query": {
-						"bool": {
-							"filter": [
-								{"match_phrase": {"json.transaction_type": "request"}},
-								{"match_phrase": {"json.site": site}},
-							]
+		query = {
+			"aggs": {
+				"0": {
+					"terms": {"field": "json.site", "size": 1000},
+					"aggs": {
+						"usage": {
+							"filter": {"exists": {"field": "json.request.counter"}},
+							"aggs": {
+								"counter": {
+									"top_metrics": {
+										"metrics": {"field": "json.request.counter"},
+										"size": 1,
+										"sort": {"@timestamp": "desc"},
+									}
+								}
+							},
 						}
 					},
-					"sort": {"@timestamp": "desc"},
-					"size": 1,
 				}
-			)
-			for site in sites
-		]
+			},
+			"size": 0,
+			"query": {
+				"bool": {
+					"filter": [
+						{
+							"bool": {
+								"filter": [
+									{
+										"bool": {
+											"should": [{"term": {"json.transaction_type": {"value": "request"}}}],
+											"minimum_should_match": 1,
+										}
+									},
+									{
+										"bool": {
+											"should": [{"term": {"agent.name": {"value": server}}}],
+											"minimum_should_match": 1,
+										}
+									},
+								]
+							}
+						},
+						{"range": {"@timestamp": {"gte": "now-1d"}}},
+					]
+				}
+			},
+		}
 
-		multi_query = [None] * 2 * len(sites)
-		multi_query[::2] = headers
-		multi_query[1::2] = bodies
-
-		payload = "\n".join(multi_query) + "\n"
-
-		response = requests.post(
-			url,
-			data=payload,
-			auth=("frappe", password),
-			headers={"Content-Type": "application/x-ndjson"},
-		).json()
-
-		result = []
-		for response in response["responses"]:
-			hits = response["hits"]["hits"]
-			if hits:
-				result.append(hits[0]["_source"]["json"]["request"].get("counter", 0))
-			else:
-				result.append(0)
-		return result
+		response = requests.post(url, json=query, auth=("frappe", password)).json()
+		for row in response["aggregations"]["0"]["buckets"]:
+			site = row["key"]
+			metric = row["usage"]["counter"]["top"]
+			if metric:
+				result[site] = metric[0]["metrics"]["json.request.counter"]
 	except Exception:
-		return [0] * len(sites)
+		pass
+	finally:
+		return result
 
 
 @frappe.whitelist()
