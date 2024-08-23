@@ -170,8 +170,14 @@ def send_drip_emails():
 		"Drip Email", {"enabled": 1, "email_type": ("in", ("Drip", "Onboarding"))}
 	)
 	for drip_email_name in drip_emails:
-		drip_email = frappe.get_doc("Drip Email", drip_email_name)
-		drip_email.send_to_sites()
+		frappe.enqueue_doc(
+			"Drip Email",
+			drip_email_name,
+			"send_to_sites",
+			queue="long",
+			job_id=f"drip_email_send_to_sites:{drip_email_name}",
+			deduplicate=True,
+		)
 
 
 def send_welcome_email():
