@@ -238,6 +238,9 @@ class Site(Document, TagHelpers):
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
+		doc.has_scheduled_updates = bool(
+			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
+		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
@@ -2134,14 +2137,14 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
-		if frappe.db.get_all(
+		if frappe.db.get_value(
 			"Agent Job",
 			filters={
 				"site": self.name,
 				"job_type": "Add User to ProxySQL",
 				"status": ["in", ["Running", "Pending"]],
 			},
-			limit=1,
+			for_update=True,
 		):
 			frappe.throw(
 				"Database Access is already being enabled on this site. Please check after a while."
