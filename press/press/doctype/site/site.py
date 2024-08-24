@@ -2137,14 +2137,14 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
-		if frappe.db.get_all(
+		if frappe.db.get_value(
 			"Agent Job",
 			filters={
 				"site": self.name,
 				"job_type": "Add User to ProxySQL",
 				"status": ["in", ["Running", "Pending"]],
 			},
-			limit=1,
+			for_update=True,
 		):
 			frappe.throw(
 				"Database Access is already being enabled on this site. Please check after a while."
