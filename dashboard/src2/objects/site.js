@@ -1190,6 +1190,7 @@ export default {
 													loading: 'Cancelling update...',
 													success: () => {
 														hide();
+														site.reload();
 														return 'Update cancelled';
 													},
 													error: e => {
