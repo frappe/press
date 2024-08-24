@@ -55,7 +55,10 @@
 						v-model="skipFailingPatches"
 					/>
 				</div>
-				<p v-else class="mt-4 text-sm text-gray-600">
+				<p
+					v-else-if="!$site.doc.group_public"
+					class="mt-4 text-sm text-gray-600"
+				>
 					If the region you're looking for isn't available, please add from the
 					Bench dashboard.
 				</p>
@@ -66,6 +69,7 @@
 </template>
 
 <script>
+import { getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import DateTimeControl from '../DateTimeControl.vue';
 
@@ -90,6 +94,9 @@ export default {
 				.format('YYYY-MM-DDTHH:mm');
 
 			return datetimeInIST;
+		},
+		$site() {
+			return getCachedDocumentResource('Site', this.site);
 		}
 	},
 	resources: {
