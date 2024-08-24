@@ -238,6 +238,9 @@ class Site(Document, TagHelpers):
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
+		doc.has_scheduled_updates = bool(
+			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
+		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
 		server = frappe.get_value(

@@ -1519,6 +1519,7 @@ export default {
 					},
 					condition() {
 						return (
+							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status
@@ -1531,6 +1532,19 @@ export default {
 							import('../components/SiteUpdateDialog.vue')
 						);
 						renderDialog(h(SiteUpdateDialog, { site: site.doc?.name }));
+					}
+				},
+				{
+					label: 'Update Scheduled',
+					slots: {
+						prefix: icon('calendar')
+					},
+					condition: () => site.doc?.has_scheduled_updates,
+					onClick() {
+						router.push({
+							name: 'Site Detail Updates',
+							params: { name: site.name }
+						});
 					}
 				},
 				{
