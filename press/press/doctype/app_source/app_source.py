@@ -9,10 +9,14 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-
 from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.app_release.app_release import AppRelease
 
 
 class AppSource(Document):
@@ -23,7 +27,6 @@ class AppSource(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.app_source_version.app_source_version import AppSourceVersion
 
 		app: DF.Link
@@ -99,62 +102,83 @@ class AppSource(Document):
 		# self.create_release()
 
 	@frappe.whitelist()
-	def create_release(self, force=False):
+	def create_release(self, force=False, commit_hash: str | None = None):
 		if self.last_github_poll_failed and not force:
 			return
 
-		if not (response := self.poll_github_for_branch_info()).ok:
+		commit_hash, commit_info, ok = self.get_commit_info(
+			commit_hash,
+		)
+
+		if not ok:
 			return
 
 		try:
-			self.create_release_from_branch_info(response)
+			return self._create_release(commit_hash, commit_info)
 		except Exception:
 			log_error("Create Release Error", doc=self)
 
-	def create_release_from_branch_info(self, response):
-		response_data = response.json()
-		hash = response_data["commit"]["sha"]
-		if frappe.db.exists(
-			"App Release", {"app": self.app, "source": self.name, "hash": hash}
-		):
-			# No need to create a new release
-			return
-
-		timestamp_str = response_data["commit"]["commit"]["author"]["date"].replace(
-			"Z", "+00:00"
+	def _create_release(self, commit_hash: str, commit_info: dict) -> "AppRelease":
+		releases = frappe.get_all(
+			"App Release",
+			{
+				"app": self.app,
+				"source": self.name,
+				"hash": commit_hash,
+			},
+			pluck="name",
+			limit=1,
 		)
-		timestamp = datetime.fromisoformat(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
-		is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
-		frappe.get_doc(
+		if len(releases) > 0:
+			# No need to create a new release
+			return frappe.get_doc("App Release", releases[0])
+
+		return self.create_release_from_commit_info(commit_info, commit_hash)
+
+	def create_release_from_commit_info(self, commit_info: dict, commit_hash: str):
+		app_release: "AppRelease" = frappe.get_doc(
 			{
 				"doctype": "App Release",
 				"app": self.app,
 				"source": self.name,
-				"hash": hash,
+				"hash": commit_hash,
 				"team": self.team,
-				"message": response_data["commit"]["commit"]["message"],
-				"author": response_data["commit"]["commit"]["author"]["name"],
-				"timestamp": timestamp,
-				"deployable": bool(is_first_release),
+				"message": commit_info.get("message"),
+				"author": commit_info.get("author", {}).get("name"),
+				"timestamp": get_timestamp_from_commit_info(commit_info),
 			}
 		).insert(ignore_permissions=True)
+		return app_release
 
-	def poll_github_for_branch_info(self) -> requests.Response:
-		if (response := self.get_poll_response()).ok:
+	def get_commit_info(self, commit_hash: None | str = None) -> tuple[str, dict, bool]:
+		if (response := self.poll_github(commit_hash)).ok:
 			self.set_poll_succeeded()
 		else:
 			self.set_poll_failed(response)
+			return ("", dict, False)
 
 		# Will cause recursion of db.save is used
 		self.db_update()
-		return response
 
-	def get_poll_response(self) -> requests.Response:
+		data = response.json()
+		if commit_hash:
+			return (commit_hash, data.get("commit", {}), True)
+
+		commit_hash = data.get("commit", {}).get("sha", "")
+		commit_info = data.get("commit", {}).get("commit", {})
+		return (commit_hash, commit_info, True)
+
+	def poll_github(self, commit_hash: None | str = None) -> requests.Response:
 		headers = self.get_auth_headers()
-		return requests.get(
-			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
-			headers=headers,
-		)
+		url = f"https://api.github.com/repos/{self.repository_owner}/{self.repository}"
+
+		if commit_hash:
+			# page and per_page set to reduce unnecessary diff info
+			url = f"{url}/commits/{commit_hash}&page=1&per_page=1"
+		else:
+			url = f"{url}/branches/{self.branch}"
+
+		return requests.get(url, headers=headers)
 
 	def set_poll_succeeded(self):
 		self.last_github_response = ""
@@ -229,3 +253,12 @@ def create_app_source(
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"App Source"
 )
+
+
+def get_timestamp_from_commit_info(commit_info: dict) -> str | None:
+	timestamp_str = commit_info.get("author", {}).get("date")
+	if not timestamp_str:
+		return None
+
+	timestamp_str = timestamp_str.replace("Z", "+00:00")
+	return datetime.fromisoformat(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
