@@ -35,6 +35,8 @@ class RegistryServer(BaseServer):
 		registry_password: DF.Password | None
 		registry_username: DF.Data | None
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types

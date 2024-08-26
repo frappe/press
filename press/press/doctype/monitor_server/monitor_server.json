@@ -28,6 +28,8 @@
   "grafana_password",
   "node_exporter_dashboard_path",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -229,6 +231,16 @@
    "fieldname": "node_exporter_dashboard_path",
    "fieldtype": "Data",
    "label": "Node Exporter Dashboard Path"
+   },
+   {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [
