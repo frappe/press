@@ -791,11 +791,17 @@ export default {
 									}
 								);
 							} else {
-								let url =
+								const url =
 									file == 'config'
 										? backup.config_file_url
 										: backup[file + '_url'];
-								window.open(url);
+
+								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/;
+								const newUrl = url.replace(
+									domainRegex,
+									`$1${site.doc.host_name}/`
+								);
+								window.open(newUrl);
 							}
 						}
 
