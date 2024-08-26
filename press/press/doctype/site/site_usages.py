@@ -36,32 +36,44 @@ def update_cpu_usages():
 		"Server", filters={"status": "Active", "is_primary": True}, pluck="name"
 	)
 	for server in servers:
-		usage = get_current_cpu_usage_for_sites_on_server(server)
-		sites = frappe.get_all(
-			"Site",
-			filters={"status": "Active", "server": server},
-			fields=["name", "plan", "current_cpu_usage"],
+		frappe.enqueue(
+			"press.press.doctype.site.site_usages.update_cpu_usage_server",
+			server=server,
+			queue="long",
+			deduplicate=True,
+			job_id=f"update_cpu_usages:{server}",
 		)
 
-		for site in sites:
-			if site.name not in usage:
-				continue
-			try:
-				cpu_usage = usage[site.name]
-				cpu_limit = get_cpu_limits(site.plan)
-				latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
 
-				if site.current_cpu_usage != latest_cpu_usage:
-					site_doc = frappe.get_doc("Site", site.name)
-					site_doc.current_cpu_usage = latest_cpu_usage
-					site_doc.save()
-					frappe.db.commit()
-			except rq.timeouts.JobTimeoutException:
-				frappe.db.rollback()
-				return
-			except Exception:
-				log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
-				frappe.db.rollback()
+def update_cpu_usage_server(server):
+	usage = get_current_cpu_usage_for_sites_on_server(server)
+	sites = frappe.get_all(
+		"Site",
+		filters={"status": "Active", "server": server},
+		fields=["name", "plan", "current_cpu_usage"],
+	)
+
+	for site in sites:
+		if site.name not in usage:
+			continue
+		try:
+			cpu_usage = usage[site.name]
+			cpu_limit = get_cpu_limits(site.plan)
+			latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
+
+			if site.current_cpu_usage != latest_cpu_usage:
+				site_doc = frappe.get_doc("Site", site.name)
+				site_doc.current_cpu_usage = latest_cpu_usage
+				site_doc.save()
+				frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
+		except Exception:
+			log_error(
+				"Site CPU Usage Update Error", site=site, cpu_usage=cpu_usage, cpu_limit=cpu_limit
+			)
+			frappe.db.rollback()
 
 
 def update_disk_usages():
