@@ -32,6 +32,8 @@ class LogServer(BaseServer):
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
