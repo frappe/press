@@ -629,9 +629,6 @@ class Bench(Document):
 		return sort_supervisor_processes(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
-		self.inplace_update_docker_image = self.get_next_inplace_update_docker_image()
-		self.save()
-
 		job = Agent(self.server).create_agent_job(
 			"Update Bench In Place",
 			path=f"benches/{self.name}/update_inplace",
@@ -639,7 +636,7 @@ class Bench(Document):
 			data={
 				"sites": sites,
 				"apps": self.get_inplace_update_apps(apps),
-				"image": self.inplace_update_docker_image,
+				"image": self.get_next_inplace_update_docker_image(),
 			},
 		)
 		return job.name
@@ -681,10 +678,44 @@ class Bench(Document):
 			"Bench",
 			request_data["bench"],
 		)
-		bench._process_update_inplace()
+		bench._process_update_inplace(job)
 
-	def _process_update_inplace(self):
-		...
+	def _process_update_inplace(self, job: "AgentJob"):
+		if job.status != "Failure" and job.status != "Success":
+			return
+
+		if job.status == "Failure":
+			# TODO: Handle failure
+			return
+
+		assert job.status == "Success", f"Incorrect job status found {job.status}"
+
+		req_data = json.loads(job.request_data) or {}
+		self.inplace_update_docker_image = req_data.get("image")
+		self.update_apps_after_inplace_update(
+			commit_hash=req_data.get("hash"),
+			update_apps=req_data.get("apps", []),
+		)
+
+		self.save()
+
+	def update_apps_after_inplace_update(
+		self,
+		commit_hash: str,
+		update_apps: list[dict],
+	):
+		apps_map = {a.app: a for a in self.apps}
+		for ua in update_apps:
+			name = ua.get("app") or ""
+			if not (bench_app := apps_map.get(name)):
+				continue
+
+			bench_app.hash = commit_hash
+
+			# Update release by creating one
+			source: "AppSource" = frappe.get_doc("App Source", bench_app.source)
+			if release := source.create_release(True, commit_hash=commit_hash):
+				bench_app.release = release
 
 	@classmethod
 	def get_workloads(

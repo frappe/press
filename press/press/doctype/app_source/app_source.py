@@ -102,11 +102,15 @@ class AppSource(Document):
 		# self.create_release()
 
 	@frappe.whitelist()
-	def create_release(self, force=False, commit_hash: str | None = None):
+	def create_release(
+		self,
+		force: bool = False,
+		commit_hash: str | None = None,
+	):
 		if self.last_github_poll_failed and not force:
 			return
 
-		commit_hash, commit_info, ok = self.get_commit_info(
+		_commit_hash, commit_info, ok = self.get_commit_info(
 			commit_hash,
 		)
 
@@ -114,11 +118,14 @@ class AppSource(Document):
 			return
 
 		try:
-			return self._create_release(commit_hash, commit_info)
+			return self._create_release(
+				_commit_hash,
+				commit_info,
+			)
 		except Exception:
 			log_error("Create Release Error", doc=self)
 
-	def _create_release(self, commit_hash: str, commit_info: dict) -> "AppRelease":
+	def _create_release(self, commit_hash: str, commit_info: dict) -> str:
 		releases = frappe.get_all(
 			"App Release",
 			{
@@ -131,11 +138,18 @@ class AppSource(Document):
 		)
 		if len(releases) > 0:
 			# No need to create a new release
-			return frappe.get_doc("App Release", releases[0])
+			return releases[0]
 
-		return self.create_release_from_commit_info(commit_info, commit_hash)
+		return self.create_release_from_commit_info(
+			commit_hash,
+			commit_info,
+		).name
 
-	def create_release_from_commit_info(self, commit_info: dict, commit_hash: str):
+	def create_release_from_commit_info(
+		self,
+		commit_hash: str,
+		commit_info: dict,
+	):
 		app_release: "AppRelease" = frappe.get_doc(
 			{
 				"doctype": "App Release",
@@ -151,6 +165,10 @@ class AppSource(Document):
 		return app_release
 
 	def get_commit_info(self, commit_hash: None | str = None) -> tuple[str, dict, bool]:
+		"""
+		If `commit_hash` is not provided, `commit_info` is of the latest commit
+		on the branch pointed to by `self.hash`.
+		"""
 		if (response := self.poll_github(commit_hash)).ok:
 			self.set_poll_succeeded()
 		else:
