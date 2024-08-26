@@ -29,6 +29,7 @@ from oci.exceptions import TransientServiceError
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class VirtualMachine(Document):
@@ -1013,7 +1014,10 @@ class VirtualMachine(Document):
 			machine: VirtualMachine = frappe.get_doc(
 				"Virtual Machine", {"instance_id": instance.id}
 			)
+			if has_job_timeout_exceeded():
+				return
 			try:
+
 				machine.sync(instance)
 				frappe.db.commit()  # release lock
 			except Exception:

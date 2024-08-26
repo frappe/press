@@ -13,6 +13,7 @@ from frappe.query_builder.functions import Coalesce, Count
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_plan.site_plan import SitePlan
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class Subscription(Document):
@@ -262,6 +263,8 @@ def create_usage_records():
 		debug=True,
 	)
 	for name in subscriptions:
+		if has_job_timeout_exceeded():
+			return
 		subscription = frappe.get_cached_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
