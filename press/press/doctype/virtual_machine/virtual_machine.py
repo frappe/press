@@ -25,6 +25,7 @@ from oci.core.models import (
 	UpdateInstanceShapeConfigDetails,
 	UpdateVolumeDetails,
 )
+from oci.exceptions import TransientServiceError
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
@@ -612,27 +613,31 @@ class VirtualMachine(Document):
 
 	def _create_snapshots_oci(self):
 		for volume in self.volumes:
-			if ".bootvolume." in volume.volume_id:
-				snapshot = (
-					self.client(BlockstorageClient)
-					.create_boot_volume_backup(
-						CreateBootVolumeBackupDetails(
-							boot_volume_id=volume.volume_id,
-							type="INCREMENTAL",
-							display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-						)
-					)
-					.data
-				)
-			else:
-				self.client(BlockstorageClient).create_volume_backup(
-					CreateVolumeBackupDetails(
-						volume_id=volume.volume_id,
-						type="INCREMENTAL",
-						display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-					)
-				).data
 			try:
+				if ".bootvolume." in volume.volume_id:
+					snapshot = (
+						self.client(BlockstorageClient)
+						.create_boot_volume_backup(
+							CreateBootVolumeBackupDetails(
+								boot_volume_id=volume.volume_id,
+								type="INCREMENTAL",
+								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+							)
+						)
+						.data
+					)
+				else:
+					snapshot = (
+						self.client(BlockstorageClient)
+						.create_volume_backup(
+							CreateVolumeBackupDetails(
+								volume_id=volume.volume_id,
+								type="INCREMENTAL",
+								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+							)
+						)
+						.data
+					)
 				frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
@@ -640,6 +645,10 @@ class VirtualMachine(Document):
 						"snapshot_id": snapshot.id,
 					}
 				).insert()
+			except TransientServiceError:
+				# We've hit OCI rate limit for creating snapshots
+				# Let's try again later
+				pass
 			except Exception:
 				log_error(
 					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
@@ -1026,6 +1035,13 @@ def sync_virtual_machines():
 def snapshot_virtual_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
 	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{"virtual_machine": machine.name, "creation": (">=", frappe.utils.today())},
+			limit=1,
+		):
+			continue
 		try:
 			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
 			frappe.db.commit()
