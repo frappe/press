@@ -82,7 +82,8 @@
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "search_index": 1
   },
   {
    "depends_on": "eval:doc.plan_type === \"Server Storage Plan\"",
@@ -98,7 +99,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-08-16 10:03:00.516978",
+ "modified": "2024-08-23 17:11:04.481626",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

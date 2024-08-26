@@ -4,8 +4,11 @@
 	</div>
 </template>
 <script>
+import { h } from 'vue';
 import { toast } from 'vue-sonner';
+import { FeatherIcon, Tooltip, Badge, Button } from 'frappe-ui';
 import ObjectList from '../ObjectList.vue';
+import Clock from '~icons/lucide/clock';
 export default {
 	name: 'PartnerApprovalRequests',
 	components: {
@@ -15,7 +18,7 @@ export default {
 		options() {
 			return {
 				doctype: 'Partner Approval Request',
-				fields: ['approved_by_partner'],
+				fields: ['approved_by_partner', 'status'],
 				columns: [
 					{
 						label: 'Customer Email',
@@ -39,24 +42,78 @@ export default {
 					{
 						label: 'Approval By Frappe',
 						fieldname: 'approved_by_frappe',
-						type: 'Badge',
-						format(value) {
-							return value ? 'Approved' : 'Pending';
+						type: 'Component',
+						align: 'center',
+						component({ row }) {
+							if (row.approved_by_frappe) {
+								return h(
+									Tooltip,
+									{
+										text: 'Approved'
+									},
+									() =>
+										h(FeatherIcon, {
+											name: 'check-circle',
+											class: 'h-4 w-4 text-green-600'
+										})
+								);
+							} else {
+								return h(
+									Tooltip,
+									{
+										text: 'Approval Pending'
+									},
+									() =>
+										h(Clock, {
+											class: 'h-4 w-4 text-yellow-500'
+										})
+								);
+							}
 						}
 					},
 					{
-						label: 'Status',
-						fieldname: 'status',
-						type: 'Badge'
+						label: 'Partner Approval',
+						fieldname: 'approved_by_partner',
+						type: 'Component',
+						align: 'center',
+						component({ row }) {
+							if (row.approved_by_partner) {
+								return h(
+									Tooltip,
+									{
+										text: 'Approved'
+									},
+									() =>
+										h(FeatherIcon, {
+											name: 'check-circle',
+											class: 'h-4 w-4 text-green-600'
+										})
+								);
+							} else {
+								return h(
+									Tooltip,
+									{
+										text: 'Approval Pending'
+									},
+									() =>
+										h(Clock, {
+											class: 'h-4 w-4 text-yellow-500'
+										})
+								);
+							}
+						}
 					},
 					{
 						label: '',
-						type: 'Button',
-						Button: ({ row, listResource }) => {
+						type: 'Component',
+						width: 1,
+						align: 'left',
+						component({ row, listResource }) {
 							if (row.status === 'Pending' && row.approved_by_partner === 0) {
-								return {
+								return h(Button, {
 									label: 'Approve',
-									type: 'primary',
+									class: 'text-md',
+									variant: 'subtle',
 									onClick: () => {
 										toast.promise(
 											listResource.runDocMethod.submit({
@@ -65,12 +122,22 @@ export default {
 											}),
 											{
 												loading: 'Approving...',
-												success: 'Approved',
+												success: 'Approval request sent to Frappe',
 												error: 'Failed to Approve'
 											}
 										);
 									}
-								};
+								});
+							} else if (
+								row.status === 'Pending' &&
+								row.approved_by_frappe === 0
+							) {
+								return h(Badge, {
+									label: "Waiting for Frappe's approval",
+									theme: 'blue',
+									variant: 'subtle',
+									size: 'md'
+								});
 							}
 						}
 					}

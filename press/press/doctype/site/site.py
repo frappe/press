@@ -177,6 +177,7 @@ class Site(Document, TagHelpers):
 		"notify_email",
 		"team",
 		"plan",
+		"setup_wizard_complete",
 		"archive_failed",
 		"cluster",
 		"bench",
@@ -237,6 +238,9 @@ class Site(Document, TagHelpers):
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
+		doc.has_scheduled_updates = bool(
+			frappe.db.exists("Site Update", {"site": self.name, "status": "Scheduled"})
+		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
@@ -963,7 +967,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(
-		self, skip_failing_patches=False, skip_backups=False, scheduled_time=None
+		self,
+		skip_failing_patches: bool = False,
+		skip_backups: bool = False,
+		scheduled_time: str = None,
 	):
 		log_site_activity(self.name, "Update")
 		doc = frappe.get_doc(
@@ -977,6 +984,29 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 		return doc.name
+
+	@dashboard_whitelist()
+	def edit_scheduled_update(
+		self,
+		name,
+		skip_failing_patches: bool = False,
+		skip_backups: bool = False,
+		scheduled_time: str = None,
+	):
+		doc = frappe.get_doc("Site Update", name)
+		doc.skipped_failing_patches = skip_failing_patches
+		doc.skipped_backups = skip_backups
+		doc.scheduled_time = scheduled_time
+		doc.save()
+		return doc.name
+
+	@dashboard_whitelist()
+	def cancel_scheduled_update(self, site_update: str):
+		if status := frappe.db.get_value("Site Update", site_update, "status") != "Scheduled":
+			frappe.throw(f"Cannot cancel a Site Update with status {status}")
+
+		# TODO: Set status to cancelled instead of deleting the doc
+		frappe.delete_doc("Site Update", site_update)
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
@@ -999,6 +1029,8 @@ class Site(Document, TagHelpers):
 		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
 	def reset_previous_status(self, fix_broken=False):
+		if self.status == "Archived":
+			return
 		self.status = self.status_before_update
 		self.status_before_update = None
 		if not self.status or (self.status == "Broken" and fix_broken):
@@ -2103,14 +2135,14 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
-		if frappe.db.get_all(
+		if frappe.db.get_value(
 			"Agent Job",
 			filters={
 				"site": self.name,
 				"job_type": "Add User to ProxySQL",
 				"status": ["in", ["Running", "Pending"]],
 			},
-			limit=1,
+			for_update=True,
 		):
 			frappe.throw(
 				"Database Access is already being enabled on this site. Please check after a while."
@@ -3232,4 +3264,6 @@ def sync_sites_setup_wizard_complete_status():
 		pluck="name",
 	)
 	for site in sites:
-		frappe.enqueue_doc("Site", site, method="fetch_setup_wizard_complete_status")
+		frappe.enqueue_doc(
+			"Site", site, method="fetch_setup_wizard_complete_status", queue="sync"
+		)

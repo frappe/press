@@ -94,12 +94,6 @@ def validate_plan(secret_key):
 	#TODO: get activation date
 	"""
 
-	if not secret_key or not isinstance(secret_key, str):
-		frappe.throw("Invalid Secret Key")
-
-	if frappe.db.exists("Subscription", {"secret_key": secret_key}):
-		return True
-
 	# TODO: replace this with plan attributes
 	plan_label_map = frappe.conf.email_plans
 
@@ -110,12 +104,11 @@ def validate_plan(secret_key):
 
 	if subscription["enabled"]:
 		# TODO: add a date filter(use start date from plan)
-		first_day = str(datetime.now().replace(day=1).date())
+		first_day = str(frappe.utils.now_datetime().replace(day=1).date())
 		count = frappe.db.count(
 			"Mail Log",
 			filters={
 				"site": subscription["site"],
-				"status": "delivered",
 				"creation": (">=", first_day),
 				"subscription_key": secret_key,
 			},

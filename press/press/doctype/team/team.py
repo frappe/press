@@ -34,6 +34,7 @@ class Team(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import (
 			CommunicationEmail,
@@ -125,6 +126,7 @@ class Team(Document):
 			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
+		user.is_2fa_enabled = frappe.db.get_value("User 2FA", {"user": user.name}, "enabled")
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
@@ -147,6 +149,13 @@ class Team(Document):
 				"stripe_mandate_id",
 			],
 			as_dict=True,
+		)
+		doc.hide_sidebar = (
+			not self.parent_team
+			and not doc.onboarding.site_created
+			and len(doc.valid_teams) == 1
+			and not self.is_payment_mode_set()
+			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
 		)
 
 	def onload(self):
@@ -207,7 +216,12 @@ class Team(Document):
 
 		has_unpaid_invoices = frappe.get_all(
 			"Invoice",
-			{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+			{
+				"team": self.name,
+				"status": ("in", ["Draft", "Unpaid"]),
+				"type": "Subscription",
+				"total": (">", 0),
+			},
 		)
 
 		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
@@ -1026,6 +1040,7 @@ class Team(Document):
 				"is_saas_user": bool(self.via_erpnext or self.is_saas_user),
 				"saas_site_request": saas_site_request,
 				"complete": complete,
+				"is_payment_mode_set": is_payment_mode_set,
 			}
 		)
 
@@ -1145,7 +1160,7 @@ class Team(Document):
 			except Exception:
 				log_error("Failed to remove subscription config in trial sites")
 
-	def get_upcoming_invoice(self):
+	def get_upcoming_invoice(self, for_update=False):
 		# get the current period's invoice
 		today = frappe.utils.today()
 		result = frappe.db.get_all(
@@ -1162,7 +1177,7 @@ class Team(Document):
 			pluck="name",
 		)
 		if result:
-			return frappe.get_doc("Invoice", result[0])
+			return frappe.get_doc("Invoice", result[0], for_update=for_update)
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()

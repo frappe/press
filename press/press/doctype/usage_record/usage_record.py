@@ -63,7 +63,9 @@ class UsageRecord(Document):
 
 		if team.free_account:
 			return
-		invoice = team.get_upcoming_invoice()
+		# Get a read lock on this invoice
+		# We're going to update the invoice and we don't want any other process to update it
+		invoice = team.get_upcoming_invoice(for_update=True)
 		if not invoice:
 			invoice = team.create_upcoming_invoice()
 

@@ -84,19 +84,16 @@ export default {
 				params: {
 					referral_code: this.code
 				},
-				onSuccess(res) {
+				onSuccess(data) {
 					this.showAddPartnerCodeDialog = false;
-					if (res) {
-						this.$team.doc.partner_referral_code = res.partner_referral_code;
-					}
-					toast.success('Approval Request has been sent to Partner');
-				},
-				onError(res) {
-					if (res) {
-						throw new DashboardError(res.message);
+					if (data === 'Request already sent') {
+						toast.error('Approval Request has already been sent to Partner');
 					} else {
-						throw new DashboardError('Error while adding partner');
+						toast.success('Approval Request has been sent to Partner');
 					}
+				},
+				onError() {
+					throw new DashboardError('Failed to add Partner Code');
 				}
 			};
 		},

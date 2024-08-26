@@ -23,6 +23,7 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import (
 	MarketplaceApp,
 	get_plans_for_app,
+	get_total_installs_by_app,
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 from press.utils.billing import get_frappe_io_connection
@@ -585,11 +586,17 @@ def options_for_marketplace_app() -> Dict[str, Dict]:
 
 @frappe.whitelist()
 def get_marketplace_apps_for_onboarding() -> List[Dict]:
-	return frappe.get_all(
+	apps = frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "description"],
 		filters={"show_for_site_creation": True, "status": "Published"},
 	)
+	total_installs_by_app = get_total_installs_by_app()
+	for app in apps:
+		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
+	# sort by total installs
+	apps = sorted(apps, key=lambda x: x["total_installs"], reverse=True)
+	return apps
 
 
 def is_on_marketplace(app: str) -> bool:
@@ -1244,3 +1251,26 @@ def get_marketplace_apps():
 		)
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
+
+
+@protected("App Source")
+@frappe.whitelist()
+def add_code_review_comment(name, filename, line_number, comment):
+	try:
+		doc = frappe.get_doc("App Release Approval Request", name)
+		# Add a new comment
+		doc.append(
+			"code_comments",
+			{
+				"filename": filename,
+				"line_number": line_number,
+				"comment": comment,
+				"commented_by": frappe.session.user,
+				"time": frappe.utils.now_datetime(),
+			},
+		)
+
+		doc.save()
+		return {"status": "success", "message": "Comment added successfully."}
+	except Exception as e:
+		frappe.throw(f"Unable to add comment. Something went wrong: {str(e)}")
