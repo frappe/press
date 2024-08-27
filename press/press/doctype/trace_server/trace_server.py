@@ -71,6 +71,8 @@ class TraceServer(BaseServer):
 		try:
 			ansible = Ansible(
 				playbook="trace.yml",
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				server=self,
 				variables={
 					"server": self.name,
@@ -122,6 +124,8 @@ class TraceServer(BaseServer):
 			ansible = Ansible(
 				playbook="trace_upgrade.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"sentry_admin_email": self.sentry_admin_email,

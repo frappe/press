@@ -73,6 +73,8 @@ class AnalyticsServer(BaseServer):
 			ansible = Ansible(
 				playbook="analytics.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"workers": 1,
