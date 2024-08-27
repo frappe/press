@@ -188,13 +188,13 @@ class Agent:
 		)
 
 	def rename_site(
-		self, site, new_name: str, create_user: dict = None, site_config: dict = None
+		self, site, new_name: str, create_user: dict = None, config: dict = None
 	):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
-		if site_config:
-			data["config"] = site_config
+		if config:
+			data["config"] = config
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",

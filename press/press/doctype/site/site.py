@@ -557,16 +557,20 @@ class Site(Document, TagHelpers):
 	def rename(self, new_name: str):
 		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
-		self.update_config_preview()
-		site_config = json.loads(self.config)
 		agent = Agent(self.server)
 		if self.standby_for_product or self.standby_for:
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
-			job = agent.rename_site(self, new_name, create_user, site_config)
+			# update the subscription config while renaming the standby site
+			self.update_config_preview()
+			site_config = json.loads(self.config)
+			subsription_config = site_config.get("subscription", {})
+			job = agent.rename_site(
+				self, new_name, create_user, config={"subscription": subsription_config}
+			)
 			self.flags.rename_site_agent_job_name = job.name
 		else:
-			agent.rename_site(self, new_name, site_config=site_config)
+			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
 		self.status = "Pending"
 		self.save()
