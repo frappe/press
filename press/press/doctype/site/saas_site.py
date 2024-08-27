@@ -52,8 +52,17 @@ class SaasSite(Site):
 		self.trial_end_date = frappe.utils.add_days(None, 14)
 		plan = get_saas_site_plan(self.app)
 		self._update_configuration(self.get_plan_config(plan), save=False)
+		subscription_config = self.configuration.get("subscription", {})
+		subscription_config.update(
+			{
+				"trial_end_date": self.trial_end_date.strftime("%Y-%m-%d"),
+			}
+		)
+		self._update_configuration(subscription_config, save=False)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
+		self.reload()
+		self.update_site_config()
 
 		return self
 
@@ -184,6 +193,14 @@ def create_app_subscriptions(site, app):
 
 	# create subscriptions
 	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps, app)
+	# set trial end date in site config
+	subscription_saas_config: dict = custom_saas_config.get("subscription", {})
+	subscription_saas_config.update(
+		{
+			"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
+		}
+	)
+	custom_saas_config["subscription"] = subscription_saas_config
 
 	# set site config
 	site_config = {f"sk_{s.document_name}": s.secret_key for s in subscription_docs}
