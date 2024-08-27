@@ -274,6 +274,8 @@ export default {
 			});
 		},
 		benchOptions(bench) {
+			if (!bench) return [];
+
 			return [
 				{
 					label: 'View in Desk',
