@@ -83,7 +83,9 @@ class Bench(Document):
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[
+			"Pending", "Installing", "Updating", "Active", "Broken", "Archived"
+		]
 		team: DF.Link
 		updated_inplace: DF.Check
 		use_rq_workerpool: DF.Check
@@ -629,6 +631,7 @@ class Bench(Document):
 		return sort_supervisor_processes(processes)
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
+		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
 		job = Agent(self.server).create_agent_job(
 			"Update Bench In Place",
 			path=f"benches/{self.name}/update_inplace",
@@ -681,23 +684,63 @@ class Bench(Document):
 		bench._process_update_inplace(job)
 
 	def _process_update_inplace(self, job: "AgentJob"):
-		if job.status != "Failure" and job.status != "Success":
-			return
-
-		if job.status == "Failure":
-			# TODO: Handle failure
-			return
-
-		assert job.status == "Success", f"Incorrect job status found {job.status}"
-
 		req_data = json.loads(job.request_data) or {}
+		if job.status in ["Undelivered", "Delivery Failure"]:
+			self.set_self_and_site_status(
+				req_data.get("sites", []),
+				status="Active",
+				site_status="Active",
+			)
+
+		elif job.status in ["Pending", "Running"]:
+			self.set_self_and_site_status(
+				req_data.get("sites", []),
+				status="Updating",
+				site_status="Updating",
+			)
+
+		elif job.status == "Failure":
+			self._handle_inplace_update_failure(req_data)
+
+		elif job.status == "Success":
+			self._handle_inplace_update_success(req_data)
+
+		else:
+			# no-op
+			raise NotImplementedError("Unexpected conditional hit")
+
+		self.save()
+
+	def _handle_inplace_update_failure(self, req_data: dict):
+		self.set_self_and_site_status(
+			req_data.get("sites", []),
+			status="Broken",
+			site_status="Broken",
+		)
+		# TODO: Handle failure recovery
+
+	def _handle_inplace_update_success(self, req_data: dict):
 		self.inplace_update_docker_image = req_data.get("image")
 		self.update_apps_after_inplace_update(
 			commit_hash=req_data.get("hash"),
 			update_apps=req_data.get("apps", []),
 		)
 
-		self.save()
+		self.set_self_and_site_status(
+			req_data.get("sites", []),
+			status="Active",
+			site_status="Active",
+		)
+
+	def set_self_and_site_status(
+		self,
+		sites: list[str],
+		status: str,
+		site_status: str,
+	):
+		self.status = status
+		for site in sites:
+			frappe.set_value("Site", site, "status", site_status)
 
 	def update_apps_after_inplace_update(
 		self,

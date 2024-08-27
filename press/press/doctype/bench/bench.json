@@ -91,7 +91,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "options": "Pending\nInstalling\nUpdating\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -356,7 +356,7 @@
   }
  ],
  "links": [],
- "modified": "2024-08-20 12:07:09.284518",
+ "modified": "2024-08-27 11:06:31.661691",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
