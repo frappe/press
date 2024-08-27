@@ -14,11 +14,15 @@
 			/>
 			<AlertCardExpired
 				class="mb-5"
-				v-if="isCardExpired && $team.doc?.payment_mode == 'Card'"
+				v-if="$team?.doc && isCardExpired && $team.doc?.payment_mode == 'Card'"
 			/>
 			<AlertAddressDetails
 				class="mb-5"
-				v-if="!$team.doc?.billing_details?.name && $team.doc.payment_mode"
+				v-if="
+					$team?.doc &&
+					!$team.doc?.billing_details?.name &&
+					$team.doc.payment_mode
+				"
 			/>
 			<AlertBanner
 				v-if="banner?.enabled"
@@ -29,6 +33,7 @@
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
+					$team?.doc &&
 					isMandateNotSet &&
 					$team.doc.currency === 'INR' &&
 					$team.doc.payment_mode == 'Card'
