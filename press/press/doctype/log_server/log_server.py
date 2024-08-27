@@ -62,6 +62,8 @@ class LogServer(BaseServer):
 			ansible = Ansible(
 				playbook="log.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"workers": 1,
