@@ -67,7 +67,6 @@ class SaasSite(Site):
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
 		self.reload()
-		self.update_site_config()
 
 		return self
 
