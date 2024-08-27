@@ -94,6 +94,8 @@ getInitialData().then(() => {
 			},
 			logErrors: true
 		});
+
+		Sentry.setTag('team', localStorage.getItem('current_team'));
 	}
 
 	if (
