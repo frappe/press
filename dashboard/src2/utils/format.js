@@ -55,9 +55,12 @@ export function planTitle(plan, teamCurrency = null) {
 	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
 }
 
-export function userCurrency(value, fractions = 2) {
-	let $team = getTeam();
-	return currency(value, $team.doc.currency, fractions);
+export function userCurrency(value, fractions = 2, teamCurrency = null) {
+	if (!teamCurrency) {
+		let $team = getTeam();
+		teamCurrency = $team.doc.currency;
+	}
+	return currency(value, teamCurrency, fractions);
 }
 
 export function currency(value, currency, fractions = 2) {
