@@ -103,10 +103,14 @@
 							>
 								setup key</span
 							>
-							to manually configure your authenticator app.
+							to manually configure your authenticator app
 						</li>
 						<li>Enter the code from the authenticator app below</li>
 					</ol>
+					<div class="mt-4 text-sm">
+						Note: If you lose access to your authenticator app, your account
+						will be locked out. Make sure to backup your vault/key.
+					</div>
 				</div>
 
 				<div
