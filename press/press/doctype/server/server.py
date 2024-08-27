@@ -1784,6 +1784,7 @@ def scale_workers(now=False):
 					method="auto_scale_workers",
 					job_id=f"auto_scale_workers:{server.name}",
 					deduplicate=True,
+					queue="long",
 					enqueue_after_commit=True,
 				)
 			frappe.db.commit()
