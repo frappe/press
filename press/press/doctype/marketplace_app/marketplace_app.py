@@ -724,5 +724,5 @@ def is_public_github_repository(github_url):
 			return True
 		else:
 			return False
-	except requests.RequestException as error:
+	except Exception:
 		return False
