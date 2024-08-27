@@ -41,12 +41,43 @@
 			</div>
 		</div>
 		<!-- Step 2 : Choose address -->
+		<div v-if="step < 2">
+			<div class="flex items-center space-x-2">
+				<TextInsideCircle>2</TextInsideCircle>
+				<span class="text-base font-medium"> Provide Billing Details </span>
+			</div>
+			<div class="pl-7">
+				<UpdateAddressForm />
+				<p></p>
+				<div class="flex w-full justify-end">
+					<Button class="mt-2 w-full sm:w-fit" variant="solid">
+						Confirm Address
+					</Button>
+				</div>
+			</div>
+		</div>
+		<div v-else>
+			<div class="flex items-center justify-between space-x-2">
+				<div class="flex items-center space-x-2">
+					<TextInsideCircle>2</TextInsideCircle>
+					<span class="text-base font-medium">
+						Address Confirmed
+					</span>
+				</div>
+				<div
+					class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+				>
+					<i-lucide-check class="h-3 w-3 text-white" />
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
 import { toast } from 'vue-sonner';
 import { setConfig, frappeRequest } from 'frappe-ui';
+import UpdateAddressForm from './UpdateAddressForm.vue';
 
 export default {
 	name: 'In-Desk Checkout',
@@ -54,7 +85,8 @@ export default {
 		SitePlansCards: defineAsyncComponent(() => import('./SitePlanCards.vue')),
 		TextInsideCircle: defineAsyncComponent(() =>
 			import('../../components/TextInsideCircle.vue')
-		)
+		),
+		UpdateAddressForm
 	},
 	beforeMount() {
 		let request = options => {
@@ -100,7 +132,8 @@ export default {
 				return;
 			}
 			this.step = 2;
-		}
+		},
+		confirmAddress() {}
 	}
 };
 </script>
