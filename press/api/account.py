@@ -643,7 +643,7 @@ def update_feature_flags(values=None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def send_reset_password_email(email):
+def send_reset_password_email(email: str):
 	valid_email = frappe.utils.validate_email_address(email)
 	if not valid_email:
 		frappe.throw(

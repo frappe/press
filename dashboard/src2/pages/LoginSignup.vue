@@ -349,9 +349,6 @@ export default {
 		resetPassword() {
 			return {
 				url: 'press.api.account.send_reset_password_email',
-				params: {
-					email: this.email
-				},
 				onSuccess() {
 					this.resetPasswordEmailSent = true;
 				}
@@ -418,7 +415,9 @@ export default {
 					);
 				}
 			} else if (this.hasForgotPassword) {
-				this.$resources.resetPassword.submit();
+				this.$resources.resetPassword.submit({
+					email: this.email
+				});
 			} else {
 				this.$resources.signup.submit();
 			}

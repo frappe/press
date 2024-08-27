@@ -1,8 +1,6 @@
 import json
-from typing import TYPE_CHECKING
 
 import frappe
-from press.agent import Agent
 from press.utils import log_error
 
 from press.api.site import protected
@@ -15,7 +13,6 @@ from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	ColumnStat,
 	DBExplain,
-	DBIndex,
 	DBOptimizer,
 	DBTable,
 )

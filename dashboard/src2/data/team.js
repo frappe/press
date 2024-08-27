@@ -1,4 +1,5 @@
 import { createDocumentResource, frappeRequest } from 'frappe-ui';
+import { clear } from 'idb-keyval';
 
 let team;
 
@@ -50,6 +51,10 @@ export async function switchToTeam(team) {
 	}
 	if (canSwitch) {
 		localStorage.setItem('current_team', team);
+
+		// clear all cache from previous team session
+		clear();
+
 		window.location.reload();
 	}
 }

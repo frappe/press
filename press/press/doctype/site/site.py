@@ -3267,5 +3267,10 @@ def sync_sites_setup_wizard_complete_status():
 	)
 	for site in sites:
 		frappe.enqueue_doc(
-			"Site", site, method="fetch_setup_wizard_complete_status", queue="sync"
+			"Site",
+			site,
+			method="fetch_setup_wizard_complete_status",
+			queue="sync",
+			job_name=f"fetch_setup_wizard_complete_status:{site}",
+			deduplicate=True,
 		)
