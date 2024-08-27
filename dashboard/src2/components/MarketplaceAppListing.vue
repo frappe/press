@@ -61,6 +61,33 @@
 							v-model="marketplaceApp.title"
 						/>
 					</div>
+					<div class="sm:col-span-4 pb-8">
+						<span class="text-base font-medium">App Source</span>
+						<p class="text-xs pt-2">
+							Note: Only open-source or source-open apps are permitted on the
+							Frappe Marketplace. You may keep your repository private, but if a
+							user requests the source code for your app, we will provide it to
+							them from our endm to comply with the license.
+						</p>
+						<div>
+							<FormControl
+								class="pt-4"
+								label="GitHub Repository URL"
+								type="text"
+								:disabled="true"
+								v-model="marketplaceApp.github_repository_url"
+							/>
+							<p
+								v-if="marketplaceApp.is_public_repo"
+								class="text-xs text-green-700 pt-3"
+							>
+								The GitHub repository is public.
+							</p>
+							<p v-else class="text-xs text-red-700 pt-3">
+								The GitHub repository is private.
+							</p>
+						</div>
+					</div>
 					<div class="sm:col-span-4">
 						<span class="text-base font-medium">Links</span>
 						<div>
@@ -199,7 +226,9 @@ export default {
 				terms_of_service: '',
 				privacy_policy: '',
 				description: '',
-				long_description: ''
+				long_description: '',
+				github_repository_url: '',
+				is_public_repo: false
 			}
 		};
 	},
@@ -230,6 +259,9 @@ export default {
 				auto: true,
 				onSuccess(response) {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
+					this.setShowIsPublicGithubRepository(
+						this.marketplaceApp.github_repository_url
+					);
 				},
 				onError(e) {
 					toast.error(
