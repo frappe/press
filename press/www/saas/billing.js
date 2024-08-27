@@ -1,22 +1,6 @@
-function calculate_trial_end_days() {
-	// try to check for trial_end_date in frappe.boot.subscription_conf
-	if (frappe.boot.subscription_conf.trial_end_date) {
-		const trial_end_date = new Date(
-			frappe.boot.subscription_conf.trial_end_date,
-		);
-		const today = new Date();
-		const diffTime = trial_end_date - today;
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		return diffDays;
-	} else {
-		return 15 - frappe.boot.telemetry_site_age;
-	}
-}
-
-const trial_end_days = calculate_trial_end_days();
-
+const trial_end = 15 - frappe.boot.telemetry_site_age;
 const trial_end_string =
-	trial_end_days > 1 ? `${trial_end_days} days` : `${trial_end_days} day`;
+	trial_end > 1 ? `${trial_end} days` : `${trial_end} day`;
 
 let subscription_string = __(
 	`Your trial ends in ${trial_end_string}. Please subscribe for uninterrupted services`,
@@ -82,7 +66,7 @@ $(document).ready(function () {
 		frappe.boot.setup_complete === 1 &&
 		!frappe.is_mobile() &&
 		frappe.boot.subscription_conf.status !== 'Subscribed' &&
-		trial_end_days > 0
+		frappe.boot.telemetry_site_age
 	) {
 		$('.layout-main-section').before($floatingBar);
 
