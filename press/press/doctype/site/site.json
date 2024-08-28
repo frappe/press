@@ -27,7 +27,6 @@
   "config",
   "billing_tab",
   "team",
-  "setup_wizard_complete",
   "plan",
   "free",
   "column_break_15",
@@ -67,6 +66,12 @@
   "update_on_weekday",
   "update_end_of_month",
   "update_on_day_of_month",
+  "setup_wizard_status_section",
+  "setup_wizard_complete",
+  "setup_wizard_status_check_max_retries_reached",
+  "column_break_vbgj",
+  "setup_wizard_status_check_retries",
+  "setup_wizard_status_check_next_retry_on",
   "database_section",
   "is_database_access_enabled",
   "database_access_mode",
@@ -603,6 +608,33 @@
    "fieldname": "saas_communication_secret",
    "fieldtype": "Data",
    "label": "SaaS Communication Secret"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "setup_wizard_status_section",
+   "fieldtype": "Section Break",
+   "label": "Setup Wizard Status"
+  },
+  {
+   "fieldname": "column_break_vbgj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wizard_status_check_retries",
+   "fieldtype": "Int",
+   "label": "Retries"
+  },
+  {
+   "fieldname": "setup_wizard_status_check_next_retry_on",
+   "fieldtype": "Datetime",
+   "label": "Next Retry On"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wizard_status_check_max_retries_reached",
+   "fieldtype": "Check",
+   "label": "Setup Wizard Status Check Max Retries Reached"
   }
  ],
  "links": [
@@ -667,7 +699,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-08-20 10:01:59.838341",
+ "modified": "2024-08-28 10:23:22.974566",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
