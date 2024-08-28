@@ -3292,7 +3292,7 @@ def sync_sites_setup_wizard_complete_status():
 			"Site",
 			site,
 			method="fetch_setup_wizard_complete_status",
-			queue="default",
+			queue="sync",
 			job_id=f"fetch_setup_wizard_complete_status:{site}",
 			deduplicate=True,
 		)
