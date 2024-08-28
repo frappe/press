@@ -160,8 +160,8 @@ class AgentJob(Document):
 
 	def after_insert(self):
 		self.create_agent_job_steps()
-		self.enqueue_http_request()
 		self.log_creation()
+		self.enqueue_http_request()
 
 	def enqueue_http_request(self):
 		frappe.enqueue_doc(
