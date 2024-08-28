@@ -37,6 +37,7 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
+		data_dir: DF.Data | None
 		domain: DF.Link | None
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
@@ -345,6 +346,10 @@ class DatabaseServer(BaseServer):
 				self.server_id = max(server_ids or []) + 1
 			else:
 				self.server_id = 1
+
+	@property
+	def datadir(self):
+		return self.data_dir or "/var/lib/mysql"
 
 	def _setup_server(self):
 		config = self._get_config()
