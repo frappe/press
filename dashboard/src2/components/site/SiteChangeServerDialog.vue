@@ -8,7 +8,7 @@
 				{
 					label: 'Add Server to Bench',
 					loading: $resources.addServerToReleaseGroup.loading,
-					disabled: $resources.isServerAddedInGroup.data || !targetServer,
+					disabled: $resources.isServerAddedInGroup.data || !targetServer.value,
 					onClick: () => $resources.addServerToReleaseGroup.submit()
 				},
 				{
@@ -17,12 +17,12 @@
 					variant: 'solid',
 					disabled:
 						!$resources.changeServerOptions?.data?.length ||
-						!targetServer ||
+						!targetServer.value ||
 						!$resources.isServerAddedInGroup.data,
 					onClick: () => {
 						$resources.changeServer.submit({
 							name: site,
-							server: targetServer,
+							server: targetServer.value,
 							scheduled_datetime: datetimeInIST,
 							skip_failing_patches: skipFailingPatches
 						});
@@ -40,7 +40,7 @@
 				v-else-if="$resources.changeServerOptions.data.length > 0"
 				label="Select Server"
 				variant="outline"
-				type="select"
+				type="autocomplete"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
 				@change="
@@ -78,7 +78,10 @@ export default {
 	data() {
 		return {
 			show: true,
-			targetServer: '',
+			targetServer: {
+				label: '',
+				value: ''
+			},
 			targetDateTime: null,
 			skipFailingPatches: false
 		};
@@ -91,12 +94,12 @@ export default {
 			if (this.$resources.changeServerOptions.data.length === 0) {
 				return 'No servers available for your team to move the site to. Please create a server first.';
 			} else if (
-				this.targetServer &&
+				this.targetServer.value &&
 				!this.$resources.isServerAddedInGroup.data
 			) {
 				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
 			} else if (
-				this.targetServer &&
+				this.targetServer.value &&
 				this.$resources.isServerAddedInGroup.data
 			) {
 				return 'The chosen server is already added to the bench. You can now migrate the site to the server.';
@@ -131,6 +134,7 @@ export default {
 				transform(d) {
 					return d.map(s => ({
 						label: s.title || s.name,
+						description: s.name,
 						value: s.name
 					}));
 				}
@@ -157,11 +161,11 @@ export default {
 				params: {
 					name: this.site,
 					group_name: this.$site.doc?.group,
-					server: this.targetServer
+					server: this.targetServer.value
 				},
 				onSuccess(data) {
 					toast.success(
-						`Server ${this.targetServer} added to the bench. Please wait for the deploy to be completed.`
+						`Server ${this.targetServer.value} added to the bench. Please wait for the deploy to be completed.`
 					);
 
 					this.$router.push({
@@ -179,7 +183,10 @@ export default {
 	},
 	methods: {
 		resetValues() {
-			this.targetServer = '';
+			this.targetServer = {
+				label: '',
+				value: ''
+			};
 			this.targetDateTime = null;
 			this.$resources.isServerAddedInGroup.reset();
 		}
