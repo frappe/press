@@ -20,47 +20,47 @@ from frappe.utils.commands import add_line_after, add_line_before, render_table
 
 # third party imports
 try:
-    print("Setting Up requirements...")
-    # imports - third party imports
-    import click
-    import html2text
-    import requests
-    from requests_toolbelt.multipart import encoder
-    from semantic_version import Version
-    from tenacity import (
-        RetryError,
-        retry,
-        retry_if_exception_type,
-        retry_unless_exception_type,
-        stop_after_attempt,
-        wait_fixed,
-    )
+	print("Setting Up requirements...")
+	# imports - third party imports
+	import click
+	import html2text
+	import requests
+	from requests_toolbelt.multipart import encoder
+	from semantic_version import Version
+	from tenacity import (
+		RetryError,
+		retry,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+		stop_after_attempt,
+		wait_fixed,
+	)
 except ImportError:
-    dependencies = [
-        "tenacity",
-        "html2text",
-        "requests",
-        "click",
-        "semantic-version",
-        "requests-toolbelt",
-    ]
-    install_command = shlex.split(
-        "{} -m pip install {}".format(sys.executable, " ".join(dependencies))
-    )
-    subprocess.check_call(install_command, stdout=open(os.devnull, "w"))
-    import click
-    import html2text
-    import requests
-    from requests_toolbelt.multipart import encoder
-    from semantic_version import Version
-    from tenacity import (
-        RetryError,
-        retry,
-        retry_if_exception_type,
-        retry_unless_exception_type,
-        stop_after_attempt,
-        wait_fixed,
-    )
+	dependencies = [
+		"tenacity",
+		"html2text",
+		"requests",
+		"click",
+		"semantic-version",
+		"requests-toolbelt",
+	]
+	install_command = shlex.split(
+		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
+	)
+	subprocess.check_call(install_command, stdout=open(os.devnull, "w"))
+	import click
+	import html2text
+	import requests
+	from requests_toolbelt.multipart import encoder
+	from semantic_version import Version
+	from tenacity import (
+		RetryError,
+		retry,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+		stop_after_attempt,
+		wait_fixed,
+	)
 
 if sys.version[0] == "2":
 	reload(sys)  # noqa

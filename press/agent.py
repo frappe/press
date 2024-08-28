@@ -213,7 +213,7 @@ class Agent:
 			bench=site.bench,
 			site=site.name,
 		)
-	
+
 	def complete_setup_wizard(self, site, data):
 		return self.create_agent_job(
 			"Complete Setup Wizard",
