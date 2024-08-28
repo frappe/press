@@ -11,7 +11,7 @@
 					onClick: () =>
 						$resources.changeGroup.submit({
 							skip_failing_patches: skipFailingPatches,
-							group: targetGroup,
+							group: targetGroup.value,
 							name: site
 						})
 				},
@@ -38,10 +38,11 @@
 				<FormControl
 					variant="outline"
 					label="Select Bench"
-					type="select"
+					type="autocomplete"
 					:options="
 						$resources.changeGroupOptions.data.map(group => ({
-							label: group.title,
+							label: group.title || group.name,
+							description: group.name,
 							value: group.name
 						}))
 					"
@@ -102,7 +103,10 @@ export default {
 	data() {
 		return {
 			show: true,
-			targetGroup: null,
+			targetGroup: {
+				label: '',
+				value: ''
+			},
 			newGroupTitle: '',
 			skipFailingPatches: false,
 			showCloneBenchDialog: false,
@@ -125,7 +129,7 @@ export default {
 				onSuccess() {
 					const destinationGroupTitle =
 						this.$resources.changeGroupOptions.data.find(
-							group => group.name === this.targetGroup
+							group => group.name === this.targetGroup.value
 						).title;
 
 					toast.success(
@@ -139,7 +143,10 @@ export default {
 						}
 					});
 
-					this.targetGroup = null;
+					this.targetGroup = {
+						label: '',
+						value: ''
+					};
 					this.show = false;
 				}
 			};
@@ -152,7 +159,7 @@ export default {
 				},
 				initialData: [],
 				onSuccess(data) {
-					if (data.length > 0) this.targetGroup = data[0].name;
+					if (data.length > 0) this.targetGroup.value = data[0].name;
 				},
 				auto: true
 			};
