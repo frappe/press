@@ -38,6 +38,7 @@
   "mariadb_section",
   "self_hosted_mariadb_server",
   "mariadb_root_password",
+  "data_dir",
   "server_id",
   "is_primary",
   "column_break_12",
@@ -523,6 +524,7 @@
    "non_negative": 1
   },
   {
+<<<<<<< HEAD
    "fieldname": "mounts_section",
    "fieldtype": "Section Break",
    "label": "Mounts"
@@ -546,11 +548,20 @@
    "fieldname": "enable_physical_backup",
    "fieldtype": "Check",
    "label": "Enable Physical Backup"
+=======
+   "fieldname": "data_dir",
+   "fieldtype": "Data",
+   "label": "Data Directory"
+>>>>>>> ac937b739 (feat: provision to setup custom data dir while setting up mysql)
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
+<<<<<<< HEAD
  "modified": "2025-01-27 10:45:05.652361",
+=======
+ "modified": "2024-08-28 10:03:56.428283",
+>>>>>>> ac937b739 (feat: provision to setup custom data dir while setting up mysql)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
