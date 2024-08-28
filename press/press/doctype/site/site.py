@@ -1609,8 +1609,8 @@ class Site(Document, TagHelpers):
 			is_completed = self.is_setup_wizard_complete()
 			if not is_completed:
 				self.setup_wizard_status_check_retries += 1
-				# max retries = 20, backoff time = 10s, with exponential backoff it will try for 12 days
-				if self.setup_wizard_status_check_retries >= 20:
+				# max retries = 18, backoff time = 10s, with exponential backoff it will try for 30 days
+				if self.setup_wizard_status_check_retries >= 18:
 					self.setup_wizard_status_check_max_retries_reached = True
 				else:
 					exponential_backoff_duration = 10 * (2**self.setup_wizard_status_check_retries)
