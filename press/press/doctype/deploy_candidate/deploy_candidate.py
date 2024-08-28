@@ -1248,20 +1248,32 @@ class DeployCandidate(Document):
 		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
 		with open(supervisor_conf, "w") as f:
 			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			custom_workers_config = self._get_custom_workers(rg)
+			custom_workers = self._get_custom_workers(rg)
+
 			content = frappe.render_template(
 				supervisor_conf_template,
-				{"doc": self, "custom_workers_config": custom_workers_config},
+				{
+					"doc": self,
+					"custom_workers": custom_workers,
+					"custom_workers_group": self._get_custom_workers_group(custom_workers),
+				},
 				is_path=True,
 			)
 			f.write(content)
 
 	def _get_custom_workers(self, rg):
 		if rg.common_site_config:
-			common_site_config = json.loads(self.common_site_config) or frappe._dict()
+			common_site_config = json.loads(rg.common_site_config) or frappe._dict()
+			return common_site_config.get("workers", frappe._dict())
 
-			if "workers" in common_site_config:
-				return common_site_config["workers"]
+		return frappe._dict()
+
+	def _get_custom_workers_group(self, custom_workers):
+		group = []
+		if custom_workers:
+			for worker_name in custom_workers:
+				group.append(f"frappe-bench-{ worker_name }-worker")
+		return ", ".join(group)
 
 	def _generate_apps_txt(self):
 		apps_txt = os.path.join(self.build_directory, "apps.txt")
