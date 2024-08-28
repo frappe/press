@@ -28,10 +28,10 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
-	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
+	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -632,6 +632,7 @@ class Bench(Document):
 
 	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
 		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
+		self.save()
 		job = Agent(self.server).create_agent_job(
 			"Update Bench In Place",
 			path=f"benches/{self.name}/update_inplace",
@@ -676,11 +677,7 @@ class Bench(Document):
 
 	@staticmethod
 	def process_update_inplace(job: "AgentJob"):
-		request_data = json.loads(job.request_data)
-		bench: "Bench" = frappe.get_doc(
-			"Bench",
-			request_data["bench"],
-		)
+		bench: "Bench" = frappe.get_doc("Bench", job.bench)
 		bench._process_update_inplace(job)
 
 	def _process_update_inplace(self, job: "AgentJob"):
@@ -722,7 +719,6 @@ class Bench(Document):
 	def _handle_inplace_update_success(self, req_data: dict):
 		self.inplace_update_docker_image = req_data.get("image")
 		self.update_apps_after_inplace_update(
-			commit_hash=req_data.get("hash"),
 			update_apps=req_data.get("apps", []),
 		)
 
@@ -744,7 +740,6 @@ class Bench(Document):
 
 	def update_apps_after_inplace_update(
 		self,
-		commit_hash: str,
 		update_apps: list[dict],
 	):
 		apps_map = {a.app: a for a in self.apps}
@@ -753,11 +748,11 @@ class Bench(Document):
 			if not (bench_app := apps_map.get(name)):
 				continue
 
-			bench_app.hash = commit_hash
+			bench_app.hash = ua.get("hash")
 
 			# Update release by creating one
 			source: "AppSource" = frappe.get_doc("App Source", bench_app.source)
-			if release := source.create_release(True, commit_hash=commit_hash):
+			if release := source.create_release(True, commit_hash=bench_app.hash):
 				bench_app.release = release
 
 	@classmethod

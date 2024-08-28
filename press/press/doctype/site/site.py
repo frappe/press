@@ -330,7 +330,7 @@ class Site(Document, TagHelpers):
 	def validate_bench(self):
 		if (
 			self.status not in ("Broken", "Archived")
-			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) != "Active"
+			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) == "Archived"
 		):
 			frappe.throw(
 				f"Bench {self.bench} is not active. Please try again if you've deployed a new bench."

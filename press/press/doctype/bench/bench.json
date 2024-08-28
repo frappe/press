@@ -352,11 +352,12 @@
    "description": "New image created when running an in place update.",
    "fieldname": "inplace_update_docker_image",
    "fieldtype": "Data",
-   "label": "In Place Update Docker Image"
+   "label": "In Place Update Docker Image",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-08-27 11:06:31.661691",
+ "modified": "2024-08-28 13:15:14.494794",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

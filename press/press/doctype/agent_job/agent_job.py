@@ -17,10 +17,8 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
-
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
@@ -883,6 +881,10 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 
 	try:
+		from press.api.dboptimize import (
+			delete_all_occurences_of_mariadb_analyze_query,
+			fetch_column_stats_update,
+		)
 		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
 			Bench,
@@ -897,9 +899,7 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			process_start_code_server_job_update,
 			process_stop_code_server_job_update,
 		)
-		from press.press.doctype.deploy_candidate.deploy_candidate import (
-			DeployCandidate,
-		)
+		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -910,6 +910,8 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 		from press.press.doctype.site.site import (
 			process_add_proxysql_user_job_update,
 			process_archive_site_job_update,
+			process_complete_setup_wizard_job_update,
+			process_create_user_job_update,
 			process_install_app_site_job_update,
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
@@ -920,22 +922,12 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			process_restore_job_update,
 			process_restore_tables_job_update,
 			process_uninstall_app_site_job_update,
-			process_create_user_job_update,
-			process_complete_setup_wizard_job_update,
 		)
-		from press.press.doctype.site_backup.site_backup import (
-			process_backup_site_job_update,
-		)
-		from press.press.doctype.site_domain.site_domain import (
-			process_new_host_job_update,
-		)
+		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
-		)
-		from press.api.dboptimize import (
-			fetch_column_stats_update,
-			delete_all_occurences_of_mariadb_analyze_query,
 		)
 
 		site_migration = get_ongoing_migration(job.site)
@@ -1037,7 +1029,7 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			delete_all_occurences_of_mariadb_analyze_query(job)
 		elif job.job_type == "Complete Setup Wizard":
 			process_complete_setup_wizard_job_update(job)
-		elif job.job_type == "Process Update Bench In Place":
+		elif job.job_type == "Update Bench In Place":
 			Bench.process_update_inplace(job)
 
 	except Exception as e:
