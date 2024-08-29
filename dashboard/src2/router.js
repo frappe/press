@@ -52,10 +52,18 @@ let router = createRouter({
 			}
 		},
 		{
-			path: '/integrated-billing/:accessToken',
+			path: '/in-desk-billing/:accessToken',
 			name: 'Integrated Billing',
-			component: () => import('./pages/app_trial/IntegratedBilling.vue'),
-			props: true,
+			component: () => import('./pages/app_trial/InDeskBilling.vue'),
+			children: [
+				{
+					path: 'onboarding',
+					name: 'Integrated Billing Onboarding',
+					component: () =>
+						import('./pages/app_trial/in_desk_billing/Onboarding.vue')
+				}
+			],
+			props: false,
 			meta: {
 				isLoginPage: true
 			}

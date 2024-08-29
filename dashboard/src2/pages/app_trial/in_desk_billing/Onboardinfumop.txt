@@ -80,7 +80,7 @@ import { setConfig, frappeRequest } from 'frappe-ui';
 import UpdateAddressForm from './UpdateAddressForm.vue';
 
 export default {
-	name: 'In-Desk Checkout',
+	name: 'In Desk Billing Onboarding',
 	components: {
 		SitePlansCards: defineAsyncComponent(() => import('./SitePlanCards.vue')),
 		TextInsideCircle: defineAsyncComponent(() =>

@@ -1,10 +1,5 @@
 <template>
 	<FormControl class="mt-4" v-model="billing_name" label="Billing Name" />
-	<!-- <AddressForm
-		ref="address-form"
-		class="mt-4"
-		v-model:address="billingInformation"
-	/> -->
 	<Form
 		class="mt-4"
 		:fields="fields"
