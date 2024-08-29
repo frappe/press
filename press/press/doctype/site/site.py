@@ -314,6 +314,8 @@ class Site(Document, TagHelpers):
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
+		if not self.setup_wizard_status_check_next_retry_on:
+			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
