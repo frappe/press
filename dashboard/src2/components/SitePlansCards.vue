@@ -1,9 +1,5 @@
 <template>
-	<PlansCards
-		v-model="currentPlan"
-		:plans="plans"
-		:teamCurrency="this.teamCurrency"
-	/>
+	<PlansCards v-model="currentPlan" :plans="plans" />
 </template>
 
 <script>
@@ -19,25 +15,11 @@ export default {
 		'selectedCluster',
 		'selectedApps',
 		'selectedVersion',
-		'hideRestrictedPlans',
-		'teamCurrency', // [optional], only used for saas
-		'saas'
+		'hideRestrictedPlans'
 	],
 	emits: ['update:modelValue'],
 	components: {
 		PlansCards
-	},
-	mounted() {
-		console.log("team currency", this.teamCurrency);
-	},
-	resources: {
-		saas_plans() {
-			return {
-				url: 'press.saas.api.site.get_plans',
-				auto: true,
-				initialData: []
-			};
-		}
 	},
 	computed: {
 		currentPlan: {
@@ -49,12 +31,7 @@ export default {
 			}
 		},
 		plans() {
-			let plans = [];
-			if (this.saas) {
-				plans = this.$resources.saas_plans?.data ?? [];
-			} else {
-				plans = getPlans();
-			}
+			let plans = getPlans();
 			if (this.isPrivateBenchSite) {
 				plans = plans.filter(plan => plan.private_benches);
 			}

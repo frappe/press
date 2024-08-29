@@ -42,25 +42,19 @@ export function plural(number, singular, plural) {
 	return plural;
 }
 
-export function planTitle(plan, teamCurrency = null) {
+export function planTitle(plan) {
 	if (plan === undefined) return;
-	if (!teamCurrency) {
-		let $team = getTeam();
-		teamCurrency = $team.doc.currency;
-	}
-	let india = teamCurrency == 'INR';
+	let $team = getTeam();
+	let india = $team.doc.currency == 'INR';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =
 		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
 	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
 }
 
-export function userCurrency(value, fractions = 2, teamCurrency = null) {
-	if (!teamCurrency) {
-		let $team = getTeam();
-		teamCurrency = $team.doc.currency;
-	}
-	return currency(value, teamCurrency, fractions);
+export function userCurrency(value, fractions = 2) {
+	let $team = getTeam();
+	return currency(value, $team.doc.currency, fractions);
 }
 
 export function currency(value, currency, fractions = 2) {

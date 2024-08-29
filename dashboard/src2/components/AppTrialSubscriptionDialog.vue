@@ -23,7 +23,6 @@
 								<SitePlansCards
 									:hideRestrictedPlans="true"
 									v-model="selectedPlan"
-									teamCurrency="USD"
 									class="mt-4"
 								/>
 								<p></p>
@@ -278,7 +277,7 @@ export default {
 	props: ['site', 'currentPlan', 'trialPlan'],
 	data() {
 		return {
-			step: 0,
+			step: 1,
 			selectedPlan: null,
 			billingInformation: {
 				cardHolderName: '',
