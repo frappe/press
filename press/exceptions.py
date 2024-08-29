@@ -27,3 +27,7 @@ class InsufficientSpaceOnServer(ValidationError):
 
 class VolumeResizeLimitError(ValidationError):
 	pass
+
+
+class AAAArecordExists(ValidationError):
+	pass
