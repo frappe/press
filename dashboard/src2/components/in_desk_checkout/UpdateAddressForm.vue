@@ -3,17 +3,18 @@
 	<Form
 		class="mt-4"
 		:fields="fields"
-		:modelValue="address"
-		@update:modelValue="$emit('update:address', $event)"
-	/>
-	<div class="mt-4" v-show="address.country == 'India'">
+		:modelValue="billingInformation"
+		@update:modelValue="data => Object.assign(billingInformation, data)"
+		ref="address-form"
+	></Form>
+	<div class="mt-4" v-show="billingInformation.country == 'India'">
 		<FormControl label="I have GSTIN" type="checkbox" v-model="gstApplicable" />
 		<FormControl
 			class="mt-2"
 			label="GSTIN"
 			v-if="gstApplicable"
 			type="text"
-			v-model="address.gstin"
+			v-model="billingInformation.gstin"
 			:disabled="!gstApplicable"
 		/>
 	</div>
@@ -35,16 +36,18 @@
 </template>
 
 <script>
-import Form from '@/components/Form.vue';
 import { indianStates } from '@/utils/billing.js';
 
 import { DashboardError } from '../../utils/error';
-import { notify } from '@/utils/toast.js';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'UpdateAddressForm',
 	emits: ['updated'],
-	components: {},
+	inject: ['team'],
+	components: {
+		Form: () => import('@/components/Form.vue')
+	},
 	data() {
 		return {
 			gstApplicable: false,
@@ -61,35 +64,32 @@ export default {
 	},
 	resources: {
 		countryList: {
-			url: 'press.api.account.country_list',
+			url: 'press.saas.api.billing.country_list',
 			auto: true,
 			onSuccess() {
-				// TODO: remove this.$account usage after dashboard-beta is merged
-				// let userCountry =
-				// 	this.$account?.team.country || this.$team?.doc.country;
-				let userCountry = 'India';
+				let userCountry = this.team?.data.country;
 				if (userCountry) {
 					let country = this.countryList.find(d => d.label === userCountry);
 					if (country) {
-						this.update('country', country.value);
+						this.updateAddress('country', country.value);
 					}
 				}
 			}
 		},
 		validateGST() {
 			return {
-				url: 'press.api.billing.validate_gst',
+				url: 'press.saas.api.billing.validate_gst',
 				makeParams() {
 					return {
-						address: this.address
+						address: this.billingInformation
 					};
 				}
 			};
 		},
 		currentBillingInformation() {
 			return {
-				url: 'press.api.account.get_billing_information',
-				auto: false,
+				url: 'press.saas.api.billing.get_information',
+				auto: true,
 				onSuccess(billingInformation) {
 					if ('country' in (billingInformation || {})) {
 						Object.assign(this.billingInformation, {
@@ -110,23 +110,24 @@ export default {
 		},
 		updateBillingInformation() {
 			return {
-				url: 'press.api.account.update_billing_information',
+				url: 'press.saas.api.billing.update_information',
 				makeParams() {
 					return {
 						billing_details: {
 							...this.billingInformation,
-							billing_name: this.billingInformation.billing_name
+							billing_name: this.billing_name
 						}
 					};
 				},
 				onSuccess() {
-					notify({
-						title: 'Address updated successfully!'
-					});
+					toast.success('Address updated successfully!');
 					this.$emit('updated');
 				},
 				validate() {
 					var billing_name = this.billing_name.trim();
+					if (!billing_name) {
+						throw new DashboardError('Billing Name is required');
+					}
 					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
 					var billingNameValid = billingNameRegex.test(billing_name);
 					if (!billingNameValid) {
@@ -135,7 +136,7 @@ export default {
 						);
 					}
 					this.billing_name = billing_name;
-					return this.$refs['address-form'].validateValues();
+					return this.validateValues();
 				}
 			};
 		}
@@ -175,11 +176,15 @@ export default {
 					required: 1
 				},
 				{
-					fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
+					fieldtype:
+						this.billingInformation.country === 'India' ? 'Select' : 'Data',
 					label: 'State / Province / Region',
 					fieldname: 'state',
 					required: 1,
-					options: this.address.country === 'India' ? this.indianStates : null
+					options:
+						this.billingInformation.country === 'India'
+							? this.indianStates
+							: null
 				},
 				{
 					fieldtype: 'Data',
@@ -188,6 +193,40 @@ export default {
 					required: 1
 				}
 			];
+		}
+	},
+	methods: {
+		updateAddress(key, value) {
+			this.billingInformation = {
+				...this.billingInformation,
+				[key]: value
+			};
+		},
+		async validateValues() {
+			let { country } = this.billingInformation;
+			let is_india = country == 'India';
+			let values = this.fields
+				.flat()
+				.filter(df => df.fieldname != 'gstin' || is_india)
+				.map(df => this.billingInformation[df.fieldname]);
+
+			if (!values.every(Boolean)) {
+				throw new DashboardError('Please fill required values');
+			}
+
+			try {
+				await this.validateGST();
+			} catch (error) {
+				console.log(error);
+				throw new DashboardError(error.messages?.join('\n'));
+			}
+		},
+		async validateGST() {
+			this.updateAddress(
+				'gstin',
+				this.gstApplicable ? this.billingInformation.gstin : 'Not Applicable'
+			);
+			await this.$resources.validateGST.submit();
 		}
 	}
 };

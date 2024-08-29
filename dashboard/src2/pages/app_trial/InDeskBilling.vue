@@ -6,7 +6,9 @@
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
-	<router-view v-else />
+	<div v-else class="px-5 py-8">
+		<router-view />
+	</div>
 </template>
 <script>
 import { setConfig, frappeRequest, createResource } from 'frappe-ui';
@@ -16,10 +18,11 @@ import { useRoute } from 'vue-router';
 export default {
 	name: 'In Desk Billing',
 	setup() {
+		let route = useRoute();
 		let request = options => {
 			let _options = options || {};
 			_options.headers = options.headers || {};
-			_options.headers['x-site-access-token'] = useRoute().params.accessToken;
+			_options.headers['x-site-access-token'] = route.params.accessToken;
 			return frappeRequest(_options);
 		};
 		setConfig('resourceFetcher', request);

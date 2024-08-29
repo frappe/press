@@ -10,7 +10,7 @@ def whitelist_saas_api(func):
 	def whitelist_wrapper(fn):
 		return frappe.whitelist(allow_guest=True, methods=["POST"])(fn)
 
-	def auth_wrapper():
+	def auth_wrapper(*args, **kwargs):
 		headers = frappe.request.headers
 		siteAccessToken = headers.get("x-site-access-token")
 		site = None
@@ -73,6 +73,11 @@ def whitelist_saas_api(func):
 		# set utility function to get team and site info
 		frappe.local.get_site = lambda: frappe.get_doc("Site", frappe.local.site_name)
 		frappe.local.get_team = lambda: frappe.get_doc("Team", frappe.local.team_name)
-		return func()
+
+		# remove cmd from kwargs
+		kwargsCopy = kwargs.copy()
+		kwargsCopy.pop("cmd", None)
+		
+		return func(*args, **kwargsCopy)
 
 	return whitelist_wrapper(auth_wrapper)

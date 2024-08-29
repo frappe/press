@@ -1,12 +1,12 @@
 <template>
 	<div class="space-y-6">
 		<!-- Step 1 : Choose a plan -->
-		<div v-if="step == 1">
+		<div v-if="step <= 1">
 			<div class="flex items-center space-x-2">
 				<TextInsideCircle>1</TextInsideCircle>
 				<span class="text-base font-medium"> Choose Site Plan </span>
 			</div>
-			<div class="pl-7">
+			<div class="pl-7" v-if="step == 1">
 				<SitePlansCards
 					v-if="teamCurrency"
 					:teamCurrency="teamCurrency"
@@ -18,7 +18,7 @@
 					<Button
 						class="mt-2 w-full sm:w-fit"
 						variant="solid"
-						@click="confirmPlan"
+						@click="confirmSitePlan"
 					>
 						Confirm Plan
 					</Button>
@@ -41,28 +41,22 @@
 			</div>
 		</div>
 		<!-- Step 2 : Choose address -->
-		<div v-if="step < 2">
+		<div v-if="step <= 2">
 			<div class="flex items-center space-x-2">
 				<TextInsideCircle>2</TextInsideCircle>
 				<span class="text-base font-medium"> Provide Billing Details </span>
 			</div>
-			<div class="pl-7">
-				<UpdateAddressForm />
-				<p></p>
-				<div class="flex w-full justify-end">
-					<Button class="mt-2 w-full sm:w-fit" variant="solid">
-						Confirm Address
-					</Button>
-				</div>
+			<div class="pl-7" v-if="step == 2">
+				<UpdateAddressForm
+					@updated="onSuccessAddressUpdate"
+				/>
 			</div>
 		</div>
 		<div v-else>
 			<div class="flex items-center justify-between space-x-2">
 				<div class="flex items-center space-x-2">
 					<TextInsideCircle>2</TextInsideCircle>
-					<span class="text-base font-medium">
-						Address Confirmed
-					</span>
+					<span class="text-base font-medium"> Address Confirmed </span>
 				</div>
 				<div
 					class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
@@ -79,21 +73,17 @@ import { toast } from 'vue-sonner';
 
 export default {
 	name: 'In Desk Billing Onboarding',
+    inject: ['team'],
 	components: {
 		TextInsideCircle: defineAsyncComponent(() =>
-			import('../../../components/TextInsideCircle.vue')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+			import('../../../components/TextInsideCircle.vue')
 		),
-        		SitePlansCards: defineAsyncComponent(() => import('../../../components/in_desk_checkout/SitePlanCards.vue')),
-                UpdateAddressForm: defineAsyncComponent(() => import('../../../components/in_desk_checkout/UpdateAddressForm.vue'))
-	},
-	resources: {
-		billing_info() {
-			return {
-				url: 'press.saas.api.billing.info',
-				initialData: {},
-				auto: true
-			};
-		}
+		SitePlansCards: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/SitePlanCards.vue')
+		),
+		UpdateAddressForm: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/UpdateAddressForm.vue')
+		)
 	},
 	data() {
 		return {
@@ -105,18 +95,20 @@ export default {
 	},
 	computed: {
 		teamCurrency() {
-			return this.$resources.billing_info?.data?.currency || 'INR';
+			return this.team?.data?.currency || 'INR';
 		}
 	},
 	methods: {
-		confirmPlan() {
+		confirmSitePlan() {
 			if (!this.selectedPlan || !this.selectedPlan.name) {
 				toast.error('Please select a plan');
 				return;
 			}
 			this.step = 2;
 		},
-		confirmAddress() {}
+		onSuccessAddressUpdate() {
+			this.step = 3;
+		}
 	}
 };
 </script>
