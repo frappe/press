@@ -43,13 +43,6 @@
 				type="autocomplete"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
-				@change="
-					e =>
-						$resources.isServerAddedInGroup.fetch({
-							name: site,
-							server: e.target.value
-						})
-				"
 			/>
 			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
 				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
@@ -85,6 +78,14 @@ export default {
 			targetDateTime: null,
 			skipFailingPatches: false
 		};
+	},
+	watch: {
+		targetServer(targetServer) {
+			this.$resources.isServerAddedInGroup.fetch({
+				name: this.site,
+				server: targetServer.value
+			});
+		}
 	},
 	computed: {
 		$site() {
