@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
+from frappe.utils import add_to_date, now_datetime
 import pytz
 from typing import Any, Dict, List
 from contextlib import suppress
@@ -137,6 +138,8 @@ class Site(Document, TagHelpers):
 		saas_communication_secret: DF.Data | None
 		server: DF.Link
 		setup_wizard_complete: DF.Check
+		setup_wizard_status_check_next_retry_on: DF.Datetime | None
+		setup_wizard_status_check_retries: DF.Int
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_backups: DF.Check
@@ -1606,7 +1609,17 @@ class Site(Document, TagHelpers):
 
 	def fetch_setup_wizard_complete_status(self):
 		with suppress(Exception):
-			self.is_setup_wizard_complete()
+			# max retries = 18, backoff time = 10s, with exponential backoff it will try for 30 days
+			if self.setup_wizard_status_check_retries >= 18:
+				return
+			is_completed = self.is_setup_wizard_complete()
+			if not is_completed:
+				self.setup_wizard_status_check_retries += 1
+				exponential_backoff_duration = 10 * (2**self.setup_wizard_status_check_retries)
+				self.setup_wizard_status_check_next_retry_on = add_to_date(
+					now_datetime(), seconds=exponential_backoff_duration
+				)
+				self.save()
 
 	@frappe.whitelist()
 	def set_status_based_on_ping(self):
@@ -3262,14 +3275,19 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 
 
 def sync_sites_setup_wizard_complete_status():
+	team_name = frappe.get_value("Team", {"user": "Administrator"}, "name")
 	sites = frappe.get_all(
 		"Site",
 		filters={
 			"status": "Active",
 			"setup_wizard_complete": 0,
-			"team": ("!=", "Administrator"),
+			"setup_wizard_status_check_retries": ("<", 18),
+			"setup_wizard_status_check_next_retry_on": ("<=", frappe.utils.now()),
+			"team": ("!=", team_name),
 		},
 		pluck="name",
+		order_by="RAND()",
+		limit=100,
 	)
 	for site in sites:
 		frappe.enqueue_doc(
@@ -3277,6 +3295,6 @@ def sync_sites_setup_wizard_complete_status():
 			site,
 			method="fetch_setup_wizard_complete_status",
 			queue="sync",
-			job_name=f"fetch_setup_wizard_complete_status:{site}",
+			job_id=f"fetch_setup_wizard_complete_status:{site}",
 			deduplicate=True,
 		)
