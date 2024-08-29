@@ -68,7 +68,6 @@
   "update_on_day_of_month",
   "setup_wizard_status_section",
   "setup_wizard_complete",
-  "setup_wizard_status_check_max_retries_reached",
   "column_break_vbgj",
   "setup_wizard_status_check_retries",
   "setup_wizard_status_check_next_retry_on",
@@ -629,12 +628,6 @@
    "fieldname": "setup_wizard_status_check_next_retry_on",
    "fieldtype": "Datetime",
    "label": "Next Retry On"
-  },
-  {
-   "default": "0",
-   "fieldname": "setup_wizard_status_check_max_retries_reached",
-   "fieldtype": "Check",
-   "label": "Setup Wizard Status Check Max Retries Reached"
   }
  ],
  "links": [
@@ -699,7 +692,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-08-28 10:23:22.974566",
+ "modified": "2024-08-29 16:30:59.471022",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

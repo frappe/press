@@ -7,7 +7,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
-from frappe.utils.data import add_to_date, now_datetime
+from frappe.utils import add_to_date, now_datetime
 import pytz
 from typing import Any, Dict, List
 from contextlib import suppress
@@ -138,7 +138,6 @@ class Site(Document, TagHelpers):
 		saas_communication_secret: DF.Data | None
 		server: DF.Link
 		setup_wizard_complete: DF.Check
-		setup_wizard_status_check_max_retries_reached: DF.Check
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
 		skip_auto_updates: DF.Check
@@ -1610,19 +1609,16 @@ class Site(Document, TagHelpers):
 
 	def fetch_setup_wizard_complete_status(self):
 		with suppress(Exception):
-			if self.setup_wizard_status_check_max_retries_reached:
+			# max retries = 18, backoff time = 10s, with exponential backoff it will try for 30 days
+			if self.setup_wizard_status_check_retries >= 18:
 				return
 			is_completed = self.is_setup_wizard_complete()
 			if not is_completed:
 				self.setup_wizard_status_check_retries += 1
-				# max retries = 18, backoff time = 10s, with exponential backoff it will try for 30 days
-				if self.setup_wizard_status_check_retries >= 18:
-					self.setup_wizard_status_check_max_retries_reached = True
-				else:
-					exponential_backoff_duration = 10 * (2**self.setup_wizard_status_check_retries)
-					self.setup_wizard_status_check_next_retry_on = add_to_date(
-						now_datetime(), seconds=exponential_backoff_duration
-					)
+				exponential_backoff_duration = 10 * (2**self.setup_wizard_status_check_retries)
+				self.setup_wizard_status_check_next_retry_on = add_to_date(
+					now_datetime(), seconds=exponential_backoff_duration
+				)
 				self.save()
 
 	@frappe.whitelist()
@@ -3285,7 +3281,7 @@ def sync_sites_setup_wizard_complete_status():
 		filters={
 			"status": "Active",
 			"setup_wizard_complete": 0,
-			"setup_wizard_status_check_max_retries_reached": 0,
+			"setup_wizard_status_check_retries": ("<", 18),
 			"setup_wizard_status_check_next_retry_on": ("<=", frappe.utils.now()),
 			"team": ("!=", team_name),
 		},
