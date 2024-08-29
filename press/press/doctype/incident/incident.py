@@ -174,7 +174,7 @@ class Incident(WebsiteGenerator):
 	def notify_unable_to_reach_twilio(self):
 		telegram = Telegram()
 		telegram.send(
-			f"""Unable to reach Twilio for Incident in f{self.server}
+			f"""Unable to reach Twilio for Incident in {self.server}
 
 Likely due to insufficient balance or incorrect credentials""",
 			reraise=True,
