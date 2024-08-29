@@ -29,5 +29,9 @@ class VolumeResizeLimitError(ValidationError):
 	pass
 
 
-class AAAArecordExists(ValidationError):
+class AAAARecordExists(ValidationError):
+	pass
+
+
+class ConflictingCAARecord(ValidationError):
 	pass

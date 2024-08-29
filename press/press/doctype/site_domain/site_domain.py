@@ -2,7 +2,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from contextlib import suppress
 import json
 
 import frappe
@@ -10,7 +9,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.site import check_dns
-from press.exceptions import AAAArecordExists
+from press.exceptions import AAAARecordExists, ConflictingCAARecord
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 
@@ -200,8 +199,7 @@ def update_dns_type():
 	)
 	for domain in domains:
 		try:
-			with suppress(AAAArecordExists):
-				response = check_dns(domain.site, domain.domain)
+			response = check_dns(domain.site, domain.domain)
 			if response["matched"] and response["type"] != domain.dns_type:
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
@@ -211,6 +209,10 @@ def update_dns_type():
 				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
 			)
 			frappe.db.commit()
+		except AAAARecordExists:
+			pass
+		except ConflictingCAARecord:
+			pass
 		except Exception:
 			frappe.db.rollback()
 			log_error("DNS Check Failed", domain=domain)
