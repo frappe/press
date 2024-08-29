@@ -1,6 +1,6 @@
 <template>
 	<div class="@container">
-		<div class="grid grid-cols-2 gap-3 @xl:grid-cols-5">
+		<div class="grid grid-cols-2 gap-3 @xl:grid-cols-6">
 			<PlanCard
 				v-for="plan in plans"
 				:plan="plan"
@@ -16,11 +16,12 @@ import PlanCard from './PlanCard.vue';
 
 export default {
 	name: 'SitePlanCards',
-	props: ['modelValue', 'teamCurrency'],
+	props: ['modelValue'],
 	emits: ['update:modelValue'],
 	components: {
 		PlanCard
 	},
+	inject: ['team'],
 	resources: {
 		saas_plans() {
 			return {
@@ -44,6 +45,11 @@ export default {
 				this.$emit('update:modelValue', value);
 			}
 		},
+		teamCurrency: {
+			get() {
+				return this.team.data?.currency || 'USD';
+			}
+		},
 		plans() {
 			let plans = this.$resources.saas_plans?.data ?? [];
 			plans = plans.filter(plan => !plan.dedicated_server_plan);
@@ -52,7 +58,10 @@ export default {
 				return {
 					...plan,
 					label: plan.plan_title,
-					sublabel: `${plan.price_usd}$ / month`,
+					sublabel:
+						this.teamCurrency == 'USD'
+							? `${plan.price_usd}$ / month`
+							: `${plan.price_inr}₹ / month`,
 					features: [
 						{
 							label: `${this.$format.plural(

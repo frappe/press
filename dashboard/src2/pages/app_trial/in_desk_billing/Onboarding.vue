@@ -1,2 +1,122 @@
-<template>go to hell</template>
-<script></script>
+<template>
+	<div class="space-y-6">
+		<!-- Step 1 : Choose a plan -->
+		<div v-if="step == 1">
+			<div class="flex items-center space-x-2">
+				<TextInsideCircle>1</TextInsideCircle>
+				<span class="text-base font-medium"> Choose Site Plan </span>
+			</div>
+			<div class="pl-7">
+				<SitePlansCards
+					v-if="teamCurrency"
+					:teamCurrency="teamCurrency"
+					v-model="selectedPlan"
+					class="mt-4"
+				/>
+				<p></p>
+				<div class="flex w-full justify-end">
+					<Button
+						class="mt-2 w-full sm:w-fit"
+						variant="solid"
+						@click="confirmPlan"
+					>
+						Confirm Plan
+					</Button>
+				</div>
+			</div>
+		</div>
+		<div v-else>
+			<div class="flex items-center justify-between space-x-2">
+				<div class="flex items-center space-x-2">
+					<TextInsideCircle>1</TextInsideCircle>
+					<span class="text-base font-medium">
+						Site plan selected ({{ selectedPlan.name }})
+					</span>
+				</div>
+				<div
+					class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+				>
+					<i-lucide-check class="h-3 w-3 text-white" />
+				</div>
+			</div>
+		</div>
+		<!-- Step 2 : Choose address -->
+		<div v-if="step < 2">
+			<div class="flex items-center space-x-2">
+				<TextInsideCircle>2</TextInsideCircle>
+				<span class="text-base font-medium"> Provide Billing Details </span>
+			</div>
+			<div class="pl-7">
+				<UpdateAddressForm />
+				<p></p>
+				<div class="flex w-full justify-end">
+					<Button class="mt-2 w-full sm:w-fit" variant="solid">
+						Confirm Address
+					</Button>
+				</div>
+			</div>
+		</div>
+		<div v-else>
+			<div class="flex items-center justify-between space-x-2">
+				<div class="flex items-center space-x-2">
+					<TextInsideCircle>2</TextInsideCircle>
+					<span class="text-base font-medium">
+						Address Confirmed
+					</span>
+				</div>
+				<div
+					class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+				>
+					<i-lucide-check class="h-3 w-3 text-white" />
+				</div>
+			</div>
+		</div>
+	</div>
+</template>
+<script>
+import { defineAsyncComponent } from 'vue';
+import { toast } from 'vue-sonner';
+
+export default {
+	name: 'In Desk Billing Onboarding',
+	components: {
+		TextInsideCircle: defineAsyncComponent(() =>
+			import('../../../components/TextInsideCircle.vue')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+		),
+        		SitePlansCards: defineAsyncComponent(() => import('../../../components/in_desk_checkout/SitePlanCards.vue')),
+                UpdateAddressForm: defineAsyncComponent(() => import('../../../components/in_desk_checkout/UpdateAddressForm.vue'))
+	},
+	resources: {
+		billing_info() {
+			return {
+				url: 'press.saas.api.billing.info',
+				initialData: {},
+				auto: true
+			};
+		}
+	},
+	data() {
+		return {
+			selectedPlan: {
+				name: ''
+			},
+			step: 1
+		};
+	},
+	computed: {
+		teamCurrency() {
+			return this.$resources.billing_info?.data?.currency || 'INR';
+		}
+	},
+	methods: {
+		confirmPlan() {
+			if (!this.selectedPlan || !this.selectedPlan.name) {
+				toast.error('Please select a plan');
+				return;
+			}
+			this.step = 2;
+		},
+		confirmAddress() {}
+	}
+};
+</script>
