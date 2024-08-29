@@ -1621,7 +1621,9 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 			)
 	except dns.resolver.NoAnswer:
 		pass
-	except dns.exception.DNSException as e:
+	except dns.exception.DNSException:
+		pass  # We have other probems
+	except Exception as e:
 		log_error("DNS Query Exception - AAAA", domain=domain, exception=e)
 
 
