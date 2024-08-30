@@ -93,7 +93,9 @@
 								<Button
 									class="mt-4"
 									:loading="
-										$resources.verify2FA.loading || $session.login.loading
+										$resources.verify2FA.loading ||
+										$session.login.loading ||
+										$resources.resetPassword.loading
 									"
 									variant="solid"
 									@click="
