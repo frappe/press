@@ -329,7 +329,6 @@ export default {
 			if (this.isChangingPlan) return;
 			this.isChangingPlan = true;
 			const plan_name = this.selectedPlan?.name;
-			console.log('Changing plan to', plan_name);
 			let request = createResource({
 				url: '/api/method/press.api.client.run_doc_method',
 				params: {
