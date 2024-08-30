@@ -9,7 +9,7 @@
 					<div v-if="!(resetPasswordEmailSent || accountRequestCreated)">
 						<form class="flex flex-col" @submit.prevent="submitForm">
 							<!-- Forgot Password Section -->
-							<template v-if="hasForgotPassword">
+							<template v-if="hasForgotPassword && !is2FA">
 								<FormControl
 									label="Email"
 									type="email"
@@ -74,11 +74,16 @@
 								<Button v-else class="mt-4" variant="solid">
 									Log in with {{ oauthProviderName }}
 								</Button>
-								<ErrorMessage class="mt-2" :message="$session.login.error" />
+								<ErrorMessage
+									class="mt-2"
+									:message="
+										$session.login.error || $resources.is2FAEnabled.error
+									"
+								/>
 							</template>
 
 							<!-- 2FA Section -->
-							<template v-else-if="isLogin && is2FA">
+							<template v-else-if="is2FA">
 								<FormControl
 									label="2FA Code from your Authenticator App"
 									placeholder="123456"
@@ -88,7 +93,9 @@
 								<Button
 									class="mt-4"
 									:loading="
-										$resources.verify2FA.loading || $session.login.loading
+										$resources.verify2FA.loading ||
+										$session.login.loading ||
+										$resources.resetPassword.loading
 									"
 									variant="solid"
 									@click="
@@ -372,7 +379,13 @@ export default {
 			return {
 				url: 'press.api.account.verify_2fa',
 				onSuccess: async () => {
-					await this.login();
+					if (this.isLogin) {
+						await this.login();
+					} else if (this.hasForgotPassword) {
+						await this.$resources.resetPassword.submit({
+							email: this.email
+						});
+					}
 				}
 			};
 		}
@@ -404,7 +417,7 @@ export default {
 									this.$router.push({
 										name: 'Login',
 										query: {
-											two_factor: true
+											two_factor: 1
 										}
 									});
 								} else {
@@ -415,9 +428,26 @@ export default {
 					);
 				}
 			} else if (this.hasForgotPassword) {
-				this.$resources.resetPassword.submit({
-					email: this.email
-				});
+				await this.$resources.is2FAEnabled.submit(
+					{ user: this.email },
+					{
+						onSuccess: async two_factor_enabled => {
+							if (two_factor_enabled) {
+								this.$router.push({
+									name: 'Login',
+									query: {
+										two_factor: 1,
+										forgot: 1
+									}
+								});
+							} else {
+								await this.$resources.resetPassword.submit({
+									email: this.email
+								});
+							}
+						}
+					}
+				);
 			} else {
 				this.$resources.signup.submit();
 			}
