@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 import frappe
+import os
 from press.saas.api import whitelist_saas_api
 from press.api import billing as billing_api
 from press.api import account as account_api
@@ -62,9 +63,38 @@ def handle_razorpay_payment_failed():
 	return billing_api.handle_razorpay_payment_failed()
 
 
-# Misc APIs
+# Invoice Related APIs
+@whitelist_saas_api
+def get_invoices():
+	return frappe.get_list(
+		"Invoice",
+		fields=[
+			"name",
+			"type",
+			"invoice_pdf",
+			"payment_mode",
+			"stripe_invoice_url",
+			"due_date",
+			"period_start",
+			"period_end",
+			"status",
+			"total",
+			"amount_paid",
+			"amount_due",
+			"stripe_payment_failed",
+		],
+	)
 
 
 @whitelist_saas_api
-def update_payment_mode():
-	pass
+def download_invoice(invoice: str):
+	invoice_pdf = frappe.get_value("Invoice", invoice, "invoice_pdf")
+	if not invoice_pdf:
+		frappe.throw("Invoice PDF not found")
+	frappe.local.response.filename = os.path.basename(invoice_pdf)
+	filedata = None
+	invoice_pdf_path = f"{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{invoice_pdf}"
+	with open(frappe.get_site_path(invoice_pdf_path), "rb") as file:
+		filedata = file.read()
+	frappe.local.response.filecontent = filedata
+	frappe.local.response.type = "download"

@@ -53,18 +53,22 @@ let router = createRouter({
 		},
 		{
 			path: '/in-desk-billing/:accessToken',
-			name: 'Integrated Billing',
+			name: 'IntegratedBilling',
 			component: () => import('./pages/app_trial/InDeskBilling.vue'),
 			children: [
 				{
-					path: '/',
-					name: 'Integrated Billing Configuration',
+					path: '',
+					redirect: { name: 'IntegratedBillingOverview' }
+				},
+				{
+					path: 'overview',
+					name: 'IntegratedBillingOverview',
 					component: () =>
-						import('./pages/app_trial/in_desk_billing/Billing.vue')
+						import('./pages/app_trial/in_desk_billing/Overview.vue')
 				},
 				{
 					path: 'invoices',
-					name: 'Integrated Billing Invoices',
+					name: 'IntegratedBillingInvoices',
 					component: () =>
 						import('./pages/app_trial/in_desk_billing/Invoices.vue')
 				}
