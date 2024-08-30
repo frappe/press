@@ -13,7 +13,7 @@ def info():
 	return {
 		"name": frappe.local.site_name,
 		"trial_end_date": frappe.get_value("Site", frappe.local.site_name, "trial_end_date"),
-		"site_plan": frappe.get_doc("Site Plan", site.plan)
+		"plan": frappe.get_doc("Site Plan", site.plan)
 	}
 
 @whitelist_saas_api

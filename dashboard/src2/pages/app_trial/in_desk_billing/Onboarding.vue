@@ -217,6 +217,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { toast } from 'vue-sonner';
+import { createResource } from 'frappe-ui';
 
 export default {
 	name: 'In Desk Billing Onboarding',
@@ -282,14 +283,14 @@ export default {
 		onPaymentMethodConfirmation() {
 			this.step = 4;
 			this.team.reload();
-			changePlan();
+			this.changePlan();
 		},
 		changePlan() {
 			if (this.isChangingPlan) return;
 			this.isChangingPlan = true;
 			const plan_name = this.selectedPlan?.name;
 			let request = createResource({
-				url: '/api/method/press.saas.api.billing.change_plan',
+				url: '/api/method/press.saas.api.site.change_plan',
 				params: {
 					plan: plan_name
 				},

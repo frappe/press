@@ -57,10 +57,16 @@ let router = createRouter({
 			component: () => import('./pages/app_trial/InDeskBilling.vue'),
 			children: [
 				{
-					path: 'onboarding',
-					name: 'Integrated Billing Onboarding',
+					path: '/',
+					name: 'Integrated Billing Configuration',
 					component: () =>
-						import('./pages/app_trial/in_desk_billing/Onboarding.vue')
+						import('./pages/app_trial/in_desk_billing/Billing.vue')
+				},
+				{
+					path: 'invoices',
+					name: 'Integrated Billing Invoices',
+					component: () =>
+						import('./pages/app_trial/in_desk_billing/Invoices.vue')
 				}
 			],
 			props: false,
