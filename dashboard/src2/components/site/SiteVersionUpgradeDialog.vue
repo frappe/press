@@ -18,13 +18,6 @@
 					type="autocomplete"
 					:options="privateReleaseGroups"
 					v-model="privateReleaseGroup"
-					@change="
-						value =>
-							$resources.validateGroupforUpgrade.submit({
-								name: site,
-								group_name: value.target.value
-							})
-					"
 				/>
 				<DateTimeControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
@@ -99,6 +92,16 @@ export default {
 			skipFailingPatches: false,
 			benchHasCommonServer: false
 		};
+	},
+	watch: {
+		privateReleaseGroup: {
+			handler(privateReleaseGroup) {
+				this.$resources.validateGroupforUpgrade.submit({
+					name: this.site,
+					group_name: privateReleaseGroup.value
+				});
+			}
+		}
 	},
 	computed: {
 		nextVersion() {
