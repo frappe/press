@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-08-28 16:22:16.613931",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "source",
+  "title",
+  "plan"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "App Source"
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Marketplace App Plan"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-08-28 20:11:22.334225",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Group Deploy App",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

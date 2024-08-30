@@ -29,6 +29,7 @@ FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
+	from press.press.doctype.site_group_deploy.site_group_deploy import SiteGroupDeploy
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -721,6 +722,30 @@ def process_new_bench_job_update(job):
 			bench_updates[0],
 		)
 		bench_update.update_sites_on_server(job.bench, bench.server)
+
+	# check if new bench related to a site group deploy (man my naming sense is bad)
+	site_group_deploy = frappe.db.get_value(
+		"Site Group Deploy",
+		{
+			"release_group": bench.group,
+			"status": ("!=", "Site Created"),
+			"bench": ("is", "not set"),
+		},
+	)
+	print(site_group_deploy)
+	if site_group_deploy:
+		# frappe.db.set_value(
+		# 	"Site Group Deploy",
+		# 	site_group_deploy,
+		# 	{"bench": job.bench, "status": "Site Created"},
+		# )
+		site_group_deploy: "SiteGroupDeploy" = frappe.get_doc(
+			"Site Group Deploy", site_group_deploy
+		)
+		site_group_deploy.bench = job.bench
+		site_group_deploy.status = "Bench Deployed"
+		site_group_deploy.save()
+		site_group_deploy.create_site()
 
 
 def process_archive_bench_job_update(job):
