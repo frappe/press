@@ -1,8 +1,5 @@
 <template>
-	<div
-		class="flex h-screen w-screen items-center justify-center"
-		v-if="team.loading"
-	>
+	<div class="flex h-screen w-screen items-center justify-center" v-if="false">
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
@@ -32,9 +29,6 @@ export default {
 			auto: true
 		});
 		provide('team', team);
-		return {
-			team
-		};
 	}
 };
 </script>

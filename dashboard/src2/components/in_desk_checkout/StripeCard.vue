@@ -22,7 +22,7 @@
 					class="mt-4"
 					label="Name on Card"
 					type="text"
-					v-model="billingInformation.cardHolderName"
+					v-model="cardHolderName"
 				/>
 			</div>
 
@@ -80,17 +80,14 @@ export default {
 	components: {
 		StripeLogo
 	},
+	inject: ['team'],
 	data() {
 		return {
 			errorMessage: null,
 			cardErrorMessage: null,
 			ready: false,
 			setupIntent: null,
-			billingInformation: {
-				cardHolderName: '',
-				country: '',
-				gstin: ''
-			},
+			cardHolderName: '',
 			gstNotApplicable: false,
 			addingCard: false,
 			tryingMicroCharge: false,
@@ -104,7 +101,7 @@ export default {
 	resources: {
 		setupIntent() {
 			return {
-				url: 'press.api.billing.get_publishable_key_and_setup_intent',
+				url: 'press.saas.api.billing.get_publishable_key_and_setup_intent',
 				async onSuccess(data) {
 					//window.posthog.capture('init_client_add_card', 'fc_signup');
 					let { publishable_key, setup_intent } = data;
@@ -146,10 +143,10 @@ export default {
 				}
 			};
 		},
-		countryList: 'press.api.account.country_list',
+		countryList: 'press.saas.api.billing.country_list',
 		setupIntentSuccess() {
 			return {
-				url: 'press.api.billing.setup_intent_success',
+				url: 'press.saas.api.billing.setup_intent_success',
 				makeParams({ setupIntent }) {
 					return {
 						setup_intent: setupIntent
@@ -159,7 +156,7 @@ export default {
 		},
 		verifyCardWithMicroCharge() {
 			return {
-				url: 'press.api.billing.create_payment_intent_for_micro_debit',
+				url: 'press.saas.api.billing.create_payment_intent_for_micro_debit',
 				makeParams({ paymentMethodName }) {
 					return {
 						payment_method_name: paymentMethodName
@@ -172,9 +169,9 @@ export default {
 		async setupStripeIntent() {
 			await this.$resources.setupIntent.submit();
 
-			let { first_name, last_name = '' } = this.$team.doc.user_info;
+			let { first_name, last_name = '' } = this.team?.data?.user_info;
 			let fullname = first_name + ' ' + last_name;
-			this.billingInformation.cardHolderName = fullname.trimEnd();
+			this.cardHolderName = fullname.trimEnd();
 		},
 		async submit() {
 			this.addingCard = true;
@@ -194,13 +191,9 @@ export default {
 					payment_method: {
 						card: this.card,
 						billing_details: {
-							name: this.billingInformation.cardHolderName,
+							name: this.cardHolderName,
 							address: {
-								line1: this.billingInformation.address,
-								city: this.billingInformation.city,
-								state: this.billingInformation.state,
-								postal_code: this.billingInformation.postal_code,
-								country: this.getCountryCode(this.billingInformation.country)
+								country: this.getCountryCode(this.team?.data?.country)
 							}
 						}
 					}
@@ -251,7 +244,7 @@ export default {
 			}
 		},
 		async verifyWithMicroChargeIfApplicable(paymentMethodName) {
-			const teamCurrency = this.$team.doc.currency;
+			const teamCurrency = this.team?.data?.currency;
 			const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
 
 			const isMicroChargeApplicable =
@@ -305,8 +298,12 @@ export default {
 	},
 	computed: {
 		formattedMicroChargeAmount() {
-			return this.$format.userCurrency(
-				this.$team.doc.billing_info.micro_debit_charge_amount
+			if (!this?.team?.data?.currency) {
+				return 0;
+			}
+			return this.$format.currency(
+				this.team?.data?.billing_info?.micro_debit_charge_amount,
+				this.team?.data?.currency
 			);
 		},
 		browserTimezone() {
