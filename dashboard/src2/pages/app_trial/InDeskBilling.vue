@@ -1,5 +1,8 @@
 <template>
-	<div class="flex h-screen w-screen items-center justify-center" v-if="false">
+	<div
+		class="flex h-screen w-screen items-center justify-center"
+		v-if="isLoadingInitialData"
+	>
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
@@ -14,6 +17,12 @@ import { useRoute } from 'vue-router';
 
 export default {
 	name: 'In Desk Billing',
+	data() {
+		return {
+			isLoadingInitialTeamData: true,
+			isLoadingInitialSiteData: true
+		};
+	},
 	setup() {
 		let route = useRoute();
 		let request = options => {
@@ -23,12 +32,27 @@ export default {
 			return frappeRequest(_options);
 		};
 		setConfig('resourceFetcher', request);
+	},
+	created() {
 		const team = createResource({
 			url: '/api/method/press.saas.api.team.info',
 			method: 'POST',
-			auto: true
+			auto: true,
+			onSuccess: () => (this.isLoadingInitialTeamData = false)
 		});
 		provide('team', team);
+		const site = createResource({
+			url: '/api/method/press.saas.api.site.info',
+			method: 'POST',
+			auto: true,
+			onSuccess: () => (this.isLoadingInitialSiteData = false)
+		});
+		provide('site', site);
+	},
+	computed: {
+		isLoadingInitialData() {
+			return this.isLoadingInitialTeamData || this.isLoadingInitialSiteData;
+		}
 	}
 };
 </script>
