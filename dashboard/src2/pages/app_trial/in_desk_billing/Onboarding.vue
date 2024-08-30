@@ -297,7 +297,6 @@ export default {
 				onSuccess: () => {
 					this.isChangingPlan = false;
 					this.site.reload();
-					// TODO: move to billing + invoice page
 				},
 				onError: () => {
 					this.isChangePlanFailed = true;
