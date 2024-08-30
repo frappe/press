@@ -112,16 +112,14 @@
 								free credits for enabling automated billing.
 							</p>
 							<!-- Stripe Card -->
-							<StripeCard2 @complete="onAddCardSuccess" />
+							<StripeCard2 @complete="onPaymentMethodConfirmation" />
 						</div>
 						<!-- Purchase Prepaid Credit -->
 						<div v-else class="mt-3">
-							<b>Not Implemented</b>
-							<!-- <BuyPrepaidCreditsForm
-											:isOnboarding="true"
-											:minimumAmount="minimumAmount"
-											@success="onBuyCreditsSuccess"
-										/> -->
+							<BuyPrepaidCreditsForm
+								:minimumAmount="minimumAmount"
+								@success="onPaymentMethodConfirmation"
+							/>
 						</div>
 					</div>
 				</div>
@@ -180,6 +178,9 @@ export default {
 		),
 		StripeCard2: defineAsyncComponent(() =>
 			import('../../../components/in_desk_checkout/StripeCard.vue')
+		),
+		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/BuyPrepaidCreditsForm.vue')
 		)
 	},
 	data() {
@@ -187,8 +188,8 @@ export default {
 			selectedPlan: {
 				name: ''
 			},
-			step: 1,
-			isAutomatedBilling: true
+			step: 3,
+			isAutomatedBilling: false
 		};
 	},
 	computed: {
@@ -203,6 +204,9 @@ export default {
 				this.teamCurrency,
 				0
 			);
+		},
+		minimumAmount() {
+			return this.teamCurrency == 'INR' ? 100 : 5;
 		}
 	},
 	methods: {
@@ -217,7 +221,7 @@ export default {
 			this.step = 3;
 			this.team.reload();
 		},
-		onAddCardSuccess() {
+		onPaymentMethodConfirmation() {
 			this.step = 4;
 			this.team.reload();
 		}

@@ -12,21 +12,25 @@ from press.api import account as account_api
 def country_list():
 	return account_api.country_list()
 
+
+# Billing Information Related APIs
 @whitelist_saas_api
 def get_information(timezone=None):
 	return account_api.get_billing_information(timezone)
 
 
 @whitelist_saas_api
-def update_information(billing_details:dict):
+def update_information(billing_details: dict):
 	team = frappe.local.get_team()
 	team.update_billing_details(frappe._dict(billing_details))
 
 
 @whitelist_saas_api
-def validate_gst(address:dict):
+def validate_gst(address: dict):
 	return billing_api.validate_gst(address)
 
+
+# Stripe Payment Gateway Related APIs
 @whitelist_saas_api
 def get_publishable_key_and_setup_intent():
 	return billing_api.get_publishable_key_and_setup_intent()
@@ -37,9 +41,28 @@ def setup_intent_success(setup_intent, address=None):
 	return billing_api.setup_intent_success(setup_intent, address)
 
 
-@frappe.whitelist()
+@whitelist_saas_api
 def create_payment_intent_for_micro_debit(payment_method_name):
 	return billing_api.create_payment_intent_for_micro_debit(payment_method_name)
+
+
+@whitelist_saas_api
+def create_payment_intent_for_buying_credits(amount):
+	return billing_api.create_payment_intent_for_buying_credits(amount)
+
+
+# Razorpay Payment Gateway Related APIs
+@whitelist_saas_api
+def create_razorpay_order(amount):
+	return billing_api.create_razorpay_order(amount)
+
+
+@whitelist_saas_api
+def handle_razorpay_payment_failed():
+	return billing_api.handle_razorpay_payment_failed()
+
+
+# Misc APIs
 
 
 @whitelist_saas_api
