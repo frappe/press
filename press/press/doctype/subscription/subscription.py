@@ -85,6 +85,14 @@ class Subscription(Document):
 
 		return query.run(as_dict=True)
 
+	def before_validate(self):
+		if not self.secret_key and self.document_type == "Marketplace App":
+			self.secret_key = frappe.utils.generate_hash(length=40)
+			if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.document_name}"}):
+				frappe.get_doc(
+					doctype="Site Config Key", internal=True, key=f"sk_{self.document_name}"
+				).insert(ignore_permissions=True)
+
 	def validate(self):
 		self.validate_duplicate()
 
