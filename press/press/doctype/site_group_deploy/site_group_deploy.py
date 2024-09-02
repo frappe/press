@@ -22,7 +22,15 @@ class SiteGroupDeploy(Document):
 		cluster: DF.Link
 		release_group: DF.Link | None
 		site: DF.Link | None
-		status: DF.Literal["Pending", "Deploying Bench", "Bench Deployed", "Site Created"]
+		status: DF.Literal[
+			"Pending",
+			"Deploying Bench",
+			"Bench Deployed",
+			"Bench Deploy Failed",
+			"Creating Site",
+			"Site Created",
+			"Site Creation Failed",
+		]
 		subdomain: DF.Data
 		team: DF.Link
 		version: DF.Link | None
@@ -113,5 +121,25 @@ class SiteGroupDeploy(Document):
 		).insert()
 
 		self.site = site.name
-		self.status = "Site Created"
+		self.status = "Creating Site"
 		self.save()
+
+	def update_site_group_deploy_on_process_job(self, job):
+		if job.job_type == "New Bench":
+			if job.status == "Success":
+				self.bench = job.bench
+				self.status = "Bench Deployed"
+				self.save()
+				self.create_site()
+
+			elif job.status == "Failure":
+				self.status = "Bench Deploy Failed"
+				self.save()
+
+		elif job.job_type == "New Site":
+			if job.status == "Success":
+				self.status = "Site Created"
+				self.save()
+			elif job.status == "Failure":
+				self.status = "Site Creation Failed"
+				self.save()

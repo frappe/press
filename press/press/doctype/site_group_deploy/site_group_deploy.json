@@ -86,7 +86,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending\nDeploying Bench\nBench Deployed\nSite Created"
+   "options": "Pending\nDeploying Bench\nBench Deployed\nBench Deploy Failed\nCreating Site\nSite Created\nSite Creation Failed"
   },
   {
    "fieldname": "column_break_smfr",
@@ -108,7 +108,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-30 17:14:08.614022",
+ "modified": "2024-09-02 10:30:41.897673",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Group Deploy",

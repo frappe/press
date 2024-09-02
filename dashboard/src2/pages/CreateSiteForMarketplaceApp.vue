@@ -4,7 +4,8 @@
 			<FBreadcrumbs
 				:items="[
 					{
-						label: 'Install App'
+						label: 'Install App',
+						route: { name: 'InstallApp', params: { app: app } }
 					}
 				]"
 			/>
@@ -26,13 +27,47 @@
 						<p class="text-sm text-gray-600">{{ appDoc.description }}</p>
 					</div>
 				</div>
-				<div>
-					<Progress
-						size="md"
-						:value="setupProgressValue"
-						:label="progressLabel"
-						:hint="true"
-					/>
+
+				<div
+					v-if="failure"
+					class="flex items-center space-x-2 rounded border border-gray-200 bg-gray-100 p-4 text-base text-gray-700"
+				>
+					<i-lucide-alert-circle class="inline-block h-5 w-5" />
+					<p>
+						Failed to install the app.
+						<router-link
+							class="underline"
+							:to="{ name: 'InstallApp', params: { app: app } }"
+							>Please try again </router-link
+						>.
+					</p>
+				</div>
+				<div class="divide-y rounded-lg bg-gray-50 px-4">
+					<div
+						v-for="step in steps"
+						:key="step.id"
+						class="flex items-center border-gray-200 px-1 py-3"
+					>
+						<div class="flex items-center space-x-4">
+							<LoadingIndicator
+								class="h-4 w-4 text-gray-900"
+								v-if="step.icon() === 'loading'"
+							/>
+							<FeatherIcon
+								v-else
+								:name="step.icon()"
+								class="h-5 w-5 text-gray-600"
+								:stroke-width="2"
+								:class="{
+									'text-green-500': step.icon() === 'check',
+									'text-red-500': step.icon() === 'x'
+								}"
+							/>
+							<div class="flex flex-col space-y-1">
+								<h5 class="text-base">{{ step.title }}</h5>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -61,7 +96,6 @@ export default {
 	},
 	data() {
 		return {
-			setupProgressValue: 0,
 			siteGroupDeployName: this.$route.query.siteGroupDeployName
 		};
 	},
@@ -92,17 +126,10 @@ export default {
 				doctype: 'Site Group Deploy',
 				name: this.siteGroupDeployName,
 				onSuccess: doc => {
-					if (doc.status === 'Pending') {
-						this.setupProgressValue = 10;
-					} else if (doc.status === 'Deploying Bench') {
-						this.setupProgressValue = 30;
-					} else if (doc.status === 'Bench Deployed') {
-						this.setupProgressValue = 50;
-					} else if (doc.status === 'Site Created') {
-						this.setupProgressValue = 100;
+					if (doc.status === 'Site Created') {
 						setTimeout(() => {
 							this.$router.push({
-								name: 'Site Detail Jobs',
+								name: 'Site Detail Overview',
 								params: { name: doc.site }
 							});
 						}, 1000);
@@ -112,12 +139,81 @@ export default {
 		}
 	},
 	computed: {
+		failure() {
+			return ['Site Creation Failed', 'Bench Deploy Failed'].includes(
+				this.$resources.siteGroupDeploy.doc?.status
+			);
+		},
+		steps() {
+			const statusPosition = status => {
+				return [
+					'Pending',
+					'Deploying Bench',
+					'Bench Deployed',
+					'Bench Deploy Failed',
+					'Creating Site',
+					'Site Created',
+					'Site Creation Failed'
+				].indexOf(status);
+			};
+			const status = this.$resources.siteGroupDeploy.doc.status;
+
+			return [
+				{
+					id: 0,
+					title: 'Initializing',
+					description: 'Initializing the setup',
+					status: 'Pending',
+					icon: () => {
+						if (statusPosition(status) === 0) {
+							return 'loading';
+						} else if (statusPosition(status) > 0) {
+							return 'check';
+						}
+					},
+					message: 'This should take a few minutes'
+				},
+				{
+					id: 1,
+					title:
+						statusPosition(status) <= 1 ? 'Deploying Bench' : 'Bench Deployed',
+					description: 'Deploying bench on the server',
+					status: 'Deploying Bench',
+					icon: () => {
+						if (status === 'Bench Deploy Failed') {
+							return 'x';
+						} else if (statusPosition(status) === 1) {
+							return 'loading';
+						} else if (statusPosition(status) > 1) {
+							return 'check';
+						} else {
+							return 'clock';
+						}
+					},
+					message: 'This should take a few minutes'
+				},
+				{
+					id: 2,
+					title: statusPosition(status) <= 4 ? 'Creating Site' : 'Site Created',
+					description: 'Creating site on the server',
+					status: 'Creating Site',
+					icon: () => {
+						if (status === 'Site Creation Failed') {
+							return 'x';
+						} else if (statusPosition(status) === 4) {
+							return 'loading';
+						} else if (statusPosition(status) > 4) {
+							return 'check';
+						} else {
+							return 'clock';
+						}
+					},
+					message: 'This should take a few minutes'
+				}
+			];
+		},
 		appDoc() {
 			return this.$resources.app.data || {};
-		},
-		progressLabel() {
-			const status = this.$resources.siteGroupDeploy.doc.status;
-			return `${status}... This should take a few minutes...`;
 		}
 	}
 };
