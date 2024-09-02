@@ -2770,6 +2770,19 @@ def process_new_site_job_update(job):
 			job.site, updated_status == "Active"
 		)
 
+	# check if new bench related to a site group deploy
+	site_group_deploy = frappe.db.get_value(
+		"Site Group Deploy",
+		{
+			"site": job.site,
+			"status": "Creating Site",
+		},
+	)
+	if site_group_deploy:
+		frappe.get_doc(
+			"Site Group Deploy", site_group_deploy
+		).update_site_group_deploy_on_process_job(job)
+
 
 def update_product_trial_request_status_based_on_site_status(site, is_site_active):
 	records = frappe.get_list(

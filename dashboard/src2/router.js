@@ -221,6 +221,12 @@ let router = createRouter({
 			props: true
 		},
 		{
+			name: 'CreateSiteForMarketplaceApp',
+			path: '/create-site/:app',
+			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
+			props: true
+		},
+		{
 			path: '/user-review/:marketplaceApp',
 			name: 'ReviewMarketplaceApp',
 			component: () =>
@@ -267,12 +273,12 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 
-    // If user is logged in and was moving to app trial signup, redirect to app trial setup
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
 		if (to.name == 'AppTrialSignup') {
 			next({ name: 'AppTrialSetup', params: to.params });
 			return;
 		}
-    
+
 		if (
 			!onboardingComplete &&
 			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))

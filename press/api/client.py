@@ -24,6 +24,7 @@ ALLOWED_DOCTYPES = [
 	"Site Config",
 	"Site Plan",
 	"Site Update",
+	"Site Group Deploy",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
