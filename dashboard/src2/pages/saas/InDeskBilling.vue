@@ -6,7 +6,7 @@
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
-	<div v-else class="px-5 py-4">
+	<div v-else>
 		<Onboarding v-if="isOnboardingRequired" />
 		<TabsWithRouter v-else :tabs="tabs" />
 	</div>
