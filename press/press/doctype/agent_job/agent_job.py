@@ -3,7 +3,9 @@
 # For license information, please see license.txt
 
 import json
+import os
 import random
+import traceback
 from typing import Optional
 
 import frappe
@@ -24,15 +26,15 @@ from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
-from press.press.doctype.press_notification.press_notification import (
-	create_new_notification,
-)
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	job_matches_site_migration,
 	process_site_migration_job_update,
 )
 from press.utils import has_role, log_error
+
+
+AGENT_LOG_KEY = "agent-jobs"
 
 
 class AgentJob(Document):
@@ -67,12 +69,7 @@ class AgentJob(Document):
 		site: DF.Link | None
 		start: DF.Datetime | None
 		status: DF.Literal[
-			"Undelivered",
-			"Pending",
-			"Running",
-			"Success",
-			"Failure",
-			"Delivery Failure",
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"
 		]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
@@ -163,6 +160,7 @@ class AgentJob(Document):
 
 	def after_insert(self):
 		self.create_agent_job_steps()
+		self.log_creation()
 		self.enqueue_http_request()
 
 	def enqueue_http_request(self):
@@ -206,6 +204,23 @@ class AgentJob(Document):
 
 			else:
 				self.set_status_and_next_retry_at()
+
+	def log_creation(self):
+		try:
+			if hasattr(frappe.local, "monitor"):
+				monitor = frappe.local.monitor.data
+			else:
+				monitor = None
+
+			data = {
+				"monitor": monitor,
+				"timestamp": frappe.utils.now(),
+				"job": self.as_dict(),
+			}
+			serialized = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
+			frappe.cache().rpush(AGENT_LOG_KEY, serialized)
+		except Exception:
+			traceback.print_exc()
 
 	def set_status_and_next_retry_at(self):
 		try:
@@ -637,30 +652,6 @@ def update_job(job_name, job):
 			"traceback": job["data"].get("traceback"),
 		},
 	)
-
-	# send notification if job failed
-	if job["status"] == "Failure":
-		job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
-		notification_type, message = "", ""
-
-		if job_type == "Update Site Migrate":
-			notification_type = "Site Migrate"
-			message = f"Site <b>{job_site}</b> failed to migrate"
-		elif job_type == "Update Site Pull":
-			notification_type = "Site Update"
-			message = f"Site <b>{job_site}</b> failed to update"
-		elif job_type.startswith("Recover Failed"):
-			notification_type = "Site Recovery"
-			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
-
-		if notification_type:
-			create_new_notification(
-				frappe.get_value("Site", job_site, "team"),
-				notification_type,
-				"Agent Job",
-				job_name,
-				message,
-			)
 
 
 def update_steps(job_name, job):
@@ -1104,3 +1095,22 @@ def to_str(data) -> str:
 		return str(data)
 	except Exception:
 		return ""
+
+
+def flush():
+	log_file = os.path.join(
+		frappe.utils.get_bench_path(), "logs", f"{AGENT_LOG_KEY}.json.log"
+	)
+	try:
+		# Fetch all entries without removing from cache
+		logs = frappe.cache().lrange(AGENT_LOG_KEY, 0, -1)
+		print("LOGS", logs)
+		if logs:
+			logs = list(map(frappe.safe_decode, logs))
+			with open(log_file, "a", os.O_NONBLOCK) as f:
+				f.write("\n".join(logs))
+				f.write("\n")
+			# Remove fetched entries from cache
+			frappe.cache().ltrim(AGENT_LOG_KEY, len(logs) - 1, -1)
+	except Exception:
+		traceback.print_exc()

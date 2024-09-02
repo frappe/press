@@ -187,10 +187,14 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None):
+	def rename_site(
+		self, site, new_name: str, create_user: dict = None, config: dict = None
+	):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
+		if config:
+			data["config"] = config
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
@@ -213,7 +217,7 @@ class Agent:
 			bench=site.bench,
 			site=site.name,
 		)
-	
+
 	def complete_setup_wizard(self, site, data):
 		return self.create_agent_job(
 			"Complete Setup Wizard",

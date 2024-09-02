@@ -9,6 +9,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.site import check_dns
+from press.exceptions import AAAARecordExists, ConflictingCAARecord
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 
@@ -208,6 +209,10 @@ def update_dns_type():
 				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
 			)
 			frappe.db.commit()
+		except AAAARecordExists:
+			pass
+		except ConflictingCAARecord:
+			pass
 		except Exception:
 			frappe.db.rollback()
 			log_error("DNS Check Failed", domain=domain)

@@ -52,6 +52,8 @@ export default {
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
+		editScheduledUpdate: 'edit_scheduled_update',
+		cancelUpdate: 'cancel_scheduled_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -789,11 +791,17 @@ export default {
 									}
 								);
 							} else {
-								let url =
+								const url =
 									file == 'config'
 										? backup.config_file_url
 										: backup[file + '_url'];
-								window.open(url);
+
+								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/;
+								const newUrl = url.replace(
+									domainRegex,
+									`$1${site.doc.host_name}/`
+								);
+								window.open(newUrl);
 							}
 						}
 
@@ -1159,7 +1167,52 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						return [
 							{
+								label: 'Edit Scheduled Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let SiteUpdateDialog = defineAsyncComponent(() =>
+										import('../components/SiteUpdateDialog.vue')
+									);
+									renderDialog(
+										h(SiteUpdateDialog, {
+											site: site.doc?.name,
+											existingUpdate: row.name
+										})
+									);
+								}
+							},
+							{
+								label: 'Cancel Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									confirmDialog({
+										title: 'Cancel Update',
+										message: `Are you sure you want to cancel the scheduled update?`,
+										onSuccess({ hide }) {
+											if (site.cancelUpdate.loading) return;
+											toast.promise(
+												site.cancelUpdate.submit({ site_update: row.name }),
+												{
+													loading: 'Cancelling update...',
+													success: () => {
+														hide();
+														site.reload();
+														return 'Update cancelled';
+													},
+													error: e => {
+														return e.messages?.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
 								label: 'View Job',
+								condition: () => row.status !== 'Scheduled',
 								onClick() {
 									router.push({
 										name: 'Site Job',
@@ -1467,12 +1520,13 @@ export default {
 				},
 				{
 					label: 'Update Available',
-					variant: 'solid',
+					variant: site.doc?.setup_wizard_complete ? 'solid' : 'subtle',
 					slots: {
 						prefix: icon('alert-circle')
 					},
 					condition() {
 						return (
+							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status
@@ -1485,6 +1539,19 @@ export default {
 							import('../components/SiteUpdateDialog.vue')
 						);
 						renderDialog(h(SiteUpdateDialog, { site: site.doc?.name }));
+					}
+				},
+				{
+					label: 'Update Scheduled',
+					slots: {
+						prefix: icon('calendar')
+					},
+					condition: () => site.doc?.has_scheduled_updates,
+					onClick() {
+						router.push({
+							name: 'Site Detail Updates',
+							params: { name: site.name }
+						});
 					}
 				},
 				{
@@ -1501,25 +1568,33 @@ export default {
 					}
 				},
 				{
-					label: site.doc?.setup_wizard_complete ? 'Visit Site' : 'Setup Site',
+					label: 'Visit Site',
 					slots: {
 						prefix: icon('external-link')
 					},
-					variant: site.doc?.setup_wizard_complete ? 'subtle' : 'solid',
-					condition: () => site.doc.status !== 'Archived',
+					condition: () =>
+						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
-						if (site.doc?.setup_wizard_complete) {
-							window.open(`https://${site.name}`, '_blank');
+						window.open(`https://${site.name}`, '_blank');
+					}
+				},
+				{
+					label: 'Setup Site',
+					slots: {
+						prefix: icon('external-link')
+					},
+					variant: 'solid',
+					condition: () =>
+						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
+					onClick() {
+						if (site.doc.additional_system_user_created) {
+							site.loginAsTeam
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
 						} else {
-							if (site.doc?.additional_system_user_created) {
-								site.loginAsTeam
-									.submit({ reason: '' })
-									.then(url => window.open(url, '_blank'));
-							} else {
-								site.loginAsAdmin
-									.submit({ reason: '' })
-									.then(url => window.open(url, '_blank'));
-							}
+							site.loginAsAdmin
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
 						}
 					}
 				},

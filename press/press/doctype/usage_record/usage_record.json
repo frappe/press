@@ -139,13 +139,14 @@
    "fieldname": "plan_type",
    "fieldtype": "Link",
    "label": "Plan Type",
-   "options": "DocType"
+   "options": "DocType",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-05 17:21:39.469557",
+ "modified": "2024-08-23 16:46:05.290651",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",

@@ -380,7 +380,8 @@ class Team(Document):
 			self.user = self.team_members[0].user
 
 	def set_team_currency(self):
-		self.currency = "INR" if self.country == "India" else "USD"
+		if not self.currency and self.country:
+			self.currency = "INR" if self.country == "India" else "USD"
 
 	def get_user_list(self):
 		return [row.user for row in self.team_members]

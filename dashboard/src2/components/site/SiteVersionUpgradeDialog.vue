@@ -15,16 +15,9 @@
 					variant="outline"
 					:label="`Please select a ${nextVersion} bench to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
-					type="select"
+					type="autocomplete"
 					:options="privateReleaseGroups"
 					v-model="privateReleaseGroup"
-					@change="
-						value =>
-							$resources.validateGroupforUpgrade.submit({
-								name: site,
-								group_name: value.target.value
-							})
-					"
 				/>
 				<DateTimeControl
 					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
@@ -50,7 +43,9 @@
 			<Button
 				v-if="!$site.doc.group_public"
 				class="mb-2 w-full"
-				:disabled="benchHasCommonServer || !privateReleaseGroup || !nextVersion"
+				:disabled="
+					benchHasCommonServer || !privateReleaseGroup.value || !nextVersion
+				"
 				label="Add Server to Bench"
 				@click="$resources.addServerToReleaseGroup.submit()"
 				:loading="
@@ -63,7 +58,7 @@
 				variant="solid"
 				label="Upgrade"
 				:disabled="
-					((!benchHasCommonServer || !privateReleaseGroup) &&
+					((!benchHasCommonServer || !privateReleaseGroup.value) &&
 						!$site.doc.group_public) ||
 					!nextVersion
 				"
@@ -90,10 +85,23 @@ export default {
 		return {
 			show: true,
 			targetDateTime: null,
-			privateReleaseGroup: '',
+			privateReleaseGroup: {
+				value: '',
+				label: ''
+			},
 			skipFailingPatches: false,
 			benchHasCommonServer: false
 		};
+	},
+	watch: {
+		privateReleaseGroup: {
+			handler(privateReleaseGroup) {
+				this.$resources.validateGroupforUpgrade.submit({
+					name: this.site,
+					group_name: privateReleaseGroup.value
+				});
+			}
+		}
 	},
 	computed: {
 		nextVersion() {
@@ -119,7 +127,7 @@ export default {
 				this.privateReleaseGroups.length === 0
 			)
 				return `Your team doesn't own any private benches available to upgrade this site to ${this.nextVersion}.`;
-			else if (!this.privateReleaseGroup) {
+			else if (!this.privateReleaseGroup.value) {
 				return '';
 			} else if (!this.$site.doc?.group_public && !this.benchHasCommonServer)
 				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
@@ -153,7 +161,7 @@ export default {
 				url: 'press.api.site.version_upgrade',
 				params: {
 					name: this.site,
-					destination_group: this.privateReleaseGroup,
+					destination_group: this.privateReleaseGroup.value,
 					skip_failing_patches: this.skipFailingPatches,
 					scheduled_datetime: this.datetimeInIST
 				},
@@ -177,6 +185,7 @@ export default {
 				transform(data) {
 					return data.map(group => ({
 						label: group.title || group.name,
+						description: group.name,
 						value: group.name
 					}));
 				},
@@ -188,16 +197,16 @@ export default {
 				url: 'press.api.site.add_server_to_release_group',
 				params: {
 					name: this.site,
-					group_name: this.privateReleaseGroup
+					group_name: this.privateReleaseGroup.value
 				},
 				onSuccess(data) {
 					toast.success('Server Added to the Bench', {
-						description: `Added a server to ${this.privateReleaseGroup} bench. Please wait for the bench to complete the deploy.`
+						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the bench to complete the deploy.`
 					});
 					this.$router.push({
 						name: 'Bench Job',
 						params: {
-							name: this.privateReleaseGroup,
+							name: this.privateReleaseGroup.value,
 							id: data
 						}
 					});
@@ -218,7 +227,10 @@ export default {
 	methods: {
 		resetValues() {
 			this.targetDateTime = null;
-			this.privateReleaseGroup = '';
+			this.privateReleaseGroup = {
+				label: '',
+				value: ''
+			};
 			this.benchHasCommonServer = false;
 			this.$resources.getPrivateGroups.reset();
 		}
