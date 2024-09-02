@@ -246,6 +246,12 @@ let router = createRouter({
 			props: true
 		},
 		{
+			name: 'CreateSiteForMarketplaceApp',
+			path: '/create-site/:app',
+			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
+			props: true
+		},
+		{
 			path: '/user-review/:marketplaceApp',
 			name: 'ReviewMarketplaceApp',
 			component: () =>
