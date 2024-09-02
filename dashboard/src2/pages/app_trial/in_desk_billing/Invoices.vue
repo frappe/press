@@ -1,6 +1,22 @@
 <template>
 	<div class="p-5">
 		<ObjectList :options="invoiceList" />
+		<Dialog
+			v-model="invoiceDialog"
+			:options="{ size: '3xl', title: showInvoice?.name }"
+		>
+			<template #body-content>
+				<template v-if="showInvoice">
+					<div
+						v-if="showInvoice.status === 'Empty'"
+						class="text-base text-gray-600"
+					>
+						Nothing to show
+					</div>
+					<InvoiceTable v-else :invoiceId="showInvoice.name" />
+				</template>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -8,16 +24,21 @@ import ObjectList from '../../../components/ObjectList.vue';
 import { currency, date } from '../../../utils/format';
 import { dayjsLocal } from '../../../utils/dayjs';
 import { icon } from '../../../utils/components';
-import { createResource } from 'frappe-ui';
+import { createResource, Button } from 'frappe-ui';
+import InvoiceTable from './InvoiceTable.vue';
 
 export default {
 	name: 'IntegratedBillingInvoices',
 	components: {
-		ObjectList
+		ObjectList,
+		InvoiceTable
 	},
 	inject: ['team'],
 	data() {
-		return {};
+		return {
+			invoiceDialog: false,
+			showInvoice: null
+		};
 	},
 	computed: {
 		invoiceList() {
@@ -106,7 +127,7 @@ export default {
 													'Content-Type': 'application/json',
 													'X-Site-Access-Token': this.$route.params.accessToken
 												},
-												body: JSON.stringify({ invoice: row.name })
+												body: JSON.stringify({ name: row.name })
 											}
 										)
 											.then(response => {
@@ -160,7 +181,12 @@ export default {
 							}
 						}
 					}
-				]
+				],
+				orderBy: 'due_date desc, creation desc',
+				onRowClick: row => {
+					this.showInvoice = row;
+					this.invoiceDialog = true;
+				}
 			};
 		}
 	},
