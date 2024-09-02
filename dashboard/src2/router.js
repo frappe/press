@@ -189,10 +189,24 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppTrial',
-			path: '/app-trial/:productId',
-			component: () => import('./pages/NewAppTrial.vue'),
-			props: true
+			name: 'AppTrial',
+			path: '/app-trial',
+			redirect: { name: 'Home' },
+			children: [
+				{
+					name: 'AppTrialSignup',
+					path: 'signup/:productId',
+					component: () => import('./pages/app_trial/Signup.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'AppTrialSetup',
+					path: 'setup/:productId',
+					component: () => import('./pages/app_trial/Setup.vue'),
+					props: true
+				}
+			]
 		},
 		{
 			name: 'Impersonate',
@@ -204,6 +218,12 @@ let router = createRouter({
 			name: 'InstallApp',
 			path: '/install-app/:app',
 			component: () => import('./pages/InstallApp.vue'),
+			props: true
+		},
+		{
+			name: 'CreateSiteForMarketplaceApp',
+			path: '/create-site/:app',
+			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
 			props: true
 		},
 		{
@@ -239,21 +259,29 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
-			to.name.startsWith('Settings');
+		// identify user in posthog
+		if (window.posthog?.__loaded) {
+			try {
+				window.posthog.identify($team.doc.user, {
+					app: 'frappe_cloud'
+				});
+			} catch (e) {
+				console.error(e);
+			}
+		}
 
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
+		if (to.name == 'AppTrialSignup') {
+			next({ name: 'AppTrialSetup', params: to.params });
+			return;
+		}
+
 		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
 		) {
 			next({ name: onboardingRoute });
 			return;
@@ -268,7 +296,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			next({ name: 'Login' });
+			if (to.name == 'AppTrialSetup') {
+				next({
+					name: 'AppTrialSignup',
+					params: to.params
+				});
+			} else {
+				next({ name: 'Login' });
+			}
 		}
 	}
 });

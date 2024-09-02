@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import frappe
 from frappe.core.utils import find
@@ -23,6 +23,7 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import (
 	MarketplaceApp,
 	get_plans_for_app,
+	get_total_installs_by_app,
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 from press.utils.billing import get_frappe_io_connection
@@ -40,12 +41,8 @@ def get(app):
 
 
 @frappe.whitelist()
-def get_install_app_options(marketplace_app: str):
+def get_install_app_options(marketplace_app: str) -> Dict:
 	"""Get options for installing a marketplace app"""
-
-	is_app_approved = frappe.db.get_value(
-		"Marketplace App", marketplace_app, "frappe_approved"
-	)
 
 	restricted_site_plan_release_group = frappe.get_all(
 		"Site Plan Release Group", fields=["parent", "release_group"], ignore_permissions=True
@@ -91,25 +88,24 @@ def get_install_app_options(marketplace_app: str):
 		["name", "cluster"],
 	)
 
-	if is_app_approved:
-		clusters = frappe.db.get_all(
-			"Cluster",
-			filters={"public": 1},
-			fields=["name", "title", "image", "beta"],
+	clusters = frappe.db.get_all(
+		"Cluster",
+		filters={"public": 1},
+		fields=["name", "title", "image", "beta"],
+	)
+
+	for cluster in clusters:
+		cluster["bench"] = frappe.db.get_value(
+			"Bench",
+			filters={
+				"cluster": cluster["name"],
+				"status": "Active",
+				"group": latest_public_group,
+			},
+			order_by="creation desc",
 		)
 
-		for cluster in clusters:
-			cluster["bench"] = frappe.db.get_value(
-				"Bench",
-				filters={
-					"cluster": cluster["name"],
-					"status": "Active",
-					"group": latest_public_group,
-				},
-				order_by="creation desc",
-			)
-
-			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
+		cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
 	ReleasGroup = frappe.qb.DocType("Release Group")
 	ReleasGroupApp = frappe.qb.DocType("Release Group App")
@@ -162,11 +158,82 @@ def get_install_app_options(marketplace_app: str):
 		"plans": app_plans,
 		"private_site_plan": private_site_plan,
 		"public_site_plan": public_site_plan,
-		"is_app_featured": is_app_approved,
 		"private_groups": private_groups,
 		"clusters": clusters,
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 	}
+
+
+@frappe.whitelist()
+def create_site_for_app(
+	subdomain: str,
+	apps: list[Dict],
+	cluster: str,
+	site_plan: str,
+	bench: Optional[str] = None,
+	group: Optional[str] = None,
+):
+	"""Create a site for a marketplace app"""
+
+	if group:
+		app_plans = {
+			app["app"]: app["plan"] for app in apps if hasattr(app, "plan") and app["plan"]
+		}
+
+		site = frappe.get_doc(
+			{
+				"doctype": "Site",
+				"subdomain": subdomain,
+				"subscription_plan": site_plan,
+				"apps": [{"app": app["app"]} for app in apps],
+				"cluster": cluster,
+				"group": group,
+				"domain": frappe.db.get_single_value("Press Settings", "domain"),
+				"team": get_current_team(),
+				"bench": bench,
+				"app_plans": app_plans,
+			}
+		).insert()
+
+		return site
+
+	else:
+		latest_stable_version = frappe.db.get_value(
+			"Frappe Version", {"status": "Stable"}, "name", order_by="number desc"
+		)
+		app_names = [app["app"] for app in apps]
+
+		AppSource = frappe.qb.DocType("App Source")
+		AppSourceVersion = frappe.qb.DocType("App Source Version")
+		app_sources = (
+			frappe.qb.from_(AppSource)
+			.left_join(AppSourceVersion)
+			.on(AppSource.name == AppSourceVersion.parent)
+			.select(AppSource.name, AppSource.app, AppSourceVersion.version)
+			.where(AppSource.app.isin(app_names))
+			.where(AppSourceVersion.version == latest_stable_version)
+			.run(as_dict=True)
+		)
+		apps_with_sources = [
+			{
+				"app": app["app"],
+				"source": find(app_sources, lambda x: x.app == app["app"]).name,
+				"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
+			}
+			for app in apps
+		]
+
+		site_group_deploy = frappe.get_doc(
+			{
+				"doctype": "Site Group Deploy",
+				"subdomain": subdomain,
+				"apps": apps_with_sources,
+				"cluster": cluster,
+				"team": get_current_team(),
+			}
+		).insert()
+
+		return site_group_deploy
 
 
 @frappe.whitelist()
@@ -585,11 +652,17 @@ def options_for_marketplace_app() -> Dict[str, Dict]:
 
 @frappe.whitelist()
 def get_marketplace_apps_for_onboarding() -> List[Dict]:
-	return frappe.get_all(
+	apps = frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "description"],
 		filters={"show_for_site_creation": True, "status": "Published"},
 	)
+	total_installs_by_app = get_total_installs_by_app()
+	for app in apps:
+		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
+	# sort by total installs
+	apps = sorted(apps, key=lambda x: x["total_installs"], reverse=True)
+	return apps
 
 
 def is_on_marketplace(app: str) -> bool:
@@ -825,7 +898,7 @@ def submit_user_review(title, rating, app, review):
 		{
 			"doctype": "App User Review",
 			"title": title,
-			"rating": rating / 5,
+			"rating": int(rating) / 5,
 			"app": app,
 			"review": review,
 			"reviewer": frappe.session.user,
@@ -1244,3 +1317,26 @@ def get_marketplace_apps():
 		)
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
+
+
+@protected("App Source")
+@frappe.whitelist()
+def add_code_review_comment(name, filename, line_number, comment):
+	try:
+		doc = frappe.get_doc("App Release Approval Request", name)
+		# Add a new comment
+		doc.append(
+			"code_comments",
+			{
+				"filename": filename,
+				"line_number": line_number,
+				"comment": comment,
+				"commented_by": frappe.session.user,
+				"time": frappe.utils.now_datetime(),
+			},
+		)
+
+		doc.save()
+		return {"status": "success", "message": "Comment added successfully."}
+	except Exception as e:
+		frappe.throw(f"Unable to add comment. Something went wrong: {str(e)}")

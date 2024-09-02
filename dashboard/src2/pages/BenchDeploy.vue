@@ -33,7 +33,7 @@
 							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
-					<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+					<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 						<template v-slot="{ open }">
 							<Button>
 								<template #icon>
@@ -185,7 +185,7 @@ export default {
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					condition: () => this.$team.doc?.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,

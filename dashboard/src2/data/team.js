@@ -1,4 +1,5 @@
 import { createDocumentResource, frappeRequest } from 'frappe-ui';
+import { clear } from 'idb-keyval';
 
 let team;
 
@@ -22,7 +23,7 @@ function getCurrentTeam() {
 		document.cookie.includes('user_id=Guest') ||
 		!document.cookie.includes('user_id')
 	) {
-		throw new Error('Not logged in');
+		window.location.href = '/login';
 	}
 	let currentTeam = localStorage.getItem('current_team');
 	if (
@@ -50,6 +51,10 @@ export async function switchToTeam(team) {
 	}
 	if (canSwitch) {
 		localStorage.setItem('current_team', team);
+
+		// clear all cache from previous team session
+		clear();
+
 		window.location.reload();
 	}
 }

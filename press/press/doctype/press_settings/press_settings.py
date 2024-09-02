@@ -140,6 +140,7 @@ class PressSettings(Document):
 		twilio_api_key_secret: DF.Password | None
 		twilio_api_key_sid: DF.Data | None
 		twilio_phone_number: DF.Phone | None
+		usage_record_creation_batch_size: DF.Int
 		usd_rate: DF.Float
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check

@@ -24,6 +24,7 @@ ALLOWED_DOCTYPES = [
 	"Site Config",
 	"Site Plan",
 	"Site Update",
+	"Site Group Deploy",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -64,6 +65,7 @@ ALLOWED_DOCTYPES = [
 	"User SSH Key",
 	"Frappe Version",
 	"Dashboard Banner",
+	"App Release Approval Request",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

@@ -255,12 +255,6 @@ export default {
 		}
 	},
 	methods: {
-		addAppHandler() {
-			this.$emit('app-added', this.app, this.isAppOnBench);
-			this.show = false;
-		}
-	},
-	methods: {
 		validateApp(data) {
 			this.selectedBranch = {
 				label: data.branch,
@@ -273,6 +267,10 @@ export default {
 				...data,
 				installation: data.selectedGithubUser.value.id
 			});
+		},
+		addAppHandler() {
+			this.$emit('app-added', this.app, this.isAppOnBench);
+			this.show = false;
 		}
 	}
 };

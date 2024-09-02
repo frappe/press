@@ -51,6 +51,20 @@
 				</template>
 			</ListItem>
 			<ListItem
+				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
+				:subtitle="
+					user.is_2fa_enabled
+						? 'Disable two-factor authentication for your account'
+						: 'Enable two-factor authentication for your account to add an extra layer of security'
+				"
+			>
+				<template #actions>
+					<Button @click="show2FADialog = true">
+						{{ user.is_2fa_enabled ? 'Disable' : 'Enable' }}
+					</Button>
+				</template>
+			</ListItem>
+			<ListItem
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
 				:subtitle="
 					teamEnabled
@@ -161,20 +175,23 @@
 	</Card>
 	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
 	<ActiveServersDialog v-model="showActiveServersDialog" />
+	<TFADialog v-model="show2FADialog" />
 </template>
 
 <script>
 import { toast } from 'vue-sonner';
+import { h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
 import ActiveServersDialog from '../../ActiveServersDialog.vue';
-import { h } from 'vue';
+import TFADialog from './TFADialog.vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
+		TFADialog,
 		FileUploader,
 		FinalizeInvoicesDialog,
 		ChurnFeedbackDialog,
@@ -182,6 +199,7 @@ export default {
 	},
 	data() {
 		return {
+			show2FADialog: false,
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,

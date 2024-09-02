@@ -820,6 +820,8 @@ class DatabaseServer(BaseServer):
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
 			server=self.name,
 			job_id=f"fetch_mariadb_stalk:{self.name}",
+			deduplicate=True,
+			queue="long",
 		)
 
 	def get_stalks(self):
@@ -831,6 +833,8 @@ class DatabaseServer(BaseServer):
 		return result
 
 	def get_stalk(self, name):
+		if self.agent.should_skip_requests():
+			return {}
 		return self.agent.get(f"database/stalks/{name}")
 
 	def _rename_server(self):

@@ -142,7 +142,7 @@ export default {
 				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
 
 			let planDescription = '';
-			if (!currentPlan.name) {
+			if (!currentPlan?.name) {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
 				price = currentPlan[priceField];

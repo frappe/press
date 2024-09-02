@@ -5,6 +5,7 @@
 
 from typing import List
 
+import rq
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder.functions import Coalesce, Count
@@ -12,6 +13,7 @@ from frappe.query_builder.functions import Coalesce, Count
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_plan.site_plan import SitePlan
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class Subscription(Document):
@@ -31,6 +33,7 @@ class Subscription(Document):
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link
+		secret_key: DF.Data | None
 		site: DF.Link | None
 		team: DF.Link
 	# end: auto-generated types
@@ -81,6 +84,14 @@ class Subscription(Document):
 			query = query.where(Subscription.enabled == enabled)
 
 		return query.run(as_dict=True)
+
+	def before_validate(self):
+		if not self.secret_key and self.document_type == "Marketplace App":
+			self.secret_key = frappe.utils.generate_hash(length=40)
+			if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.document_name}"}):
+				frappe.get_doc(
+					doctype="Site Config Key", internal=True, key=f"sk_{self.document_name}"
+				).insert(ignore_permissions=True)
 
 	def validate(self):
 		self.validate_duplicate()
@@ -245,6 +256,7 @@ def create_usage_records():
 	Creates daily usage records for paid Subscriptions
 	"""
 	free_sites = sites_with_free_hosting()
+	settings = frappe.get_single("Press Settings")
 	subscriptions = frappe.db.get_all(
 		"Subscription",
 		filters={
@@ -255,14 +267,23 @@ def create_usage_records():
 		},
 		pluck="name",
 		order_by=None,
-		limit=2000,
+		limit=settings.usage_record_creation_batch_size or 500,
 		ignore_ifnull=True,
+		debug=True,
 	)
 	for name in subscriptions:
+		if has_job_timeout_exceeded():
+			return
 		subscription = frappe.get_cached_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			# This job took too long to execute
+			# We need to rollback the transaction
+			# Try again in the next job
+			frappe.db.rollback()
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Create Usage Record Error", name=name)

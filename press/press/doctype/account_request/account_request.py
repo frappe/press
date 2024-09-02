@@ -40,7 +40,6 @@ class AccountRequest(Document):
 		ip_address: DF.Data | None
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
-		new_signup_flow: DF.Check
 		no_of_employees: DF.Data | None
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
@@ -55,7 +54,6 @@ class AccountRequest(Document):
 		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
-		saas_signup_values: DF.SmallText | None
 		send_email: DF.Check
 		state: DF.Data | None
 		subdomain: DF.Data | None
@@ -90,17 +88,25 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def after_insert(self):
-		if not self.is_saas_signup():
+		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
+		if not (
+			frappe.db.exists("Team", {"user": self.email})
+			or self.is_saas_signup()
+			or self.invited_by_parent_team
+		):
 			# Telemetry: Account Request Created
 			capture("account_request_created", "fc_signup", self.email)
+
+		if self.is_saas_signup():
+			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
+			capture("verification_email_sent", "fc_signup", self.email)
+			capture("clicked_verify_link", "fc_signup", self.email)
+
 		if self.send_email:
 			self.send_verification_email()
-		else:
-			if not self.is_saas_signup():
-				# Telemetry: Verification Mail Sent
-				# If user used oauth, we don't send verification email but to track the event in stat, send this event
-				capture("verification_email_sent", "fc_signup", self.email)
-				capture("clicked_verify_link", "fc_signup", self.email)
+		if self.oauth_signup:
+			# Telemetry: simulate verification email sent
+			capture("verification_email_sent", "fc_signup", self.email)
 
 	def get_country_info(self):
 		return get_country_info()
@@ -134,6 +140,7 @@ class AccountRequest(Document):
 
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
+		sender = ""
 
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
@@ -141,6 +148,17 @@ class AccountRequest(Document):
 		if self.is_saas_signup() or custom_template:
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
+			# If product trial, get the product trial details
+			if self.product_trial:
+				template = "product_trial_verify_account"
+				product_trial = frappe.get_doc("Product Trial", self.product_trial)
+				if product_trial.email_subject:
+					subject = product_trial.email_subject.format(otp=self.otp)
+				if product_trial.email_account:
+					sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
+				if product_trial.email_full_logo:
+					args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+				args.update({"header_content": product_trial.email_header_content or ""})
 		else:
 			template = "verify_account"
 
@@ -152,18 +170,25 @@ class AccountRequest(Document):
 			{
 				"invited_by": self.invited_by,
 				"link": url,
-				# "image_path": "/assets/press/images/frappe-logo-black.png",
-				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
 				"read_pixel_path": get_url(
 					f"/api/method/press.utils.telemetry.capture_read_event?email={self.email}"
 				),
 				"otp": self.otp,
 			}
 		)
-		if not self.is_saas_signup():
+		if not args.get("image_path"):
+			args.update(
+				{
+					"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94"
+				}
+			)
+		# Telemetry: Verification Email Sent
+		# Only capture if it's not a saas signup or invited by parent team
+		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
 		frappe.sendmail(
+			sender=sender,
 			recipients=self.email,
 			subject=subject,
 			template=template,
@@ -175,6 +200,10 @@ class AccountRequest(Document):
 		if self.saas:
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
+			)
+		if self.product_trial:
+			return get_url(
+				f"/api/method/press.api.saas.setup_account_product_trial?key={self.request_key}"
 			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
@@ -188,4 +217,4 @@ class AccountRequest(Document):
 		)
 
 	def is_saas_signup(self):
-		return bool(self.saas_app or self.product_trial)
+		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)

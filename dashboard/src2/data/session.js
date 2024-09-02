@@ -1,5 +1,6 @@
 import { computed, reactive } from 'vue';
 import { createResource } from 'frappe-ui';
+import { clear } from 'idb-keyval';
 import router from '../router';
 
 export let session = reactive({
@@ -18,6 +19,14 @@ export let session = reactive({
 			session.user = getSessionUser();
 			await router.replace({ name: 'Login' });
 			localStorage.removeItem('current_team');
+			// On logout, reset posthog user identity and device id
+			if (window.posthog?.__loaded) {
+				posthog.reset(true);
+			}
+
+			// clear all cache from the session
+			clear();
+
 			window.location.reload();
 		}
 	}),

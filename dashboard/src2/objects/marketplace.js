@@ -8,6 +8,8 @@ import router from '../router';
 import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
 import { isMobile } from '../utils/device';
+import { Button, Badge } from 'frappe-ui';
+import CodeReview from '../components/marketplace/CodeReview.vue';
 
 export default {
 	doctype: 'Marketplace App',
@@ -125,6 +127,10 @@ export default {
 					doctype: 'Marketplace App Version',
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
+					},
+					onRowClick: (row, context) => {
+						const { listResource: versions, documentResource: app } = context;
+						showReleases(row, app);
 					},
 					fields: [
 						'source.repository_owner as repository_owner',
@@ -259,114 +265,7 @@ export default {
 									prefix: icon('plus')
 								},
 								onClick() {
-									renderDialog(
-										h(
-											GenericDialog,
-											{
-												options: {
-													title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-													size: '4xl'
-												}
-											},
-											{
-												default: () =>
-													h(ObjectList, {
-														options: {
-															label: 'Version',
-															type: 'list',
-															doctype: 'App Release',
-															filters: {
-																app: app.doc.name,
-																source: row.source
-															},
-															fields: ['message', 'tag', 'author', 'status'],
-															orderBy: 'creation desc',
-															columns: [
-																{
-																	label: 'Commit Message',
-																	fieldname: 'message',
-																	class: 'w-64',
-																	width: 0.5
-																},
-																{
-																	label: 'Hash',
-																	fieldname: 'hash',
-																	class: 'w-24',
-																	type: 'Badge',
-																	width: 0.2,
-																	format: value => {
-																		return value.slice(0, 7);
-																	}
-																},
-																{
-																	label: 'Author',
-																	fieldname: 'author',
-																	width: 0.2
-																},
-																{
-																	label: 'Status',
-																	fieldname: 'status',
-																	type: 'Badge',
-																	width: 0.3
-																},
-																{
-																	label: '',
-																	fieldname: '',
-																	align: 'right',
-																	type: 'Button',
-																	width: 0.2,
-																	Button({ row, listResource: releases }) {
-																		let label = '';
-																		let successMessage = '';
-																		let loadingMessage = '';
-
-																		if (row.status === 'Awaiting Approval') {
-																			label = 'Cancel';
-																			successMessage =
-																				'The release has been cancelled';
-																			loadingMessage = 'Cancelling release...';
-																		} else if (row.status === 'Draft') {
-																			label = 'Submit';
-																			loadingMessage =
-																				'Submitting release for approval...';
-																			successMessage =
-																				'The release has been submitted for approval';
-																		}
-
-																		return {
-																			label: label,
-																			onClick() {
-																				toast.promise(
-																					row.status === 'Awaiting Approval'
-																						? app.cancelApprovalRequest.submit({
-																								app_release: row.name
-																						  })
-																						: app.createApprovalRequest.submit({
-																								app_release: row.name
-																						  }),
-																					{
-																						loading: loadingMessage,
-																						success: () => {
-																							releases.reload();
-																							return successMessage;
-																						},
-																						error: e => {
-																							return e.messages.length
-																								? e.messages.join('\n')
-																								: e.message;
-																						}
-																					}
-																				);
-																			}
-																		};
-																	}
-																}
-															]
-														}
-													})
-											}
-										)
-									);
+									showReleases(row, app);
 								}
 							},
 							{
@@ -569,7 +468,7 @@ export default {
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
 						window.open(
-							'https://frappecloud.com/docs/marketplace/marketpace-guidelines',
+							'https://frappecloud.com/docs/marketplace/marketplace-guidelines',
 							'_blank'
 						);
 					}
@@ -630,3 +529,146 @@ export default {
 		}
 	}
 };
+
+function showReleases(row, app) {
+	renderDialog(
+		h(
+			GenericDialog,
+			{
+				options: {
+					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
+					size: '6xl'
+				}
+			},
+			{
+				default: () =>
+					h(ObjectList, {
+						options: {
+							label: 'Version',
+							type: 'list',
+							doctype: 'App Release',
+							filters: {
+								app: app.doc.name,
+								source: row.source
+							},
+							fields: ['message', 'tag', 'author', 'status'],
+							orderBy: 'creation desc',
+							columns: [
+								{
+									label: 'Commit Message',
+									fieldname: 'message',
+									class: 'w-64',
+									width: 0.5
+								},
+								{
+									label: 'Hash',
+									fieldname: 'hash',
+									class: 'w-24',
+									type: 'Badge',
+									width: 0.2,
+									format: value => {
+										return value.slice(0, 7);
+									}
+								},
+								{
+									label: 'Author',
+									fieldname: 'author',
+									width: 0.2
+								},
+								{
+									label: 'Status',
+									fieldname: 'status',
+									type: 'Badge',
+									width: 0.3
+								},
+								{
+									label: 'Code Screening',
+									type: 'Component',
+									width: 0.2,
+									component: ({ row, listResource: releases, app }) => {
+										if (
+											(row.status === 'Awaiting Approval' ||
+												row.status === 'Rejected') &&
+											row.screening_status === 'Complete'
+										) {
+											return h(Button, {
+												label: 'Code Review',
+												variant: 'subtle',
+												theme: 'blue',
+												size: 'sm',
+												onClick: () =>
+													codeReview(row, app, window.is_system_user)
+											});
+										}
+										return h(Badge, {
+											label: row.screening_status || 'Not Started'
+										});
+									}
+								},
+								{
+									label: '',
+									fieldname: '',
+									align: 'right',
+									type: 'Button',
+									width: 0.2,
+									Button({ row, listResource: releases }) {
+										let label = '';
+										let successMessage = '';
+										let loadingMessage = '';
+
+										if (row.status === 'Awaiting Approval') {
+											label = 'Cancel';
+											successMessage = 'The release has been cancelled';
+											loadingMessage = 'Cancelling release...';
+										} else if (row.status === 'Draft') {
+											label = 'Submit';
+											loadingMessage = 'Submitting release for approval...';
+											successMessage =
+												'The release has been submitted for approval';
+										}
+
+										return {
+											label: label,
+											onClick() {
+												toast.promise(
+													row.status === 'Awaiting Approval'
+														? app.cancelApprovalRequest.submit({
+																app_release: row.name
+														  })
+														: app.createApprovalRequest.submit({
+																app_release: row.name
+														  }),
+													{
+														loading: loadingMessage,
+														success: () => {
+															releases.reload();
+															return successMessage;
+														},
+														error: e => {
+															return e.messages.length
+																? e.messages.join('\n')
+																: e.message;
+														}
+													}
+												);
+											}
+										};
+									}
+								}
+							]
+						}
+					})
+			}
+		)
+	);
+}
+
+function codeReview(row, app, isSystemUser) {
+	renderDialog(
+		h(CodeReview, {
+			row: row,
+			app: app,
+			isSystemUser: isSystemUser
+		})
+	);
+}

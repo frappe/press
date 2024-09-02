@@ -52,6 +52,8 @@ export default {
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
+		editScheduledUpdate: 'edit_scheduled_update',
+		cancelUpdate: 'cancel_scheduled_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -368,7 +370,7 @@ export default {
 						return [
 							{
 								label: 'View in Desk',
-								condition: () => $team.doc.is_desk_user,
+								condition: () => $team.doc?.is_desk_user,
 								onClick() {
 									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
@@ -559,7 +561,7 @@ export default {
 							},
 							{
 								label: 'Set Primary',
-								condition: () => !row.primary,
+								condition: () => !row.primary && row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Set Primary Domain`,
@@ -589,7 +591,10 @@ export default {
 							},
 							{
 								label: 'Redirect to Primary',
-								condition: () => !row.primary && !row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									!row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
@@ -619,7 +624,10 @@ export default {
 							},
 							{
 								label: 'Remove Redirect',
-								condition: () => !row.primary && row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,
@@ -759,7 +767,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> in your site to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess() {
@@ -783,11 +791,17 @@ export default {
 									}
 								);
 							} else {
-								let url =
+								const url =
 									file == 'config'
 										? backup.config_file_url
 										: backup[file + '_url'];
-								window.open(url);
+
+								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/;
+								const newUrl = url.replace(
+									domainRegex,
+									`$1${site.doc.host_name}/`
+								);
+								window.open(newUrl);
 							}
 						}
 
@@ -1153,7 +1167,52 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						return [
 							{
+								label: 'Edit Scheduled Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let SiteUpdateDialog = defineAsyncComponent(() =>
+										import('../components/SiteUpdateDialog.vue')
+									);
+									renderDialog(
+										h(SiteUpdateDialog, {
+											site: site.doc?.name,
+											existingUpdate: row.name
+										})
+									);
+								}
+							},
+							{
+								label: 'Cancel Update',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									confirmDialog({
+										title: 'Cancel Update',
+										message: `Are you sure you want to cancel the scheduled update?`,
+										onSuccess({ hide }) {
+											if (site.cancelUpdate.loading) return;
+											toast.promise(
+												site.cancelUpdate.submit({ site_update: row.name }),
+												{
+													loading: 'Cancelling update...',
+													success: () => {
+														hide();
+														site.reload();
+														return 'Update cancelled';
+													},
+													error: e => {
+														return e.messages?.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
 								label: 'View Job',
+								condition: () => row.status !== 'Scheduled',
 								onClick() {
 									router.push({
 										name: 'Site Job',
@@ -1461,12 +1520,13 @@ export default {
 				},
 				{
 					label: 'Update Available',
-					variant: 'solid',
+					variant: site.doc?.setup_wizard_complete ? 'solid' : 'subtle',
 					slots: {
 						prefix: icon('alert-circle')
 					},
 					condition() {
 						return (
+							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status
@@ -1482,6 +1542,19 @@ export default {
 					}
 				},
 				{
+					label: 'Update Scheduled',
+					slots: {
+						prefix: icon('calendar')
+					},
+					condition: () => site.doc?.has_scheduled_updates,
+					onClick() {
+						router.push({
+							name: 'Site Detail Updates',
+							params: { name: site.name }
+						});
+					}
+				},
+				{
 					label: 'Impersonate Site Owner',
 					slots: {
 						prefix: defineAsyncComponent(() =>
@@ -1489,7 +1562,7 @@ export default {
 						)
 					},
 					condition: () =>
-						$team.doc.is_desk_user && site.doc.team != $team.name,
+						$team.doc?.is_desk_user && site.doc.team !== $team.name,
 					onClick() {
 						switchToTeam(site.doc.team);
 					}
@@ -1499,9 +1572,30 @@ export default {
 					slots: {
 						prefix: icon('external-link')
 					},
-					condition: () => site.doc.status !== 'Archived',
+					condition: () =>
+						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
 						window.open(`https://${site.name}`, '_blank');
+					}
+				},
+				{
+					label: 'Setup Site',
+					slots: {
+						prefix: icon('external-link')
+					},
+					variant: 'solid',
+					condition: () =>
+						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
+					onClick() {
+						if (site.doc.additional_system_user_created) {
+							site.loginAsTeam
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
+						} else {
+							site.loginAsAdmin
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
+						}
 					}
 				},
 				{
@@ -1511,7 +1605,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: 'external-link',
-							condition: () => $team.doc.is_desk_user,
+							condition: () => $team.doc?.is_desk_user,
 							onClick: () => {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,

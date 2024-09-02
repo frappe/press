@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from contextlib import suppress
 import _io
 import json
 import os
@@ -186,10 +187,14 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None):
+	def rename_site(
+		self, site, new_name: str, create_user: dict = None, config: dict = None
+	):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
+		if config:
+			data["config"] = config
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
@@ -208,6 +213,15 @@ class Agent:
 		return self.create_agent_job(
 			"Create User",
 			f"benches/{site.bench}/sites/{site.name}/create-user",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def complete_setup_wizard(self, site, data):
+		return self.create_agent_job(
+			"Complete Setup Wizard",
+			f"benches/{site.bench}/sites/{site.name}/complete-setup-wizard",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -812,14 +826,18 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result):
+	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
 			return
 
+		reason = None
+		with suppress(TypeError, ValueError):
+			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+
 		message = f"""
-			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
-			Response: {getattr(result, 'text', 'Unknown')}
-		"""
+Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Response: {reason or getattr(result, 'text', 'Unknown')}
+"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 

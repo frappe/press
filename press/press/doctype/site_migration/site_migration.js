@@ -24,13 +24,22 @@ frappe.ui.form.on('Site Migration', {
 				},
 			};
 		});
-		if (['Scheduled', 'Failure'].includes(frm.doc.status)) {
+		if (frm.doc.status === 'Failure') {
 			frm.add_custom_button(__('Continue'), () => {
 				frappe.confirm(
-					`Are you sure you want to continue from next Pending step?
+					`Are you sure you want to continue from next Pending step?<br>
 
 					<b>Note: This could cause data loss if you don't know what you're doing</b>`,
 					() => frm.call('continue_from_next_pending'),
+				);
+			});
+		} else if (frm.doc.status === 'Scheduled') {
+			frm.add_custom_button(__('Start'), () => {
+				frappe.confirm(
+					`Are you sure you want to start the migration?<br>
+
+					<b>Note: This will start downtime</b>`,
+					() => frm.call('start'),
 				);
 			});
 		}

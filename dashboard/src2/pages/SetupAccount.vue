@@ -3,11 +3,6 @@
 		class="flex h-screen overflow-hidden bg-gray-50"
 		v-if="!$resources.validateRequestKey.loading && email"
 	>
-		<ProductSignupPitch
-			v-if="saasProduct"
-			:saasProduct="saasProduct"
-			class="order-1 hidden sm:block"
-		/>
 		<div class="w-full overflow-auto">
 			<LoginBox>
 				<div
@@ -65,11 +60,6 @@
 							v-model="country"
 							required
 						/>
-						<Form
-							v-if="signupFields.length > 0"
-							:fields="signupFields"
-							v-model="signupValues"
-						/>
 						<div class="mt-4 flex items-start">
 							<label class="text-base text-gray-900">
 								<FormControl type="checkbox" v-model="termsAccepted" />
@@ -119,15 +109,13 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
-import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
 		LoginBox,
 		Link,
-		Form,
-		ProductSignupPitch
+		Form
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -195,32 +183,16 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
-					oauth_domain: this.oauthDomain,
-					signup_values: this.signupValues
+					oauth_domain: this.oauthDomain
 				},
 				onSuccess() {
 					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard/app-trial/${this.saasProduct.name}`;
+						path = `/dashboard/app-trial/setup/${this.saasProduct.name}`;
 					}
 					window.location.href = path;
 				}
 			};
-		}
-	},
-	computed: {
-		signupFields() {
-			let fields = this.saasProduct?.signup_fields || [];
-			return fields.map(df => {
-				if (df.fieldtype == 'Select') {
-					df.options = df.options
-						.split('\n')
-						.map(o => o.trim())
-						.filter(Boolean);
-				}
-				df.required = true;
-				return df;
-			});
 		}
 	}
 };

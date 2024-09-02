@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
 
+
 from . import __version__ as app_version
 
 app_name = "press"
@@ -71,6 +72,10 @@ website_route_rules = [
 
 website_redirects = [
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
+	{
+		"source": "/suspended-site",
+		"target": "/api/method/press.api.handle_suspended_site_redirection",
+	},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
 ]
@@ -188,7 +193,6 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 	],
 	"hourly": [
@@ -210,6 +214,7 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
 		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 	],
@@ -217,6 +222,7 @@ scheduler_events = {
 		"press.auth.flush",
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
 		"press.press.doctype.site.archive.archive_suspended_trial_sites",
+		"press.press.doctype.agent_job.agent_job.flush",
 	],
 	"cron": {
 		"1-59/2 * * * *": [

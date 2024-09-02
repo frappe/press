@@ -3,10 +3,10 @@
 # For license information, please see license.txt
 
 
-from datetime import timedelta
 import json
 import shlex
 import typing
+from datetime import timedelta
 from functools import cached_property
 from typing import List, Union
 
@@ -17,7 +17,6 @@ from frappe.core.utils import find
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
-
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
@@ -477,10 +476,15 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def is_build_server(self) -> bool:
+		# Not a field in all subclasses
+		if getattr(self, "use_for_build", False):
+			return True
+
 		name = frappe.db.get_single_value("Press Settings", "build_server")
 		if name == self.name:
 			return True
 
+		# Whether build_server explicitly set on Release Group
 		count = frappe.db.count(
 			"Release Group",
 			{
@@ -1090,6 +1094,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return 22
 		return self.ssh_port or 22
 
+	def get_primary_frappe_public_key(self):
+		if primary_public_key := frappe.db.get_value(
+			self.doctype, self.primary, "frappe_public_key"
+		):
+			return primary_public_key
+
+		primary = frappe.get_doc(self.doctype, self.primary)
+		ansible = Ansible(
+			playbook="fetch_frappe_public_key.yml",
+			server=primary,
+		)
+		play = ansible.run()
+		if play.status == "Success":
+			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -1291,7 +1311,6 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 
 		try:
@@ -1305,7 +1324,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -1329,6 +1348,14 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def get_proxy_ip(self):
+		"""In case of standalone setup proxy will not required"""
+
+		if self.is_standalone:
+			return self.ip
+
+		return frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 
 	@frappe.whitelist()
 	def setup_standalone(self):
@@ -1407,7 +1434,6 @@ class Server(BaseServer):
 		)
 
 	def _agent_set_proxy_ip(self):
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		agent_password = self.get_password("agent_password")
 
 		try:
@@ -1418,7 +1444,7 @@ class Server(BaseServer):
 				port=self._ssh_port(),
 				variables={
 					"server": self.name,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 				},
@@ -1490,12 +1516,11 @@ class Server(BaseServer):
 		self.save()
 
 	def _setup_secondary(self):
-		primary_public_key = frappe.db.get_value("Server", self.primary, "frappe_public_key")
 		try:
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
-				variables={"primary_public_key": primary_public_key},
+				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
 			self.reload()
@@ -1576,8 +1601,6 @@ class Server(BaseServer):
 		else:
 			kibana_password = None
 
-		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
-
 		try:
 			ansible = Ansible(
 				playbook="rename.yml",
@@ -1587,7 +1610,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
-					"proxy_ip": proxy_ip,
+					"proxy_ip": self.get_proxy_ip(),
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -1761,6 +1784,7 @@ def scale_workers(now=False):
 					method="auto_scale_workers",
 					job_id=f"auto_scale_workers:{server.name}",
 					deduplicate=True,
+					queue="long",
 					enqueue_after_commit=True,
 				)
 			frappe.db.commit()

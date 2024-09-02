@@ -23,12 +23,16 @@ class AppReleaseApprovalRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.marketplace.doctype.app_release_approval_code_comments.app_release_approval_code_comments import (
+			AppReleaseApprovalCodeComments,
+		)
 
 		app: DF.Link | None
 		app_release: DF.Link
 		baseline_request: DF.Data | None
 		baseline_requirements: DF.Code | None
 		baseline_result: DF.Code | None
+		code_comments: DF.Table[AppReleaseApprovalCodeComments]
 		marketplace_app: DF.Link
 		reason_for_rejection: DF.TextEditor | None
 		requirements: DF.Code | None
@@ -39,6 +43,16 @@ class AppReleaseApprovalRequest(Document):
 		status: DF.Literal["Open", "Cancelled", "Approved", "Rejected"]
 		team: DF.Link | None
 	# end: auto-generated types
+
+	dashboard_fields = [
+		"name",
+		"marketplace_app",
+		"screening_status",
+		"app_release",
+		"status",
+		"result",
+		"code_comments",
+	]
 
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
@@ -205,7 +219,11 @@ class AppReleaseApprovalRequest(Document):
 					search = regex.search(line)
 					if search:
 						issues.append(
-							{"severity": severity, "violation": violation, "match": search.group(1)}
+							{
+								"severity": severity,
+								"violation": violation,
+								"match": search.group(1),
+							}
 						)
 			if issues:
 				context = get_context(lines, index)

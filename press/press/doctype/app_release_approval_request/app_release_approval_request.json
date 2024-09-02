@@ -24,7 +24,9 @@
   "result",
   "result_html",
   "result_html_rendered",
-  "requirements"
+  "requirements",
+  "comments_tab",
+  "code_comments"
  ],
  "fields": [
   {
@@ -152,11 +154,22 @@
    "fieldtype": "Select",
    "label": "Screening Status",
    "options": "Not Started\nScreening\nComplete"
+  },
+  {
+   "fieldname": "comments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Comments"
+  },
+  {
+   "fieldname": "code_comments",
+   "fieldtype": "Table",
+   "label": "Code Comments",
+   "options": "App Release Approval Code Comments"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-17 14:41:48.554937",
+ "modified": "2024-08-20 14:52:29.180004",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",

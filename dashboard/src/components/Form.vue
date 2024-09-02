@@ -24,14 +24,44 @@
 </template>
 
 <script>
+// https://github.com/eggert/tz/blob/main/backward add more if required.
+const TZ_BACKWARD_COMPATBILITY_MAP = {
+	'Asia/Calcutta': 'Asia/Kolkata'
+};
+
 export default {
 	name: 'Form',
 	props: ['fields', 'modelValue'],
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			requiredFieldNotSet: []
+			requiredFieldNotSet: [],
+			guessedTimezone: ''
 		};
+	},
+	mounted() {
+		this.guessedTimezone = this.guessTimezone();
+	},
+	watch: {
+		fields: {
+			handler(new_fields) {
+				let timezoneFields = new_fields.filter(
+					f => f.fieldtype === 'Select' && f.fieldname.endsWith('_tz')
+				);
+				for (let field of timezoneFields) {
+					if (!field.options) {
+						field.options = [];
+					}
+					if (
+						this.guessedTimezone &&
+						field.options.includes(this.guessedTimezone)
+					) {
+						this.onChange(this.guessedTimezone, field);
+					}
+				}
+			},
+			deep: true
+		}
 	},
 	methods: {
 		onChange(value, field) {
@@ -79,8 +109,21 @@ export default {
 				Select: 'select',
 				Check: 'checkbox',
 				Password: 'password',
-				Text: 'textarea'
+				Text: 'textarea',
+				Date: 'date'
 			}[field.fieldtype || 'Data'];
+		},
+		guessTimezone() {
+			try {
+				let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				if (TZ_BACKWARD_COMPATBILITY_MAP[tz]) {
+					return TZ_BACKWARD_COMPATBILITY_MAP[tz];
+				}
+				return tz;
+			} catch (e) {
+				console.error("Couldn't guess timezone", e);
+				return null;
+			}
 		}
 	}
 };

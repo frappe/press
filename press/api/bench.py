@@ -468,6 +468,9 @@ def all_apps(name):
 		fields=["name", "title", "image", "app"],
 	)
 
+	if not marketplace_apps:
+		return []
+
 	AppSource = frappe.qb.DocType("App Source")
 	AppSourceVersion = frappe.qb.DocType("App Source Version")
 	marketplace_app_sources = (
@@ -754,7 +757,6 @@ def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
 				}
 				for site in sites
 			],
-			"status": "Pending",
 		}
 	).insert(ignore_permissions=True)
 	return bench_update.deploy(run_will_fail_check)

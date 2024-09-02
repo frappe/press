@@ -17,7 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
-
+from press.exceptions import AAAARecordExists, ConflictingCAARecord
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -39,7 +39,6 @@ from press.utils import (
 
 if TYPE_CHECKING:
 	from frappe.types import DF
-
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -52,6 +51,21 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 def protected(doctypes):
+	"""
+	This decorator is stupid. It works in magical ways. It checks whether the
+	owner of the Doctype (one of `doctypes`) is the same as the current team.
+
+	The stupid magical part of this decorator is how it gets the name of the
+	Doctype (see: `get_protected_doctype_name`); in order of precedence:
+	1. kwargs value with key `name`
+	2. first value in kwargs value with key `filters` i.e. ≈ `kwargs['filters'].values()[0]`
+	3. first value in the args tuple
+	4. kwargs value with key `snake_case(doctypes[0])`
+	"""
+
+	if not isinstance(doctypes, list):
+		doctypes = [doctypes]
+
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
@@ -60,16 +74,11 @@ def protected(doctypes):
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		# name is either name or 1st value from filters dict from kwargs or 1st value from args
-		name = (
-			kwargs.get("name") or next(iter(kwargs.get("filters", {}).values()), None) or args[0]
-		)
+		name = get_protected_doctype_name(args, kwargs, doctypes)
+		if not name:
+			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)
+
 		team = get_current_team()
-
-		nonlocal doctypes
-		if not isinstance(doctypes, list):
-			doctypes = [doctypes]
-
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
@@ -79,6 +88,41 @@ def protected(doctypes):
 		frappe.throw("Not Permitted", frappe.PermissionError)
 
 	return wrapper
+
+
+def get_protected_doctype_name(args: list, kwargs: dict, doctypes: list[str]):
+	# 1. Name from kwargs["name"]
+	if name := kwargs.get("name"):
+		return name
+
+	# 2. Name from first value in filters
+	filters = kwargs.get("filters", {})
+	if name := get_name_from_filters(filters):
+		return name
+
+	#  3. Name from first value in args
+	if len(args) >= 1 and args[0]:
+		return args[0]
+
+	if len(doctypes) == 0:
+		return None
+
+	# 4. Name from snakecased first `doctypes` name
+	doctype = doctypes[0]
+	key = doctype.lower().replace(" ", "_")
+	return kwargs.get(key)
+
+
+def get_name_from_filters(filters: dict):
+	values = [v for v in filters.values()]
+	if len(values) == 0:
+		return None
+
+	value = values[0]
+	if isinstance(value, (int, str)):
+		return value
+
+	return None
 
 
 def _new(site, server: str = None, ignore_plan_validation: bool = False):
@@ -408,6 +452,9 @@ def app_details_for_new_public_site():
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
+
+	if not marketplace_app_sources:
+		return []
 
 	AppSource = frappe.qb.DocType("App Source")
 	MarketplaceApp = frappe.qb.DocType("Marketplace App")
@@ -785,10 +832,12 @@ def get_site_plans():
 			plan.clusters = plan_details_dict[plan.name]["clusters"]
 			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
 			plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
+			plan.restricted_plan = True
 		else:
 			plan.clusters = []
 			plan.allowed_apps = []
 			plan.bench_versions = []
+			plan.restricted_plan = False
 		filtered_plans.append(plan)
 
 	return filtered_plans
@@ -1502,60 +1551,86 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other probems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same."
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			ConflictingCAARecord,
 		)
 
 
+def check_dns_cname(name, domain):
+	result = {"type": "CNAME", "matched": False, "answer": ""}
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "CNAME")
+		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
+		result["answer"] = answer.rrset.to_text()
+		if mapped_domain == name:
+			result["matched"] = True
+	except dns.exception.DNSException as e:
+		result["answer"] = str(e)
+	except Exception as e:
+		result["answer"] = str(e)
+		log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
+	finally:
+		return result
+
+
+def check_dns_a(name, domain):
+	result = {"type": "A", "matched": False, "answer": ""}
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "A")
+		domain_ip = answer[0].to_text()
+		site_ip = resolver.query(name, "A")[0].to_text()
+		result["answer"] = answer.rrset.to_text()
+		if domain_ip == site_ip:
+			result["matched"] = True
+		elif site_ip:
+			# We can issue certificates even if the domain points to the secondary proxies
+			server = frappe.db.get_value("Site", name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			secondary_ips = frappe.get_all(
+				"Proxy Server",
+				{"status": "Active", "primary": proxy, "is_replication_setup": True},
+				pluck="ip",
+			)
+			if domain_ip in secondary_ips:
+				result["matched"] = True
+	except dns.exception.DNSException as e:
+		result["answer"] = str(e)
+	except Exception as e:
+		result["answer"] = str(e)
+		log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
+	finally:
+		return result
+
+
+def ensure_dns_aaaa_record_doesnt_exist(domain: str):
+	"""
+	Ensure that the domain doesn't have an AAAA record
+
+	LetsEncrypt has issues with IPv6, so we need to ensure that the domain doesn't have an AAAA record
+	ref: https://letsencrypt.org/docs/ipv6-support/#incorrect-ipv6-addresses
+	"""
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "AAAA")
+		if answer:
+			frappe.throw(
+				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed.",
+				AAAARecordExists,
+			)
+	except dns.resolver.NoAnswer:
+		pass
+	except dns.exception.DNSException:
+		pass  # We have other probems
+
+
 def check_dns_cname_a(name, domain):
-	def check_dns_cname(name, domain):
-		result = {"type": "CNAME", "matched": False, "answer": ""}
-		try:
-			resolver = Resolver(configure=False)
-			resolver.nameservers = NAMESERVERS
-			answer = resolver.query(domain, "CNAME")
-			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
-			result["answer"] = answer.rrset.to_text()
-			if mapped_domain == name:
-				result["matched"] = True
-		except dns.exception.DNSException as e:
-			result["answer"] = str(e)
-		except Exception as e:
-			result["answer"] = str(e)
-			log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
-		finally:
-			return result
-
-	def check_dns_a(name, domain):
-		result = {"type": "A", "matched": False, "answer": ""}
-		try:
-			resolver = Resolver(configure=False)
-			resolver.nameservers = NAMESERVERS
-			answer = resolver.query(domain, "A")
-			domain_ip = answer[0].to_text()
-			site_ip = resolver.query(name, "A")[0].to_text()
-			result["answer"] = answer.rrset.to_text()
-			if domain_ip == site_ip:
-				result["matched"] = True
-			elif site_ip:
-				# We can issue certificates even if the domain points to the secondary proxies
-				server = frappe.db.get_value("Site", name, "server")
-				proxy = frappe.db.get_value("Server", server, "proxy_server")
-				secondary_ips = frappe.get_all(
-					"Proxy Server",
-					{"status": "Active", "primary": proxy, "is_replication_setup": True},
-					pluck="ip",
-				)
-				if domain_ip in secondary_ips:
-					result["matched"] = True
-		except dns.exception.DNSException as e:
-			result["answer"] = str(e)
-		except Exception as e:
-			result["answer"] = str(e)
-			log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
-		finally:
-			return result
-
 	check_domain_allows_letsencrypt_certs(domain)
+	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname}
 	result.update(cname)
