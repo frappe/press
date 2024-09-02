@@ -9,7 +9,14 @@ let router = createRouter({
 			path: '/',
 			name: 'Home',
 			component: () => import('./pages/Home.vue'),
-			redirect: { name: 'Welcome' }
+			beforeEnter: (to, from, next) => {
+				next({
+					name: 'Welcome',
+					query: {
+						is_redirect: true
+					}
+				});
+			}
 		},
 		{
 			path: '/welcome',
