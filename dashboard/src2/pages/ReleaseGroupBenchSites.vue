@@ -27,8 +27,7 @@ import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { toast } from 'vue-sonner';
 import { trialDays } from '../utils/site';
-import { getTeam } from '../data/team';
-import { userCurrency } from '../utils/format';
+import { planTitle } from '../utils/format';
 import ActionButton from '../components/ActionButton.vue';
 
 export default {
@@ -155,16 +154,7 @@ export default {
 							if (row.trial_end_date) {
 								return trialDays(row.trial_end_date);
 							}
-							let $team = getTeam();
-							if (row.price_usd > 0) {
-								let india = $team?.doc.country == 'India';
-								let formattedValue = userCurrency(
-									india ? row.price_inr : row.price_usd,
-									0
-								);
-								return `${formattedValue} /mo`;
-							}
-							return row.plan_title;
+							return planTitle(row);
 						}
 					}
 				],
