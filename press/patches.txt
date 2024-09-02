@@ -129,3 +129,4 @@ press.press.doctype.payout_order.patches.compute_total_amount
 press.press.doctype.marketplace_app.patches.change_field_from_first_site_creation_to_site_creation
 press.press.doctype.marketplace_app.patches.convert_images_to_webp
 press.marketplace.doctype.app_user_review.patches.add_rating_values_to_apps
+press.patches.v0_7_0.update_enable_performance_tuning

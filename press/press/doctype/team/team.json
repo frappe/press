@@ -413,7 +413,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "false",
+   "default": "true",
    "fieldname": "enable_performance_tuning",
    "fieldtype": "Check",
    "label": "Enable Performance Tuning"
@@ -476,7 +476,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-08-02 10:33:18.861721",
+ "modified": "2024-09-02 10:13:30.588156",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
