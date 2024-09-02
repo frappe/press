@@ -30,6 +30,9 @@ def update_information(billing_details: dict):
 def validate_gst(address: dict):
 	return billing_api.validate_gst(address)
 
+@whitelist_saas_api
+def change_payment_mode(mode:str):
+	return billing_api.change_payment_mode(mode)
 
 # Stripe Payment Gateway Related APIs
 @whitelist_saas_api

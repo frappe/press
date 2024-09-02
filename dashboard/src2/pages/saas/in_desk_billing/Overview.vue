@@ -164,23 +164,32 @@
 				/>
 			</template>
 		</Dialog>
+
+		<!-- Change payment mode dialog -->
+		<ChangePaymentModeDialog2 v-model="showChangeModeDialog" />
 	</div>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
-import InvoiceTable from '../../../components/in_desk_checkout/InvoiceTable.vue';
-import BuyPrepaidCreditsForm from '../../../components/in_desk_checkout/BuyPrepaidCreditsForm.vue';
-import UpdateAddressForm from '../../../components/in_desk_checkout/UpdateAddressForm.vue';
 
 export default {
 	name: 'BillingOverview',
 	inject: ['team'],
 	components: {
-		InvoiceTable,
-		BuyPrepaidCreditsForm,
-		UpdateAddressForm,
+		InvoiceTable: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/InvoiceTable.vue')
+		),
+		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/BuyPrepaidCreditsForm.vue')
+		),
+		UpdateAddressForm: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/UpdateAddressForm.vue')
+		),
 		StripeCard2: defineAsyncComponent(() =>
 			import('../../../components/in_desk_checkout/StripeCard.vue')
+		),
+		ChangePaymentModeDialog2: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/ChangePaymentModeDialog.vue')
 		)
 	},
 	data() {
