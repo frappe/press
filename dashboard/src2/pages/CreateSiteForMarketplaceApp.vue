@@ -56,11 +56,12 @@
 							<FeatherIcon
 								v-else
 								:name="step.icon()"
-								class="h-5 w-5 text-gray-600"
-								:stroke-width="2"
+								class="h-5 w-5 rounded-full p-0.5 text-white"
+								:stroke-width="3"
 								:class="{
-									'text-green-500': step.icon() === 'check',
-									'text-red-500': step.icon() === 'x'
+									'bg-green-500': step.icon() === 'check',
+									'bg-red-500': step.icon() === 'x',
+									'bg-gray-500': step.icon() === 'clock'
 								}"
 							/>
 							<div class="flex flex-col space-y-1">
