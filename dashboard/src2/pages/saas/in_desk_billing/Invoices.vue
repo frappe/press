@@ -118,7 +118,8 @@ export default {
 									slots: {
 										prefix: icon('download')
 									},
-									onClick: () => {
+									onClick: e => {
+										e.stopPropagation();
 										fetch(
 											'/api/method/press.saas.api.billing.download_invoice',
 											{
