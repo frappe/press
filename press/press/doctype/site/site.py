@@ -1034,10 +1034,15 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
+		frappe.only_for("System Manager")
 		self.ready_for_move()
+
+		if bench == self.bench:
+			frappe.throw("Site is already on the selected bench.")
+
 		log_site_activity(self.name, "Update")
 		agent = Agent(self.server)
-		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		return agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
