@@ -17,6 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
+from press.exceptions import AAAARecordExists, ConflictingCAARecord
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1550,7 +1551,8 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other probems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same."
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			ConflictingCAARecord,
 		)
 
 
@@ -1617,12 +1619,13 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 		answer = resolver.query(domain, "AAAA")
 		if answer:
 			frappe.throw(
-				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed."
+				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed.",
+				AAAARecordExists,
 			)
 	except dns.resolver.NoAnswer:
 		pass
-	except dns.exception.DNSException as e:
-		log_error("DNS Query Exception - AAAA", domain=domain, exception=e)
+	except dns.exception.DNSException:
+		pass  # We have other probems
 
 
 def check_dns_cname_a(name, domain):
