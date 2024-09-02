@@ -25,12 +25,16 @@
 	/>
 	<div class="flex w-full justify-end">
 		<Button
-			class="mt-2 w-full sm:w-fit"
+			class="mt-3 w-full sm:w-fit"
+			:class="{
+				'sm:w-fit': !submitButtonWidthFull,
+				'sm:w-full': submitButtonWidthFull
+			}"
 			variant="solid"
 			:loading="$resources.updateBillingInformation.loading"
 			@click="$resources.updateBillingInformation.submit"
 		>
-			Update Billing Details
+			{{ submitButtonText }}
 		</Button>
 	</div>
 </template>
@@ -47,6 +51,14 @@ export default {
 	inject: ['team'],
 	components: {
 		Form: () => import('@/components/Form.vue')
+	},
+	props: {
+		submitButtonText: {
+			default: 'Update Billing Details'
+		},
+		submitButtonWidthFull: {
+			default: false
+		}
 	},
 	data() {
 		return {

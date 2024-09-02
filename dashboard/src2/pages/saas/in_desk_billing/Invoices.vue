@@ -25,7 +25,7 @@ import { currency, date } from '../../../utils/format';
 import { dayjsLocal } from '../../../utils/dayjs';
 import { icon } from '../../../utils/components';
 import { createResource, Button } from 'frappe-ui';
-import InvoiceTable from './InvoiceTable.vue';
+import InvoiceTable from '../../../components/in_desk_checkout/InvoiceTable.vue';
 
 export default {
 	name: 'IntegratedBillingInvoices',

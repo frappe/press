@@ -87,6 +87,16 @@ def get_invoices():
 
 
 @whitelist_saas_api
+def upcoming_invoice():
+	return billing_api.upcoming_invoice()
+
+
+@whitelist_saas_api
+def total_unpaid_amount():
+	return billing_api.total_unpaid_amount()
+
+
+@whitelist_saas_api
 def get_invoice(name: str):
 	invoice = frappe.get_doc("Invoice", name)
 	invoice.has_permission("read")
