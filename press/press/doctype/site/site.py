@@ -2160,9 +2160,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert(ignore_permissions=True)
 
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def enable_database_access(self, mode="read_only"):
+	def check_db_access_enabling(self):
 		if frappe.db.get_value(
 			"Agent Job",
 			filters={
@@ -2176,8 +2174,19 @@ class Site(Document, TagHelpers):
 				"Database Access is already being enabled on this site. Please check after a while."
 			)
 
+	def check_db_access_enabled_already(self):
+		if frappe.db.get_value(
+			self.doctype, self.name, "is_database_access_enabled", for_update=True
+		):
+			frappe.throw("Database Access already enabled. Reload the page and try.")
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
+		self.check_db_access_enabling()
+		self.check_db_access_enabled_already()
 		log_site_activity(self.name, "Enable Database Access")
 
 		server_agent = Agent(self.server)
