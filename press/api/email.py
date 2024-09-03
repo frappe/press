@@ -8,6 +8,7 @@ import secrets
 from datetime import datetime
 
 import frappe
+from frappe.exceptions import TooManyRequestsError
 import requests
 
 from press.api.developer.marketplace import get_subscription_info
@@ -15,8 +16,8 @@ from press.api.site import site_config, update_config
 from press.utils import log_error
 
 
-class PlanExpiredError(Exception):
-	http_status_code = 401
+class EmailLimitExceeded(TooManyRequestsError):
+	pass
 
 
 @frappe.whitelist(allow_guest=True)
@@ -117,9 +118,9 @@ def validate_plan(secret_key):
 			return True
 		else:
 			frappe.throw(
-				"Your plan for email delivery service has expired try upgrading it from, "
-				f"https://frappecloud.com/dashboard/sites/{subscription['site']}/overview",
-				PlanExpiredError,
+				"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
+				f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+				EmailLimitExceeded,
 			)
 
 	return False
@@ -147,6 +148,8 @@ def send_mime_mail(**data):
 
 		if resp.status_code == 200:
 			return "Sending"
+		else:
+			log_error("Email Delivery Service: Send mail error", data=resp.text)
 
 	return "Error"
 
