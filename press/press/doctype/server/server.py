@@ -111,7 +111,12 @@ class BaseServer(Document, TagHelpers):
 			server_doc.create_subscription_for_storage()
 
 	@dashboard_whitelist()
-	def change_auto_add_storage(self, server: str, min: int, max: int) -> None:
+	def configure_auto_add_storage(self, server: str, min: int, max: int) -> None:
+		if min < 0 or max < 0:
+			frappe.throw(_("Minimum and maximum storage sizes must be positive"))
+		if min > max:
+			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
+
 		if server == self.name:
 			self.auto_add_storage_min = min
 			self.auto_add_storage_max = max

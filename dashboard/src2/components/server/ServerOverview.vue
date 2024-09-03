@@ -281,25 +281,48 @@ export default {
 							}
 						},
 						{
-							label: 'Disable Auto Increase Storage',
-							icon: 'alert-octagon',
+							label: 'Configure Auto Increase Storage',
+							icon: 'tool',
 							variant: 'ghost',
-							condition:
-								doc.auto_add_storage_min !== 0 &&
-								doc.auto_add_storage_max !== 0,
 							onClick: () => {
 								confirmDialog({
-									title: 'Disable Auto Increase Storage',
-									message: `Are you sure you want to disable auto increase storage for the server <b>${
+									title: 'Configure Auto Increase Storage',
+									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing min and max as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
 										doc.title || doc.name
-									}</b>?<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>If you disable it, we will <strong>not be notified of incidents from this server</strong>.</div>`,
-									onSuccess: ({ hide }) => {
+									}</b>.`,
+									fields: [
+										{
+											fieldname: 'min',
+											type: 'select',
+											default: String(doc.auto_add_storage_min),
+											label: 'Minimum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										},
+										{
+											fieldname: 'max',
+											type: 'select',
+											default: String(doc.auto_add_storage_max),
+											label: 'Maximum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										}
+									],
+									onSuccess: ({ hide, values }) => {
 										toast.promise(
-											this.$appServer.changeAutoAddStorage.submit(
+											this.$appServer.configureAutoAddStorage.submit(
 												{
 													server: doc.name,
-													min: 0,
-													max: 0
+													min: values.min,
+													max: values.max
 												},
 												{
 													onSuccess: () => {
@@ -311,70 +334,25 @@ export default {
 															this.$dbServer.reload();
 														else if (doc.name === this.$replicationServer.name)
 															this.$replicationServer.reload();
-													},
-													onError(e) {
-														console.error(e);
 													}
 												}
 											),
 											{
-												loading: 'Disabling auto increase storage...',
-												success: 'Auto increase storage is disabled',
-												error: 'Failed to disable auto increase storage'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Enable Auto Increase Storage',
-							icon: 'alert-octagon',
-							variant: 'ghost',
-							condition:
-								doc.auto_add_storage_min === 0 &&
-								doc.auto_add_storage_max === 0,
-							onClick: () => {
-								confirmDialog({
-									title: 'Enable Auto Increase Storage',
-									message: `Are you sure you want to enable auto increase storage for the server <b>${
-										doc.title || doc.name
-									}</b>?<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtim<br><br>If you enable it, we will <strong>be notified of incidents from this server</strong>.</div>`,
-									onSuccess: ({ hide }) => {
-										toast.promise(
-											this.$appServer.changeAutoAddStorage.submit(
-												{
-													server: doc.name,
-													min: 50,
-													max: 250
-												},
-												{
-													onSuccess: () => {
-														hide();
-
-														if (doc.name === this.$appServer.name)
-															this.$appServer.reload();
-														else if (doc.name === this.$dbServer.name)
-															this.$dbServer.reload();
-														else if (doc.name === this.$replicationServer.name)
-															this.$replicationServer.reload();
-													},
-													onError(e) {
-														console.error(e);
-													}
+												loading: 'Configuring auto increase storage...',
+												success: 'Auto increase storage is configured',
+												error: err => {
+													return err.messages.length
+														? err.messages.join('/n')
+														: err.message ||
+																'Failed to configure auto increase storage';
 												}
-											),
-											{
-												loading: 'Enabling auto increase storage...',
-												success: 'Auto increase storage is enabled',
-												error: 'Failed to enable auto increase storage'
 											}
 										);
 									}
 								});
 							}
 						}
-					].filter(d => d.condition ?? true)
+					]
 				}
 			];
 		}
