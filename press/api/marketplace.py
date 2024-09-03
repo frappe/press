@@ -211,6 +211,7 @@ def create_site_for_app(
 			.on(AppSource.name == AppSourceVersion.parent)
 			.select(AppSource.name, AppSource.app, AppSourceVersion.version)
 			.where(AppSource.app.isin(app_names))
+			.where(AppSource.public == 1)
 			.where(AppSourceVersion.version == latest_stable_version)
 			.run(as_dict=True)
 		)
