@@ -157,17 +157,17 @@ export default {
 									}
 								};
 							}
-							if (row.status !== 'Paid' && row.amount_due > 0) {
-								return {
-									label: 'Pay Now',
-									slots: {
-										prefix: icon('external-link')
-									},
-									onClick: e => {
-										e.stopPropagation();
-									}
-								};
-							}
+							// if (row.status !== 'Paid' && row.amount_due > 0) {
+							// 	return {
+							// 		label: 'Pay Now',
+							// 		slots: {
+							// 			prefix: icon('external-link')
+							// 		},
+							// 		onClick: e => {
+							// 			e.stopPropagation();
+							// 		}
+							// 	};
+							// }
 						},
 						prefix(row) {
 							if (row.stripe_payment_failed && row.status !== 'Paid') {

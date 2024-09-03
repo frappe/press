@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-6">
+	<div class="space-y-6 p-5">
 		<!-- Step 1 : Choose a plan -->
 		<div v-if="step <= 1">
 			<div class="flex items-center space-x-2">
