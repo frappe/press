@@ -175,10 +175,32 @@ def create_site_for_app(
 ):
 	"""Create a site for a marketplace app"""
 
-	if group:
+	latest_stable_version = frappe.db.get_value(
+		"Frappe Version", {"status": "Stable"}, "name", order_by="number desc"
+	)
+	public_apps = frappe.db.get_all(
+		"Marketplace App", {"frappe_approved": 1}, pluck="name"
+	)
+	if group or all(app["app"] in public_apps or app["app"] == "frappe" for app in apps):
 		app_plans = {
 			app["app"]: app["plan"] for app in apps if hasattr(app, "plan") and app["plan"]
 		}
+
+		if not group:
+			restricted_release_groups = frappe.get_all(
+				"Site Plan Release Group",
+				fields=["release_group"],
+				pluck="release_group",
+				ignore_permissions=True,
+			)
+			group = frappe.db.get_value(
+				"Release Group",
+				{
+					"public": 1,
+					"version": latest_stable_version,
+					"name": ("not in", restricted_release_groups),
+				},
+			)
 
 		site = frappe.get_doc(
 			{
@@ -198,9 +220,6 @@ def create_site_for_app(
 		return site
 
 	else:
-		latest_stable_version = frappe.db.get_value(
-			"Frappe Version", {"status": "Stable"}, "name", order_by="number desc"
-		)
 		app_names = [app["app"] for app in apps]
 
 		AppSource = frappe.qb.DocType("App Source")
