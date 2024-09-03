@@ -18,7 +18,7 @@ from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
 from press.agent import Agent
-from press.api.client import dashboard_whitelist, get
+from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
@@ -66,6 +66,7 @@ class BaseServer(Document, TagHelpers):
 		return results
 
 	def get_doc(self, doc):
+		from press.api.client import get
 		from press.api.server import usage
 
 		if self.plan:
@@ -110,18 +111,16 @@ class BaseServer(Document, TagHelpers):
 			server_doc.create_subscription_for_storage()
 
 	@dashboard_whitelist()
-	def change_auto_add_storage(self, server: str, min: int, max: int) -> "BaseServer":
+	def change_auto_add_storage(self, server: str, min: int, max: int) -> None:
 		if server == self.name:
 			self.auto_add_storage_min = min
 			self.auto_add_storage_max = max
 			self.save()
-			return get("Server", server)
 		else:
 			server_doc = frappe.get_doc("Database Server", server)
 			server_doc.auto_add_storage_min = min
 			server_doc.auto_add_storage_max = max
 			server_doc.save()
-			return get("Database Server", server)
 
 	@staticmethod
 	def on_not_found(name):

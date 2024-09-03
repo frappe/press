@@ -304,6 +304,13 @@ export default {
 												{
 													onSuccess: () => {
 														hide();
+
+														if (doc.name === this.$appServer.name)
+															this.$appServer.reload();
+														else if (doc.name === this.$dbServer.name)
+															this.$dbServer.reload();
+														else if (doc.name === this.$replicationServer.name)
+															this.$replicationServer.reload();
 													},
 													onError(e) {
 														console.error(e);
@@ -344,6 +351,13 @@ export default {
 												{
 													onSuccess: () => {
 														hide();
+
+														if (doc.name === this.$appServer.name)
+															this.$appServer.reload();
+														else if (doc.name === this.$dbServer.name)
+															this.$dbServer.reload();
+														else if (doc.name === this.$replicationServer.name)
+															this.$replicationServer.reload();
 													},
 													onError(e) {
 														console.error(e);
