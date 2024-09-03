@@ -43,7 +43,9 @@
 						<div v-else-if="d.type === 'progress'">
 							<div class="flex items-center justify-between space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<Button v-if="d.action" v-bind="d.action" />
+								<div v-if="d.actions" class="flex space-x-2">
+									<Button v-for="action in d.actions || []" v-bind="action" />
+								</div>
 								<div v-else class="h-8" />
 							</div>
 							<div class="mt-2">
@@ -221,62 +223,144 @@ export default {
 						diskSize - (currentPlan?.disk || 0) > 0
 							? `Add-on storage: ${diskSize - (currentPlan?.disk || 0)} GB`
 							: '',
-					action: {
-						label: 'Increase Storage',
-						icon: 'plus',
-						variant: 'ghost',
-						onClick: () => {
-							confirmDialog({
-								title: 'Increase Storage',
-								message: `Enter the disk size you want to increase to the server <b>${
-									doc.title || doc.name
-								}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
-									doc.storage_plan[priceField]
-								)}/mo</b> for each additional GB of storage.</div>`,
-								fields: [
-									{
-										fieldname: 'storage',
-										type: 'select',
-										default: 50,
-										label: 'Storage (GB)',
-										variant: 'outline',
-										// options from 5 GB to 500 GB in steps of 5 GB
-										options: Array.from({ length: 100 }, (_, i) => ({
-											label: `${(i + 1) * 5} GB`,
-											value: (i + 1) * 5
-										}))
-									}
-								],
-								onSuccess: ({ hide, values }) => {
-									toast.promise(
-										this.$appServer.increaseDiskSize.submit(
-											{
-												server: doc.name,
-												increment: values.storage
-											},
-											{
-												onSuccess: () => {
-													hide();
-													this.$router.push({
-														name: 'Server Detail Plays',
-														params: { name: this.$appServer.name }
-													});
-												},
-												onError(e) {
-													console.error(e);
-												}
-											}
-										),
+					actions: [
+						{
+							label: 'Increase Storage',
+							icon: 'plus',
+							variant: 'ghost',
+							onClick: () => {
+								confirmDialog({
+									title: 'Increase Storage',
+									message: `Enter the disk size you want to increase to the server <b>${
+										doc.title || doc.name
+									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
+										doc.storage_plan[priceField]
+									)}/mo</b> for each additional GB of storage.</div>`,
+									fields: [
 										{
-											loading: 'Increasing disk size...',
-											success: 'Disk size is scheduled to increase',
-											error: 'Failed to increase disk size'
+											fieldname: 'storage',
+											type: 'select',
+											default: 50,
+											label: 'Storage (GB)',
+											variant: 'outline',
+											// options from 5 GB to 500 GB in steps of 5 GB
+											options: Array.from({ length: 100 }, (_, i) => ({
+												label: `${(i + 1) * 5} GB`,
+												value: (i + 1) * 5
+											}))
 										}
-									);
-								}
-							});
+									],
+									onSuccess: ({ hide, values }) => {
+										toast.promise(
+											this.$appServer.increaseDiskSize.submit(
+												{
+													server: doc.name,
+													increment: values.storage
+												},
+												{
+													onSuccess: () => {
+														hide();
+														this.$router.push({
+															name: 'Server Detail Plays',
+															params: { name: this.$appServer.name }
+														});
+													},
+													onError(e) {
+														console.error(e);
+													}
+												}
+											),
+											{
+												loading: 'Increasing disk size...',
+												success: 'Disk size is scheduled to increase',
+												error: 'Failed to increase disk size'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Disable Auto Increase Storage',
+							icon: 'alert-octagon',
+							variant: 'ghost',
+							condition:
+								doc.auto_add_storage_min !== 0 &&
+								doc.auto_add_storage_max !== 0,
+							onClick: () => {
+								confirmDialog({
+									title: 'Disable Auto Increase Storage',
+									message: `Are you sure you want to disable auto increase storage for the server <b>${
+										doc.title || doc.name
+									}</b>?<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>If you disable it, we will <strong>not be notified of incidents from this server</strong>.</div>`,
+									onSuccess: ({ hide }) => {
+										toast.promise(
+											this.$appServer.changeAutoAddStorage.submit(
+												{
+													server: doc.name,
+													min: 0,
+													max: 0
+												},
+												{
+													onSuccess: () => {
+														hide();
+													},
+													onError(e) {
+														console.error(e);
+													}
+												}
+											),
+											{
+												loading: 'Disabling auto increase storage...',
+												success: 'Auto increase storage is disabled',
+												error: 'Failed to disable auto increase storage'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Enable Auto Increase Storage',
+							icon: 'alert-octagon',
+							variant: 'ghost',
+							condition:
+								doc.auto_add_storage_min === 0 &&
+								doc.auto_add_storage_max === 0,
+							onClick: () => {
+								confirmDialog({
+									title: 'Enable Auto Increase Storage',
+									message: `Are you sure you want to enable auto increase storage for the server <b>${
+										doc.title || doc.name
+									}</b>?<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtim<br><br>If you enable it, we will <strong>be notified of incidents from this server</strong>.</div>`,
+									onSuccess: ({ hide }) => {
+										toast.promise(
+											this.$appServer.changeAutoAddStorage.submit(
+												{
+													server: doc.name,
+													min: 50,
+													max: 250
+												},
+												{
+													onSuccess: () => {
+														hide();
+													},
+													onError(e) {
+														console.error(e);
+													}
+												}
+											),
+											{
+												loading: 'Enabling auto increase storage...',
+												success: 'Auto increase storage is enabled',
+												error: 'Failed to enable auto increase storage'
+											}
+										);
+									}
+								});
+							}
 						}
-					}
+					].filter(d => d.condition ?? true)
 				}
 			];
 		}

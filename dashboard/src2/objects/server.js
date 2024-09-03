@@ -13,6 +13,7 @@ export default {
 	doctype: 'Server',
 	whitelistedMethods: {
 		increaseDiskSize: 'increase_disk_size_for_server',
+		changeAutoAddStorage: 'change_auto_add_storage',
 		changePlan: 'change_plan',
 		reboot: 'reboot',
 		rename: 'rename',
