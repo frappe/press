@@ -3319,11 +3319,19 @@ def sync_sites_setup_wizard_complete_status():
 		limit=100,
 	)
 	for site in sites:
-		frappe.enqueue_doc(
-			"Site",
-			site,
-			method="fetch_setup_wizard_complete_status",
+		frappe.enqueue(
+			"press.press.doctype.site.site.fetch_setup_wizard_complete_status_if_site_exists",
+			site=site,
 			queue="sync",
 			job_id=f"fetch_setup_wizard_complete_status:{site}",
 			deduplicate=True,
 		)
+
+
+def fetch_setup_wizard_complete_status_if_site_exists(site):
+	if not frappe.db.exists("Site", site):
+		return
+	try:
+		frappe.get_doc("Site", site).fetch_setup_wizard_complete_status()
+	except frappe.DoesNotExistError:
+		pass
