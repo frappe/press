@@ -170,7 +170,7 @@ export default {
 									}
 								};
 							}
-							if (row.status !== 'Paid' && row.amount_due > 0) {
+							if (row.status === 'Unpaid' && row.amount_due > 0) {
 								return {
 									label: 'Pay Now',
 									slots: {

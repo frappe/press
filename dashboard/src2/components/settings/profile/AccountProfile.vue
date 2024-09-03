@@ -1,5 +1,5 @@
 <template>
-	<Card title="Profile">
+	<Card title="Profile" v-if="user">
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar size="2xl" :label="user.first_name" :image="user.user_image" />

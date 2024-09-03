@@ -147,6 +147,8 @@ export default {
 		},
 		steps() {
 			const statusPosition = status => {
+				if (!status) return -1;
+
 				return [
 					'Pending',
 					'Deploying Bench',
@@ -157,7 +159,7 @@ export default {
 					'Site Creation Failed'
 				].indexOf(status);
 			};
-			const status = this.$resources.siteGroupDeploy.doc.status;
+			const status = this.$resources.siteGroupDeploy?.doc?.status;
 
 			return [
 				{

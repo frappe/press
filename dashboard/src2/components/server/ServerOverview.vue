@@ -43,7 +43,9 @@
 						<div v-else-if="d.type === 'progress'">
 							<div class="flex items-center justify-between space-x-2">
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<Button v-if="d.action" v-bind="d.action" />
+								<div v-if="d.actions" class="flex space-x-2">
+									<Button v-for="action in d.actions || []" v-bind="action" />
+								</div>
 								<div v-else class="h-8" />
 							</div>
 							<div class="mt-2">
@@ -221,62 +223,136 @@ export default {
 						diskSize - (currentPlan?.disk || 0) > 0
 							? `Add-on storage: ${diskSize - (currentPlan?.disk || 0)} GB`
 							: '',
-					action: {
-						label: 'Increase Storage',
-						icon: 'plus',
-						variant: 'ghost',
-						onClick: () => {
-							confirmDialog({
-								title: 'Increase Storage',
-								message: `Enter the disk size you want to increase to the server <b>${
-									doc.title || doc.name
-								}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
-									doc.storage_plan[priceField]
-								)}/mo</b> for each additional GB of storage.</div>`,
-								fields: [
-									{
-										fieldname: 'storage',
-										type: 'select',
-										default: 50,
-										label: 'Storage (GB)',
-										variant: 'outline',
-										// options from 5 GB to 500 GB in steps of 5 GB
-										options: Array.from({ length: 100 }, (_, i) => ({
-											label: `${(i + 1) * 5} GB`,
-											value: (i + 1) * 5
-										}))
-									}
-								],
-								onSuccess: ({ hide, values }) => {
-									toast.promise(
-										this.$appServer.increaseDiskSize.submit(
-											{
-												server: doc.name,
-												increment: values.storage
-											},
-											{
-												onSuccess: () => {
-													hide();
-													this.$router.push({
-														name: 'Server Detail Plays',
-														params: { name: this.$appServer.name }
-													});
+					actions: [
+						{
+							label: 'Increase Storage',
+							icon: 'plus',
+							variant: 'ghost',
+							onClick: () => {
+								confirmDialog({
+									title: 'Increase Storage',
+									message: `Enter the disk size you want to increase to the server <b>${
+										doc.title || doc.name
+									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
+										doc.storage_plan[priceField]
+									)}/mo</b> for each additional GB of storage.</div>`,
+									fields: [
+										{
+											fieldname: 'storage',
+											type: 'select',
+											default: 50,
+											label: 'Storage (GB)',
+											variant: 'outline',
+											// options from 5 GB to 500 GB in steps of 5 GB
+											options: Array.from({ length: 100 }, (_, i) => ({
+												label: `${(i + 1) * 5} GB`,
+												value: (i + 1) * 5
+											}))
+										}
+									],
+									onSuccess: ({ hide, values }) => {
+										toast.promise(
+											this.$appServer.increaseDiskSize.submit(
+												{
+													server: doc.name,
+													increment: values.storage
 												},
-												onError(e) {
-													console.error(e);
+												{
+													onSuccess: () => {
+														hide();
+														this.$router.push({
+															name: 'Server Detail Plays',
+															params: { name: this.$appServer.name }
+														});
+													},
+													onError(e) {
+														console.error(e);
+													}
+												}
+											),
+											{
+												loading: 'Increasing disk size...',
+												success: 'Disk size is scheduled to increase',
+												error: 'Failed to increase disk size'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Configure Auto Increase Storage',
+							icon: 'tool',
+							variant: 'ghost',
+							onClick: () => {
+								confirmDialog({
+									title: 'Configure Auto Increase Storage',
+									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing min and max as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
+										doc.title || doc.name
+									}</b>.`,
+									fields: [
+										{
+											fieldname: 'min',
+											type: 'select',
+											default: String(doc.auto_add_storage_min),
+											label: 'Minimum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										},
+										{
+											fieldname: 'max',
+											type: 'select',
+											default: String(doc.auto_add_storage_max),
+											label: 'Maximum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										}
+									],
+									onSuccess: ({ hide, values }) => {
+										toast.promise(
+											this.$appServer.configureAutoAddStorage.submit(
+												{
+													server: doc.name,
+													min: values.min,
+													max: values.max
+												},
+												{
+													onSuccess: () => {
+														hide();
+
+														if (doc.name === this.$appServer.name)
+															this.$appServer.reload();
+														else if (doc.name === this.$dbServer.name)
+															this.$dbServer.reload();
+														else if (doc.name === this.$replicationServer.name)
+															this.$replicationServer.reload();
+													}
+												}
+											),
+											{
+												loading: 'Configuring auto increase storage...',
+												success: 'Auto increase storage is configured',
+												error: err => {
+													return err.messages.length
+														? err.messages.join('/n')
+														: err.message ||
+																'Failed to configure auto increase storage';
 												}
 											}
-										),
-										{
-											loading: 'Increasing disk size...',
-											success: 'Disk size is scheduled to increase',
-											error: 'Failed to increase disk size'
-										}
-									);
-								}
-							});
+										);
+									}
+								});
+							}
 						}
-					}
+					]
 				}
 			];
 		}

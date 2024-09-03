@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'SSH Access',
-			size: '4xl'
+			size: 'xl'
 		}"
 		v-model="show"
 	>
@@ -15,7 +15,10 @@
 							Execute the following shell command to store the SSH certificate
 							locally.
 						</p>
-						<ClickToCopyField :textContent="certificateCommand" />
+						<ClickToCopyField
+							:textContent="certificateCommand"
+							:breakLines="false"
+						/>
 					</div>
 				</div>
 				<div class="space-y-2">

@@ -2,19 +2,20 @@
 	<div class="p-5">
 		<div v-if="!$resources.upcomingInvoice.loading">
 			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-				<div class="rounded-md border p-4">
+				<div class="flex flex-col gap-2 rounded-md border p-4">
 					<div class="flex items-center justify-between">
-						<div class="mb-2 text-sm text-gray-700">Current Billing Amount</div>
+						<div class="text-sm text-gray-700">Current Billing Amount</div>
 						<Button @click="showUpcomingInvoiceDialog = true"> Details </Button>
 					</div>
 					<div class="text-lg font-medium">
 						{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
 					</div>
 				</div>
-				<div class="rounded-md border p-4">
-					<div class="flex justify-between text-sm text-gray-700">
-						<div class="mb-2">Unpaid Amount</div>
+				<div class="flex flex-col gap-2 rounded-md border p-4">
+					<div class="flex justify-between text-sm items-center text-gray-700">
+						<div>Unpaid Amount</div>
 						<Button
+							:disabled="Boolean($resources.unpaidAmountDue.data == 0)"
 							@click="showPrepaidCreditsDialog = true"
 							theme="gray"
 							iconLeft="credit-card"
@@ -30,9 +31,9 @@
 						}}
 					</div>
 				</div>
-				<div class="rounded-md border p-4">
-					<div class="flex justify-between text-sm text-gray-700">
-						<div class="mb-2">Account Balance</div>
+				<div class="flex flex-col gap-2 rounded-md border p-4">
+					<div class="flex justify-between text-sm items-center text-gray-700">
+						<div>Credits Available</div>
 						<Button
 							@click="showPrepaidCreditsDialog = true"
 							theme="gray"
@@ -45,30 +46,30 @@
 					</div>
 				</div>
 
-				<div class="rounded-md border p-4">
-					<div class="flex justify-between text-sm text-gray-700">
-						<div class="mb-2">Payment Mode</div>
+				<div class="flex flex-col gap-2 rounded-md border p-4">
+					<div class="flex justify-between items-center text-sm text-gray-700">
+						<div>Payment Mode</div>
 						<Button @click="showChangeModeDialog = true"> Change </Button>
 					</div>
 					<div class="text-lg font-medium">
 						{{ $team.doc.payment_mode || 'Not set' }}
 					</div>
 				</div>
-				<div class="rounded-md border p-4">
-					<div class="flex justify-between text-sm text-gray-700">
-						<div class="mb-2">Billing Details</div>
+				<div class="flex flex-col gap-2 rounded-md border p-4">
+					<div class="flex justify-between text-sm items-center text-gray-700">
+						<div>Billing Details</div>
 						<Button @click="showBillingDetailsDialog = true"> Update </Button>
 					</div>
-					<div class="overflow-hidden text-ellipsis text-base font-medium">
-						<span class="whitespace-nowrap" v-if="$team.doc.billing_details">
+					<div class="overflow-hidden text-base font-medium">
+						<span v-if="$team.doc.billing_details">
 							{{ billingDetailsSummary }}
 						</span>
 						<span v-else class="font-normal text-gray-600">Not set</span>
 					</div>
 				</div>
-				<div class="rounded-md border p-4">
-					<div class="flex justify-between text-sm text-gray-700">
-						<div class="mb-2">Payment Method</div>
+				<div class="flex flex-col gap-2 rounded-md border p-4">
+					<div class="flex justify-between items-center text-sm text-gray-700">
+						<div>Payment Method</div>
 						<Button @click="showAddCardDialog = true">
 							{{ $team.doc.payment_method ? 'Change' : 'Add' }}
 						</Button>
