@@ -14,6 +14,7 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.utils import has_role
+from press.exceptions import TeamHeaderNotInRequestError
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -24,6 +25,7 @@ ALLOWED_DOCTYPES = [
 	"Site Config",
 	"Site Plan",
 	"Site Update",
+	"Site Group Deploy",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -446,7 +448,8 @@ def check_permissions(doctype):
 
 	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
-			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
+			"current_team is not set. Use X-PRESS-TEAM header in the request to set it.",
+			TeamHeaderNotInRequestError,
 		)
 
 	return True

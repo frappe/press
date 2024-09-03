@@ -602,6 +602,8 @@ def get_pair_jobs() -> tuple[str]:
 		"Remove Site from Upstream",
 		"Rename Site",
 		"Rename Site on Upstream",
+		"Add User to ProxySQL",
+		"Remove User from ProxySQL",
 	)
 
 

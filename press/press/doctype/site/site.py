@@ -1034,10 +1034,15 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
+		frappe.only_for("System Manager")
 		self.ready_for_move()
+
+		if bench == self.bench:
+			frappe.throw("Site is already on the selected bench.")
+
 		log_site_activity(self.name, "Update")
 		agent = Agent(self.server)
-		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		return agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -2155,9 +2160,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert(ignore_permissions=True)
 
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def enable_database_access(self, mode="read_only"):
+	def check_db_access_enabling(self):
 		if frappe.db.get_value(
 			"Agent Job",
 			filters={
@@ -2171,8 +2174,19 @@ class Site(Document, TagHelpers):
 				"Database Access is already being enabled on this site. Please check after a while."
 			)
 
+	def check_db_access_enabled_already(self):
+		if frappe.db.get_value(
+			self.doctype, self.name, "is_database_access_enabled", for_update=True
+		):
+			frappe.throw("Database Access already enabled. Reload the page and try.")
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
+		self.check_db_access_enabling()
+		self.check_db_access_enabled_already()
 		log_site_activity(self.name, "Enable Database Access")
 
 		server_agent = Agent(self.server)
@@ -2764,6 +2778,19 @@ def process_new_site_job_update(job):
 		update_product_trial_request_status_based_on_site_status(
 			job.site, updated_status == "Active"
 		)
+
+	# check if new bench related to a site group deploy
+	site_group_deploy = frappe.db.get_value(
+		"Site Group Deploy",
+		{
+			"site": job.site,
+			"status": "Creating Site",
+		},
+	)
+	if site_group_deploy:
+		frappe.get_doc(
+			"Site Group Deploy", site_group_deploy
+		).update_site_group_deploy_on_process_job(job)
 
 
 def update_product_trial_request_status_based_on_site_status(site, is_site_active):

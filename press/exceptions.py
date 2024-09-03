@@ -35,3 +35,7 @@ class AAAARecordExists(ValidationError):
 
 class ConflictingCAARecord(ValidationError):
 	pass
+
+
+class TeamHeaderNotInRequestError(ValidationError):
+	pass

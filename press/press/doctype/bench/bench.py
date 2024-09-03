@@ -692,6 +692,21 @@ def process_new_bench_job_update(job):
 		return
 
 	frappe.db.set_value("Bench", job.bench, "status", updated_status)
+
+	# check if new bench related to a site group deploy
+	site_group_deploy = frappe.db.get_value(
+		"Site Group Deploy",
+		{
+			"release_group": bench.group,
+			"site": ("is", "not set"),
+			"bench": ("is", "not set"),
+		},
+	)
+	if site_group_deploy:
+		frappe.get_doc(
+			"Site Group Deploy", site_group_deploy
+		).update_site_group_deploy_on_process_job(job)
+
 	if updated_status != "Active":
 		return
 
