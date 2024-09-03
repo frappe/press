@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime
 
 import frappe
-from frappe.exceptions import TooManyRequestsError
+from frappe.exceptions import TooManyRequestsError, OutgoingEmailError
 import requests
 
 from press.api.developer.marketplace import get_subscription_info
@@ -17,6 +17,10 @@ from press.utils import log_error
 
 
 class EmailLimitExceeded(TooManyRequestsError):
+	pass
+
+
+class EmailDeliveryServiceError(OutgoingEmailError):
 	pass
 
 
@@ -149,7 +153,11 @@ def send_mime_mail(**data):
 		if resp.status_code == 200:
 			return "Sending"
 		else:
-			log_error("Email Delivery Service: Send mail error", data=resp.text)
+			log_error("Email Delivery Service: Sending error", data=resp.text)
+			frappe.throw(
+				"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+				EmailDeliveryServiceError,
+			)
 
 	return "Error"
 
