@@ -39,7 +39,12 @@
 						<div class="flex w-full items-center justify-between px-3 py-2">
 							<div class="text-base text-gray-800">{{ role.label }}</div>
 						</div>
-						<Button class="ml-auto" icon="x" @click="removeRole(role.value)" />
+						<Button
+							class="ml-auto"
+							variant="ghost"
+							icon="x"
+							@click="removeRole(role.value)"
+						/>
 					</div>
 				</div>
 			</div>
