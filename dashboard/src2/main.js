@@ -90,6 +90,7 @@ getInitialData().then(() => {
 					'ValidationError',
 					'PermissionError',
 					'SecurityException',
+					'AAAARecordExists',
 					'AuthenticationError'
 				];
 				const error = hint.originalException;
