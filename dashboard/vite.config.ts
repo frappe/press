@@ -28,7 +28,7 @@ export default defineConfig({
 			url: process.env.SENTRY_URL,
 			org: process.env.SENTRY_ORG,
 			project: process.env.SENTRY_PROJECT,
-			applicationKey: process.env.SENTRY_APP_KEY,
+			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN
 		})
 	],
