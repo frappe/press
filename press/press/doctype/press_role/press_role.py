@@ -54,6 +54,13 @@ class PressRole(Document):
 			frappe.throw("Only the team owner can create roles")
 
 	def validate(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
+
 		if self.admin_access:
 			self.allow_apps = 1
 			self.allow_billing = 1
