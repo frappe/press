@@ -144,9 +144,7 @@ class PressSettings(Document):
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
-		verify_cards_with_micro_charge: DF.Literal[
-			"No", "Only INR", "Only USD", "Both INR and USD"
-		]
+		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
