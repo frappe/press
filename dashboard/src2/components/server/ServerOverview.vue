@@ -287,7 +287,7 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Configure Auto Increase Storage',
-									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing min and max as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
+									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing minimum and maximum as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
 										doc.title || doc.name
 									}</b>.`,
 									fields: [
