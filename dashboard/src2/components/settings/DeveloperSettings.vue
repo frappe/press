@@ -2,7 +2,7 @@
 	<div class="p-5">
 		<div class="grid grid-cols-1 gap-5">
 			<div
-				class="space-y-6 rounded-md border p-4 sm:mx-auto sm:min-w-[48rem] sm:max-w-3xl"
+				class="space-y-6 rounded-md border p-4 sm:mx-auto sm:min-w-[60rem] sm:max-w-3xl"
 			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">API Access</div>
@@ -70,7 +70,7 @@
 				</Dialog>
 			</div>
 			<div
-				class="space-y-6 rounded-md border p-4 sm:mx-auto sm:min-w-[42rem] sm:max-w-3xl"
+				class="space-y-6 rounded-md border p-4 sm:mx-auto sm:min-w-[60rem] sm:max-w-3xl"
 			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">SSH Keys</div>
