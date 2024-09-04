@@ -56,7 +56,7 @@ class PressRole(Document):
 	def validate(self):
 		admin_roles = frappe.get_all(
 			"Press Role",
-			filters={"team": self.team, "admin_access": 1},
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
 		)
 		if admin_roles and self.admin_access:
 			frappe.throw("There can only be one admin role per team")
