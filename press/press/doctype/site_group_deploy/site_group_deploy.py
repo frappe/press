@@ -105,23 +105,28 @@ class SiteGroupDeploy(Document):
 		apps = [{"app": app.app} for app in self.apps]
 		app_plan_map = {app.app: {"name": app.plan} for app in self.apps if app.plan}
 
-		site = frappe.get_doc(
-			{
-				"doctype": "Site",
-				"team": self.team,
-				"subdomain": self.subdomain,
-				"apps": apps,
-				"cluster": self.cluster,
-				"release_group": self.release_group,
-				"bench": self.bench,
-				"domain": frappe.db.get_single_value("Press Settings", "domain"),
-				"subscription_plan": cheapest_private_bench_plan,
-				"app_plans": app_plan_map,
-			}
-		).insert()
+		try:
+			site = frappe.get_doc(
+				{
+					"doctype": "Site",
+					"team": self.team,
+					"subdomain": self.subdomain,
+					"apps": apps,
+					"cluster": self.cluster,
+					"release_group": self.release_group,
+					"bench": self.bench,
+					"domain": frappe.db.get_single_value("Press Settings", "domain"),
+					"subscription_plan": cheapest_private_bench_plan,
+					"app_plans": app_plan_map,
+				}
+			).insert()
 
-		self.site = site.name
-		self.status = "Creating Site"
+			self.site = site.name
+			self.status = "Creating Site"
+
+		except frappe.exceptions.ValidationError:
+			self.status = "Site Creation Failed"
+
 		self.save()
 
 	def update_site_group_deploy_on_process_job(self, job):
