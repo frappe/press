@@ -24,7 +24,6 @@ export default {
 
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
-			const disabled = !onboardingComplete;
 			const enforce2FA = Boolean(
 				this.$team.doc.enforce_2fa && !this.$team.doc.user_info?.is_2fa_enabled
 			);

@@ -306,6 +306,12 @@ router.beforeEach(async (to, from, next) => {
 			return;
 		}
 
+		// if team owner/admin doesn't enforce 2fa don't allow user to visit Enable2FA route
+		if (to.name === Enable2FARoute && !$team.doc.enforce_2fa) {
+			next({ name: defaultRoute });
+			return;
+		}
+
 		if (
 			!onboardingComplete &&
 			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
