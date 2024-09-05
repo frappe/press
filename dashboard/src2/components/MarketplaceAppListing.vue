@@ -95,6 +95,7 @@
 								class="mt-4"
 								label="Documentation"
 								type="text"
+								@blur="validateLink('documentation')"
 								@input="editing = true"
 								v-model="marketplaceApp.documentation"
 							/>
@@ -102,6 +103,7 @@
 								class="mt-4"
 								label="Website"
 								type="text"
+								@blur="validateLink('website')"
 								@input="editing = true"
 								v-model="marketplaceApp.website"
 							/>
@@ -109,6 +111,7 @@
 								class="mt-4"
 								label="Support"
 								type="text"
+								@blur="validateLink('support')"
 								@input="editing = true"
 								v-model="marketplaceApp.support"
 							/>
@@ -116,6 +119,7 @@
 								class="mt-4"
 								label="Terms of Service"
 								type="text"
+								@blur="validateLink('terms_of_service')"
 								@input="editing = true"
 								v-model="marketplaceApp.terms_of_service"
 							/>
@@ -123,6 +127,7 @@
 								class="mt-4"
 								label="Privacy Policy"
 								type="text"
+								@blur="validateLink('privacy_policy')"
 								@input="editing = true"
 								v-model="marketplaceApp.privacy_policy"
 							/>
@@ -327,6 +332,26 @@ export default {
 					}
 				}
 			];
+		},
+		validateLink(link) {
+			const value = this.marketplaceApp[link];
+
+			// Regular expression to validate URL format
+			const urlPattern =
+				/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:\/?#[\]@!$&'()*+,;=]*)?$/;
+
+			// Check if the link is empty
+			if (!value.trim()) {
+				this.$toast.error(`${link.replace('_', ' ')} link is empty`);
+				return false;
+			}
+
+			// Check if the link contains a valid URL
+			if (!urlPattern.test(value.trim())) {
+				this.$toast.error(`${link.replace('_', ' ')} contains an invalid URL`);
+				return false;
+			}
+			return true;
 		}
 	},
 	computed: {
