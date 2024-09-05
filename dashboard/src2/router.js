@@ -68,6 +68,15 @@ let router = createRouter({
 			}
 		},
 		{
+			name: 'Enable2FA',
+			path: '/enable-2fa',
+			component: () => import('./pages/Enable2FA.vue'),
+			props: true,
+			meta: {
+				hideSidebar: true
+			}
+		},
+		{
 			name: 'New Site',
 			path: '/sites/new',
 			component: () => import('./pages/NewSite.vue')
@@ -283,6 +292,17 @@ router.beforeEach(async (to, from, next) => {
 		// If user is logged in and was moving to app trial signup, redirect to app trial setup
 		if (to.name == 'AppTrialSignup') {
 			next({ name: 'AppTrialSetup', params: to.params });
+			return;
+		}
+
+		// if team owner/admin enforce 2fa and user has not enabled 2fa, redirect to enable 2fa
+		const Enable2FARoute = 'Enable2FA';
+		if (
+			to.name !== Enable2FARoute &&
+			$team.doc.enforce_2fa &&
+			!$team.doc.user_info.is_2fa_enabled
+		) {
+			next({ name: Enable2FARoute });
 			return;
 		}
 
