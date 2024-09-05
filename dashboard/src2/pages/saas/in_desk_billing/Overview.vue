@@ -21,11 +21,15 @@
 					</p>
 				</div>
 				<div class="mt-2 flex justify-end">
-					<Button variant="solid" theme="gray" @click="showSitePlanChangeDialog = true">Upgrade Plan</Button>
+					<Button
+						variant="solid"
+						theme="gray"
+						@click="showSitePlanChangeDialog = true"
+						>Upgrade Plan</Button
+					>
 				</div>
 			</div>
-			<p class="my-3 text-lg font-medium">Details</p>
-			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 mt-4">
 				<!-- Current billing amount -->
 				<div class="rounded-md border p-4">
 					<div class="flex items-center justify-between">
@@ -193,7 +197,7 @@
 		<ChangePaymentModeDialog2 v-model="showChangeModeDialog" />
 
 		<!-- Change plan dialog -->
-		 <SitePlanChangeDialog v-model="showSitePlanChangeDialog" />
+		<SitePlanChangeDialog v-model="showSitePlanChangeDialog" />
 	</div>
 </template>
 <script>
@@ -220,7 +224,7 @@ export default {
 		),
 		SitePlanChangeDialog: defineAsyncComponent(() =>
 			import('../../../components/in_desk_checkout/SitePlanChangeDialog.vue')
-		),
+		)
 	},
 	mounted() {
 		window.addEventListener('message', this.onMessageHandler);
@@ -235,7 +239,7 @@ export default {
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
 			showUpcomingInvoiceDialog: false,
-			showSitePlanChangeDialog: false,
+			showSitePlanChangeDialog: false
 		};
 	},
 	watch: {
