@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime
 
 import frappe
-from frappe.exceptions import TooManyRequestsError, OutgoingEmailError
+from frappe.exceptions import TooManyRequestsError, OutgoingEmailError, ValidationError
 import requests
 
 from press.api.developer.marketplace import get_subscription_info
@@ -20,8 +20,12 @@ class EmailLimitExceeded(TooManyRequestsError):
 	pass
 
 
-class EmailDeliveryServiceError(OutgoingEmailError):
+class EmailSendError(OutgoingEmailError):
 	pass
+
+
+class EmailConfigError(ValidationError):
+	http_status_code = 400
 
 
 @frappe.whitelist(allow_guest=True)
@@ -102,32 +106,40 @@ def validate_plan(secret_key):
 	# TODO: replace this with plan attributes
 	plan_label_map = frappe.conf.email_plans
 
+	if not secret_key:
+		frappe.throw(
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			EmailConfigError,
+		)
+
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
 		frappe.throw(e)
 
-	if subscription["enabled"]:
-		# TODO: add a date filter(use start date from plan)
-		first_day = str(frappe.utils.now_datetime().replace(day=1).date())
-		count = frappe.db.count(
-			"Mail Log",
-			filters={
-				"site": subscription["site"],
-				"creation": (">=", first_day),
-				"subscription_key": secret_key,
-			},
+	if not subscription["enabled"]:
+		frappe.throw(
+			"Your subscription is not active. Try activating it from, "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			EmailConfigError,
 		)
-		if count < plan_label_map[subscription["plan"]]:
-			return True
-		else:
-			frappe.throw(
-				"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-				f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
-				EmailLimitExceeded,
-			)
 
-	return False
+	# TODO: add a date filter(use start date from plan)
+	first_day = str(frappe.utils.now_datetime().replace(day=1).date())
+	count = frappe.db.count(
+		"Mail Log",
+		filters={
+			"site": subscription["site"],
+			"creation": (">=", first_day),
+			"subscription_key": secret_key,
+		},
+	)
+	if not count < plan_label_map[subscription["plan"]]:
+		frappe.throw(
+			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			EmailLimitExceeded,
+		)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -138,28 +150,27 @@ def send_mime_mail(**data):
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
 
-	if validate_plan(data["sk_mail"]):
-		api_key, domain = frappe.db.get_value(
-			"Press Settings", None, ["mailgun_api_key", "root_domain"]
+	validate_plan(data["sk_mail"])
+
+	api_key, domain = frappe.db.get_value(
+		"Press Settings", None, ["mailgun_api_key", "root_domain"]
+	)
+
+	resp = requests.post(
+		f"https://api.mailgun.net/v3/{domain}/messages.mime",
+		auth=("api", f"{api_key}"),
+		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		files={"message": files["mime"].read()},
+	)
+
+	if resp.status_code == 200:
+		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
+	else:
+		log_error("Email Delivery Service: Sending error", data=resp.text)
+		frappe.throw(
+			"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+			EmailSendError,
 		)
-
-		resp = requests.post(
-			f"https://api.mailgun.net/v3/{domain}/messages.mime",
-			auth=("api", f"{api_key}"),
-			data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-			files={"message": files["mime"].read()},
-		)
-
-		if resp.status_code == 200:
-			return "Sending"
-		else:
-			log_error("Email Delivery Service: Sending error", data=resp.text)
-			frappe.throw(
-				"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
-				EmailDeliveryServiceError,
-			)
-
-	return "Error"
 
 
 @frappe.whitelist(allow_guest=True)

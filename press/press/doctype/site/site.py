@@ -619,12 +619,11 @@ class Site(Document, TagHelpers):
 		self.config = json.dumps(new_config, indent=4)
 
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
-		marketplace_app_hook(app=app, site=self.name, op="install")
-
 		if plan:
 			MarketplaceAppPlan.create_marketplace_app_subscription(
 				self.name, app, plan, self.team
 			)
+		marketplace_app_hook(app=app, site=self.name, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
 		marketplace_app_hook(app=app, site=self.name, op="uninstall")

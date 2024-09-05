@@ -1167,7 +1167,7 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						return [
 							{
-								label: 'Edit Scheduled Update',
+								label: 'Edit',
 								condition: () => row.status === 'Scheduled',
 								onClick() {
 									let SiteUpdateDialog = defineAsyncComponent(() =>
@@ -1182,7 +1182,7 @@ export default {
 								}
 							},
 							{
-								label: 'Cancel Update',
+								label: 'Cancel',
 								condition: () => row.status === 'Scheduled',
 								onClick() {
 									confirmDialog({

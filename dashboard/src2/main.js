@@ -61,7 +61,7 @@ getInitialData().then(() => {
 				}),
 				Sentry.thirdPartyErrorFilterIntegration({
 					// Specify the application keys that you specified in the Sentry bundler plugin
-					filterKeys: [process.env.SENTRY_APP_KEY],
+					filterKeys: ['press-dashboard'],
 
 					// Defines how to handle errors that contain third party stack frames.
 					// Possible values are:
@@ -89,6 +89,7 @@ getInitialData().then(() => {
 					'ValidationError',
 					'PermissionError',
 					'SecurityException',
+					'AAAARecordExists',
 					'AuthenticationError'
 				];
 				const error = hint.originalException;
