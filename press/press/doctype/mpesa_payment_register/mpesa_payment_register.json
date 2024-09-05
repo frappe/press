@@ -1,0 +1,236 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "allow_import": 1,
+ "autoname": "MPC2B.-.YY.-.MM.-.######",
+ "creation": "2024-04-11 13:39:25.887687",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "merchant_request_id",
+  "trans_id",
+  "transaction_type",
+  "trans_time",
+  "trans_amount",
+  "bill_ref_number",
+  "org_account_balance",
+  "third_party_transid",
+  "msisdn",
+  "column_break_14",
+  "payment_partner",
+  "invoice_number",
+  "posting_date",
+  "posting_time",
+  "default_currency",
+  "submit_payment",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "msisdn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "MSISDN",
+   "no_copy": 1,
+   "options": "Phone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Posting Date",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "default": "KES",
+   "fetch_from": "company.default_currency",
+   "fieldname": "default_currency",
+   "fieldtype": "Data",
+   "label": "Default Currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "submit_payment",
+   "fieldtype": "Check",
+   "label": "Submit Payment "
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Mpesa Payment Register",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "trans_id",
+   "fieldtype": "Data",
+   "label": "Trans ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "trans_time",
+   "fieldtype": "Data",
+   "label": "Trans Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "trans_amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Trans Amount",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "bill_ref_number",
+   "fieldtype": "Data",
+   "label": "Bill Ref Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "invoice_number",
+   "fieldtype": "Data",
+   "label": "Invoice Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "org_account_balance",
+   "fieldtype": "Data",
+   "label": "Org Account Balance",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "third_party_transid",
+   "fieldtype": "Data",
+   "label": "Third Party Trans ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_type",
+   "fieldtype": "Select",
+   "label": "Transaction Type",
+   "options": "\nMpesa Express\nMpesa C2B"
+  },
+  {
+   "fieldname": "merchant_request_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Request ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payment Partner",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-09-05 17:44:50.641932",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Mpesa Payment Register",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "show_preview_popup": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "trans_id",
+ "track_changes": 1
+}

@@ -1,21 +1,23 @@
 {
  "actions": [],
- "autoname": "field:payment_gateway_name",
+ "autoname": "format:{team}-{api_type}",
  "creation": "2024-07-04 09:03:02.080734",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "payment_gateway_name",
+  "team",
+  "api_type",
   "consumer_key",
   "consumer_secret",
   "initiator_name",
   "till_number",
-  "transaction_limit",
   "sandbox",
   "column_break_4",
   "business_shortcode",
   "online_passkey",
+  "transaction_limit",
   "security_credential",
   "get_account_balance",
   "account_balance"
@@ -100,14 +102,28 @@
    "hidden": 1,
    "label": "Account Balance",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "api_type",
+   "fieldtype": "Select",
+   "label": "API Type",
+   "options": "\nMpesa Express\nMpesa C2B",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2024-07-04 09:03:02.080734",
+ "modified": "2024-09-05 17:33:46.139266",
  "modified_by": "Administrator",
- "module": "Frappe Mpesa Payments",
+ "module": "Press",
  "name": "Mpesa Settings",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
