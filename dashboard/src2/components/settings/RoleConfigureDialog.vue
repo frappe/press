@@ -64,39 +64,46 @@
 				</div>
 				<div v-else-if="tab.value === 'settings'" class="mt-4 text-base">
 					<div class="space-y-3">
-						<div class="space-y-3 rounded border p-4">
+						<div class="rounded border p-4">
+							<Switch
+								class="ml-2"
+								v-model="adminAccess"
+								label="Admin Access"
+								description="Grants team owner like access to the members. Includes access to all pages and settings."
+							/>
+						</div>
+						<div class="space-y-1 rounded border p-4">
+							<h2 class="mb-2 ml-2 font-semibold">Page Access</h2>
 							<Switch
 								v-model="allowBilling"
 								label="Allow Billing Access"
-								description="Grant users belonging to this role access to billing page"
+								:disabled="adminAccess"
 							/>
 							<Switch
 								v-model="allowApps"
 								label="Allow Apps Access"
-								description="Grant users belonging to this role access to apps page"
+								:disabled="adminAccess"
 							/>
 							<Switch
 								v-if="$team.doc.erpnext_partner"
 								v-model="allowPartner"
 								label="Allow Partner Access"
-								description="Grant users belonging to this role access to partner page"
+								:disabled="adminAccess"
 							/>
-						</div>
-						<div class="space-y-3 rounded border p-4">
 							<Switch
 								v-model="allowSiteCreation"
 								label="Allow Site Creation"
-								description="Newly created sites will be given access to users of this role"
+								:disabled="adminAccess"
 							/>
 							<Switch
 								v-model="allowBenchCreation"
 								label="Allow Bench Creation"
-								description="Newly created benches will be given access to users of this role"
+								:disabled="adminAccess"
 							/>
 							<Switch
 								v-model="allowServerCreation"
 								label="Allow Server Creation"
-								description="Newly created servers will be given access to users of this role"
+								:disabled="adminAccess"
 							/>
 						</div>
 					</div>
@@ -154,6 +161,19 @@ export default {
 			return this.$team.doc.team_members
 				?.filter(({ user }) => isNotGroupMember(user))
 				.map(({ user }) => ({ label: user, value: user }));
+		},
+		adminAccess: {
+			get() {
+				return !!this.role?.admin_access;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						admin_access: value
+					},
+					{ onSuccess: this.$session.roles.reload }
+				);
+			}
 		},
 		allowBilling: {
 			get() {

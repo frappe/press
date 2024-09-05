@@ -35,6 +35,12 @@ export let session = reactive({
 		cache: ['roles', localStorage.getItem('current_team')],
 		initialData: []
 	}),
+	isTeamAdmin: computed(
+		() =>
+			session.roles.data.length
+				? session.roles.data.some(role => role.admin_access)
+				: false // if no roles, assume not admin and has member access
+	),
 	hasBillingAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some(role => role.allow_billing)

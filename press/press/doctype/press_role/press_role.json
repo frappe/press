@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "hash",
  "creation": "2024-05-13 11:44:03.637522",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -9,6 +10,7 @@
   "column_break_qnnn",
   "team",
   "section_break_yvqq",
+  "admin_access",
   "allow_billing",
   "allow_apps",
   "allow_partner",
@@ -92,14 +94,21 @@
    "fieldname": "allow_partner",
    "fieldtype": "Check",
    "label": "Allow Partner"
+  },
+  {
+   "default": "0",
+   "fieldname": "admin_access",
+   "fieldtype": "Check",
+   "label": "Admin Access"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 14:15:20.587705",
+ "modified": "2024-09-04 10:13:47.505718",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {

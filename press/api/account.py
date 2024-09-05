@@ -1147,6 +1147,7 @@ def get_permission_roles():
 		frappe.qb.from_(PressRole)
 		.select(
 			PressRole.name,
+			PressRole.admin_access,
 			PressRole.allow_billing,
 			PressRole.allow_apps,
 			PressRole.allow_partner,
