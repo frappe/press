@@ -30,7 +30,7 @@ export default {
 	computed: {
 		enforce2FA: {
 			get() {
-				return this.$team?.doc.enforce_2fa;
+				return Boolean(this.$team?.doc.enforce_2fa);
 			},
 			set(value) {
 				this.$team.setValue.submit({ enforce_2fa: value });
