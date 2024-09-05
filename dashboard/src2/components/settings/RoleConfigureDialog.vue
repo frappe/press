@@ -72,7 +72,7 @@
 								class="ml-2"
 								v-model="adminAccess"
 								label="Admin Access"
-								description="Grants team owner like access to the user. Includes access to all pages and settings."
+								description="Grants team owner like access to the members. Includes access to all pages and settings."
 							/>
 						</div>
 						<div class="space-y-1 rounded border p-4">
