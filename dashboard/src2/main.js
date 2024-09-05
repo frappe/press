@@ -70,7 +70,7 @@ getInitialData().then(() => {
 					// - 'drop-error-if-exclusively-contains-third-party-frames'
 					// - 'apply-tag-if-contains-third-party-frames'
 					// - 'apply-tag-if-exclusively-contains-third-party-frames'
-					behaviour: 'drop-error-if-exclusively-contains-third-party-frames'
+					behaviour: 'apply-tag-if-contains-third-party-frames'
 				})
 			],
 			replaysSessionSampleRate: 0.1,
