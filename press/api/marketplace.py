@@ -45,7 +45,9 @@ def get_install_app_options(marketplace_app: str) -> Dict:
 	"""Get options for installing a marketplace app"""
 
 	restricted_site_plan_release_group = frappe.get_all(
-		"Site Plan Release Group", fields=["parent", "release_group"], ignore_permissions=True
+		"Site Plan Release Group",
+		fields=["parent", "release_group"],
+		ignore_permissions=True,
 	)
 	restricted_site_plans = [x.parent for x in restricted_site_plan_release_group]
 	restricted_release_groups = [
@@ -124,7 +126,11 @@ def get_install_app_options(marketplace_app: str) -> Dict:
 	for group in private_groups:
 		benches = frappe.db.get_all(
 			"Bench",
-			filters={"team": get_current_team(), "status": "Active", "group": group.name},
+			filters={
+				"team": get_current_team(),
+				"status": "Active",
+				"group": group.name,
+			},
 			fields=["name", "cluster"],
 			order_by="creation desc",
 			limit=1,
@@ -805,7 +811,10 @@ def get_marketplace_subscriptions_for_site(site: str):
 		subscription.app_title = marketplace_app_info.title
 		subscription.app_image = marketplace_app_info.image
 		subscription.plan_info = frappe.db.get_value(
-			"Marketplace App Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+			"Marketplace App Plan",
+			subscription.plan,
+			["price_usd", "price_inr"],
+			as_dict=True,
 		)
 		subscription.is_free = frappe.db.get_value(
 			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
@@ -836,7 +845,9 @@ def get_apps_with_plans(apps, release_group: str):
 
 	# Make sure it is a marketplace app
 	m_apps = frappe.db.get_all(
-		"Marketplace App", filters={"app": ("in", apps)}, fields=["name", "title", "image"]
+		"Marketplace App",
+		filters={"app": ("in", apps)},
+		fields=["name", "title", "image"],
 	)
 
 	frappe_version = frappe.db.get_value("Release Group", release_group, "version")
@@ -1254,20 +1265,34 @@ def review_steps(name):
 		{"step": "Add a logo for your app", "completed": True if app.image else False},
 		{
 			"step": "Add links",
-			"completed": True if app.website and app.support and app.documentation else False,
+			"completed": (
+				True
+				if app.website
+				and app.support
+				and app.documentation
+				and app.terms_of_service
+				and app.privacy_policy
+				else False
+			),
 		},
 		{
 			"step": "Update description and long description",
-			"completed": True if app.description else False,
+			"completed": (
+				True
+				if app.description.strip() and app.long_description.strip() != "<p></p>"
+				else False
+			),
 		},
 		{
 			"step": "Publish a release for version",
-			"completed": True
-			if (
-				frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
-				or frappe.db.exists("App Release", {"app": name, "status": "Approved"})
-			)
-			else False,
+			"completed": (
+				True
+				if (
+					frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+					or frappe.db.exists("App Release", {"app": name, "status": "Approved"})
+				)
+				else False
+			),
 		},
 	]
 

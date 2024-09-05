@@ -64,10 +64,10 @@
 					<div class="sm:col-span-4 pb-8">
 						<span class="text-base font-medium">App Source</span>
 						<p class="text-xs pt-2">
-							Note: Only open-source or source-open apps are permitted on the
-							Frappe Marketplace. You may keep your repository private, but if a
-							user requests the source code for your app, we will provide it to
-							them from our endm to comply with the license.
+							Note: Only open-source or source-available applications are
+							allowed on the Frappe Marketplace. You can keep your repository
+							private, but if a user requests the source code, you must provide
+							it.
 						</p>
 						<div>
 							<FormControl
