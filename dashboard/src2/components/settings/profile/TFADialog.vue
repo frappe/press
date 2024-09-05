@@ -8,7 +8,7 @@
 		}"
 	>
 		<template #body-content>
-			<Configure2FA @enabled="handleEnabled" @disabled="handleDisabled" />
+			<Configure2FA @enabled="closeDialog" @disabled="closeDialog" />
 		</template>
 	</Dialog>
 </template>
@@ -27,10 +27,7 @@ export default {
 		Configure2FA
 	},
 	methods: {
-		handleEnabled() {
-			this.show = false;
-		},
-		handleDisabled() {
+		closeDialog() {
 			this.show = false;
 		}
 	},
