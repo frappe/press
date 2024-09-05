@@ -15,9 +15,9 @@ class PressRole(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
+		admin_access: DF.Check
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
@@ -32,6 +32,7 @@ class PressRole(Document):
 	dashboard_fields = [
 		"title",
 		"users",
+		"admin_access",
 		"allow_billing",
 		"allow_apps",
 		"allow_partner",
@@ -51,6 +52,22 @@ class PressRole(Document):
 			"Team", self.team, "user"
 		):
 			frappe.throw("Only the team owner can create roles")
+
+	def validate(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
+
+		if self.admin_access:
+			self.allow_apps = 1
+			self.allow_billing = 1
+			self.allow_partner = 1
+			self.allow_site_creation = 1
+			self.allow_bench_creation = 1
+			self.allow_server_creation = 1
 
 	@dashboard_whitelist()
 	def add_user(self, user):

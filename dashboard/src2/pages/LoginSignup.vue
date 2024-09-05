@@ -8,14 +8,45 @@
 				<template v-slot:default>
 					<div v-if="!(resetPasswordEmailSent || accountRequestCreated)">
 						<form class="flex flex-col" @submit.prevent="submitForm">
+							<!-- 2FA Section -->
+							<template v-if="is2FA">
+								<FormControl
+									label="2FA Code from your Authenticator App"
+									placeholder="123456"
+									v-model="twoFactorCode"
+									required
+								/>
+								<Button
+									class="mt-4"
+									:loading="
+										$resources.verify2FA.loading ||
+										$session.login.loading ||
+										$resources.resetPassword.loading
+									"
+									variant="solid"
+									@click="
+										$resources.verify2FA.submit({
+											user: email,
+											totp_code: twoFactorCode
+										})
+									"
+								>
+									Verify
+								</Button>
+								<ErrorMessage
+									class="mt-2"
+									:message="$resources.verify2FA.error"
+								/>
+							</template>
+
 							<!-- Forgot Password Section -->
-							<template v-if="hasForgotPassword && !is2FA">
+							<template v-else-if="hasForgotPassword">
 								<FormControl
 									label="Email"
 									type="email"
 									placeholder="johndoe@mail.com"
 									autocomplete="email"
-									:modelValue="email"
+									v-model="email"
 									required
 								/>
 								<router-link
@@ -38,7 +69,7 @@
 							</template>
 
 							<!-- Login Section -->
-							<template v-else-if="isLogin && !is2FA">
+							<template v-else-if="isLogin">
 								<FormControl
 									label="Email"
 									placeholder="johndoe@mail.com"
@@ -79,37 +110,6 @@
 									:message="
 										$session.login.error || $resources.is2FAEnabled.error
 									"
-								/>
-							</template>
-
-							<!-- 2FA Section -->
-							<template v-else-if="is2FA">
-								<FormControl
-									label="2FA Code from your Authenticator App"
-									placeholder="123456"
-									v-model="twoFactorCode"
-									required
-								/>
-								<Button
-									class="mt-4"
-									:loading="
-										$resources.verify2FA.loading ||
-										$session.login.loading ||
-										$resources.resetPassword.loading
-									"
-									variant="solid"
-									@click="
-										$resources.verify2FA.submit({
-											user: email,
-											totp_code: twoFactorCode
-										})
-									"
-								>
-									Verify
-								</Button>
-								<ErrorMessage
-									class="mt-2"
-									:message="$resources.verify2FA.error"
 								/>
 							</template>
 

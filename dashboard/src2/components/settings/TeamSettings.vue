@@ -34,7 +34,8 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam();
-		if (row.name === team.doc.user) return [];
+		if (row.name === team.doc.user || row.name === team.doc.user_info?.name)
+			return [];
 		return [
 			{
 				label: 'Remove Member',
