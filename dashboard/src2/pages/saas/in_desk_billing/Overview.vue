@@ -1,5 +1,5 @@
 <template>
-	<div class="p-5">
+	<div class="pt-5">
 		<div v-if="!$resources.upcomingInvoice.loading">
 			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 				<!-- Current billing amount -->
@@ -174,7 +174,7 @@ import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'BillingOverview',
-	inject: ['team'],
+	inject: ['team', 'site'],
 	components: {
 		InvoiceTable: defineAsyncComponent(() =>
 			import('../../../components/in_desk_checkout/InvoiceTable.vue')
@@ -192,6 +192,12 @@ export default {
 			import('../../../components/in_desk_checkout/ChangePaymentModeDialog.vue')
 		)
 	},
+	mounted() {
+		window.addEventListener('message', this.onMessageHandler);
+	},
+	beforeUnmount() {
+		window.removeEventListener('message', this.onMessageHandler);
+	},
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
@@ -200,6 +206,23 @@ export default {
 			showAddCardDialog: false,
 			showUpcomingInvoiceDialog: false
 		};
+	},
+	watch: {
+		showPrepaidCreditsDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		},
+		showChangeModeDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		},
+		showBillingDetailsDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		},
+		showAddCardDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		},
+		showUpcomingInvoiceDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		}
 	},
 	resources: {
 		upcomingInvoice: {
@@ -249,6 +272,29 @@ export default {
 			return [billing_name, address_line1, city, state, country, pincode, gstin]
 				.filter(Boolean)
 				.join(', ');
+		}
+	},
+	methods: {
+		triggerEventToParent(eventName) {
+			if (window?.parent) {
+				try {
+					window.parent.postMessage(
+						eventName,
+						`https://${this.site?.data?.name}`
+					);
+				} catch (e) {
+					console.error('failed to send message to parent', e);
+				}
+			}
+		},
+		onMessageHandler(event) {
+			if (event.data === 'backdrop_clicked') {
+				this.showPrepaidCreditsDialog = false;
+				this.showChangeModeDialog = false;
+				this.showBillingDetailsDialog = false;
+				this.showAddCardDialog = false;
+				this.showUpcomingInvoiceDialog = false;
+			}
 		}
 	}
 };

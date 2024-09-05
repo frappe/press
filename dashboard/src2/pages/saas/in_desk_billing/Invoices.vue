@@ -1,8 +1,8 @@
 <template>
-	<div class="p-5">
+	<div class="pt-5">
 		<ObjectList :options="invoiceList" />
 		<Dialog
-			v-model="invoiceDialog"
+			v-model="showInvoiceDialog"
 			:options="{ size: '3xl', title: showInvoice?.name }"
 		>
 			<template #body-content>
@@ -24,7 +24,7 @@ import ObjectList from '../../../components/ObjectList.vue';
 import { currency, date } from '../../../utils/format';
 import { dayjsLocal } from '../../../utils/dayjs';
 import { icon } from '../../../utils/components';
-import { createResource, Button } from 'frappe-ui';
+import { Button } from 'frappe-ui';
 import InvoiceTable from '../../../components/in_desk_checkout/InvoiceTable.vue';
 
 export default {
@@ -33,12 +33,23 @@ export default {
 		ObjectList,
 		InvoiceTable
 	},
-	inject: ['team'],
+	inject: ['team', 'site'],
 	data() {
 		return {
-			invoiceDialog: false,
+			showInvoiceDialog: false,
 			showInvoice: null
 		};
+	},
+	mounted() {
+		window.addEventListener('message', this.onMessageHandler);
+	},
+	beforeUnmount() {
+		window.removeEventListener('message', this.onMessageHandler);
+	},
+	watch: {
+		showInvoiceDialog(value) {
+			this.triggerEventToParent(value ? 'modal:show' : 'modal:hide');
+		}
 	},
 	computed: {
 		invoiceList() {
@@ -186,7 +197,7 @@ export default {
 				orderBy: 'due_date desc, creation desc',
 				onRowClick: row => {
 					this.showInvoice = row;
-					this.invoiceDialog = true;
+					this.showInvoiceDialog = true;
 				}
 			};
 		}
@@ -197,6 +208,23 @@ export default {
 				return '';
 			}
 			return currency(value, this.team?.data?.currency);
+		},
+		triggerEventToParent(eventName) {
+			if (window?.parent) {
+				try {
+					window.parent.postMessage(
+						eventName,
+						`https://${this.site?.data?.name}`
+					);
+				} catch (e) {
+					console.error('failed to send message to parent', e);
+				}
+			}
+		},
+		onMessageHandler(event) {
+			if (event.data === 'backdrop_clicked') {
+				this.showInvoiceDialog = false;
+			}
 		}
 	}
 };

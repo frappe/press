@@ -11,6 +11,17 @@
 		<TabsWithRouter v-else :tabs="tabs" />
 	</div>
 </template>
+<style>
+[role='tablist'] {
+	padding-left: 0px !important;
+}
+
+.transition-opacity {
+	transition-property: none !important;
+	transition-duration: 0s !important;
+	transition-timing-function: unset !important;
+}
+</style>
 <script>
 import { setConfig, frappeRequest, createResource } from 'frappe-ui';
 import { provide } from 'vue';

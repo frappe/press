@@ -1,6 +1,6 @@
 <template>
 	<div class="@container">
-		<div class="grid grid-cols-2 gap-3 @xl:grid-cols-6">
+		<div class="grid grid-cols-2 gap-3 @xl:grid-cols-3">
 			<PlanCard
 				v-for="plan in plans"
 				:plan="plan"
