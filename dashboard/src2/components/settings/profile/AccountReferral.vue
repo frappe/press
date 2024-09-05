@@ -3,11 +3,12 @@
 		v-if="referralLink"
 		title="Refer & Earn"
 		subtitle="Your unique referral link"
+		class="mx-auto max-w-3xl"
 	>
 		<div class="flex flex-col space-y-4 overflow-hidden">
 			<ClickToCopyField :textContent="referralLink" />
 			<span class="text-base font-medium text-gray-700">
-				When someone sign's up using the above link and spends at least
+				When someone signs up using the above link and spends at least
 				{{ minimumSpentAmount }} on Frappe Cloud, you
 				<strong>
 					get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits!

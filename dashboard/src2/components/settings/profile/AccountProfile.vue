@@ -1,5 +1,5 @@
 <template>
-	<Card title="Profile" v-if="user">
+	<Card title="Profile" v-if="user" class="mx-auto max-w-3xl">
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar size="2xl" :label="user.first_name" :image="user.user_image" />
@@ -122,7 +122,10 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.disableAccount.loading,
-						onClick: () => $resources.disableAccount.submit()
+						onClick: () =>
+							$resources.disableAccount.submit({
+								totp_code: disableAccount2FACode
+							})
 					}
 				]
 			}"
@@ -141,6 +144,12 @@
 					</ul>
 					You can enable your account later anytime. Do you want to continue?
 				</div>
+				<FormControl
+					v-if="user.is_2fa_enabled"
+					class="mt-4"
+					label="Enter your 2FA code to confirm"
+					v-model="disableAccount2FACode"
+				/>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
 		</Dialog>
@@ -200,6 +209,7 @@ export default {
 	data() {
 		return {
 			show2FADialog: false,
+			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,

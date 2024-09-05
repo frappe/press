@@ -227,9 +227,17 @@ def active_servers():
 
 
 @frappe.whitelist()
-def disable_account():
+def disable_account(totp_code: str = None):
+	user = frappe.session.user
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.user:
+
+	if is_2fa_enabled(user):
+		if not totp_code:
+			frappe.throw("2FA Code is required")
+		if not verify_2fa(user, totp_code):
+			frappe.throw("Invalid 2FA Code")
+
+	if user != team.user:
 		frappe.throw("Only team owner can disable the account")
 	if has_unsettled_invoices(team.name):
 		return "Unpaid Invoices"

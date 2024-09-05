@@ -3,6 +3,7 @@
 		v-if="!$team.doc.erpnext_partner"
 		title="Frappe Partner"
 		subtitle="Frappe Partner associated with your account"
+		class="mx-auto max-w-3xl"
 	>
 		<template #actions>
 			<Button

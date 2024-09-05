@@ -37,8 +37,8 @@
 							@click="() => addUser(member.value)"
 						/>
 					</div>
-					<div class="rounded border p-3">
-						<div class="mb-1 text-gray-600">Members</div>
+					<div class="rounded border px-3">
+						<div class="mt-2 text-gray-600">Members</div>
 						<div
 							v-if="roleUsers.length === 0"
 							class="p-4 text-center text-gray-500"
@@ -46,17 +46,14 @@
 							<span>No members added to this role.</span>
 						</div>
 						<div v-else class="flex flex-col divide-y">
-							<div
-								v-for="user in roleUsers"
-								class="flex justify-between py-2.5"
-							>
+							<div v-for="user in roleUsers" class="flex justify-between py-3">
 								<UserWithAvatarCell
 									:avatarImage="user.user_image"
 									:fullName="user.full_name"
 									:email="user.user"
 									:key="user.user"
 								/>
-								<Button @click="() => removeUser(user.user)">
+								<Button variant="ghost" @click="() => removeUser(user.user)">
 									<template #icon>
 										<i-lucide-x class="h-4 w-4 text-gray-600" />
 									</template>
