@@ -3,7 +3,7 @@
 		<h1 class="text-center text-2xl font-semibold">Enable 2FA</h1>
 
 		<AlertBanner
-			title="Two-Factor Authentication is enforced for all members of this team by the team owner/admin. You must enable it to continue."
+			:title="`Two-Factor Authentication is enforced for all members of the team <strong>${$team.doc.user}</strong> by the team owner/admin. You must enable it to continue.`"
 			type="error"
 		/>
 		<Configure2FA @enabled="handleEnabled" />
