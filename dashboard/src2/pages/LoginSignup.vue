@@ -188,10 +188,10 @@
 								required
 							/>
 							<FormControl
-								label="OTP (Sent to your email)"
+								label="Verification code (Sent to your email)"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit OTP"
+								placeholder="5 digit verification code"
 								maxlength="5"
 								v-model="otp"
 								required
@@ -206,7 +206,7 @@
 								:loading="$resources.verifyOTP.loading"
 								@click="$resources.verifyOTP.submit()"
 							>
-								Verify & Next
+								Verify
 							</Button>
 							<Button
 								class="mt-2"
@@ -304,7 +304,8 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.accountRequestCreated = true;
-				}
+				},
+				onError: this.onSignupError.bind(this)
 			};
 		},
 		verifyOTP() {
@@ -485,6 +486,22 @@ export default {
 					}
 				}
 			);
+		},
+		onSignupError(error) {
+			if (error?.exc_type !== 'ValidationError') {
+				return;
+			}
+			let errorMessage = '';
+			if ((error?.messages ?? []).length) {
+				errorMessage = error?.messages?.[0];
+			}
+			// check if error message has `is already registered` substring
+			if (errorMessage.includes('is already registered')) {
+				localStorage.setItem('login_email', this.email);
+				this.$router.push({
+					name: 'Login'
+				});
+			}
 		}
 	},
 	computed: {
