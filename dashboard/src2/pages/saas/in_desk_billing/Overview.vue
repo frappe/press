@@ -1,6 +1,30 @@
 <template>
 	<div class="pt-5">
 		<div v-if="!$resources.upcomingInvoice.loading">
+			<!-- Current plan -->
+			<div class="rounded-md border p-4">
+				<div class="flex items-start justify-between">
+					<div>
+						<div class="text-lg font-medium">Current Plan</div>
+						<div class="mt-0.5 text-sm text-gray-700">
+							{{
+								isSupportIncluded ? 'Support Included' : 'Support Not Included'
+							}}
+						</div>
+					</div>
+					<!-- <Button @click="showUpcomingInvoiceDialog = true"> Details </Button> -->
+					<p class="inline-block text-gray-700">
+						<span class="text-lg font-bold text-black">{{
+							currentPlanPricing
+						}}</span>
+						/ month
+					</p>
+				</div>
+				<div class="mt-2 flex justify-end">
+					<Button variant="solid" theme="gray" @click="showSitePlanChangeDialog = true">Upgrade Plan</Button>
+				</div>
+			</div>
+			<p class="my-3 text-lg font-medium">Details</p>
 			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 				<!-- Current billing amount -->
 				<div class="rounded-md border p-4">
@@ -167,6 +191,9 @@
 
 		<!-- Change payment mode dialog -->
 		<ChangePaymentModeDialog2 v-model="showChangeModeDialog" />
+
+		<!-- Change plan dialog -->
+		 <SitePlanChangeDialog v-model="showSitePlanChangeDialog" />
 	</div>
 </template>
 <script>
@@ -190,7 +217,10 @@ export default {
 		),
 		ChangePaymentModeDialog2: defineAsyncComponent(() =>
 			import('../../../components/in_desk_checkout/ChangePaymentModeDialog.vue')
-		)
+		),
+		SitePlanChangeDialog: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/SitePlanChangeDialog.vue')
+		),
 	},
 	mounted() {
 		window.addEventListener('message', this.onMessageHandler);
@@ -204,7 +234,8 @@ export default {
 			showChangeModeDialog: false,
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
-			showUpcomingInvoiceDialog: false
+			showUpcomingInvoiceDialog: false,
+			showSitePlanChangeDialog: false,
 		};
 	},
 	watch: {
@@ -272,6 +303,20 @@ export default {
 			return [billing_name, address_line1, city, state, country, pincode, gstin]
 				.filter(Boolean)
 				.join(', ');
+		},
+		currentPlanPricing() {
+			if (!this.site?.data || !this.team?.data) return '';
+			return this.$format.currency(
+				this.team?.data?.currency == 'INR'
+					? this.site?.data?.plan?.price_inr
+					: this.site?.data?.plan?.price_usd,
+				this.team?.data?.currency,
+				0
+			);
+		},
+		isSupportIncluded() {
+			if (!this.site?.data || !this.team?.data) return false;
+			return this.site?.data?.plan?.support_included;
 		}
 	},
 	methods: {

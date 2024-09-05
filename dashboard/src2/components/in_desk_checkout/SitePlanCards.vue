@@ -60,8 +60,8 @@ export default {
 					label: plan.plan_title,
 					sublabel:
 						this.teamCurrency == 'USD'
-							? `${plan.price_usd}$ / month`
-							: `${plan.price_inr}₹ / month`,
+							? `$${plan.price_usd} / month`
+							: `₹${plan.price_inr} / month`,
 					features: [
 						{
 							label: `${this.$format.plural(
