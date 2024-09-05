@@ -4,7 +4,7 @@
 	>
 		<i-lucide-alert-triangle
 			v-if="showIcon"
-			:class="`h-4 w-4 text-${color}-600`"
+			:class="`h-4 w-8 text-${color}-600`"
 		/>
 		<div
 			:class="{ 'ml-3': showIcon }"

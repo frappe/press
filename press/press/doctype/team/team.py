@@ -56,6 +56,7 @@ class Team(Document):
 		discounts: DF.Table[InvoiceDiscount]
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
+		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
 		frappe_partnership_date: DF.Date | None
 		free_account: DF.Check
@@ -93,6 +94,7 @@ class Team(Document):
 		"user",
 		"partner_email",
 		"erpnext_partner",
+		"enforce_2fa",
 		"billing_team",
 		"team_members",
 		"child_team_members",
