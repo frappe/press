@@ -188,10 +188,10 @@
 								required
 							/>
 							<FormControl
-								label="OTP (Sent to your email)"
+								label="Verification code (Sent to your email)"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit OTP"
+								placeholder="5 digit verification code"
 								maxlength="5"
 								v-model="otp"
 								required
@@ -206,7 +206,7 @@
 								:loading="$resources.verifyOTP.loading"
 								@click="$resources.verifyOTP.submit()"
 							>
-								Verify & Next
+								Verify
 							</Button>
 							<Button
 								class="mt-2"
