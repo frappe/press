@@ -56,6 +56,7 @@ class Team(Document):
 		discounts: DF.Table[InvoiceDiscount]
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
+		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
 		frappe_partnership_date: DF.Date | None
 		free_account: DF.Check
@@ -93,6 +94,7 @@ class Team(Document):
 		"user",
 		"partner_email",
 		"erpnext_partner",
+		"enforce_2fa",
 		"billing_team",
 		"team_members",
 		"child_team_members",
@@ -382,6 +384,9 @@ class Team(Document):
 	def set_team_currency(self):
 		if not self.currency and self.country:
 			self.currency = "INR" if self.country == "India" else "USD"
+
+		if self.is_new() and self.country == "India" and self.currency != "INR":
+			self.currency = "INR"
 
 	def get_user_list(self):
 		return [row.user for row in self.team_members]
@@ -902,8 +907,6 @@ class Team(Document):
 	def can_create_site(self):
 		why = ""
 		allow = (True, "")
-
-		return allow  # TODO must be removed
 
 		if not self.enabled:
 			why = "You cannot create a new site because your account is disabled"
