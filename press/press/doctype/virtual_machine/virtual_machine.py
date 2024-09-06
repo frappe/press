@@ -30,6 +30,7 @@ from oci.exceptions import TransientServiceError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
+import rq
 
 
 class VirtualMachine(Document):
@@ -1020,6 +1021,8 @@ class VirtualMachine(Document):
 
 				machine.sync(instance)
 				frappe.db.commit()  # release lock
+			except rq.timeouts.JobTimeoutException:
+				return
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
