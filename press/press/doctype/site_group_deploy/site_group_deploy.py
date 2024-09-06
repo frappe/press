@@ -52,7 +52,6 @@ class SiteGroupDeploy(Document):
 		self.save()
 
 		group.initial_deploy()
-		# creation of site is called from `process_new_bench_job_update`
 
 	def set_latest_version(self):
 		if self.version:
