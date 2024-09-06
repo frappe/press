@@ -908,8 +908,6 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		return allow  # TODO must be removed
-
 		if not self.enabled:
 			why = "You cannot create a new site because your account is disabled"
 			return (False, why)
