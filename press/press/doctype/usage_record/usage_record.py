@@ -6,8 +6,6 @@
 import frappe
 from frappe.model.document import Document
 
-from press.utils import log_error
-
 
 class UsageRecord(Document):
 	# begin: auto-generated types
@@ -44,10 +42,7 @@ class UsageRecord(Document):
 			self.time = frappe.utils.nowtime()
 
 	def on_submit(self):
-		try:
-			self.update_usage_in_invoice()
-		except Exception:
-			log_error(title="Usage Record Invoice Update Error", name=self.name)
+		self.update_usage_in_invoice()
 
 	def on_cancel(self):
 		self.remove_usage_from_invoice()
