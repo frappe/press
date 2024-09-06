@@ -385,6 +385,9 @@ class Team(Document):
 		if not self.currency and self.country:
 			self.currency = "INR" if self.country == "India" else "USD"
 
+		if self.is_new() and self.country == "India" and self.currency != "INR":
+			self.currency = "INR"
+
 	def get_user_list(self):
 		return [row.user for row in self.team_members]
 
