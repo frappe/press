@@ -17,6 +17,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
+from press.exceptions import AAAARecordExists, ConflictingCAARecord
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1550,60 +1551,86 @@ def check_domain_allows_letsencrypt_certs(domain):
 		pass  # We have other probems
 	else:
 		frappe.throw(
-			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same."
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same.",
+			ConflictingCAARecord,
 		)
 
 
+def check_dns_cname(name, domain):
+	result = {"type": "CNAME", "matched": False, "answer": ""}
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "CNAME")
+		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
+		result["answer"] = answer.rrset.to_text()
+		if mapped_domain == name:
+			result["matched"] = True
+	except dns.exception.DNSException as e:
+		result["answer"] = str(e)
+	except Exception as e:
+		result["answer"] = str(e)
+		log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
+	finally:
+		return result
+
+
+def check_dns_a(name, domain):
+	result = {"type": "A", "matched": False, "answer": ""}
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "A")
+		domain_ip = answer[0].to_text()
+		site_ip = resolver.query(name, "A")[0].to_text()
+		result["answer"] = answer.rrset.to_text()
+		if domain_ip == site_ip:
+			result["matched"] = True
+		elif site_ip:
+			# We can issue certificates even if the domain points to the secondary proxies
+			server = frappe.db.get_value("Site", name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			secondary_ips = frappe.get_all(
+				"Proxy Server",
+				{"status": "Active", "primary": proxy, "is_replication_setup": True},
+				pluck="ip",
+			)
+			if domain_ip in secondary_ips:
+				result["matched"] = True
+	except dns.exception.DNSException as e:
+		result["answer"] = str(e)
+	except Exception as e:
+		result["answer"] = str(e)
+		log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
+	finally:
+		return result
+
+
+def ensure_dns_aaaa_record_doesnt_exist(domain: str):
+	"""
+	Ensure that the domain doesn't have an AAAA record
+
+	LetsEncrypt has issues with IPv6, so we need to ensure that the domain doesn't have an AAAA record
+	ref: https://letsencrypt.org/docs/ipv6-support/#incorrect-ipv6-addresses
+	"""
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "AAAA")
+		if answer:
+			frappe.throw(
+				f"Domain {domain} has an AAAA record. This causes issues with https certificate generation. Please remove the same to proceed.",
+				AAAARecordExists,
+			)
+	except dns.resolver.NoAnswer:
+		pass
+	except dns.exception.DNSException:
+		pass  # We have other probems
+
+
 def check_dns_cname_a(name, domain):
-	def check_dns_cname(name, domain):
-		result = {"type": "CNAME", "matched": False, "answer": ""}
-		try:
-			resolver = Resolver(configure=False)
-			resolver.nameservers = NAMESERVERS
-			answer = resolver.query(domain, "CNAME")
-			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
-			result["answer"] = answer.rrset.to_text()
-			if mapped_domain == name:
-				result["matched"] = True
-		except dns.exception.DNSException as e:
-			result["answer"] = str(e)
-		except Exception as e:
-			result["answer"] = str(e)
-			log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
-		finally:
-			return result
-
-	def check_dns_a(name, domain):
-		result = {"type": "A", "matched": False, "answer": ""}
-		try:
-			resolver = Resolver(configure=False)
-			resolver.nameservers = NAMESERVERS
-			answer = resolver.query(domain, "A")
-			domain_ip = answer[0].to_text()
-			site_ip = resolver.query(name, "A")[0].to_text()
-			result["answer"] = answer.rrset.to_text()
-			if domain_ip == site_ip:
-				result["matched"] = True
-			elif site_ip:
-				# We can issue certificates even if the domain points to the secondary proxies
-				server = frappe.db.get_value("Site", name, "server")
-				proxy = frappe.db.get_value("Server", server, "proxy_server")
-				secondary_ips = frappe.get_all(
-					"Proxy Server",
-					{"status": "Active", "primary": proxy, "is_replication_setup": True},
-					pluck="ip",
-				)
-				if domain_ip in secondary_ips:
-					result["matched"] = True
-		except dns.exception.DNSException as e:
-			result["answer"] = str(e)
-		except Exception as e:
-			result["answer"] = str(e)
-			log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
-		finally:
-			return result
-
 	check_domain_allows_letsencrypt_certs(domain)
+	ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname}
 	result.update(cname)
@@ -2213,9 +2240,21 @@ def change_server(name, server, scheduled_datetime=None, skip_failing_patches=Fa
 	)
 
 	if not bench:
-		frappe.throw(
-			f"Please wait for the new deploy to be created in the server {frappe.bold(server)} if you have just added a new server to the bench."
-		)
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "New Bench",
+				"status": ("in", ("Pending", "Running")),
+				"server": server,
+			},
+		):
+			frappe.throw(
+				f"Please wait for the new deploy to be created in the server {frappe.bold(server)} if you have just added a new server to the bench."
+			)
+		else:
+			frappe.throw(
+				f"A deploy does not exist in the server {frappe.bold(server)}. Please schedule a new deploy on your bench and try again."
+			)
 
 	site_migration = frappe.get_doc(
 		{

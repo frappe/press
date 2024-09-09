@@ -1317,7 +1317,7 @@ class ReleaseGroup(Document, TagHelpers):
 		app_source = self.get_app_source(app)
 		app_source.create_release(force=True)
 
-	@dashboard_whitelist()
+	@frappe.whitelist()
 	def archive(self):
 		benches = frappe.get_all(
 			"Bench", filters={"group": self.name, "status": "Active"}, pluck="name"
@@ -1333,6 +1333,12 @@ class ReleaseGroup(Document, TagHelpers):
 		self.save()
 
 		frappe.db.delete("Press Role Permission", {"release_group": self.name})
+
+	@dashboard_whitelist()
+	def delete(self) -> None:
+		# Note: using delete instead of archive to avoid client api fetching the doc again
+
+		self.archive()
 
 	def set_default_app_cache_flags(self):
 		if self.use_app_cache:

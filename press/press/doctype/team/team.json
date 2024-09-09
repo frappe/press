@@ -21,6 +21,7 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
+  "enforce_2fa",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -417,6 +418,13 @@
    "fieldname": "enable_performance_tuning",
    "fieldtype": "Check",
    "label": "Enable Performance Tuning"
+  },
+  {
+   "default": "0",
+   "description": "Enforces 2FA to all members",
+   "fieldname": "enforce_2fa",
+   "fieldtype": "Check",
+   "label": "Enforce 2FA"
   }
  ],
  "links": [
@@ -476,7 +484,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-08-02 10:33:18.861721",
+ "modified": "2024-09-05 15:06:48.179274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

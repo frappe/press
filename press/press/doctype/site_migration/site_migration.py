@@ -127,6 +127,7 @@ class SiteMigration(Document):
 				MissingAppsInBench,
 			)
 
+	@frappe.whitelist()
 	def start(self):
 		self.status = "Pending"
 		self.save()
@@ -344,7 +345,7 @@ class SiteMigration(Document):
 				self.restore_site_on_destination_server.__name__,
 				self.restore_site_on_destination_proxy.__name__,
 			]
-			and site.status_before_update == "Active"
+			and site.status_before_update != "Inactive"
 		):
 			site.activate()
 			if self.migration_type == "Cluster":

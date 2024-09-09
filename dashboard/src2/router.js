@@ -9,7 +9,14 @@ let router = createRouter({
 			path: '/',
 			name: 'Home',
 			component: () => import('./pages/Home.vue'),
-			redirect: { name: 'Welcome' }
+			beforeEnter: (to, from, next) => {
+				next({
+					name: 'Welcome',
+					query: {
+						is_redirect: true
+					}
+				});
+			}
 		},
 		{
 			path: '/welcome',
@@ -55,6 +62,15 @@ let router = createRouter({
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
+			props: true,
+			meta: {
+				hideSidebar: true
+			}
+		},
+		{
+			name: 'Enable2FA',
+			path: '/enable-2fa',
+			component: () => import('./pages/Enable2FA.vue'),
 			props: true,
 			meta: {
 				hideSidebar: true
@@ -221,6 +237,12 @@ let router = createRouter({
 			props: true
 		},
 		{
+			name: 'CreateSiteForMarketplaceApp',
+			path: '/create-site/:app',
+			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
+			props: true
+		},
+		{
 			path: '/user-review/:marketplaceApp',
 			name: 'ReviewMarketplaceApp',
 			component: () =>
@@ -267,12 +289,29 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 
-    // If user is logged in and was moving to app trial signup, redirect to app trial setup
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
 		if (to.name == 'AppTrialSignup') {
 			next({ name: 'AppTrialSetup', params: to.params });
 			return;
 		}
-    
+
+		// if team owner/admin enforce 2fa and user has not enabled 2fa, redirect to enable 2fa
+		const Enable2FARoute = 'Enable2FA';
+		if (
+			to.name !== Enable2FARoute &&
+			$team.doc.enforce_2fa &&
+			!$team.doc.user_info.is_2fa_enabled
+		) {
+			next({ name: Enable2FARoute });
+			return;
+		}
+
+		// if team owner/admin doesn't enforce 2fa don't allow user to visit Enable2FA route
+		if (to.name === Enable2FARoute && !$team.doc.enforce_2fa) {
+			next({ name: defaultRoute });
+			return;
+		}
+
 		if (
 			!onboardingComplete &&
 			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))

@@ -15,7 +15,10 @@
 							Execute the following shell command to store the SSH certificate
 							locally.
 						</p>
-						<ClickToCopyField :textContent="certificateCommand" />
+						<ClickToCopyField
+							:textContent="certificateCommand"
+							:breakLines="false"
+						/>
 					</div>
 				</div>
 				<div class="space-y-2">
@@ -25,6 +28,22 @@
 							Execute the following shell command to SSH into your bench
 						</p>
 						<ClickToCopyField :textContent="sshCommand" />
+					</div>
+				</div>
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">Step 3</h4>
+					<div class="space-y-1">
+						<p class="text-base">
+							Use wisely and only for
+							<a
+								href="/docs/benches/debugging"
+								class="underline"
+								target="_blank"
+								>debugging</a
+							>
+							purposes. Do not install/uninstall apps as you would on a local
+							machine. Use the UI for that.
+						</p>
 					</div>
 				</div>
 			</div>

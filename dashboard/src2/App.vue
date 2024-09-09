@@ -47,6 +47,7 @@ import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
+import { session } from './data/session.js';
 
 const AppSidebar = defineAsyncComponent(() =>
 	import('./components/AppSidebar.vue')
@@ -56,10 +57,13 @@ const MobileNav = defineAsyncComponent(() =>
 );
 
 const route = useRoute();
-const team = getTeam();
 
 const isHideSidebar = computed(
-	() => route.name == 'Welcome' && team?.doc?.hide_sidebar === true
+	() => {
+		if(!session.user) return false;
+		const team = getTeam();
+		return route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
+	}
 );
 </script>
 

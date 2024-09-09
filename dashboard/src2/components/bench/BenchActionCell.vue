@@ -138,12 +138,12 @@ function onDropBench() {
 			label: 'Drop',
 			theme: 'red',
 			onClick: ({ hide, values }) => {
-				if (releaseGroup.archive.loading) return;
+				if (releaseGroup.delete.loading) return;
 				if (values.confirmBenchName !== releaseGroup.doc.title) {
 					throw new Error('Bench name does not match');
 				}
 				toast.promise(
-					releaseGroup.archive.submit(null, {
+					releaseGroup.delete.submit(null, {
 						onSuccess: () => {
 							hide();
 							router.push({ name: 'Release Group List' });

@@ -514,6 +514,11 @@ export default {
 				this.restrictMessage = error?.messages?.[0] ?? '';
 			}
 
+			if (error?.exc_type === 'PermissionError') {
+				this.errorMessage = error?.messages?.[0] ?? '';
+				return;
+			}
+
 			if (this.restrictMessage) {
 				this.step = 'restrict-build';
 				return;

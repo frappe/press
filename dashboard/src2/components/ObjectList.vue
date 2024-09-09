@@ -237,7 +237,7 @@ export default {
 	},
 	beforeUpdate() {
 		if (this.$list?.list) {
-			let filters = this.$list.list?.params?.filters;
+			const filters = this.$list.list?.params?.filters || {};
 			for (let control of this.filterControls) {
 				if (control.value !== filters[control.fieldname]) {
 					control.value = filters[control.fieldname];

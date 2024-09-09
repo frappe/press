@@ -34,7 +34,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending\nApproved\nRejected"
+   "options": "Pending\nApproved\nRejected",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_cujq",
@@ -66,7 +67,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-13 22:29:09.830588",
+ "modified": "2024-08-23 15:21:24.754187",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Approval Request",

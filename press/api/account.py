@@ -227,9 +227,17 @@ def active_servers():
 
 
 @frappe.whitelist()
-def disable_account():
+def disable_account(totp_code: str = None):
+	user = frappe.session.user
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.user:
+
+	if is_2fa_enabled(user):
+		if not totp_code:
+			frappe.throw("2FA Code is required")
+		if not verify_2fa(user, totp_code):
+			frappe.throw("Invalid 2FA Code")
+
+	if user != team.user:
 		frappe.throw("Only team owner can disable the account")
 	if has_unsettled_invoices(team.name):
 		return "Unpaid Invoices"
@@ -643,7 +651,7 @@ def update_feature_flags(values=None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def send_reset_password_email(email):
+def send_reset_password_email(email: str):
 	valid_email = frappe.utils.validate_email_address(email)
 	if not valid_email:
 		frappe.throw(
@@ -1139,6 +1147,7 @@ def get_permission_roles():
 		frappe.qb.from_(PressRole)
 		.select(
 			PressRole.name,
+			PressRole.admin_access,
 			PressRole.allow_billing,
 			PressRole.allow_apps,
 			PressRole.allow_partner,

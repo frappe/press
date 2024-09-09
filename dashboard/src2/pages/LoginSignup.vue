@@ -8,14 +8,45 @@
 				<template v-slot:default>
 					<div v-if="!(resetPasswordEmailSent || accountRequestCreated)">
 						<form class="flex flex-col" @submit.prevent="submitForm">
+							<!-- 2FA Section -->
+							<template v-if="is2FA">
+								<FormControl
+									label="2FA Code from your Authenticator App"
+									placeholder="123456"
+									v-model="twoFactorCode"
+									required
+								/>
+								<Button
+									class="mt-4"
+									:loading="
+										$resources.verify2FA.loading ||
+										$session.login.loading ||
+										$resources.resetPassword.loading
+									"
+									variant="solid"
+									@click="
+										$resources.verify2FA.submit({
+											user: email,
+											totp_code: twoFactorCode
+										})
+									"
+								>
+									Verify
+								</Button>
+								<ErrorMessage
+									class="mt-2"
+									:message="$resources.verify2FA.error"
+								/>
+							</template>
+
 							<!-- Forgot Password Section -->
-							<template v-if="hasForgotPassword">
+							<template v-else-if="hasForgotPassword">
 								<FormControl
 									label="Email"
 									type="email"
 									placeholder="johndoe@mail.com"
 									autocomplete="email"
-									:modelValue="email"
+									v-model="email"
 									required
 								/>
 								<router-link
@@ -38,7 +69,7 @@
 							</template>
 
 							<!-- Login Section -->
-							<template v-else-if="isLogin && !is2FA">
+							<template v-else-if="isLogin">
 								<FormControl
 									label="Email"
 									placeholder="johndoe@mail.com"
@@ -74,35 +105,11 @@
 								<Button v-else class="mt-4" variant="solid">
 									Log in with {{ oauthProviderName }}
 								</Button>
-								<ErrorMessage class="mt-2" :message="$session.login.error" />
-							</template>
-
-							<!-- 2FA Section -->
-							<template v-else-if="isLogin && is2FA">
-								<FormControl
-									label="2FA Code from your Authenticator App"
-									placeholder="123456"
-									v-model="twoFactorCode"
-									required
-								/>
-								<Button
-									class="mt-4"
-									:loading="
-										$resources.verify2FA.loading || $session.login.loading
-									"
-									variant="solid"
-									@click="
-										$resources.verify2FA.submit({
-											user: email,
-											totp_code: twoFactorCode
-										})
-									"
-								>
-									Verify
-								</Button>
 								<ErrorMessage
 									class="mt-2"
-									:message="$resources.verify2FA.error"
+									:message="
+										$session.login.error || $resources.is2FAEnabled.error
+									"
 								/>
 							</template>
 
@@ -181,10 +188,10 @@
 								required
 							/>
 							<FormControl
-								label="OTP (Sent to your email)"
+								label="Verification code (Sent to your email)"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit OTP"
+								placeholder="5 digit verification code"
 								maxlength="5"
 								v-model="otp"
 								required
@@ -199,7 +206,7 @@
 								:loading="$resources.verifyOTP.loading"
 								@click="$resources.verifyOTP.submit()"
 							>
-								Verify & Next
+								Verify
 							</Button>
 							<Button
 								class="mt-2"
@@ -279,6 +286,18 @@ export default {
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		if (window.posthog?.__loaded) {
+			window.posthog.identify((this.email || window.posthog.get_distinct_id()), {
+				app: 'frappe_cloud',
+				action: 'login_signup'
+			});
+			window.posthog.startSessionRecording();
+		}
+	},
+	unmounted() {
+		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
+		}
 	},
 	watch: {
 		email() {
@@ -297,7 +316,8 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.accountRequestCreated = true;
-				}
+				},
+				onError: this.onSignupError.bind(this)
 			};
 		},
 		verifyOTP() {
@@ -349,9 +369,6 @@ export default {
 		resetPassword() {
 			return {
 				url: 'press.api.account.send_reset_password_email',
-				params: {
-					email: this.email
-				},
 				onSuccess() {
 					this.resetPasswordEmailSent = true;
 				}
@@ -375,7 +392,13 @@ export default {
 			return {
 				url: 'press.api.account.verify_2fa',
 				onSuccess: async () => {
-					await this.login();
+					if (this.isLogin) {
+						await this.login();
+					} else if (this.hasForgotPassword) {
+						await this.$resources.resetPassword.submit({
+							email: this.email
+						});
+					}
 				}
 			};
 		}
@@ -407,7 +430,7 @@ export default {
 									this.$router.push({
 										name: 'Login',
 										query: {
-											two_factor: true
+											two_factor: 1
 										}
 									});
 								} else {
@@ -418,7 +441,26 @@ export default {
 					);
 				}
 			} else if (this.hasForgotPassword) {
-				this.$resources.resetPassword.submit();
+				await this.$resources.is2FAEnabled.submit(
+					{ user: this.email },
+					{
+						onSuccess: async two_factor_enabled => {
+							if (two_factor_enabled) {
+								this.$router.push({
+									name: 'Login',
+									query: {
+										two_factor: 1,
+										forgot: 1
+									}
+								});
+							} else {
+								await this.$resources.resetPassword.submit({
+									email: this.email
+								});
+							}
+						}
+					}
+				);
 			} else {
 				this.$resources.signup.submit();
 			}
@@ -456,6 +498,22 @@ export default {
 					}
 				}
 			);
+		},
+		onSignupError(error) {
+			if (error?.exc_type !== 'ValidationError') {
+				return;
+			}
+			let errorMessage = '';
+			if ((error?.messages ?? []).length) {
+				errorMessage = error?.messages?.[0];
+			}
+			// check if error message has `is already registered` substring
+			if (errorMessage.includes('is already registered')) {
+				localStorage.setItem('login_email', this.email);
+				this.$router.push({
+					name: 'Login'
+				});
+			}
 		}
 	},
 	computed: {

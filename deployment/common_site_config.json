@@ -6,6 +6,7 @@
 	"default_site": "frappe.cloud",
 	"disable_global_search": true,
 	"dns_multitenant": true,
+	"email_queue_batch_size": 100,
 	"file_watcher_port": 6787,
 	"frappe_user": "frappe",
 	"gunicorn_workers": 32,

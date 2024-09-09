@@ -537,7 +537,7 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.name} on ${row.branch} branch`,
-					size: '8xl'
+					size: '6xl'
 				}
 			},
 			{
@@ -585,17 +585,19 @@ function showReleases(row, app) {
 									label: 'Code Screening',
 									type: 'Component',
 									width: 0.2,
-									component: ({ row, listResource: releases }) => {
+									component: ({ row, listResource: releases, app }) => {
 										if (
-											row.status === 'Awaiting Approval' &&
+											(row.status === 'Awaiting Approval' ||
+												row.status === 'Rejected') &&
 											row.screening_status === 'Complete'
 										) {
 											return h(Button, {
-												label: 'Review',
+												label: 'Code Review',
 												variant: 'subtle',
 												theme: 'blue',
 												size: 'sm',
-												onClick: () => codeReview(row)
+												onClick: () =>
+													codeReview(row, app, window.is_system_user)
 											});
 										}
 										return h(Badge, {
@@ -661,10 +663,12 @@ function showReleases(row, app) {
 	);
 }
 
-function codeReview(row) {
+function codeReview(row, app, isSystemUser) {
 	renderDialog(
 		h(CodeReview, {
-			row: row
+			row: row,
+			app: app,
+			isSystemUser: isSystemUser
 		})
 	);
 }

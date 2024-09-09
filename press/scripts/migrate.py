@@ -19,7 +19,6 @@ from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 
 # third party imports
-
 try:
 	print("Setting Up requirements...")
 	# imports - third party imports
@@ -44,7 +43,6 @@ except ImportError:
 		"click",
 		"semantic-version",
 		"requests-toolbelt",
-		"mimetypes",
 	]
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))

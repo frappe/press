@@ -40,6 +40,8 @@ class BaseServer(Document, TagHelpers):
 		"team",
 		"database_server",
 		"is_self_hosted",
+		"auto_add_storage_min",
+		"auto_add_storage_max",
 	]
 
 	@staticmethod
@@ -107,6 +109,23 @@ class BaseServer(Document, TagHelpers):
 			server_doc = frappe.get_doc("Database Server", server)
 			server_doc.increase_disk_size(increment)
 			server_doc.create_subscription_for_storage()
+
+	@dashboard_whitelist()
+	def configure_auto_add_storage(self, server: str, min: int, max: int) -> None:
+		if min < 0 or max < 0:
+			frappe.throw(_("Minimum and maximum storage sizes must be positive"))
+		if min > max:
+			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
+
+		if server == self.name:
+			self.auto_add_storage_min = min
+			self.auto_add_storage_max = max
+			self.save()
+		else:
+			server_doc = frappe.get_doc("Database Server", server)
+			server_doc.auto_add_storage_min = min
+			server_doc.auto_add_storage_max = max
+			server_doc.save()
 
 	@staticmethod
 	def on_not_found(name):
@@ -1784,6 +1803,7 @@ def scale_workers(now=False):
 					method="auto_scale_workers",
 					job_id=f"auto_scale_workers:{server.name}",
 					deduplicate=True,
+					queue="long",
 					enqueue_after_commit=True,
 				)
 			frappe.db.commit()
