@@ -266,9 +266,9 @@ def create_site_on_private_bench(
 		.left_join(MarketplaceAppVersion)
 		.on(MarketplaceApp.name == MarketplaceAppVersion.parent)
 		.select(
-			MarketplaceApp.app, MarketplaceAppVersion.version, MarketplaceAppVersion.source
+			MarketplaceApp.name, MarketplaceAppVersion.version, MarketplaceAppVersion.source
 		)
-		.where(MarketplaceApp.app.isin(app_names))
+		.where(MarketplaceApp.name.isin(app_names))
 		.orderby(MarketplaceAppVersion.version, order=frappe.qb.desc)
 		.run(as_dict=True)
 	)
