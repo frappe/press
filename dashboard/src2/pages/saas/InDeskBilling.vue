@@ -6,6 +6,14 @@
 		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
+	<div
+		v-else-if="isSessionExpired"
+		class="flex h-screen w-screen flex-col items-center justify-center gap-4"
+	>
+		<div class="whitespace-pre-line text-red-600" role="alert">
+			Session Expired. Refresh the page.
+		</div>
+	</div>
 	<div v-else>
 		<Onboarding v-if="isOnboardingRequired" />
 		<TabsWithRouter v-else :tabs="tabs" />
@@ -46,6 +54,7 @@ export default {
 			isLoadingInitialSiteData: true,
 			teamPaymentMode: '',
 			isSiteOnTrialPlan: false,
+			isSessionExpired: false,
 			// Tab data
 			currentTab: 0,
 			tabs: [
@@ -54,7 +63,6 @@ export default {
 			]
 		};
 	},
-
 	setup() {
 		let route = useRoute();
 		let request = options => {
@@ -87,6 +95,9 @@ export default {
 		});
 		provide('site', site);
 	},
+	mounted() {
+		setInterval(this.isAccessTokenValid, 1000);
+	},
 	computed: {
 		isLoadingInitialData() {
 			return this.isLoadingInitialTeamData || this.isLoadingInitialSiteData;
@@ -95,6 +106,26 @@ export default {
 			if (!this.teamPaymentMode) return true;
 			if (this.isSiteOnTrialPlan) return true;
 			return false;
+		}
+	},
+	methods: {
+		isAccessTokenValid() {
+			const accesstoken = this.$route?.params?.accessToken;
+			if (!accesstoken) return;
+			fetch(`/api/method/press.saas.api.auth.is_access_token_valid`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					token: accesstoken
+				})
+			})
+				.then(response => response.json())
+				.then(data => {
+					this.isSessionExpired = !(data?.message ?? true);
+				})
+				.catch(console.error);
 		}
 	}
 };

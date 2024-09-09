@@ -31,12 +31,11 @@ class SiteAccessToken(Document):
 
 
 def cleanup_expired_access_tokens():
-	return # TODO: remove this line after testing
 	# cleanup expired tokens
 	frappe.db.sql(
 		"""
 		DELETE FROM `tabSite Access Token`
-		WHERE TIMESTAMPDIFF(MINUTE, creation, NOW()) > 15
+		WHERE TIMESTAMPDIFF(MINUTE, creation, NOW()) > 30
 		"""
 	)
 	frappe.db.commit()
