@@ -30,9 +30,11 @@ def update_information(billing_details: dict):
 def validate_gst(address: dict):
 	return billing_api.validate_gst(address)
 
+
 @whitelist_saas_api
-def change_payment_mode(mode:str):
+def change_payment_mode(mode: str):
 	return billing_api.change_payment_mode(mode)
+
 
 # Stripe Payment Gateway Related APIs
 @whitelist_saas_api
@@ -76,6 +78,7 @@ def get_invoices():
 			"type",
 			"invoice_pdf",
 			"payment_mode",
+			"stripe_invoice_id",
 			"stripe_invoice_url",
 			"due_date",
 			"period_start",
@@ -120,3 +123,15 @@ def download_invoice(name: str):
 		filedata = file.read()
 	frappe.local.response.filecontent = filedata
 	frappe.local.response.type = "download"
+
+
+@whitelist_saas_api
+def get_stripe_payment_url_for_invoice(name: str) -> str:
+	try:
+		invoice = frappe.get_doc("Invoice", name)
+		if invoice.stripe_invoice_url:
+			return invoice.stripe_invoice_url
+		else:
+			return invoice.get_stripe_payment_url()
+	except frappe.DoesNotExistError:
+		frappe.throw("Invoice not found")

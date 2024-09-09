@@ -18,6 +18,26 @@
 			</template>
 		</Dialog>
 	</div>
+
+	<!-- Add Prepaid Credits Dialog -->
+	<Dialog
+		v-if="showPrepaidCreditsDialog"
+		v-model="showPrepaidCreditsDialog"
+		:options="{
+			title: 'Add Prepaid Credit'
+		}"
+	>
+		<template #body-content>
+			<BuyPrepaidCreditsForm
+				:minimumAmount="minimumAmount"
+				@success="
+					() => {
+						showPrepaidCreditsDialog = false;
+					}
+				"
+			/>
+		</template>
+	</Dialog>
 </template>
 <script>
 import ObjectList from '../../../components/ObjectList.vue';
@@ -26,18 +46,26 @@ import { dayjsLocal } from '../../../utils/dayjs';
 import { icon } from '../../../utils/components';
 import { Button } from 'frappe-ui';
 import InvoiceTable from '../../../components/in_desk_checkout/InvoiceTable.vue';
+import { createResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'IntegratedBillingInvoices',
 	components: {
 		ObjectList,
-		InvoiceTable
+		InvoiceTable,
+		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
+			import('../../../components/in_desk_checkout/BuyPrepaidCreditsForm.vue')
+		)
 	},
 	inject: ['team', 'site'],
 	data() {
 		return {
 			showInvoiceDialog: false,
-			showInvoice: null
+			showInvoice: null,
+			showPrepaidCreditsDialog: false,
+			minimumAmount: 0
 		};
 	},
 	mounted() {
@@ -168,17 +196,23 @@ export default {
 									}
 								};
 							}
-							// if (row.status !== 'Paid' && row.amount_due > 0) {
-							// 	return {
-							// 		label: 'Pay Now',
-							// 		slots: {
-							// 			prefix: icon('external-link')
-							// 		},
-							// 		onClick: e => {
-							// 			e.stopPropagation();
-							// 		}
-							// 	};
-							// }
+							if (row.status === 'Unpaid' && row.amount_due > 0) {
+								return {
+									label: 'Pay Now',
+									slots: {
+										prefix: icon('external-link')
+									},
+									onClick: e => {
+										if (row.stripe_invoice_id && row.payment_mode == 'Card') {
+											this.openStripeInvoicePaymentPage(row.name);
+										} else {
+											this.showPrepaidCreditsDialog = true;
+											this.minimumAmount = row.amount_due;
+										}
+										e.stopPropagation();
+									}
+								};
+							}
 						},
 						prefix(row) {
 							if (row.stripe_payment_failed && row.status !== 'Paid') {
@@ -225,6 +259,29 @@ export default {
 			if (event.data === 'backdrop_clicked') {
 				this.showInvoiceDialog = false;
 			}
+		},
+		openStripeInvoicePaymentPage(name) {
+			let request = createResource({
+				url: '/api/method/press.saas.api.billing.get_stripe_payment_url_for_invoice',
+				params: {
+					name
+				},
+				onSuccess: url => {
+					if (url) {
+						window.open(url, '_blank');
+					} else {
+						toast.error(
+							'Failed to fetch Stripe Payment URL. Please try again later.'
+						);
+					}
+				},
+				onError: () => {
+					toast.error(
+						'Failed to fetch Stripe Payment URL. Please try again later.'
+					);
+				}
+			});
+			request.submit();
 		}
 	}
 };

@@ -29,7 +29,7 @@
 					>
 				</div>
 			</div>
-			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 mt-4">
+			<div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
 				<!-- Current billing amount -->
 				<div class="rounded-md border p-4">
 					<div class="flex items-center justify-between">
@@ -44,6 +44,7 @@
 				<div class="rounded-md border p-4">
 					<div class="flex justify-between text-sm text-gray-700">
 						<div class="mb-2">Unpaid Amount</div>
+						<Button @click="openInvoicePage" theme="gray">View Invoice</Button>
 					</div>
 					<div class="text-lg font-medium">
 						{{
@@ -344,6 +345,14 @@ export default {
 				this.showAddCardDialog = false;
 				this.showUpcomingInvoiceDialog = false;
 			}
+		},
+		openInvoicePage() {
+			this.$router.push({
+				name: 'IntegratedBillingInvoices',
+				params: {
+					accessToken: this.$route.params.accessToken
+				}
+			});
 		}
 	}
 };
