@@ -1,8 +1,7 @@
 import {
 	createListResource,
 	LoadingIndicator,
-	frappeRequest,
-	Tooltip
+	createResource
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
@@ -894,17 +893,18 @@ export default {
 												h(SelectSiteForRestore, {
 													site: site.name,
 													onRestore(siteName) {
+														const restoreSite = createResource({
+															url: 'press.api.site.restore'
+														});
+
 														return toast.promise(
-															frappeRequest({
-																url: 'press.api.site.restore',
-																params: {
-																	name: siteName,
-																	files: {
-																		database: row.remote_database_file,
-																		public: row.remote_public_file,
-																		private: row.remote_private_file,
-																		config: row.remote_config_file
-																	}
+															restoreSite.submit({
+																name: siteName,
+																files: {
+																	database: row.remote_database_file,
+																	public: row.remote_public_file,
+																	private: row.remote_private_file,
+																	config: row.remote_config_file
 																}
 															}),
 															{
