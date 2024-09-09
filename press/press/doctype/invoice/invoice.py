@@ -207,6 +207,7 @@ class Invoice(Document):
 			url = stripe_invoice.hosted_invoice_url
 		else:
 			url = self.stripe_invoice_url
+		return url
 
 	def validate(self):
 		self.validate_team()
