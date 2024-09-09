@@ -25,7 +25,7 @@
 						variant="solid"
 						theme="gray"
 						@click="showSitePlanChangeDialog = true"
-						>Upgrade Plan</Button
+						>Change Plan</Button
 					>
 				</div>
 			</div>
