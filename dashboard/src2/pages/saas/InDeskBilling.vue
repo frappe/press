@@ -96,7 +96,7 @@ export default {
 		provide('site', site);
 	},
 	mounted() {
-		setInterval(this.isAccessTokenValid, 1000);
+		setInterval(this.isAccessTokenValid, 10000);
 	},
 	computed: {
 		isLoadingInitialData() {
