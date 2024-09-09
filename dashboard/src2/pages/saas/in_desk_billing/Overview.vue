@@ -44,7 +44,12 @@
 				<div class="rounded-md border p-4">
 					<div class="flex justify-between text-sm text-gray-700">
 						<div class="mb-2">Unpaid Amount</div>
-						<Button @click="openInvoicePage" theme="gray">View Invoice</Button>
+						<Button
+							v-if="Math.ceil($resources.unpaidAmountDue.data)"
+							@click="openInvoicePage"
+							theme="gray"
+							>View Invoice</Button
+						>
 					</div>
 					<div class="text-lg font-medium">
 						{{
