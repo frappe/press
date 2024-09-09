@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class MpesaPaymentRegister(Document):
+class MpesaPaymentRecord(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -15,18 +15,17 @@ class MpesaPaymentRegister(Document):
 		from frappe.types import DF
 
 		amended_from: DF.Link | None
+		amountusd: DF.Currency
 		bill_ref_number: DF.Data | None
 		company: DF.Link | None
 		default_currency: DF.Data | None
+		exchange_rate: DF.Float
 		invoice_number: DF.Data | None
 		merchant_request_id: DF.Data | None
 		msisdn: DF.Data | None
-		org_account_balance: DF.Data | None
 		payment_partner: DF.Data | None
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
-		submit_payment: DF.Check
-		third_party_transid: DF.Data | None
 		trans_amount: DF.Float
 		trans_id: DF.Data | None
 		trans_time: DF.Data | None

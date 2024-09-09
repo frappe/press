@@ -773,11 +773,10 @@ def verify_pesa_transaction(**kwargs):
 				total_paid = amount + sum(completed_payments)
 				mpesa_receipts = ", ".join(mpesa_receipts + [mpesa_receipt])
 
-				# if total_paid >= pr.grand_total:
 				pr.run_method("on_payment_authorized", "Completed")
-				# Mark the Integration Request as successful
 				integration_request.handle_success(transaction_response)
-				 # Call function to create a new Mpesa Payment Register entry
+	
+				 # Call function to create a new Mpesa Payment Record entry
 				create_mpesa_payment_register_entry(transaction_response)
 			except Exception:
 				# Handle failure scenario and log an error
@@ -859,7 +858,7 @@ def handle_api_response(global_id, request_dict, response):
    
 def create_mpesa_payment_register_entry(transaction_response):
 	team = get_current_team()
-	"""Create a new entry in the Mpesa Payment Register for a successful transaction."""
+	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
 	# Extract necessary details from the transaction response
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
 	
@@ -871,9 +870,9 @@ def create_mpesa_payment_register_entry(transaction_response):
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
 
-	# Create a new entry in Mpesa Payment Register
+	# Create a new entry in Mpesa Payment Record
 	new_entry = frappe.get_doc({
-		"doctype": "Mpesa Payment Register",
+		"doctype": "Mpesa Payment Record",
 		"transaction_id": transaction_id,
 		"trans_time": trans_time,
 		"transaction_type":"Mpesa Express",
@@ -887,4 +886,36 @@ def create_mpesa_payment_register_entry(transaction_response):
 	# Save the new document to the database
 	new_entry.insert(ignore_permissions=True)
 	frappe.db.commit()  # Commit the changes to the database
-	frappe.msgprint(_("Mpesa Payment Register entry created successfully"))
+	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
+
+
+def create_balance_transaction(team, amount, invoice=None):
+	"""Create a new entry in the Balance Transaction table."""
+ 
+	#Get the ending balance of this team
+	team_balance_transaction=frappe.get_all("Balance Transaction", filters={"team": team}, fields=["ending_balance"], order_by="creation desc", limit=1)
+	ending_balance=team_balance_transaction[0].ending_balance if team_balance_transaction else 0
+	# Create a new entry in the Balance Transaction table
+	new_entry = frappe.get_doc({
+		"doctype": "Balance Transaction",
+		"team": team,
+		"type":"Adjustment",
+		"amount": amount,
+		"source": "Prepaid Credits",
+		"ending_balance":ending_balance+amount,
+		"docstatus": 1,
+		"invoice": invoice if invoice else None,
+	})
+
+	# Save the new document to the database
+	new_entry.insert(ignore_permissions=True)
+	frappe.db.commit()  # Commit the changes to the database
+	frappe.msgprint(_("Balance Transaction entry created successfully"))
+ 
+def after_save(doc, method=None):
+	team = doc.team
+	amount = doc.amount
+	create_balance_transaction(team, amount)
+ 
+
+ 

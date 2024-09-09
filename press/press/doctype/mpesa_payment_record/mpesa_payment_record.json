@@ -15,17 +15,16 @@
   "transaction_type",
   "trans_time",
   "trans_amount",
+  "amountusd",
   "bill_ref_number",
-  "org_account_balance",
-  "third_party_transid",
-  "msisdn",
+  "exchange_rate",
   "column_break_14",
+  "msisdn",
   "payment_partner",
   "invoice_number",
   "posting_date",
   "posting_time",
   "default_currency",
-  "submit_payment",
   "amended_from"
  ],
  "fields": [
@@ -78,17 +77,11 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "submit_payment",
-   "fieldtype": "Check",
-   "label": "Submit Payment "
-  },
-  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Mpesa Payment Register",
+   "options": "Mpesa Payment Record",
    "print_hide": 1,
    "read_only": 1
   },
@@ -112,7 +105,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Trans Amount",
+   "label": "Trans Amount(Ksh)",
    "no_copy": 1,
    "read_only": 1
   },
@@ -127,20 +120,6 @@
    "fieldname": "invoice_number",
    "fieldtype": "Data",
    "label": "Invoice Number",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "org_account_balance",
-   "fieldtype": "Data",
-   "label": "Org Account Balance",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "third_party_transid",
-   "fieldtype": "Data",
-   "label": "Third Party Trans ID",
    "no_copy": 1,
    "read_only": 1
   },
@@ -167,16 +146,27 @@
    "label": "Payment Partner",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "amountusd",
+   "fieldtype": "Currency",
+   "label": "Amount(USD)"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate",
+   "precision": "9"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-05 17:44:50.641932",
+ "modified": "2024-09-09 11:56:11.306741",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Mpesa Payment Register",
+ "name": "Mpesa Payment Record",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [

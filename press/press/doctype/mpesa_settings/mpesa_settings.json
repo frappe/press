@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:{team}-{api_type}",
+ "autoname": "format:{payment_gateway_name}-{api_type}",
  "creation": "2024-07-04 09:03:02.080734",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -119,7 +119,7 @@
   }
  ],
  "links": [],
- "modified": "2024-09-05 17:33:46.139266",
+ "modified": "2024-09-06 08:49:55.451792",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Settings",
