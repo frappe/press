@@ -276,7 +276,7 @@ def create_site_on_private_bench(
 		{
 			"app": app["app"],
 			"source": find(
-				frappe_app_source + app_sources, lambda x: x.app == app["app"]
+				frappe_app_source + app_sources, lambda x: x.name == app["app"]
 			).source,
 			"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
 		}
