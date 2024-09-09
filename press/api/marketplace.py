@@ -266,22 +266,28 @@ def create_site_on_private_bench(
 		.left_join(MarketplaceAppVersion)
 		.on(MarketplaceApp.name == MarketplaceAppVersion.parent)
 		.select(
-			MarketplaceApp.name, MarketplaceAppVersion.version, MarketplaceAppVersion.source
+			MarketplaceApp.name.as_("app"),
+			MarketplaceAppVersion.version,
+			MarketplaceAppVersion.source,
 		)
 		.where(MarketplaceApp.name.isin(app_names))
 		.orderby(MarketplaceAppVersion.version, order=frappe.qb.desc)
 		.run(as_dict=True)
 	)
-	apps_with_sources = [
-		{
-			"app": app["app"],
-			"source": find(
-				frappe_app_source + app_sources, lambda x: x.name == app["app"]
-			).source,
-			"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
-		}
-		for app in apps
-	]
+
+	apps_with_sources = []
+	for app in apps:
+		app_source = find(frappe_app_source + app_sources, lambda x: x.app == app["app"])
+		if not app_source:
+			frappe.throw(f"Source not found for app {app['app']}")
+
+		apps_with_sources.append(
+			{
+				"app": app["app"],
+				"source": app_source.source,
+				"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
+			}
+		)
 
 	site_group_deploy = frappe.get_doc(
 		{
