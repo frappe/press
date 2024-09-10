@@ -275,8 +275,9 @@ export default {
 			];
 		},
 		currentPlan() {
-			if (!this.$site.doc.current_plan) return null;
-			let currency = this.$team.doc.currency;
+			if (!this.$site.doc.current_plan && this.$team.doc) return null;
+
+			const currency = this.$team.doc.currency;
 			return {
 				price:
 					currency === 'INR'
@@ -286,7 +287,7 @@ export default {
 					currency === 'INR'
 						? this.$site.doc.current_plan.price_per_day_inr
 						: this.$site.doc.current_plan.price_per_day_usd,
-				currency: currency == 'INR' ? '₹' : '$',
+				currency: currency === 'INR' ? '₹' : '$',
 				...this.$site.doc.current_plan
 			};
 		},
