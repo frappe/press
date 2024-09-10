@@ -716,28 +716,32 @@ class Bench(Document):
 			site_status="Broken",
 		)
 
-		self.reset_bench(sites)
+		self.recover_update_inplace(sites)
 
-	def reset_bench(self, sites: list[str]):
+	def recover_update_inplace(self, sites: list[str]):
 		"""Used to attempt recovery if `update_inplace` fails"""
 		self.resetting_bench = True
 		self.save()
+
+		# `inplace_update_docker_image` is the last working inplace update image
+		docker_image = self.inplace_update_docker_image or self.docker_image
+
 		Agent(self.server).create_agent_job(
-			"Reset Bench",
-			path=f"benches/{self.name}/reset_bench",
+			"Recover Update Inplace",
+			path=f"benches/{self.name}/recover_update_inplace",
 			bench=self.name,
 			data={
 				"sites": sites,
-				"image": self.docker_image,
+				"image": docker_image,
 			},
 		)
 
 	@staticmethod
-	def process_reset_bench(job: "AgentJob"):
+	def process_recover_update_inplace(job: "AgentJob"):
 		bench: "Bench" = frappe.get_doc("Bench", job.bench)
-		bench._process_reset_bench(job)
+		bench._process_recover_update_inplace(job)
 
-	def _process_reset_bench(self, job: "AgentJob"):
+	def _process_recover_update_inplace(self, job: "AgentJob"):
 		self.resetting_bench = job.status not in ["Running", "Pending"]
 		if job.status != "Success":
 			return

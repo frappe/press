@@ -1051,8 +1051,8 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			process_complete_setup_wizard_job_update(job)
 		elif job.job_type == "Update Bench In Place":
 			Bench.process_update_inplace(job)
-		elif job.job_type == "Reset Bench":
-			Bench.process_reset_bench(job)
+		elif job.job_type == "Recover Update In Place":
+			Bench.process_recover_update_inplace(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

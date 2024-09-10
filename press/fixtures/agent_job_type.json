@@ -2128,5 +2128,41 @@
     "step_name": "Bench Restart"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-10 12:11:38.844112",
+  "name": "Recover Update In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/recover_update_inplace",
+  "steps": [
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Recover Sites"
+   }
+  ]
  }
 ]
