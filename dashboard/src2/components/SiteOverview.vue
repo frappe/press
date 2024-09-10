@@ -275,7 +275,7 @@ export default {
 			];
 		},
 		currentPlan() {
-			if (!this.$site.doc.current_plan && this.$team.doc) return null;
+			if (!this.$site.doc.current_plan && this.$team?.doc) return null;
 
 			const currency = this.$team.doc.currency;
 			return {
