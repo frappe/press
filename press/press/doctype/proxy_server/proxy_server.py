@@ -26,7 +26,6 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import (
 			ProxyServerDomain,
 		)
@@ -57,6 +56,7 @@ class ProxyServer(BaseServer):
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
+		public: DF.Check
 		root_public_key: DF.Code | None
 		self_hosted_server_domain: DF.Data | None
 		ssh_certificate_authority: DF.Link | None
