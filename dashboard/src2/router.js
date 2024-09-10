@@ -298,6 +298,7 @@ router.beforeEach(async (to, from, next) => {
 
 	if (to.name.startsWith('IntegratedBilling')) {
 		next();
+		return;
 	}
 
 	if (isLoggedIn) {
