@@ -29,6 +29,7 @@
   "auto_add_storage_max",
   "networking_section",
   "ip",
+  "ip6",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -85,6 +86,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "virtual_machine.public_ip6_address",
+   "fieldname": "ip6",
+   "fieldtype": "Data",
+   "label": "IPv6",
    "set_only_once": 1
   },
   {
@@ -526,7 +534,7 @@
   }
  ],
  "links": [],
- "modified": "2024-09-24 12:56:06.423649",
+ "modified": "2024-10-15 15:28:10.193273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

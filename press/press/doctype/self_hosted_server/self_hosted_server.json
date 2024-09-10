@@ -22,6 +22,7 @@
   "server_created",
   "server",
   "ip",
+  "ip6",
   "ssh_user",
   "column_break_smwr",
   "existing_bench_present",
@@ -94,6 +95,12 @@
    "in_list_view": 1,
    "label": "IP",
    "reqd": 1
+  },
+  {
+   "fieldname": "ip6",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IPv6"
   },
   {
    "default": "root",
@@ -451,7 +458,7 @@
   }
  ],
  "links": [],
- "modified": "2024-05-29 11:41:41.304954",
+ "modified": "2024-10-15 15:28:10.193273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",
