@@ -1,5 +1,6 @@
 ansible==3.4.0
 beautifulsoup4
+boto3==1.29.7
 Click
 coverage
 dnspython==1.16.0
