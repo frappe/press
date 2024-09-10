@@ -97,4 +97,5 @@ def get_data():
 				data["recommended_throughput"] = throughput.split()[0]
 
 			results.append(data)
+	results.sort(key=lambda x: x["estimated_savings"], reverse=True)
 	return results
