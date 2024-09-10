@@ -750,7 +750,13 @@ class Bench(Document):
 		)
 
 	def _handle_inplace_update_success(self, req_data: dict):
-		self.inplace_update_docker_image = req_data.get("image")
+		docker_image = req_data.get("image")
+		self.inplace_update_docker_image = docker_image
+
+		bench_config = json.loads(self.bench_config)
+		bench_config.update({"docker_image": docker_image})
+		self.bench_config = json.dumps(bench_config, indent=4)
+
 		self.update_apps_after_inplace_update(
 			update_apps=req_data.get("apps", []),
 		)
