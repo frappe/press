@@ -181,11 +181,6 @@ export default {
 											.then(blob => {
 												const url = window.URL.createObjectURL(blob);
 												window.open(url, '_blank');
-												// Optionally, revoke the object URL after some time to free up resources
-												setTimeout(
-													() => window.URL.revokeObjectURL(url),
-													10000
-												);
 											})
 											.catch(error => {
 												console.error(
