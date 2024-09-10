@@ -173,14 +173,7 @@ def send_mime_mail(**data):
 		)
 
 
-@frappe.whitelist(allow_guest=True)
-def event_log():
-	"""
-	log the webhook and forward it to site
-	"""
-	data = json.loads(frappe.request.data)
-	event_data = data.get("event-data")
-
+def is_valid_mailgun_event(event_data):
 	if not event_data:
 		return
 
@@ -196,6 +189,20 @@ def event_log():
 	if "message" not in event_data["delivery-status"]:
 		return
 
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def event_log():
+	"""
+	log the webhook and forward it to site
+	"""
+	data = json.loads(frappe.request.data)
+	event_data = data.get("event-data")
+
+	if not is_valid_mailgun_event(event_data):
+		return
+
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
 		headers = event_data["message"]["headers"]
@@ -209,7 +216,10 @@ def event_log():
 			or message_id.split("@")[1]
 		)
 		status = event_data["event"]
-
+		delivery_message = (
+			event_data["delivery-status"]["message"]
+			or event_data["delivery-status"]["description"]
+		)
 		frappe.get_doc(
 			{
 				"doctype": "Mail Log",
@@ -220,8 +230,7 @@ def event_log():
 				"site": site,
 				"status": event_data["event"],
 				"subscription_key": secret_key,
-				"message": event_data["delivery-status"]["message"]
-				or event_data["delivery-status"]["description"],
+				"message": delivery_message,
 				"log": json.dumps(data),
 			}
 		).insert(ignore_permissions=True)
@@ -230,7 +239,12 @@ def event_log():
 		log_error("Mail App: Event log error", data=data)
 		raise
 
-	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
+	data = {
+		"status": status,
+		"message_id": message_id,
+		"delivery_message": delivery_message,
+		"secret_key": secret_key,
+	}
 
 	try:
 		host_name = frappe.db.get_value("Site", site, "host_name") or site
@@ -240,6 +254,5 @@ def event_log():
 		)
 	except Exception as e:
 		log_error("Mail App: Email status update error", data=e)
-		return "Successful", 200
 
 	return "Successful", 200

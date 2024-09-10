@@ -96,10 +96,12 @@ export default {
 	watch: {
 		privateReleaseGroup: {
 			handler(privateReleaseGroup) {
-				this.$resources.validateGroupforUpgrade.submit({
-					name: this.site,
-					group_name: privateReleaseGroup.value
-				});
+				if (privateReleaseGroup.value) {
+					this.$resources.validateGroupforUpgrade.submit({
+						name: this.site,
+						group_name: privateReleaseGroup.value
+					});
+				}
 			}
 		}
 	},

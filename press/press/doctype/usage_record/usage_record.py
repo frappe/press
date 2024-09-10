@@ -87,6 +87,8 @@ class UsageRecord(Document):
 				"date": self.date,
 				"plan": self.plan,
 				"docstatus": 1,
+				"subscription": self.subscription,
+				"invoice": self.invoice,
 			},
 			pluck="name",
 		)
