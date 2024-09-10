@@ -422,6 +422,8 @@ def schedule_updates_server(server):
 			},
 		):
 			continue
+		if site.site_migration_scheduled():
+			continue
 		try:
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
