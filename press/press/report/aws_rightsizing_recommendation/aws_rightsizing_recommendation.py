@@ -61,7 +61,10 @@ def get_data():
 			}[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
 
 			server = frappe.db.get_value(
-				server_type, {"virtual_machine": virtual_machine}, as_dict=True
+				server_type,
+				{"virtual_machine": virtual_machine},
+				["name", "team", "public"],
+				as_dict=True,
 			)
 			data = {
 				"resource_type": resource_type,
