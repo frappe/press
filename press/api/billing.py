@@ -779,12 +779,10 @@ def verify_pesa_transaction(**kwargs):
 				 # Call function to create a new Mpesa Payment Record entry
 				create_mpesa_payment_register_entry(transaction_response)
 			except Exception:
-				# Handle failure scenario and log an error
 				integration_request.handle_failure(transaction_response)
 				frappe.log_error("Mpesa: Failed to verify transaction")
 
 	else:
-		# If the transaction was not successful, handle the failure
 		integration_request.handle_failure(transaction_response)
  
  
@@ -876,46 +874,63 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"transaction_id": transaction_id,
 		"trans_time": trans_time,
 		"transaction_type":"Mpesa Express",
-		# "business_shortcode": business_shortcode,
 		"team": team,
 		"msisdn": msisdn,
 		"trans_amount": amount,
 		"merchant_request_id": request_id,
 	})
 
-	# Save the new document to the database
 	new_entry.insert(ignore_permissions=True)
-	frappe.db.commit()  # Commit the changes to the database
+	frappe.db.commit()  
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 
 
 def create_balance_transaction(team, amount, invoice=None):
-	"""Create a new entry in the Balance Transaction table."""
+    """Create a new entry in the Balance Transaction table."""
  
-	#Get the ending balance of this team
-	team_balance_transaction=frappe.get_all("Balance Transaction", filters={"team": team}, fields=["ending_balance"], order_by="creation desc", limit=1)
-	ending_balance=team_balance_transaction[0].ending_balance if team_balance_transaction else 0
-	# Create a new entry in the Balance Transaction table
-	new_entry = frappe.get_doc({
-		"doctype": "Balance Transaction",
-		"team": team,
-		"type":"Adjustment",
-		"amount": amount,
-		"source": "Prepaid Credits",
-		"ending_balance":ending_balance+amount,
-		"docstatus": 1,
-		"invoice": invoice if invoice else None,
-	})
+    # Get the ending balance of this team
+    team_balance_transaction = frappe.get_all(
+        "Balance Transaction", 
+        filters={"team": team}, 
+        fields=["ending_balance"], 
+        order_by="creation desc", 
+        limit=1
+    )
+    ending_balance = team_balance_transaction[0].ending_balance if team_balance_transaction else 0
 
-	# Save the new document to the database
-	new_entry.insert(ignore_permissions=True)
-	frappe.db.commit()  # Commit the changes to the database
-	frappe.msgprint(_("Balance Transaction entry created successfully"))
+    # Create a new entry in the Balance Transaction table
+    new_entry = frappe.get_doc({
+        "doctype": "Balance Transaction",
+        "team": team,
+        "type": "Adjustment",
+        "amount": amount,
+        "source": "Prepaid Credits",
+        "ending_balance": ending_balance + amount,
+        "docstatus": 1,
+        "invoice": invoice if invoice else None,
+        "description": "Added Credits through mpesa payments",
+    })
+
+    new_entry.insert(ignore_permissions=True)
+    frappe.db.commit()  
+    frappe.msgprint(_("Balance Transaction entry created successfully"))
+
+    return new_entry.name 
+
  
-def after_save(doc, method=None):
-	team = doc.team
-	amount = doc.amount
-	create_balance_transaction(team, amount)
- 
+def after_save_mpesa_payment_record(doc, method=None):
+    team = doc.team
+    amount = doc.amount
+
+    # Create the Balance Transaction and get the transaction name
+    balance_transaction_name = create_balance_transaction(team, amount)
+    
+    # Update Mpesa Payment Record with the balance transaction reference
+    doc.balance_transaction = balance_transaction_name
+    doc.docstatus=1
+    doc.save()
+    doc.submit()
+    frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction."))
+
 
  

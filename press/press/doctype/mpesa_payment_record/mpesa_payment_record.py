@@ -16,6 +16,7 @@ class MpesaPaymentRecord(Document):
 
 		amended_from: DF.Link | None
 		amountusd: DF.Currency
+		balance_transaction: DF.Link | None
 		bill_ref_number: DF.Data | None
 		company: DF.Link | None
 		default_currency: DF.Data | None

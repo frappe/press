@@ -25,7 +25,8 @@
   "posting_date",
   "posting_time",
   "default_currency",
-  "amended_from"
+  "amended_from",
+  "balance_transaction"
  ],
  "fields": [
   {
@@ -157,13 +158,19 @@
    "fieldtype": "Float",
    "label": "Exchange Rate",
    "precision": "9"
+  },
+  {
+   "fieldname": "balance_transaction",
+   "fieldtype": "Link",
+   "label": "Balance Transaction",
+   "options": "Balance Transaction"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-09 11:56:11.306741",
+ "modified": "2024-09-10 17:37:45.538455",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",
