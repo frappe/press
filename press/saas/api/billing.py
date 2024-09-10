@@ -116,12 +116,10 @@ def download_invoice(name: str):
 	invoice_pdf = frappe.get_value("Invoice", name, "invoice_pdf")
 	if not invoice_pdf:
 		frappe.throw("Invoice PDF not found")
-	frappe.local.response.filename = os.path.basename(invoice_pdf)
-	filedata = None
-	invoice_pdf_path = f"{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{invoice_pdf}"
-	with open(frappe.get_site_path(invoice_pdf_path), "rb") as file:
-		filedata = file.read()
-	frappe.local.response.filecontent = filedata
+	file_name = os.path.basename(invoice_pdf)
+	file = frappe.get_doc("File", {"file_name": file_name})
+	frappe.local.response.filename = file.file_name
+	frappe.local.response.filecontent = file.get_content()
 	frappe.local.response.type = "download"
 
 
