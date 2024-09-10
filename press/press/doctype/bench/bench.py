@@ -80,6 +80,7 @@ class Bench(Document):
 		merge_default_and_short_rq_queues: DF.Check
 		mounts: DF.Table[BenchMount]
 		port_offset: DF.Int
+		resetting_bench: DF.Check
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
@@ -87,7 +88,6 @@ class Bench(Document):
 			"Pending", "Installing", "Updating", "Active", "Broken", "Archived"
 		]
 		team: DF.Link
-		updated_inplace: DF.Check
 		use_rq_workerpool: DF.Check
 		vcpu: DF.Int
 	# end: auto-generated types
@@ -704,17 +704,50 @@ class Bench(Document):
 
 		else:
 			# no-op
-			raise NotImplementedError("Unexpected conditional hit")
+			raise NotImplementedError("Unexpected case reached")
 
 		self.save()
 
 	def _handle_inplace_update_failure(self, req_data: dict):
+		sites = req_data.get("sites", [])
 		self.set_self_and_site_status(
-			req_data.get("sites", []),
+			sites=sites,
 			status="Broken",
 			site_status="Broken",
 		)
-		# TODO: Handle failure recovery
+
+		self.reset_bench(sites)
+
+	def reset_bench(self, sites: list[str]):
+		"""Used to attempt recovery if `update_inplace` fails"""
+		self.resetting_bench = True
+		self.save()
+		Agent(self.server).create_agent_job(
+			"Reset Bench",
+			path=f"benches/{self.name}/reset_bench",
+			bench=self.name,
+			data={
+				"sites": sites,
+				"image": self.docker_image,
+			},
+		)
+
+	@staticmethod
+	def process_reset_bench(job: "AgentJob"):
+		bench: "Bench" = frappe.get_doc("Bench", job.bench)
+		bench._process_reset_bench(job)
+
+	def _process_reset_bench(self, job: "AgentJob"):
+		self.resetting_bench = job.status not in ["Running", "Pending"]
+		if job.status != "Success":
+			return
+
+		req_data = json.loads(job.request_data) or {}
+		self.set_self_and_site_status(
+			req_data.get("sites", []),
+			status="Active",
+			site_status="Active",
+		)
 
 	def _handle_inplace_update_success(self, req_data: dict):
 		self.inplace_update_docker_image = req_data.get("image")
@@ -998,7 +1031,7 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 	benches = frappe.db.sql(
 		f"""
 		SELECT
-			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -1025,6 +1058,10 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 
 def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
+		# Bench is Broken but a reset to a working state is being attempted
+		if bench.resetting_bench:
+			continue
+
 		if (
 			bench.last_archive_failure
 			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
