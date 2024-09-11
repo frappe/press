@@ -50,7 +50,8 @@
   {
    "fieldname": "email",
    "fieldtype": "Data",
-   "label": "Email"
+   "label": "Email",
+   "search_index": 1
   },
   {
    "fieldname": "request_key",
@@ -267,7 +268,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-12 16:39:05.101313",
+ "modified": "2024-09-11 17:33:21.986307",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

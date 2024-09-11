@@ -1643,7 +1643,7 @@ class Site(Document, TagHelpers):
 	def ping(self):
 		return requests.get(f"https://{self.name}/api/method/ping")
 
-	def _set_configuration(self, config):
+	def _set_configuration(self, config: list[dict]):
 		"""Similar to _update_configuration but will replace full configuration at once
 		This is necessary because when you update site config from the UI, you can update the key,
 		update the value, remove the key. All of this can be handled by setting the full configuration at once.
@@ -1679,7 +1679,7 @@ class Site(Document, TagHelpers):
 		Args:
 		config (dict): Python dict for any suitable frappe.conf
 		"""
-		keys = {x.key: i for i, x in enumerate(self.configuration)}
+		existing_keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
 			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(
 				value
@@ -1687,9 +1687,9 @@ class Site(Document, TagHelpers):
 			converted_value = convert(value)
 			if converted_value is None or cstr(converted_value).strip() == "":
 				continue
-			if key in keys:
-				self.configuration[keys[key]].value = converted_value
-				self.configuration[keys[key]].type = _type
+			if key in existing_keys:
+				self.configuration[existing_keys[key]].value = converted_value
+				self.configuration[existing_keys[key]].type = _type
 			else:
 				self.append(
 					"configuration",
@@ -1740,7 +1740,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def delete_config(self, key):
+	def delete_config(self, key, save=True):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
 			return
@@ -1750,7 +1750,9 @@ class Site(Document, TagHelpers):
 			if row.key != key and not row.internal:
 				updated_config.append({"key": row.key, "value": row.value, "type": row.type})
 
-		self.update_site_config(updated_config)
+		self._set_configuration(updated_config)
+		if save:
+			return Agent(self.server).update_site_config(self)
 
 	@frappe.whitelist()
 	def update_site_config(self, config=None):
@@ -1846,8 +1848,6 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	def set_plan(self, plan):
 		from press.api.site import validate_plan
-
-		print("hello > ", plan)
 
 		validate_plan(self.server, plan)
 		self.change_plan(plan)

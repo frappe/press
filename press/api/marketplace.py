@@ -170,6 +170,145 @@ def get_install_app_options(marketplace_app: str) -> Dict:
 	}
 
 
+def site_should_be_created_on_public_bench(apps: list[Dict]) -> bool:
+	"""Check if site should be created on public bench"""
+
+	public_apps = frappe.db.get_all(
+		"Marketplace App", {"frappe_approved": 1}, pluck="name"
+	)
+	return all(app["app"] in public_apps or app["app"] == "frappe" for app in apps)
+
+
+def create_site_on_public_bench(
+	subdomain: str,
+	apps: list[Dict],
+	cluster: str,
+	site_plan: str,
+	bench: str,
+	latest_stable_version: str,
+	group: str = None,
+) -> dict:
+	"""Create site on public bench"""
+
+	app_plans = {
+		app["app"]: app["plan"] for app in apps if hasattr(app, "plan") and app["plan"]
+	}
+
+	if not group:
+		restricted_release_groups = frappe.get_all(
+			"Site Plan Release Group",
+			fields=["release_group"],
+			pluck="release_group",
+			ignore_permissions=True,
+		)
+		group = frappe.db.get_value(
+			"Release Group",
+			{
+				"public": 1,
+				"version": latest_stable_version,
+				"name": ("not in", restricted_release_groups),
+			},
+		)
+
+	site = frappe.get_doc(
+		{
+			"doctype": "Site",
+			"subdomain": subdomain,
+			"subscription_plan": site_plan,
+			"apps": [{"app": app["app"]} for app in apps],
+			"cluster": cluster,
+			"group": group,
+			"domain": frappe.db.get_single_value("Press Settings", "domain"),
+			"team": get_current_team(),
+			"bench": bench,
+			"app_plans": app_plans,
+		}
+	).insert()
+
+	return site
+
+
+def create_site_on_private_bench(
+	subdomain: str,
+	apps: list[Dict],
+	cluster: str,
+) -> dict:
+	"""Create site on private bench using Site Group Deploy dt"""
+
+	app_names = [app["app"] for app in apps]
+	app_names.remove("frappe")
+
+	all_latest_stable_version_supported = frappe.db.get_all(
+		"Marketplace App Version",
+		{"parent": ("in", app_names)},
+		pluck="version",
+		order_by="version desc",
+	)
+
+	if not all_latest_stable_version_supported:
+		frappe.throw("No stable version found for the selected app(s)")
+
+	latest_stable_version_supported = sorted(
+		all_latest_stable_version_supported, reverse=True
+	)[0]
+
+	AppSource = frappe.qb.DocType("App Source")
+	AppSourceVersion = frappe.qb.DocType("App Source Version")
+	frappe_app_source = (
+		frappe.qb.from_(AppSource)
+		.left_join(AppSourceVersion)
+		.on(AppSource.name == AppSourceVersion.parent)
+		.select(AppSource.name.as_("source"), AppSource.app, AppSourceVersion.version)
+		.where(AppSource.app == "frappe")
+		.where(AppSource.public == 1)
+		.where(AppSourceVersion.version == latest_stable_version_supported)
+		.run(as_dict=True)
+	)
+
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	MarketplaceAppVersion = frappe.qb.DocType("Marketplace App Version")
+	app_sources = (
+		frappe.qb.from_(MarketplaceApp)
+		.left_join(MarketplaceAppVersion)
+		.on(MarketplaceApp.name == MarketplaceAppVersion.parent)
+		.select(
+			MarketplaceApp.name.as_("app"),
+			MarketplaceAppVersion.version,
+			MarketplaceAppVersion.source,
+		)
+		.where(MarketplaceApp.name.isin(app_names))
+		.orderby(MarketplaceAppVersion.version, order=frappe.qb.desc)
+		.run(as_dict=True)
+	)
+
+	apps_with_sources = []
+	for app in apps:
+		app_source = find(frappe_app_source + app_sources, lambda x: x.app == app["app"])
+		if not app_source:
+			frappe.throw(f"Source not found for app {app['app']}")
+
+		apps_with_sources.append(
+			{
+				"app": app["app"],
+				"source": app_source.source,
+				"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
+			}
+		)
+
+	site_group_deploy = frappe.get_doc(
+		{
+			"doctype": "Site Group Deploy",
+			"subdomain": subdomain,
+			"apps": apps_with_sources,
+			"cluster": cluster,
+			"version": latest_stable_version_supported,
+			"team": get_current_team(),
+		}
+	).insert()
+
+	return site_group_deploy
+
+
 @frappe.whitelist()
 def create_site_for_app(
 	subdomain: str,
@@ -184,82 +323,14 @@ def create_site_for_app(
 	latest_stable_version = frappe.db.get_value(
 		"Frappe Version", {"status": "Stable"}, "name", order_by="number desc"
 	)
-	public_apps = frappe.db.get_all(
-		"Marketplace App", {"frappe_approved": 1}, pluck="name"
-	)
-	if group or all(app["app"] in public_apps or app["app"] == "frappe" for app in apps):
-		app_plans = {
-			app["app"]: app["plan"] for app in apps if hasattr(app, "plan") and app["plan"]
-		}
 
-		if not group:
-			restricted_release_groups = frappe.get_all(
-				"Site Plan Release Group",
-				fields=["release_group"],
-				pluck="release_group",
-				ignore_permissions=True,
-			)
-			group = frappe.db.get_value(
-				"Release Group",
-				{
-					"public": 1,
-					"version": latest_stable_version,
-					"name": ("not in", restricted_release_groups),
-				},
-			)
-
-		site = frappe.get_doc(
-			{
-				"doctype": "Site",
-				"subdomain": subdomain,
-				"subscription_plan": site_plan,
-				"apps": [{"app": app["app"]} for app in apps],
-				"cluster": cluster,
-				"group": group,
-				"domain": frappe.db.get_single_value("Press Settings", "domain"),
-				"team": get_current_team(),
-				"bench": bench,
-				"app_plans": app_plans,
-			}
-		).insert()
-
-		return site
+	if site_should_be_created_on_public_bench(apps):
+		return create_site_on_public_bench(
+			subdomain, apps, cluster, site_plan, bench, latest_stable_version, group
+		)
 
 	else:
-		app_names = [app["app"] for app in apps]
-
-		AppSource = frappe.qb.DocType("App Source")
-		AppSourceVersion = frappe.qb.DocType("App Source Version")
-		app_sources = (
-			frappe.qb.from_(AppSource)
-			.left_join(AppSourceVersion)
-			.on(AppSource.name == AppSourceVersion.parent)
-			.select(AppSource.name, AppSource.app, AppSourceVersion.version)
-			.where(AppSource.app.isin(app_names))
-			.where(AppSource.public == 1)
-			.where(AppSourceVersion.version == latest_stable_version)
-			.run(as_dict=True)
-		)
-		apps_with_sources = [
-			{
-				"app": app["app"],
-				"source": find(app_sources, lambda x: x.app == app["app"]).name,
-				"plan": app["plan"] if hasattr(app, "plan") and app["plan"] else None,
-			}
-			for app in apps
-		]
-
-		site_group_deploy = frappe.get_doc(
-			{
-				"doctype": "Site Group Deploy",
-				"subdomain": subdomain,
-				"apps": apps_with_sources,
-				"cluster": cluster,
-				"team": get_current_team(),
-			}
-		).insert()
-
-		return site_group_deploy
+		return create_site_on_private_bench(subdomain, apps, cluster)
 
 
 @frappe.whitelist()

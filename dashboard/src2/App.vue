@@ -10,7 +10,8 @@
 						v-if="
 							$session.user &&
 							$route.name != 'AppTrialSignup' &&
-							$route.name != 'AppTrialSetup'
+							$route.name != 'AppTrialSetup' &&
+							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
 				</div>
@@ -21,7 +22,8 @@
 							!isHideSidebar &&
 							$session.user &&
 							$route.name != 'AppTrialSignup' &&
-							$route.name != 'AppTrialSetup'
+							$route.name != 'AppTrialSetup' &&
+							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
 					<div
@@ -58,13 +60,13 @@ const MobileNav = defineAsyncComponent(() =>
 
 const route = useRoute();
 
-const isHideSidebar = computed(
-	() => {
-		if(!session.user) return false;
-		const team = getTeam();
-		return route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
-	}
-);
+const isHideSidebar = computed(() => {
+	if (!session.user) return false;
+	const team = getTeam();
+	return (
+		route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
+	);
+});
 </script>
 
 <style src="../src/assets/style.css"></style>

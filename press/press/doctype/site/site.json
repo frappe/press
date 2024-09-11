@@ -690,9 +690,14 @@
    "group": "Related Documents",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Access Token",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2024-08-29 16:30:59.471022",
+ "modified": "2024-09-10 15:32:56.518075",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

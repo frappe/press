@@ -66,18 +66,30 @@ const teamMembersListOptions = ref({
 			}
 		];
 	},
-	primaryAction() {
-		return {
-			label: 'Add Member',
-			variant: 'solid',
-			iconLeft: 'plus',
-			onClick() {
-				const InviteTeamMemberDialog = defineAsyncComponent(() =>
-					import('./InviteTeamMemberDialog.vue')
-				);
-				renderDialog(h(InviteTeamMemberDialog));
+	actions() {
+		return [
+			{
+				label: 'Settings',
+				iconLeft: 'settings',
+				onClick() {
+					const TeamSettingsDialog = defineAsyncComponent(() =>
+						import('./TeamSettingsDialog.vue')
+					);
+					renderDialog(h(TeamSettingsDialog));
+				}
+			},
+			{
+				label: 'Add Member',
+				variant: 'solid',
+				iconLeft: 'plus',
+				onClick() {
+					const InviteTeamMemberDialog = defineAsyncComponent(() =>
+						import('./InviteTeamMemberDialog.vue')
+					);
+					renderDialog(h(InviteTeamMemberDialog));
+				}
 			}
-		};
+		];
 	}
 });
 </script>

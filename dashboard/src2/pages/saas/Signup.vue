@@ -1,5 +1,8 @@
 <template>
-	<div class="flex h-screen w-screen justify-center items-center" v-if="$resources.signupSettings.loading">
+	<div
+		class="flex h-screen w-screen justify-center items-center"
+		v-if="$resources.signupSettings.loading"
+	>
 		<Spinner class="w-4 mr-2" />
 		<p class="text-gray-800">Loading</p>
 	</div>
@@ -170,7 +173,10 @@ export default {
 					otp: this.otp
 				},
 				onSuccess(key) {
-					window.open(`/api/method/press.api.saas.setup_account_product_trial?key=${key}`, "_self");
+					window.open(
+						`/api/method/press.api.saas.setup_account_product_trial?key=${key}`,
+						'_self'
+					);
 				}
 			};
 		},

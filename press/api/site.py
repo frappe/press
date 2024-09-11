@@ -2240,9 +2240,21 @@ def change_server(name, server, scheduled_datetime=None, skip_failing_patches=Fa
 	)
 
 	if not bench:
-		frappe.throw(
-			f"Please wait for the new deploy to be created in the server {frappe.bold(server)} if you have just added a new server to the bench."
-		)
+		if frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "New Bench",
+				"status": ("in", ("Pending", "Running")),
+				"server": server,
+			},
+		):
+			frappe.throw(
+				f"Please wait for the new deploy to be created in the server {frappe.bold(server)} if you have just added a new server to the bench."
+			)
+		else:
+			frappe.throw(
+				f"A deploy does not exist in the server {frappe.bold(server)}. Please schedule a new deploy on your bench and try again."
+			)
 
 	site_migration = frappe.get_doc(
 		{

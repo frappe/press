@@ -1707,6 +1707,10 @@ class Server(BaseServer):
 				)
 				if commit:
 					frappe.db.commit()
+			except frappe.TimestampMismatchError:
+				if commit:
+					frappe.db.rollback()
+				continue
 			except Exception:
 				log_error(
 					"Bench Auto Scale Worker Error", bench=bench, workload=self.bench_workloads[bench]

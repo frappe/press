@@ -85,7 +85,7 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-	def setup_trial_site(self, team, plan, cluster=None) -> tuple["Site", str, bool]:
+	def setup_trial_site(self, team, plan, cluster=None):
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
@@ -122,17 +122,8 @@ class ProductTrial(Document):
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		site.reload()
-		site.generate_saas_communication_secret()
+		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True
-		site.update_site_config(
-			{
-				"subscription": {
-					"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d"),
-					"app_trial": self.name,
-				},
-				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
-			}
-		)
 		if standby_site:
 			agent_job_name = site.create_user_with_team_info()
 		return site, agent_job_name, bool(standby_site)

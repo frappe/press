@@ -193,7 +193,10 @@ class Invoice(Document):
 	def stripe_payment_url(self):
 		if not self.stripe_invoice_id:
 			return
+		frappe.response.location = self.get_stripe_payment_url()
+		frappe.response.type = "redirect"
 
+	def get_stripe_payment_url(self):
 		stripe_link_expired = (
 			self.status == "Unpaid"
 			and frappe.utils.date_diff(frappe.utils.now(), self.due_date) > 30
@@ -204,9 +207,7 @@ class Invoice(Document):
 			url = stripe_invoice.hosted_invoice_url
 		else:
 			url = self.stripe_invoice_url
-
-		frappe.response.location = url
-		frappe.response.type = "redirect"
+		return url
 
 	def validate(self):
 		self.validate_team()

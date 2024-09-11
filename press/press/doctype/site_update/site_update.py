@@ -422,8 +422,11 @@ def schedule_updates_server(server):
 			},
 		):
 			continue
+
 		try:
 			site = frappe.get_doc("Site", site.name)
+			if site.site_migration_scheduled():
+				continue
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()

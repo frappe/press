@@ -6,8 +6,6 @@
 import frappe
 from frappe.model.document import Document
 
-from press.utils import log_error
-
 
 class UsageRecord(Document):
 	# begin: auto-generated types
@@ -43,11 +41,11 @@ class UsageRecord(Document):
 		if not self.time:
 			self.time = frappe.utils.nowtime()
 
+	def before_submit(self):
+		self.validate_duplicate_usage_record()
+
 	def on_submit(self):
-		try:
-			self.update_usage_in_invoice()
-		except Exception:
-			log_error(title="Usage Record Invoice Update Error", name=self.name)
+		self.update_usage_in_invoice()
 
 	def on_cancel(self):
 		self.remove_usage_from_invoice()
@@ -76,6 +74,30 @@ class UsageRecord(Document):
 		invoice = team.get_upcoming_invoice()
 		if invoice:
 			invoice.remove_usage_record(self)
+
+	def validate_duplicate_usage_record(self):
+		usage_record = frappe.get_all(
+			"Usage Record",
+			{
+				"name": ("!=", self.name),
+				"team": self.team,
+				"document_type": self.document_type,
+				"document_name": self.document_name,
+				"interval": self.interval,
+				"date": self.date,
+				"plan": self.plan,
+				"docstatus": 1,
+				"subscription": self.subscription,
+				"invoice": self.invoice,
+			},
+			pluck="name",
+		)
+
+		if usage_record:
+			frappe.throw(
+				f"Usage Record {usage_record[0]} already exists for this document",
+				frappe.DuplicateEntryError,
+			)
 
 
 def link_unlinked_usage_records():
