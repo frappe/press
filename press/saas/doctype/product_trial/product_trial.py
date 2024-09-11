@@ -122,7 +122,7 @@ class ProductTrial(Document):
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		site.reload()
-		site.generate_saas_communication_secret()
+		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True
 		if standby_site:
 			agent_job_name = site.create_user_with_team_info()
