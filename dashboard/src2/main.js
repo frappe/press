@@ -12,7 +12,6 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
-import { toast } from 'vue-sonner';
 import './vendor/posthog.js';
 
 let request = options => {

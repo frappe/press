@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<p v-if="$team.doc.currency === 'INR'" class="mt-3 text-p-sm">
+		<p v-if="team?.data?.currency === 'INR'" class="mt-3 text-p-sm">
 			If you select Razorpay, you can pay using Credit Card, Debit Card, Net
 			Banking, UPI, Wallets, etc. If you are using Net Banking, it may take upto
 			5 days for balance to reflect.
@@ -27,10 +27,11 @@
 </template>
 <script>
 import { toast } from 'vue-sonner';
-import { DashboardError } from '../utils/error';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'BuyPrepaidCreditsRazorpay',
+	inject: ['team'],
 	props: {
 		amount: {
 			default: 0
@@ -60,7 +61,7 @@ export default {
 	resources: {
 		createRazorpayOrder() {
 			return {
-				url: 'press.api.billing.create_razorpay_order',
+				url: 'press.saas.api.billing.create_razorpay_order',
 				params: {
 					amount: this.amount
 				},
@@ -78,7 +79,7 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				url: 'press.api.billing.handle_razorpay_payment_failed',
+				url: 'press.saas.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
 				}
@@ -96,7 +97,7 @@ export default {
 				name: 'Frappe Cloud',
 				image: '/assets/press/images/frappe-cloud-logo.png',
 				prefill: {
-					email: this.$team.doc.user
+					email: this.team?.data?.user
 				},
 				handler: this.handlePaymentSuccess,
 				theme: { color: '#171717' }
@@ -109,7 +110,6 @@ export default {
 
 			// Attach failure handler
 			rzp.on('payment.failed', this.handlePaymentFailed);
-			// rzp.on('payment.success', this.handlePaymentSuccess);
 		},
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
@@ -126,8 +126,8 @@ export default {
 		},
 		async checkForOnboardingPaymentCompletion() {
 			this.isVerifyingPayment = true;
-			await this.$team.reload();
-			if (!this.$team.doc.payment_mode) {
+			await this.team.reload();
+			if (!this.team?.data?.payment_mode) {
 				setTimeout(this.checkForOnboardingPaymentCompletion, 2000);
 			} else {
 				this.isVerifyingPayment = false;

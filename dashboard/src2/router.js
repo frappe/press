@@ -59,6 +59,31 @@ let router = createRouter({
 			}
 		},
 		{
+			path: '/in-desk-billing/:accessToken',
+			name: 'IntegratedBilling',
+			component: () => import('./pages/saas/InDeskBilling.vue'),
+			children: [
+				{
+					path: '',
+					redirect: { name: 'IntegratedBillingOverview' }
+				},
+				{
+					path: 'overview',
+					name: 'IntegratedBillingOverview',
+					component: () => import('./pages/saas/in_desk_billing/Overview.vue')
+				},
+				{
+					path: 'invoices',
+					name: 'IntegratedBillingInvoices',
+					component: () => import('./pages/saas/in_desk_billing/Invoices.vue')
+				}
+			],
+			props: false,
+			meta: {
+				isLoginPage: true
+			}
+		},
+		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
@@ -212,14 +237,14 @@ let router = createRouter({
 				{
 					name: 'AppTrialSignup',
 					path: 'signup/:productId',
-					component: () => import('./pages/app_trial/Signup.vue'),
+					component: () => import('./pages/saas/Signup.vue'),
 					props: true,
 					meta: { isLoginPage: true }
 				},
 				{
 					name: 'AppTrialSetup',
 					path: 'setup/:productId',
-					component: () => import('./pages/app_trial/Setup.vue'),
+					component: () => import('./pages/saas/Setup.vue'),
 					props: true
 				}
 			]
@@ -270,6 +295,11 @@ router.beforeEach(async (to, from, next) => {
 		document.cookie.includes('user_id') &&
 		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
+
+	if (to.name.startsWith('IntegratedBilling')) {
+		next();
+		return;
+	}
 
 	if (isLoggedIn) {
 		await waitUntilTeamLoaded();
