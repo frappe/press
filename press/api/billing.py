@@ -7,6 +7,7 @@ from typing import Dict, List
 import frappe
 from frappe.core.utils import find
 from frappe.utils import fmt_money
+import json 
 
 from press.press.doctype.team.team import (
 	has_unsettled_invoices,
@@ -834,10 +835,9 @@ def request_for_payment(**kwargs):
 			else:
 				response = frappe._dict(generate_stk_push(**args))
 
-			handle_api_response("CheckoutRequestID", args, response)
-   
-   
-def handle_api_response(global_id, request_dict, response):
+			handle_api_mpesa_response("CheckoutRequestID", args, response)
+
+def handle_api_mpesa_response(global_id, request_dict, response):
 		"""Response received from API calls returns a global identifier for each transaction, this code is returned during the callback."""
 		# check error response
 		if getattr(response, "requestId"):
@@ -849,13 +849,13 @@ def handle_api_response(global_id, request_dict, response):
 			error = None
 
 		if not frappe.db.exists("Integration Request", req_name):
-			create_request_log(request_dict, "Host", "Mpesa", req_name, error)
+			create_request_log(request_dict, "Host", "Mpesa Express", req_name, error)
 
 		if error:
 			frappe.throw(_(getattr(response, "errorMessage")), title=_("Transaction Error"))
    
 def create_mpesa_payment_register_entry(transaction_response):
-	team = get_current_team()
+	#team = get_current_team()
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
 	# Extract necessary details from the transaction response
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
@@ -867,7 +867,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 	transaction_id=transaction_response.get("CheckoutRequestID")
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
-
+	team, partner = get_team_and_partner_from_integration_request(transaction_id)
+	
 	# Create a new entry in Mpesa Payment Record
 	new_entry = frappe.get_doc({
 		"doctype": "Mpesa Payment Record",
@@ -878,6 +879,7 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"msisdn": msisdn,
 		"trans_amount": amount,
 		"merchant_request_id": request_id,
+		"payment_partner": partner,
 	})
 
 	new_entry.insert(ignore_permissions=True)
@@ -933,4 +935,24 @@ def after_save_mpesa_payment_record(doc, method=None):
     frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction."))
 
 
- 
+def get_team_and_partner_from_integration_request(transaction_id):
+    """Get the team and partner associated with the integration request."""
+    integration_request = frappe.get_doc("Integration Request", transaction_id)
+    
+    request_data = integration_request.get("request_data")
+    
+    # Parse the request_data as a dictionary
+    if request_data:
+        try:
+            request_data_dict = json.loads(request_data)  
+            team = request_data_dict.get("team")
+            partner = request_data_dict.get("partner")
+        except json.JSONDecodeError:
+            frappe.throw(_("Invalid JSON format in request_data"))
+            team = None
+            partner = None
+    else:
+        team = None
+        partner = None
+    
+    return team, partner
