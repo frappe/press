@@ -44,7 +44,7 @@
 			<!-- Steps for user to follow -->
 			<div class="rounded border border-gray-200 bg-gray-50 p-4">
 				<h3 class="text-lg font-semibold">Steps to Enable 2FA</h3>
-				<ol class="mt-2 list-disc pl-2 text-sm text-gray-700">
+				<ol class="ml-1 mt-2 list-disc pl-2 text-sm text-gray-700">
 					<li>
 						Download an authenticator app on your phone, such as
 						<a
