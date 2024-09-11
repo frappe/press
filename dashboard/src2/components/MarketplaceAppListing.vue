@@ -61,6 +61,33 @@
 							v-model="marketplaceApp.title"
 						/>
 					</div>
+					<div class="sm:col-span-4 pb-8">
+						<span class="text-base font-medium">App Source</span>
+						<p class="text-xs pt-2">
+							Note: Only open-source or source-available applications are
+							allowed on the Frappe Marketplace. You can keep your repository
+							private, but if a user requests the source code, you must provide
+							it.
+						</p>
+						<div>
+							<FormControl
+								class="pt-4"
+								label="GitHub Repository URL"
+								type="text"
+								:disabled="true"
+								v-model="marketplaceApp.github_repository_url"
+							/>
+							<p
+								v-if="marketplaceApp.is_public_repo"
+								class="text-xs text-green-700 pt-3"
+							>
+								The GitHub repository is public.
+							</p>
+							<p v-else class="text-xs text-red-700 pt-3">
+								The GitHub repository is private.
+							</p>
+						</div>
+					</div>
 					<div class="sm:col-span-4">
 						<span class="text-base font-medium">Links</span>
 						<div>
@@ -68,6 +95,7 @@
 								class="mt-4"
 								label="Documentation"
 								type="text"
+								@blur="validateLink('documentation')"
 								@input="editing = true"
 								v-model="marketplaceApp.documentation"
 							/>
@@ -75,6 +103,7 @@
 								class="mt-4"
 								label="Website"
 								type="text"
+								@blur="validateLink('website')"
 								@input="editing = true"
 								v-model="marketplaceApp.website"
 							/>
@@ -82,6 +111,7 @@
 								class="mt-4"
 								label="Support"
 								type="text"
+								@blur="validateLink('support')"
 								@input="editing = true"
 								v-model="marketplaceApp.support"
 							/>
@@ -89,6 +119,7 @@
 								class="mt-4"
 								label="Terms of Service"
 								type="text"
+								@blur="validateLink('terms_of_service')"
 								@input="editing = true"
 								v-model="marketplaceApp.terms_of_service"
 							/>
@@ -96,6 +127,7 @@
 								class="mt-4"
 								label="Privacy Policy"
 								type="text"
+								@blur="validateLink('privacy_policy')"
 								@input="editing = true"
 								v-model="marketplaceApp.privacy_policy"
 							/>
@@ -199,7 +231,9 @@ export default {
 				terms_of_service: '',
 				privacy_policy: '',
 				description: '',
-				long_description: ''
+				long_description: '',
+				github_repository_url: '',
+				is_public_repo: false
 			}
 		};
 	},
@@ -230,6 +264,9 @@ export default {
 				auto: true,
 				onSuccess(response) {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
+					this.setShowIsPublicGithubRepository(
+						this.marketplaceApp.github_repository_url
+					);
 				},
 				onError(e) {
 					toast.error(
@@ -295,6 +332,26 @@ export default {
 					}
 				}
 			];
+		},
+		validateLink(link) {
+			const value = this.marketplaceApp[link];
+
+			// Regular expression to validate URL format
+			const urlPattern =
+				/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:\/?#[\]@!$&'()*+,;=]*)?$/;
+
+			// Check if the link is empty
+			if (!value.trim()) {
+				this.$toast.error(`${link.replace('_', ' ')} link is empty`);
+				return false;
+			}
+
+			// Check if the link contains a valid URL
+			if (!urlPattern.test(value.trim())) {
+				this.$toast.error(`${link.replace('_', ' ')} contains an invalid URL`);
+				return false;
+			}
+			return true;
 		}
 	},
 	computed: {

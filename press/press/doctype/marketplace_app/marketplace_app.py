@@ -25,6 +25,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import get_current_team, get_last_doc
+import re
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -346,14 +347,21 @@ class MarketplaceApp(WebsiteGenerator):
 				continue
 
 			frappe_source_name = frappe.get_doc(
-				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+				"Release Group App",
+				{"app": "frappe", "parent": unique_public_rgs[source.version]},
 			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
+				"App Source",
+				frappe_source_name,
+				["repository_url", "branch"],
+				as_dict=True,
 			)
 
 			app_source = frappe.db.get_value(
-				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+				"App Source",
+				source.source,
+				["repository_url", "branch", "public"],
+				as_dict=True,
 			)
 
 			supported_versions.append(
@@ -547,6 +555,9 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def listing_details(self):
+		github_repository_url = frappe.get_value(
+			"App Source", {"app": self.app}, "repository_url"
+		)
 		return {
 			"support": self.support,
 			"website": self.website,
@@ -556,6 +567,8 @@ class MarketplaceApp(WebsiteGenerator):
 			"description": self.description,
 			"long_description": self.long_description,
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
+			"github_repository_url": github_repository_url,
+			"is_public_repo": is_public_github_repository(github_repository_url),
 		}
 
 	@dashboard_whitelist()
@@ -587,7 +600,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"installs_active_benches": self.total_active_benches(),
 			"installs_last_week": frappe.db.count(
 				"Site Activity",
-				{"action": "Install App", "reason": self.app, "creation": (">=", last_week)},
+				{
+					"action": "Install App",
+					"reason": self.app,
+					"creation": (">=", last_week),
+				},
 			),
 			"total_payout": self.get_payout_amount(),
 			"paid_payout": self.get_payout_amount(status="Paid"),
@@ -681,3 +698,31 @@ def get_total_installs_by_app():
 		group_by="app",
 	)
 	return {installs["app"]: installs["count"] for installs in total_installs}
+
+
+def is_public_github_repository(github_url):
+	# Match the GitHub URL pattern to extract owner and repository
+	match = re.search(r"github\.com/([^/]+)/([^/]+)", github_url)
+
+	if not match:
+		return False
+
+	owner, repo = match.groups()
+
+	api_url = f"https://api.github.com/repos/{owner}/{repo}"
+
+	try:
+		response = requests.get(api_url)
+
+		if response.status_code != 200:
+			return False
+
+		data = response.json()
+
+		# Check if the repository is public
+		if data.get("private") is False:
+			return True
+		else:
+			return False
+	except Exception:
+		return False
