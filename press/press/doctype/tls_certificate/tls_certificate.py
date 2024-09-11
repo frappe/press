@@ -69,7 +69,12 @@ class TLSCertificate(Document):
 		)
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"_obtain_certificate",
+			enqueue_after_commit=True,
+			job_id=f"obtain_certificate:{self.name}",
+			deduplicate=True,
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -97,7 +102,13 @@ class TLSCertificate(Document):
 			if hasattr(e, "output") and e.output:
 				if "Another instance of Certbot is already running" in e.output.decode():
 					time.sleep(5)
-					frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
+					frappe.enqueue_doc(
+						self.doctype,
+						self.name,
+						"_obtain_certificate",
+						job_id=f"obtain_certificate:{self.name}",
+						deduplicate=True,
+					)
 					return
 				self.error = e.output.decode()
 			else:
