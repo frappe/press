@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
 import json
 import urllib.parse
 import frappe
@@ -13,7 +14,7 @@ from frappe.utils.password import decrypt as decrypt_password
 from frappe.utils.password_strength import test_password_strength
 import urllib
 
-from frappe.utils.telemetry import capture
+from frappe.utils.telemetry import capture, init_telemetry
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
@@ -34,7 +35,14 @@ class ProductTrialRequest(Document):
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
-		status: DF.Literal["Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"]
+		status: DF.Literal[
+			"Pending",
+			"Wait for Site",
+			"Completing Setup Wizard",
+			"Site Created",
+			"Error",
+			"Expired",
+		]
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -65,16 +73,18 @@ class ProductTrialRequest(Document):
 		return frappe.db.get_value("Team", self.team, "user")
 
 	def capture_posthog_event(self, event_name):
-		capture(
-			event_name,
-			"fc_saas",
-			self.get_email(),
-			properties={
-				"product_trial_request_id": self.name,
-				"product_trial": self.product_trial,
-				"email": self.get_email(),
-			},
-		)
+		init_telemetry()
+		ph = getattr(frappe.local, "posthog", None)
+		with suppress(Exception):
+			ph and ph.capture(
+				distinct_id=self.get_email(),
+				event=f"fc_saas_{event_name}",
+				properties={
+					"product_trial_request_id": self.name,
+					"product_trial": self.product_trial,
+					"email": self.get_email(),
+				},
+			)
 
 	def after_insert(self):
 		self.capture_posthog_event("product_trial_request_created")
