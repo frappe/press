@@ -268,6 +268,14 @@ export default {
 		) {
 			this.$resources.getSiteRequest.promise.then(this.subscribeNow);
 		}
+		if (window.posthog?.__loaded) {
+			window.posthog.identify($team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'saas_setup',
+				saas_app: this.productId
+			});
+			window.posthog.startSessionRecording();
+		}
 	},
 	data() {
 		return {
