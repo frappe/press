@@ -12,6 +12,7 @@ from frappe.utils.password import decrypt as decrypt_password
 from frappe.utils.password_strength import test_password_strength
 import urllib
 
+from frappe.utils.telemetry import capture
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
@@ -63,6 +64,35 @@ class ProductTrialRequest(Document):
 			"Enable Scheduler": "Just a moment",
 		},
 	}
+
+	def get_email(self):
+		return frappe.db.get_value("Team", self.team, "user")
+
+	def capture_posthog_event(self, event_name):
+		capture(
+			event_name,
+			"fc_saas",
+			self.get_email(),
+			properties={
+				"product_trial_request_id": self.name,
+				"product_trial": self.product_trial,
+				"email": self.get_email(),
+			},
+		)
+
+	def after_insert(self):
+		self.capture_posthog_event("product_trial_request_created")
+
+	def on_update(self):
+		if self.has_value_changed("status"):
+			if self.status == "Error":
+				self.capture_posthog_event("product_trial_request_failed")
+			elif self.status == "Wait for Site":
+				self.capture_posthog_event("product_trial_request_initiated_site_creation")
+			elif self.status == "Completing Setup Wizard":
+				self.capture_posthog_event("product_trial_request_started_setup_wizard_completion")
+			elif self.status == "Site Created":
+				self.capture_posthog_event("product_trial_request_site_created")
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
