@@ -97,7 +97,11 @@ class AccountRequest(Document):
 			# Telemetry: Account Request Created
 			capture("account_request_created", "fc_signup", self.email)
 
-		if self.is_saas_signup():
+		if self.is_saas_signup() and self.is_using_new_saas_flow():
+			# Telemetry: Account Request Created
+			capture("account_request_created", "fc_saas", self.email)
+
+		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
 			capture("verification_email_sent", "fc_signup", self.email)
 			capture("clicked_verify_link", "fc_signup", self.email)
@@ -215,6 +219,9 @@ class AccountRequest(Document):
 		return (
 			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
 		)
+
+	def is_using_new_saas_flow(self):
+		return bool(self.product_trial)
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)

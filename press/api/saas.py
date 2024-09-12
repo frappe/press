@@ -469,6 +469,8 @@ def setup_account_product_trial(key):
 		)
 	frappe.db.commit()
 	frappe.set_user(current_user)
+	# Telemetry: Created account
+	capture("completed_signup", "fc_saas", ar.email)
 	# login
 	frappe.local.login_manager.login_as(ar.email)
 	frappe.local.response["type"] = "redirect"
