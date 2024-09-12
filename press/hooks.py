@@ -290,6 +290,7 @@ scheduler_events = {
 		"0 8 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
+			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
 		],
 		"0 6 * * *": [
 			"press.press.audit.suspend_sites_with_disabled_team",
