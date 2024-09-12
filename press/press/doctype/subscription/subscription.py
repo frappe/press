@@ -154,10 +154,13 @@ class Subscription(Document):
 			team.create_upcoming_invoice()
 
 		plan = frappe.get_cached_doc(self.plan_type, self.plan)
-		amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		if self.additional_storage:
-			amount = amount * int(self.additional_storage)
+			price = plan.price_inr if team.currency == "INR" else plan.price_usd
+			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
+			amount = price_per_day * int(self.additional_storage)
+		else:
+			amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
