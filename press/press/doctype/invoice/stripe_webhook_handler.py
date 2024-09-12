@@ -50,6 +50,10 @@ class StripeWebhookHandler:
 
 		event = frappe.parse_json(self.webhook_log.payload)
 		stripe_invoice = event["data"]["object"]
+
+		if not frappe.db.exists("Invoice", {"stripe_invoice_id": stripe_invoice["id"]}):
+			return
+
 		self.invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": stripe_invoice["id"]})
 
 		event_type = self.webhook_log.event_type
