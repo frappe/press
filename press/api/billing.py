@@ -694,13 +694,19 @@ def split_request_amount_according_to_transaction_limit(amount, transaction_limi
 def generate_stk_push(**kwargs):
 	"""Generate stk push by making a API call to the stk push API."""
 	args = frappe._dict(kwargs)
+ 
+	# Fetch the team document
+	partner = frappe.get_doc("Team", args.partner)
+	
+	# Get Mpesa settings for the partner's team
+	mpesa_settings = get_mpesa_settings_for_team(partner.name)
+	
 	try:
 		callback_url = (
 			get_request_site_address(True)
 			+ "/api/method/press.press.doctype.mpesa_settings.mpesa_settings.verify_transaction"
 		)
 
-		mpesa_settings = frappe.get_doc("Mpesa Settings", args.payment_gateway[6:])
 		env = "production" if not mpesa_settings.sandbox else "sandbox"
 		# for sandbox, business shortcode is same as till number
 		business_shortcode = (
@@ -734,6 +740,13 @@ def generate_stk_push(**kwargs):
 			title=_("Mpesa Express Error"),
 		)
   
+def get_mpesa_settings_for_team(team_name):
+    """Fetch Mpesa settings for a given team."""
+    mpesa_settings = frappe.get_all("Mpesa Settings", filters={"team": team_name}, pluck="name")
+    if not mpesa_settings:
+        frappe.throw(_("Mpesa Settings not configured for this team"), title=_("Mpesa Express Error"))
+    return frappe.get_doc("Mpesa Settings", mpesa_settings[0])
+  
 
 '''Verify transaction after push notification'''
 @frappe.whitelist(allow_guest=True)
@@ -750,38 +763,14 @@ def verify_pesa_transaction(**kwargs):
 
 	# Retrieve the corresponding Integration Request document
 	integration_request = frappe.get_doc("Integration Request", checkout_id)
-	transaction_data = frappe._dict(loads(integration_request.data))
-	total_paid = 0  
-	success = False
 
-	if transaction_response["ResultCode"] == 0:  # Transaction was successful
-		if integration_request.reference_doctype and integration_request.reference_docname:
-			try:
-				item_response = transaction_response["CallbackMetadata"]["Item"]
-				amount = fetch_param_value(item_response, "Amount", "Name")
-				mpesa_receipt = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
-				
-				# Fetch the document associated with the payment
-				pr = frappe.get_doc(
-					integration_request.reference_doctype, integration_request.reference_docname
-				)
-
-				# Get completed payments and receipts for the integration request
-				mpesa_receipts, completed_payments = get_completed_integration_requests_info(
-					integration_request.reference_doctype, integration_request.reference_docname, checkout_id
-				)
-
-				total_paid = amount + sum(completed_payments)
-				mpesa_receipts = ", ".join(mpesa_receipts + [mpesa_receipt])
-
-				pr.run_method("on_payment_authorized", "Completed")
-				integration_request.handle_success(transaction_response)
-	
-				 # Call function to create a new Mpesa Payment Record entry
-				create_mpesa_payment_register_entry(transaction_response)
-			except Exception:
-				integration_request.handle_failure(transaction_response)
-				frappe.log_error("Mpesa: Failed to verify transaction")
+	if transaction_response["ResultCode"] == 0:
+		try:
+			integration_request.handle_success(transaction_response)
+			create_mpesa_payment_register_entry(transaction_response)
+		except Exception:
+			integration_request.handle_failure(transaction_response)
+			frappe.log_error("Mpesa: Failed to verify transaction")
 
 	else:
 		integration_request.handle_failure(transaction_response)
@@ -855,7 +844,6 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 			frappe.throw(_(getattr(response, "errorMessage")), title=_("Transaction Error"))
    
 def create_mpesa_payment_register_entry(transaction_response):
-	#team = get_current_team()
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
 	# Extract necessary details from the transaction response
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
@@ -888,71 +876,71 @@ def create_mpesa_payment_register_entry(transaction_response):
 
 
 def create_balance_transaction(team, amount, invoice=None):
-    """Create a new entry in the Balance Transaction table."""
+	"""Create a new entry in the Balance Transaction table."""
  
-    # Get the ending balance of this team
-    team_balance_transaction = frappe.get_all(
-        "Balance Transaction", 
-        filters={"team": team}, 
-        fields=["ending_balance"], 
-        order_by="creation desc", 
-        limit=1
-    )
-    ending_balance = team_balance_transaction[0].ending_balance if team_balance_transaction else 0
+	# Get the ending balance of this team
+	team_balance_transaction = frappe.get_all(
+		"Balance Transaction", 
+		filters={"team": team}, 
+		fields=["ending_balance"], 
+		order_by="creation desc", 
+		limit=1
+	)
+	ending_balance = team_balance_transaction[0].ending_balance if team_balance_transaction else 0
 
-    # Create a new entry in the Balance Transaction table
-    new_entry = frappe.get_doc({
-        "doctype": "Balance Transaction",
-        "team": team,
-        "type": "Adjustment",
-        "amount": amount,
-        "source": "Prepaid Credits",
-        "ending_balance": ending_balance + amount,
-        "docstatus": 1,
-        "invoice": invoice if invoice else None,
-        "description": "Added Credits through mpesa payments",
-    })
+	# Create a new entry in the Balance Transaction table
+	new_entry = frappe.get_doc({
+		"doctype": "Balance Transaction",
+		"team": team,
+		"type": "Adjustment",
+		"amount": amount,
+		"source": "Prepaid Credits",
+		"ending_balance": ending_balance + amount,
+		"docstatus": 1,
+		"invoice": invoice if invoice else None,
+		"description": "Added Credits through mpesa payments",
+	})
 
-    new_entry.insert(ignore_permissions=True)
-    frappe.db.commit()  
-    frappe.msgprint(_("Balance Transaction entry created successfully"))
+	new_entry.insert(ignore_permissions=True)
+	frappe.db.commit()  
+	frappe.msgprint(_("Balance Transaction entry created successfully"))
 
-    return new_entry.name 
+	return new_entry.name 
 
  
 def after_save_mpesa_payment_record(doc, method=None):
-    team = doc.team
-    amount = doc.amount
+	team = doc.team
+	amount = doc.amount
 
-    # Create the Balance Transaction and get the transaction name
-    balance_transaction_name = create_balance_transaction(team, amount)
-    
-    # Update Mpesa Payment Record with the balance transaction reference
-    doc.balance_transaction = balance_transaction_name
-    doc.docstatus=1
-    doc.save()
-    doc.submit()
-    frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction."))
+	# Create the Balance Transaction and get the transaction name
+	balance_transaction_name = create_balance_transaction(team, amount)
+	
+	# Update Mpesa Payment Record with the balance transaction reference
+	doc.balance_transaction = balance_transaction_name
+	doc.docstatus=1
+	doc.save()
+	doc.submit()
+	frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction."))
 
 
 def get_team_and_partner_from_integration_request(transaction_id):
-    """Get the team and partner associated with the integration request."""
-    integration_request = frappe.get_doc("Integration Request", transaction_id)
-    
-    request_data = integration_request.get("request_data")
-    
-    # Parse the request_data as a dictionary
-    if request_data:
-        try:
-            request_data_dict = json.loads(request_data)  
-            team = request_data_dict.get("team")
-            partner = request_data_dict.get("partner")
-        except json.JSONDecodeError:
-            frappe.throw(_("Invalid JSON format in request_data"))
-            team = None
-            partner = None
-    else:
-        team = None
-        partner = None
-    
-    return team, partner
+	"""Get the team and partner associated with the integration request."""
+	integration_request = frappe.get_doc("Integration Request", transaction_id)
+	
+	request_data = integration_request.get("request_data")
+	
+	# Parse the request_data as a dictionary
+	if request_data:
+		try:
+			request_data_dict = json.loads(request_data)  
+			team = request_data_dict.get("team")
+			partner = request_data_dict.get("partner")
+		except json.JSONDecodeError:
+			frappe.throw(_("Invalid JSON format in request_data"))
+			team = None
+			partner = None
+	else:
+		team = None
+		partner = None
+	
+	return team, partner
