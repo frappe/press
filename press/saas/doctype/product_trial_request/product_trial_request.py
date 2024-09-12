@@ -5,6 +5,7 @@ import json
 import urllib.parse
 import frappe
 from frappe.model.document import Document
+from frappe.utils.data import now_datetime
 from frappe.utils.momentjs import get_all_timezones
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
@@ -31,14 +32,9 @@ class ProductTrialRequest(Document):
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
-		status: DF.Literal[
-			"Pending",
-			"Wait for Site",
-			"Completing Setup Wizard",
-			"Site Created",
-			"Error",
-			"Expired",
-		]
+		site_creation_completed_on: DF.Datetime | None
+		site_creation_started_on: DF.Datetime | None
+		status: DF.Literal["Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"]
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -190,6 +186,7 @@ class ProductTrialRequest(Document):
 		self.validate_signup_fields()
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		self.status = "Wait for Site"
+		self.site_creation_started_on = now_datetime()
 		self.save(ignore_permissions=True)
 		self.reload()
 		site, agent_job_name, _ = product.setup_trial_site(
