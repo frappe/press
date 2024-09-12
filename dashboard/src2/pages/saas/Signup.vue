@@ -146,7 +146,8 @@ export default {
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'saas_signup'
+				action: 'saas_signup',
+				saas_app: this.productId
 			});
 			if (!window.posthog.sessionRecordingStarted()) {
 				window.posthog.startSessionRecording();
