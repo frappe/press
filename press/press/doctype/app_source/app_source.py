@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import frappe
 import requests
@@ -12,8 +12,6 @@ from frappe.model.naming import make_autoname
 from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -173,7 +171,7 @@ class AppSource(Document):
 			self.set_poll_succeeded()
 		else:
 			self.set_poll_failed(response)
-			return ("", dict, False)
+			return ("", {}, False)
 
 		# Will cause recursion of db.save is used
 		self.db_update()
@@ -192,7 +190,7 @@ class AppSource(Document):
 
 		if commit_hash:
 			# page and per_page set to reduce unnecessary diff info
-			url = f"{url}/commits/{commit_hash}&page=1&per_page=1"
+			url = f"{url}/commits/{commit_hash}?page=1&per_page=1"
 		else:
 			url = f"{url}/branches/{self.branch}"
 
