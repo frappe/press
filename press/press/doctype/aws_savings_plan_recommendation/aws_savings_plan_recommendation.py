@@ -5,7 +5,9 @@ import boto3
 import frappe
 import frappe.utils
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import cint, flt
+
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
 AWS_HOURS_IN_A_MONTH = 730
@@ -71,6 +73,29 @@ class AWSSavingsPlanRecommendation(Document):
 
 	def validate(self):
 		self.validate_duplicate()
+
+	def after_insert(self):
+		self.send_telegram_message()
+
+	def send_telegram_message(self):
+		currency = frappe.get_value("Currency", self.currency, "symbol")
+		message = f"""*Savings Plan Recommendation*
+
+Monthly Savings Amount: *{currency} {cint(self.monthly_savings_amount)}*
+Savings Percentage: *{cint(self.savings_percentage)} %*
+
+Upfront Cost: {currency} {cint(self.upfront_cost)}
+
+Generated At: `{self.generated_at}`
+Lookback Period: `{self.lookback_period}`
+Payment Option: `{self.payment_option}`
+Term: `{self.term}`
+Savings Plan Type: `{self.savings_plan_type}`
+
+Monthly On Demand Spend: {currency} {cint(self.monthly_on_demand_spend)}
+Monthly Commitment: {currency} {cint(self.monthly_commitment)}
+ROI Percentage: {cint(self.roi_percentage)} %"""
+		TelegramMessage.enqueue(message=message, topic="Reminders")
 
 	@property
 	def client(self):
