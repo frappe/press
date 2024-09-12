@@ -143,16 +143,18 @@ export default {
 		};
 	},
 	mounted() {
-		if (window.posthog?.__loaded) {
-			window.posthog.identify(window.posthog.get_distinct_id(), {
-				app: 'frappe_cloud',
-				action: 'saas_signup',
-				saas_app: this.productId
-			});
-			if (!window.posthog.sessionRecordingStarted()) {
-				window.posthog.startSessionRecording();
+		setTimeout(() => {
+			if (window.posthog?.__loaded) {
+				window.posthog.identify(window.posthog.get_distinct_id(), {
+					app: 'frappe_cloud',
+					action: 'saas_signup',
+					saas_app: this.productId
+				});
+				if (!window.posthog.sessionRecordingStarted()) {
+					window.posthog.startSessionRecording();
+				}
 			}
-		}
+		}, 3000);
 	},
 	resources: {
 		signup() {

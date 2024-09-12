@@ -254,19 +254,21 @@ export default {
 		};
 	},
 	mounted() {
-		if (window.posthog?.__loaded) {
-			try {
-				window.posthog.identify(this.team?.data?.user, {
-					app: 'fc_in_desk_billing',
-					page: 'onboarding'
-				});
-				if(!window.posthog.sessionRecordingStarted()) {
-					window.posthog.startSessionRecording();
+		setTimeout(() => {
+			if (window.posthog?.__loaded) {
+				try {
+					window.posthog.identify(this.team?.data?.user, {
+						app: 'fc_in_desk_billing',
+						page: 'onboarding'
+					});
+					if (!window.posthog.sessionRecordingStarted()) {
+						window.posthog.startSessionRecording();
+					}
+				} catch (e) {
+					console.error(e);
 				}
-			} catch (e) {
-				console.error(e);
 			}
-		}
+		}, 3000);
 	},
 	computed: {
 		teamCurrency() {
