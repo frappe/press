@@ -27,7 +27,13 @@
 						"
 					/>
 					<div
-						v-if="!$session.user && !$route.meta.isLoginPage"
+						v-if="
+							!$session.user &&
+							!$route.meta.isLoginPage &&
+							!$route.name?.startsWith('IntegratedBilling') &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup'
+						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
