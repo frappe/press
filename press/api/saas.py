@@ -429,6 +429,7 @@ def signup(full_name, email, country, product, terms_accepted, referrer=None):
 			"last_name": last_name,
 			"country": country,
 			"role": "Press Admin",
+			"saas": 1,
 			"referrer_id": referrer,
 			"product_trial": product,
 			"send_email": True,
