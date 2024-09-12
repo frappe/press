@@ -57,6 +57,7 @@ def signup(email, product=None, referrer=None):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
+				"saas": bool(product),
 				"product_trial": product,
 				"send_email": True,
 			}

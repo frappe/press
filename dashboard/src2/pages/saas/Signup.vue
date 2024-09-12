@@ -1,9 +1,9 @@
 <template>
 	<div
-		class="flex h-screen w-screen justify-center items-center"
+		class="flex h-screen w-screen items-center justify-center"
 		v-if="$resources.signupSettings.loading"
 	>
-		<Spinner class="w-4 mr-2" />
+		<Spinner class="mr-2 w-4" />
 		<p class="text-gray-800">Loading</p>
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
@@ -57,10 +57,10 @@
 						/>
 						<FormControl
 							v-if="account_request_created"
-							label="OTP (Sent to your email)"
+							label="Verification Code (Sent to your email)"
 							type="text"
 							class="mt-4"
-							placeholder="5 digit OTP"
+							placeholder="5 digit verification code"
 							maxlength="5"
 							v-model="otp"
 							required
@@ -111,7 +111,7 @@
 							:loading="$resources.resendOTP?.loading"
 							@click.prevent="$resources.resendOTP.submit()"
 						>
-							Didn't receive otp? Resend
+							Didn't receive any mail ? Resend
 						</Button>
 					</form>
 				</template>
@@ -141,6 +141,20 @@ export default {
 			account_request_created: false,
 			terms_accepted: false
 		};
+	},
+	mounted() {
+		setTimeout(() => {
+			if (window.posthog?.__loaded) {
+				window.posthog.identify(window.posthog.get_distinct_id(), {
+					app: 'frappe_cloud',
+					action: 'saas_signup',
+					saas_app: this.productId
+				});
+				if (!window.posthog.sessionRecordingStarted()) {
+					window.posthog.startSessionRecording();
+				}
+			}
+		}, 3000);
 	},
 	resources: {
 		signup() {

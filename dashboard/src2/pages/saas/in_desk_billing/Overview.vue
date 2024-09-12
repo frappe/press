@@ -234,6 +234,21 @@ export default {
 	},
 	mounted() {
 		window.addEventListener('message', this.onMessageHandler);
+		setTimeout(() => {
+			if (window.posthog?.__loaded) {
+				try {
+					window.posthog.identify(this.team?.data?.user, {
+						app: 'fc_in_desk_billing',
+						page: 'billing_overview'
+					});
+					if (!window.posthog.sessionRecordingStarted()) {
+						window.posthog.startSessionRecording();
+					}
+				} catch (e) {
+					console.error(e);
+				}
+			}
+		}, 3000);
 	},
 	beforeUnmount() {
 		window.removeEventListener('message', this.onMessageHandler);

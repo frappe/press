@@ -2807,6 +2807,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		)
 		if mode != "auto":
 			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
 			product_trial_request.save(ignore_permissions=True)
 		else:
 			product_trial_request.complete_setup_wizard()
@@ -2826,6 +2827,7 @@ def process_complete_setup_wizard_job_update(job):
 	)
 	if job.status == "Success":
 		product_trial_request.status = "Site Created"
+		product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
