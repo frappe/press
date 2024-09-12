@@ -295,6 +295,7 @@ scheduler_events = {
 		"0 6 * * *": [
 			"press.press.audit.suspend_sites_with_disabled_team",
 			"press.press.doctype.tls_certificate.tls_certificate.retrigger_failed_wildcard_tls_callbacks",
+			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.refresh",
 		],
 	},
 }

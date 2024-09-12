@@ -69,6 +69,9 @@ class AWSSavingsPlanRecommendation(Document):
 
 		self.roi_percentage = self.monthly_savings_amount / self.monthly_commitment * 100
 
+	def validate(self):
+		self.validate_duplicate()
+
 	@property
 	def client(self):
 		settings = frappe.get_single("Press Settings")
@@ -80,6 +83,9 @@ class AWSSavingsPlanRecommendation(Document):
 		)
 		return client
 
+	def generate_recommendation(self):
+		self.client.start_savings_plans_purchase_recommendation_generation()
+
 	def get_recommendation(self):
 		response = self.client.get_savings_plans_purchase_recommendation(
 			SavingsPlansType="COMPUTE_SP",
@@ -89,10 +95,28 @@ class AWSSavingsPlanRecommendation(Document):
 		)
 		return response
 
+	def validate_duplicate(self):
+		if frappe.db.exists(
+			self.doctype,
+			{
+				"generated_at": self.generated_at,
+			},
+		):
+			frappe.throw(
+				"AWS Savings Plan Recommendation witht this timestamp already exists",
+				frappe.DuplicateEntryError,
+			)
+
+
+def refresh():
+	frappe.new_doc("AWS Savings Plan Recommendation").generate_recommendation()
+
 
 def create():
 	try:
 		frappe.new_doc("AWS Savings Plan Recommendation").insert()
+	except frappe.DuplicateEntryError:
+		pass
 	except Exception:
 		# Ignore all exceptions till this works
 		pass
