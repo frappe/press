@@ -70,6 +70,19 @@ export default {
 	},
 	mounted() {
 		window.addEventListener('message', this.onMessageHandler);
+		if (window.posthog?.__loaded) {
+			try {
+				window.posthog.identify(this.team?.data?.user, {
+					app: 'fc_in_desk_billing',
+					page: 'invoice_list'
+				});
+				if (!window.posthog.sessionRecordingStarted()) {
+					window.posthog.startSessionRecording();
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
 	},
 	beforeUnmount() {
 		window.removeEventListener('message', this.onMessageHandler);

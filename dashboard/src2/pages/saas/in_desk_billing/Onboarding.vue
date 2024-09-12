@@ -253,6 +253,21 @@ export default {
 			isChangePlanFailed: false
 		};
 	},
+	mounted() {
+		if (window.posthog?.__loaded) {
+			try {
+				window.posthog.identify(this.team?.data?.user, {
+					app: 'fc_in_desk_billing',
+					page: 'onboarding'
+				});
+				if(!window.posthog.sessionRecordingStarted()) {
+					window.posthog.startSessionRecording();
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
+	},
 	computed: {
 		teamCurrency() {
 			return this.team?.data?.currency || 'INR';
