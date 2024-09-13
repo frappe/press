@@ -435,20 +435,29 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def app_details_for_new_public_site():
+	fields = [
+		"name",
+		"title",
+		"image",
+		"description",
+		"app",
+		"route",
+		"subscription_type",
+		{"sources": ["source", "version"]},
+	]
+	if frappe.db.get_value(
+		"Team", get_current_team(), "auto_install_localisation_app_enabled"
+	):
+		fields += [
+			{"localisation_apps": ["marketplace_app", "country"]},
+		]
+
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",
-		fields=[
-			"name",
-			"title",
-			"image",
-			"description",
-			"app",
-			"route",
-			"subscription_type",
-			{"sources": ["source", "version"]},
-		],
+		fields=fields,
 		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
+
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]

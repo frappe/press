@@ -23,6 +23,30 @@
 				"
 			/>
 		</div>
+		<div v-if="localisationAppNames && apps.length" class="space-y-4">
+			<FormControl
+				label="Install Localisation App?"
+				v-model="showLocalisationApps"
+				type="checkbox"
+			/>
+			<FormControl
+				class="w-1/2"
+				variant="outline"
+				v-if="showLocalisationApps"
+				label="Select Country"
+				v-model="selectedLocalisationCountry"
+				type="select"
+				:options="localisationAppCountries"
+			/>
+		</div>
+		<!-- <div v-if="showLocalisationApps && localisationApps">
+			<h2 class="text-sm font-medium leading-6 text-gray-900">
+				Select Localisation App
+			</h2>
+			<div class="mt-2 w-full space-y-2">
+				<ObjectList :options="localisationApps" />
+			</div>
+		</div> -->
 		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Private Apps
@@ -52,6 +76,7 @@ export default {
 	data() {
 		return {
 			selectedApp: null,
+			showLocalisationApps: false,
 			showAppPlanSelectorDialog: false
 		};
 	},
@@ -66,8 +91,11 @@ export default {
 		},
 		publicApps() {
 			if (!this.availableApps) return;
-			let publicApps = this.availableApps.filter(
-				app => (app.public || app.plans?.length) && app.image
+			const publicApps = this.availableApps.filter(
+				app =>
+					(app.public || app.plans?.length) &&
+					app.image &&
+					!this.localisationAppNames.includes(app.app)
 			);
 
 			if (!publicApps.length) return;
@@ -92,7 +120,7 @@ export default {
 										class: 'h-6 w-6 rounded-sm',
 										src: row.image
 									}),
-									h('span', { class: 'ml-2' }, row.app_title),
+									h('span', { class: 'ml-2' }, row.title || row.app_title),
 									row.subscription_type !== 'Free'
 										? h(Badge, {
 												class: 'ml-2',
@@ -131,7 +159,90 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps.map(a => a.app).includes(app.app);
+							const isAppAdded = this.apps.map(a => a.app).includes(app.app);
+
+							return {
+								label: isAppAdded ? 'check' : 'plus',
+								slots: {
+									icon: isAppAdded ? icon('check') : icon('plus')
+								},
+								variant: isAppAdded ? 'outline' : 'subtle',
+								onClick: event => {
+									this.toggleApp(app);
+									event.stopPropagation();
+								}
+							};
+						}
+					}
+				]
+			};
+		},
+		localisationAppCountries() {
+			if (!this.availableApps) return [];
+			const localisationAppDetails = this.availableApps.flatMap(
+				app => app.localisation_apps
+			);
+			return localisationAppDetails.map(app => ({
+				label: app?.country,
+				value: app?.country
+			}));
+		},
+		localisationAppNames() {
+			if (!this.availableApps) return [];
+			const localisationAppDetails = this.availableApps.flatMap(
+				app => app.localisation_apps
+			);
+			return localisationAppDetails.map(app => app?.marketplace_app);
+		},
+		localisationApps() {
+			if (!this.availableApps) return;
+
+			const localisationApps = this.availableApps.filter(app =>
+				this.localisationAppNames.includes(app.app)
+			);
+			console.log(this.apps, this.localisationAppNames);
+
+			if (localisationApps.length === 0) return;
+
+			return {
+				data: () => localisationApps,
+				columns: [
+					{
+						label: 'App',
+						fieldname: 'app_title',
+						type: 'Component',
+						component: ({ row }) => {
+							return h(
+								'a',
+								{
+									class: 'flex items-center text-sm',
+									href: `/${row.route}`,
+									target: '_blank'
+								},
+								[
+									h('img', {
+										class: 'h-6 w-6 rounded-sm',
+										src: row.image
+									}),
+									h('span', { class: 'ml-2' }, row.app_title),
+									row.subscription_type !== 'Free'
+										? h(Badge, {
+												class: 'ml-2',
+												theme: 'gray',
+												label: 'Paid'
+										  })
+										: ''
+								]
+							);
+						}
+					},
+					{
+						label: '',
+						width: 0.2,
+						align: 'right',
+						type: 'Button',
+						Button: ({ row: app }) => {
+							const isAppAdded = this.apps.map(a => a.app).includes(app.app);
 
 							return {
 								label: isAppAdded ? 'check' : 'plus',
@@ -170,7 +281,7 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps
+							const isAppAdded = this.apps
 								.map(a => a.app)
 								.includes(app.app || app.app_title);
 							return {
@@ -192,16 +303,29 @@ export default {
 	},
 	methods: {
 		toggleApp(app) {
+			let apps = this.apps;
+
+			// if (this.localisationAppNames.length && app.localisation_apps?.length) {
+			// 	this.showLocalisationApps = !this.showLocalisationApps;
+			// }
+			if (
+				this.localisationAppNames.length &&
+				this.localisationAppNames.includes(app.app)
+			) {
+				// unselect all localisation apps
+				apps = apps.filter(a => !this.localisationAppNames.includes(a.app));
+			}
 			if (this.apps.map(a => a.app).includes(app.app)) {
-				this.apps = this.apps.filter(a => a.app !== app.app);
+				apps = apps.filter(a => a.app !== app.app);
 			} else {
 				if (app.subscription_type && app.subscription_type !== 'Free') {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
-					this.apps = [...this.apps, app];
+					apps = [...apps, app];
 				}
 			}
+			this.apps = apps;
 		}
 	}
 };
