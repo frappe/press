@@ -405,17 +405,16 @@ export default {
 				return 'Skip and Deploy';
 			}
 
-			const site = this.$format.plural(
-				this.selectedSites.length,
-				'site',
-				'sites'
-			);
-
-			if (this.useUpdateInPlace) {
-				return `Update ${this.selectedSites.length} ${site} in place`;
+			let site = 'site';
+			if (this.selectedSites.length > 1) {
+				site = `${this.selectedSites.length} sites`;
 			}
 
-			return `Deploy and update ${this.selectedSites.length} ${site}`;
+			if (this.useUpdateInPlace) {
+				return `Update ${site} in place`;
+			}
+
+			return `Deploy and update ${site}`;
 		},
 		canUpdateInPlace() {
 			if (!this.benchDocResource?.doc.enable_inplace_updates) {
