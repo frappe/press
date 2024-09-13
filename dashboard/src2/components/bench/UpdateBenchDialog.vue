@@ -485,7 +485,7 @@ export default {
 				params: {
 					name: this.bench,
 					apps: this.selectedApps,
-					sites: this.selectedSites
+					sites: this.selectedSites.map(s => s.name)
 				},
 				onSuccess(id) {
 					this.$router.push({

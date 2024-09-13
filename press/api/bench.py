@@ -15,6 +15,7 @@ from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
@@ -30,7 +31,6 @@ from press.utils import (
 	get_current_team,
 	unique,
 )
-from press.press.doctype.bench_update.bench_update import get_bench_update
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
