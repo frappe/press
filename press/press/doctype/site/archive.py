@@ -47,3 +47,36 @@ def archive_suspended_trial_sites():
 				archived_now = archived_now + 1
 		except Exception:
 			log_error("Suspended Site Archive Error")
+
+
+def delete_offsite_backups_for_archived_sites():
+	archived_sites = frappe.db.sql(
+		"""
+		SELECT
+			backup.site,
+			COUNT(*) as offsite_backups
+		FROM
+			`tabSite Backup` backup
+		LEFT JOIN
+			`tabSite` site
+		ON
+			backup.site = site.name
+		WHERE
+			site.status = "Archived" AND
+			backup.files_availability = "Available" AND
+			backup.offsite = True
+		GROUP BY
+			backup.site
+		HAVING
+			offsite_backups > 1
+		ORDER BY
+			offsite_backups DESC
+	""",
+		as_dict=True,
+	)
+	for site in archived_sites:
+		try:
+			frappe.get_doc("Site", site.site).delete_offsite_backups()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
