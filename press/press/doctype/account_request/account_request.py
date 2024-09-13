@@ -152,7 +152,7 @@ class AccountRequest(Document):
 		if self.is_saas_signup() or custom_template:
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
-			# If product trial, get the product trial details
+			# If product trial(new saas flow), get the product trial details
 			if self.product_trial:
 				template = "product_trial_verify_account"
 				product_trial = frappe.get_doc("Product Trial", self.product_trial)
@@ -163,6 +163,11 @@ class AccountRequest(Document):
 				if product_trial.email_full_logo:
 					args.update({"image_path": get_url(product_trial.email_full_logo, True)})
 				args.update({"header_content": product_trial.email_header_content or ""})
+			# If saas_app is set, check for email account in saas settings of that app
+			elif self.saas_app:
+				email_account = frappe.get_value("Saas Settings", self.saas_app, "email_account")
+				if email_account:
+					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
 
