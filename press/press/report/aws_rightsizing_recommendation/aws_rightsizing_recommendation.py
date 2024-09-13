@@ -58,40 +58,40 @@ def get_data(resource_type, action_type):
 				"Ec2Instance": "Virtual Machine",
 				"EbsVolume": "Virtual Machine Volume",
 			}[row["currentResourceType"]]
-			virtual_machine = row["resourceId"]
-			# if resource_type == "Virtual Machine":
-			# 	virtual_machine = frappe.get_all(
-			# 		resource_type, {"instance_id": row["resourceId"]}, pluck="name"
-			# 	)
-			# elif resource_type == "Virtual Machine Volume":
-			# 	virtual_machine = frappe.get_all(
-			# 		resource_type, {"volume_id": row["resourceId"]}, pluck="parent"
-			# 	)
 
-			# if not virtual_machine:
-			# 	# This resource is not managed by Press. Ignore
-			# 	continue
-			# virtual_machine = virtual_machine[0]
+			if resource_type == "Virtual Machine":
+				virtual_machine = frappe.get_all(
+					resource_type, {"instance_id": row["resourceId"]}, pluck="name"
+				)
+			elif resource_type == "Virtual Machine Volume":
+				virtual_machine = frappe.get_all(
+					resource_type, {"volume_id": row["resourceId"]}, pluck="parent"
+				)
 
-			# server_type = {
-			# 	"f": "Server",
-			# 	"m": "Database Server",
-			# 	"n": "Proxy Server",
-			# }[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
+			if not virtual_machine:
+				# This resource is not managed by Press. Ignore
+				continue
+			virtual_machine = virtual_machine[0]
 
-			# server = frappe.db.get_value(
-			# 	server_type,
-			# 	{"virtual_machine": virtual_machine},
-			# 	["name", "team", "public"],
-			# 	as_dict=True,
-			# )
+			server_type = {
+				"f": "Server",
+				"m": "Database Server",
+				"n": "Proxy Server",
+			}[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
+
+			server = frappe.db.get_value(
+				server_type,
+				{"virtual_machine": virtual_machine},
+				["name", "team", "public"],
+				as_dict=True,
+			)
 			data = {
 				"resource_type": resource_type,
 				"virtual_machine": virtual_machine,
-				# "server_type": server_type,
-				# "server": server.name,
-				# "team": server.team,
-				# "public": server.public,
+				"server_type": server_type,
+				"server": server.name,
+				"team": server.team,
+				"public": server.public,
 				"region": row["region"],
 				"estimated_cost": row["estimatedMonthlyCost"],
 				"estimated_savings": row["estimatedMonthlySavings"],
