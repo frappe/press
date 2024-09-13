@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-11 22:58:01.233719",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "marketplace_app",
+  "country"
+ ],
+ "fields": [
+  {
+   "fieldname": "marketplace_app",
+   "fieldtype": "Link",
+   "label": "Marketplace App",
+   "options": "Marketplace App"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-13 10:16:22.693868",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace Localisation App",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
