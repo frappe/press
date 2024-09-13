@@ -61,7 +61,6 @@
   "dashboard_tab",
   "onboarding_related_section",
   "show_for_site_creation",
-  "localisation_apps",
   "section_break_tlpw",
   "average_rating"
  ],
@@ -382,12 +381,6 @@
    "hidden": 1,
    "label": "Average Rating",
    "precision": "2"
-  },
-  {
-   "fieldname": "localisation_apps",
-   "fieldtype": "Table",
-   "label": "Localisation Apps",
-   "options": "Marketplace Localisation App"
   }
  ],
  "has_web_view": 1,
@@ -411,7 +404,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2024-09-12 10:43:13.742115",
+ "modified": "2024-08-13 18:46:40.786507",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

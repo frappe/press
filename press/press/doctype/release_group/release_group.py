@@ -89,7 +89,6 @@ class ReleaseGroup(Document, TagHelpers):
 		common_site_config: DF.Code | None
 		common_site_config_table: DF.Table[CommonSiteConfig]
 		compress_app_cache: DF.Check
-		country: DF.Link | None
 		default: DF.Check
 		dependencies: DF.Table[ReleaseGroupDependency]
 		enabled: DF.Check

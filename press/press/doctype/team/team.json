@@ -62,7 +62,6 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
-  "auto_install_localisation_app_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -426,13 +425,6 @@
    "fieldname": "enforce_2fa",
    "fieldtype": "Check",
    "label": "Enforce 2FA"
-  },
-  {
-   "default": "0",
-   "description": "Allows team members to install localisation app along with ERPNext on New Site creation",
-   "fieldname": "auto_install_localisation_app_enabled",
-   "fieldtype": "Check",
-   "label": "Auto Install Localisation App Enabled"
   }
  ],
  "links": [
@@ -492,7 +484,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-11 15:24:58.670399",
+ "modified": "2024-09-05 15:06:48.179274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

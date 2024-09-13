@@ -15,7 +15,6 @@
   "default",
   "public",
   "central_bench",
-  "country",
   "section_break_7",
   "servers",
   "section_break_keov",
@@ -368,16 +367,10 @@
    "fieldtype": "Link",
    "label": "Build Server",
    "options": "Server"
-  },
-  {
-   "fieldname": "country",
-   "fieldtype": "Link",
-   "label": "Country",
-   "options": "Country"
   }
  ],
  "links": [],
- "modified": "2024-09-13 10:15:21.888574",
+ "modified": "2024-06-10 16:04:25.806757",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
