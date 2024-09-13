@@ -53,6 +53,7 @@
   "referrer_id",
   "ssh_access_enabled",
   "skip_backups",
+  "inplace_updates_enabled",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -425,6 +426,13 @@
    "fieldname": "enforce_2fa",
    "fieldtype": "Check",
    "label": "Enforce 2FA"
+  },
+  {
+   "default": "0",
+   "description": "Allows bypassing build to update a Bench (if conditions are met)",
+   "fieldname": "inplace_updates_enabled",
+   "fieldtype": "Check",
+   "label": "In Place Updates Enabled"
   }
  ],
  "links": [
@@ -484,7 +492,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-05 15:06:48.179274",
+ "modified": "2024-09-13 10:10:07.650125",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

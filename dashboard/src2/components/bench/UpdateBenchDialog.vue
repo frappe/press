@@ -80,6 +80,14 @@
 					</div>
 				</div>
 
+				<div v-if="canUpdateInPlace">
+					<FormControl
+						label="Use regular update"
+						type="checkbox"
+						v-model="useRegularUpdate"
+					/>
+				</div>
+
 				<ErrorMessage :message="errorMessage" />
 			</div>
 		</template>
@@ -89,11 +97,14 @@
 				<Button v-if="canShowBack" label="Back" @click="back" />
 				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
 				<Button
-					v-if="canShowSkipAndDeploy"
+					v-if="canShowDeploy"
 					variant="solid"
 					:label="deployLabel"
-					:loading="$resources.deploy.loading"
-					@click="skipAndDeploy"
+					:loading="
+						$resources.deployAndUpdate.loading ||
+						$resources.updateInPlace.loading
+					"
+					@click="updateBench"
 				/>
 			</div>
 		</template>
@@ -125,6 +136,7 @@ export default {
 			step: '',
 			errorMessage: '',
 			ignoreWillFailCheck: false,
+			useRegularUpdate: false,
 			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: []
@@ -309,6 +321,12 @@ export default {
 			let siteData = deployInformation.sites;
 			let team = getTeam();
 
+			/**
+			 * If In Place update is being used failed patches are skipped
+			 * and site backups are not taken by default.
+			 */
+			const disabled = this.useUpdateInPlace;
+
 			return {
 				data: siteData,
 				selectable: true,
@@ -324,7 +342,8 @@ export default {
 						type: 'Component',
 						component({ row }) {
 							return h(Checkbox, {
-								modelValue: row.skip_failing_patches
+								modelValue: row.skip_failing_patches,
+								disabled
 							});
 						}
 					},
@@ -338,7 +357,8 @@ export default {
 						},
 						component({ row }) {
 							return h(Checkbox, {
-								modelValue: row.skip_backups
+								modelValue: row.skip_backups,
+								disabled
 							});
 						}
 					}
@@ -377,24 +397,54 @@ export default {
 
 			return true;
 		},
-		canShowSkipAndDeploy() {
+		canShowDeploy() {
 			return !this.canShowNext;
 		},
 		deployLabel() {
-			if (this.selectedSites?.length > 0) {
-				const site = this.$format.plural(
-					this.selectedSites.length,
-					'site',
-					'sites'
-				);
-				return `Deploy and update ${this.selectedSites.length} ${site}`;
+			if (this.selectedSites.length === 0) {
+				return 'Skip and Deploy';
 			}
 
-			return 'Skip and deploy';
+			const site = this.$format.plural(
+				this.selectedSites.length,
+				'site',
+				'sites'
+			);
+
+			if (this.useUpdateInPlace) {
+				return `Update ${this.selectedSites.length} ${site} in place`;
+			}
+
+			return `Deploy and update ${this.selectedSites.length} ${site}`;
+		},
+		canUpdateInPlace() {
+			if (!this.benchDocResource?.doc.inplace_updates_enabled) {
+				return false;
+			}
+
+			// All sites to be updated must belong to the same bench.
+			const benches = new Set(this.selectedSites.map(s => s.bench));
+			if (benches.size !== 1) {
+				return false;
+			}
+
+			const allSites = this.siteOptions.data
+				.filter(s => benches.has(s.bench))
+				.map(s => s.name);
+
+			// All sites under a bench should be updated
+			if (allSites.length !== this.selectedSites.length) {
+				return false;
+			}
+
+			return true;
+		},
+		useUpdateInPlace() {
+			return !this.useRegularUpdate && this.canUpdateInPlace;
 		}
 	},
 	resources: {
-		deploy() {
+		deployAndUpdate() {
 			return {
 				url: 'press.api.bench.deploy_and_update',
 				params: {
@@ -421,6 +471,27 @@ export default {
 					this.restrictMessage = '';
 					this.show = false;
 					this.$emit('success', candidate);
+				},
+				onError: this.setErrorMessage.bind(this)
+			};
+		},
+		updateInPlace() {
+			return {
+				url: 'press.api.bench.update_inplace',
+				params: {
+					name: this.bench,
+					apps: this.selectedApps,
+					sites: this.selectedSites
+				},
+				onSuccess(id) {
+					this.$router.push({
+						name: 'Bench Job',
+						params: { id }
+					});
+
+					this.restrictMessage = '';
+					this.show = false;
+					this.$emit('success', null);
 				},
 				onError: this.setErrorMessage.bind(this)
 			};
@@ -498,7 +569,7 @@ export default {
 				a => a.app === app.app
 			).next_release;
 		},
-		skipAndDeploy() {
+		updateBench() {
 			if (this.restrictMessage && !this.ignoreWillFailCheck) {
 				this.errorMessage =
 					'Please check the <b>I understand</b> box to proceed';
@@ -506,7 +577,11 @@ export default {
 			}
 
 			this.errorMessage = '';
-			this.$resources.deploy.submit();
+			if (this.useUpdateInPlace) {
+				this.$resources.updateInPlace.submit();
+			} else {
+				this.$resources.deployAndUpdate.submit();
+			}
 		},
 		setErrorMessage(error) {
 			this.ignoreWillFailCheck = false;

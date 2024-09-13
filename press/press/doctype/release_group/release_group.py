@@ -51,8 +51,8 @@ LastDeployInfo = TypedDict(
 
 
 if TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.app.app import App
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -163,6 +163,7 @@ class ReleaseGroup(Document, TagHelpers):
 		doc.status = self.status
 		doc.actions = self.get_actions()
 		doc.are_builds_suspended = are_builds_suspended()
+
 		if len(self.servers) == 1:
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
@@ -170,6 +171,12 @@ class ReleaseGroup(Document, TagHelpers):
 			doc.server = self.servers[0].server
 			doc.server_title = server.title
 			doc.server_team = server.team
+
+		doc.inplace_updates_enabled = frappe.get_cached_value(
+			"Team",
+			self.team,
+			"inplace_updates_enabled",
+		)
 
 	def get_actions(self):
 		return [
