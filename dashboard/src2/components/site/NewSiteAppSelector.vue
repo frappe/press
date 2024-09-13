@@ -24,29 +24,28 @@
 			/>
 		</div>
 		<div v-if="localisationAppNames && apps.length" class="space-y-4">
-			<FormControl
-				label="Install Localisation App?"
-				v-model="showLocalisationApps"
-				type="checkbox"
-			/>
+			<div class="flex space-x-2">
+				<FormControl
+					label="Install Localisation App?"
+					v-model="showLocalisationApps"
+					type="checkbox"
+				/>
+				<Tooltip
+					text="Localisation apps add country specific features, like taxation model, to your site"
+				>
+					<i-lucide-info class="h-4 w-4 text-gray-500" />
+				</Tooltip>
+			</div>
 			<FormControl
 				class="w-1/2"
 				variant="outline"
-				v-if="showLocalisationApps"
+				:class="{ 'pointer-events-none opacity-50': !showLocalisationApps }"
 				label="Select Country"
 				v-model="selectedLocalisationCountry"
-				type="select"
+				type="autocomplete"
 				:options="localisationAppCountries"
 			/>
 		</div>
-		<!-- <div v-if="showLocalisationApps && localisationApps">
-			<h2 class="text-sm font-medium leading-6 text-gray-900">
-				Select Localisation App
-			</h2>
-			<div class="mt-2 w-full space-y-2">
-				<ObjectList :options="localisationApps" />
-			</div>
-		</div> -->
 		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Private Apps
@@ -77,7 +76,8 @@ export default {
 		return {
 			selectedApp: null,
 			showLocalisationApps: false,
-			showAppPlanSelectorDialog: false
+			showAppPlanSelectorDialog: false,
+			selectedLocalisationCountry: null
 		};
 	},
 	computed: {
@@ -194,72 +194,6 @@ export default {
 			);
 			return localisationAppDetails.map(app => app?.marketplace_app);
 		},
-		localisationApps() {
-			if (!this.availableApps) return;
-
-			const localisationApps = this.availableApps.filter(app =>
-				this.localisationAppNames.includes(app.app)
-			);
-			console.log(this.apps, this.localisationAppNames);
-
-			if (localisationApps.length === 0) return;
-
-			return {
-				data: () => localisationApps,
-				columns: [
-					{
-						label: 'App',
-						fieldname: 'app_title',
-						type: 'Component',
-						component: ({ row }) => {
-							return h(
-								'a',
-								{
-									class: 'flex items-center text-sm',
-									href: `/${row.route}`,
-									target: '_blank'
-								},
-								[
-									h('img', {
-										class: 'h-6 w-6 rounded-sm',
-										src: row.image
-									}),
-									h('span', { class: 'ml-2' }, row.app_title),
-									row.subscription_type !== 'Free'
-										? h(Badge, {
-												class: 'ml-2',
-												theme: 'gray',
-												label: 'Paid'
-										  })
-										: ''
-								]
-							);
-						}
-					},
-					{
-						label: '',
-						width: 0.2,
-						align: 'right',
-						type: 'Button',
-						Button: ({ row: app }) => {
-							const isAppAdded = this.apps.map(a => a.app).includes(app.app);
-
-							return {
-								label: isAppAdded ? 'check' : 'plus',
-								slots: {
-									icon: isAppAdded ? icon('check') : icon('plus')
-								},
-								variant: isAppAdded ? 'outline' : 'subtle',
-								onClick: event => {
-									this.toggleApp(app);
-									event.stopPropagation();
-								}
-							};
-						}
-					}
-				]
-			};
-		},
 		privateApps() {
 			if (!this.availableApps) return;
 
@@ -303,29 +237,16 @@ export default {
 	},
 	methods: {
 		toggleApp(app) {
-			let apps = this.apps;
-
-			// if (this.localisationAppNames.length && app.localisation_apps?.length) {
-			// 	this.showLocalisationApps = !this.showLocalisationApps;
-			// }
-			if (
-				this.localisationAppNames.length &&
-				this.localisationAppNames.includes(app.app)
-			) {
-				// unselect all localisation apps
-				apps = apps.filter(a => !this.localisationAppNames.includes(a.app));
-			}
 			if (this.apps.map(a => a.app).includes(app.app)) {
-				apps = apps.filter(a => a.app !== app.app);
+				this.apps = this.apps.filter(a => a.app !== app.app);
 			} else {
 				if (app.subscription_type && app.subscription_type !== 'Free') {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
-					apps = [...apps, app];
+					this.apps = [...this.apps, app];
 				}
 			}
-			this.apps = apps;
 		}
 	}
 };
