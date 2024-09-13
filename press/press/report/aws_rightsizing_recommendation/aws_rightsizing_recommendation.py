@@ -8,11 +8,12 @@ import boto3
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	columns = frappe.get_doc("Report", "AWS Rightsizing Recommendation").get_columns()
-	data = get_data()
+	resource_type = filters.get("resource_type")
+	data = get_data(resource_type)
 	return columns, data
 
 
-def get_data():
+def get_data(resource_type):
 	settings = frappe.get_single("Press Settings")
 	client = boto3.client(
 		"cost-optimization-hub",
@@ -21,13 +22,15 @@ def get_data():
 		aws_secret_access_key=settings.get_password("aws_secret_access_key"),
 	)
 
+	resource_types = {
+		"Compute": ["Ec2Instance"],
+		"Storage": ["EbsVolume"],
+	}.get(resource_type, ["Ec2Instance", "EbsVolume"])
+
 	paginator = client.get_paginator("list_recommendations")
 	response_iterator = paginator.paginate(
 		filter={
-			"resourceTypes": [
-				"Ec2Instance",
-				"EbsVolume",
-			],
+			"resourceTypes": resource_types,
 			"actionTypes": ["Rightsize"],
 		},
 	)
