@@ -134,7 +134,7 @@
    "fieldname": "resource_type",
    "fieldtype": "Select",
    "label": "Resource Type",
-   "mandatory": 1,
+   "mandatory": 0,
    "options": "\nCompute\nStorage",
    "wildcard_filter": 0
   },
@@ -152,7 +152,7 @@
  "is_standard": "Yes",
  "json": "",
  "letterhead": null,
- "modified": "2024-09-13 10:41:52.819651",
+ "modified": "2024-09-13 10:56:35.626625",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Rightsizing Recommendation",
