@@ -31,7 +31,7 @@
 					type="checkbox"
 				/>
 				<Tooltip
-					text="Localisation apps add country specific features, like taxation model, to your site"
+					text="Localisation app allows creating transactions as per statutory compliance. They're maintained by community partners."
 				>
 					<i-lucide-info class="h-4 w-4 text-gray-500" />
 				</Tooltip>
@@ -63,6 +63,7 @@ import DownloadIcon from '~icons/lucide/download';
 import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
 import { Badge } from 'frappe-ui';
 import { icon } from '../../utils/components';
+import { getCountry } from '../../utils/country';
 import ObjectList from '../ObjectList.vue';
 
 export default {
@@ -79,6 +80,22 @@ export default {
 			showAppPlanSelectorDialog: false,
 			selectedLocalisationCountry: null
 		};
+	},
+	watch: {
+		showLocalisationApps() {
+			if (this.showLocalisationApps) {
+				const localisationAppCountries = this.localisationAppCountries.map(
+					c => c.value
+				);
+
+				if (
+					localisationAppCountries.includes(getCountry()) &&
+					!this.selectedLocalisationCountry
+				) {
+					this.selectedLocalisationCountry = getCountry();
+				}
+			}
+		}
 	},
 	computed: {
 		apps: {
