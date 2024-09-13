@@ -120,7 +120,8 @@
    "label": "Server Type",
    "options": "DocType",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "bench",
@@ -253,7 +254,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2024-05-17 11:25:24.215362",
+ "modified": "2024-08-23 16:32:27.447230",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

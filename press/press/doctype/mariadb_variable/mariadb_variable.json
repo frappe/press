@@ -30,7 +30,7 @@
    "fieldname": "datatype",
    "fieldtype": "Select",
    "label": "Datatype",
-   "options": "Int\nBool\nFloat\nStr",
+   "options": "Int\nFloat\nStr",
    "reqd": 1
   },
   {
@@ -65,7 +65,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-22 08:36:43.526135",
+ "modified": "2024-07-03 07:14:39.263413",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

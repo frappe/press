@@ -6,7 +6,7 @@
 	</div>
 
 	<div
-		v-if="!$team.doc.is_desk_user && !$session.hasSiteCreationAccess"
+		v-if="!$team.doc?.is_desk_user && !$session.hasSiteCreationAccess"
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 	>
 		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
@@ -34,23 +34,41 @@
 				</div>
 				<div class="mt-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-						<button
+						<component
 							v-for="v in availableVersions"
 							:key="v.name"
-							:class="[
-								version === v.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-gray-50',
-								v.disabled && 'pointer-events-none opacity-50',
-								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
-							]"
-							@click="version = v.name"
+							:is="v.disabled ? 'Tooltip' : 'div'"
+							:text="
+								v.disabled
+									? `This version is not available for the ${$format.plural(
+											versionAppsMap[v.name].length,
+											'app',
+											'apps'
+									  )} ${$format.commaAnd(versionAppsMap[v.name])}`
+									: ''
+							"
 						>
-							<span class="font-medium">{{ v.name }} </span>
-							<span class="ml-1 text-gray-600">
-								{{ v.status }}
-							</span>
-						</button>
+							<button
+								:class="[
+									version === v.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'bg-white text-gray-900  hover:bg-gray-50',
+									v.disabled && 'opacity-50 hover:cursor-default',
+									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
+								]"
+								@click="
+									() => {
+										if (v.disabled) return;
+										version = v.name;
+									}
+								"
+							>
+								<span class="font-medium">{{ v.name }} </span>
+								<span class="ml-1 text-gray-600">
+									{{ v.status }}
+								</span>
+							</button>
+						</component>
 					</div>
 				</div>
 			</div>
@@ -106,6 +124,9 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:selectedCluster="cluster"
+						:selectedApps="apps"
+						:selectedVersion="version"
 					/>
 				</div>
 			</div>
@@ -201,12 +222,13 @@ import {
 	getCachedDocumentResource
 } from 'frappe-ui';
 import SitePlansCards from '../components/SitePlansCards.vue';
-import { validateSubdomain } from '../../src/utils.js';
+import { validateSubdomain } from '../utils/site';
 import Header from '../components/Header.vue';
 import router from '../router';
 import { plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewSite',
@@ -223,6 +245,22 @@ export default {
 		Tooltip,
 		Summary,
 		Header
+	},
+	mounted() {
+		if (!this.$team.doc.onboarding.site_created && window.posthog?.__loaded) {
+			window.posthog.identify(this.$team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'first_new_site_creation'
+			});
+			if (!window.posthog.sessionRecordingStarted()) {
+				window.posthog.startSessionRecording();
+			}
+		}
+	},
+	unmounted() {
+		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
+		}
 	},
 	data() {
 		return {
@@ -242,10 +280,16 @@ export default {
 	watch: {
 		apps() {
 			this.version = this.autoSelectVersion();
+			this.cluster = null;
 			this.agreedToRegionConsent = false;
 		},
 		async version() {
+			this.cluster = null;
 			this.cluster = await this.getClosestCluster();
+			this.agreedToRegionConsent = false;
+		},
+		cluster() {
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		subdomain: {
@@ -286,7 +330,10 @@ export default {
 					};
 				},
 				validate() {
-					return validateSubdomain(this.subdomain);
+					let error = validateSubdomain(this.subdomain);
+					if (error) {
+						return new DashboardError(error);
+					}
 				},
 				transform(data) {
 					return !Boolean(data);
@@ -329,11 +376,13 @@ export default {
 				},
 				validate() {
 					if (!this.subdomain) {
-						return 'Please enter a subdomain';
+						throw new DashboardError('Please enter a subdomain');
 					}
 
 					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create site';
+						throw new DashboardError(
+							'Please agree to the above consent to create site'
+						);
 					}
 				},
 				onSuccess: site => {
@@ -407,6 +456,9 @@ export default {
 				}
 			});
 		},
+		selectedVersionAppNames() {
+			return this.selectedVersionApps.map(app => app.app);
+		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);
 		},
@@ -418,6 +470,24 @@ export default {
 		selectedPlan() {
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan.name);
+		},
+		versionAppsMap() {
+			const versions = this.availableVersions.map(v => v.name);
+			let problemAppVersions = {};
+			if (!this.bench)
+				for (let app of this.apps) {
+					const appVersions = app.sources.map(s => s.version);
+					const problemVersions = versions.filter(
+						version => !appVersions.includes(version)
+					);
+					for (let version of problemVersions) {
+						if (!problemAppVersions[version]) {
+							problemAppVersions[version] = [];
+						}
+						problemAppVersions[version].push(app.app_title);
+					}
+				}
+			return problemAppVersions;
 		},
 		breadcrumbs() {
 			if (this.bench) {

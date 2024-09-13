@@ -1,12 +1,12 @@
 import re
+
 import frappe
-import stripe
 import razorpay
-
+import stripe
 from frappe.utils import fmt_money
-from press.utils import get_current_team, log_error
-from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
 
+from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
+from press.utils import get_current_team, log_error
 
 states_with_tin = {
 	"Andaman and Nicobar Islands": "35",
@@ -126,16 +126,35 @@ def get_publishable_key():
 
 
 def get_setup_intent(team):
+	from frappe.utils import random_string
+
 	intent = frappe.cache().hget("setup_intent", team)
 	if not intent:
-		customer_id = frappe.db.get_value("Team", team, "stripe_customer_id")
+		data = frappe.db.get_value("Team", team, ["stripe_customer_id", "currency"])
+		customer_id = data[0]
+		currency = data[1]
 		stripe = get_stripe()
+		hash = random_string(10)
 		intent = stripe.SetupIntent.create(
 			customer=customer_id,
 			payment_method_types=["card"],
-			payment_method_options={"card": {"request_three_d_secure": "automatic"}},
+			payment_method_options={
+				"card": {
+					"request_three_d_secure": "automatic",
+					"mandate_options": {
+						"reference": f"Mandate-team:{team}-{hash}",
+						"amount_type": "maximum",
+						"amount": 1500000,
+						"currency": currency.lower(),
+						"start_date": int(frappe.utils.get_timestamp()),
+						"interval": "sporadic",
+						"supported_types": ["india"],
+					},
+				}
+			},
 		)
 		frappe.cache().hset("setup_intent", team, intent)
+
 	return intent
 
 

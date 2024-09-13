@@ -1,10 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import json
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
-import json
 
 
 class PressJobStep(Document):
@@ -17,7 +18,7 @@ class PressJobStep(Document):
 		from frappe.types import DF
 
 		attempts: DF.Int
-		duration: DF.Time | None
+		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job: DF.Link
 		job_type: DF.Link
@@ -66,7 +67,7 @@ class PressJobStep(Document):
 			self.traceback = frappe.get_traceback(with_context=True)
 
 		self.end = frappe.utils.now_datetime()
-		self.duration = self.end - self.start
+		self.duration = (self.end - self.start).total_seconds()
 		self.save()
 
 		if self.status == "Failure":

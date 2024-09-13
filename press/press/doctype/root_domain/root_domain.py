@@ -3,14 +3,14 @@
 # For license information, please see license.txt
 
 
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 from typing import Iterable, List
 
 import boto3
 import frappe
-from frappe.model.document import Document
 from frappe.core.utils import find
+from frappe.model.document import Document
 
 from press.utils import log_error
 
@@ -126,6 +126,28 @@ class RootDomain(Document):
 						to_delete.append(record)
 			if to_delete:
 				self.delete_dns_records(to_delete)
+
+	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+		# update records in batches of 500
+		batch_size = 500
+		for i in range(0, len(sites), batch_size):
+			changes = []
+			for site in sites[i : i + batch_size]:  # noqa
+				changes.append(
+					{
+						"Action": "UPSERT",
+						"ResourceRecordSet": {
+							"Name": site,
+							"Type": "CNAME",
+							"TTL": 600,
+							"ResourceRecords": [{"Value": proxy_server}],
+						},
+					}
+				)
+
+			self.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
+			)
 
 
 def cleanup_cname_records():

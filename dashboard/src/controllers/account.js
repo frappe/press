@@ -24,7 +24,7 @@ export default class Account {
 	}
 
 	async fetchAccount() {
-		if (document.cookie.includes('user_id=Guest;')) {
+		if (document.cookie.includes('user_id=Guest')) {
 			return;
 		}
 		try {

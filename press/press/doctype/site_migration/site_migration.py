@@ -4,6 +4,7 @@
 
 
 from typing import TYPE_CHECKING
+
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -27,8 +28,8 @@ from press.utils import log_error
 from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
-	from press.press.doctype.site.site import Site
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.site.site import Site
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -53,6 +54,7 @@ class SiteMigration(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_migration_step.site_migration_step import (
 			SiteMigrationStep,
 		)
@@ -77,7 +79,9 @@ class SiteMigration(Document):
 		self.validate_bench()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
-			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+			frappe.throw(
+				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists."
+			)
 
 	def validate_bench(self):
 		if (
@@ -90,7 +94,13 @@ class SiteMigration(Document):
 		try:
 			backup: SiteBackup = frappe.get_last_doc(  # approximation with last backup
 				"Site Backup",
-				{"site": self.site, "with_files": True, "offsite": True, "status": "Success"},
+				{
+					"site": self.site,
+					"with_files": True,
+					"offsite": True,
+					"status": "Success",
+					"files_availability": "Available",
+				},
 			)
 		except frappe.DoesNotExistError:
 			pass
@@ -117,14 +127,15 @@ class SiteMigration(Document):
 				MissingAppsInBench,
 			)
 
+	@frappe.whitelist()
 	def start(self):
+		self.status = "Pending"
+		self.save()
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
 		site.ready_for_move()
-		self.status = "Pending"
-		self.save()
 		frappe.db.commit()
 		self.run_next_step()
 
@@ -279,13 +290,10 @@ class SiteMigration(Document):
 		self.save()
 
 	@property
-	def archived_site_on_source(self) -> bool:
-		return (
-			find(
-				self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
-			).status
-			== "Success"
-		)
+	def possibly_archived_site_on_source(self) -> bool:
+		return find(
+			self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
+		).status in ["Success", "Failure"]
 
 	def set_pending_steps_to_skipped(self):
 		for step in self.steps:
@@ -303,7 +311,9 @@ class SiteMigration(Document):
 	def fail(self, cleanup=True, reason=None, activate=False):
 		self.set_pending_steps_to_skipped()
 		if (
-			cleanup and not self.archived_site_on_source and self.restore_on_destination_happened
+			cleanup
+			and not self.possibly_archived_site_on_source
+			and self.restore_on_destination_happened
 		):
 			self.append(
 				"steps",
@@ -335,10 +345,9 @@ class SiteMigration(Document):
 				self.restore_site_on_destination_server.__name__,
 				self.restore_site_on_destination_proxy.__name__,
 			]
-			and site.status_before_update == "Active"
+			and site.status_before_update != "Inactive"
 		):
 			site.activate()
-			site.status_before_update = None
 			if self.migration_type == "Cluster":
 				site.create_dns_record()
 
@@ -595,7 +604,11 @@ class SiteMigration(Document):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site: "Site" = frappe.get_doc("Site", self.site)
 		dest_server: Server = frappe.get_doc("Server", self.destination_server)
-		if not dest_server.is_shared and site.team == dest_server.team:
+		if (
+			not dest_server.is_shared
+			and site.team == dest_server.team
+			and not site.is_on_dedicated_plan
+		):
 			try:
 				site.change_plan(
 					"Unlimited",

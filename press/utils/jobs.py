@@ -1,11 +1,12 @@
-import frappe
 from typing import Any, Generator, Optional
+import signal
 
+import frappe
 from frappe.core.doctype.rq_job.rq_job import fetch_job_ids
 from frappe.utils.background_jobs import get_queues, get_redis_conn
 from redis import Redis
 from rq.command import send_stop_job_command
-from rq.job import Job, JobStatus, NoSuchJobError
+from rq.job import Job, JobStatus, NoSuchJobError, get_current_job
 
 
 def stop_background_job(job: Job):
@@ -82,3 +83,11 @@ def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:
 		return False
 
 	return True
+
+
+def has_job_timeout_exceeded() -> bool:
+	# RQ sets up an alarm signal and a signal handler that raises
+	# JobTimeoutException after the timeout amount
+	# getitimer returns the time left for this timer
+	# 0.0 means the timer is expired
+	return bool(get_current_job()) and (signal.getitimer(signal.ITIMER_REAL)[0] <= 0)

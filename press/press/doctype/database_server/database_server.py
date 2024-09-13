@@ -3,9 +3,12 @@
 # For license information, please see license.txt
 
 
+import json
 from typing import Any
+
 import frappe
 from frappe.core.doctype.version.version import get_diff
+from frappe.core.utils import find
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
@@ -14,7 +17,6 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
-from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
@@ -31,6 +33,8 @@ class DatabaseServer(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
+		auto_add_storage_max: DF.Int
+		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -48,6 +52,8 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
+		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
+		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
@@ -57,6 +63,7 @@ class DatabaseServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		self_hosted_mariadb_server: DF.Data | None
@@ -110,7 +117,6 @@ class DatabaseServer(BaseServer):
 			and self.subscription
 			and self.subscription.team != self.team
 		):
-
 			self.subscription.disable()
 
 			# enable subscription if exists
@@ -814,15 +820,21 @@ class DatabaseServer(BaseServer):
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
 			server=self.name,
 			job_id=f"fetch_mariadb_stalk:{self.name}",
+			deduplicate=True,
+			queue="long",
 		)
 
 	def get_stalks(self):
+		if self.agent.should_skip_requests():
+			return []
 		result = self.agent.get("database/stalks", raises=False)
 		if (not result) or ("error" in result):
 			return []
 		return result
 
 	def get_stalk(self, name):
+		if self.agent.should_skip_requests():
+			return {}
 		return self.agent.get(f"database/stalks/{name}")
 
 	def _rename_server(self):
@@ -1513,6 +1525,45 @@ class DatabaseServer(BaseServer):
 		if count is None:
 			return None
 		return count / 1000000000
+
+  def update_memory_allocator(self, memory_allocator):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_update_memory_allocator",
+			memory_allocator=memory_allocator,
+			enqueue_after_commit=True,
+		)
+
+	def _update_memory_allocator(self, memory_allocator):
+		ansible = Ansible(
+			playbook="mariadb_memory_allocator.yml",
+			server=self,
+			variables={
+				"server": self.name,
+				"allocator": memory_allocator.lower(),
+				"mariadb_root_password": self.get_password("mariadb_root_password"),
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Memory Allocator Setup Error", server=self.name)
+		elif play.status == "Success":
+			result = json.loads(
+				frappe.get_all(
+					"Ansible Task",
+					filters={"play": play.name, "task": "Show Memory Allocator"},
+					pluck="result",
+					order_by="creation DESC",
+					limit=1,
+				)[0]
+			)
+			query_result = result.get("query_result")
+			if query_result:
+				self.reload()
+				self.memory_allocator = memory_allocator
+				self.memory_allocator_version = query_result[0][0]["Value"]
+				self.save()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

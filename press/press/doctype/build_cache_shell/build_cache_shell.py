@@ -5,10 +5,8 @@ import json
 
 import frappe
 from frappe.model.document import Document
+
 from press.agent import Agent
-from press.press.doctype.deploy_candidate.cache_utils import (
-	run_command_in_docker_cache,
-)
 
 
 class BuildCacheShell(Document):
@@ -20,7 +18,7 @@ class BuildCacheShell(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		build_server: DF.Link | None
+		build_server: DF.Link
 		cache_target: DF.Data
 		command: DF.Code
 		cwd: DF.Data | None
@@ -39,13 +37,10 @@ class BuildCacheShell(Document):
 		frappe.db.commit()
 
 	def _run_command(self):
-		if self.build_server:
-			return Agent(self.build_server).run_command_in_docker_cache(
-				self.command,
-				self.cache_target,
-			)
+		if not self.build_server:
+			frappe.throw("Please select a <b>Build Server</b>.")
 
-		return run_command_in_docker_cache(
+		return Agent(self.build_server).run_command_in_docker_cache(
 			self.command,
 			self.cache_target,
 		)

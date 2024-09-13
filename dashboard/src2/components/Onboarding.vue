@@ -1,5 +1,5 @@
 <template>
-	<div class="mx-auto max-w-2xl rounded-lg border p-8">
+	<div class="mx-auto max-w-2xl rounded-lg border-0 px-2 sm:border sm:p-8">
 		<div class="prose prose-sm max-w-none">
 			<h1 class="text-2xl font-semibold">Welcome to Frappe Cloud</h1>
 			<p>
@@ -10,9 +10,9 @@
 			</p>
 		</div>
 		<p class="mt-6 text-base text-gray-800">
-			Complete the following steps to get started:
+			You are just few steps away from creating your first site.
 		</p>
-		<div class="mt-6 space-y-8">
+		<div class="mt-6 space-y-6">
 			<div class="rounded-md">
 				<div v-if="pendingSiteRequest">
 					<div class="flex items-center justify-between space-x-2">
@@ -44,7 +44,7 @@
 						</p>
 						<Button
 							class="mt-2"
-							:route="`/app-trial/${pendingSiteRequest.saas_product}`"
+							:route="`/app-trial/${pendingSiteRequest.product_trial}`"
 						>
 							Continue
 						</Button>
@@ -55,7 +55,7 @@
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
 							<span class="text-base font-medium">
-								Your trial site is ready: {{ trialSite.name }}
+								Your trial site is ready
 							</span>
 						</div>
 						<div
@@ -65,6 +65,18 @@
 						</div>
 					</div>
 					<div class="pl-7">
+						<div class="mt-2">
+							<a
+								class="flex items-center text-base font-medium underline"
+								:href="`https://${trialSite.name}`"
+								target="_blank"
+							>
+								https://{{ trialSite.name }}
+								<i-lucide-external-link
+									class="ml-1 h-3.5 w-3.5 text-gray-800"
+								/>
+							</a>
+						</div>
 						<p class="mt-2 text-p-base text-gray-800">
 							Your trial will expire on
 							<span class="font-medium">
@@ -88,55 +100,105 @@
 					</div>
 				</div>
 			</div>
+			<!-- Step 2 - Update Billing Details -->
 			<div class="rounded-md">
-				<div v-if="!$team.doc.payment_mode">
+				<div v-if="!isBillingDetailsSet">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
-						<span class="text-base font-medium"> Add a payment mode </span>
+						<span class="text-base font-medium"> Update billing details </span>
 					</div>
-
 					<div class="pl-7">
-						<p class="mt-2 text-p-base text-gray-800">
-							Select this option to add a card on file. If you do this, we give
-							you <span class="font-medium">{{ free_credits }}</span> worth of
-							free credits so that you can create sites without any upfront
-							cost.
-						</p>
-						<div class="mt-2">
-							<Button @click="showAddCardDialog = true">
-								Add a debit/credit card for automatic billing
-							</Button>
-						</div>
-						<div
-							class="relative mt-2 py-4 text-base uppercase tracking-wide text-gray-700"
-						>
-							<div class="h-px border-b"></div>
-							<div
-								class="absolute left-1/2 inline-block -translate-x-1/2 -translate-y-1/2 bg-white px-2"
-							>
-								Or
-							</div>
-						</div>
-						<p class="mt-2 text-p-base text-gray-800">
-							If you don't want to add your card on file, you can add money to
-							your account and use it to create sites.
-						</p>
-						<div class="mt-2 flex items-center space-x-2">
-							<Button @click="showBuyCreditsDialog = true">
-								Add money to your account
-							</Button>
-						</div>
+						<UpdateBillingDetailsForm @updated="onBillingAddresUpdateSuccess" />
 					</div>
 				</div>
 				<div v-else>
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>2</TextInsideCircle>
+							<span class="text-base font-medium">
+								Billing address updated
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<i-lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Add Payment Method -->
+			<div
+				class="rounded-md"
+				:class="{ 'pointer-events-none opacity-50': !isBillingDetailsSet }"
+			>
+				<div v-if="!$team.doc.payment_mode">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>3</TextInsideCircle>
+						<span class="text-base font-medium"> Add a payment mode </span>
+					</div>
+
+					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
+						<!-- Payment Method Selector -->
+						<div
+							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+						>
+							<div
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
+								:class="{
+									'bg-gray-100': isAutomatedBilling
+								}"
+								@click="isAutomatedBilling = true"
+							>
+								Automated Billing
+							</div>
+							<div
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
+								:class="{
+									'bg-gray-100': !isAutomatedBilling
+								}"
+								@click="isAutomatedBilling = false"
+							>
+								Add Money
+							</div>
+						</div>
+
+						<div class="mt-2 w-full">
+							<!-- Automated Billing Section -->
+							<div v-if="isAutomatedBilling">
+								<!-- Offer -->
+								<p class="my-3 text-p-sm text-gray-800">
+									🎉 You are eligible for
+									<span class="font-medium">{{ free_credits }}</span> worth of
+									free credits for enabling automated billing.
+								</p>
+								<!-- Stripe Card -->
+								<StripeCard2
+									@complete="onAddCardSuccess"
+									:withoutAddress="true"
+								/>
+							</div>
+							<!-- Purchase Prepaid Credit -->
+							<div v-else class="mt-3">
+								<BuyPrepaidCreditsForm
+									:isOnboarding="true"
+									:minimumAmount="minimumAmount"
+									@success="onBuyCreditsSuccess"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Payment Method Added -->
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>3</TextInsideCircle>
 							<span
 								class="text-base font-medium"
 								v-if="$team.doc.payment_mode === 'Card'"
 							>
-								Automatic billing setup complete
+								Automatic billing setup completed
 							</span>
 							<span
 								class="text-base font-medium"
@@ -151,48 +213,34 @@
 							<i-lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
-					<div class="mt-1.5 pl-7 text-p-base text-gray-800">
+					<div
+						class="mt-1.5 pl-7 text-p-base text-gray-800"
+						v-if="$team.doc.payment_mode === 'Prepaid Credits'"
+					>
 						Account balance: {{ $format.userCurrency($team.doc.balance) }}
 					</div>
 				</div>
 			</div>
 			<div
-				v-if="!$team.doc.is_saas_user"
+				v-if="!$team.doc.is_saas_user && !$team.doc.onboarding.site_created"
 				class="rounded-md"
 				:class="{ 'pointer-events-none opacity-50': !$team.doc.payment_mode }"
 			>
 				<div class="flex items-center space-x-2">
-					<TextInsideCircle>3</TextInsideCircle>
-					<div class="text-base font-medium">Create a site</div>
+					<TextInsideCircle>4</TextInsideCircle>
+					<div class="text-base font-medium">Create your first site</div>
 				</div>
 
-				<div class="pl-7">
-					<p class="mt-2 text-p-base text-gray-800">
-						You can now create sites and benches from the dashboard. Go ahead
-						and try it.
+				<div class="pl-7" v-if="$team.doc.payment_mode">
+					<p class="mt-1 text-p-base text-gray-800">
+						Choose an app below to create your first site.
 					</p>
-					<Button class="mt-2" :route="{ name: 'New Site' }">
-						Create a new site
-					</Button>
+
+					<!-- App Chooser -->
+					<OnboardingAppSelector :apps="$resources.availableApps.data" />
 				</div>
 			</div>
-			<div v-if="$team.doc.payment_mode">
-				<Button route="/sites"> Go to sites </Button>
-			</div>
 		</div>
-		<Dialog
-			v-model="showAddCardDialog"
-			:options="{ title: 'Add card for automatic billing' }"
-		>
-			<template #body-content>
-				<StripeCard2 @complete="onAddCardSuccess" />
-			</template>
-		</Dialog>
-		<BuyPrepaidCreditsDialog
-			v-model="showBuyCreditsDialog"
-			:minimumAmount="minimumAmount"
-			@success="onBuyCreditsSuccess"
-		/>
 	</div>
 </template>
 <script>
@@ -205,28 +253,60 @@ export default {
 		StripeCard2: defineAsyncComponent(() =>
 			import('../components/StripeCard.vue')
 		),
-		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
-			import('../components/BuyPrepaidCreditsDialog.vue')
+		UpdateBillingDetailsForm: defineAsyncComponent(() =>
+			import('./UpdateBillingDetailsForm.vue')
 		),
+		CardWithDetails: defineAsyncComponent(() =>
+			import('../../src/components/CardWithDetails.vue')
+		),
+		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
+			import('./BuyPrepaidCreditsForm.vue')
+		),
+		OnboardingAppSelector: defineAsyncComponent(() =>
+			import('./OnboardingAppSelector.vue')
+		),
+		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
 		TextInsideCircle
+	},
+	mounted() {
+		if (window.posthog?.__loaded) {
+			window.posthog.identify(this.$team.doc.user, {
+				app: 'frappe_cloud',
+				action: 'onboarding'
+			});
+			window.posthog.startSessionRecording();
+		}
+	},
+	unmounted() {
+		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
+			window.posthog.stopSessionRecording();
+		}
 	},
 	data() {
 		return {
-			showAddCardDialog: false,
-			showBuyCreditsDialog: false
+			billingInformation: {
+				cardHolderName: '',
+				country: '',
+				gstin: ''
+			},
+			isAutomatedBilling: true
 		};
 	},
 	methods: {
 		onBuyCreditsSuccess() {
 			this.$team.reload();
-			this.showBuyCreditsDialog = false;
 		},
 		onAddCardSuccess() {
 			this.$team.reload();
-			this.showAddCardDialog = false;
+		},
+		onBillingAddresUpdateSuccess() {
+			this.$team.reload();
 		}
 	},
 	computed: {
+		isBillingDetailsSet() {
+			return Boolean(this.$team.doc.billing_details?.name);
+		},
 		free_credits() {
 			return this.$format.userCurrency(
 				this.$team.doc.currency == 'INR'
@@ -243,6 +323,14 @@ export default {
 		},
 		trialSite() {
 			return this.$team.doc.trial_sites?.[0];
+		}
+	},
+	resources: {
+		availableApps() {
+			return {
+				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
+				auto: true
+			};
 		}
 	}
 };

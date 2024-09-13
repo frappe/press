@@ -8,6 +8,7 @@ from typing import Optional, TypedDict
 import frappe
 import requests
 from frappe.model.document import Document
+
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
@@ -55,6 +56,7 @@ class AppPatch(Document):
 		name: DF.Int | None
 		patch: DF.Code
 		status: DF.Literal["Not Applied", "In Process", "Failed", "Applied"]
+		team: DF.Link
 		url: DF.Data | None
 	# end: auto-generated types
 
@@ -160,7 +162,10 @@ class AppPatch(Document):
 
 
 def create_app_patch(
-	release_group: str, app: str, patch_config: PatchConfig
+	release_group: str,
+	app: str,
+	team: str,
+	patch_config: PatchConfig,
 ) -> list[str]:
 	patch = get_patch(patch_config)
 	benches = get_benches(release_group, patch_config)
@@ -173,6 +178,7 @@ def create_app_patch(
 			bench=bench,
 			group=release_group,
 			app=app,
+			team=team,
 			app_release=get_app_release(bench, app),
 			url=patch_config.get("patch_url"),
 			filename=patch_config.get("filename"),

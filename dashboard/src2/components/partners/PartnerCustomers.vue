@@ -1,6 +1,6 @@
 <template>
 	<div class="p-4">
-		<GenericList :options="partnerCustomerList" />
+		<ObjectList :options="partnerCustomerList" />
 		<Dialog
 			v-model="contributionDialog"
 			:options="{
@@ -16,7 +16,10 @@
 					>
 						Nothing to show
 					</div>
-					<PartnerCustomerInvoices :customerTeam="showInvoice.name" />
+					<PartnerCustomerInvoices
+						:customerTeam="showInvoice.name"
+						:customerCurrency="showInvoice.currency"
+					/>
 				</template>
 			</template>
 		</Dialog>
@@ -25,7 +28,7 @@
 			:options="{ title: 'Transfer Credits' }"
 		>
 			<template #body-content>
-				<p class="text-p-base pb-3">
+				<p class="pb-3 text-p-base">
 					Enter the equivalent amount of credits (in {{ $team.doc.currency }})
 					you wish to transfer.
 				</p>
@@ -62,7 +65,7 @@
 					{{ formatCurrency(amount) }} credits have been transferred to
 					<strong>{{ customerTeam.billing_name }}</strong>
 				</p>
-				<span class="text-base text-gray-700 font-medium"
+				<span class="text-base font-medium text-gray-700"
 					>Credits available: {{ creditBalance() }}</span
 				>
 			</template>
@@ -71,17 +74,18 @@
 </template>
 <script>
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
-import GenericList from '../GenericList.vue';
+import ObjectList from '../ObjectList.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
+
 export default {
 	name: 'PartnerCustomers',
 	components: {
 		PartnerCustomerInvoices,
 		Dialog,
 		ErrorMessage,
-		GenericList
+		ObjectList
 	},
 	data() {
 		return {
@@ -90,28 +94,10 @@ export default {
 			transferCreditsDialog: false,
 			customerTeam: null,
 			amount: 0.0,
-			showConfirmationDialog: false,
-			partnerCustomers: []
+			showConfirmationDialog: false
 		};
 	},
 	resources: {
-		getPartnerCustomers() {
-			return {
-				url: 'press.api.partner.get_partner_customers',
-				onSuccess(data) {
-					this.partnerCustomers = data.map(d => {
-						return {
-							email: d.user,
-							billing_name: d.billing_name || '',
-							payment_mode: d.payment_mode || '',
-							currency: d.currency,
-							name: d.name
-						};
-					});
-				},
-				auto: true
-			};
-		},
 		transferCredits() {
 			return {
 				url: 'press.api.partner.transfer_credits',
@@ -131,8 +117,24 @@ export default {
 	computed: {
 		partnerCustomerList() {
 			return {
-				data: this.partnerCustomers,
-				selectable: false,
+				resource() {
+					return {
+						url: 'press.api.partner.get_partner_customers',
+						transform(data) {
+							return data.map(d => {
+								return {
+									email: d.user,
+									billing_name: d.billing_name || '',
+									payment_mode: d.payment_mode || '',
+									currency: d.currency,
+									name: d.name
+								};
+							});
+						},
+						initialData: [],
+						auto: true
+					};
+				},
 				columns: [
 					{
 						label: 'Name',

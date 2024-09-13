@@ -3,8 +3,9 @@
 # See license.txt
 
 
-import frappe
 import unittest
+
+import frappe
 
 from press.press.doctype.team.test_team import create_test_team
 

@@ -1,14 +1,17 @@
-import frappe
 import datetime
 from datetime import timedelta
 from itertools import cycle
 
+import frappe
+
 agents = [
 	"shadrak@erpnext.com",
+	"tanmoy@frappe.io",
+	"alan@iwebnotes.com",
 	"balamurali@erpnext.com",
-	"aditya@erpnext.com",
-	"athul@erpnext.com",
-	"rutwik@frappe.io",
+	"arun@frappe.io",
+	"saurabh@erpnext.com",
+	"suhail@frappe.io",
 ]
 
 
@@ -37,9 +40,7 @@ def next_weekdays(from_: datetime.date, till: datetime.date):
 
 def main():
 	agent_cycle = cycle(agents)
-	weekday_cycle = agents
-	# weekday_cycle.remove("aditya@erpnext.com")
-	weekday_cycle = cycle(weekday_cycle)
+	weekday_cycle = cycle(reversed(agents))
 
 	from_ = datetime.date.today()
 	till = datetime.date(2023, 7, 20)
@@ -73,7 +74,7 @@ def main():
 		if frappe.db.exists(
 			"Event",
 			{
-				"subject": ("like", "%Dedicated Support"),
+				"subject": ("like", "%Backup Support"),
 				"starts_on": weekday,
 				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 			},
@@ -82,7 +83,7 @@ def main():
 		frappe.get_doc(
 			{
 				"doctype": "Event",
-				"subject": f"{contact.first_name} on Dedicated Support",
+				"subject": f"{contact.first_name} on Backup Support",
 				"starts_on": weekday,
 				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 				"all_day": 1,

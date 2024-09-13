@@ -53,6 +53,7 @@ export default {
 				doctype: 'Site',
 				fields: ['host_name', 'name'],
 				filters: { name: ['!=', this.site] },
+				pageLength: 500,
 				auto: true
 			};
 		}

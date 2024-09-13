@@ -5,7 +5,7 @@ frappe.ui.form.on('Deploy Candidate', {
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/benches/${frm.doc.group}/deploys/${frm.doc.name}`,
-			__('Visit Dashboard'),
+			'Visit Dashboard',
 		);
 
 		frm.fields_dict['apps'].grid.get_field('app').get_query = function (doc) {
@@ -15,94 +15,98 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
-		const can_build = ['Draft', 'Failure', 'Success'].includes(frm.doc.status);
-		const can_fail = !can_build;
-		const actions = [
-			[__('Stop and Fail'), 'stop_and_fail', can_fail, __('Build')],
-			[__('Complete'), 'build', can_build, __('Build')],
-			[
-				__('Generate Context'),
-				'generate_build_context',
-				can_build,
-				__('Build'),
-			],
-			[__('Without Cache'), 'build_without_cache', can_build, __('Build')],
-			[__('Without Push'), 'build_without_push', can_build, __('Build')],
-			[
-				__('Cleanup Directory'),
-				'cleanup_build_directory',
-				frm.doc.status !== 'Draft',
-				__('Build'),
-			],
-			[
-				__('Schedule Build and Deploy'),
+		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
+			set_handler(
+				frm,
+				'Complete',
+				'build',
+				{ no_push: false, no_build: false, no_cache: false },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Generate Context',
+				'build',
+				{ no_push: true, no_build: true, no_cache: false },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Without Cache',
+				'build',
+				{ no_push: false, no_build: false, no_cache: true },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Without Push',
+				'build',
+				{ no_push: true, no_build: false, no_cache: false },
+				'Build',
+			);
+			set_handler(frm, 'Redeploy', 'redeploy', { no_cache: false }, 'Deploy');
+			set_handler(
+				frm,
+				'Redeploy (No Cache)',
+				'redeploy',
+				{ no_cache: true },
+				'Deploy',
+			);
+			set_handler(
+				frm,
+				'Schedule Build and Deploy',
 				'schedule_build_and_deploy',
-				can_build,
-				__('Deploy'),
-			],
-		];
-
-		for (const [label, method, show, group] of actions) {
-			if (!show) {
-				continue;
-			}
-
-			async function handler() {
-				const { message: data } = await frm.call(method);
-				if (data.error) {
-					frappe.msgprint({
-						title: __('Action Failed'),
-						indicator: 'yellow',
-						message: data.message || `Could not execute ${method}`,
-					});
-					return;
-				}
-
-				frm.refresh();
-			}
-
-			frm.add_custom_button(label, handler, group);
+				{ run_now: false },
+				'Deploy',
+			);
 		}
 
-		add_redeploy(frm);
+		// Build already running
+		else {
+			set_handler(frm, 'Stop and Fail', 'stop_and_fail', {}, 'Build');
+			set_handler(frm, 'Fail and Redeploy', 'fail_and_redeploy', {}, 'Deploy');
+		}
+
+		if (frm.doc.status !== 'Draft') {
+			set_handler(
+				frm,
+				'Cleanup Directory',
+				'cleanup_build_directory',
+				{},
+				'Build',
+			);
+		}
 	},
 });
 
-function add_redeploy(frm) {
-	/**
-	 * The methods `fail_and_redeploy` and `redeploy` create
-	 * a new Deploy Candidate from the linked Release Group
-	 * and trigger `deploy_candidate.build_and_deploy`.
-	 */
+function set_handler(frm, label, method, args, group) {
+	const handler = get_handler(frm, method, args);
+	frm.add_custom_button(label, handler, group);
+}
 
-	let method = 'fail_and_redeploy';
-	let label = __('Fail and Redeploy');
+function get_handler(frm, method, args) {
+	return async function handler() {
+		const { message: data } = await frm.call({ method, args, doc: frm.doc });
 
-	if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
-		method = 'redeploy';
-		label = __('Redeploy');
-	}
-
-	frm.add_custom_button(label, handler, __('Deploy'));
-	async function handler() {
-		const { message: data } = await frm.call(method);
-		if (data.error) {
+		if (data?.error) {
 			frappe.msgprint({
-				title: __('Cannot Redeploy'),
+				title: 'Action Failed',
 				indicator: 'yellow',
 				message: data.message,
 			});
 			return;
 		}
 
-		frappe.msgprint({
-			title: __('Redeploy Triggered'),
-			indicator: 'green',
-			message: __(`Duplicate {0} created and redeploy triggered.`, [
-				`<a href="/app/deploy-candidate/${data.message}">Deploy Candidate</a>`,
-			]),
-		});
+		if (method.endsWith('redeploy') && data?.message) {
+			frappe.msgprint({
+				title: 'Redeploy Triggered',
+				indicator: 'green',
+				message: __(`Duplicate {0} created and redeploy triggered.`, [
+					`<a href="/app/deploy-candidate/${data?.message}">Deploy Candidate</a>`,
+				]),
+			});
+		}
 
 		frm.refresh();
-	}
+	};
 }

@@ -1,0 +1,13 @@
+---
+- name: Remove Primary Proxy Server's access
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Remove Primary from Authorized Keys
+      become_user: frappe
+      authorized_key:
+        user: frappe
+        key: "{{ primary_public_key }}"
+        state: absent

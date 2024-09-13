@@ -71,8 +71,9 @@
   },
   {
    "fieldname": "invoice",
-   "fieldtype": "Data",
-   "label": "Invoice"
+   "fieldtype": "Link",
+   "label": "Invoice",
+   "options": "Invoice"
   },
   {
    "fieldname": "column_break_4",
@@ -85,8 +86,8 @@
   {
    "fieldname": "date",
    "fieldtype": "Date",
-   "search_index": 1,
-   "label": "Date"
+   "label": "Date",
+   "search_index": 1
   },
   {
    "fieldname": "time",
@@ -95,8 +96,9 @@
   },
   {
    "fieldname": "subscription",
-   "fieldtype": "Data",
-   "label": "Subscription"
+   "fieldtype": "Link",
+   "label": "Subscription",
+   "options": "Subscription"
   },
   {
    "fieldname": "column_break_13",
@@ -137,13 +139,14 @@
    "fieldname": "plan_type",
    "fieldtype": "Link",
    "label": "Plan Type",
-   "options": "DocType"
+   "options": "DocType",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-09 18:10:09.586376",
+ "modified": "2024-08-23 16:46:05.290651",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",

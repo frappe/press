@@ -83,7 +83,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					condition: () => team.doc.is_desk_user,
+					condition: () => team.doc?.is_desk_user,
 					onClick() {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/app-patch/${row.name}`,
@@ -98,7 +98,7 @@ export default {
 						toast.promise(
 							listResource.runDocMethod.submit({
 								method: 'apply_patch',
-								name: row.name
+								name: String(row.name)
 							}),
 							{
 								loading: 'Creating job to apply patch',
@@ -115,7 +115,7 @@ export default {
 						toast.promise(
 							listResource.runDocMethod.submit({
 								method: 'revert_patch',
-								name: row.name
+								name: String(row.name)
 							}),
 							{
 								loading: 'Creating job to revert patch',

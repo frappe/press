@@ -131,6 +131,8 @@
 	</Dialog>
 </template>
 <script>
+import { DashboardError } from '../utils/error';
+
 export default {
 	name: 'AddDomainDialog',
 	props: {
@@ -150,7 +152,7 @@ export default {
 		checkDNS: {
 			url: 'press.api.site.check_dns',
 			validate() {
-				if (!this.newDomain) return 'Domain cannot be empty';
+				if (!this.newDomain) throw new DashboardError('Domain cannot be empty');
 			}
 		},
 		addDomain: {

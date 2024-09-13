@@ -1,14 +1,14 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
+import frappe
+from frappe.utils import cint
 from prometheus_client import (
 	CollectorRegistry,
 	Gauge,
 	generate_latest,
 )
 from werkzeug.wrappers import Response
-import frappe
-from frappe.utils import cint
 
 
 class MetricsRenderer:
@@ -44,9 +44,7 @@ class MetricsRenderer:
 			filters={"status": ("!=", "Success")},
 		)
 
-		self.get_status(
-			"press_site_total", "Site", filters={"status": ("not in", ("Archived", "Active"))}
-		)
+		self.get_status("press_site_total", "Site", filters={"status": ("!=", "Archived")})
 		self.get_status("press_bench_total", "Bench", filters={"status": ("!=", "Archived")})
 		self.get_status("press_server_total", "Server")
 

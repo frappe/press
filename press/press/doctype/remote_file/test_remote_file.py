@@ -11,7 +11,10 @@ import frappe
 
 
 def create_test_remote_file(
-	site: Optional[str] = None, creation: datetime = None, file_path: str = None
+	site: Optional[str] = None,
+	creation: datetime = None,
+	file_path: str = None,
+	file_size: int = 1024,
 ):
 	"""Create test remote file doc for required timestamp."""
 	creation = creation or frappe.utils.now_datetime()
@@ -21,7 +24,7 @@ def create_test_remote_file(
 			"status": "Available",
 			"site": site,
 			"file_path": file_path,
-			"file_size": 1024,
+			"file_size": file_size,
 		}
 	).insert(ignore_if_duplicate=True)
 	remote_file.db_set("creation", creation)

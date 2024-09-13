@@ -35,6 +35,8 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
+		if self.status == "Failure":
+			return
 		self.validate_versions()
 		self.validate_same_server()
 		self.validate_apps()
@@ -188,6 +190,11 @@ def update_from_site_update():
 def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
 		try:
+			site_status = frappe.db.get_value("Site", upgrade.site, "status")
+			if site_status.endswith("ing"):
+				# If we attempt to start the upgrade now, it will fail
+				# This will be picked up in the next iteration
+				continue
 			upgrade.start()
 			frappe.db.commit()
 		except Exception:

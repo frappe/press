@@ -4,8 +4,9 @@
 
 
 import frappe
-from frappe.model.document import Document
 from frappe.core.utils import find
+from frappe.model.document import Document
+
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -17,6 +18,7 @@ class DeployCandidateDifference(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.deploy_candidate_difference_app.deploy_candidate_difference_app import (
 			DeployCandidateDifferenceApp,
 		)

@@ -4,12 +4,14 @@
 
 
 import frappe
-from frappe.model.document import Document
-from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.model.document import Document
+
+from press.api.billing import get_stripe
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
-from press.api.client import dashboard_whitelist
+from press.utils.telemetry import capture
 
 
 class StripePaymentMethod(Document):
@@ -29,7 +31,10 @@ class StripePaymentMethod(Document):
 		last_4: DF.Data | None
 		name_on_card: DF.Data | None
 		stripe_customer_id: DF.Data | None
+		stripe_mandate_id: DF.Data | None
+		stripe_mandate_reference: DF.Data | None
 		stripe_payment_method_id: DF.Data | None
+		stripe_setup_intent_id: DF.Data | None
 		team: DF.Link
 	# end: auto-generated types
 
@@ -40,13 +45,43 @@ class StripePaymentMethod(Document):
 		"brand",
 		"name_on_card",
 		"last_4",
+		"stripe_mandate_id",
 	]
 
 	def onload(self):
 		load_address_and_contact(self)
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		StripeWebhookLog = frappe.qb.DocType("Stripe Webhook Log")
+		StripePaymentMethod = frappe.qb.DocType("Stripe Payment Method")
+
+		query = (
+			query.select(StripeWebhookLog.stripe_payment_method)
+			.left_join(StripeWebhookLog)
+			.on(
+				(StripeWebhookLog.stripe_payment_method == StripePaymentMethod.name)
+				& (StripeWebhookLog.event_type == "payment_intent.payment_failed")
+			)
+			.distinct()
+		)
+
+		return query
+
 	@dashboard_whitelist()
 	def delete(self):
+		if webhook_logs := frappe.get_all(
+			"Stripe Webhook Log",
+			filters={"stripe_payment_method": self.name},
+			pluck="name",
+		):
+			frappe.db.set_value(
+				"Stripe Webhook Log",
+				{"name": ("in", webhook_logs)},
+				"stripe_payment_method",
+				None,
+			)
+
 		super().delete()
 
 	@dashboard_whitelist()
@@ -68,6 +103,11 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 		if not frappe.db.get_value("Team", self.team, "payment_mode"):
 			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
+			account_request_name = frappe.get_value("Team", self.team, "account_request")
+			if account_request_name:
+				account_request = frappe.get_doc("Account Request", account_request_name)
+				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
+					capture("added_card_or_prepaid_credits", "fc_signup", account_request.email)
 
 	def on_trash(self):
 		self.remove_address_links()

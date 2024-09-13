@@ -7,6 +7,7 @@ import pluginRewriteAll from 'vite-plugin-rewrite-all';
 import Components from 'unplugin-vue-components/vite';
 import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
 	plugins: [
@@ -22,7 +23,14 @@ export default defineConfig({
 			],
 			resolvers: [IconsResolver()]
 		}),
-		Icons()
+		Icons(),
+		sentryVitePlugin({
+			url: process.env.SENTRY_URL,
+			org: process.env.SENTRY_ORG,
+			project: process.env.SENTRY_PROJECT,
+			applicationKey: 'press-dashboard',
+			authToken: process.env.SENTRY_AUTH_TOKEN
+		})
 	],
 	resolve: {
 		alias: {

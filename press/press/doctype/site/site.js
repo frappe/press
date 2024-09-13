@@ -97,6 +97,7 @@ frappe.ui.form.on('Site', {
 		[
 			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
 			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
@@ -141,6 +142,13 @@ frappe.ui.form.on('Site', {
 				__('Fetch bench from Agent'),
 				'fetch_bench_from_agent',
 				frm.doc.status !== 'Archived',
+			],
+			[
+				__('Set status based on Ping'),
+				'set_status_based_on_ping',
+				!['Active', 'Archived', 'Inactive', 'Suspended'].includes(
+					frm.doc.status,
+				),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -379,6 +387,61 @@ ${r.message.error}
 									'Failed to Remove Site',
 								);
 							}
+						});
+				});
+
+				dialog.show();
+			},
+			__('Dangerous Actions'),
+		);
+
+		frm.add_custom_button(
+			__('Forcefully Move Site'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('Forcefully Move Site'),
+					fields: [
+						{
+							fieldtype: 'Link',
+							options: 'Bench',
+							label: __('Bench'),
+							fieldname: 'bench',
+							reqd: 1,
+							get_query: () => {
+								return {
+									filters: [
+										['name', '!=', frm.doc.bench],
+										['status', '!=', 'Archived'],
+									],
+								};
+							},
+						},
+						{
+							fieldtype: 'Check',
+							label: __("I know what I'm doing"),
+							fieldname: 'confirmation',
+							reqd: 1,
+						},
+						{
+							fieldtype: 'Check',
+							label: __('Deactivate'),
+							fieldname: 'deactivate',
+						},
+					],
+				});
+
+				dialog.set_primary_action(__('Forcefully Move Site'), (args) => {
+					if (!args.confirmation) {
+						frappe.throw(__("Please confirm that you know what you're doing"));
+					}
+					frm
+						.call('move_to_bench', {
+							bench: args.bench,
+							deactivate: args.deactivate,
+						})
+						.then(() => {
+							dialog.hide();
+							frm.refresh();
 						});
 				});
 

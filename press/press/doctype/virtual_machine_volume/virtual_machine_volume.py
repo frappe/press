@@ -15,6 +15,7 @@ class VirtualMachineVolume(Document):
 		from frappe.types import DF
 
 		iops: DF.Int
+		last_updated_at: DF.Datetime | None
 		name: DF.Int | None
 		parent: DF.Data
 		parentfield: DF.Data

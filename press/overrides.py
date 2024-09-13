@@ -3,14 +3,16 @@
 # For license information, please see license.txt
 
 
-import frappe
-from frappe.utils import cint
-from frappe.handler import is_whitelisted
 from functools import partial
-from frappe.core.doctype.user.user import User
-from press.utils import _get_current_team, _system_user
-from press.runner import constants
+
+import frappe
 from ansible.utils.path import cleanup_tmp_file
+from frappe.core.doctype.user.user import User
+from frappe.handler import is_whitelisted
+from frappe.utils import cint
+
+from press.runner import constants
+from press.utils import _get_current_team, _system_user
 
 
 @frappe.whitelist(allow_guest=True)
@@ -96,9 +98,9 @@ def after_job():
 
 
 def update_website_context(context):
-	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(
-		"Press Settings", "publish_docs"
-	):
+	if (
+		frappe.request and frappe.request.path.startswith("/docs")
+	) and not frappe.db.get_single_value("Press Settings", "publish_docs"):
 		raise frappe.DoesNotExistError
 
 

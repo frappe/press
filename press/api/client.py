@@ -6,15 +6,15 @@ from __future__ import unicode_literals
 import inspect
 
 import frappe
-from frappe import is_whitelisted
 from frappe.client import set_value as _set_value
-from frappe.handler import get_attr
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
+
 from press.utils import has_role
+from press.exceptions import TeamHeaderNotInRequestError
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -23,9 +23,9 @@ ALLOWED_DOCTYPES = [
 	"Site Backup",
 	"Site Activity",
 	"Site Config",
-	"Site Config Key",
 	"Site Plan",
 	"Site Update",
+	"Site Group Deploy",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -39,7 +39,7 @@ ALLOWED_DOCTYPES = [
 	"Press Role",
 	"Press Role Permission",
 	"Team",
-	"SaaS Product Site Request",
+	"Product Trial Request",
 	"Deploy Candidate",
 	"Deploy Candidate Difference",
 	"Deploy Candidate Difference App",
@@ -53,7 +53,6 @@ ALLOWED_DOCTYPES = [
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
-	"User",
 	"Partner Approval Request",
 	"Marketplace App",
 	"Subscription",
@@ -62,10 +61,12 @@ ALLOWED_DOCTYPES = [
 	"App Release",
 	"Payout Order",
 	"App Patch",
-	"SaaS Product",
+	"Product Trial",
 	"Press Notification",
 	"User SSH Key",
 	"Frappe Version",
+	"Dashboard Banner",
+	"App Release Approval Request",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
@@ -77,22 +78,22 @@ whitelisted_methods = set()
 
 @frappe.whitelist()
 def get_list(
-	doctype,
-	fields=None,
-	filters=None,
-	order_by=None,
-	start=0,
-	limit=20,
-	parent=None,
-	debug=False,
+	doctype: str,
+	fields: list | None = None,
+	filters: dict | None = None,
+	order_by: str | None = None,
+	start: int = 0,
+	limit: int = 20,
+	parent: str | None = None,
+	debug: bool = False,
 ):
 	from press.press.doctype.press_role.press_role import check_role_permissions
 
 	if filters is None:
 		filters = {}
 
-	# team doctype doesn't have a team field to filter by
-	if doctype == "Team":
+	# these doctypes doesn't have a team field to filter by but are used in get or run_doc_method
+	if doctype in ["Team", "User SSH Key"]:
 		return []
 
 	check_permissions(doctype)
@@ -239,7 +240,7 @@ def insert(doc=None):
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
-def set_value(doctype, name, fieldname, value=None):
+def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None = None):
 	check_permissions(doctype)
 	check_document_access(doctype, name)
 
@@ -247,11 +248,14 @@ def set_value(doctype, name, fieldname, value=None):
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
 		is_allowed_field(doctype, field)
 
-	return _set_value(doctype, name, fieldname, value)
+	_set_value(doctype, name, fieldname, value)
+
+	# frappe set_value returns just the doc and not press's overriden `get_doc`
+	return get(doctype, name)
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])
-def delete(doctype, name):
+def delete(doctype: str, name: str):
 	method = "delete"
 
 	check_permissions(doctype)
@@ -262,17 +266,28 @@ def delete(doctype, name):
 
 
 @frappe.whitelist()
-def run_doc_method(dt, dn, method, args=None):
+def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
-	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
+	_run_doc_method(
+		dt=dt,
+		dn=dn,
+		method=method,
+		args=fix_args(method, args),
+	)
 	frappe.response.docs = [get(dt, dn)]
 
 
 @frappe.whitelist()
-def search_link(doctype, query=None, filters=None, order_by=None, page_length=None):
+def search_link(
+	doctype: str,
+	query: str | None = None,
+	filters: dict | None = None,
+	order_by: str | None = None,
+	page_length: int | None = None,
+):
 	check_permissions(doctype)
 	if doctype == "Team" and not frappe.local.system_user():
 		raise_not_permitted()
@@ -337,27 +352,6 @@ def check_dashboard_actions(doctype, name, method):
 
 	if fn not in whitelisted_methods:
 		raise_not_permitted()
-
-
-@frappe.whitelist()
-def run_doctype_method(doctype, method, **kwargs):
-	check_permissions(doctype)
-
-	from frappe.modules.utils import get_doctype_module, get_module_name
-
-	module = get_doctype_module(doctype)
-	method_path = get_module_name(doctype, module, "", "." + method)
-
-	try:
-		_function = get_attr(method_path)
-	except Exception as e:
-		frappe.throw(
-			frappe._("Failed to get method for command {0} with {1}").format(method_path, e)
-		)
-
-	is_whitelisted(_function)
-
-	return frappe.call(_function, **kwargs)
 
 
 def apply_custom_filters(doctype, query, **list_args):
@@ -454,7 +448,8 @@ def check_permissions(doctype):
 
 	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
-			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
+			"current_team is not set. Use X-PRESS-TEAM header in the request to set it.",
+			TeamHeaderNotInRequestError,
 		)
 
 	return True
@@ -490,3 +485,20 @@ def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
 		return decorated_func
 
 	return wrapper
+
+
+def fix_args(method, args):
+	# This is a fixer function. Certain callers of `run_doc_method`
+	# pass duplicates of the passed kwargs in the `args` arg.
+	#
+	# This causes "got multiple values for argument 'method'"
+	if not isinstance(args, dict):
+		return args
+
+	# Even if it doesn't match it'll probably throw
+	# down the call stack, but in that case it's unexpected
+	# behavior and so it's better to error-out.
+	if args.get("method") == method:
+		del args["method"]
+
+	return args

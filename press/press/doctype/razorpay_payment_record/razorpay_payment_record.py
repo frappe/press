@@ -1,13 +1,14 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from datetime import datetime, timedelta
-from press.utils import log_error
+
+import frappe
 from frappe.model.document import Document
-from press.utils.billing import get_razorpay_client
+
 from press.press.doctype.team.team import _enqueue_finalize_unpaid_invoices_for_team
+from press.utils import log_error
+from press.utils.billing import get_razorpay_client
 
 
 class RazorpayPaymentRecord(Document):
@@ -36,13 +37,15 @@ class RazorpayPaymentRecord(Document):
 
 		client = get_razorpay_client()
 		payment = client.payment.fetch(self.payment_id)
-		amount = payment["amount"] / 100
+		amount_with_tax = payment["amount"] / 100
 		gst = float(payment["notes"].get("gst", 0))
+		amount = amount_with_tax - gst
 		balance_transaction = team.allocate_credit_amount(
-			amount - gst if gst else amount,
+			amount,
 			source="Prepaid Credits",
 			remark=f"Razorpay: {self.payment_id}",
 		)
+		team.reload()
 
 		# Add a field to track razorpay event
 		invoice = frappe.get_doc(
@@ -51,10 +54,11 @@ class RazorpayPaymentRecord(Document):
 			type="Prepaid Credits",
 			status="Paid",
 			due_date=datetime.fromtimestamp(payment["created_at"]),
-			amount_paid=amount,
-			gst=gst or 0,
-			total_before_tax=amount - gst,
+			total=amount,
 			amount_due=amount,
+			gst=gst or 0,
+			amount_due_with_tax=amount_with_tax,
+			amount_paid=amount_with_tax,
 			razorpay_order_id=self.order_id,
 			razorpay_payment_record=self.name,
 			razorpay_payment_method=payment["method"],
@@ -98,9 +102,8 @@ class RazorpayPaymentRecord(Document):
 			log_error(title="Failed to sync Razorpay Payment Record", order_id=self.order_id)
 
 
-def fetch_pending_payment_orders():
-
-	past_12hrs_ago = datetime.now() - timedelta(hours=12)
+def fetch_pending_payment_orders(hours=12):
+	past_12hrs_ago = datetime.now() - timedelta(hours=hours)
 	pending_orders = frappe.get_all(
 		"Razorpay Payment Record",
 		dict(status="Pending", creation=(">=", past_12hrs_ago)),
@@ -112,7 +115,6 @@ def fetch_pending_payment_orders():
 		return
 
 	for order_id in pending_orders:
-
 		try:
 			response = client.order.payments(order_id)
 			for item in response.get("items"):

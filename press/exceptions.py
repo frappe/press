@@ -23,3 +23,19 @@ class MissingAppsInBench(ValidationError):
 
 class InsufficientSpaceOnServer(ValidationError):
 	pass
+
+
+class VolumeResizeLimitError(ValidationError):
+	pass
+
+
+class AAAARecordExists(ValidationError):
+	pass
+
+
+class ConflictingCAARecord(ValidationError):
+	pass
+
+
+class TeamHeaderNotInRequestError(ValidationError):
+	pass

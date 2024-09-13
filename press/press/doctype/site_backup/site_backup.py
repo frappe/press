@@ -10,6 +10,7 @@ from typing import Dict
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
+
 from press.agent import Agent
 
 
@@ -46,6 +47,7 @@ class SiteBackup(Document):
 		site: DF.Link
 		size: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		team: DF.Link | None
 		url: DF.Data | None
 		with_files: DF.Check
 	# end: auto-generated types
@@ -158,7 +160,6 @@ def process_backup_site_job_update(job):
 		return
 	backup = backups[0]
 	if job.status != backup.status:
-
 		status = job.status
 		if job.status == "Delivery Failure":
 			status = "Failure"

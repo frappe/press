@@ -1,0 +1,12 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Server Storage Plan",
+  "enabled": 1,
+  "modified": "2024-06-27 12:34:02.292945",
+  "name": "Add-on Storage plan",
+  "price_inr": 16.4,
+  "price_usd": 0.2,
+  "title": "Add-on Storage plan"
+ }
+]

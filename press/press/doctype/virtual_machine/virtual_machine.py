@@ -1,33 +1,36 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import base64
 import ipaddress
+
 import boto3
-from oci.core import ComputeClient, BlockstorageClient, VirtualNetworkClient
-from oci.core.models import (
-	LaunchInstanceShapeConfigDetails,
-	UpdateInstanceShapeConfigDetails,
-	LaunchInstancePlatformConfig,
-	CreateVnicDetails,
-	LaunchInstanceDetails,
-	UpdateInstanceDetails,
-	InstanceSourceViaImageDetails,
-	InstanceOptions,
-	UpdateBootVolumeDetails,
-	UpdateVolumeDetails,
-	CreateBootVolumeBackupDetails,
-	CreateVolumeBackupDetails,
-)
-
-
-from frappe.model.document import Document
+import frappe
 from frappe.core.utils import find
-from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
+from frappe.model.document import Document
+from frappe.model.naming import make_autoname
+from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
+from oci.core.models import (
+	CreateBootVolumeBackupDetails,
+	CreateVnicDetails,
+	CreateVolumeBackupDetails,
+	InstanceOptions,
+	InstanceSourceViaImageDetails,
+	LaunchInstanceDetails,
+	LaunchInstancePlatformConfig,
+	LaunchInstanceShapeConfigDetails,
+	UpdateBootVolumeDetails,
+	UpdateInstanceDetails,
+	UpdateInstanceShapeConfigDetails,
+	UpdateVolumeDetails,
+)
+from oci.exceptions import TransientServiceError
+
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
+import rq
 
 
 class VirtualMachine(Document):
@@ -38,6 +41,7 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
@@ -338,9 +342,12 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
+		if not increment:
+			return
 		volume = self.volumes[0]
-		volume.size += int(increment or 50)
+		volume.size += int(increment)
 		self.disk_size = volume.size
+		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
 		elif self.cloud_provider == "OCI":
@@ -395,11 +402,15 @@ class VirtualMachine(Document):
 				self.save()
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self, *args, **kwargs):
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		except frappe.QueryTimeoutError:  # lock wait timeout
+			return
 		if self.cloud_provider == "AWS EC2":
-			return self._sync_aws()
+			return self._sync_aws(*args, **kwargs)
 		elif self.cloud_provider == "OCI":
-			return self._sync_oci()
+			return self._sync_oci(*args, **kwargs)
 
 	def _sync_oci(self, instance=None):
 		if not instance:
@@ -539,7 +550,7 @@ class VirtualMachine(Document):
 			"Pending": "Pending",
 			"Running": "Active",
 			"Terminated": "Archived",
-			"Stopped": "Archived",
+			"Stopped": "Pending",
 		}
 		for doctype in self.server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
@@ -604,27 +615,31 @@ class VirtualMachine(Document):
 
 	def _create_snapshots_oci(self):
 		for volume in self.volumes:
-			if ".bootvolume." in volume.volume_id:
-				snapshot = (
-					self.client(BlockstorageClient)
-					.create_boot_volume_backup(
-						CreateBootVolumeBackupDetails(
-							boot_volume_id=volume.volume_id,
-							type="INCREMENTAL",
-							display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-						)
-					)
-					.data
-				)
-			else:
-				self.client(BlockstorageClient).create_volume_backup(
-					CreateVolumeBackupDetails(
-						volume_id=volume.volume_id,
-						type="INCREMENTAL",
-						display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
-					)
-				).data
 			try:
+				if ".bootvolume." in volume.volume_id:
+					snapshot = (
+						self.client(BlockstorageClient)
+						.create_boot_volume_backup(
+							CreateBootVolumeBackupDetails(
+								boot_volume_id=volume.volume_id,
+								type="INCREMENTAL",
+								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+							)
+						)
+						.data
+					)
+				else:
+					snapshot = (
+						self.client(BlockstorageClient)
+						.create_volume_backup(
+							CreateVolumeBackupDetails(
+								volume_id=volume.volume_id,
+								type="INCREMENTAL",
+								display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+							)
+						)
+						.data
+					)
 				frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
@@ -632,6 +647,10 @@ class VirtualMachine(Document):
 						"snapshot_id": snapshot.id,
 					}
 				).insert()
+			except TransientServiceError:
+				# We've hit OCI rate limit for creating snapshots
+				# Let's try again later
+				pass
 			except Exception:
 				log_error(
 					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
@@ -893,51 +912,73 @@ class VirtualMachine(Document):
 	def bulk_sync_aws(cls):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
-			["cluster"],
+			["cluster", "max(`index`) as max_index"],
 			{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "AWS EC2"},
 			group_by="cluster",
-			pluck="cluster",
 		):
-			# Pick a random machine
-			# TODO: This probably should be a method on the Cluster
-			machine = frappe.get_doc(
-				"Virtual Machine",
-				{
-					"status": ("not in", ("Terminated", "Draft")),
-					"cloud_provider": "AWS EC2",
-					"cluster": cluster,
-				},
-			)
-			frappe.enqueue_doc(
-				machine.doctype,
-				machine.name,
-				method="bulk_sync_aws_cluster",
-				queue="sync",
-				job_id=f"bulk_sync_aws:{machine.cluster}",
-				deduplicate=True,
-			)
+			CHUNK_SIZE = 25  # Each call will pick up ~50 machines (2 x CHUNK_SIZE)
+			# Generate closed bounds for 25 indexes at a time
+			# (1, 25), (26, 50), (51, 75), ...
+			# We might have uneven chunks because of missing indexes
+			chunks = [
+				(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)
+			]
+			for start, end in chunks:
+				# Pick a random machine
+				# TODO: This probably should be a method on the Cluster
+				machines = cls._get_active_aws_machines_within_chunk_range(
+					cluster.cluster, start, end
+				)
+				if not machines:
+					# There might not be any running machines in the chunk range
+					continue
 
-	def bulk_sync_aws_cluster(self):
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					machines[0].name,
+					method="bulk_sync_aws_cluster",
+					start=start,
+					end=end,
+					queue="sync",
+					job_id=f"bulk_sync_aws:{cluster.cluster}:{start}-{end}",
+					deduplicate=True,
+				)
+
+	def bulk_sync_aws_cluster(self, start, end):
 		client = self.client()
-		instance_ids = frappe.get_all(
-			"Virtual Machine",
-			filters={
-				"status": ("not in", ("Terminated", "Draft")),
-				"cloud_provider": "AWS EC2",
-				"cluster": self.cluster,
-			},
-			pluck="instance_id",
+		machines = self.__class__._get_active_aws_machines_within_chunk_range(
+			self.cluster, start, end
 		)
-		response = client.describe_instances(InstanceIds=instance_ids)
+		instance_ids = [machine.instance_id for machine in machines]
+		response = client.describe_instances(
+			Filters=[{"Name": "instance-id", "Values": instance_ids}]
+		)
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
-				machine = frappe.get_doc("Virtual Machine", {"instance_id": instance["InstanceId"]})
+				machine: VirtualMachine = frappe.get_doc(
+					"Virtual Machine", {"instance_id": instance["InstanceId"]}
+				)
 				try:
-					machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
-					frappe.db.commit()
+					machine.sync({"Reservations": [{"Instances": [instance]}]})
+					frappe.db.commit()  # release lock
 				except Exception:
 					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 					frappe.db.rollback()
+
+	@classmethod
+	def _get_active_aws_machines_within_chunk_range(cls, cluster, start, end):
+		return frappe.get_all(
+			"Virtual Machine",
+			fields=["name", "instance_id"],
+			filters=[
+				["status", "not in", ("Terminated", "Draft")],
+				["cloud_provider", "=", "AWS EC2"],
+				["cluster", "=", cluster],
+				["instance_id", "is", "set"],
+				["index", ">=", start],
+				["index", "<=", end],
+			],
+		)
 
 	@classmethod
 	def bulk_sync_oci(cls):
@@ -971,10 +1012,17 @@ class VirtualMachine(Document):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
-			machine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
+			machine: VirtualMachine = frappe.get_doc(
+				"Virtual Machine", {"instance_id": instance.id}
+			)
+			if has_job_timeout_exceeded():
+				return
 			try:
-				machine._sync_oci(instance)
-				frappe.db.commit()
+
+				machine.sync(instance)
+				frappe.db.commit()  # release lock
+			except rq.timeouts.JobTimeoutException:
+				return
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
@@ -994,6 +1042,13 @@ def sync_virtual_machines():
 def snapshot_virtual_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
 	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{"virtual_machine": machine.name, "creation": (">=", frappe.utils.today())},
+			limit=1,
+		):
+			continue
 		try:
 			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
 			frappe.db.commit()

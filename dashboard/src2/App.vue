@@ -3,17 +3,37 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!$isMobile"
+					v-if="!$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar v-if="$session.user && $route.name != 'NewAppTrial'" />
+					<AppSidebar
+						v-if="
+							$session.user &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup' &&
+							!$route.name?.startsWith('IntegratedBilling')
+						"
+					/>
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="$isMobile && $session.user && $route.name != 'NewAppTrial'"
+						v-if="
+							$isMobile &&
+							!isHideSidebar &&
+							$session.user &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup' &&
+							!$route.name?.startsWith('IntegratedBilling')
+						"
 					/>
 					<div
-						v-if="!$session.user && !$route.meta.isLoginPage"
+						v-if="
+							!$session.user &&
+							!$route.meta.isLoginPage &&
+							!$route.name?.startsWith('IntegratedBilling') &&
+							$route.name != 'AppTrialSignup' &&
+							$route.name != 'AppTrialSetup'
+						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
@@ -30,9 +50,12 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed } from 'vue';
+import { defineAsyncComponent, computed, watch } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
+import { useRoute } from 'vue-router';
+import { getTeam } from './data/team';
+import { session } from './data/session.js';
 
 const AppSidebar = defineAsyncComponent(() =>
 	import('./components/AppSidebar.vue')
@@ -40,6 +63,16 @@ const AppSidebar = defineAsyncComponent(() =>
 const MobileNav = defineAsyncComponent(() =>
 	import('./components/MobileNav.vue')
 );
+
+const route = useRoute();
+
+const isHideSidebar = computed(() => {
+	if (!session.user) return false;
+	const team = getTeam();
+	return (
+		route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
+	);
+});
 </script>
 
 <style src="../src/assets/style.css"></style>

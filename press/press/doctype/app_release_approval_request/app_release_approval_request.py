@@ -1,16 +1,17 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import glob
 import json
 import re
-import glob
-from pygments.lexers import PythonLexer as PL
-from pygments.formatters import HtmlFormatter as HF
-from pygments import highlight
 
 import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from pygments import highlight
+from pygments.formatters import HtmlFormatter as HF
+from pygments.lexers import PythonLexer as PL
+
 from press.press.doctype.app_release.app_release import AppRelease
 
 
@@ -22,12 +23,16 @@ class AppReleaseApprovalRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.marketplace.doctype.app_release_approval_code_comments.app_release_approval_code_comments import (
+			AppReleaseApprovalCodeComments,
+		)
 
 		app: DF.Link | None
 		app_release: DF.Link
 		baseline_request: DF.Data | None
 		baseline_requirements: DF.Code | None
 		baseline_result: DF.Code | None
+		code_comments: DF.Table[AppReleaseApprovalCodeComments]
 		marketplace_app: DF.Link
 		reason_for_rejection: DF.TextEditor | None
 		requirements: DF.Code | None
@@ -38,6 +43,16 @@ class AppReleaseApprovalRequest(Document):
 		status: DF.Literal["Open", "Cancelled", "Approved", "Rejected"]
 		team: DF.Link | None
 	# end: auto-generated types
+
+	dashboard_fields = [
+		"name",
+		"marketplace_app",
+		"screening_status",
+		"app_release",
+		"status",
+		"result",
+		"code_comments",
+	]
 
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
@@ -185,10 +200,16 @@ class AppReleaseApprovalRequest(Document):
 		self.result = json.dumps(result, indent=2)
 
 	def _screen_python_file(self, filename):
+		def is_commented_line(line):
+			stripped_line = line.strip()
+			return stripped_line.startswith("#")
+
 		with open(filename, "r") as ff:
 			lines = ff.read().splitlines()
 		lines_with_issues = []
 		for index, line in enumerate(lines):
+			if is_commented_line(line):
+				continue
 			issues = []
 			configuration = get_configuration()
 			for severity, violations in configuration.items():
@@ -198,7 +219,11 @@ class AppReleaseApprovalRequest(Document):
 					search = regex.search(line)
 					if search:
 						issues.append(
-							{"severity": severity, "violation": violation, "match": search.group(1)}
+							{
+								"severity": severity,
+								"violation": violation,
+								"match": search.group(1),
+							}
 						)
 			if issues:
 				context = get_context(lines, index)

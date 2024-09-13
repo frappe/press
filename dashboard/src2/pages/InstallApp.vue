@@ -30,18 +30,7 @@
 					</div>
 				</div>
 
-				<div v-if="!options.is_app_featured && !options.private_groups.length">
-					<div
-						class="flex items-center space-x-2 rounded border border-gray-200 bg-gray-100 p-4 text-base text-gray-700"
-					>
-						<i-lucide-alert-circle class="inline-block h-5 w-5" />
-						<p>
-							This app isn't available in our public benches.<br />
-							Read below documentation to add it to your own bench.
-						</p>
-					</div>
-				</div>
-				<div v-else class="space-y-12">
+				<div class="space-y-12">
 					<div v-if="plans.length">
 						<div class="flex items-center justify-between">
 							<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -56,12 +45,7 @@
 					<div v-if="options.private_groups.length">
 						<h2 class="text-base font-medium leading-6 text-gray-900">
 							Select Bench
-							<span
-								v-if="options.is_app_featured"
-								class="text-sm text-gray-500"
-							>
-								(Optional)
-							</span>
+							<span class="text-sm text-gray-500"> (Optional) </span>
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<FormControl
@@ -77,12 +61,7 @@
 						</div>
 					</div>
 
-					<div
-						v-if="
-							options.is_app_featured ||
-							(!options.is_app_featured && selectedGroup)
-						"
-					>
+					<div>
 						<h2 class="text-base font-medium leading-6 text-gray-900">
 							Select Region
 						</h2>
@@ -171,7 +150,9 @@
 						<Button
 							class="w-full"
 							variant="solid"
-							:disabled="!agreedToRegionConsent"
+							:disabled="
+								!agreedToRegionConsent || !$resources.subdomainExists.data
+							"
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"
 						>
@@ -197,10 +178,11 @@
 </template>
 
 <script>
-import { Breadcrumbs, TextInput } from 'frappe-ui';
-import { getDocResource } from '../utils/resource';
+import { Breadcrumbs, debounce } from 'frappe-ui';
 import Header from '../components/Header.vue';
 import PlansCards from '../components/PlansCards.vue';
+import { DashboardError } from '../utils/error';
+import { validateSubdomain } from '../utils/site';
 
 export default {
 	name: 'InstallApp',
@@ -230,7 +212,27 @@ export default {
 			agreedToRegionConsent: false
 		};
 	},
+	watch: {
+		subdomain: {
+			handler: debounce(function (value) {
+				let invalidMessage = validateSubdomain(value);
+				this.$resources.subdomainExists.error = invalidMessage;
+				if (!invalidMessage) {
+					this.$resources.subdomainExists.submit();
+				}
+			}, 500)
+		}
+	},
 	resources: {
+		app() {
+			return {
+				url: 'press.api.marketplace.get',
+				params: {
+					app: this.app
+				},
+				auto: true
+			};
+		},
 		installAppOptions() {
 			return {
 				url: 'press.api.marketplace.get_install_app_options',
@@ -242,11 +244,13 @@ export default {
 					domain: '',
 					plans: [],
 					clusters: [],
-					is_app_featured: false,
 					private_groups: []
 				},
 				async onSuccess() {
 					this.cluster = await this.getClosestCluster();
+					if (this.$resources.installAppOptions.data?.plans.length > 0) {
+						this.selectedPlan = this.$resources.installAppOptions.data.plans[0];
+					}
 				}
 			};
 		},
@@ -255,12 +259,15 @@ export default {
 				url: 'press.api.site.exists',
 				makeParams() {
 					return {
-						domain: this.$resources.options.domain,
+						domain: this.$resources.installAppOptions.data?.domain,
 						subdomain: this.subdomain
 					};
 				},
 				validate() {
-					return validateSubdomain(this.subdomain);
+					let error = validateSubdomain(this.subdomain);
+					if (error) {
+						throw new DashboardError(error);
+					}
 				},
 				transform(data) {
 					return !Boolean(data);
@@ -271,45 +278,53 @@ export default {
 			if (!this.options) return;
 
 			return {
-				url: 'press.api.client.insert',
+				url: 'press.api.marketplace.create_site_for_app',
 				makeParams() {
 					return {
-						doc: {
-							doctype: 'Site',
-							team: this.$team.doc.name,
-							subdomain: this.subdomain,
-							apps: [{ app: 'frappe' }, { app: this.app }],
-							app_plans: this.selectedPlan
-								? {
-										[this.app]: this.selectedPlan
-								  }
-								: null,
-							cluster: this.cluster,
-							bench: this.regions.find(r => r.name === this.cluster).bench,
-							group: this.selectedGroup?.value,
-							subscription_plan: this.selectedGroup
-								? this.options.private_site_plan
-								: this.options.public_site_plan,
-							domain: this.options.domain
-						}
+						subdomain: this.subdomain,
+						site_plan: this.selectedGroup
+							? this.options.private_site_plan
+							: this.options.public_site_plan,
+						apps: [
+							{
+								app: 'frappe'
+							},
+							{
+								app: this.app,
+								plan: this.selectedPlan?.name
+							}
+						],
+						cluster: this.cluster,
+						group: this.selectedGroup?.value,
+						bench: this.regions.find(r => r.name === this.cluster)?.bench
 					};
 				},
 				validate() {
 					if (!this.selectedPlan && this.plans.length > 0) {
-						return 'Please select a plan';
+						throw new DashboardError('Please select a plan');
 					}
 					if (!this.subdomain) {
-						return 'Please enter a subdomain';
+						throw new DashboardError('Please enter a subdomain');
 					}
 					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create site';
+						throw new DashboardError(
+							'Please agree to the above consent to create site'
+						);
 					}
 				},
-				onSuccess: site => {
-					this.$router.push({
-						name: 'Site Detail Jobs',
-						params: { name: site.name }
-					});
+				onSuccess: doc => {
+					if (doc.doctype === 'Site') {
+						this.$router.push({
+							name: 'Site Detail Jobs',
+							params: { name: doc.name }
+						});
+					} else if (doc.doctype === 'Site Group Deploy') {
+						this.$router.push({
+							name: 'CreateSiteForMarketplaceApp',
+							params: { app: this.app },
+							query: { siteGroupDeployName: doc.name }
+						});
+					}
 				}
 			};
 		}
@@ -356,16 +371,13 @@ export default {
 	},
 	computed: {
 		appDoc() {
-			let doc = getDocResource({
-				doctype: 'Marketplace App',
-				name: this.app
-			});
-			return doc.doc || {};
+			return this.$resources.app.data || {};
 		},
 		options() {
 			return this.$resources.installAppOptions.data;
 		},
 		plans() {
+			if (!this.$resources?.installAppOptions) return [];
 			return this.options.plans.map(plan => ({
 				...plan,
 				label:

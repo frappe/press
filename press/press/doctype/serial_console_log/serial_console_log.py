@@ -1,13 +1,13 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-from io import StringIO
 import time
-
-import pexpect
+from io import StringIO
 
 import frappe
+import pexpect
 from frappe.model.document import Document
+
 from press.press.doctype.deploy_candidate.deploy_candidate import ansi_escape
 
 
@@ -20,24 +20,50 @@ class SerialConsoleLog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		action: DF.Literal[
+			"help",
+			"reboot",
+			"crash",
+			"sync",
+			"show-all-timers",
+			"unmount",
+			"show-all-locks",
+			"show-backtrace-all-active-cpus",
+			"show-registers",
+			"show-task-states",
+			"show-blocked-tasks",
+			"dump-ftrace-buffer",
+			"show-memory-usage",
+			"terminate-all-tasks",
+			"memory-full-oom-kill",
+			"thaw-filesystems",
+			"kill-all-tasks",
+			"nice-all-RT-tasks",
+			"replay-kernel-logs",
+		]
+		command: DF.Data | None
+		message: DF.Data | None
 		output: DF.Code | None
 		server: DF.DynamicLink
 		server_type: DF.Link
 		virtual_machine: DF.Link
 	# end: auto-generated types
 
+	def validate(self):
+		self.command, self.message = SYSRQ_COMMANDS.get(self.action, ("h", "HELP"))
+
 	@frappe.whitelist()
-	def run_reboot(self):
+	def run_sysrq(self):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			method="_run_reboot",
+			method="_run_sysrq",
 			queue="long",
 			enqueue_after_commit=True,
 		)
 		frappe.db.commit()
 
-	def _run_reboot(self):
+	def _run_sysrq(self):
 		credentials = frappe.get_doc(
 			"Virtual Machine", self.virtual_machine
 		).get_serial_console_credentials()
@@ -71,10 +97,10 @@ class SerialConsoleLog(Document):
 			ssh.sendline("")
 			ssh.send("~B")
 			time.sleep(0.1)
-			ssh.send("b")
+			ssh.send(self.command)
 
 			# Wait for reboot
-			index = ssh.expect(["sysrq: Resetting", pexpect.TIMEOUT], timeout=1)
+			index = ssh.expect([f"sysrq: {self.message}", pexpect.TIMEOUT], timeout=1)
 			if index == 0 or break_attempt > 10:
 				break
 
@@ -106,9 +132,32 @@ class FakeIO(StringIO):
 		frappe.db.commit()
 
 
+SYSRQ_COMMANDS = {
+	"crash": ("c", "Trigger a crash"),
+	"reboot": ("b", "Resetting"),
+	"sync": ("s", "Emergency Sync"),
+	"help": ("h", "HELP"),
+	"show-all-timers": ("q", "Show clockevent devices & pending hrtimers (no others)"),
+	"unmount": ("u", "Emergency Remount R/O"),
+	"show-all-locks": ("d", "Show Locks Held"),
+	"show-backtrace-all-active-cpus": ("l", "Show backtrace of all active CPUs"),
+	"show-registers": ("p", "Show Regs"),
+	"show-task-states": ("t", "Show State"),
+	"show-blocked-tasks": ("w", "Show Blocked State"),
+	"dump-ftrace-buffer": ("z", "Dump ftrace buffer"),
+	"show-memory-usage": ("m", "Show Memory"),
+	"terminate-all-tasks": ("e", "Terminate All Tasks"),
+	"memory-full-oom-kill": ("f", "Manual OOM execution"),
+	"thaw-filesystems": ("j", "Emergency Thaw of all frozen filesystems"),
+	"kill-all-tasks": ("i", "Kill All Tasks"),
+	"nice-all-RT-tasks": ("n", "Nice All RT Tasks"),
+	"replay-kernel-logs": ("R", "Replay kernel logs on consoles"),
+}
+
+
 @frappe.whitelist()
-def run_reboot(doc):
+def run_sysrq(doc):
 	frappe.only_for("System Manager")
 	parsed_doc = frappe.parse_json(doc)
-	frappe.get_doc(parsed_doc.doctype, parsed_doc.name).run_reboot()
+	frappe.get_doc(parsed_doc.doctype, parsed_doc.name).run_sysrq()
 	return doc

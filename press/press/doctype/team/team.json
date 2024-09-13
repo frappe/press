@@ -21,6 +21,7 @@
   "is_code_server_user",
   "free_account",
   "via_erpnext",
+  "enforce_2fa",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -54,6 +55,7 @@
   "skip_backups",
   "column_break_31",
   "database_access_enabled",
+  "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
@@ -200,7 +202,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPartner Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -410,6 +412,19 @@
   {
    "fieldname": "column_break_wejg",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "false",
+   "fieldname": "enable_performance_tuning",
+   "fieldtype": "Check",
+   "label": "Enable Performance Tuning"
+  },
+  {
+   "default": "0",
+   "description": "Enforces 2FA to all members",
+   "fieldname": "enforce_2fa",
+   "fieldtype": "Check",
+   "label": "Enforce 2FA"
   }
  ],
  "links": [
@@ -462,9 +477,14 @@
    "group": "Marketplace",
    "link_doctype": "Marketplace Publisher Profile",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Stripe Payment Method",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2024-04-04 22:20:46.667608",
+ "modified": "2024-09-05 15:06:48.179274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -20,7 +20,7 @@ class PayoutOrderItem(Document):
 		document_type: DF.Link
 		gateway_fee: DF.Currency
 		invoice: DF.Link
-		invoice_item: DF.Link
+		invoice_item: DF.Link | None
 		name: DF.Int | None
 		net_amount: DF.Currency
 		parent: DF.Data

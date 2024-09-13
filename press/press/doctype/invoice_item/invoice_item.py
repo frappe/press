@@ -19,6 +19,7 @@ class InvoiceItem(Document):
 		amount: DF.Currency
 		description: DF.Data | None
 		discount: DF.Currency
+		discount_percentage: DF.Percent
 		document_name: DF.DynamicLink | None
 		document_type: DF.Link | None
 		has_marketplace_payout_completed: DF.Check

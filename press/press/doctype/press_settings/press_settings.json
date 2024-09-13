@@ -11,24 +11,30 @@
   "column_break_2",
   "bench_configuration",
   "billing_tab",
+  "free_credits_usd",
+  "free_credits_inr",
+  "column_break_cpry",
+  "micro_debit_charge_usd",
+  "micro_debit_charge_inr",
+  "column_break_wrqp",
+  "usage_record_creation_batch_size",
   "invoicing_section",
   "invoicing_column",
   "gst_percentage",
   "column_break_qfwx",
   "print_format",
   "stripe_settings_section",
-  "stripe_inr_plan_id",
   "stripe_publishable_key",
+  "stripe_secret_key",
+  "column_break_26",
   "create_stripe_plans",
   "stripe_product_id",
   "stripe_usd_plan_id",
+  "stripe_inr_plan_id",
+  "column_break_yhwz",
   "create_stripe_webhook",
   "stripe_webhook_endpoint_id",
   "stripe_webhook_secret",
-  "column_break_26",
-  "stripe_secret_key",
-  "free_credits_inr",
-  "free_credits_usd",
   "ngrok_auth_token",
   "razorpay_settings_section",
   "razorpay_key_id",
@@ -72,7 +78,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "remote_build_server",
+  "build_server",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -145,7 +151,6 @@
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
-  "allow_developer_account",
   "threshold",
   "commission",
   "usd_rate",
@@ -160,6 +165,7 @@
   "agent_sentry_dsn",
   "column_break_105",
   "agent_github_access_token",
+  "branch",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -188,7 +194,8 @@
   "spaces_domain",
   "hybrid_server_tab",
   "hybrid_cluster",
-  "hybrid_domain"
+  "hybrid_domain",
+  "tls_renewal_queue_size"
  ],
  "fields": [
   {
@@ -228,6 +235,7 @@
    "label": "Billing"
   },
   {
+   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -828,12 +836,6 @@
    "non_negative": 1
   },
   {
-   "default": "0",
-   "fieldname": "allow_developer_account",
-   "fieldtype": "Check",
-   "label": "Allow Developer Account from Dashboard"
-  },
-  {
    "fieldname": "infrastructure_tab",
    "fieldtype": "Tab Break",
    "label": "Infrastructure"
@@ -967,7 +969,7 @@
   {
    "fieldname": "usd_rate",
    "fieldtype": "Float",
-   "label": "Commission USD Rate"
+   "label": "USD Rate"
   },
   {
    "fieldname": "press_monitoring_password",
@@ -1177,15 +1179,59 @@
    "label": "Agent Sentry DSN"
   },
   {
-   "fieldname": "remote_build_server",
+   "fieldname": "build_server",
    "fieldtype": "Link",
-   "label": "Remote Build Server",
+   "label": "Build Server",
    "options": "Server"
+  },
+  {
+   "default": "10",
+   "fieldname": "tls_renewal_queue_size",
+   "fieldtype": "Int",
+   "label": "TLS Renewal Queue Size"
+  },
+  {
+   "default": "80",
+   "fieldname": "micro_debit_charge_inr",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (INR)",
+   "precision": "0"
+  },
+  {
+   "default": "1",
+   "fieldname": "micro_debit_charge_usd",
+   "fieldtype": "Currency",
+   "label": "Micro Debit Charge (USD)",
+   "precision": "0"
+  },
+  {
+   "default": "master",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
+  },
+  {
+   "fieldname": "column_break_yhwz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_cpry",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wrqp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "500",
+   "fieldname": "usage_record_creation_batch_size",
+   "fieldtype": "Int",
+   "label": "Usage Record Creation Batch Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-05-23 13:52:31.570272",
+ "modified": "2024-08-19 17:47:53.603250",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

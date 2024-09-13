@@ -1,8 +1,18 @@
 <template>
 	<div>
-		<div v-if="hideControls" class="flex items-center justify-between">
+		<!-- Banners -->
+		<component
+			:is="banner.dismissable ? 'DismissableBanner' : 'AlertBanner'"
+			v-if="banner"
+			v-bind="banner"
+			class="mb-4"
+		>
+			<Button v-if="banner.button" v-bind="banner.button" class="ml-auto" />
+		</component>
+
+		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
-				<div class="flex items-center space-x-2">
+				<div v-if="showControls" class="flex items-center space-x-2">
 					<TextInput
 						placeholder="Search"
 						class="max-w-[20rem]"
@@ -24,6 +34,7 @@
 						@update:filter="onFilterControlChange"
 					/>
 				</div>
+				<div v-else></div>
 			</slot>
 			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
@@ -42,13 +53,18 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Tooltip text="Refresh" v-if="$list">
-					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
-						<template #icon>
+				<Button
+					label="Refresh"
+					v-if="$list"
+					@click="$list.reload()"
+					:loading="isLoading"
+				>
+					<template #icon>
+						<Tooltip text="Refresh">
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-						</template>
-					</Button>
-				</Tooltip>
+						</Tooltip>
+					</template>
+				</Button>
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -66,7 +82,7 @@
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
-						? row => this.options.onRowClick(row)
+						? row => this.options.onRowClick(row, context)
 						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
@@ -119,6 +135,9 @@
 </template>
 <script>
 import { reactive } from 'vue';
+import { throttle } from '../utils/throttle';
+import DismissableBanner from './DismissableBanner.vue';
+import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
@@ -139,6 +158,8 @@ export default {
 	props: ['options'],
 	emits: ['update:selections'],
 	components: {
+		AlertBanner,
+		DismissableBanner,
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
@@ -152,7 +173,6 @@ export default {
 	},
 	data() {
 		return {
-			lastRefreshed: null,
 			searchQuery: ''
 		};
 	},
@@ -207,9 +227,6 @@ export default {
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
 				auto: true,
-				onSuccess: () => {
-					this.lastRefreshed = new Date();
-				},
 				onError: e => {
 					if (this.$list.data) {
 						this.$list.data = [];
@@ -220,7 +237,7 @@ export default {
 	},
 	beforeUpdate() {
 		if (this.$list?.list) {
-			let filters = this.$list.list?.params?.filters;
+			const filters = this.$list.list?.params?.filters || {};
 			for (let control of this.filterControls) {
 				if (control.value !== filters[control.fieldname]) {
 					control.value = filters[control.fieldname];
@@ -231,33 +248,29 @@ export default {
 	mounted() {
 		if (this.options.data) return;
 		if (this.options.list) {
-			let resource = this.$list.list || this.$list;
+			const resource = this.$list.list || this.$list;
 			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
 			this.$socket.emit('doctype_subscribe', doctype);
 			subscribed[doctype] = true;
 
+			const throttledReload = throttle(this.$list.reload, 5000);
 			this.$socket.on('list_update', data => {
-				let names = (this.$list.data || []).map(d => d.name);
-				if (
-					data.doctype === doctype &&
-					names.includes(data.name) &&
-					// update list if last refreshed is more than 5 seconds ago
-					new Date() - this.lastRefreshed > 5000
-				) {
-					this.$list.reload();
+				const names = (this.$list.data || []).map(d => d.name);
+				if (data.doctype === doctype && names.includes(data.name)) {
+					throttledReload();
 				}
 			});
 		}
 	},
 	beforeUnmount() {
 		if (this.options.doctype) {
-			let doctype = this.options.doctype;
+			const doctype = this.options.doctype;
 			this.$socket.emit('doctype_unsubscribe', doctype);
 			subscribed[doctype] = false;
 		}
@@ -389,11 +402,21 @@ export default {
 			if (this.options.data) return false;
 			return this.$list.list?.loading || this.$list.loading;
 		},
-		hideControls() {
-			return !this.options.hideControls;
+		showControls() {
+			return (
+				(this.searchQuery ||
+					this.rows.length > 5 ||
+					this.filterControls.length) &&
+				!this.options.hideControls
+			);
 		},
 		emptyStateMessage() {
 			return this.options.emptyStateMessage || 'No results found';
+		},
+		banner() {
+			if (this.options.banner) {
+				return this.options.banner(this.context);
+			}
 		}
 	},
 	methods: {

@@ -5,18 +5,19 @@
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
-import { userCurrency } from '../../utils/format';
+import { currency } from '../../utils/format';
 import dayjs from '../../utils/dayjs';
 
 export default {
 	name: 'PartnerCustomerInvoices',
-	props: ['customerTeam'],
+	props: ['customerTeam', 'customerCurrency'],
 	components: {
 		ObjectList
 	},
 	data() {
 		return {
-			team: this.customerTeam
+			team: this.customerTeam,
+			currency: this.customerCurrency
 		};
 	},
 	computed: {
@@ -61,7 +62,7 @@ export default {
 			if (value === 0) {
 				return '';
 			}
-			return userCurrency(value);
+			return currency(value, this.currency);
 		}
 	}
 };

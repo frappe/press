@@ -1,7 +1,7 @@
 from contextlib import suppress
-from posthog import Posthog
 
 import frappe
+from posthog import Posthog
 
 from press.utils import log_error
 
@@ -36,9 +36,9 @@ def identify(site, **kwargs):
 
 
 @frappe.whitelist(allow_guest=True)
-def capture_read_event(name: str = None):
+def capture_read_event(email: str = None):
 	try:
-		capture("read_email", "fc_signup", name)
+		capture("read_email", "fc_signup", email)
 	except Exception as e:
 		log_error("Failed to capture read_email event", e)
 	finally:

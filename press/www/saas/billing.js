@@ -1,13 +1,29 @@
-const trial_end = 15 - frappe.boot.telemetry_site_age;
+function calculate_trial_end_days() {
+	// try to check for trial_end_date in frappe.boot.subscription_conf
+	if (frappe.boot.subscription_conf.trial_end_date) {
+		const trial_end_date = new Date(
+			frappe.boot.subscription_conf.trial_end_date,
+		);
+		const today = new Date();
+		const diffTime = trial_end_date - today;
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		return diffDays;
+	} else {
+		return 15 - frappe.boot.telemetry_site_age;
+	}
+}
+
+const trial_end_days = calculate_trial_end_days();
+
 const trial_end_string =
-	trial_end > 1 ? `${trial_end} days` : `${trial_end} day`;
+	trial_end_days > 1 ? `${trial_end_days} days` : `${trial_end_days} day`;
 
 let subscription_string = __(
-	`Your trial ends in ${trial_end_string}. Please subscribe to avoid uninterrupted services`,
+	`Your trial ends in ${trial_end_string}. Please subscribe for uninterrupted services`,
 );
 
 let $floatingBar = $(`
-			<div class="flex justify-content-center flex-col p-2"
+			<div class="flex justify-content-center flex-col px-2"
 				style="
 					background-color: rgb(254 243 199);
 					border-radius: 10px;
@@ -27,54 +43,52 @@ let $floatingBar = $(`
 				<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
 				<line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
 			</svg>
-			<p style="margin: auto 0; margin-right: 20px; padding-left: 10px; font-size: 15px;">
+			<p style="margin: auto 0; margin-right: 20px; padding-left: 10px;">
 				${subscription_string}
 			</p>
 			<button id="show-dialog" type="button"
 				class="
 					button-renew
-					px-4
-					py-2
-					border-0
-					text-white
+					px-2
+					py-1
 				"
 				onclick="showBanner()"
 				style="
 					margin: auto;
 					height: fit-content;
-					background-color: #171717;
-					border-radius: 10px;
-					margin-right: 10px
+					background-color: transparent;
+					border: 1px solid #171717;
+					color: #171717;
+					border-radius: 8px;
+					margin-right: 8px;
+					font-size: 13px;
 				"
 			>
 			Subscribe
 			</button>
-			<!--<a type="button"
+			<a type="button"
 				class="dismiss-upgrade text-muted"
 				data-dismiss="modal"
 				aria-hidden="true"
-				style="font-size:30px;
+				style="font-size:24px;
 				margin-bottom: 5px;
-				margin-right: 10px"
-			>×</a>-->
+				margin-right: 5px"
+			>×</a>
 			</div>
 `);
-let showFloatingBanner = localStorage.getItem('showFloatingBanner');
-let banner = true;
-
-if (showFloatingBanner != null) {
-	let now = new Date();
-	let temp = new Date(showFloatingBanner);
-
-	if (temp.getTime() > now.getTime() && temp.getDate() <= now.getDate()) {
-		banner = false;
-	}
-}
 
 $(document).ready(function () {
-	// check if setup complete
-	if (frappe.boot.setup_complete === 1 && banner && !frappe.is_mobile()) {
+	if (
+		frappe.boot.setup_complete === 1 &&
+		!frappe.is_mobile() &&
+		frappe.boot.subscription_conf.status !== 'Subscribed' &&
+		trial_end_days > 0
+	) {
 		$('.layout-main-section').before($floatingBar);
+
+		$floatingBar.find('.dismiss-upgrade').on('click', () => {
+			$floatingBar.remove();
+		});
 	}
 });
 
@@ -82,15 +96,6 @@ function showBanner() {
 	const d = new frappe.ui.Dialog({
 		title: __('Change Plan'),
 		size: 'medium',
-	});
-
-	// dismiss banner and add 4 hour dismissal time
-	$floatingBar.find('.dismiss-upgrade').on('click', () => {
-		const now = new Date();
-		const sixHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-
-		localStorage.setItem('showFloatingBanner', sixHoursLater);
-		$floatingBar.remove();
 	});
 
 	$(d.body).html(`

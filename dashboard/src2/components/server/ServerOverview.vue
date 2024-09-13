@@ -4,7 +4,9 @@
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
 		<div
-			v-for="server in ['Server', 'Database Server', 'Replication Server']"
+			v-for="server in !!$dbReplicaServer?.doc
+				? ['Server', 'Database Server', 'Replication Server']
+				: ['Server', 'Database Server']"
 			class="col-span-1 rounded-md border lg:col-span-2"
 		>
 			<div class="grid grid-cols-2 lg:grid-cols-4">
@@ -15,16 +17,20 @@
 					>
 						<div
 							v-if="d.type === 'header'"
-							class="flex items-center justify-between"
+							class="m-auto flex items-center justify-between"
 						>
 							<div
 								v-if="d.type === 'header'"
 								class="mt-2 flex flex-col space-y-2"
 							>
 								<div class="text-base text-gray-700">{{ d.label }}</div>
-								<div>
-									<div class="text-base text-gray-900">
-										{{ d.value }}
+								<div class="space-y-1">
+									<div class="text-base text-gray-900" v-html="d.value" />
+									<div class="flex space-x-1">
+										<div class="text-sm text-gray-600" v-html="d.subValue" />
+										<Tooltip v-if="d.help" :text="d.help">
+											<i-lucide-info class="h-3.5 w-3.5 text-gray-500" />
+										</Tooltip>
 									</div>
 								</div>
 							</div>
@@ -35,15 +41,24 @@
 							/>
 						</div>
 						<div v-else-if="d.type === 'progress'">
-							<div class="text-base text-gray-700">{{ d.label }}</div>
+							<div class="flex items-center justify-between space-x-2">
+								<div class="text-base text-gray-700">{{ d.label }}</div>
+								<div v-if="d.actions" class="flex space-x-2">
+									<Button v-for="action in d.actions || []" v-bind="action" />
+								</div>
+								<div v-else class="h-8" />
+							</div>
 							<div class="mt-2">
-								<Progress size="md" :value="d.progress_value" />
-								<div>
+								<Progress size="md" :value="d.progress_value || 0" />
+								<div class="flex space-x-2">
 									<div class="mt-2 flex justify-between">
 										<div class="text-sm text-gray-600">
 											{{ d.value }}
 										</div>
 									</div>
+									<Tooltip v-if="d.help" :text="d.help">
+										<i-lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+									</Tooltip>
 								</div>
 							</div>
 						</div>
@@ -73,9 +88,10 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
-import { renderDialog } from '../../utils/components';
+import { confirmDialog, renderDialog } from '../../utils/components';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';
@@ -113,7 +129,7 @@ export default {
 					: serverType === 'Database Server'
 					? this.$dbServer.doc
 					: serverType === 'Replication Server'
-					? this.$dbReplicaServer
+					? this.$dbReplicaServer?.doc
 					: null;
 
 			if (!doc) return [];
@@ -121,16 +137,18 @@ export default {
 			let currentPlan = doc.current_plan;
 			let currentUsage = doc.usage;
 			let diskSize = doc.disk_size;
+			let additionalStorage = diskSize - (currentPlan?.disk || 0);
+			let price = 0;
+			// not using $format.planTitle cuz of manual calculation of add-on storage plan
+			let priceField =
+				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
 
 			let planDescription = '';
-			if (!currentPlan) {
+			if (!currentPlan?.name) {
 				planDescription = 'No plan selected';
 			} else if (currentPlan.price_usd > 0) {
-				if (this.$team.doc.currency === 'INR') {
-					planDescription = `₹${currentPlan.price_inr} /month`;
-				} else {
-					planDescription = `$${currentPlan.price_usd} /month`;
-				}
+				price = currentPlan[priceField];
+				planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
 			} else {
 				planDescription = currentPlan.plan_title;
 			}
@@ -144,7 +162,22 @@ export default {
 							? 'Database Server Plan'
 							: 'Replication Server Plan',
 					value: planDescription,
-					type: 'header'
+					subValue:
+						additionalStorage > 0
+							? `${this.$format.userCurrency(
+									doc.storage_plan[priceField] * additionalStorage,
+									0
+							  )}/mo`
+							: '',
+					type: 'header',
+					help:
+						additionalStorage > 0
+							? `Server Plan: ${this.$format.userCurrency(
+									currentPlan[priceField]
+							  )}/mo & Add-on Storage Plan: ${this.$format.userCurrency(
+									doc.storage_plan[priceField] * additionalStorage
+							  )}/mo`
+							: ''
 				},
 				{
 					label: 'CPU',
@@ -153,10 +186,14 @@ export default {
 						? (currentUsage.vcpu / currentPlan.vcpu) * 100
 						: 0,
 					value: currentPlan
-						? `${((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100}% of ${
-								currentPlan.vcpu
-						  } ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
-						: 'vCPU'
+						? `${(((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100).toFixed(
+								2
+						  )}% of ${currentPlan.vcpu} ${this.$format.plural(
+								currentPlan.vcpu,
+								'vCPU',
+								'vCPUs'
+						  )}`
+						: '0% vCPU'
 				},
 				{
 					label: 'Memory',
@@ -168,7 +205,7 @@ export default {
 						? `${formatBytes(currentUsage.memory || 0)} of ${formatBytes(
 								currentPlan.memory
 						  )}`
-						: 'GB'
+						: formatBytes(currentUsage.memory || 0)
 				},
 				{
 					label: 'Storage',
@@ -181,7 +218,141 @@ export default {
 						? `${currentUsage.disk || 0} GB of ${
 								diskSize ? diskSize : currentPlan.disk
 						  } GB`
-						: 'GB'
+						: `${currentUsage.disk || 0} GB`,
+					help:
+						diskSize - (currentPlan?.disk || 0) > 0
+							? `Add-on storage: ${diskSize - (currentPlan?.disk || 0)} GB`
+							: '',
+					actions: [
+						{
+							label: 'Increase Storage',
+							icon: 'plus',
+							variant: 'ghost',
+							onClick: () => {
+								confirmDialog({
+									title: 'Increase Storage',
+									message: `Enter the disk size you want to increase to the server <b>${
+										doc.title || doc.name
+									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
+										doc.storage_plan[priceField]
+									)}/mo</b> for each additional GB of storage.</div>`,
+									fields: [
+										{
+											fieldname: 'storage',
+											type: 'select',
+											default: 50,
+											label: 'Storage (GB)',
+											variant: 'outline',
+											// options from 5 GB to 500 GB in steps of 5 GB
+											options: Array.from({ length: 100 }, (_, i) => ({
+												label: `${(i + 1) * 5} GB`,
+												value: (i + 1) * 5
+											}))
+										}
+									],
+									onSuccess: ({ hide, values }) => {
+										toast.promise(
+											this.$appServer.increaseDiskSize.submit(
+												{
+													server: doc.name,
+													increment: values.storage
+												},
+												{
+													onSuccess: () => {
+														hide();
+														this.$router.push({
+															name: 'Server Detail Plays',
+															params: { name: this.$appServer.name }
+														});
+													},
+													onError(e) {
+														console.error(e);
+													}
+												}
+											),
+											{
+												loading: 'Increasing disk size...',
+												success: 'Disk size is scheduled to increase',
+												error: 'Failed to increase disk size'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Configure Auto Increase Storage',
+							icon: 'tool',
+							variant: 'ghost',
+							onClick: () => {
+								confirmDialog({
+									title: 'Configure Auto Increase Storage',
+									message: `<div class="rounded my-4 p-2 text-sm text-gray-700 bg-gray-100 border">Auto Increase Storage feature is enabled by default to avoid server/site downtime when the storage gets full.<br><br>You can disable this feature by providing minimum and maximum as 0.<br><br>But if you disable it, <strong>we may not be notified of incidents from this server</strong>.</div>Enter the maximum and minimum storage to increase for the server <b>${
+										doc.title || doc.name
+									}</b>.`,
+									fields: [
+										{
+											fieldname: 'min',
+											type: 'select',
+											default: String(doc.auto_add_storage_min),
+											label: 'Minimum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										},
+										{
+											fieldname: 'max',
+											type: 'select',
+											default: String(doc.auto_add_storage_max),
+											label: 'Maximum Storage Increase (GB)',
+											variant: 'outline',
+											// options from 5 GB to 250 GB in steps of 5 GB
+											options: Array.from({ length: 51 }, (_, i) => ({
+												label: `${i * 5} GB`,
+												value: i * 5
+											}))
+										}
+									],
+									onSuccess: ({ hide, values }) => {
+										toast.promise(
+											this.$appServer.configureAutoAddStorage.submit(
+												{
+													server: doc.name,
+													min: values.min,
+													max: values.max
+												},
+												{
+													onSuccess: () => {
+														hide();
+
+														if (doc.name === this.$appServer.name)
+															this.$appServer.reload();
+														else if (doc.name === this.$dbServer.name)
+															this.$dbServer.reload();
+														else if (doc.name === this.$replicationServer.name)
+															this.$replicationServer.reload();
+													}
+												}
+											),
+											{
+												loading: 'Configuring auto increase storage...',
+												success: 'Auto increase storage is configured',
+												error: err => {
+													return err.messages.length
+														? err.messages.join('/n')
+														: err.message ||
+																'Failed to configure auto increase storage';
+												}
+											}
+										);
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}

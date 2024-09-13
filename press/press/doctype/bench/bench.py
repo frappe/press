@@ -2,13 +2,14 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from itertools import groupby
 import json
+from collections import OrderedDict
 from functools import cached_property
-import pytz
-from typing import TYPE_CHECKING, Iterable, Literal, Optional
+from itertools import groupby
+from typing import TYPE_CHECKING, Generator, Iterable, Literal, Optional
 
 import frappe
+import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
@@ -21,13 +22,14 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 	create_bench_shell_log,
 )
 from press.press.doctype.site.site import Site
-from press.utils import log_error
-
+from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
+	from press.press.doctype.bench_update.bench_update import BenchUpdate
+
 	SupervisorctlActions = Literal[
 		"start",
 		"stop",
@@ -83,6 +85,7 @@ class Bench(Document):
 		vcpu: DF.Int
 	# end: auto-generated types
 
+	DOCTYPE = "Bench"
 	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
 
 	@staticmethod
@@ -305,10 +308,15 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def archive(self):
-		unarchived_sites = frappe.db.exists(
-			"Site", {"bench": self.name, "status": ("!=", "Archived")}
+		self.status = "Pending"
+		self.save()  # lock 1
+		unarchived_sites = frappe.db.get_value(
+			"Site",
+			{"bench": self.name, "status": ("!=", "Archived")},
+			"name",
+			for_update=True,  # lock 2
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
@@ -346,6 +354,8 @@ class Bench(Document):
 			last_synced_time = None
 
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_info(self, since=last_synced_time)
 		if data:
 			for site, info in data.items():
@@ -354,6 +364,9 @@ class Bench(Document):
 				try:
 					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
+				except frappe.DoesNotExistError:
+					# Ignore: Site got renamed or deleted
+					pass
 				except Exception:
 					log_error(
 						"Site Sync Error",
@@ -367,6 +380,8 @@ class Bench(Document):
 	@frappe.whitelist()
 	def sync_analytics(self):
 		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
 		data = agent.get_sites_analytics(self)
 		if not data:
 			return
@@ -485,7 +500,6 @@ class Bench(Document):
 
 	@frappe.whitelist()
 	def retry_bench(self):
-
 		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
 			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
 
@@ -599,6 +613,27 @@ class Bench(Document):
 			programs,
 		)
 
+	def supervisorctl_status(self):
+		result = self.docker_execute("supervisorctl status")
+		if result["status"] != "Success" or not result["output"]:
+			# Check Bench Shell Log for traceback if present
+			raise Exception("Could not fetch supervisorctl status")
+
+		output = result["output"]
+		processes = parse_supervisor_status(output)
+		return sort_supervisor_processes(processes)
+
+	@classmethod
+	def get_workloads(
+		cls, sites: list[str]
+	) -> Generator[tuple[str, float, str], None, None]:
+		benches = frappe.get_all(
+			"Site", filters={"name": ["in", sites]}, pluck="bench", order_by="bench"
+		)
+		for bench_name in benches:
+			bench = cls(cls.DOCTYPE, bench_name)
+			yield bench.name, bench.workload, bench.server
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -653,29 +688,54 @@ def process_new_bench_job_update(job):
 		"Failure": "Broken",
 		"Delivery Failure": "Broken",
 	}[job.status]
+	if updated_status == bench.status:
+		return
 
-	if updated_status != bench.status:
-		frappe.db.set_value("Bench", job.bench, "status", updated_status)
-		if updated_status == "Active":
-			StagingSite.create_if_needed(bench)
-			bench = frappe.get_doc("Bench", job.bench)
-			frappe.enqueue(
-				"press.press.doctype.bench.bench.archive_obsolete_benches",
-				enqueue_after_commit=True,
-				group=bench.group,
-				server=bench.server,
-			)
-			bench.add_ssh_user()
+	frappe.db.set_value("Bench", job.bench, "status", updated_status)
 
-			bench_update = frappe.get_all(
-				"Bench Update",
-				{"candidate": bench.candidate, "status": "Build Successful"},
-				pluck="name",
-			)
-			if bench_update:
-				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(
-					job.bench, bench.server
-				)
+	# check if new bench related to a site group deploy
+	site_group_deploy = frappe.db.get_value(
+		"Site Group Deploy",
+		{
+			"release_group": bench.group,
+			"site": ("is", "not set"),
+			"bench": ("is", "not set"),
+		},
+	)
+	if site_group_deploy:
+		frappe.get_doc(
+			"Site Group Deploy", site_group_deploy
+		).update_site_group_deploy_on_process_job(job)
+
+	if updated_status != "Active":
+		return
+
+	StagingSite.create_if_needed(bench)
+	bench = frappe.get_doc("Bench", job.bench)
+	frappe.enqueue(
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		enqueue_after_commit=True,
+		group=bench.group,
+		server=bench.server,
+	)
+	bench.add_ssh_user()
+
+	dc_status = frappe.get_value("Deploy Candidate", bench.candidate, "status")
+	if dc_status != "Success":
+		return
+
+	bench_updates = frappe.get_all(
+		"Bench Update",
+		{"candidate": bench.candidate},
+		pluck="name",
+		limit=1,
+	)
+	if len(bench_updates) != 0:
+		bench_update: "BenchUpdate" = frappe.get_doc(
+			"Bench Update",
+			bench_updates[0],
+		)
+		bench_update.update_sites_on_server(job.bench, bench.server)
 
 
 def process_archive_bench_job_update(job):
@@ -707,12 +767,16 @@ def process_archive_bench_job_update(job):
 
 def process_add_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", True)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", True, update_modified=False
+		)
 
 
 def process_remove_ssh_user_job_update(job):
 	if job.status == "Success":
-		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False)
+		frappe.db.set_value(
+			"Bench", job.bench, "is_ssh_proxy_setup", False, update_modified=False
+		)
 
 
 def get_archive_jobs(bench: str):
@@ -954,6 +1018,57 @@ def sync_bench_analytics(name):
 def convert_user_timezone_to_utc(datetime):
 	timezone = pytz.timezone(get_system_timezone())
 	return timezone.localize(datetime).astimezone(pytz.utc)
+
+
+def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
+	"""
+	Sorts supervisor processes according to `status_order` and groups them
+	by process group.
+	"""
+
+	status_order = [
+		"Starting",
+		"Backoff",
+		"Running",
+		"Stopping",
+		"Stopped",
+		"Exited",
+		"Fatal",
+		"Unknown",
+	]
+	status_grouped = group_supervisor_processes(processes)
+	sorted_process_groups: "list[list[SupervisorProcess]]" = []
+	for status in status_order:
+		if not (group_grouped := status_grouped.get(status)):
+			continue
+
+		sorted_process_groups.extend(group_grouped.values())
+		del status_grouped[status]
+
+	# Incase not all statuses have been accounted for
+	for group_grouped in status_grouped.values():
+		sorted_process_groups.extend(group_grouped.values())
+
+	return flatten(sorted_process_groups)
+
+
+def group_supervisor_processes(processes: "list[SupervisorProcess]"):
+	status_grouped: "OrderedDict[str, OrderedDict[str, list[SupervisorProcess]]]" = (
+		OrderedDict()
+	)
+	for p in processes:
+		status = p.get("status")
+		group = p.get("group", "NONE")
+
+		if status not in status_grouped:
+			status_grouped[status] = OrderedDict()
+
+		group_grouped = status_grouped[status]
+		if group not in group_grouped:
+			group_grouped[group] = []
+
+		group_grouped[group].append(p)
+	return status_grouped
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

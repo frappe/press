@@ -4,11 +4,15 @@
 
 import functools
 import json
+import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Union
+from typing import Optional, TypedDict, TypeVar
 from urllib.parse import urljoin
 
+from babel.dates import format_timedelta
 import frappe
 import pytz
 import requests
@@ -16,6 +20,20 @@ import wrapt
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+
+SupervisorProcess = TypedDict(
+	"SupervisorProcess",
+	{
+		"program": str,  # group and name
+		"name": str,
+		"status": str,
+		"uptime": Optional[float],  # in seconds
+		"uptime_string": Optional[str],
+		"message": Optional[str],  # when not running
+		"group": Optional[str],
+		"pid": Optional[int],
+	},
+)
 
 
 def log_error(title, **kwargs):
@@ -47,9 +65,18 @@ def log_error(title, **kwargs):
 	except Exception:
 		pass
 
-	traceback = frappe.get_traceback(with_context=True)
-	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
-	message = f"Data:\n{serialized}\nException:\n{traceback}"
+	message = ""
+	if serialized := json.dumps(
+		kwargs,
+		indent=4,
+		sort_keys=True,
+		default=str,
+		skipkeys=True,
+	):
+		message += f"Data:\n{serialized}\n"
+
+	if traceback := frappe.get_traceback(with_context=True):
+		message += f"Exception:\n{traceback}\n"
 
 	try:
 		frappe.log_error(
@@ -64,7 +91,7 @@ def log_error(title, **kwargs):
 
 def get_current_team(get_doc=False):
 	if frappe.session.user == "Guest":
-		frappe.throw("Not Permitted", frappe.PermissionError)
+		frappe.throw("Not Permitted", frappe.AuthenticationError)
 
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
@@ -86,6 +113,10 @@ def get_current_team(get_doc=False):
 
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
+	if not team:
+		# check if `team_name` is available in frappe.local
+		# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
+		team = getattr(frappe.local, "team_name", "")
 
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
@@ -110,14 +141,15 @@ def get_current_team(get_doc=False):
 	if not system_user and not is_user_part_of_team(frappe.session.user, team):
 		# if user is not part of the team, get the default team for user
 		team = get_default_team_for_user(frappe.session.user)
-		if not team:
-			frappe.throw(
-				"User {0} does not belong to Team {1}".format(frappe.session.user, team),
-				frappe.PermissionError,
-			)
+
+	if not team:
+		frappe.throw(
+			f"User {frappe.session.user} is not part of any team",
+			frappe.AuthenticationError,
+		)
 
 	if not frappe.db.exists("Team", {"name": team, "enabled": 1}):
-		frappe.throw("Invalid Team", frappe.PermissionError)
+		frappe.throw("Invalid Team", frappe.AuthenticationError)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
@@ -291,14 +323,19 @@ def get_frappe_backups(url, email, password):
 	return RemoteFrappeSite(url, email, password).get_backups()
 
 
+def is_allowed_access_performance_tuning():
+	team = get_current_team(get_doc=True)
+	return team.enable_performance_tuning
+
+
 class RemoteFrappeSite:
 	def __init__(self, url, usr, pwd):
 		if not url.startswith("http"):
 			# http will be redirected to https in requests
 			url = f"http://{url}"
 
-		self.user_site = url
-		self.user_login = usr
+		self.user_site = url.strip()
+		self.user_login = usr.strip()
 		self.password_login = pwd
 		self._remote_backup_links = {}
 
@@ -319,7 +356,7 @@ class RemoteFrappeSite:
 
 	def _validate_frappe_site(self):
 		"""Validates if Frappe Site and sets RemoteBackupRetrieval.site"""
-		res = requests.get(f"{self.user_site}/api/method/frappe.ping")
+		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
 			frappe.throw("Invalid Frappe Site")
@@ -333,6 +370,7 @@ class RemoteFrappeSite:
 		response = requests.post(
 			f"{self.site}/api/method/login",
 			data={"usr": self.user_login, "pwd": self.password_login},
+			timeout=(5, 10),
 		)
 		if not response.ok:
 			if response.status_code == 401:
@@ -371,6 +409,7 @@ class RemoteFrappeSite:
 		res = requests.get(
 			f"{self.site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
 			headers=headers,
+			timeout=(5, 10),
 		)
 		if not res.ok:
 			self._handle_backups_retrieval_failure(res)
@@ -583,6 +622,144 @@ def reconnect_on_failure():
 	return wrapper
 
 
+def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
+	# Note: this function is verbose due to supervisor status being kinda
+	# unstructured, and I'm not entirely sure of all possible input formats.
+	#
+	# example lines:
+	# ```
+	#   frappe-bench-web:frappe-bench-frappe-web            RUNNING   pid 1327, uptime 23:13:00
+	# 	frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
+	#   sshd                                                FATAL     Exited too quickly (process log may have details)
+	# ```
+
+	pid_rex = re.compile(r"^pid\s+\d+")
+
+	lines = output.split("\n")
+	parsed: list["SupervisorProcess"] = []
+
+	for line in lines:
+		if "DeprecationWarning:" in line or "pkg_resources is deprecated" in line:
+			continue
+
+		entry: "SupervisorProcess" = {
+			"program": "",
+			"status": "",
+		}
+
+		splits = strip_split(line, maxsplit=1)
+		if len(splits) != 2:
+			continue
+
+		program, info = splits
+
+		# example: "code-server"
+		entry["program"] = program
+		entry["name"] = program
+
+		prog_splits = program.split(":")
+
+		if len(prog_splits) == 2:
+			# example: "frappe-bench-web:frappe-bench-frappe-web"
+			entry["group"] = prog_splits[0]
+			entry["name"] = prog_splits[1]
+
+		info_splits = strip_split(info, maxsplit=1)
+		if len(info_splits) != 2:
+			continue
+
+		# example: "STOPPED   Not started"
+		entry["status"] = info_splits[0].title()
+		if not pid_rex.match(info_splits[1]):
+			entry["message"] = info_splits[1]
+
+		else:
+			# example: "RUNNING   pid 9, uptime 150 days, 2:55:52"
+			pid, uptime, uptime_string = parse_pid_uptime(info_splits[1])
+			entry["pid"] = pid
+			entry["uptime"] = uptime
+			entry["uptime_string"] = uptime_string
+
+		parsed.append(entry)
+
+	return parsed
+
+
+def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
+	pid: Optional[int] = None
+	uptime: Optional[float] = None
+	splits = strip_split(s, ",", maxsplit=1)
+
+	if len(splits) != 2:
+		return pid, uptime
+
+	# example: "pid 9"
+	pid_split = splits[0]
+
+	# example: "uptime 150 days, 2:55:52"
+	uptime_split = splits[1]
+
+	pid_split, uptime_split = splits
+	pid_splits = strip_split(pid_split, maxsplit=1)
+
+	if len(pid_splits) == 2 and pid_splits[0] == "pid":
+		pid = int(pid_splits[1])
+
+	uptime_string = ""
+	uptime_splits = strip_split(uptime_split, maxsplit=1)
+	if len(uptime_splits) == 2 and uptime_splits[0] == "uptime":
+		uptime_string = uptime_splits[1]
+		uptime = parse_uptime(uptime_string)
+
+	return pid, uptime, uptime_string
+
+
+def parse_uptime(s: str) -> Optional[float]:
+	# example `s`: "uptime 68 days, 6:10:37"
+	days = 0
+	hours = 0
+	minutes = 0
+	seconds = 0
+
+	t_string = ""
+	splits = strip_split(s, sep=",", maxsplit=1)
+
+	# Uptime has date info too
+	if len(splits) == 2 and (splits[0].endswith("days") or splits[0].endswith("day")):
+		t_string = splits[1]
+		d_string = splits[0].split(" ")[0]
+		days = float(d_string)
+
+	# Uptime less than a day
+	elif len(splits) == 1:
+		t_string = splits[0]
+	else:
+		return None
+
+	# Time string format hh:mm:ss
+	t_splits = t_string.split(":")
+	if len(t_splits) == 3:
+		hours = float(t_splits[0])
+		minutes = float(t_splits[1])
+		seconds = float(t_splits[2])
+
+	return timedelta(
+		days=days,
+		hours=hours,
+		minutes=minutes,
+		seconds=seconds,
+	).total_seconds()
+
+
+def strip_split(string: str, sep: str = " ", maxsplit: int = -1) -> list[str]:
+	splits: list[str] = []
+	for part in string.split(sep, maxsplit):
+		if p_stripped := part.strip():
+			splits.append(p_stripped)
+
+	return splits
+
+
 def get_filepath(root: str, filename: str, max_depth: int = 1):
 	"""
 	Returns the absolute path of a `filename` under `root`. If
@@ -616,3 +793,15 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+
+
+def fmt_timedelta(td: Union[timedelta, int]):
+	locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
+	return format_timedelta(td, locale=locale)
+
+
+V = TypeVar("V")
+
+
+def flatten(value_lists: "list[list[V]]") -> "list[V]":
+	return [value for values in value_lists for value in values]

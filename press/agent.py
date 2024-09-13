@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from contextlib import suppress
+import _io
 import json
 import os
 from datetime import date
 from typing import TYPE_CHECKING, List
 
-import _io
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
+
 from press.utils import log_error, sanitize_config
 
 if TYPE_CHECKING:
@@ -68,12 +70,6 @@ class Agent:
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
 		)
 
-	def restart_nginx(self):
-		return self.create_agent_job(
-			"Reload NGINX",
-			"server/reload",
-		)
-
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
 			"Bench Restart",
@@ -129,7 +125,7 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site):
+	def new_site(self, site, create_user: dict = None):
 		apps = [app.app for app in site.apps]
 
 		data = {
@@ -140,6 +136,9 @@ class Agent:
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
+
+		if create_user:
+			data["create_user"] = create_user
 
 		return self.create_agent_job(
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
@@ -188,13 +187,41 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None):
+	def rename_site(
+		self, site, new_name: str, create_user: dict = None, config: dict = None
+	):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
+		if config:
+			data["config"] = config
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def create_user(self, site, email, first_name, last_name, password=None):
+		data = {
+			"email": email,
+			"first_name": first_name,
+			"last_name": last_name,
+			"password": password,
+		}
+		return self.create_agent_job(
+			"Create User",
+			f"benches/{site.bench}/sites/{site.name}/create-user",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def complete_setup_wizard(self, site, data):
+		return self.create_agent_job(
+			"Complete Setup Wizard",
+			f"benches/{site.bench}/sites/{site.name}/complete-setup-wizard",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -468,7 +495,7 @@ class Agent:
 			bench=site.bench,
 		)
 
-	def new_host(self, domain):
+	def new_host(self, domain, skip_reload=False):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
 			"name": domain.domain,
@@ -478,6 +505,7 @@ class Agent:
 				"fullchain.pem": certificate.full_chain,
 				"chain.pem": certificate.intermediate_chain,
 			},
+			"skip_reload": skip_reload,
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
@@ -686,6 +714,7 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.raise_if_past_requests_have_failed()
 		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
@@ -740,6 +769,7 @@ class Agent:
 				)
 		except Exception as exc:
 			self.handle_exception(agent_job, exc)
+			self.log_request_failure(exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -750,14 +780,64 @@ class Agent:
 				doc=agent_job,
 			)
 
-	def handle_request_failure(self, agent_job, result):
+	def raise_if_past_requests_have_failed(self):
+		failures = frappe.db.get_value(
+			"Agent Request Failure", {"server": self.server}, "failure_count"
+		)
+		if failures:
+			raise AgentRequestSkippedException(
+				f"Previous {failures} requests have failed. Try again later."
+			)
+
+	def log_request_failure(self, exc):
+		filters = {
+			"server": self.server,
+		}
+		failure = frappe.db.get_value(
+			"Agent Request Failure", filters, ["name", "failure_count"], as_dict=True
+		)
+		if failure:
+			frappe.db.set_value(
+				"Agent Request Failure", failure.name, "failure_count", failure.failure_count + 1
+			)
+		else:
+			fields = filters
+			fields.update(
+				{
+					"server_type": self.server_type,
+					"traceback": frappe.get_traceback(with_context=True),
+					"error": repr(exc),
+					"failure_count": 1,
+				}
+			)
+			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
+
+	def raw_request(self, method, path, data=None, raises=True, timeout=None):
+		url = f"https://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		timeout = timeout or (10, 30)
+		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
+		json_response = response.json()
+		if raises:
+			response.raise_for_status()
+		return json_response
+
+	def should_skip_requests(self):
+		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
+
+	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
 			return
 
+		reason = None
+		with suppress(TypeError, ValueError):
+			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+
 		message = f"""
-			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
-			Response: {getattr(result, 'text', 'Unknown')}
-		"""
+Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Response: {reason or getattr(result, 'text', 'Unknown')}
+"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 
@@ -786,7 +866,6 @@ class Agent:
 		reference_doctype=None,
 		reference_name=None,
 	):
-
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
 		don't add new job until its gets comleted
@@ -885,13 +964,17 @@ class Agent:
 		return result and result.get("sid")
 
 	def get_site_info(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+		if result:
+			return result["data"]
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_site_analytics(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/analytics")["data"]
+		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
+		if result:
+			return result["data"]
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
@@ -905,10 +988,12 @@ class Agent:
 
 	def add_database_index(self, site, doctype, columns):
 		data = {"doctype": doctype, "columns": list(columns)}
-		return self.post(
+		return self.create_agent_job(
+			"Add Database Index",
 			f"benches/{site.bench}/sites/{site.name}/add-database-index",
-			data=data,
-		)["data"]
+			data,
+			site=site.name,
+		)
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
@@ -924,7 +1009,8 @@ class Agent:
 
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
-		return self.post("update", data={"url": url})
+		branch = frappe.get_doc(self.server_type, self.server).get_agent_repository_branch()
+		return self.post("update", data={"url": url, "branch": branch})
 
 	def ping(self):
 		return self.get("ping")["message"]
@@ -1007,7 +1093,7 @@ class Agent:
 
 		return None
 
-	def run_remote_builder(self, data: dict):
+	def run_build(self, data: dict):
 		reference_name = data.get("deploy_candidate")
 		return self.create_agent_job(
 			"Run Remote Builder",
@@ -1048,6 +1134,19 @@ class Agent:
 			data={},
 		)
 
+	def get_site_apps(self, site):
+		raw_apps_list = self.get(
+			f"benches/{site.bench}/sites/{site.name}/apps",
+		)
+		apps: list[str] = [
+			line.split()[0] for line in raw_apps_list["data"].splitlines() if line
+		]
+		return apps
+
 
 class AgentCallbackException(Exception):
+	pass
+
+
+class AgentRequestSkippedException(Exception):
 	pass

@@ -2,13 +2,14 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-import frappe
 import unittest
-
 from typing import Optional
+
+import frappe
+
 from press.press.doctype.marketplace_app.utils import (
-	number_k_format,
 	get_rating_percentage_distribution,
+	number_k_format,
 )
 
 

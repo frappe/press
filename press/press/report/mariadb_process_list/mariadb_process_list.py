@@ -2,10 +2,10 @@
 # For license information, please see license.txt
 
 import frappe
-
 import sqlparse
-from press.agent import Agent
 from frappe.utils import cint
+
+from press.agent import Agent
 
 
 def execute(filters=None):

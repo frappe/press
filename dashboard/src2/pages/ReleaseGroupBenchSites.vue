@@ -3,13 +3,13 @@
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
-			:options="{ title: 'Apps', size: '3xl' }"
+			:options="{
+				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
+				size: '6xl'
+			}"
 		>
 			<template #body-content>
-				<div class="mb-4 text-base font-medium">
-					{{ $releaseGroup.getAppVersions.params.args.bench }}
-				</div>
-				<GenericList :options="appVersionOptions" />
+				<ObjectList :options="appVersionOptions" />
 			</template>
 		</Dialog>
 	</div>
@@ -21,21 +21,19 @@ import {
 	Tooltip,
 	createDocumentResource
 } from 'frappe-ui';
-import GenericList from '../components/GenericList.vue';
 import ObjectList from '../components/ObjectList.vue';
 import Badge from '@/components/global/Badge.vue';
 import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { toast } from 'vue-sonner';
 import { trialDays } from '../utils/site';
-import { getTeam } from '../data/team';
-import { userCurrency } from '../utils/format';
+import { planTitle } from '../utils/format';
 import ActionButton from '../components/ActionButton.vue';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
 	props: ['releaseGroup'],
-	components: { GenericList, ObjectList },
+	components: { ObjectList },
 	data() {
 		return {
 			showAppVersionDialog: false,
@@ -92,18 +90,20 @@ export default {
 		listOptions() {
 			return {
 				list: this.$resources.sites,
-				groupHeader: ({ group }) => {
-					let options = this.benchOptions(group);
+				groupHeader: ({ group: bench }) => {
+					if (!bench?.status) return;
+
+					let options = this.benchOptions(bench);
 					let IconHash = icon('hash', 'w-3 h-3');
 					return (
 						<div class="flex items-center">
 							<div class="text-base font-medium leading-6 text-gray-900">
-								{group.group}
+								{bench.group}
 							</div>
-							{group.status != 'Active' ? (
-								<Badge class="ml-4" label={group.status} />
+							{bench.status != 'Active' ? (
+								<Badge class="ml-4" label={bench.status} />
 							) : null}
-							{group.has_app_patch_applied && (
+							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this deploy have been patched">
 									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
 										<IconHash />
@@ -131,11 +131,13 @@ export default {
 					{
 						label: 'Status',
 						fieldname: 'status',
-						type: 'Badge'
+						type: 'Badge',
+						width: 0.5
 					},
 					{
 						label: 'Region',
 						fieldname: 'cluster_title',
+						width: 0.5,
 						prefix(row) {
 							if (row.cluster_title)
 								return h('img', {
@@ -147,20 +149,12 @@ export default {
 					},
 					{
 						label: 'Plan',
+						width: 0.5,
 						format(value, row) {
 							if (row.trial_end_date) {
 								return trialDays(row.trial_end_date);
 							}
-							let $team = getTeam();
-							if (row.price_usd > 0) {
-								let india = $team.doc.country == 'India';
-								let formattedValue = userCurrency(
-									india ? row.price_inr : row.price_usd,
-									0
-								);
-								return `${formattedValue} /mo`;
-							}
-							return row.plan_title;
+							return planTitle(row);
 						}
 					}
 				],
@@ -249,7 +243,7 @@ export default {
 						type: 'Badge'
 					}
 				],
-				data: this.$releaseGroup.getAppVersions.data
+				data: () => this.$releaseGroup.getAppVersions.data
 			};
 		},
 		$releaseGroup() {
@@ -270,10 +264,12 @@ export default {
 			});
 		},
 		benchOptions(bench) {
+			if (!bench) return [];
+
 			return [
 				{
 					label: 'View in Desk',
-					condition: () => this.$team.doc.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () =>
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${bench.name}`,
@@ -422,6 +418,49 @@ export default {
 							}
 						});
 					}
+				},
+				{
+					label: 'Archive Bench',
+					onClick: () => {
+						confirmDialog({
+							title: 'Archive Bench',
+							message: `Are you sure you want to archive the bench <b>${bench.name}</b>?`,
+							primaryAction: {
+								label: 'Archive',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									toast.promise(this.$bench(bench.name).archive.submit(), {
+										loading: 'Scheduling bench for archival...',
+										success: () => {
+											hide();
+											return 'Bench is scheduled for archival';
+										},
+										error: e => {
+											return e.messages.length
+												? e.messages.join('\n')
+												: e.message || 'Failed to archive bench';
+										}
+									});
+								}
+							}
+						});
+					}
+				},
+				{
+					label: 'View Processes',
+					condition: () => bench.status === 'Active',
+					onClick: () => {
+						let SupervisorProcessesDialog = defineAsyncComponent(() =>
+							import('../components/bench/SupervisorProcessesDialog.vue')
+						);
+
+						renderDialog(
+							h(SupervisorProcessesDialog, {
+								bench: bench.name
+							})
+						);
+					}
 				}
 			];
 		},
@@ -432,6 +471,7 @@ export default {
 				whitelistedMethods: {
 					restart: 'restart',
 					rebuild: 'rebuild',
+					archive: 'archive',
 					updateAllSites: 'update_all_sites'
 				},
 				auto: false

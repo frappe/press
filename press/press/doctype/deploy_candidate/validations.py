@@ -4,14 +4,17 @@ from typing import TYPE_CHECKING, Optional
 
 import frappe
 import semantic_version as sv
+
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	PackageManagers,
+	get_will_fail_checker,
 )
 from press.utils import get_filepath, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class PreBuildValidations:
@@ -31,8 +34,8 @@ class PreBuildValidations:
 
 	def _validate_repos(self):
 		for app in self.dc.apps:
-			if frappe.get_value(app.release, "invalid_release"):
-				reason = frappe.get_value(app.release, "invalidation_reason")
+			if frappe.get_value("App Release", app.release, "invalid_release"):
+				reason = frappe.get_value("App Release", app.release, "invalidation_reason")
 
 				# Do not change message without updating deploy_notifications.py
 				raise Exception(
@@ -205,3 +208,16 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 		return [v.value for v in assign.value.elts]
 
 	return []
+
+
+def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
+	if not (old_dc := rg.get_last_deploy_candidate()):
+		return
+
+	if not old_dc.error_key:
+		return
+
+	if not (checker := get_will_fail_checker(old_dc.error_key)):
+		return
+
+	checker(old_dc, new_dc)

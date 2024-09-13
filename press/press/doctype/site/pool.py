@@ -5,12 +5,13 @@
 
 import frappe
 from frappe.model.naming import make_autoname
-from press.utils import log_error
+
 from press.press.doctype.site.erpnext_site import (
-	get_erpnext_bench,
 	get_erpnext_apps,
+	get_erpnext_bench,
 	get_erpnext_domain,
 )
+from press.utils import log_error
 
 
 class SitePool:

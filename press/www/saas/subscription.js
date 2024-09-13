@@ -19,15 +19,15 @@ function show_banner() {
 		moment(trial_end_date) > moment()
 			? `Your trial will end on ${moment(trial_end_date).format(
 					'Do MMMM, YYYY',
-			  )}.`
+				)}.`
 			: 'Your trial has ended.';
 	let alert = `
 			<div class="form-message orange">
 				<div class="flex align-center justify-between">
 					<span>
-						${trial_end_message} Please subscribe to avoid uninterrupted services.
+						${trial_end_message} Please subscribe for uninterrupted services.
 					</span>
-					<a class="btn btn-primary" href="${get_subscription_url()}">Subscribe</a>
+					<a class="btn btn-primary" href="${get_subscription_url()}" target="_blank">Subscribe</a>
 				</div>
 			</div>
 		`;
@@ -41,6 +41,12 @@ function add_manage_subscription_link() {
 }
 
 function get_subscription_url() {
+	if (
+		frappe.boot.subscription_conf &&
+		frappe.boot.subscription_conf.app_trial
+	) {
+		return `https://frappecloud.com/dashboard/app-trial/setup/${frappe.boot.subscription_conf.app_trial}#subscription`;
+	}
 	let sitename = frappe.boot.sitename;
 	return `https://frappecloud.com/dashboard/sites/${sitename}`;
 }

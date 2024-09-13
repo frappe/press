@@ -6,7 +6,6 @@
 import base64
 import binascii
 import hashlib
-from press.utils import log_error
 import re
 import shlex
 import subprocess
@@ -14,6 +13,8 @@ import subprocess
 import frappe
 from frappe import safe_decode
 from frappe.model.document import Document
+
+from press.utils import log_error
 
 
 class UserSSHCertificate(Document):

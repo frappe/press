@@ -2,10 +2,9 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from datetime import datetime, timedelta
-
 import json
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
@@ -38,13 +37,13 @@ class TestRootDomain(unittest.TestCase):
 		frappe.db.rollback()
 
 	def _create_fake_rename_job(self, site_name: str, creation=None):
+		from press.press.doctype.database_server.test_database_server import (
+			create_test_database_server,
+		)
 		from press.press.doctype.proxy_server.test_proxy_server import (
 			create_test_proxy_server,
 		)
 		from press.press.doctype.server.test_server import create_test_server
-		from press.press.doctype.database_server.test_database_server import (
-			create_test_database_server,
-		)
 
 		creation = creation or frappe.utils.now_datetime()
 		server = create_test_server(

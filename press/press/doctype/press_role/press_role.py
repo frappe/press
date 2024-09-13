@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.api.client import dashboard_whitelist
 
 
@@ -16,9 +17,11 @@ class PressRole(Document):
 		from frappe.types import DF
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
+		admin_access: DF.Check
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
+		allow_partner: DF.Check
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
 		team: DF.Link
@@ -29,8 +32,10 @@ class PressRole(Document):
 	dashboard_fields = [
 		"title",
 		"users",
+		"admin_access",
 		"allow_billing",
 		"allow_apps",
+		"allow_partner",
 		"allow_site_creation",
 		"allow_bench_creation",
 		"allow_server_creation",
@@ -47,6 +52,22 @@ class PressRole(Document):
 			"Team", self.team, "user"
 		):
 			frappe.throw("Only the team owner can create roles")
+
+	def validate(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
+
+		if self.admin_access:
+			self.allow_apps = 1
+			self.allow_billing = 1
+			self.allow_partner = 1
+			self.allow_site_creation = 1
+			self.allow_bench_creation = 1
+			self.allow_server_creation = 1
 
 	@dashboard_whitelist()
 	def add_user(self, user):
@@ -77,7 +98,7 @@ class PressRole(Document):
 				perm_doc.delete()
 
 	@dashboard_whitelist()
-	def delete(self):
+	def delete(self) -> None:
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
 		):
@@ -85,8 +106,9 @@ class PressRole(Document):
 
 		super().delete()
 
-	def on_trash(self):
+	def on_trash(self) -> None:
 		frappe.db.delete("Press Role Permission", {"role": self.name})
+		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
 def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:

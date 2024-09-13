@@ -1,7 +1,9 @@
+import unittest
+
 import frappe
 from frappe.core.doctype.scheduled_job_type.scheduled_job_type import insert_events
+
 from press.hooks import scheduler_events
-import unittest
 
 
 class TestSanity(unittest.TestCase):

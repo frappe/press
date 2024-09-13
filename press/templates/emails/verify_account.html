@@ -3,14 +3,21 @@
 {% set title = title %}
 {% set image_path = image_path %}
 {% set read_pixel_path = read_pixel_path %}
+{% set otp = otp %}
 
 {% block content %}
 
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
         <p><strong>You're almost done!</strong></p>
-        <p>Just one quick step left to get you started with Frappe Cloud!
-        Please confirm your email address to complete your account setup.</p>
+        <p>Just one quick step left to get you started with Frappe Cloud!</p>
+        {% if otp %}
+        <p class="font-medium">Verification Code</p>
+        <div class="text-xl font-bold">{{ otp }}</div>
+        <p>Or click on the button to verify your account</p>
+        {% else %}
+        <p>Click on the button to verify your account</p>
+        {% endif %}
         {{ utils.button('Verify Account', link, true) }}
         {{ utils.separator() }}
         <p class="my-0">Team Frappe</p>

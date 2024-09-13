@@ -3,8 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
+
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.utils import log_error
 
 
 class BenchUpdate(Document):
@@ -19,10 +19,11 @@ class BenchUpdate(Document):
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 
 		apps: DF.Table[BenchUpdateApp]
+		bench: DF.Link | None
 		candidate: DF.Link | None
 		group: DF.Link
+		is_inplace_update: DF.Check
 		sites: DF.Table[BenchSiteUpdate]
-		status: DF.Literal["Pending", "Running", "Build Successful", "Failure", "Success"]
 	# end: auto-generated types
 
 	def validate(self):
@@ -46,12 +47,11 @@ class BenchUpdate(Document):
 			):
 				frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
-	def deploy(self):
+	def deploy(self, run_will_fail_check=False):
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(self.apps)
+		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
 		candidate.schedule_build_and_deploy()
 
-		self.status = "Running"
 		self.candidate = candidate.name
 		self.save()
 		return candidate.name
@@ -91,10 +91,10 @@ class BenchUpdate(Document):
 					)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
-				except Exception as e:
+				except Exception:
 					# Rollback the failed attempt and set status to Failure
 					# So, we don't try again
-					log_error("Bench Update: Failed to create Site Update", exception=e)
+					# TODO: Add Notifications
 					frappe.db.rollback()
 					frappe.db.set_value("Bench Site Update", row.name, "status", "Failure")
 					traceback = frappe.get_traceback(with_context=True)

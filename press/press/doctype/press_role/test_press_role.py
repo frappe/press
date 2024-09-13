@@ -3,8 +3,9 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from press.press.doctype.team.test_team import create_test_team
+
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.team.test_team import create_test_team
 
 
 class TestPressRole(FrappeTestCase):
@@ -98,7 +99,7 @@ class TestPressRole(FrappeTestCase):
 		frappe.set_user(self.team_user.name)
 
 		# permission for site1 added in the role
-		self.assertEqual(get_list("Site"), [{"name": site1.name}])
+		self.assertEqual(get_list("Site"), [{"name": site1.name, "bench": site1.bench}])
 
 		frappe.set_user("Administrator")
 		perm2 = frappe.new_doc("Press Role Permission")
@@ -109,7 +110,13 @@ class TestPressRole(FrappeTestCase):
 		frappe.set_user(self.team_user.name)
 
 		# permission for site2 added in another role
-		self.assertCountEqual(get_list("Site"), [{"name": site1.name}, {"name": site2.name}])
+		self.assertCountEqual(
+			get_list("Site"),
+			[
+				{"name": site1.name, "bench": site1.bench},
+				{"name": site2.name, "bench": site2.bench},
+			],
+		)
 
 	def test_get_with_permissions(self):
 		from press.api.client import get

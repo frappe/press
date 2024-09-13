@@ -132,6 +132,90 @@
   "skippable": 0
  },
  {
+  "datatype": "Int",
+  "default_value": "5120",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-22 08:38:16.807229",
+  "name": "tmp_disk_table_size",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "5",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-03-05 12:55:47.689706",
+  "name": "extra_max_connections",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "3307",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2024-03-05 12:55:54.950776",
+  "name": "extra_port",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "200",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-07-29 13:26:57.153685",
+  "name": "max_connections",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-01-12 14:21:03.949888",
+  "name": "max_user_connections",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-03-05 12:59:31.069472",
+  "name": "binlog_expire_logs_seconds",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Int",
+  "default_value": "32",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-06-12 10:30:47.403256",
+  "name": "max_heap_table_size",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
   "datatype": "Str",
   "default_value": "",
   "doc_section": "replication-and-binary-log",
@@ -204,78 +288,6 @@
   "skippable": 0
  },
  {
-  "datatype": "Int",
-  "default_value": "5120",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-22 08:38:16.807229",
-  "name": "tmp_disk_table_size",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "5",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2024-03-05 12:55:47.689706",
-  "name": "extra_max_connections",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "3307",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 0,
-  "modified": "2024-03-05 12:55:54.950776",
-  "name": "extra_port",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "100",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-12-17 20:05:35.338733",
-  "name": "max_connections",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": null,
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2024-01-12 14:21:03.949888",
-  "name": "max_user_connections",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": null,
-  "doc_section": "replication-and-binary-log",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2024-03-05 12:59:31.069472",
-  "name": "binlog_expire_logs_seconds",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
   "datatype": "Str",
   "default_value": "3600",
   "doc_section": "server",
@@ -285,6 +297,42 @@
   "modified": "2024-03-28 15:23:30.635417",
   "name": "max_statement_time",
   "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-07-03 07:13:23.014958",
+  "name": "innodb_print_all_deadlocks",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-08-31 13:53:59.926965",
+  "name": "innodb_strict_mode",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "50",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-08-14 15:54:38.037523",
+  "name": "innodb_lock_wait_timeout",
+  "set_on_new_servers": 0,
   "skippable": 0
  }
 ]

@@ -28,7 +28,6 @@
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
 			/>
-			{{ $resources.changePaymentMode.error }}
 		</template>
 	</Dialog>
 	<BillingInformationDialog
@@ -46,9 +45,14 @@
 			}
 		"
 	/>
+	<FinalizeInvoicesDialog
+		v-if="showFinalizeInvoicesDialog"
+		v-model="showFinalizeInvoicesDialog"
+	/>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'ChangePaymentModeDialog',
@@ -63,13 +67,17 @@ export default {
 		),
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
+		),
+		FinalizeInvoicesDialog: defineAsyncComponent(() =>
+			import('./billing/FinalizeInvoicesDialog.vue')
 		)
 	},
 	data() {
 		return {
 			showBillingInformationDialog: false,
 			showPrepaidCreditsDialog: false,
-			paymentMode: this.$team.doc.payment_mode
+			paymentMode: this.$team.doc.payment_mode,
+			showFinalizeInvoicesDialog: false
 		};
 	},
 	watch: {
@@ -86,10 +94,14 @@ export default {
 				params: {
 					mode: this.paymentMode
 				},
-				onSuccess() {
-					this.$emit('update:modelValue', false);
-					this.$resources.changePaymentMode.reset();
-					this.$team.reload();
+				onSuccess(data) {
+					if (data && data == 'Unpaid Invoices') {
+						this.showFinalizeInvoicesDialog = true;
+					} else {
+						this.$emit('update:modelValue', false);
+						this.$resources.changePaymentMode.reset();
+						this.$team.reload();
+					}
 				},
 				validate() {
 					if (
@@ -112,7 +124,9 @@ export default {
 						this.paymentMode == 'Paid By Partner' &&
 						!this.$team.doc.partner_email
 					) {
-						return 'Please add a partner first from Partner section';
+						throw new DashboardError(
+							'Please add a partner first from Partner section'
+						);
 					}
 				}
 			};

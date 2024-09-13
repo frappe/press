@@ -1,16 +1,17 @@
 """Functions for automated audit of frappe cloud systems."""
+
 import json
-from press.press.doctype.server.server import Server
 from typing import Dict, List
 
 import frappe
 from frappe.utils import rounded
 
 from press.agent import Agent
+from press.press.doctype.server.server import Server
 from press.press.doctype.subscription.subscription import (
+	created_usage_records,
 	paid_plans,
 	sites_with_free_hosting,
-	created_usage_records,
 )
 
 
@@ -123,15 +124,22 @@ class BenchFieldCheck(Audit):
 
 		return {"bench_field_updates": bench_field_updates()}
 
+	def is_site_updating_or_moving(self, site):
+		"""
+		During SiteUpdate or SiteMigration, the status of the site is changed to Updating or Pending
+		"""
+		return frappe.db.get_value("Site", site, "status", for_update=True).endswith("ing")
+
 	def apply_potential_fixes(self):
 		fixes = self.get_potential_fixes()
 		for site, benches in fixes["bench_field_updates"].items():
+			if self.is_site_updating_or_moving(site):
+				continue
 			frappe.db.set_value("Site", site, "bench", benches[1])
 		frappe.db.commit()
 
 
 class AppServerReplicaDirsCheck(Audit):
-
 	audit_type = "App Server Replica Dirs Check"
 
 	def __init__(self):
@@ -301,7 +309,6 @@ class BillingAudit(Audit):
 		)
 		audits = {
 			"Subscriptions with no usage records created": self.subscriptions_without_usage_record,
-			"Teams with active sites that don't have payment method set": self.teams_without_payment_method,
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
 			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
@@ -335,29 +342,6 @@ class BillingAudit(Audit):
 			},
 			pluck="name",
 		)
-
-	def teams_without_payment_method(self):
-		teams_with_no_card = frappe.get_all(
-			"Team",
-			{
-				"free_account": False,
-				"name": ("in", self.teams_with_paid_sites),
-				"payment_mode": "Card",
-				"default_payment_method": ("is", "not set"),
-			},
-			pluck="name",
-		)
-		teams_with_no_payment_method = frappe.get_all(
-			"Team",
-			{
-				"free_account": False,
-				"name": ("in", self.teams_with_paid_sites),
-				"payment_mode": ("is", "not set"),
-			},
-			pluck="name",
-		)
-
-		return teams_with_no_card + teams_with_no_payment_method
 
 	def disabled_teams_with_active_sites(self):
 		return frappe.get_all(
@@ -531,19 +515,19 @@ def partner_billing_audit():
 
 
 def suspend_sites_with_disabled_team():
-	teams_with_paid_sites = get_teams_with_paid_sites()
-	disabled_teams = frappe.get_all(
-		"Team",
-		{"name": ("in", teams_with_paid_sites), "enabled": False},
-		pluck="name",
+	site = frappe.qb.DocType("Site")
+	team = frappe.qb.DocType("Team")
+
+	disabled_teams_with_active_sites = (
+		frappe.qb.from_(site)
+		.inner_join(team)
+		.on(team.name == site.team)
+		.where((site.status).isin(["Active", "Broken", "Pending"]) & (team.enabled == 0))
+		.select(site.team)
+		.distinct()
+		.run(pluck="team")
 	)
 
-	if disabled_teams:
-		for team in disabled_teams:
-			sites = frappe.get_all(
-				"Site",
-				{"team": team, "status": ("not in", ("Archived", "Suspended", "Inactive"))},
-				pluck="name",
-			)
-			for site in sites:
-				frappe.get_doc("Site", site).suspend(reason="Disabled Team")
+	if disabled_teams_with_active_sites:
+		for team in disabled_teams_with_active_sites:
+			frappe.get_doc("Team", team).suspend_sites(reason="Disabled Team")

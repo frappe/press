@@ -12,7 +12,9 @@
   "key",
   "column_break_cujq",
   "status",
-  "send_mail"
+  "send_mail",
+  "approved_by_frappe",
+  "approved_by_partner"
  ],
  "fields": [
   {
@@ -32,7 +34,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending\nApproved\nRejected"
+   "options": "Pending\nApproved\nRejected",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_cujq",
@@ -48,11 +51,23 @@
    "fieldname": "key",
    "fieldtype": "Data",
    "label": "Key"
+  },
+  {
+   "default": "0",
+   "fieldname": "approved_by_frappe",
+   "fieldtype": "Check",
+   "label": "Approved By Frappe"
+  },
+  {
+   "default": "0",
+   "fieldname": "approved_by_partner",
+   "fieldtype": "Check",
+   "label": "Approved By Partner"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-25 10:55:16.227941",
+ "modified": "2024-08-23 15:21:24.754187",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Approval Request",

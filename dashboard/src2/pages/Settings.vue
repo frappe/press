@@ -16,7 +16,6 @@
 <script setup>
 import Header from '../components/Header.vue';
 import { Breadcrumbs } from 'frappe-ui';
-import { provide, ref } from 'vue';
 import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import { getTeam } from '../data/team';
@@ -35,7 +34,10 @@ const tabs = [
 		label: 'Team',
 		icon: icon('users'),
 		routeName: 'SettingsTeam',
-		condition: () => $team.doc.user === $session.user || $session.isSystemUser
+		condition: () =>
+			$team.doc.user === $session.user ||
+			$session.isTeamAdmin ||
+			$session.isSystemUser
 	},
 	{
 		label: 'Permissions',
@@ -45,7 +47,10 @@ const tabs = [
 			'SettingsPermissionRoles',
 			'SettingsPermissionRolePermissions'
 		],
-		condition: () => $team.doc.user === $session.user || $session.isSystemUser
+		condition: () =>
+			$team.doc.user === $session.user ||
+			$session.isTeamAdmin ||
+			$session.isSystemUser
 	},
 	{
 		label: 'Developer',

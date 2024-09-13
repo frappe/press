@@ -29,7 +29,7 @@
 	<div>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
-			:tabs="object.detail.tabs"
+			:tabs="tabs"
 		>
 			<template #tab-content="{ tab }">
 				<!-- this div is required for some reason -->
@@ -57,6 +57,7 @@ import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 let subscribed = {};
 
@@ -119,6 +120,16 @@ export default {
 		object() {
 			return getObject(this.objectType);
 		},
+		tabs() {
+			return this.object.detail.tabs.filter(tab => {
+				if (tab.condition) {
+					return tab.condition({
+						documentResource: this.$resources.document
+					});
+				}
+				return true;
+			});
+		},
 		title() {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
@@ -167,6 +178,14 @@ export default {
 					items = result;
 				}
 			}
+
+			// add ellipsis if breadcrumbs too long
+			for (let i = 0; i < items.length; i++) {
+				if (items[i].label.length > 30 && i !== items.length - 1) {
+					items[i].label = items[i].label.slice(0, 30) + '...';
+				}
+			}
+
 			return items;
 		}
 	}

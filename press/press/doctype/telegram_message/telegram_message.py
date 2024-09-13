@@ -5,8 +5,11 @@ import traceback
 
 import frappe
 from frappe.model.document import Document
-from press.telegram_utils import Telegram
 from telegram.error import NetworkError, RetryAfter
+
+from press.telegram_utils import Telegram
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 
 
 class TelegramMessage(Document):
@@ -91,6 +94,12 @@ class TelegramMessage(Document):
 		message = TelegramMessage.get_one()
 		if message:
 			return message.send()
+
+	@staticmethod
+	def clear_old_logs(days=30):
+		table = frappe.qb.DocType("Telegram Message")
+		frappe.db.delete(table, filters=(table.modified < (Now() - Interval(days=days))))
+		frappe.db.commit()
 
 
 def send_telegram_message():

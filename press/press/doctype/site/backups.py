@@ -6,7 +6,9 @@
 import functools
 from collections import deque
 from datetime import datetime, timedelta
+from functools import wraps
 from itertools import groupby
+from time import time
 from typing import Dict, List
 
 import frappe
@@ -18,9 +20,6 @@ from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
-
-from functools import wraps
-from time import time
 
 
 def timing(f):

@@ -140,6 +140,18 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.virtual_machine,
 			],
+			[
+				__('Enable Public Bench and Site Creation'),
+				'enable_server_for_new_benches_and_site',
+				true,
+				frm.doc.virtual_machine,
+			],
+			[
+				__('Disable Public Bench and Site Creation'),
+				'disable_server_for_new_benches_and_site',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

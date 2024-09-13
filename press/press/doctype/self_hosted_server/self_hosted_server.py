@@ -2,13 +2,14 @@
 # For license information, please see license.txt
 
 
+import json
+
 import frappe
 from frappe.model.document import Document
-from press.runner import Ansible
-from press.utils import log_error
 from frappe.model.naming import make_autoname
 
-import json
+from press.runner import Ansible
+from press.utils import log_error
 
 # from tldextract import extract as sdext
 
@@ -21,6 +22,7 @@ class SelfHostedServer(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.self_hosted_site_apps.self_hosted_site_apps import (
 			SelfHostedSiteApps,
 		)
@@ -371,6 +373,8 @@ class SelfHostedServer(Document):
 			if not frappe.flags.in_test:
 				db_server.create_dns_record()
 
+			frappe.db.commit()
+
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
@@ -446,6 +450,8 @@ class SelfHostedServer(Document):
 
 			if not frappe.flags.in_test:
 				server.create_dns_record()
+
+			frappe.db.commit()
 
 		except Exception as e:
 			self.status = "Broken"
@@ -765,7 +771,6 @@ class SelfHostedServer(Document):
 		try:
 			result = self._get_play(play_id)
 			if server_type == "app":
-
 				self.vendor = result["ansible_facts"]["system_vendor"]
 				self.ram = result["ansible_facts"]["memtotal_mb"]
 				self.vcpus = result["ansible_facts"]["processor_vcpus"]

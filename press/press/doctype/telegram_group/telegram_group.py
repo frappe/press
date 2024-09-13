@@ -13,6 +13,7 @@ class TelegramGroup(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.telegram_group_topic.telegram_group_topic import (
 			TelegramGroupTopic,
 		)

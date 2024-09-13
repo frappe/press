@@ -1,4 +1,5 @@
 import { createDocumentResource, frappeRequest } from 'frappe-ui';
+import { clear } from 'idb-keyval';
 
 let team;
 
@@ -19,10 +20,10 @@ export function getTeam() {
 
 function getCurrentTeam() {
 	if (
-		document.cookie.includes('user_id=Guest;') ||
+		document.cookie.includes('user_id=Guest') ||
 		!document.cookie.includes('user_id')
 	) {
-		throw new Error('Not logged in');
+		window.location.href = '/login';
 	}
 	let currentTeam = localStorage.getItem('current_team');
 	if (
@@ -50,8 +51,21 @@ export async function switchToTeam(team) {
 	}
 	if (canSwitch) {
 		localStorage.setItem('current_team', team);
+
+		// clear all cache from previous team session
+		clear();
+
 		window.location.reload();
 	}
+}
+
+export async function isLastSite(team) {
+	let count = 0;
+	count = await frappeRequest({
+		url: '/api/method/press.api.account.get_site_count',
+		params: { team }
+	});
+	return Boolean(count === 1);
 }
 
 window.switchToTeam = switchToTeam;

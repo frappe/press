@@ -3,8 +3,9 @@
 # See license.txt
 
 
-import frappe
 import unittest
+
+import frappe
 
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 

@@ -1,23 +1,25 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from functools import cached_property
 from typing import TYPE_CHECKING
+
 import frappe
-import json
 from frappe.model.document import Document
+from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
+from frappe.utils.data import add_to_date
+
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
-from frappe.utils import get_url_to_form
-from frappe.utils.data import add_to_date
 
 if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
-	from press.press.doctype.press_job.press_job import PressJob
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -47,6 +49,7 @@ class AlertmanagerWebhookLog(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.alertmanager_webhook_log_reaction_job.alertmanager_webhook_log_reaction_job import (
 			AlertmanagerWebhookLogReactionJob,
 		)
@@ -120,19 +123,6 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def ongoing_reaction_exists(self, instance):
-		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
-			"Prometheus Alert Reaction",
-			{
-				"alert": self.alert,
-				"instance": instance,
-				"status": ("in", ["Pending", "Running"]),
-			},
-			"status",
-			for_update=True,
-		)
-		return bool(ongoing_incident_status)
-
 	def react_for_instance(self, instance) -> "PressJob":
 		instance_type = self.guess_doctype(instance)
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
@@ -143,7 +133,7 @@ class AlertmanagerWebhookLog(Document):
 			self.append("reaction_jobs", self.react_for_instance(instance))
 		self.save()
 
-	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
+	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
 		instances = []
 		payload = json.loads(payload)
 		instances.extend(
@@ -268,7 +258,7 @@ class AlertmanagerWebhookLog(Document):
 		return parsed
 
 	def ongoing_incident_exists(self) -> bool:
-		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+		ongoing_incident_status = frappe.db.get_value(
 			"Incident",
 			{
 				"alert": self.alert,

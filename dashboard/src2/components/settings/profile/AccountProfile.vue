@@ -1,5 +1,5 @@
 <template>
-	<Card title="Profile">
+	<Card title="Profile" v-if="user" class="mx-auto max-w-3xl">
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar size="2xl" :label="user.first_name" :image="user.user_image" />
@@ -16,7 +16,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
+								class="absolute inset-0 grid h-10 w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
@@ -42,11 +42,25 @@
 			<ListItem
 				title="Become Marketplace Developer"
 				subtitle="Become a marketplace app publisher"
-				v-if="showBecomePublisherButton"
+				v-if="!$team.doc.is_developer"
 			>
 				<template #actions>
-					<Button @click="confirmPublisherAccount()">
+					<Button @click="confirmPublisherAccount">
 						<span>Become a Publisher</span>
+					</Button>
+				</template>
+			</ListItem>
+			<ListItem
+				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
+				:subtitle="
+					user.is_2fa_enabled
+						? 'Disable two-factor authentication for your account'
+						: 'Enable two-factor authentication for your account to add an extra layer of security'
+				"
+			>
+				<template #actions>
+					<Button @click="show2FADialog = true">
+						{{ user.is_2fa_enabled ? 'Disable' : 'Enable' }}
 					</Button>
 				</template>
 			</ListItem>
@@ -108,7 +122,10 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.disableAccount.loading,
-						onClick: () => $resources.disableAccount.submit()
+						onClick: () =>
+							$resources.disableAccount.submit({
+								totp_code: disableAccount2FACode
+							})
 					}
 				]
 			}"
@@ -127,6 +144,12 @@
 					</ul>
 					You can enable your account later anytime. Do you want to continue?
 				</div>
+				<FormControl
+					v-if="user.is_2fa_enabled"
+					class="mt-4"
+					label="Enter your 2FA code to confirm"
+					v-model="disableAccount2FACode"
+				/>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
 		</Dialog>
@@ -160,36 +183,46 @@
 		</Dialog>
 	</Card>
 	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
+	<ActiveServersDialog v-model="showActiveServersDialog" />
+	<TFADialog v-model="show2FADialog" />
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
+import { h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
-import { notify } from '@/utils/toast';
-import { getSessionUser } from '../../../data/session';
-import { getTeam } from '../../../data/team';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
+import { confirmDialog, renderDialog } from '../../../utils/components';
+import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
+import ActiveServersDialog from '../../ActiveServersDialog.vue';
+import TFADialog from './TFADialog.vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
+		TFADialog,
 		FileUploader,
-		FinalizeInvoicesDialog
+		FinalizeInvoicesDialog,
+		ChurnFeedbackDialog,
+		ActiveServersDialog
 	},
 	data() {
 		return {
+			show2FADialog: false,
+			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
-			showBecomePublisherButton: false,
-			showFinalizeInvoicesDialog: false
+			showFinalizeInvoicesDialog: false,
+			showActiveServersDialog: false
 		};
 	},
 	computed: {
 		teamEnabled() {
-			return getTeam().doc.enabled;
+			return this.$team.doc.enabled;
 		},
 		user() {
-			return this.$team.doc.user_info;
+			return this.$team?.doc?.user_info;
 		}
 	},
 	resources: {
@@ -215,13 +248,18 @@ export default {
 
 				if (data === 'Unpaid Invoices') {
 					this.showFinalizeInvoicesDialog = true;
+				} else if (data === 'Active Servers') {
+					this.showActiveServersDialog = true;
 				} else {
-					notify({
-						title: 'Account disabled',
-						message: 'Your account was disabled successfully',
-						icon: 'check',
-						color: 'green'
-					});
+					renderDialog(
+						h(ChurnFeedbackDialog, {
+							team: this.$team.doc.name,
+							onUpdated: () => {
+								toast.success('Your feedback was submitted successfully');
+							}
+						})
+					);
+					toast.success('Your account was disabled successfully');
 					this.reloadAccount();
 				}
 			}
@@ -229,61 +267,52 @@ export default {
 		enableAccount: {
 			url: 'press.api.account.enable_account',
 			onSuccess() {
-				notify({
-					title: 'Account enabled',
-					message: 'Your account was enabled successfully',
-					icon: 'check',
-					color: 'green'
-				});
+				toast.success('Your account was enabled successfully');
 				this.reloadAccount();
 				this.showEnableAccountDialog = false;
 			}
-		},
-		isDeveloperAccountAllowed() {
-			return {
-				url: 'press.api.marketplace.developer_toggle_allowed',
-				auto: true,
-				onSuccess(data) {
-					if (data) {
-						this.showBecomePublisherButton = true;
-					}
-				}
-			};
-		},
-		becomePublisher() {
-			return {
-				url: 'press.api.marketplace.become_publisher',
-				onSuccess() {
-					this.$router.push('/marketplace');
-				}
-			};
 		}
 	},
 	methods: {
 		reloadAccount() {
-			getTeam().reload();
-			this.$resources.user.reload();
+			this.$team.reload();
 		},
 		onProfilePhotoChange() {
 			this.reloadAccount();
 			this.notifySuccess();
 		},
 		notifySuccess() {
-			notify({
-				title: 'Updated profile information',
-				icon: 'check',
-				color: 'green'
-			});
+			toast.success('Your profile was updated successfully');
 		},
 		confirmPublisherAccount() {
-			this.$confirm({
+			confirmDialog({
 				title: 'Become a marketplace app developer?',
 				message:
 					'You will be able to publish apps to our Marketplace upon confirmation.',
-				actionLabel: 'Yes',
-				action: closeDialog => {
-					this.$resources.becomePublisher.submit();
-					closeDialog();
+				onSuccess: ({ hide }) => {
+					toast.promise(
+						this.$team.setValue.submit(
+							{
+								is_developer: 1
+							},
+							{
+								onSuccess: () => {
+									hide();
+									this.$router.push({
+										name: 'Marketplace App List'
+									});
+								},
+								onError(e) {
+									console.error(e);
+								}
+							}
+						),
+						{
+							success: 'You can now publish apps to our Marketplace',
+							error: 'Failed to mark you as a developer',
+							loading: 'Making you a developer...'
+						}
+					);
 				}
 			});
 		}

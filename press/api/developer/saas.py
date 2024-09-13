@@ -1,4 +1,5 @@
 import json
+
 import frappe
 
 from press.api.developer import raise_invalid_key_error

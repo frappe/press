@@ -16,6 +16,7 @@ class ERPNextConsultant(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.erpnext_consultant_region.erpnext_consultant_region import (
 			ERPNextConsultantRegion,
 		)

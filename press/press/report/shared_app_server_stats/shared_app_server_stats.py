@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from press.api.server import usage, total_resource, prometheus_query, calculate_swap
 from frappe.utils import rounded
+
+from press.api.server import calculate_swap, prometheus_query, total_resource, usage
 
 
 def execute(filters=None):

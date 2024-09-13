@@ -13,6 +13,7 @@ class IncidentSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 			IncidentSettingsSelfHostedUser,
 		)

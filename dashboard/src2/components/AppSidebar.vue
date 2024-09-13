@@ -41,7 +41,7 @@
 								<div
 									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-gray-700 sm:inline"
 								>
-									{{ $team?.get.loading ? 'Loading...' : $team.doc?.user }}
+									{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 								</div>
 							</Tooltip>
 						</div>

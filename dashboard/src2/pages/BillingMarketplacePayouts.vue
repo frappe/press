@@ -3,7 +3,7 @@
 		<ObjectList :options="options" />
 		<Dialog
 			v-model="payoutDialog"
-			:options="{ size: '4xl', title: showPayout?.name }"
+			:options="{ size: '6xl', title: showPayout?.name }"
 		>
 			<template #body-content>
 				<template v-if="showPayout">
@@ -21,7 +21,6 @@
 </template>
 <script>
 import ObjectList from '../components/ObjectList.vue';
-import { currency } from '../utils/format';
 import PayoutTable from '../components/PayoutTable.vue';
 
 export default {
@@ -48,12 +47,12 @@ export default {
 					'net_total_inr',
 					'net_total_usd'
 				],
-				filterControls() {
+				filterControls: () => {
 					return [
 						{
 							type: 'select',
 							label: 'Status',
-							class: 'w-36',
+							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'status',
 							options: ['', 'Draft', 'Paid', 'Commissioned']
 						}
@@ -75,14 +74,19 @@ export default {
 					{ label: 'Payment Mode', fieldname: 'mode_of_payment' },
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
 					{
-						label: 'Net INR',
+						label: 'Total',
 						fieldname: 'net_total_inr',
-						format: value => currency(value, 'INR')
-					},
-					{
-						label: 'Net USD',
-						fieldname: 'net_total_usd',
-						format: value => currency(value, 'USD')
+						align: 'right',
+						format: (_, row) => {
+							let total = 0;
+							if (this.$team.doc.currency === 'INR') {
+								total = row.net_total_inr + row.net_total_usd * 82;
+							} else {
+								total = row.net_total_inr / 82 + row.net_total_usd;
+							}
+
+							return this.$format.userCurrency(total);
+						}
 					}
 				],
 				onRowClick: row => {

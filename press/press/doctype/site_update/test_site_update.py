@@ -4,8 +4,11 @@
 
 
 import json
+from unittest.mock import MagicMock, Mock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -14,16 +17,12 @@ from press.press.doctype.app_source.test_app_source import create_test_app_sourc
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
-from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
-
-from unittest.mock import patch, Mock, MagicMock
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import SiteUpdate
-
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 

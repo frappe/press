@@ -1,10 +1,10 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import Mock, patch
-import frappe
 import unittest
+from unittest.mock import Mock, patch
 
+import frappe
 
 from press.agent import Agent
 

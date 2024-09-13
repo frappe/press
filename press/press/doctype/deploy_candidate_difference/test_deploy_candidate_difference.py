@@ -3,10 +3,9 @@
 # See license.txt
 
 
-from unittest.mock import Mock, patch
-
 # import frappe
 import unittest
+from unittest.mock import Mock, patch
 
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
 

@@ -4,6 +4,7 @@
 
 
 import frappe
+
 from press.press.doctype.deploy_candidate.deploy_candidate import toggle_builds
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible

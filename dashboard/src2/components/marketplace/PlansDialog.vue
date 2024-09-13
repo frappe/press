@@ -96,6 +96,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'PlanDialog',
@@ -144,7 +145,7 @@ export default {
 				url: 'press.api.marketplace.create_app_plan',
 				validate() {
 					if (!this.currentEditingPlan.title) {
-						return 'Plan name is required';
+						throw new DashboardError('Plan name is required');
 					}
 				},
 				onSuccess() {

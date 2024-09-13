@@ -6,6 +6,7 @@ from base64 import b64decode
 from typing import Dict, List
 
 import frappe
+from frappe.types.DF import Data
 import requests
 from frappe.query_builder.functions import Cast_
 from frappe.utils.caching import redis_cache
@@ -13,6 +14,7 @@ from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.api.client import dashboard_whitelist
 from press.api.github import get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
@@ -22,8 +24,8 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import get_last_doc, get_current_team
-from press.api.client import dashboard_whitelist
+from press.utils import get_current_team, get_last_doc
+import re
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -47,6 +49,7 @@ class MarketplaceApp(WebsiteGenerator):
 		after_install_script: DF.Code | None
 		after_uninstall_script: DF.Code | None
 		app: DF.Link
+		average_rating: DF.Float
 		categories: DF.Table[MarketplaceAppCategories]
 		custom_verify_template: DF.Check
 		description: DF.SmallText
@@ -73,6 +76,7 @@ class MarketplaceApp(WebsiteGenerator):
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
 		screenshots: DF.Table[MarketplaceAppScreenshot]
+		show_for_site_creation: DF.Check
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
@@ -135,7 +139,6 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	def before_insert(self):
-
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
@@ -147,10 +150,8 @@ class MarketplaceApp(WebsiteGenerator):
 		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def check_if_duplicate(self):
-		if frappe.db.exists("Marketplace App", self.app):
-			frappe.throw(
-				f"App {self.app} already exists and is owned by some other team. Please contact support"
-			)
+		if frappe.db.exists("Marketplace App", self.name):
+			frappe.throw(f"App {self.name} already exists. Please contact support.")
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):
@@ -164,6 +165,8 @@ class MarketplaceApp(WebsiteGenerator):
 				self.repository_url,
 				self.branch,
 				self.team,
+				self.github_installation_id,
+				public=True,
 			)
 			self.app = source.app
 			self.append("sources", {"version": self.version, "source": source.name})
@@ -245,6 +248,7 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc = frappe.get_doc("App Source", existing_source)
 			try:
 				source_doc.append("versions", {"version": version})
+				source_doc.public = 1
 				source_doc.save()
 			except Exception:
 				pass
@@ -343,14 +347,21 @@ class MarketplaceApp(WebsiteGenerator):
 				continue
 
 			frappe_source_name = frappe.get_doc(
-				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+				"Release Group App",
+				{"app": "frappe", "parent": unique_public_rgs[source.version]},
 			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
+				"App Source",
+				frappe_source_name,
+				["repository_url", "branch"],
+				as_dict=True,
 			)
 
 			app_source = frappe.db.get_value(
-				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+				"App Source",
+				source.source,
+				["repository_url", "branch", "public"],
+				as_dict=True,
 			)
 
 			supported_versions.append(
@@ -544,6 +555,9 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def listing_details(self):
+		github_repository_url = frappe.get_value(
+			"App Source", {"app": self.app}, "repository_url"
+		)
 		return {
 			"support": self.support,
 			"website": self.website,
@@ -553,6 +567,8 @@ class MarketplaceApp(WebsiteGenerator):
 			"description": self.description,
 			"long_description": self.long_description,
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
+			"github_repository_url": github_repository_url,
+			"is_public_repo": is_public_github_repository(github_repository_url),
 		}
 
 	@dashboard_whitelist()
@@ -584,7 +600,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"installs_active_benches": self.total_active_benches(),
 			"installs_last_week": frappe.db.count(
 				"Site Activity",
-				{"action": "Install App", "reason": self.app, "creation": (">=", last_week)},
+				{
+					"action": "Install App",
+					"reason": self.app,
+					"creation": (">=", last_week),
+				},
 			),
 			"total_payout": self.get_payout_amount(),
 			"paid_payout": self.get_payout_amount(status="Paid"),
@@ -606,7 +626,6 @@ class MarketplaceApp(WebsiteGenerator):
 def get_plans_for_app(
 	app_name, frappe_version=None, include_free=True, include_disabled=False
 ):  # Unused for now, might use later
-
 	plans = []
 	filters = {"app": app_name}
 
@@ -640,7 +659,7 @@ def get_plans_for_app(
 	return plans
 
 
-def marketplace_app_hook(app=None, site="", op="install"):
+def marketplace_app_hook(app=None, site: Data | None = "", op="install"):
 	if app is None:
 		site_apps = frappe.get_all("Site App", filters={"parent": site}, pluck="app")
 		for app in site_apps:
@@ -679,3 +698,31 @@ def get_total_installs_by_app():
 		group_by="app",
 	)
 	return {installs["app"]: installs["count"] for installs in total_installs}
+
+
+def is_public_github_repository(github_url):
+	# Match the GitHub URL pattern to extract owner and repository
+	match = re.search(r"github\.com/([^/]+)/([^/]+)", github_url)
+
+	if not match:
+		return False
+
+	owner, repo = match.groups()
+
+	api_url = f"https://api.github.com/repos/{owner}/{repo}"
+
+	try:
+		response = requests.get(api_url)
+
+		if response.status_code != 200:
+			return False
+
+		data = response.json()
+
+		# Check if the repository is public
+		if data.get("private") is False:
+			return True
+		else:
+			return False
+	except Exception:
+		return False

@@ -3,21 +3,21 @@
 # See license.txt
 
 
-import frappe
 import unittest
-
-
-from typing import Optional
 from datetime import date, timedelta
-from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.drip_email.drip_email import DripEmail
-from press.press.doctype.site.test_site import create_test_site
+from typing import Optional
+
+import frappe
+
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.drip_email.drip_email import DripEmail
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
 )
+from press.press.doctype.site.test_site import create_test_site
 
 
 def create_test_drip_email(
@@ -48,14 +48,18 @@ class TestDripEmail(unittest.TestCase):
 
 		drip_email = create_test_drip_email(0, saas_app=test_marketplace_app.name)
 
-		site1 = create_test_site("site1", standby_for=test_marketplace_app.name)
-		site1.account_request = create_test_account_request(
-			"site1", saas=True, saas_app=test_marketplace_app.name
-		).name
+		site1 = create_test_site(
+			"site1",
+			standby_for=test_marketplace_app.name,
+			account_request=create_test_account_request(
+				"site1", saas=True, saas_app=test_marketplace_app.name
+			).name,
+		)
 		site1.save()
 
-		site2 = create_test_site("site2")
-		site2.account_request = create_test_account_request("site2").name
+		site2 = create_test_site(
+			"site2", account_request=create_test_account_request("site2").name
+		)
 		site2.save()
 
 		create_test_site("site3")  # Note: site is not created

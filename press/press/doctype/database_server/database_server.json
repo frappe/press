@@ -19,10 +19,13 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "public",
   "billing_section",
   "team",
   "column_break_11",
   "plan",
+  "auto_add_storage_min",
+  "auto_add_storage_max",
   "networking_section",
   "ip",
   "column_break_10",
@@ -54,10 +57,11 @@
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
-  "column_break_eiyu",
   "memory_max",
-  "column_break_wbbi",
   "memory_swap_max",
+  "column_break_eiyu",
+  "memory_allocator",
+  "memory_allocator_version",
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables",
@@ -374,7 +378,7 @@
   {
    "fieldname": "memory_limits_section",
    "fieldtype": "Section Break",
-   "label": "Memory Limits"
+   "label": "Memory"
   },
   {
    "fieldname": "memory_high",
@@ -425,10 +429,6 @@
   },
   {
    "fieldname": "column_break_apox",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_wbbi",
    "fieldtype": "Column Break"
   },
   {
@@ -697,11 +697,48 @@
    "fieldname": "stalk_sleep",
    "fieldtype": "Int",
    "label": "Stalk Sleep"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "default": "System",
+   "fieldname": "memory_allocator",
+   "fieldtype": "Select",
+   "label": "Memory Allocator",
+   "options": "System\njemalloc\nTCMalloc",
+   "read_only": 1
+  },
+  {
+   "fieldname": "memory_allocator_version",
+   "fieldtype": "Data",
+   "label": "Memory Allocator Version",
+   "read_only": 1
+  },
+  {
+   "default": "50",
+   "description": "Minimum storage to add automatically each time",
+   "fieldname": "auto_add_storage_min",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Min",
+   "non_negative": 1,
+   "options": "50"
+  },
+  {
+   "default": "250",
+   "description": "Maximum storage to add automatically each time",
+   "fieldname": "auto_add_storage_max",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Max",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-08 13:37:28.064067",
+ "modified": "2024-08-13 11:02:07.399141",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

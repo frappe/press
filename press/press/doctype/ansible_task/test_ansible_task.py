@@ -3,8 +3,9 @@
 # See license.txt
 
 
-import frappe
 import unittest
+
+import frappe
 
 
 def create_test_ansible_play_task(

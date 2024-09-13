@@ -1,13 +1,14 @@
-""" Utility methods for writing tests """
+"""Utility methods for writing tests"""
+
+from typing import Callable
 
 import frappe
-from typing import Callable
 
 
 def foreground_enqueue_doc(
 	doctype: str,
 	docname: str,
-	doc_method: str,
+	method: str,
 	queue="default",
 	timeout=None,
 	now=False,  # default args unused to avoid them from going to kwargs
@@ -22,7 +23,7 @@ def foreground_enqueue_doc(
 
 	Use for monkey patching enqueue_doc in tests
 	"""
-	getattr(frappe.get_doc(doctype, docname), doc_method)(**kwargs)
+	getattr(frappe.get_doc(doctype, docname), method)(**kwargs)
 
 
 def foreground_enqueue(

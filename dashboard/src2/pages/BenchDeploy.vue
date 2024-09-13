@@ -33,7 +33,7 @@
 							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
-					<Dropdown v-if="dropdownOptions.length" :options="dropdownOptions">
+					<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 						<template v-slot="{ open }">
 							<Button>
 								<template #icon>
@@ -84,15 +84,6 @@
 			</div>
 		</div>
 
-		<!-- Build Failure -->
-		<div class="mt-8" v-if="deploy.build_error && deploy.status === 'Failure'">
-			<BuildError
-				:build_error="deploy.build_error"
-				:build_steps="deploy.build_steps"
-			/>
-			<hr class="mt-4" />
-		</div>
-
 		<!-- Build Steps -->
 		<div :class="deploy.build_error ? 'mt-4' : 'mt-8'" class="space-y-4">
 			<JobStep
@@ -104,12 +95,13 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { createResource, getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
-import BuildError from '../components/BuildError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
+import dayjs from 'dayjs';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'BenchDeploy',
@@ -117,7 +109,6 @@ export default {
 	components: {
 		JobStep,
 		AlertBanner,
-		BuildError,
 		AlertAddressableError
 	},
 	resources: {
@@ -158,10 +149,11 @@ export default {
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
 			let rgDoc = getCachedDocumentResource(
 				'Release Group',
-				this.$resources.deploy.doc.group
+				this.$resources.deploy.doc?.group
 			);
-			this.$resources.deploy.reload();
 			rgDoc.reload();
+			this.$resources.deploy.reload();
+			this.$resources.errors.reload();
 		});
 	},
 	beforeUnmount() {
@@ -193,15 +185,31 @@ export default {
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					condition: () => this.$team.doc.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
 							'_blank'
 						);
 					}
+				},
+				{
+					label: 'Fail and Redeploy',
+					icon: 'repeat',
+					condition: () => this.showFailAndRedeploy,
+					onClick: () => this.failAndRedeploy()
 				}
 			].filter(option => option.condition?.() ?? true);
+		},
+		showFailAndRedeploy() {
+			if (!this.deploy || this.deploy.status !== 'Running') {
+				return false;
+			}
+
+			const start = dayjs(this.deploy.build_start);
+			const now = dayjs(new Date());
+
+			return now.diff(start, 'hours') > 2;
 		}
 	},
 	methods: {
@@ -226,6 +234,28 @@ export default {
 					: null;
 			}
 			return deploy;
+		},
+		failAndRedeploy() {
+			if (!this.deploy) {
+				return;
+			}
+
+			const group = this.deploy.group;
+			const onError = () => toast.error('Could not fail and redeploy');
+			const router = this.$router;
+
+			createResource({
+				url: 'press.api.bench.fail_and_redeploy',
+				params: { name: group, dc_name: this.deploy.name },
+				onSuccess(name) {
+					if (!name) {
+						onError();
+					} else {
+						router.push(`/benches/${group}/deploys/${name}`);
+					}
+				},
+				onError
+			}).fetch();
 		}
 	}
 };

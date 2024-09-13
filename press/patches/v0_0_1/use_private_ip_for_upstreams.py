@@ -3,8 +3,9 @@
 
 
 import frappe
-from press.agent import Agent
 from frappe.utils.fixtures import sync_fixtures
+
+from press.agent import Agent
 
 
 def execute():

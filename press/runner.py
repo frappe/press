@@ -1,8 +1,8 @@
 import json
 
+import frappe
 import wrapt
-from ansible import context
-from ansible import constants
+from ansible import constants, context
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_executor import TaskExecutor
 from ansible.inventory.manager import InventoryManager
@@ -13,10 +13,8 @@ from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
-from pymysql.err import InterfaceError
-
-import frappe
 from frappe.utils import now_datetime as now
+from pymysql.err import InterfaceError
 
 
 def reconnect_on_failure():
@@ -163,7 +161,7 @@ class Ansible:
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
-			verbosity=3,
+			verbosity=1,
 		)
 
 		self.loader = DataLoader()
@@ -175,7 +173,7 @@ class Ansible:
 
 		self.callback = AnsibleCallback()
 		self.display = Display()
-		self.display.verbosity = 3
+		self.display.verbosity = 1
 		self.create_ansible_play()
 
 	def patch(self):

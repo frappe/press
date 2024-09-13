@@ -1,7 +1,11 @@
 import json
-
+import re
+from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Optional, TypedDict
+
+import frappe
 
 PackageManagers = TypedDict(
 	"PackageManagers",
@@ -96,3 +100,87 @@ def load_package_json(app: str, package_json_path: str):
 			raise Exception(
 				"App has invalid package.json file", app, package_json_path
 			) from None
+
+
+def get_error_key(error_substring: str | list[str]) -> str:
+	if isinstance(error_substring, list):
+		error_substring = " ".join(error_substring)
+	"""
+	Converts `MatchStrings` into error keys, these are set on
+	DeployCandidates on UA Failures for two reasons:
+	1. To check if a subsequent deploy will fail for the same reasons.
+	2. To track the kind of UA errors the users are facing.
+	"""
+
+	return re.sub(
+		r"[\"'\[\],:]|\.$",
+		"",
+		error_substring.lower(),
+	)
+
+
+def get_will_fail_checker(error_key: str):
+	from press.press.doctype.deploy_candidate.deploy_notifications import handlers
+
+	for error_substring, _, will_fail_checker in handlers():
+		if get_error_key(error_substring) == error_key:
+			return will_fail_checker
+
+
+def is_suspended() -> bool:
+	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
+
+
+class BuildValidationError(frappe.ValidationError):
+	...
+
+
+def get_build_server(group: str | None = None) -> str | None:
+	"""
+	Order of build server selection precedence:
+	1. Build Server set on Release Group
+	2. Build Server with least active builds
+	3. Build Server set in Press Settings
+	"""
+
+	if group and (server := frappe.get_value("Release Group", group, "build_server")):
+		return server
+
+	if server := get_build_server_with_least_active_builds():
+		return server
+
+	return frappe.get_value("Press Settings", None, "build_server")
+
+
+def get_build_server_with_least_active_builds() -> str | None:
+	build_servers = frappe.get_all(
+		"Server",
+		filters={"use_for_build": True, "status": "Active"},
+		pluck="name",
+	)
+
+	if not build_servers:
+		return None
+
+	if len(build_servers) == 1:
+		return build_servers[0]
+
+	build_count = get_active_build_count_by_build_server()
+
+	# Build server might not be in build_count, or might be inactive
+	build_count_tuples = [(s, build_count[s]) for s in build_servers]
+	build_count_tuples.sort(key=lambda x: x[1])
+	return build_count_tuples[0][0]
+
+
+def get_active_build_count_by_build_server():
+	build_servers = frappe.get_all(
+		"Deploy Candidate",
+		fields=["build_server"],
+		filters={
+			"status": ["in", ["Running", "Preparing"]],
+			"modified": [">", frappe.utils.now_datetime() - timedelta(hours=4)],
+		},
+		pluck="build_server",
+	)
+	return Counter(build_servers)

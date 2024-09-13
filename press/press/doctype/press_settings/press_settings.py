@@ -6,13 +6,13 @@
 import boto3
 import frappe
 from boto3.session import Session
-from twilio.rest import Client
 from frappe.model.document import Document
 from frappe.utils import get_url
+from twilio.rest import Client
 
 from press.api.billing import get_stripe
-from press.telegram_utils import Telegram
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
+from press.telegram_utils import Telegram
 
 
 class PressSettings(Document):
@@ -28,7 +28,6 @@ class PressSettings(Document):
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
-		allow_developer_account: DF.Check
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
 		aws_access_key_id: DF.Data | None
@@ -40,7 +39,9 @@ class PressSettings(Document):
 		backup_region: DF.Data | None
 		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
 		bench_configuration: DF.Code
+		branch: DF.Data | None
 		build_directory: DF.Data | None
+		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
 		clone_directory: DF.Data | None
@@ -89,6 +90,8 @@ class PressSettings(Document):
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
+		micro_debit_charge_inr: DF.Currency
+		micro_debit_charge_usd: DF.Currency
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
@@ -107,7 +110,6 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		remote_access_key_id: DF.Data | None
-		remote_build_server: DF.Link | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
@@ -132,11 +134,13 @@ class PressSettings(Document):
 		telegram_bot_token: DF.Data | None
 		telegram_chat_id: DF.Data | None
 		threshold: DF.Float
+		tls_renewal_queue_size: DF.Int
 		trial_sites_count: DF.Int
 		twilio_account_sid: DF.Data | None
 		twilio_api_key_secret: DF.Password | None
 		twilio_api_key_sid: DF.Data | None
 		twilio_phone_number: DF.Phone | None
+		usage_record_creation_batch_size: DF.Int
 		usd_rate: DF.Float
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
@@ -164,6 +168,8 @@ class PressSettings(Document):
 				"invoice.payment_succeeded",
 				"invoice.payment_failed",
 				"invoice.finalized",
+				"mandate.updated",
+				"setup_intent.succeeded",
 			],
 		)
 		self.stripe_webhook_endpoint_id = webhook["id"]

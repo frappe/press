@@ -2,13 +2,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 from calendar import monthrange
-from press.utils import log_error
-from frappe.utils import now_datetime
-from frappe.utils import get_time, get_datetime
+
+import frappe
+from frappe.utils import get_datetime, get_time, now_datetime
+
+from press.press.doctype.site.site import Site
 from press.press.doctype.site_update.site_update import benches_with_available_update
+from press.utils import log_error
 
 
 def trigger():
@@ -19,7 +20,8 @@ def trigger():
 		"Site",
 		filters={
 			"status": ("in", ("Active", "Inactive")),
-			"auto_updates_scheduled": True,
+			"only_update_at_specified_time": True,
+			"skip_auto_updates": False,
 			"bench": (
 				"in",
 				benches_with_available_update(),  # An update should be available for this site
@@ -52,7 +54,7 @@ def trigger():
 		set_schedule_details(auto_update_log, site)
 
 		try:
-			site_doc = frappe.get_doc("Site", site.name)
+			site_doc: Site = frappe.get_doc("Site", site.name)
 			site_doc.schedule_update()
 			site_doc.auto_update_last_triggered_on = now_datetime()
 			site_doc.save()

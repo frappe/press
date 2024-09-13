@@ -6,6 +6,7 @@
 				{
 					label: 'Restore',
 					variant: 'solid',
+					theme: 'red',
 					loading: $resources.restoreBackup.loading,
 					onClick: () => {
 						$resources.restoreBackup.submit();
@@ -47,6 +48,8 @@
 	</Dialog>
 </template>
 <script>
+import { DashboardError } from '../utils/error';
+
 export default {
 	name: 'SiteDatabaseRestoreDialog',
 	props: {
@@ -78,7 +81,9 @@ export default {
 				},
 				validate() {
 					if (!this.filesUploaded) {
-						return 'Please upload database, public and private files to restore.';
+						throw new DashboardError(
+							'Please upload database, public and private files to restore.'
+						);
 					}
 				},
 				onSuccess() {

@@ -2,19 +2,20 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
+import unittest
+from unittest.mock import Mock, patch
+
+import frappe
+
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.tls_certificate.tls_certificate import (
 	BaseCA,
 	LetsEncrypt,
 	TLSCertificate,
 )
-from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
-from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from unittest.mock import Mock, patch
-from press.press.doctype.agent_job.agent_job import AgentJob
-
-import frappe
-import unittest
 
 
 @patch.object(TLSCertificate, "obtain_certificate", new=Mock())

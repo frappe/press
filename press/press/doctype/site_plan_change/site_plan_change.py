@@ -33,6 +33,14 @@ class SitePlanChange(Document):
 			to_plan_value = frappe.db.get_value("Site Plan", self.to_plan, "price_usd")
 			self.type = "Downgrade" if from_plan_value > to_plan_value else "Upgrade"
 
+		if self.from_plan and self.to_plan and self.type == "Downgrade":
+			if not frappe.db.get_value(
+				"Site Plan", self.to_plan, "allow_downgrading_from_other_plan"
+			):
+				frappe.throw(
+					"Sorry, you cannot downgrade to {} from {}".format(self.to_plan, self.from_plan)
+				)
+
 		if self.type == "Initial Plan":
 			self.from_plan = ""
 

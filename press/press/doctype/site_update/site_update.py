@@ -4,6 +4,7 @@
 
 import random
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import pytz
@@ -13,10 +14,8 @@ from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 
 from press.agent import Agent
-from press.utils import log_error
 from press.api.client import dashboard_whitelist
-
-from typing import TYPE_CHECKING
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -50,6 +49,7 @@ class SiteUpdate(Document):
 		status: DF.Literal[
 			"Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"
 		]
+		team: DF.Link | None
 		update_job: DF.Link | None
 	# end: auto-generated types
 
@@ -63,6 +63,8 @@ class SiteUpdate(Document):
 		"update_job",
 		"scheduled_time",
 		"creation",
+		"skipped_backups",
+		"skipped_failing_patches",
 	]
 
 	@staticmethod
@@ -261,7 +263,15 @@ class SiteUpdate(Document):
 			and workload_diff
 			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
-			server.auto_scale_workers(commit=False)
+			frappe.enqueue_doc(
+				"Server",
+				server.name,
+				method="auto_scale_workers",
+				job_id=f"auto_scale_workers:{server.name}",
+				deduplicate=True,
+				enqueue_after_commit=True,
+				at_front=True,
+			)
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):
@@ -353,8 +363,10 @@ def sites_with_available_update(server=None):
 		filters={
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
+			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
+			"skip_auto_updates": False,
 		},
-		fields=["name", "timezone", "bench", "server", "status", "skip_auto_updates"],
+		fields=["name", "timezone", "bench", "server", "status"],
 	)
 	return sites
 
@@ -386,7 +398,6 @@ def schedule_updates_server(server):
 		return
 
 	sites = sites_with_available_update(server)
-	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
 
 	# If a site can't be updated for some reason, then we shouldn't get stuck
@@ -405,11 +416,17 @@ def schedule_updates_server(server):
 
 		if frappe.db.exists(
 			"Site Update",
-			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
+			{
+				"site": site.name,
+				"status": ("in", ("Pending", "Running", "Failure", "Scheduled")),
+			},
 		):
 			continue
+
 		try:
 			site = frappe.get_doc("Site", site.name)
+			if site.site_migration_scheduled():
+				continue
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
@@ -417,10 +434,6 @@ def schedule_updates_server(server):
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
-
-
-def should_not_skip_auto_updates(site):
-	return not site.skip_auto_updates
 
 
 def should_try_update(site):
@@ -510,7 +523,9 @@ def process_update_site_job_update(job):
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
-		elif updated_status in ("Success", "Delivery Failure"):
+		elif updated_status == "Success":
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+		elif updated_status == "Delivery Failure":
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
@@ -518,6 +533,9 @@ def process_update_site_job_update(job):
 				trigger_recovery_job(site_update.name)
 			else:
 				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
+
+	if job.status == "Failure":
+		send_job_failure_notification(job.name)
 
 
 def process_update_site_recover_job_update(job):
@@ -548,6 +566,9 @@ def process_update_site_recover_job_update(job):
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 
+	if job.status == "Failure":
+		send_job_failure_notification(job.name)
+
 
 def mark_stuck_updates_as_fatal():
 	frappe.db.set_value(
@@ -577,6 +598,34 @@ def run_scheduled_updates():
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)
 			frappe.db.rollback()
+
+
+def send_job_failure_notification(job_name):
+	from press.press.doctype.press_notification.press_notification import (
+		create_new_notification,
+	)
+
+	job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
+	notification_type, message = "", ""
+
+	if job_type == "Update Site Migrate":
+		notification_type = "Site Migrate"
+		message = f"Site <b>{job_site}</b> failed to migrate"
+	elif job_type == "Update Site Pull":
+		notification_type = "Site Update"
+		message = f"Site <b>{job_site}</b> failed to update"
+	elif job_type.startswith("Recover Failed"):
+		notification_type = "Site Recovery"
+		message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
+
+	if notification_type:
+		create_new_notification(
+			frappe.get_value("Site", job_site, "team"),
+			notification_type,
+			"Agent Job",
+			job_name,
+			message,
+		)
 
 
 def on_doctype_update():

@@ -1,11 +1,12 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-from datetime import datetime
 import json
-import frappe
-import unittest
 import typing
+import unittest
+from datetime import datetime
+
+import frappe
 
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
