@@ -421,6 +421,11 @@ export default {
 				return false;
 			}
 
+			// In Place updates cannot take place with removed apps.
+			if (this.hasRemovedApps) {
+				return false;
+			}
+
 			// All sites to be updated must belong to the same bench.
 			const benches = new Set(this.selectedSites.map(s => s.bench));
 			if (benches.size !== 1) {
