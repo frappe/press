@@ -9,11 +9,22 @@ def execute(filters=None):
 	frappe.only_for("System Manager")
 	columns = frappe.get_doc("Report", "AWS Rightsizing Recommendation").get_columns()
 	resource_type = filters.get("resource_type")
-	data = get_data(resource_type)
+	columns_to_remove = []
+	if resource_type == "Compute":
+		columns_to_remove = [
+			"current_iops",
+			"recommended_iops",
+			"current_throughput",
+			"recommended_throughput",
+		]
+	elif resource_type == "Storage":
+		columns_to_remove = ["current_instance_type", "recommended_instance_type"]
+	columns = [column for column in columns if column.fieldname not in columns_to_remove]
+	data = get_data(resource_type, filters.get("action_type"))
 	return columns, data
 
 
-def get_data(resource_type):
+def get_data(resource_type, action_type):
 	settings = frappe.get_single("Press Settings")
 	client = boto3.client(
 		"cost-optimization-hub",
@@ -27,11 +38,16 @@ def get_data(resource_type):
 		"Storage": ["EbsVolume"],
 	}.get(resource_type, ["Ec2Instance", "EbsVolume"])
 
+	action_types = {
+		"Rightsize": ["Rightsize"],
+		"Migrate to Graviton": ["MigrateToGraviton"],
+	}.get(action_type)
+
 	paginator = client.get_paginator("list_recommendations")
 	response_iterator = paginator.paginate(
 		filter={
 			"resourceTypes": resource_types,
-			"actionTypes": ["Rightsize"],
+			"actionTypes": action_types,
 		},
 	)
 
@@ -42,40 +58,40 @@ def get_data(resource_type):
 				"Ec2Instance": "Virtual Machine",
 				"EbsVolume": "Virtual Machine Volume",
 			}[row["currentResourceType"]]
+			virtual_machine = row["resourceId"]
+			# if resource_type == "Virtual Machine":
+			# 	virtual_machine = frappe.get_all(
+			# 		resource_type, {"instance_id": row["resourceId"]}, pluck="name"
+			# 	)
+			# elif resource_type == "Virtual Machine Volume":
+			# 	virtual_machine = frappe.get_all(
+			# 		resource_type, {"volume_id": row["resourceId"]}, pluck="parent"
+			# 	)
 
-			if resource_type == "Virtual Machine":
-				virtual_machine = frappe.get_all(
-					resource_type, {"instance_id": row["resourceId"]}, pluck="name"
-				)
-			elif resource_type == "Virtual Machine Volume":
-				virtual_machine = frappe.get_all(
-					resource_type, {"volume_id": row["resourceId"]}, pluck="parent"
-				)
+			# if not virtual_machine:
+			# 	# This resource is not managed by Press. Ignore
+			# 	continue
+			# virtual_machine = virtual_machine[0]
 
-			if not virtual_machine:
-				# This resource is not managed by Press. Ignore
-				continue
-			virtual_machine = virtual_machine[0]
+			# server_type = {
+			# 	"f": "Server",
+			# 	"m": "Database Server",
+			# 	"n": "Proxy Server",
+			# }[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
 
-			server_type = {
-				"f": "Server",
-				"m": "Database Server",
-				"n": "Proxy Server",
-			}[frappe.db.get_value("Virtual Machine", virtual_machine, "series")]
-
-			server = frappe.db.get_value(
-				server_type,
-				{"virtual_machine": virtual_machine},
-				["name", "team", "public"],
-				as_dict=True,
-			)
+			# server = frappe.db.get_value(
+			# 	server_type,
+			# 	{"virtual_machine": virtual_machine},
+			# 	["name", "team", "public"],
+			# 	as_dict=True,
+			# )
 			data = {
 				"resource_type": resource_type,
 				"virtual_machine": virtual_machine,
-				"server_type": server_type,
-				"server": server.name,
-				"team": server.team,
-				"public": server.public,
+				# "server_type": server_type,
+				# "server": server.name,
+				# "team": server.team,
+				# "public": server.public,
 				"region": row["region"],
 				"estimated_cost": row["estimatedMonthlyCost"],
 				"estimated_savings": row["estimatedMonthlySavings"],

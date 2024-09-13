@@ -130,11 +130,21 @@
  "doctype": "Report",
  "filters": [
   {
+   "default": "Compute",
    "fieldname": "resource_type",
    "fieldtype": "Select",
    "label": "Resource Type",
-   "mandatory": 0,
+   "mandatory": 1,
    "options": "\nCompute\nStorage",
+   "wildcard_filter": 0
+  },
+  {
+   "default": "Rightsize",
+   "fieldname": "action_type",
+   "fieldtype": "Select",
+   "label": "Action Type",
+   "mandatory": 1,
+   "options": "Rightsize\nMigrate to Graviton",
    "wildcard_filter": 0
   }
  ],
@@ -142,7 +152,7 @@
  "is_standard": "Yes",
  "json": "",
  "letterhead": null,
- "modified": "2024-09-13 10:31:54.223096",
+ "modified": "2024-09-13 10:41:52.819651",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Rightsizing Recommendation",
