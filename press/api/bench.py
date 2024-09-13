@@ -734,7 +734,7 @@ def deploy(name, apps):
 def deploy_and_update(
 	name: str,
 	apps: list,
-	sites: str | list[str] | None = None,
+	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
 	# Returns name of the Deploy Candidate that is running the build
@@ -751,7 +751,7 @@ def deploy_and_update(
 def update_inplace(
 	name: str,
 	apps: list,
-	sites: str | list[str] | None = None,
+	sites: list,
 ):
 	# Returns name of the Agent Job name that runs the inplace update
 	return get_bench_update(

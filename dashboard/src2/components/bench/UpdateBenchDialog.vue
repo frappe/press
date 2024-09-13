@@ -151,6 +151,18 @@ export default {
 			this.step = 'select-sites';
 		}
 	},
+	watch: {
+		useUpdateInPlace(v) {
+			if (!v) {
+				return;
+			}
+
+			for (const site of this.selectedSites) {
+				site.skip_failing_patches = true;
+				site.skip_backups = true;
+			}
+		}
+	},
 	computed: {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
@@ -485,7 +497,7 @@ export default {
 				params: {
 					name: this.bench,
 					apps: this.selectedApps,
-					sites: this.selectedSites.map(s => s.name)
+					sites: this.selectedSites
 				},
 				onSuccess(id) {
 					this.$router.push({
