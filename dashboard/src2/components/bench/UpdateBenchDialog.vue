@@ -418,7 +418,7 @@ export default {
 			return `Deploy and update ${this.selectedSites.length} ${site}`;
 		},
 		canUpdateInPlace() {
-			if (!this.benchDocResource?.doc.inplace_updates_enabled) {
+			if (!this.benchDocResource?.doc.enable_inplace_updates) {
 				return false;
 			}
 

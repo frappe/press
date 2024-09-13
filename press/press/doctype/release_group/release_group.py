@@ -172,10 +172,10 @@ class ReleaseGroup(Document, TagHelpers):
 			doc.server_title = server.title
 			doc.server_team = server.team
 
-		doc.inplace_updates_enabled = frappe.get_cached_value(
+		doc.enable_inplace_updates = frappe.get_value(
 			"Team",
 			self.team,
-			"inplace_updates_enabled",
+			"enable_inplace_updates",
 		)
 
 	def get_actions(self):
