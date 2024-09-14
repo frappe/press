@@ -38,6 +38,8 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 from hcloud import APIException, Client
 from hcloud.images import Image
 from hcloud.server_types import ServerType
+from hcloud.networks.domain import NetworkSubnet
+
 
 from press.utils import get_current_team, unique
 
@@ -61,7 +63,7 @@ class Cluster(Document):
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -168,10 +170,45 @@ class Cluster(Document):
 			self.provision_on_aws_ec2()
 		elif self.cloud_provider == "OCI":
 			self.provision_on_oci()
+		elif self.cloud_provider == "Hetzner":
+			self.provision_on_hetzner()
+
+	def provision_on_hetzner(self):
+		try:
+			# Define the subnet
+			subnets = [
+				NetworkSubnet(
+					type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
+					ip_range=self.subnet_cidr_block,
+					network_zone=self.region,
+				)
+			]
+
+			# Get Hetzner API token from Press Settings
+			settings: "PressSettings" = frappe.get_single("Press Settings")
+			api_token = settings.get_password("hetzner_api_token")
+
+			client = Client(token=api_token)
+
+			# Create the network (VPC) on Hetzner
+			network = client.networks.create(
+				name=f"Frappe Cloud - {self.name}",
+				ip_range=self.cidr_block,  # The IP range for the entire network (CIDR)
+				subnets=subnets,
+				routes=[],
+			)
+
+		except APIException as e:
+			frappe.throw(f"Failed to provision network on Hetzner: {str(e)}")
+
+		except Exception as e:
+			frappe.throw(f"An unexpected error occurred during provisioning: {str(e)}")
 
 	def on_trash(self):
 		machines = frappe.get_all(
-			"Virtual Machine", {"cluster": self.name, "status": "Terminated"}, pluck="name"
+			"Virtual Machine",
+			{"cluster": self.name, "status": "Terminated"},
+			pluck="name",
 		)
 		for machine in machines:
 			frappe.delete_doc("Virtual Machine", machine)
@@ -248,7 +285,12 @@ class Cluster(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "subnet",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Public Subnet"}],
+					"Tags": [
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Public Subnet",
+						}
+					],
 				},
 			],
 			AvailabilityZone=self.availability_zone,
@@ -262,7 +304,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "internet-gateway",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Internet Gateway"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Internet Gateway",
+						},
 					],
 				},
 			],
@@ -307,7 +352,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "security-group",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Security Group"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Security Group",
+						},
 					],
 				},
 			],
@@ -339,7 +387,10 @@ class Cluster(Document):
 					"FromPort": 3306,
 					"IpProtocol": "tcp",
 					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "MariaDB from private network"}
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "MariaDB from private network",
+						}
 					],
 					"ToPort": 3306,
 				},
@@ -347,7 +398,10 @@ class Cluster(Document):
 					"FromPort": 22000,
 					"IpProtocol": "tcp",
 					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SSH from private network"}
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "SSH from private network",
+						}
 					],
 					"ToPort": 22999,
 				},
@@ -367,7 +421,10 @@ class Cluster(Document):
 				KeyName=self.ssh_key,
 				PublicKeyMaterial=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 				TagSpecifications=[
-					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key}]},
+					{
+						"ResourceType": "key-pair",
+						"Tags": [{"Key": "Name", "Value": self.ssh_key}],
+					},
 				],
 			)
 		except Exception:
@@ -389,7 +446,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "security-group",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Proxy - Security Group"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Proxy - Security Group",
+						},
 					],
 				},
 			],
@@ -402,7 +462,12 @@ class Cluster(Document):
 				{
 					"FromPort": 2222,
 					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
+					"IpRanges": [
+						{
+							"CidrIp": "0.0.0.0/0",
+							"Description": "SSH proxy from anywhere",
+						}
+					],
 					"ToPort": 2222,
 				},
 				{
