@@ -34,6 +34,11 @@ from oci.identity import IdentityClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
+
+from hcloud import APIException, Client
+from hcloud.images import Image
+from hcloud.server_types import ServerType
+
 from press.utils import get_current_team, unique
 
 if typing.TYPE_CHECKING:
@@ -113,6 +118,26 @@ class Cluster(Document):
 			self.validate_aws_credentials()
 		elif self.cloud_provider == "OCI":
 			self.set_oci_availability_zone()
+		elif self.cloud_provider == "Hetzner":
+			self.validate_hetzner_api_token()
+
+	def validate_hetzner_api_token(self):
+		settings: "PressSettings" = frappe.get_single("Press Settings")
+		api_token = settings.get_password("hetzner_api_token")
+		client = Client(token=api_token)
+		try:
+			# Check if we can list servers (read access)
+			servers = client.servers.get_all()
+
+			if servers is None:
+				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+
+		except APIException as e:
+			# Handle specific API exceptions like unauthorized access
+			if e.code == "unauthorized":
+				frappe.throw("API token is invalid or does not have the correct permissions.")
+			else:
+				frappe.throw(f"An error occurred while validating the API token: {e}")
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")

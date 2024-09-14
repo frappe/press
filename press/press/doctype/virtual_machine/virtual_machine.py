@@ -27,6 +27,10 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from hcloud import Client
+from hcloud.images import Image
+from hcloud.server_types import ServerType
+
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
@@ -80,6 +84,7 @@ class VirtualMachine(Document):
 		"Proxy Server",
 		"Monitor Server",
 		"Log Server",
+		"Devbox Server",
 	]
 
 	def autoname(self):

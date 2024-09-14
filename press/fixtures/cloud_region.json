@@ -62,5 +62,13 @@
   "name": "eu-central-1",
   "provider": "AWS EC2",
   "region_name": "eu-central-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2024-09-14 12:06:04.298999",
+  "name": "ap-southeast",
+  "provider": "Hetzner",
+  "region_name": "ap-southeast"
  }
 ]
