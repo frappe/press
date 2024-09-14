@@ -26,12 +26,12 @@
 		<div v-if="localisationAppNames && apps.length" class="space-y-4">
 			<div class="flex space-x-2">
 				<FormControl
-					label="Install Localisation App?"
+					label="Install Local Compliance App?"
 					v-model="showLocalisationApps"
 					type="checkbox"
 				/>
 				<Tooltip
-					text="Localisation app allows creating transactions as per statutory compliance. They're maintained by community partners."
+					text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
 				>
 					<i-lucide-info class="h-4 w-4 text-gray-500" />
 				</Tooltip>
