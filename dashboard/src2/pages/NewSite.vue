@@ -22,10 +22,34 @@
 		</div>
 		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<NewSiteAppSelector
-				:availableApps="selectedVersionApps"
+				:availableApps="selectedVersionAppOptions"
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
+
+			<div v-if="localisationAppNames && apps.length" class="space-y-4">
+				<div class="flex space-x-2">
+					<FormControl
+						label="Install Local Compliance App?"
+						v-model="showLocalisationOption"
+						type="checkbox"
+					/>
+					<Tooltip
+						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
+					>
+						<i-lucide-info class="h-4 w-4 text-gray-500" />
+					</Tooltip>
+				</div>
+				<FormControl
+					class="w-1/2"
+					variant="outline"
+					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
+					label="Select Country"
+					v-model="selectedLocalisationCountry"
+					type="autocomplete"
+					:options="localisationAppCountries"
+				/>
+			</div>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -229,6 +253,7 @@ import { plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 import { DashboardError } from '../utils/error';
+import { getCountry } from '../utils/country';
 
 export default {
 	name: 'NewSite',
@@ -272,6 +297,8 @@ export default {
 			appPlans: {},
 			selectedApp: null,
 			closestCluster: null,
+			selectedLocalisationCountry: null,
+			showLocalisationOption: false,
 			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false
@@ -282,6 +309,20 @@ export default {
 			this.version = this.autoSelectVersion();
 			this.cluster = null;
 			this.agreedToRegionConsent = false;
+		},
+		showLocalisationOption() {
+			if (this.showLocalisationOption) {
+				const localisationAppCountries = this.localisationAppCountries.map(
+					c => c.value
+				);
+
+				if (
+					localisationAppCountries.includes(getCountry()) &&
+					!this.selectedLocalisationCountry
+				) {
+					this.selectedLocalisationCountry = { value: getCountry() };
+				}
+			}
 		},
 		async version() {
 			this.cluster = null;
@@ -343,55 +384,108 @@ export default {
 		newSite() {
 			if (!(this.options && this.selectedVersion)) return;
 
-			return {
-				url: 'press.api.client.insert',
-				makeParams() {
-					let appPlans = {};
-					for (let app of this.apps) {
-						if (app.plan) {
-							appPlans[app.app] = app.plan;
+			if (this.bench) {
+				return {
+					url: 'press.api.client.insert',
+					makeParams() {
+						let appPlans = {};
+						for (let app of this.apps) {
+							if (app.plan) {
+								appPlans[app.app] = app.plan;
+							}
 						}
-					}
 
-					return {
-						doc: {
-							doctype: 'Site',
-							team: this.$team.doc.name,
-							subdomain: this.subdomain,
-							apps: [
-								{ app: 'frappe' },
-								...this.apps
-									.filter(app => app.app)
-									.map(app => ({ app: app.app }))
-							],
-							app_plans: appPlans,
-							cluster: this.cluster,
-							bench: this.bench ? this.selectedVersion.group.bench : null,
-							group: this.selectedVersion.group.name,
-							domain: this.options.domain,
-							subscription_plan: this.plan.name,
-							share_details_consent: this.shareDetailsConsent
+						return {
+							doc: {
+								doctype: 'Site',
+								team: this.$team.doc.name,
+								subdomain: this.subdomain,
+								apps: [
+									{ app: 'frappe' },
+									...this.apps
+										.filter(app => app.app)
+										.map(app => ({ app: app.app }))
+								],
+								app_plans: appPlans,
+								cluster: this.cluster,
+								bench: this.bench ? this.selectedVersion.group.bench : null,
+								group: this.selectedVersion.group.name,
+								domain: this.options.domain,
+								subscription_plan: this.plan.name,
+								share_details_consent: this.shareDetailsConsent
+							}
+						};
+					},
+					validate() {
+						if (!this.subdomain) {
+							throw new DashboardError('Please enter a subdomain');
 						}
-					};
-				},
-				validate() {
-					if (!this.subdomain) {
-						throw new DashboardError('Please enter a subdomain');
-					}
 
-					if (!this.agreedToRegionConsent) {
-						throw new DashboardError(
-							'Please agree to the above consent to create site'
-						);
+						if (!this.agreedToRegionConsent) {
+							throw new DashboardError(
+								'Please agree to the above consent to create site'
+							);
+						}
+					},
+					onSuccess: site => {
+						router.push({
+							name: 'Site Detail Jobs',
+							params: { name: site.name }
+						});
 					}
-				},
-				onSuccess: site => {
-					router.push({
-						name: 'Site Detail Jobs',
-						params: { name: site.name }
-					});
-				}
-			};
+				};
+			} else {
+				return {
+					url: 'press.api.site.new',
+					makeParams() {
+						let appPlans = {};
+						for (let app of this.apps) {
+							if (app.plan) {
+								appPlans[app.app] = app.plan;
+							}
+						}
+
+						return {
+							site: {
+								name: this.subdomain,
+								apps: [
+									{ app: 'frappe' },
+									...this.apps
+										.filter(app => app.app)
+										.map(app => ({ app: app.app }))
+								],
+								localisation_country: this.selectedLocalisationCountry?.value,
+								version: this.selectedVersion.name,
+								group: this.selectedVersion.group.name,
+								cluster: this.cluster,
+								plan: this.plan.name,
+								share_details_consent: this.shareDetailsConsent,
+								selected_app_plans: appPlans
+								// files: this.selectedFiles,
+								// skip_failing_patches: this.skipFailingPatches,
+							}
+						};
+					},
+					validate() {
+						if (!this.subdomain) {
+							throw new DashboardError('Please enter a subdomain');
+						}
+
+						if (!this.agreedToRegionConsent) {
+							throw new DashboardError(
+								'Please agree to the above consent to create site'
+							);
+						}
+					},
+					onSuccess: site => {
+						console.log('site', site);
+						router.push({
+							name: 'Site Job',
+							params: { name: site.site, id: site.job }
+						});
+					}
+				};
+			}
 		}
 	},
 	computed: {
@@ -456,16 +550,27 @@ export default {
 				}
 			});
 		},
-		selectedVersionAppNames() {
-			return this.selectedVersionApps.map(app => app.app);
+		selectedVersionAppOptions() {
+			return this.selectedVersionApps.filter(
+				app => !this.localisationAppNames.includes(app.app)
+			);
 		},
-		selectedVersionPublicApps() {
-			return this.selectedVersionApps.filter(app => app.public);
+		localisationAppNames() {
+			if (!this.selectedVersionApps) return [];
+			const localisationAppDetails = this.selectedVersionApps.flatMap(
+				app => app.localisation_apps
+			);
+			return localisationAppDetails.map(app => app?.marketplace_app);
 		},
-		selectedVersionPrivateApps() {
-			if (this.selectedVersion?.group?.public) return [];
-
-			return this.selectedVersionApps.filter(app => !app.public);
+		localisationAppCountries() {
+			if (!this.selectedVersionApps) return [];
+			const localisationAppDetails = this.selectedVersionApps.flatMap(
+				app => app.localisation_apps
+			);
+			return localisationAppDetails.map(app => ({
+				label: app?.country,
+				value: app?.country
+			}));
 		},
 		selectedPlan() {
 			if (!plans?.data) return;

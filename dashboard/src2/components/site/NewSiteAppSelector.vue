@@ -23,29 +23,6 @@
 				"
 			/>
 		</div>
-		<div v-if="localisationAppNames && apps.length" class="space-y-4">
-			<div class="flex space-x-2">
-				<FormControl
-					label="Install Local Compliance App?"
-					v-model="showLocalisationApps"
-					type="checkbox"
-				/>
-				<Tooltip
-					text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
-				>
-					<i-lucide-info class="h-4 w-4 text-gray-500" />
-				</Tooltip>
-			</div>
-			<FormControl
-				class="w-1/2"
-				variant="outline"
-				:class="{ 'pointer-events-none opacity-50': !showLocalisationApps }"
-				label="Select Country"
-				v-model="selectedLocalisationCountry"
-				type="autocomplete"
-				:options="localisationAppCountries"
-			/>
-		</div>
 		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Private Apps
@@ -63,7 +40,6 @@ import DownloadIcon from '~icons/lucide/download';
 import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
 import { Badge } from 'frappe-ui';
 import { icon } from '../../utils/components';
-import { getCountry } from '../../utils/country';
 import ObjectList from '../ObjectList.vue';
 
 export default {
@@ -76,26 +52,8 @@ export default {
 	data() {
 		return {
 			selectedApp: null,
-			showLocalisationApps: false,
-			showAppPlanSelectorDialog: false,
-			selectedLocalisationCountry: null
+			showAppPlanSelectorDialog: false
 		};
-	},
-	watch: {
-		showLocalisationApps() {
-			if (this.showLocalisationApps) {
-				const localisationAppCountries = this.localisationAppCountries.map(
-					c => c.value
-				);
-
-				if (
-					localisationAppCountries.includes(getCountry()) &&
-					!this.selectedLocalisationCountry
-				) {
-					this.selectedLocalisationCountry = getCountry();
-				}
-			}
-		}
 	},
 	computed: {
 		apps: {
@@ -109,10 +67,7 @@ export default {
 		publicApps() {
 			if (!this.availableApps) return;
 			const publicApps = this.availableApps.filter(
-				app =>
-					(app.public || app.plans?.length) &&
-					app.image &&
-					!this.localisationAppNames.includes(app.app)
+				app => (app.public || app.plans?.length) && app.image
 			);
 
 			if (!publicApps.length) return;
@@ -193,23 +148,6 @@ export default {
 					}
 				]
 			};
-		},
-		localisationAppCountries() {
-			if (!this.availableApps) return [];
-			const localisationAppDetails = this.availableApps.flatMap(
-				app => app.localisation_apps
-			);
-			return localisationAppDetails.map(app => ({
-				label: app?.country,
-				value: app?.country
-			}));
-		},
-		localisationAppNames() {
-			if (!this.availableApps) return [];
-			const localisationAppDetails = this.availableApps.flatMap(
-				app => app.localisation_apps
-			);
-			return localisationAppDetails.map(app => app?.marketplace_app);
 		},
 		privateApps() {
 			if (!this.availableApps) return;
