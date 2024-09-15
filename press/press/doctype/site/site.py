@@ -85,6 +85,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server.server import BaseServer
 
+DOCTYPE_SERVER_TYPE_MAP = {
+	"Server": "Application",
+	"Database Server": "Database",
+	"Proxy Server": "Proxy",
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -770,7 +776,7 @@ class Site(Document, TagHelpers):
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
 		if (diff := server.free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {server.doctype} to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
 			if server.public:
 				self.try_increasing_disk(server, diff, msg)
 			else:
