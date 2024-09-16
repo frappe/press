@@ -41,7 +41,6 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
@@ -55,6 +54,7 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
+		platform: DF.Literal["x86_64", "arm64"]
 		private_dns_name: DF.Data | None
 		private_ip_address: DF.Data | None
 		public_dns_name: DF.Data | None
@@ -317,8 +317,9 @@ class VirtualMachine(Document):
 
 	def get_latest_ubuntu_image(self):
 		if self.cloud_provider == "AWS EC2":
+			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
-				Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
 		elif self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
