@@ -7,8 +7,8 @@
 
 - name: Download cAdvisor Binary
   get_url:
-    url: https://github.com/google/cadvisor/releases/download/v0.37.5/cadvisor
-    checksum: sha256:0becc44bc1f4bdf82485b1136897b421604c474a2cf7c1106fd2c032cbf6f5cb
+    url: https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-amd64
+    checksum: sha256:c63976400ca980b4b34bd074ef93c5321650050e45e6dc4d0cb1baf7dc772639
     dest: /opt/cadvisor/cadvisor
     mode: 0755
 
