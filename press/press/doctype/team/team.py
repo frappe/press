@@ -12,7 +12,6 @@ from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_fullname, get_url_to_form, random_string
-
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
@@ -54,6 +53,7 @@ class Team(Document):
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
+		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		enforce_2fa: DF.Check
@@ -111,6 +111,7 @@ class Team(Document):
 		"parent_team",
 		"is_developer",
 		"enable_performance_tuning",
+		"enable_inplace_updates",
 	]
 
 	def get_doc(self, doc):

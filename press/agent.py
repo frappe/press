@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader
 
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site.site import Site
 
 
@@ -883,7 +884,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			if job:
 				return job
 
-		job = frappe.get_doc(
+		job: "AgentJob" = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"server_type": self.server_type,

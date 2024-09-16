@@ -603,7 +603,7 @@ class DeployCandidate(Document):
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
 		else:
-			self._update_status_from_remote_build_job(job, job_data)
+			self._update_status_from_remote_build_job(job)
 
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
@@ -643,7 +643,7 @@ class DeployCandidate(Document):
 		]:
 			self.upload_step_updater.end("Pending")
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
+	def _update_status_from_remote_build_job(self, job: "AgentJob"):
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
