@@ -359,7 +359,7 @@ export default {
 			return false;
 		},
 		buyCreditsWithMidTrans(){
-			console.log("credits")
+			//console.log("credits")
 			this.$resources.createMidTransToken.submit();
 		},
 		processMidTransOrder(data){
@@ -374,6 +374,15 @@ export default {
 					result["user"] = this.$account.user.full_name
 					result["email"] = this.$account.user.email
 					result["invoice_type"] = "Subscription"
+					result["marketplace"] = 1
+					result["subscription_type"] = ""
+					result["app"] = this.app
+					result["appTitle"] = this.appTitle
+					result["site"] = this.site
+					result["plan"] = this.plan
+					result["renewal"] = this.renewal
+					result["subscription"] = this.subscription
+					result["subscriptions"] = this.$resources.subscriptions.data
 					this.$resources.MidTransPaymentSuccess.submit({result});
 					this.showCheckoutDialog = false;
 					
@@ -555,6 +564,7 @@ export default {
 				}
 			};
 		},
+
 		createMidTransToken(){
 			return {
 				method: 'optibizpro.utils.create_midtrans_token',
@@ -584,6 +594,16 @@ export default {
 				method: 'optibizpro.utils.handle_midtrans_payment_success',
 				onSuccess() {
 					this.$emit('success');
+					this.errorMessage = null;
+					this.showCheckoutDialog = false;
+					this.step = 'Confirm Checkout';
+					this.$notify({
+						title: 'Payment request received!',
+						message:
+							'Your plan will be change as soon as we get the payment confirmation',
+						icon: 'check',
+						color: 'green'
+					});
 				}
 			};
 		},
