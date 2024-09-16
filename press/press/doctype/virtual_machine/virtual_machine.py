@@ -29,7 +29,8 @@ from oci.exceptions import TransientServiceError
 
 from hcloud import Client
 from hcloud.images import Image
-from hcloud.server_types import ServerType
+
+# from hcloud.server_types import ServerType
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
@@ -137,6 +138,11 @@ class VirtualMachine(Document):
 			return self._provision_aws()
 		elif self.cloud_provider == "OCI":
 			return self._provision_oci()
+		elif self.cloud_provider == "Hetzner":
+			return self._provision_hetzner()
+
+	def _provision_hetzner(self):
+		pass
 
 	def _provision_aws(self):
 		options = {

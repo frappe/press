@@ -197,6 +197,7 @@ class Cluster(Document):
 				subnets=subnets,
 				routes=[],
 			)
+			self.vpc_id = network.id_or_name
 
 		except APIException as e:
 			frappe.throw(f"Failed to provision network on Hetzner: {str(e)}")
