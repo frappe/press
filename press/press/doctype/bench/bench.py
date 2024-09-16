@@ -727,7 +727,7 @@ class Bench(Document):
 		docker_image = self.inplace_update_docker_image or self.docker_image
 
 		Agent(self.server).create_agent_job(
-			"Recover Update Inplace",
+			"Recover Update In Place",
 			path=f"benches/{self.name}/recover_update_inplace",
 			bench=self.name,
 			data={
@@ -743,14 +743,16 @@ class Bench(Document):
 
 	def _process_recover_update_inplace(self, job: "AgentJob"):
 		self.resetting_bench = job.status not in ["Running", "Pending"]
-		if job.status != "Success":
+		if job.status != "Success" and job.status != "Failure":
 			return
 
 		req_data = json.loads(job.request_data) or {}
+		status = "Active" if job.status == "Success" else "Broken"
+
 		self.set_self_and_site_status(
 			req_data.get("sites", []),
-			status="Active",
-			site_status="Active",
+			status=status,
+			site_status=status,
 		)
 
 	def _handle_inplace_update_success(self, req_data: dict):
