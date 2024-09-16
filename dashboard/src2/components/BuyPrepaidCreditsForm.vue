@@ -82,8 +82,8 @@
 			>
 			<img
 					class="h-7 w-24"
-					:src="`/assets/press/images/mpesa.svg`"
-					alt="Stripe Logo"
+					:src="`/assets/press/images/stripe-logo.svg`"
+					alt="M-pesa Logo"
 				/>
 		</button>
 		</div>

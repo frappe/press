@@ -4,6 +4,7 @@
 from itertools import groupby
 from typing import Dict, List
 
+
 import frappe
 from frappe.core.utils import find
 from frappe.utils import fmt_money
@@ -28,6 +29,11 @@ from frappe.utils import get_request_site_address
 from press.press.doctype.mpesa_settings.mpesa_connector import MpesaConnector
 from json import dumps, loads
 from frappe.integrations.utils import create_request_log
+from frappe import _  # Import this for translation functionality
+import json
+
+# other imports and the rest of your code...
+
 
 supported_mpesa_currencies = ["KES"]
 
@@ -703,8 +709,8 @@ def generate_stk_push(**kwargs):
 	
 	try:
 		callback_url = (
-			get_request_site_address(True)
-			+ "/api/method/press.press.doctype.mpesa_settings.mpesa_settings.verify_transaction"
+			# get_request_site_address(True)
+			"https://635d-41-80-112-111.ngrok-free.app"+ "/api/method/press.api.billing.verify_mpesa_transaction"
 		)
 
 		env = "production" if not mpesa_settings.sandbox else "sandbox"
@@ -720,7 +726,7 @@ def generate_stk_push(**kwargs):
 		)
 
 		mobile_number = sanitize_mobile_number(args.sender)
-
+		
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
 			amount=args.request_amount,
@@ -730,7 +736,7 @@ def generate_stk_push(**kwargs):
 			phone_number=mobile_number,
 			description="Frappe Cloud Payment",
 		)
-
+		print(str(response))
 		return response
 
 	except Exception:
@@ -739,18 +745,19 @@ def generate_stk_push(**kwargs):
 			_("Issue detected with Mpesa configuration, check the error logs for more details"),
 			title=_("Mpesa Express Error"),
 		)
-  
+
 def get_mpesa_settings_for_team(team_name):
-    """Fetch Mpesa settings for a given team."""
-    mpesa_settings = frappe.get_all("Mpesa Settings", filters={"team": team_name}, pluck="name")
-    if not mpesa_settings:
-        frappe.throw(_("Mpesa Settings not configured for this team"), title=_("Mpesa Express Error"))
-    return frappe.get_doc("Mpesa Settings", mpesa_settings[0])
+	"""Fetch Mpesa settings for a given team."""
+	mpesa_settings = frappe.get_all("Mpesa Settings", filters={"team": team_name}, pluck="name")
+	if not mpesa_settings:
+		frappe.throw(_("Mpesa Settings not configured for this team"), title=_("Mpesa Express Error"))
+	return frappe.get_doc("Mpesa Settings", mpesa_settings[0])
   
 
 '''Verify transaction after push notification'''
 @frappe.whitelist(allow_guest=True)
-def verify_pesa_transaction(**kwargs):
+def verify_mpesa_transaction(**kwargs):
+	print("Working here")
 	"""Verify the transaction result received via callback from STK."""
 	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
 		frappe.throw(_("Invalid transaction response format"))
@@ -776,6 +783,9 @@ def verify_pesa_transaction(**kwargs):
 		integration_request.handle_failure(transaction_response)
  
  
+# @frappe.whitelist(allow_guest=True)
+# def hello_test():
+#     print("Hello sir")
 '''fetch parameters from the args'''
 def fetch_param_value(response, key, key_field):
 	"""Fetch the specified key from list of dictionary. Key is identified via the key field."""
@@ -809,9 +819,20 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 	return mpesa_receipts, completed_payments
 
 '''request for payments'''
-def request_for_payment(**kwargs):
+@frappe.whitelist(allow_guest=True)
+#def request_for_payment(**kwargs)
+def request_for_payment():
+		kwargs={
+  "partner": "ijlpjgrgr7",
+  "sender": "0740743521",
+  "request_amount": 1,  # Amount in Kenyan Shillings (Ksh)
+  "reference_doctype": "Invoice",
+  "reference_docname": "INV-2024-00006",
+  "transaction_limit":150000
+}
+
 		args = frappe._dict(kwargs)
-		request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount)
+		request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
 
 		for i, amount in enumerate(request_amounts):
 			args.request_amount = amount

@@ -5,7 +5,7 @@
 	>
 		<template #body-title>
 			<h3 class="text-2xl font-semibold leading-6 text-gray-900">
-				Add money to your account
+				Add money to your accountsss
 			</h3>
 			<p class="mt-1 text-base text-gray-600">
 				{{ paymentGateway ? '' : 'Choose your payment gateway' }}
