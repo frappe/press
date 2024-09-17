@@ -98,6 +98,7 @@ class PressSettings(Document):
 		ngrok_auth_token: DF.Data | None
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
+		offsite_backups_endpoint: DF.Data | None
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
 		plausible_api_key: DF.Password | None
