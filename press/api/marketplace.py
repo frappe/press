@@ -184,7 +184,6 @@ def create_site_on_public_bench(
 	apps: list[Dict],
 	cluster: str,
 	site_plan: str,
-	bench: str,
 	latest_stable_version: str,
 	group: str = None,
 ) -> dict:
@@ -213,7 +212,7 @@ def create_site_on_public_bench(
 			.where(
 				ReleaseGroupApp.app.isin([app["app"] for app in apps if app["app"] != "frappe"])
 			)
-			.where(ReleaseGroup.version == "Version 14")
+			.where(ReleaseGroup.version == latest_stable_version)
 			.where(ReleaseGroup.public == 1)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.name.notin(restricted_release_groups or [""]))
@@ -233,7 +232,6 @@ def create_site_on_public_bench(
 			"group": group,
 			"domain": frappe.db.get_single_value("Press Settings", "domain"),
 			"team": get_current_team(),
-			"bench": bench,
 			"app_plans": app_plans,
 		}
 	).insert()
@@ -328,7 +326,6 @@ def create_site_for_app(
 	apps: list[Dict],
 	cluster: str,
 	site_plan: str,
-	bench: Optional[str] = None,
 	group: Optional[str] = None,
 ):
 	"""Create a site for a marketplace app"""
@@ -339,7 +336,7 @@ def create_site_for_app(
 
 	if site_should_be_created_on_public_bench(apps):
 		return create_site_on_public_bench(
-			subdomain, apps, cluster, site_plan, bench, latest_stable_version, group
+			subdomain, apps, cluster, site_plan, latest_stable_version, group
 		)
 
 	else:

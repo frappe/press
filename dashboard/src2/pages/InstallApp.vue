@@ -295,8 +295,7 @@ export default {
 							}
 						],
 						cluster: this.cluster,
-						group: this.selectedGroup?.value,
-						bench: this.regions.find(r => r.name === this.cluster)?.bench
+						group: this.selectedGroup?.value
 					};
 				},
 				validate() {
