@@ -15,7 +15,6 @@ from dns.resolver import Resolver
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, sbool, time_diff_in_hours
-from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
 from press.exceptions import AAAARecordExists, ConflictingCAARecord
@@ -47,6 +46,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -1823,18 +1823,18 @@ def get_trial_plan():
 
 @frappe.whitelist()
 def get_upload_link(file, parts=1):
-	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
-	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
+	bucket_name = press_settings.remote_uploads_bucket
+	expiration = press_settings.remote_link_expiry or 3600
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
 	s3_client = client(
 		"s3",
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "remote_secret_access_key"
-		),
-		region_name="ap-south-1",
+		aws_access_key_id=press_settings.remote_access_key_id,
+		aws_secret_access_key=press_settings.get_password("remote_secret_access_key"),
+		region_name=press_settings.get("remote_uploads_region") or "ap-south-1",
+		endpoint_url=press_settings.get("remote_uploads_endpoint") or None,
 	)
 	try:
 		# The response contains the presigned URL and required fields
@@ -1866,24 +1866,24 @@ def get_upload_link(file, parts=1):
 
 @frappe.whitelist()
 def multipart_exit(file, id, action, parts=None):
+	press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
+	bucket_name = "uploads.frappe.cloud"  # TODO: Use press_settings.remote_uploads_bucket
+
 	s3_client = client(
 		"s3",
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings",
-			"Press Settings",
-			"remote_secret_access_key",
-			raise_exception=False,
-		),
-		region_name="ap-south-1",
+		aws_access_key_id=press_settings.remote_access_key_id,
+		aws_secret_access_key=press_settings.get_password("remote_secret_access_key", raise_exception=False),
+		region_name=press_settings.get("remote_uploads_region") or "ap-south-1",
+		endpoint_url=press_settings.get("remote_uploads_endpoint") or None,
 	)
+
 	if action == "abort":
-		response = s3_client.abort_multipart_upload(Bucket="uploads.frappe.cloud", Key=file, UploadId=id)
+		response = s3_client.abort_multipart_upload(Bucket=bucket_name, Key=file, UploadId=id)
 	elif action == "complete":
 		parts = json.loads(parts)
 		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
 		response = s3_client.complete_multipart_upload(
-			Bucket="uploads.frappe.cloud",
+			Bucket=bucket_name,
 			Key=file,
 			UploadId=id,
 			MultipartUpload={"Parts": parts},
