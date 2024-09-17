@@ -132,6 +132,32 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 	files = site.get("files", {})
 
+	if localisation_country := site.get("localisation_country"):
+		# if localisation country is selected, move site to a public bench with the same localisation app
+		localisation_app = frappe.db.get_value(
+			"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
+		)
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupApp = frappe.qb.DocType("Release Group App")
+		if group := (
+			frappe.qb.from_(ReleaseGroup)
+			.select(ReleaseGroup.name)
+			.join(ReleaseGroupApp)
+			.on(ReleaseGroup.name == ReleaseGroupApp.parent)
+			.where(ReleaseGroupApp.app == localisation_app)
+			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.version == site.get("version"))
+			.run(pluck="name")
+		):
+			group = group[0]
+		else:
+			frappe.throw(
+				f"Localisation app for the {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
+			)
+	else:
+		group = site.get("group")
+
 	domain = site.get("domain")
 	if not (domain and frappe.db.exists("Root Domain", {"name": domain})):
 		frappe.throw("No root domain for site")
@@ -187,10 +213,11 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			"doctype": "Site",
 			"subdomain": site["name"],
 			"domain": domain,
-			"group": site["group"],
+			"group": group,
 			"server": server,
 			"cluster": cluster,
 			"apps": [{"app": app} for app in site["apps"]],
+			"app_plans": app_plans,
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
@@ -435,20 +462,29 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def app_details_for_new_public_site():
+	fields = [
+		"name",
+		"title",
+		"image",
+		"description",
+		"app",
+		"route",
+		"subscription_type",
+		{"sources": ["source", "version"]},
+	]
+	if frappe.db.get_value(
+		"Team", get_current_team(), "auto_install_localisation_app_enabled"
+	):
+		fields += [
+			{"localisation_apps": ["marketplace_app", "country"]},
+		]
+
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",
-		fields=[
-			"name",
-			"title",
-			"image",
-			"description",
-			"app",
-			"route",
-			"subscription_type",
-			{"sources": ["source", "version"]},
-		],
+		fields=fields,
 		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
+
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
