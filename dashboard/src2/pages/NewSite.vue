@@ -473,7 +473,6 @@ export default {
 						}
 					},
 					onSuccess: site => {
-						console.log('site', site);
 						router.push({
 							name: 'Site Job',
 							params: { name: site.site, id: site.job }
