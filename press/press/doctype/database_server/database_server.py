@@ -1526,13 +1526,13 @@ class DatabaseServer(BaseServer):
 			return None
 		return count / 1000000000
 
-  def update_memory_allocator(self, memory_allocator):
+	def update_memory_allocator(self, memory_allocator):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_update_memory_allocator",
 			memory_allocator=memory_allocator,
-			enqueue_after_commit=True,
+			enqueue_after_commipt=True,
 		)
 
 	def _update_memory_allocator(self, memory_allocator):
