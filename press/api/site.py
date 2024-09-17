@@ -132,6 +132,8 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 	files = site.get("files", {})
 
+	apps = [{"app": app} for app in site["apps"]]
+
 	if localisation_country := site.get("localisation_country"):
 		# if localisation country is selected, move site to a public bench with the same localisation app
 		localisation_app = frappe.db.get_value(
@@ -150,6 +152,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			.where(ReleaseGroup.version == site.get("version"))
 			.run(pluck="name")
 		):
+			apps.append({"app": localisation_app})
 			group = group[0]
 		else:
 			frappe.throw(
@@ -216,7 +219,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			"group": group,
 			"server": server,
 			"cluster": cluster,
-			"apps": [{"app": app} for app in site["apps"]],
+			"apps": apps,
 			"app_plans": app_plans,
 			"team": team.name,
 			"free": team.free_account,
