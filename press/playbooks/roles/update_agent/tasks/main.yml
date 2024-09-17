@@ -13,6 +13,13 @@
   args:
     chdir: /home/frappe/agent/repo
 
+- name: Pull Agent Changes
+  become: yes
+  become_user: frappe
+  command: 'git pull upstream {{ agent_repository_branch }}'
+  args:
+    chdir: /home/frappe/agent/repo
+
 - name: Update Agent
   become: yes
   become_user: frappe

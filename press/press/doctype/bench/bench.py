@@ -28,7 +28,10 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
+	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -65,6 +68,7 @@ class Bench(Document):
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
 		gunicorn_workers: DF.Int
+		inplace_update_docker_image: DF.Data | None
 		is_code_server_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
@@ -76,10 +80,13 @@ class Bench(Document):
 		merge_default_and_short_rq_queues: DF.Check
 		mounts: DF.Table[BenchMount]
 		port_offset: DF.Int
+		resetting_bench: DF.Check
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[
+			"Pending", "Installing", "Updating", "Active", "Broken", "Archived"
+		]
 		team: DF.Link
 		use_rq_workerpool: DF.Check
 		vcpu: DF.Int
@@ -623,6 +630,176 @@ class Bench(Document):
 		processes = parse_supervisor_status(output)
 		return sort_supervisor_processes(processes)
 
+	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
+		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
+		self.save()
+		job = Agent(self.server).create_agent_job(
+			"Update Bench In Place",
+			path=f"benches/{self.name}/update_inplace",
+			bench=self.name,
+			data={
+				"sites": sites,
+				"apps": self.get_inplace_update_apps(apps),
+				"image": self.get_next_inplace_update_docker_image(),
+			},
+		)
+		return job.name
+
+	def get_inplace_update_apps(self, apps: "list[BenchUpdateApp]"):
+		inplace_update_apps = []
+		for app in apps:
+			source: "AppSource" = frappe.get_doc("App Source", app.source)
+			inplace_update_apps.append(
+				{
+					"app": app.app,
+					"url": source.get_repo_url(),
+					"hash": app.hash,
+				}
+			)
+		return inplace_update_apps
+
+	def get_next_inplace_update_docker_image(self):
+		sep = "-inplace-"
+		default = self.docker_image + sep + "01"
+		if not self.inplace_update_docker_image:
+			return default
+
+		splits = self.inplace_update_docker_image.split(sep)
+		if len(splits) != 2:
+			return default
+
+		try:
+			count = int(splits[1]) + 1
+		except ValueError:
+			return default
+
+		return self.docker_image + f"{sep}{count:02}"
+
+	@staticmethod
+	def process_update_inplace(job: "AgentJob"):
+		bench: "Bench" = frappe.get_doc("Bench", job.bench)
+		bench._process_update_inplace(job)
+
+	def _process_update_inplace(self, job: "AgentJob"):
+		req_data = json.loads(job.request_data) or {}
+		if job.status in ["Undelivered", "Delivery Failure"]:
+			self.set_self_and_site_status(
+				req_data.get("sites", []),
+				status="Active",
+				site_status="Active",
+			)
+
+		elif job.status in ["Pending", "Running"]:
+			self.set_self_and_site_status(
+				req_data.get("sites", []),
+				status="Updating",
+				site_status="Updating",
+			)
+
+		elif job.status == "Failure":
+			self._handle_inplace_update_failure(req_data)
+
+		elif job.status == "Success":
+			self._handle_inplace_update_success(req_data)
+
+		else:
+			# no-op
+			raise NotImplementedError("Unexpected case reached")
+
+		self.save()
+
+	def _handle_inplace_update_failure(self, req_data: dict):
+		sites = req_data.get("sites", [])
+		self.set_self_and_site_status(
+			sites=sites,
+			status="Broken",
+			site_status="Broken",
+		)
+
+		self.recover_update_inplace(sites)
+
+	def recover_update_inplace(self, sites: list[str]):
+		"""Used to attempt recovery if `update_inplace` fails"""
+		self.resetting_bench = True
+		self.save()
+
+		# `inplace_update_docker_image` is the last working inplace update image
+		docker_image = self.inplace_update_docker_image or self.docker_image
+
+		Agent(self.server).create_agent_job(
+			"Recover Update In Place",
+			path=f"benches/{self.name}/recover_update_inplace",
+			bench=self.name,
+			data={
+				"sites": sites,
+				"image": docker_image,
+			},
+		)
+
+	@staticmethod
+	def process_recover_update_inplace(job: "AgentJob"):
+		bench: "Bench" = frappe.get_doc("Bench", job.bench)
+		bench._process_recover_update_inplace(job)
+
+	def _process_recover_update_inplace(self, job: "AgentJob"):
+		self.resetting_bench = job.status not in ["Running", "Pending"]
+		if job.status != "Success" and job.status != "Failure":
+			return
+
+		req_data = json.loads(job.request_data) or {}
+		status = "Active" if job.status == "Success" else "Broken"
+
+		self.set_self_and_site_status(
+			req_data.get("sites", []),
+			status=status,
+			site_status=status,
+		)
+
+	def _handle_inplace_update_success(self, req_data: dict):
+		docker_image = req_data.get("image")
+		self.inplace_update_docker_image = docker_image
+
+		bench_config = json.loads(self.bench_config)
+		bench_config.update({"docker_image": docker_image})
+		self.bench_config = json.dumps(bench_config, indent=4)
+
+		self.update_apps_after_inplace_update(
+			update_apps=req_data.get("apps", []),
+		)
+
+		self.set_self_and_site_status(
+			req_data.get("sites", []),
+			status="Active",
+			site_status="Active",
+		)
+
+	def set_self_and_site_status(
+		self,
+		sites: list[str],
+		status: str,
+		site_status: str,
+	):
+		self.status = status
+		for site in sites:
+			frappe.set_value("Site", site, "status", site_status)
+
+	def update_apps_after_inplace_update(
+		self,
+		update_apps: list[dict],
+	):
+		apps_map = {a.app: a for a in self.apps}
+		for ua in update_apps:
+			name = ua.get("app") or ""
+			if not (bench_app := apps_map.get(name)):
+				continue
+
+			bench_app.hash = ua.get("hash")
+
+			# Update release by creating one
+			source: "AppSource" = frappe.get_doc("App Source", bench_app.source)
+			if release := source.create_release(True, commit_hash=bench_app.hash):
+				bench_app.release = release
+
 	@classmethod
 	def get_workloads(
 		cls, sites: list[str]
@@ -866,7 +1043,7 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 	benches = frappe.db.sql(
 		f"""
 		SELECT
-			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -893,6 +1070,10 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 
 def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
+		# Bench is Broken but a reset to a working state is being attempted
+		if bench.resetting_bench:
+			continue
+
 		if (
 			bench.last_archive_failure
 			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
