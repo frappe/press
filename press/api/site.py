@@ -139,6 +139,11 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		localisation_app = frappe.db.get_value(
 			"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
 		)
+		restricted_release_group_names = frappe.db.get_all(
+			"Site Plan Release Group",
+			pluck="release_group",
+			filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+		)
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		ReleaseGroupApp = frappe.qb.DocType("Release Group App")
 		if group := (
@@ -149,6 +154,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			.where(ReleaseGroupApp.app == localisation_app)
 			.where(ReleaseGroup.public == 1)
 			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.notin(restricted_release_group_names))
 			.where(ReleaseGroup.version == site.get("version"))
 			.run(pluck="name")
 		):
