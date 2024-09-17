@@ -150,6 +150,7 @@
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
+						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
 			</div>
