@@ -26,15 +26,14 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
-from hcloud import Client
-from hcloud.images import Image
-
-# from hcloud.server_types import ServerType
-
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 import rq
+
+from hcloud import Client
+from hcloud.images import Image
+from hcloud.servers.domain import ServerCreatePublicNetwork
 
 
 class VirtualMachine(Document):
@@ -141,30 +140,29 @@ class VirtualMachine(Document):
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
+		server_type = self.client().server_types.get_by_name("cpx11")
+		location = self.client().locations.get_by_name("sin")
+		network = self.client().networks.get_by_id(cluster.vpc_id)
+		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
 
-		volume = self.client().volumes.create(
-			name=f"{self.name}-volume",
-			size=100,
-			location=cluster.region,
-			automount=True,
-		)
-
-		server = self.client().servers.create(
+		server_response = self.client().servers.create(
 			name=f"{self.name}",
-			server_type="CPX21",
-			image=self.machine_image,  # Assuming machine_image has the Hetzner image name
-			ssh_keys=[self.ssh_key],
-			networks=[
-				{
-					"network": cluster.vpc_id,  # Attach the network
-					"ip": self.private_ip_address,
-				}
-			],
-			volumes=[volume],
-			user_data=self.get_cloud_init()
-			if self.virtual_machine_image
-			else "",  # Cloud-init script
+			server_type=server_type,
+			image=Image(name="ubuntu-22.04"),
+			networks=[network],
+			location=location,
+			public_net=public_net,
 		)
+
+		server = server_response.server
+
+		# volume = client().volumes.create(
+		# name="meow1234",
+		# size=100,
+		# format="ext4",
+		# automount=True,
+		# server=server,
+		# )
 
 	def _provision_aws(self):
 		options = {
