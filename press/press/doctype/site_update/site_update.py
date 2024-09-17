@@ -279,11 +279,11 @@ class SiteUpdate(Document):
 
 
 def trigger_recovery_job(site_update_name):
-	site_update = frappe.get_doc("Site Update", site_update_name)
+	site_update: "SiteUpdate" = frappe.get_doc("Site Update", site_update_name)
 	if site_update.recover_job:
 		return
 	agent = Agent(site_update.server)
-	site = frappe.get_doc("Site", site_update.site)
+	site: "Site" = frappe.get_doc("Site", site_update.site)
 	job = None
 	if site.bench == site_update.destination_bench:
 		# The site is already on destination bench

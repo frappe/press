@@ -1,47 +1,5 @@
 [
  {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
-  "modified": "2024-08-20 12:32:56.100866",
-  "name": "Update In Place",
-  "request_method": "POST",
-  "request_path": "/bench/{bench}/update_inplace",
-  "steps": [
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Pull App Changes"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Migrate Sites"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Rebuild Bench Assets"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Commit Container Changes"
-   },
-   {
-    "parent": "Update In Place",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Restart"
-   }
-  ]
- },
- {
   "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
@@ -2126,6 +2084,102 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-10 12:11:38.844112",
+  "name": "Recover Update In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/recover_update_inplace",
+  "steps": [
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Recover Sites"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-11 13:28:32.120581",
+  "name": "Ping Job",
+  "request_method": "POST",
+  "request_path": "ping_job",
+  "steps": [
+   {
+    "parent": "Ping Job",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Ping Step"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-08-20 12:51:05.293373",
+  "name": "Update Bench In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/update_inplace",
+  "steps": [
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Pull App Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Sites"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Commit Container Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
    }
   ]
  }

@@ -235,7 +235,7 @@ export default {
 										doc.title || doc.name
 									}</b><div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">You will be charged at the rate of <b>${this.$format.userCurrency(
 										doc.storage_plan[priceField]
-									)}/mo</b> for each additional GB of storage.</div>`,
+									)}/mo</b> for each additional GB of storage.</div><p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.</div>`,
 									fields: [
 										{
 											fieldname: 'storage',
@@ -273,7 +273,10 @@ export default {
 											{
 												loading: 'Increasing disk size...',
 												success: 'Disk size is scheduled to increase',
-												error: 'Failed to increase disk size'
+												error: e =>
+													e.messages.length
+														? e.messages.join('\n')
+														: e.message || 'Failed to increase disk size'
 											}
 										);
 									}

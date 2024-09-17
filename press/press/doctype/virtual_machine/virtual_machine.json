@@ -21,6 +21,7 @@
   "section_break_5",
   "machine_type",
   "instance_id",
+  "platform",
   "column_break_hgcr",
   "disk_size",
   "vcpu",
@@ -279,6 +280,15 @@
    "fieldtype": "Data",
    "label": "Instance ID",
    "read_only": 1
+  },
+  {
+   "default": "x86_64",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64",
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -309,7 +319,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-12-12 12:18:00.680292",
+ "modified": "2024-09-16 12:05:05.989784",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

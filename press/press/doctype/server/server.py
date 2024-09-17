@@ -324,6 +324,11 @@ class BaseServer(Document, TagHelpers):
 		return agent.ping()
 
 	@frappe.whitelist()
+	def ping_agent_job(self):
+		agent = Agent(self.name, self.doctype)
+		return agent.create_agent_job("Ping Job", "ping_job").name
+
+	@frappe.whitelist()
 	def update_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.update()

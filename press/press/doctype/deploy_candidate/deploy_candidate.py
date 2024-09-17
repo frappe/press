@@ -23,8 +23,6 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
-from rq.job import Job
-
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
@@ -49,6 +47,7 @@ from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
+from rq.job import Job
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -68,7 +67,6 @@ class DeployCandidate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 			DeployCandidateApp,
 		)
@@ -357,9 +355,10 @@ class DeployCandidate(Document):
 			no_cache=no_cache,
 		)
 
-	def _deploy(self):
+	@frappe.whitelist()
+	def deploy(self):
 		try:
-			self.create_deploy()
+			return self.create_deploy()
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 
@@ -603,7 +602,7 @@ class DeployCandidate(Document):
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
 		else:
-			self._update_status_from_remote_build_job(job, job_data)
+			self._update_status_from_remote_build_job(job)
 
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
@@ -643,7 +642,7 @@ class DeployCandidate(Document):
 		]:
 			self.upload_step_updater.end("Pending")
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
+	def _update_status_from_remote_build_job(self, job: "AgentJob"):
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
@@ -1327,17 +1326,19 @@ class DeployCandidate(Document):
 		)
 
 	def create_deploy(self):
-		deploy_doc = None
 		servers = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
+		if not servers:
+			return None
+
 		deploy_doc = frappe.db.exists(
 			"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
 		)
 
-		if deploy_doc or not servers:
-			return
+		if deploy_doc:
+			return str(deploy_doc)
 
-		return self._create_deploy(servers)
+		return self._create_deploy(servers).name
 
 	def _create_deploy(self, servers: List[str]):
 		deploy = frappe.get_doc(

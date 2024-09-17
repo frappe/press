@@ -5,15 +5,19 @@
     state: directory
     mode: 0755
 
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
 - name: Download Node Exporter Archive
   unarchive:
-    src: https://github.com/prometheus/node_exporter/releases/download/v1.1.2/node_exporter-1.1.2.linux-amd64.tar.gz
+    src: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
 - name: Copy Node Exporter Binary
   copy:
-    src: /tmp/node_exporter-1.1.2.linux-amd64/node_exporter
+    src: "/tmp/node_exporter-1.8.2.linux-{{ arch }}/node_exporter"
     dest: /opt/node_exporter/node_exporter
     remote_src: yes
     mode: 0755
