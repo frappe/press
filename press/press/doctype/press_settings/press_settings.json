@@ -89,10 +89,12 @@
   "auto_update_queue_size",
   "remote_files_section",
   "remote_uploads_bucket",
-  "remote_link_expiry",
+  "remote_uploads_region",
+  "remote_uploads_endpoint",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
+  "remote_link_expiry",
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
@@ -1227,11 +1229,21 @@
    "fieldname": "usage_record_creation_batch_size",
    "fieldtype": "Int",
    "label": "Usage Record Creation Batch Size"
+  },
+  {
+   "fieldname": "remote_uploads_region",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Region"
+  },
+  {
+   "fieldname": "remote_uploads_endpoint",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Endpoint"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-08-19 17:47:53.603250",
+ "modified": "2024-09-17 14:32:09.101920",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
