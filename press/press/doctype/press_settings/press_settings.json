@@ -90,10 +90,12 @@
   "auto_update_queue_size",
   "remote_files_section",
   "remote_uploads_bucket",
-  "remote_link_expiry",
+  "remote_uploads_region",
+  "remote_uploads_endpoint",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
+  "remote_link_expiry",
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
@@ -1246,11 +1248,21 @@
    "fieldtype": "Link",
    "label": "Press Trial Plan",
    "options": "Site Plan"
+  },
+  {
+   "fieldname": "remote_uploads_region",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Region"
+  },
+  {
+   "fieldname": "remote_uploads_endpoint",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Endpoint"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-10-14 21:02:12.948747",
+ "modified": "2024-11-14 14:20:04.183955",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
