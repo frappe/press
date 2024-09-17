@@ -55,8 +55,9 @@
   "backups_tab",
   "offsite_backups_section",
   "backup_region",
-  "offsite_backups_provider",
   "aws_s3_bucket",
+  "offsite_backups_endpoint",
+  "offsite_backups_provider",
   "data_40",
   "backup_rotation_scheme",
   "column_break_35",
@@ -1326,11 +1327,16 @@
    "fieldname": "remote_uploads_endpoint",
    "fieldtype": "Data",
    "label": "Uploads Bucket Endpoint"
+  },
+  {
+   "fieldname": "offsite_backups_endpoint",
+   "fieldtype": "Data",
+   "label": "Bucket Endpoint"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-17 16:53:09.230763",
+ "modified": "2025-01-17 16:53:30.844897",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
