@@ -62,7 +62,7 @@
 							:key="v.name"
 							:is="v.disabled ? 'Tooltip' : 'div'"
 							:text="
-								v.disabled
+								v.disabled && versionAppsMap[v.name]
 									? `This version is not available for the ${$format.plural(
 											versionAppsMap[v.name].length,
 											'app',
@@ -503,6 +503,7 @@ export default {
 				// temporary override since we don't have localisation app ready for v14
 				// TODO: remove this when localisation app is ready for v14
 				commonVersions = ['Version 15'];
+				this.version = 'Version 15';
 			}
 
 			return this.options.versions.map(v => ({

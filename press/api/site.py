@@ -153,7 +153,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			group = group[0]
 		else:
 			frappe.throw(
-				f"Localisation app for the {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
+				f"Localisation app for {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
 			)
 	else:
 		group = site.get("group")
