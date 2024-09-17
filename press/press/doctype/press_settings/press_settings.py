@@ -50,7 +50,6 @@ class PressSettings(Document):
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
-		data_40: DF.Data | None
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
@@ -99,7 +98,6 @@ class PressSettings(Document):
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
 		offsite_backups_endpoint: DF.Data | None
-		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None

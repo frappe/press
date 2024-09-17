@@ -57,8 +57,6 @@
   "backup_region",
   "aws_s3_bucket",
   "offsite_backups_endpoint",
-  "offsite_backups_provider",
-  "data_40",
   "backup_rotation_scheme",
   "column_break_35",
   "offsite_backups_access_key_id",
@@ -409,20 +407,9 @@
    "label": "Backup Region"
   },
   {
-   "default": "AWS S3",
-   "fieldname": "offsite_backups_provider",
-   "fieldtype": "Select",
-   "label": "Backup Provider",
-   "options": "AWS S3"
-  },
-  {
    "fieldname": "aws_s3_bucket",
    "fieldtype": "Data",
    "label": "Bucket Name"
-  },
-  {
-   "fieldname": "data_40",
-   "fieldtype": "Data"
   },
   {
    "fieldname": "backup_rotation_scheme",
@@ -1268,7 +1255,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-11-14 14:20:57.695620",
+ "modified": "2024-11-14 14:21:14.359536",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
