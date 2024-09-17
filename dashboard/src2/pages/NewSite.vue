@@ -322,6 +322,8 @@ export default {
 				) {
 					this.selectedLocalisationCountry = { value: getCountry() };
 				}
+			} else {
+				this.selectedLocalisationCountry = null;
 			}
 		},
 		async version() {
@@ -449,7 +451,9 @@ export default {
 							site: {
 								name: this.subdomain,
 								apps: ['frappe', ...this.apps.map(app => app.app)],
-								localisation_country: this.selectedLocalisationCountry?.value,
+								localisation_country: this.showLocalisationSelector
+									? this.selectedLocalisationCountry?.value
+									: null,
 								version: this.selectedVersion.name,
 								group: this.selectedVersion.group.name,
 								cluster: this.cluster,
