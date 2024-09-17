@@ -448,12 +448,7 @@ export default {
 						return {
 							site: {
 								name: this.subdomain,
-								apps: [
-									{ app: 'frappe' },
-									...this.apps
-										.filter(app => app.app)
-										.map(app => ({ app: app.app }))
-								],
+								apps: ['frappe', ...this.apps.map(app => app.app)],
 								localisation_country: this.selectedLocalisationCountry?.value,
 								version: this.selectedVersion.name,
 								group: this.selectedVersion.group.name,

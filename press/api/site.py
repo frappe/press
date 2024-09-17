@@ -216,7 +216,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			"group": group,
 			"server": server,
 			"cluster": cluster,
-			"apps": site["apps"],
+			"apps": [{"app": app} for app in site["apps"]],
 			"app_plans": app_plans,
 			"team": team.name,
 			"free": team.free_account,
