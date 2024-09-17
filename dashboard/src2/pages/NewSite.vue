@@ -26,7 +26,7 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-			<div v-if="localisationAppNames.length && apps.length" class="space-y-4">
+			<div v-if="showLocalisationSelector" class="space-y-4">
 				<div class="flex space-x-2">
 					<FormControl
 						label="Install Local Compliance App?"
@@ -554,6 +554,27 @@ export default {
 			return this.selectedVersionApps.filter(
 				app => !this.localisationAppNames.includes(app.app)
 			);
+		},
+		showLocalisationSelector() {
+			if (
+				!this.selectedVersionApps ||
+				!this.localisationAppNames.length ||
+				!this.apps.length
+			)
+				return false;
+
+			const appsThatNeedLocalisation = this.selectedVersionApps.filter(
+				app => app.localisation_apps.length
+			);
+
+			if (
+				appsThatNeedLocalisation.some(app =>
+					this.apps.map(a => a.app).includes(app.app)
+				)
+			)
+				return true;
+
+			return false;
 		},
 		localisationAppNames() {
 			if (!this.selectedVersionApps) return [];
