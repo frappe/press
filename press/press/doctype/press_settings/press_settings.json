@@ -90,10 +90,12 @@
   "auto_update_queue_size",
   "remote_files_section",
   "remote_uploads_bucket",
-  "remote_link_expiry",
+  "remote_uploads_region",
+  "remote_uploads_endpoint",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
+  "remote_link_expiry",
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
@@ -1314,11 +1316,21 @@
    "fieldname": "partnership_fee_inr",
    "fieldtype": "Int",
    "label": "Partnership Fee INR"
+  },
+  {
+   "fieldname": "remote_uploads_region",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Region"
+  },
+  {
+   "fieldname": "remote_uploads_endpoint",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Endpoint"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-12-27 11:44:09.454080",
+ "modified": "2025-01-17 16:53:09.230763",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

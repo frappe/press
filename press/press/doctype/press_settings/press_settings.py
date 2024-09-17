@@ -122,6 +122,8 @@ class PressSettings(Document):
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
+		remote_uploads_endpoint: DF.Data | None
+		remote_uploads_region: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		spaces_domain: DF.Link | None
