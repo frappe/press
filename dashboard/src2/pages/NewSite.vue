@@ -26,8 +26,7 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-
-			<div v-if="localisationAppNames && apps.length" class="space-y-4">
+			<div v-if="localisationAppNames.length && apps.length" class="space-y-4">
 				<div class="flex space-x-2">
 					<FormControl
 						label="Install Local Compliance App?"
@@ -560,7 +559,10 @@ export default {
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
 				app => app.localisation_apps
 			);
-			return localisationAppDetails.map(app => app?.marketplace_app);
+
+			return localisationAppDetails
+				.map(app => app?.marketplace_app)
+				.filter(Boolean);
 		},
 		localisationAppCountries() {
 			if (!this.selectedVersionApps) return [];
