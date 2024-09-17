@@ -3,7 +3,6 @@
 
 import base64
 import ipaddress
-
 import boto3
 import frappe
 from frappe.core.utils import find
@@ -46,13 +45,12 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI"]
+		cloud_provider: DF.Literal["AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -142,7 +140,31 @@ class VirtualMachine(Document):
 			return self._provision_hetzner()
 
 	def _provision_hetzner(self):
-		pass
+		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		volume = self.client().volumes.create(
+			name=f"{self.name}-volume",
+			size=100,
+			location=cluster.region,
+			automount=True,
+		)
+
+		server = self.client().servers.create(
+			name=f"{self.name}",
+			server_type="CPX21",
+			image=self.machine_image,  # Assuming machine_image has the Hetzner image name
+			ssh_keys=[self.ssh_key],
+			networks=[
+				{
+					"network": cluster.vpc_id,  # Attach the network
+					"ip": self.private_ip_address,
+				}
+			],
+			volumes=[volume],
+			user_data=self.get_cloud_init()
+			if self.virtual_machine_image
+			else "",  # Cloud-init script
+		)
 
 	def _provision_aws(self):
 		options = {
@@ -162,7 +184,10 @@ class VirtualMachine(Document):
 			"MaxCount": 1,
 			"MinCount": 1,
 			"Monitoring": {"Enabled": False},
-			"Placement": {"AvailabilityZone": self.availability_zone, "Tenancy": "default"},
+			"Placement": {
+				"AvailabilityZone": self.availability_zone,
+				"Tenancy": "default",
+			},
 			"NetworkInterfaces": [
 				{
 					"AssociatePublicIpAddress": True,
@@ -227,9 +252,11 @@ class VirtualMachine(Document):
 					is_pv_encryption_in_transit_enabled=True,
 					metadata={
 						"ssh_authorized_keys": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-						"user_data": base64.b64encode(self.get_cloud_init().encode()).decode()
-						if self.virtual_machine_image
-						else "",
+						"user_data": (
+							base64.b64encode(self.get_cloud_init().encode()).decode()
+							if self.virtual_machine_image
+							else ""
+						),
 					},
 				)
 			)
@@ -605,7 +632,10 @@ class VirtualMachine(Document):
 				{
 					"ResourceType": "snapshot",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
+						}
 					],
 				},
 			],
@@ -621,7 +651,9 @@ class VirtualMachine(Document):
 				).insert()
 			except Exception:
 				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
+					title="Virtual Disk Snapshot Error",
+					virtual_machine=self.name,
+					snapshot=snapshot,
 				)
 
 	def _create_snapshots_oci(self):
@@ -664,7 +696,9 @@ class VirtualMachine(Document):
 				pass
 			except Exception:
 				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
+					title="Virtual Disk Snapshot Error",
+					virtual_machine=self.name,
+					snapshot=snapshot,
 				)
 
 	@frappe.whitelist()
@@ -779,6 +813,11 @@ class VirtualMachine(Document):
 			)
 		elif self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+		elif self.cloud_provider == "Hetzner":
+			settings = frappe.get_single("Press Settings")
+			api_token = settings.get_password("hetzner_api_token")
+			client = Client(token=api_token)
+			return client
 
 	@frappe.whitelist()
 	def create_server(self):
@@ -924,7 +963,10 @@ class VirtualMachine(Document):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
 			["cluster", "max(`index`) as max_index"],
-			{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "AWS EC2"},
+			{
+				"status": ("not in", ("Terminated", "Draft")),
+				"cloud_provider": "AWS EC2",
+			},
 			group_by="cluster",
 		):
 			CHUNK_SIZE = 25  # Each call will pick up ~50 machines (2 x CHUNK_SIZE)
