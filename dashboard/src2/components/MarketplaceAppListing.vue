@@ -264,9 +264,6 @@ export default {
 				auto: true,
 				onSuccess(response) {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
-					this.setShowIsPublicGithubRepository(
-						this.marketplaceApp.github_repository_url
-					);
 				},
 				onError(e) {
 					toast.error(
