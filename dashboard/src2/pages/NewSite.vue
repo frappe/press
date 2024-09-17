@@ -500,6 +500,12 @@ export default {
 				return acc.filter(v => app.sources.map(s => s.version).includes(v));
 			}, null);
 
+			if (this.selectedLocalisationCountry) {
+				// temporary override since we don't have localisation app ready for v14
+				// TODO: remove this when localisation app is ready for v14
+				commonVersions = ['Version 15'];
+			}
+
 			return this.options.versions.map(v => ({
 				...v,
 				disabled: !commonVersions.includes(v.name)
