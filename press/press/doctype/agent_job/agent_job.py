@@ -1053,6 +1053,11 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
+		elif job.job_type == "Fetch Performance Report":
+			server = frappe.get_doc("Database Server", job.server)
+			job_data = json.loads(job.data or "{}")
+			if job_data:
+				server.process_performance_report(job_data)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

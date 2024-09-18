@@ -65,6 +65,7 @@
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables",
+  "auto_fetch_performance_schema_report",
   "performance_schema_report_section",
   "is_total_allocated_memory_perf_report_enabled",
   "is_top_memory_by_event_perf_report_enabled",
@@ -96,6 +97,7 @@
   "is_innodb_buffer_stats_by_table_perf_report_enabled",
   "is_user_resource_use_overview_perf_report_enabled",
   "is_user_resource_use_io_statistics_perf_report_enabled",
+  "is_user_resource_use_statement_statistics_perf_report_enabled",
   "mariadb_stalk_section",
   "is_stalk_setup",
   "stalk_gdb_collector",
@@ -734,11 +736,24 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.is_performance_schema_enabled",
+   "fieldname": "auto_fetch_performance_schema_report",
+   "fieldtype": "Check",
+   "label": "Auto Fetch Performance Schema Report"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_user_resource_use_statement_statistics_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "User Resource Use Statement Statistics"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-13 11:02:07.399141",
+ "modified": "2024-09-18 12:27:35.166971",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

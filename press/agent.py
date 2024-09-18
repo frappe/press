@@ -1144,6 +1144,53 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		]
 		return apps
 
+	def get_db_performance_report(self):
+		server_record = frappe.get_doc("Database Server", self.server)
+		reports_is_enabled_status = {
+			"total_allocated_memory": server_record.is_total_allocated_memory_perf_report_enabled,
+			"top_memory_by_event": server_record.is_top_memory_by_event_perf_report_enabled,
+			"top_memory_by_user": server_record.is_top_memory_by_user_perf_report_enabled,
+			"top_memory_by_host": server_record.is_top_memory_by_host_perf_report_enabled,
+			"top_memory_by_thread": server_record.is_top_memory_by_thread_perf_report_enabled,
+			"top_io_by_file_activity_report": server_record.is_top_io_by_file_activity_report_perf_report_enabled,
+			"top_io_by_file_by_time": server_record.is_top_io_by_file_by_time_perf_report_enabled,
+			"top_io_by_event_category": server_record.is_top_io_by_event_category_perf_report_enabled,
+			"top_io_in_time_by_event_category": server_record.is_top_io_in_time_by_event_category_perf_report_enabled,
+			"top_io_by_user_or_thread": server_record.is_top_io_by_user_or_thread_perf_report_enabled,
+			"statement_analysis": server_record.is_statement_analysis_perf_report_enabled,
+			"statements_in_highest_5_percentile": server_record.is_statements_in_highest_5_percentile_perf_report_enabled,
+			"statements_using_temp_tables": server_record.is_statements_using_temp_tables_perf_report_enabled,
+			"statements_with_sorting": server_record.is_statements_with_sorting_perf_report_enabled,
+			"statements_with_full_table_scans": server_record.is_statements_with_full_table_scans_perf_report_enabled,
+			"statements_with_errors_or_warnings": server_record.is_statements_with_errors_or_warnings_perf_report_enabled,
+			"schema_index_statistics": server_record.is_schema_index_statistics_perf_report_enabled,
+			"schema_table_statistics": server_record.is_schema_table_statistics_perf_report_enabled,
+			"schema_table_statistics_with_innodb_buffer": server_record.is_schema_table_statistics_with_innodb_perf_report_enabled,
+			"schema_tables_with_full_table_scans": server_record.is_schema_tables_with_full_table_scans_perf_report_enabled,
+			"schema_unused_indexes": server_record.is_schema_unused_indexes_perf_report_enabled,
+			"global_waits_by_time": server_record.is_global_waits_by_time_perf_report_enabled,
+			"waits_by_user_by_time": server_record.is_waits_by_user_by_time_perf_report_enabled,
+			"wait_classes_by_time": server_record.is_wait_classes_by_time_perf_report_enabled,
+			"waits_classes_by_avg_time": server_record.is_waits_classes_by_avg_time_perf_report_enabled,
+			"innodb_buffer_stats_by_schema": server_record.is_innodb_buffer_stats_by_schema_perf_report_enabled,
+			"innodb_buffer_stats_by_table": server_record.is_innodb_buffer_stats_by_table_perf_report_enabled,
+			"user_resource_use_overview": server_record.is_user_resource_use_overview_perf_report_enabled,
+			"user_resource_use_io_statistics": server_record.is_user_resource_use_io_statistics_perf_report_enabled,
+			"user_resource_use_statement_statistics": server_record.is_user_resource_use_statement_statistics_perf_report_enabled,
+		}
+
+		return self.create_agent_job(
+			"Fetch Performance Report",
+			f"database/performance_report",
+			data={
+				"private_ip": server_record.private_ip,
+				"mariadb_root_password": server_record.get_password("mariadb_root_password"),
+				"reports": [
+					report for report, enabled in reports_is_enabled_status.items() if enabled
+				],
+			},
+		)
+
 
 class AgentCallbackException(Exception):
 	pass

@@ -10,6 +10,7 @@ import frappe
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 
+from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
@@ -35,6 +36,7 @@ class DatabaseServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_fetch_performance_schema_report: DF.Check
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -42,14 +44,44 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_global_waits_by_time_perf_report_enabled: DF.Check
+		is_innodb_buffer_stats_by_schema_perf_report_enabled: DF.Check
+		is_innodb_buffer_stats_by_table_perf_report_enabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
+		is_schema_index_statistics_perf_report_enabled: DF.Check
+		is_schema_table_statistics_perf_report_enabled: DF.Check
+		is_schema_table_statistics_with_innodb_perf_report_enabled: DF.Check
+		is_schema_tables_with_full_table_scans_perf_report_enabled: DF.Check
+		is_schema_unused_indexes_perf_report_enabled: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
 		is_stalk_setup: DF.Check
+		is_statement_analysis_perf_report_enabled: DF.Check
+		is_statements_in_highest_5_percentile_perf_report_enabled: DF.Check
+		is_statements_using_temp_tables_perf_report_enabled: DF.Check
+		is_statements_with_errors_or_warnings_perf_report_enabled: DF.Check
+		is_statements_with_full_table_scans_perf_report_enabled: DF.Check
+		is_statements_with_sorting_perf_report_enabled: DF.Check
+		is_top_io_by_event_category_perf_report_enabled: DF.Check
+		is_top_io_by_file_activity_report_perf_report_enabled: DF.Check
+		is_top_io_by_file_by_time_perf_report_enabled: DF.Check
+		is_top_io_by_user_or_thread_perf_report_enabled: DF.Check
+		is_top_io_in_time_by_event_category_perf_report_enabled: DF.Check
+		is_top_memory_by_event_perf_report_enabled: DF.Check
+		is_top_memory_by_host_perf_report_enabled: DF.Check
+		is_top_memory_by_thread_perf_report_enabled: DF.Check
+		is_top_memory_by_user_perf_report_enabled: DF.Check
+		is_total_allocated_memory_perf_report_enabled: DF.Check
+		is_user_resource_use_io_statistics_perf_report_enabled: DF.Check
+		is_user_resource_use_overview_perf_report_enabled: DF.Check
+		is_user_resource_use_statement_statistics_perf_report_enabled: DF.Check
+		is_wait_classes_by_time_perf_report_enabled: DF.Check
+		is_waits_by_user_by_time_perf_report_enabled: DF.Check
+		is_waits_classes_by_avg_time_perf_report_enabled: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -932,17 +964,12 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def fetch_performance_report(self):
-		if self.is_performance_schema_enabled:
-			frappe.enqueue_doc(
-				self.doctype, self.name, "_fetch_performance_report", queue="long", timeout=1200
-			)
-			frappe.msgprint("Performance Schema Report Fetching Started")
-		else:
-			frappe.throw("Performance Schema is not enabled")
+		agent = Agent(self.name, self.doctype)
+		agent.get_db_performance_report()
+		frappe.msgprint("Performance Schema Report Fetching Started")
 
-	def _fetch_performance_report(self):
+	def process_performance_report(self, reports: dict):
 		try:
-			reports = self.get_performance_report()
 			record = frappe.new_doc("Performance Report")
 			record.server = self.name
 			record.recorded_on = frappe.utils.now_datetime()
@@ -1469,53 +1496,6 @@ class DatabaseServer(BaseServer):
 			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
 			raise
 
-	def get_performance_report(self):
-		reports_is_enabled_status = {
-			"total_allocated_memory": self.is_total_allocated_memory_perf_report_enabled,
-			"top_memory_by_event": self.is_top_memory_by_event_perf_report_enabled,
-			"top_memory_by_user": self.is_top_memory_by_user_perf_report_enabled,
-			"top_memory_by_host": self.is_top_memory_by_host_perf_report_enabled,
-			"top_memory_by_thread": self.is_top_memory_by_thread_perf_report_enabled,
-			"top_io_by_file_activity_report": self.is_top_io_by_file_activity_report_perf_report_enabled,
-			"top_io_by_file_by_time": self.is_top_io_by_file_by_time_perf_report_enabled,
-			"top_io_by_event_category": self.is_top_io_by_event_category_perf_report_enabled,
-			"top_io_in_time_by_event_category": self.is_top_io_in_time_by_event_category_perf_report_enabled,
-			"top_io_by_user_or_thread": self.is_top_io_by_user_or_thread_perf_report_enabled,
-			"statement_analysis": self.is_statement_analysis_perf_report_enabled,
-			"statements_in_highest_5_percentile": self.is_statements_in_highest_5_percentile_perf_report_enabled,
-			"statements_using_temp_tables": self.is_statements_using_temp_tables_perf_report_enabled,
-			"statements_with_sorting": self.is_statements_with_sorting_perf_report_enabled,
-			"statements_with_full_table_scans": self.is_statements_with_full_table_scans_perf_report_enabled,
-			"statements_with_errors_or_warnings": self.is_statements_with_errors_or_warnings_perf_report_enabled,
-			"schema_index_statistics": self.is_schema_index_statistics_perf_report_enabled,
-			"schema_table_statistics": self.is_schema_table_statistics_perf_report_enabled,
-			"schema_table_statistics_with_innodb_buffer": self.is_schema_table_statistics_with_innodb_perf_report_enabled,
-			"schema_tables_with_full_table_scans": self.is_schema_tables_with_full_table_scans_perf_report_enabled,
-			"schema_unused_indexes": self.is_schema_unused_indexes_perf_report_enabled,
-			"global_waits_by_time": self.is_global_waits_by_time_perf_report_enabled,
-			"waits_by_user_by_time": self.is_waits_by_user_by_time_perf_report_enabled,
-			"wait_classes_by_time": self.is_wait_classes_by_time_perf_report_enabled,
-			"waits_classes_by_avg_time": self.is_waits_classes_by_avg_time_perf_report_enabled,
-			"innodb_buffer_stats_by_schema": self.is_innodb_buffer_stats_by_schema_perf_report_enabled,
-			"innodb_buffer_stats_by_table": self.is_innodb_buffer_stats_by_table_perf_report_enabled,
-			"user_resource_use_overview": self.is_user_resource_use_overview_perf_report_enabled,
-			"user_resource_use_io_statistics": self.is_user_resource_use_io_statistics_perf_report_enabled,
-			"user_resource_use_statement_statistics": self.is_user_resource_use_statement_statistics_perf_report_enabled,
-		}
-		return (
-			self.agent.post(
-				"database/performance_report",
-				{
-					"private_ip": self.private_ip,
-					"mariadb_root_password": self.get_password("mariadb_root_password"),
-					"reports": [
-						report for report, enabled in reports_is_enabled_status.items() if enabled
-					],
-				},
-			)
-			or {}
-		)
-
 	def _bytes_to_mb(self, bytes_val):
 		if bytes_val is None:
 			return None
@@ -1586,6 +1566,7 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 
 
 def fetch_performance_schema_reports():
-	for server in frappe.get_all("Database Server", {"is_performance_schema_enabled": 1}):
-		server = frappe.get_doc("Database Server", server.name)
-		server.fetch_performance_report()
+	pass
+	# for server in frappe.get_all("Database Server", {"is_performance_schema_enabled": 1}):
+	# 	server = frappe.get_doc("Database Server", server.name)
+	# 	server.fetch_performance_report()
