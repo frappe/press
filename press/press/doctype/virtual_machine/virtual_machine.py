@@ -1028,6 +1028,22 @@ class VirtualMachine(Document):
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
 
+	def disable_delete_on_termination_for_all_volumes(self):
+		attached_volumes = self.client().describe_instance_attribute(
+			InstanceId=self.instance_id, Attribute="blockDeviceMapping"
+		)
+
+		modified_volumes = []
+		for volume in attached_volumes["BlockDeviceMappings"]:
+			volume["Ebs"]["DeleteOnTermination"] = False
+			volume["Ebs"].pop("AttachTime", None)
+			volume["Ebs"].pop("Status", None)
+			modified_volumes.append(volume)
+
+		self.client().modify_instance_attribute(
+			InstanceId=self.instance_id, BlockDeviceMappings=modified_volumes
+		)
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Virtual Machine"
