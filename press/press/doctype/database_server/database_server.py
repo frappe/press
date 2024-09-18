@@ -138,6 +138,10 @@ class DatabaseServer(BaseServer):
 			return
 		self.update_mariadb_system_variables()
 		if (
+			not self.is_performance_schema_enabled and self.auto_fetch_performance_schema_report
+		):
+			self.auto_fetch_performance_schema_report = False
+		if (
 			self.has_value_changed("memory_high")
 			or self.has_value_changed("memory_max")
 			or self.has_value_changed("memory_swap_max")
@@ -1566,7 +1570,8 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 
 
 def fetch_performance_schema_reports():
-	pass
-	# for server in frappe.get_all("Database Server", {"is_performance_schema_enabled": 1}):
-	# 	server = frappe.get_doc("Database Server", server.name)
-	# 	server.fetch_performance_report()
+	for server in frappe.get_all(
+		"Database Server", {"auto_fetch_performance_schema_report": 1}
+	):
+		server: DatabaseServer = frappe.get_doc("Database Server", server.name)
+		server.fetch_performance_report()
