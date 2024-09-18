@@ -64,6 +64,9 @@
 					</div>
 				</div>
 			</div>
+			<div v-if="benchVersion && defaultApps.length">
+				<ObjectList :options="defaultAppsList" />
+			</div>
 			<div
 				class="flex flex-col"
 				v-if="options?.clusters.length && benchVersion && !server"
@@ -129,17 +132,7 @@
 								version: benchVersion,
 								cluster: benchRegion,
 								saas_app: null,
-								apps: [
-									// some wizardry to only pick frappe for the chosen version
-									options.versions
-										.find(v => v.name === benchVersion)
-										.apps.find(app => app.name === 'frappe')
-								].map(app => {
-									return {
-										name: app.name,
-										source: app.source.name
-									};
-								}),
+								apps: getAppsToInstall(),
 								server: server || null
 							}
 						})
@@ -156,12 +149,16 @@
 import Summary from '../components/Summary.vue';
 import Header from '../components/Header.vue';
 import { DashboardError } from '../utils/error';
+import { h } from 'vue';
+import { Badge } from 'frappe-ui';
+import ObjectList from '../components/ObjectList.vue';
 
 export default {
 	name: 'NewBench',
 	components: {
 		Summary,
-		Header
+		Header,
+		ObjectList
 	},
 	props: ['server'],
 	data() {
@@ -208,9 +205,79 @@ export default {
 			};
 		}
 	},
+	methods: {
+		getAppsToInstall() {
+			let apps = [
+				this.options.versions
+					.find(v => v.name === this.benchVersion)
+					.apps.find(app => app.name === 'frappe')
+			].map(app => {
+				return {
+					name: app.name,
+					source: app.source.name
+				};
+			});
+
+			// add default apps
+			this.defaultApps.forEach(app => {
+				apps.push({
+					name: app.name,
+					source: app.source
+				});
+			});
+
+			return apps;
+		}
+	},
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		defaultApps() {
+			let defaultApps = [];
+			this.options.versions.forEach(version => {
+				version.apps.forEach(app => {
+					if (app.is_default) {
+						let d = {
+							name: app.name,
+							source: app.source.name,
+							app_title: app.title,
+							route: app.source.repository_url
+						};
+						if (
+							defaultApps.filter(app => app.app_title === d.app_title)
+								.length === 0
+						) {
+							defaultApps.push(d);
+						}
+					}
+				});
+			});
+
+			return defaultApps;
+		},
+		defaultAppsList() {
+			return {
+				data: () => this.defaultApps,
+				columns: [
+					{
+						label: 'Default Apps',
+						fieldname: 'app_title',
+						type: 'Component',
+						component: ({ row }) => {
+							return h(
+								'a',
+								{
+									class: 'flex items-center text-sm',
+									href: `${row.route}`,
+									target: '_blank'
+								},
+								[h('span', { class: 'ml-2' }, row.app_title)]
+							);
+						}
+					}
+				]
+			};
 		},
 		summaryOptions() {
 			return [

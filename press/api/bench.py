@@ -233,6 +233,10 @@ def options(only_by_current_team=False):
 	approved_apps = frappe.get_all(
 		"Marketplace App", filters={"frappe_approved": 1}, pluck="app"
 	)
+
+	press_settings = frappe.get_single("Press Settings")
+	apps_group = press_settings.get_app_group()
+
 	version_list = unique(rows, lambda x: x.version)
 	versions = []
 	for d in version_list:
@@ -240,9 +244,11 @@ def options(only_by_current_team=False):
 		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
 		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
+
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
 			app_dict = {"name": app, "title": app_rows[0].title}
+
 			for source in app_rows:
 				source_dict = {
 					"name": source.source,
@@ -252,7 +258,10 @@ def options(only_by_current_team=False):
 					"repository_owner": source.repository_owner,
 				}
 				app_dict.setdefault("sources", []).append(source_dict)
+
 			app_dict["source"] = app_dict["sources"][0]
+			app_dict["is_default"] = True if app in apps_group else False
+
 			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
 

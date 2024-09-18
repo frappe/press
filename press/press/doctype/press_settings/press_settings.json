@@ -190,6 +190,9 @@
   "column_break_rdlr",
   "disable_auto_retry",
   "disable_agent_job_deduplication",
+  "section_break_jstu",
+  "enable_app_grouping",
+  "default_apps",
   "code_spaces_tab",
   "spaces_domain",
   "hybrid_server_tab",
@@ -1227,11 +1230,27 @@
    "fieldname": "usage_record_creation_batch_size",
    "fieldtype": "Int",
    "label": "Usage Record Creation Batch Size"
+  },
+  {
+   "fieldname": "section_break_jstu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_app_grouping",
+   "fieldtype": "Check",
+   "label": "Enable App Grouping"
+  },
+  {
+   "fieldname": "default_apps",
+   "fieldtype": "Table",
+   "label": "Default Apps",
+   "options": "App Group"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-08-19 17:47:53.603250",
+ "modified": "2024-09-04 14:23:54.913179",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

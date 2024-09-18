@@ -23,6 +23,7 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
 		agent_github_access_token: DF.Data | None
@@ -51,6 +52,7 @@ class PressSettings(Document):
 		commission: DF.Float
 		compress_app_cache: DF.Check
 		data_40: DF.Data | None
+		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
@@ -61,6 +63,7 @@ class PressSettings(Document):
 		docker_registry_username: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
+		enable_app_grouping: DF.Check
 		enable_google_oauth: DF.Check
 		enable_site_pooling: DF.Check
 		enforce_storage_limits: DF.Check
@@ -246,3 +249,8 @@ class PressSettings(Document):
 		api_key_sid = self.twilio_api_key_sid
 		api_key_secret = self.get_password("twilio_api_key_secret")
 		return Client(api_key_sid, api_key_secret, account_sid)
+
+	def get_app_group(self):
+		if self.enable_app_grouping:
+			return [app.app for app in self.default_apps]
+		return []
