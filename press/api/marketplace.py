@@ -97,16 +97,6 @@ def get_install_app_options(marketplace_app: str) -> Dict:
 	)
 
 	for cluster in clusters:
-		cluster["bench"] = frappe.db.get_value(
-			"Bench",
-			filters={
-				"cluster": cluster["name"],
-				"status": "Active",
-				"group": latest_public_group,
-			},
-			order_by="creation desc",
-		)
-
 		cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
 	ReleasGroup = frappe.qb.DocType("Release Group")
