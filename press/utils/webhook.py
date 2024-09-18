@@ -36,7 +36,9 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str):
 
 	query = (
 		frappe.qb.from_(PressWebhookSelectedEvent)
-		.select(frappe.qb.functions.Count(PressWebhookSelectedEvent.name).as_("count"))
+		.select(
+			frappe.query_builder.functions.Count(PressWebhookSelectedEvent.name).as_("count")
+		)
 		.left_join(PressWebhook)
 		.on(PressWebhookSelectedEvent.parent == PressWebhook.name)
 		.where(PressWebhookSelectedEvent.event == event)
@@ -51,6 +53,6 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str):
 				"status": "Pending",
 				"event": event,
 				"team": team,
-				"data": json.dumps(data),
+				"data": json.dumps(data, default=str),
 			}
 		).insert(ignore_permissions=True)

@@ -14,7 +14,7 @@ class PressWebhookQueue(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		data: DF.JSON
+		data: DF.SmallText
 		event: DF.Link
 		status: DF.Literal["Pending", "Sent", "Failed"]
 		team: DF.Link

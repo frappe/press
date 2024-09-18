@@ -503,7 +503,7 @@ class Site(Document, TagHelpers):
 						capture("first_site_status_changed_to_active", "fc_signup", team.user)
 
 		if self.has_value_changed("status"):
-			dispatch_webhook_event("Site Status Update", self.get_doc().as_dict(), self.team)
+			dispatch_webhook_event("Site Status Update", self, self.team)
 
 	def generate_saas_communication_secret(self, create_agent_job=False):
 		if not self.standby_for and not self.standby_for_product:

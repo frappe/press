@@ -47,15 +47,15 @@
   },
   {
    "fieldname": "data",
-   "fieldtype": "JSON",
-   "in_list_view": 1,
+   "fieldtype": "Small Text",
    "label": "Data",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 16:37:33.019875",
+ "modified": "2024-09-18 17:26:16.659431",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Queue",
