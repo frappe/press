@@ -93,13 +93,19 @@ class Bench(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Bench"
-	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
+	dashboard_fields = [
+		"name",
+		"group",
+		"status",
+		"is_ssh_proxy_setup",
+		"inplace_update_docker_image",
+	]
 
 	@staticmethod
 	def get_list_query(query):
 		Bench = frappe.qb.DocType("Bench")
 		benches = (
-			query.select(Bench.is_ssh_proxy_setup)
+			query.select(Bench.is_ssh_proxy_setup, Bench.inplace_update_docker_image)
 			.where(Bench.status != "Archived")
 			.run(as_dict=1)
 		)
@@ -111,6 +117,7 @@ class Bench(Document):
 		)
 		for bench in benches:
 			bench.has_app_patch_applied = bench.name in benches_with_patches
+			bench.has_updated_inplace = bool(bench.inplace_update_docker_image)
 		return benches
 
 	def get_doc(self, doc):
