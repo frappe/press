@@ -206,6 +206,7 @@ def create_site_on_public_bench(
 			.where(ReleaseGroup.public == 1)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.name.notin(restricted_release_groups or [""]))
+			.orderby(ReleaseGroup.creation, order=frappe.qb.asc)
 			.run(as_dict=True)
 		):
 			group = group[0].name
