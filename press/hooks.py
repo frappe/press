@@ -181,6 +181,7 @@ scheduler_events = {
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
+        "press.database_performance_schema.doctype.db_performance_report.db_performance_report.clear_performance_reports_older_than_7_days",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
