@@ -93,8 +93,9 @@ export default {
 				groupHeader: ({ group: bench }) => {
 					if (!bench?.status) return;
 
-					let options = this.benchOptions(bench);
-					let IconHash = icon('hash', 'w-3 h-3');
+					const options = this.benchOptions(bench);
+					const IconHash = icon('hash', 'w-3 h-3');
+					const IconStar = icon('star', 'w-3 h-3');
 					return (
 						<div class="flex items-center">
 							<div class="text-base font-medium leading-6 text-gray-900">
@@ -104,9 +105,16 @@ export default {
 								<Badge class="ml-4" label={bench.status} />
 							) : null}
 							{bench.has_app_patch_applied && (
-								<Tooltip text="Apps in this deploy have been patched">
+								<Tooltip text="Apps in this deploy may have been patched">
 									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
 										<IconHash />
+									</div>
+								</Tooltip>
+							)}
+							{bench.has_updated_inplace && (
+								<Tooltip text="This deploy has been updated in place">
+									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+										<IconStar />
 									</div>
 								</Tooltip>
 							)}
