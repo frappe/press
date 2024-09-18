@@ -573,7 +573,7 @@ def options_for_new(for_bench: str = None):
 			"Release Group",
 			fieldname=["name", "`default`", "title", "public"],
 			filters=filters,
-			order_by="creation desc",
+			order_by="creation asc",
 			as_dict=1,
 		)
 		version.group = release_group

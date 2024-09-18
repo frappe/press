@@ -429,7 +429,7 @@ export default {
 			return `Deploy and update ${site}`;
 		},
 		canUpdateInPlace() {
-			if (!this.benchDocResource?.doc.enable_inplace_updates) {
+			if (!this.benchDocResource?.doc?.enable_inplace_updates) {
 				return false;
 			}
 
