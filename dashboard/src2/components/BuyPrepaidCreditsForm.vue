@@ -11,11 +11,16 @@
 		>
 			<template #prefix>
 				<div class="grid w-4 place-items-center text-sm text-gray-700">
-					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
+					<!-- {{ $team.doc.currency === 'INR' ? '₹' : '$' }} -->
+
+					<!--Test Currency, but will add KES for kenya and GBP for Egypt-->
+					{{ $team.doc.currency === 'INR' ? '₹' : $team.doc.currency === 'KES' ? 'Ksh' : '$' }}
+
+
 				</div>
 			</template>
 		</FormControl>
-		<FormControl
+		<!-- <FormControl
 			v-if="$team.doc.currency === 'INR'"
 			:label="`Total Amount + GST (${
 				$team.doc?.billing_info.gst_percentage * 100
@@ -31,7 +36,25 @@
 					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
 				</div>
 			</template>
-		</FormControl>
+		</FormControl> -->
+		<FormControl
+	v-if="$team.doc.currency === 'INR' || $team.doc.currency === 'KES'"
+	:label="`Total Amount + ${$team.doc.currency === 'INR' ? 'GST' : 'VAT'} (${
+		$team.doc?.billing_info.gst_percentage * 100
+	}%)`"
+	disabled
+	:modelValue="totalAmount"
+	name="total"
+	autocomplete="off"
+	type="number"
+>
+	<template #prefix>
+		<div class="grid w-4 place-items-center text-sm text-gray-700">
+			{{ $team.doc.currency === 'INR' ? '₹' : $team.doc.currency === 'KES' ? 'Ksh' : '$' }}
+		</div>
+	</template>
+</FormControl>
+
 	</div>
 
 	<div class="mt-4">
@@ -82,7 +105,7 @@
 			>
 			<img
 					class="h-7 w-24"
-					:src="`/assets/press/images/stripe-logo.svg`"
+					:src="`/assets/press/images/mpesa.svg`"
 					alt="M-pesa Logo"
 				/>
 		</button>
@@ -157,17 +180,34 @@ export default {
 			this.$emit('success');
 		}
 	},
-	computed: {
-		totalAmount() {
+	// computed: {
+	// 	totalAmount() {
+	// 		let creditsToBuy = this.creditsToBuy || 0;
+	// 		if (this.$team.doc.currency === 'INR') {
+	// 			return (
+	// 				creditsToBuy +
+	// 				creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
+	// 			).toFixed(2);
+	// 		} else {
+	// 			return creditsToBuy;
+	// 		}
+	// 	}
+	// }
+
+	//We can add a GBP for Egypt at this point
+	computed:{
+		totalAmount(){
 			let creditsToBuy = this.creditsToBuy || 0;
-			if (this.$team.doc.currency === 'INR') {
-				return (
-					creditsToBuy +
-					creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
-				).toFixed(2);
-			} else {
-				return creditsToBuy;
-			}
+			let gstPercentage = this.$team.doc.currency === 'INR' ?
+				this.$team.doc.billing_info.gst_percentage || 0:
+				this.$team.doc.currency === 'KES' ?
+				this.$team.doc.billing_info.vat_percentage || 0: 0;
+			return (
+				creditsToBuy +
+				creditsToBuy * gstPercentage
+			).toFixed(2
+			)
+		
 		}
 	}
 };

@@ -757,7 +757,6 @@ def get_mpesa_settings_for_team(team_name):
 '''Verify transaction after push notification'''
 @frappe.whitelist(allow_guest=True)
 def verify_mpesa_transaction(**kwargs):
-	print("Working here")
 	"""Verify the transaction result received via callback from STK."""
 	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
 		frappe.throw(_("Invalid transaction response format"))
@@ -825,7 +824,7 @@ def request_for_payment():
 		kwargs={
   "partner": "ijlpjgrgr7",
   "sender": "0740743521",
-  "request_amount": 1,  # Amount in Kenyan Shillings (Ksh)
+  "request_amount": 1,
   "reference_doctype": "Invoice",
   "reference_docname": "INV-2024-00006",
   "transaction_limit":150000
@@ -884,14 +883,16 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"transaction_id": transaction_id,
 		"trans_time": trans_time,
 		"transaction_type":"Mpesa Express",
-		"team": team,
+		"team": 'ijlpjgrgr7',
 		"msisdn": msisdn,
 		"trans_amount": amount,
 		"merchant_request_id": request_id,
 		"payment_partner": partner,
+  
 	})
 
 	new_entry.insert(ignore_permissions=True)
+	new_entry.submit()
 	frappe.db.commit()  
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 
@@ -930,18 +931,23 @@ def create_balance_transaction(team, amount, invoice=None):
 
  
 def after_save_mpesa_payment_record(doc, method=None):
-	team = doc.team
-	amount = doc.amount
-
-	# Create the Balance Transaction and get the transaction name
-	balance_transaction_name = create_balance_transaction(team, amount)
 	
-	# Update Mpesa Payment Record with the balance transaction reference
-	doc.balance_transaction = balance_transaction_name
-	doc.docstatus=1
-	doc.save()
-	doc.submit()
-	frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction."))
+	try:
+		team = doc.team
+		amount = doc.trans_amount
+		
+		balance_transaction_name = create_balance_transaction(team, amount)
+		
+		frappe.db.set_value('Mpesa Payment Record', doc.name, 'balance_transaction', balance_transaction_name)
+		
+		frappe.db.set_value('Mpesa Payment Record', doc.name, 'docstatus', 1)
+		doc.reload()
+		frappe.db.commit()
+		
+		frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction and submitted."))
+	except Exception as e:
+		frappe.throw(_("An error occurred: ") + str(e))
+		frappe.log_error(message=str(e), title="Mpesa Payment Submission Failed")
 
 
 def get_team_and_partner_from_integration_request(transaction_id):
@@ -965,3 +971,5 @@ def get_team_and_partner_from_integration_request(transaction_id):
 		partner = None
 	
 	return team, partner
+
+
