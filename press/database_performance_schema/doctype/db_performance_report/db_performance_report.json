@@ -549,7 +549,7 @@
  "modified": "2024-02-08 10:46:01.135333",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
- "name": "Performance Report",
+ "name": "DB Performance Report",
  "owner": "Administrator",
  "permissions": [
   {

@@ -1,7 +1,7 @@
 // Copyright (c) 2024, Frappe and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Performance Report", {
+frappe.ui.form.on("DB Performance Report", {
 	refresh(frm) {
 		frm.add_custom_button(__('Multiply 10^9 with Count & Time Field'), function(){
 			format_fields_helper(frm.get_doc());

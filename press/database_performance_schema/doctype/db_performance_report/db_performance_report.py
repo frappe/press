@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class PerformanceReport(Document):
+class DBPerformanceReport(Document):
 	pass

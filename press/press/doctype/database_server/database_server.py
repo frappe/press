@@ -974,7 +974,7 @@ class DatabaseServer(BaseServer):
 
 	def process_performance_report(self, reports: dict):
 		try:
-			record = frappe.new_doc("Performance Report")
+			record = frappe.new_doc("DB Performance Report")
 			record.server = self.name
 			record.recorded_on = frappe.utils.now_datetime()
 			record.total_allocated_memory = self._bytes_to_mb(
