@@ -30,7 +30,9 @@ def clear_performance_reports_older_than_7_days():
 				SELECT * FROM `{original}`
 				WHERE `{original}`.`modified` > NOW() - INTERVAL 7 DAY"""
 		)
-		frappe.db.sql_ddl(f"RENAME TABLE `{original}` TO `{backup}`, `{temporary}` TO `{original}`")
+		frappe.db.sql_ddl(
+			f"RENAME TABLE `{original}` TO `{backup}`, `{temporary}` TO `{original}`"
+		)
 	except Exception:
 		frappe.db.rollback()
 		frappe.db.sql_ddl(f"DROP TABLE IF EXISTS `{temporary}`")
