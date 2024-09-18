@@ -1516,7 +1516,7 @@ class DatabaseServer(BaseServer):
 			self.name,
 			"_update_memory_allocator",
 			memory_allocator=memory_allocator,
-			enqueue_after_commipt=True,
+			enqueue_after_commit=True,
 		)
 
 	def _update_memory_allocator(self, memory_allocator):
