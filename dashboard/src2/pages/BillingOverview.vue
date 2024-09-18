@@ -194,9 +194,7 @@ export default {
 			const minimumDefault = this.$team.doc.currency == 'INR' ? 800 : 10;
 
 			return Math.ceil(
-				unpaidAmount && unpaidAmount > minimumDefault
-					? unpaidAmount
-					: minimumDefault
+				unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault
 			);
 		},
 		upcomingInvoice() {
