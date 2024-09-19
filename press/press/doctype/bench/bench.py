@@ -707,7 +707,7 @@ class Bench(Document):
 			self._handle_inplace_update_failure(req_data)
 
 		elif job.status == "Success":
-			self._handle_inplace_update_success(req_data)
+			self._handle_inplace_update_success(req_data, job)
 
 		else:
 			# no-op
@@ -762,17 +762,18 @@ class Bench(Document):
 			site_status=status,
 		)
 
-	def _handle_inplace_update_success(self, req_data: dict):
-		docker_image = req_data.get("image")
-		self.inplace_update_docker_image = docker_image
+	def _handle_inplace_update_success(self, req_data: dict, job: "AgentJob"):
+		if job.get_step_status("Bench Restart") == "Success":
+			docker_image = req_data.get("image")
+			self.inplace_update_docker_image = docker_image
 
-		bench_config = json.loads(self.bench_config)
-		bench_config.update({"docker_image": docker_image})
-		self.bench_config = json.dumps(bench_config, indent=4)
+			bench_config = json.loads(self.bench_config)
+			bench_config.update({"docker_image": docker_image})
+			self.bench_config = json.dumps(bench_config, indent=4)
 
-		self.update_apps_after_inplace_update(
-			update_apps=req_data.get("apps", []),
-		)
+			self.update_apps_after_inplace_update(
+				update_apps=req_data.get("apps", []),
+			)
 
 		self.set_self_and_site_status(
 			req_data.get("sites", []),
