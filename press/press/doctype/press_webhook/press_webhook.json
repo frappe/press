@@ -5,6 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "enabled",
   "team",
   "callback_url",
   "secret",
@@ -43,11 +44,17 @@
    "label": "Events",
    "options": "Press Webhook Selected Event",
    "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 15:22:53.227163",
+ "modified": "2024-09-19 09:32:05.547606",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook",

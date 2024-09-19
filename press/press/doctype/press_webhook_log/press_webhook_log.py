@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class PressWebhook(Document):
+class PressWebhookLog(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -13,15 +13,13 @@ class PressWebhook(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.press_webhook_selected_event.press_webhook_selected_event import (
-			PressWebhookSelectedEvent,
-		)
 
-		callback_url: DF.Data
-		enabled: DF.Check
-		events: DF.Table[PressWebhookSelectedEvent]
-		secret: DF.Data | None
-		team: DF.Link
+		event: DF.Link
+		request_payload: DF.SmallText
+		response_body: DF.SmallText | None
+		response_status_code: DF.Data | None
+		status: DF.Literal["Sent", "Failed"]
+		webhook: DF.Link
 	# end: auto-generated types
 
 	pass
