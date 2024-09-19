@@ -90,9 +90,8 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import AlertBanner from '../../../src2/components/AlertBanner.vue';
+import AlertBanner from '../../AlertBanner.vue';
 import { toast } from 'vue-sonner';
-import router from '../../router';
 
 export default {
 	props: [
