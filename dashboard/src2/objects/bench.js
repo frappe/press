@@ -237,7 +237,7 @@ export default {
 									? 'Update Available'
 									: 'Latest Version';
 							},
-							width: 0.8
+							width: 0.5
 						}
 					],
 					rowActions({
