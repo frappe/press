@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-19 15:30:52.341880",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "virtual_machine",
+  "status",
+  "column_break_pega",
+  "virtual_machine_image",
+  "instance_type",
+  "copied_virtual_machine",
+  "section_break_pplo",
+  "volumes",
+  "section_break_mjhg",
+  "steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "reqd": 1
+  },
+  {
+   "fieldname": "copied_virtual_machine",
+   "fieldtype": "Link",
+   "label": "Copied Virtual Machine",
+   "options": "Virtual Machine",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pega",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Virtual Machine Migration Step"
+  },
+  {
+   "fieldname": "section_break_pplo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_mjhg",
+   "fieldtype": "Section Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "volumes",
+   "fieldtype": "Table",
+   "label": "Volumes",
+   "options": "Virtual Machine Migration Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "virtual_machine_image",
+   "fieldtype": "Link",
+   "label": "Virtual Machine Image",
+   "options": "Virtual Machine Image",
+   "reqd": 1
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-19 16:20:05.827739",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine Migration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
