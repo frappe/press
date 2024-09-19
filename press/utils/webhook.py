@@ -43,6 +43,7 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str):
 		.on(PressWebhookSelectedEvent.parent == PressWebhook.name)
 		.where(PressWebhookSelectedEvent.event == event)
 		.where(PressWebhook.team == team)
+		.where(PressWebhook.enabled == 1)
 	)
 
 	result = query.run(as_dict=True)
