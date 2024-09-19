@@ -61,11 +61,13 @@ export default {
 		},
 		requestLogsOptions() {
 			return {
-				resource: l => {
-					console.log(l.filters);
+				resource: () => {
 					return {
 						url: 'press.api.analytics.request_logs',
-						makeParams: () => {
+						makeParams: params => {
+							// for filterControls to work
+							if (params) return params;
+
 							return {
 								name: this.name,
 								timezone: dayjs.tz.guess(),
@@ -74,7 +76,6 @@ export default {
 								start: this.start
 							};
 						},
-						// auto: Boolean(this.today),
 						auto: true,
 						initialData: [],
 						transform: data => {
@@ -106,6 +107,7 @@ export default {
 						type: 'select',
 						label: 'Sort',
 						fieldname: 'sort',
+						class: !this.$isMobile ? 'w-48' : '',
 						options: [
 							'Time (Ascending)',
 							'Time (Descending)',

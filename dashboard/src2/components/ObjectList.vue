@@ -438,17 +438,17 @@ export default {
 		onFilterControlChange(control) {
 			// update params directly if resource is provided
 			// else update filters in list resource
+			//
+			// Note: this needs makeParams method in list resource to work
+			// In makeParams, return params if it exists so that old params won't overwrite the one we are setting
+
 			if (this.options.resource) {
-				let params = { ...this.$list.params };
-				for (let c of this.filterControls) {
-					console.log(c.fieldname, c.value);
-					params[c.fieldname] = c.value;
-				}
-				console.log(this.$list.params.sort);
+				const params = {
+					...this.$list.params,
+					[control.fieldname]: control.value
+				};
 				this.$list.update({ params });
-				console.log(params, this.$list.params.sort);
-				this.$list.submit({ ...params });
-				console.log(this.$list.params.sort);
+				this.$list.reload();
 			} else {
 				let filters = { ...this.$list.filters };
 				for (let c of this.filterControls) {
