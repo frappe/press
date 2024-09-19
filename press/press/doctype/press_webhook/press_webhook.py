@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from press.overrides import get_permission_query_conditions_for_doctype
 import requests
 from frappe.model.document import Document
 
@@ -62,3 +63,6 @@ class PressWebhook(Document):
 		else:
 			message = f"<b>Status Code -</b> {result.response_status_code}</br><b>Response -</b></br>{result.response}"
 			frappe.throw(title="Webhook endpoint is invalid", msg=message)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

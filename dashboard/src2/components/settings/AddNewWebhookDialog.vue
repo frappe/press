@@ -1,0 +1,138 @@
+<template>
+	<Dialog
+		:options="{
+			title: 'Add New Webhook',
+			actions: [
+				{
+					label: 'Add Webhook',
+					variant: 'solid',
+					onClick: addWebhook
+				}
+			]
+		}"
+	>
+		<template #body-content>
+			<div class="space-y-4">
+				<FormControl label="Endpoint" v-model="endpoint" />
+				<div>
+					<FormControl label="Secret" v-model="secret">
+						<template #suffix>
+							<FeatherIcon
+								class="w-4 cursor-pointer"
+								name="refresh-ccw"
+								@click="generateRandomSecret"
+							/>
+						</template>
+					</FormControl>
+					<p class="mt-2 text-sm text-gray-700">
+						Note: Secret is optional. Check the
+						<a href="//frappecloud.com/docs" class="underline" target="_blank"
+							>documentation here</a
+						>
+						to learn more
+					</p>
+				</div>
+				<p class="text-base text-gray-900">Select the webhook events</p>
+				<div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-2">
+					<button
+						v-for="event in $resources.events.data"
+						:key="event.name"
+						class="flex items-start gap-2.5 text-start"
+						@click.stop="selectEvent(event.name)"
+					>
+						<FormControl
+							type="checkbox"
+							@click.stop="selectEvent(event.name)"
+							:modelValue="isEventSelected(event.name)"
+						/>
+						<div>
+							<p class="text-base text-gray-900">{{ event.name }}</p>
+							<p class="mt-1 text-sm text-gray-700">{{ event.description }}</p>
+						</div>
+					</button>
+				</div>
+				<ErrorMessage :message="errorMessage || $resources.addWebhook.error" />
+			</div>
+		</template>
+	</Dialog>
+</template>
+
+<script>
+import { toast } from 'vue-sonner';
+
+export default {
+	emits: ['success'],
+	data() {
+		return {
+			endpoint: '',
+			secret: '',
+			selectedEvents: [],
+			errorMessage: ''
+		};
+	},
+	mounted() {
+		if (this.selectedEvents.length) {
+			this.selectedEvents = this.selectedEvents.map(event => event.name);
+		}
+	},
+	resources: {
+		events() {
+			return {
+				url: 'press.api.webhook.get_events',
+				inititalData: [],
+				auto: true
+			};
+		},
+		addWebhook() {
+			return {
+				url: 'press.api.webhook.add_webhook',
+				params: {
+					endpoint: this.endpoint,
+					secret: this.secret,
+					events: this.selectedEvents
+				},
+				onSuccess() {
+					toast.success('Webhook added successfully');
+					this.$emit('success');
+				}
+			};
+		}
+	},
+	computed: {},
+	methods: {
+		generateRandomSecret() {
+			this.secret = Array(30)
+				.fill(0)
+				.map(
+					() =>
+						'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+							Math.floor(Math.random() * 62)
+						]
+				)
+				.join('');
+		},
+		selectEvent(event) {
+			if (this.selectedEvents.includes(event)) {
+				this.selectedEvents = this.selectedEvents.filter(e => e !== event);
+			} else {
+				this.selectedEvents.push(event);
+			}
+		},
+		isEventSelected(event) {
+			return this.selectedEvents.includes(event);
+		},
+		addWebhook() {
+			if (!this.endpoint) {
+				this.errorMessage = 'Provide a valid webhook endpoint';
+				return;
+			}
+			if (!this.selectedEvents.length) {
+				this.errorMessage = 'Select at least one event';
+				return;
+			}
+			this.errorMessage = '';
+			this.$resources.addWebhook.submit();
+		}
+	}
+};
+</script>

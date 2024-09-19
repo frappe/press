@@ -77,6 +77,19 @@
 				</div>
 				<ObjectList :options="sshKeyListOptions" />
 			</div>
+			<div
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
+				<div class="flex items-center justify-between">
+					<div class="text-xl font-semibold">Webhooks</div>
+				</div>
+				<ObjectList :options="webhookListOptions" />
+				<AddNewWebhookDialog
+					v-if="showAddWebhookDialog"
+					v-model="showAddWebhookDialog"
+					@success="onNewWebhookSuccess"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
@@ -90,9 +103,11 @@ import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
 import ClickToCopyField from '../ClickToCopyField.vue';
+import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);
+const showAddWebhookDialog = ref(false);
 
 const createSecret = createResource({
 	url: 'press.api.account.create_api_secret',
@@ -249,4 +264,51 @@ function renderAddNewKeyDialog(listResource) {
 		}
 	});
 }
+
+const webhookListResource = createResource({
+	url: 'press.api.webhook.get_webhooks',
+	initialData: [],
+	auto: true
+});
+
+const webhookListOptions = computed(() => ({
+	data: () => webhookListResource.data,
+	columns: [
+		{
+			label: 'Status',
+			fieldname: 'enabled',
+			width: 0.1,
+			format: _ => '',
+			prefix(row) {
+				return row.enabled
+					? h(Badge, {
+							label: 'Enabled',
+							theme: 'green'
+					  })
+					: h(Badge, {
+							label: 'Disabled',
+							theme: 'red'
+					  });
+			}
+		},
+		{
+			label: 'Endpoint',
+			fieldname: 'endpoint',
+			width: 0.9,
+			format: value => value.substring(0, 50)
+		}
+	],
+	primaryAction({ listResource }) {
+		return {
+			label: 'Add Webhook',
+			slots: { prefix: icon('plus') },
+			onClick: () => (showAddWebhookDialog.value = true)
+		};
+	}
+}));
+
+const onNewWebhookSuccess = () => {
+	webhookListResource.reload();
+	showAddWebhookDialog.value = false;
+};
 </script>
