@@ -436,16 +436,31 @@ export default {
 			return false;
 		},
 		onFilterControlChange(control) {
-			let filters = { ...this.$list.filters };
-			for (let c of this.filterControls) {
-				filters[c.fieldname] = c.value;
+			// update params directly if resource is provided
+			// else update filters in list resource
+			if (this.options.resource) {
+				let params = { ...this.$list.params };
+				for (let c of this.filterControls) {
+					console.log(c.fieldname, c.value);
+					params[c.fieldname] = c.value;
+				}
+				console.log(this.$list.params.sort);
+				this.$list.update({ params });
+				console.log(params, this.$list.params.sort);
+				this.$list.submit({ ...params });
+				console.log(this.$list.params.sort);
+			} else {
+				let filters = { ...this.$list.filters };
+				for (let c of this.filterControls) {
+					filters[c.fieldname] = c.value;
+				}
+				this.$list.update({
+					filters,
+					start: 0,
+					pageLength: this.options.pageLength || 20
+				});
+				this.$list.reload();
 			}
-			this.$list.update({
-				filters,
-				start: 0,
-				pageLength: this.options.pageLength || 20
-			});
-			this.$list.reload();
 		}
 	}
 };

@@ -8,9 +8,10 @@
 		v-else-if="$attrs.type === 'tab'"
 		v-bind="{ ...$attrs, buttons: $attrs.options.map(o => ({ label: o })) }"
 	/>
+	<DatePicker v-else-if="$attrs.type === 'date'" v-bind="$attrs" />
 	<FormControl v-else v-bind="$attrs" />
 </template>
 <script setup>
-import { TabButtons } from 'frappe-ui';
+import { DatePicker, TabButtons } from 'frappe-ui';
 import LinkControl from './LinkControl.vue';
 </script>

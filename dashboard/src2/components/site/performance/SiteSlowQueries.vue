@@ -1,12 +1,7 @@
 <template>
-	<div class="space-y-4">
+	<div class="m-5 space-y-4">
 		<!-- Show this block if siteVersion is "Version 14" -->
-		<div v-if="siteVersion === 'Version 14'">
-			<AlertBanner
-				title="Great!! You do not seem to have any slow queries"
-				type="info"
-				v-if="show"
-			/>
+		<div v-if="siteVersion !== 'Version 14'">
 			<div>
 				<ObjectList :options="slowQueriesData" />
 			</div>
@@ -25,24 +20,18 @@
 <script>
 import { defineAsyncComponent, h } from 'vue';
 import { ListView, FormControl, Dialog } from 'frappe-ui';
-import ObjectList from '../../../src2/components/ObjectList.vue';
-import AlertBanner from '../../../src2/components/AlertBanner.vue';
-import { renderDialog } from '../../utils/components';
+import ObjectList from '../../ObjectList.vue';
+import AlertBanner from '../../AlertBanner.vue';
+import { renderDialog } from '../../../utils/components';
 
 export default {
-	name: 'SitePerformance',
-	props: ['siteName', 'siteVersion'],
+	props: ['name', 'siteVersion'],
 	components: {
 		ListView,
 		FormControl,
 		Dialog,
 		ObjectList,
 		AlertBanner
-	},
-	data() {
-		return {
-			show: null
-		};
 	},
 	computed: {
 		slowQueriesData() {
@@ -52,11 +41,11 @@ export default {
 				data: () => this.$resources.slowQueries.data.data,
 				onRowClick: row => {
 					const SlowQueryDialog = defineAsyncComponent(() =>
-						import('./SiteMariaDBSlowQueryDialog.vue')
+						import('./SiteSlowQueryDialog.vue')
 					);
 					renderDialog(
 						h(SlowQueryDialog, {
-							siteName: this.siteName,
+							siteName: this.name,
 							query: row.query,
 							duration: row.duration,
 							count: row.count,
@@ -66,6 +55,7 @@ export default {
 						})
 					);
 				},
+				emptyStateMessage: 'No slow queries found',
 				columns: [
 					{
 						label: 'Query',
@@ -97,24 +87,26 @@ export default {
 						class: 'text-gray-600',
 						width: 0.5
 					}
+				],
+				actions: () => [
+					{
+						label: 'Back',
+						icon: 'arrow-left',
+						onClick: () =>
+							this.$router.push({ name: 'Site Detail Performance' })
+					}
 				]
 			};
 		}
 	},
 	methods: {
 		getDateTimeRange() {
-			const now = new Date();
-			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 			const formatDateTime = date => {
-				const year = date.getFullYear();
-				const month = String(date.getMonth() + 1).padStart(2, '0');
-				const day = String(date.getDate()).padStart(2, '0');
-				const hours = String(date.getHours()).padStart(2, '0');
-				const minutes = String(date.getMinutes()).padStart(2, '0');
-				const seconds = String(date.getSeconds()).padStart(2, '0');
-				return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 			};
 
+			const now = new Date();
+			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 			const endDateTime = formatDateTime(now);
 			const startDateTimeFormatted = formatDateTime(startDateTime);
 
@@ -130,18 +122,13 @@ export default {
 			return {
 				url: 'press.api.analytics.mariadb_slow_queries',
 				params: {
-					name: this.siteName,
+					name: this.name,
 					start_datetime: startDateTime,
 					stop_datetime: endDateTime,
 					max_lines: 10,
 					search_pattern: '.*',
 					normalize_queries: true,
 					analyze: false
-				},
-				onSuccess(data) {
-					if (!data.data) {
-						this.show = true;
-					}
 				},
 				auto: true,
 				initialData: { columns: [], data: [] }

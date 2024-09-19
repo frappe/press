@@ -13,7 +13,6 @@ from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
 	get_datetime,
-	get_datetime_str,
 )
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone
@@ -22,17 +21,10 @@ from press.agent import Agent
 from press.api.site import protected
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
+	get_data as get_binary_log_data,
 	convert_user_timezone_to_utc,
-	get_files_in_timespan,
 )
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
-
-try:
-	from frappe.utils import convert_utc_to_user_timezone
-except ImportError:
-	from frappe.utils import (
-		convert_utc_to_system_timezone as convert_utc_to_user_timezone,
-	)
 
 
 @frappe.whitelist()
@@ -609,6 +601,241 @@ def get_current_cpu_usage_for_sites_on_server(server):
 @frappe.whitelist()
 @protected("Site")
 def request_logs(name, timezone, date, sort=None, start=0):
+	import datetime
+
+	return [
+		{
+			"duration": 8497166,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "4ff23fb5-ce71-4edb-9fc3-0d8be0c9f253",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				27,
+				57,
+				386912,
+			),
+		},
+		{
+			"duration": 8464099,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "bc5bb295-bbb8-4297-85b0-ec37098eaa45",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				28,
+				1,
+				385695,
+			),
+		},
+		{
+			"duration": 8437567,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 467,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "373988ff-4977-4c56-a5dc-6db3da501b43",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				27,
+				55,
+				43885,
+			),
+		},
+		{
+			"duration": 8345300,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "64705908-cd37-49e2-8db4-4fe2beb997d5",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				27,
+				56,
+				259670,
+			),
+		},
+		{
+			"duration": 8337023,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "52616b3e-c97a-4b2e-8c91-e647ded0da63",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				27,
+				56,
+				6698,
+			),
+		},
+		{
+			"duration": 8288883,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 551032261,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "c82e04f9-ed2f-45c0-b1de-75685b26e6b8",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				27,
+				55,
+				814208,
+			),
+		},
+		{
+			"duration": 8273586,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 592777236,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "2048da9e-e73f-492a-9cb4-fc8cb381ccde",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				28,
+				4,
+				609322,
+			),
+		},
+		{
+			"duration": 8264797,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 567824780,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "7078462c-5c33-4f8a-ad3e-c4c144be55f5",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				28,
+				4,
+				147423,
+			),
+		},
+		{
+			"duration": 8263439,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 559500423,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "0beb484c-afe3-4f75-910f-a95ab3bb1aea",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				28,
+				3,
+				519417,
+			),
+		},
+		{
+			"duration": 8261876,
+			"request": {
+				"path": "/api/method/frappe.email.get_contact_list",
+				"response_length": 103,
+				"status_code": 200,
+				"method": "POST",
+				"ip": "110.226.179.242",
+				"counter": 618099377,
+			},
+			"site": "frappeio.frappe.cloud",
+			"transaction_type": "request",
+			"uuid": "3089de33-b809-4486-9491-ee262d012530",
+			"timestamp": datetime.datetime(
+				2024,
+				9,
+				10,
+				8,
+				28,
+				11,
+				787483,
+			),
+		},
+	]
+
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
 		return []
@@ -653,46 +880,136 @@ def request_logs(name, timezone, date, sort=None, start=0):
 @frappe.whitelist()
 @protected("Site")
 def binary_logs(name, start_time, end_time, pattern=".*", max_lines=4000):
-	site_doc = frappe.get_doc("Site", name)
+	filters = frappe._dict(
+		site=name,
+		database=frappe.db.get_value("Site", name, "database_name"),
+		start_datetime=start_time,
+		stop_datetime=end_time,
+		pattern=pattern,
+		max_lines=max_lines,
+	)
 
-	db_server = frappe.db.get_value("Server", site_doc.server, "database_server")
-	agent = Agent(db_server, "Database Server")
-
-	data = {
-		"database": site_doc.database_name,
-		"start_datetime": convert_user_timezone_to_utc(start_time),
-		"stop_datetime": convert_user_timezone_to_utc(end_time),
-		"search_pattern": pattern,
-		"max_lines": max_lines,
-	}
-
-	files = agent.get("database/binary/logs")
-
-	files_in_timespan = get_files_in_timespan(files, start_time, end_time)
-
-	out = []
-	for file in files_in_timespan:
-		print(file)
-		rows = agent.post(f"database/binary/logs/{file}", data=data)
-		print(rows)
-		for row in rows:
-			row["query"] = sqlparse.format(
-				row["query"].strip(), keyword_case="upper", reindent=True
-			)
-			row["timestamp"] = get_datetime_str(
-				convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
-			)
-			out.append(row)
-
-			if len(out) >= max_lines:
-				return out
-
-	return out
+	data = get_binary_log_data(filters)
+	print(data)
+	return data
 
 
 @frappe.whitelist()
 @protected("Site")
 def mariadb_processlist(site):
+	return [
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:52758",
+			"Id": 26605373,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 112,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:52768",
+			"Id": 26605374,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 88,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:34036",
+			"Id": 26606391,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 88,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:34048",
+			"Id": 26606393,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 88,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:34066",
+			"Id": 26606396,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 112,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:49330",
+			"Id": 26634272,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 112,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:45592",
+			"Id": 26649840,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 112,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:45626",
+			"Id": 26649848,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 88,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Sleep",
+			"Host": "ip-10-3-1-101.ap-south-1.compute.internal:35684",
+			"Id": 30088687,
+			"Info": "",
+			"Progress": 0.0,
+			"State": "",
+			"Time": 112,
+			"User": "_3c6a84711da814e7_read_write",
+			"db": "_3c6a84711da814e7",
+		},
+		{
+			"Command": "Query",
+			"Host": "ip-10-3-2-219.ap-south-1.compute.internal:40776",
+			"Id": 36435951,
+			"Info": "SELECT DISTINCT COUNT(*)\nFROM `tabLMS Enrollment`\nWHERE `course`='production-planning-and-execution'\n  AND `member_type`='Student' /* FRAPPE_TRACE_ID: 7e871475-13ea-42bc-9707-cd8e4e681056 */",
+			"Progress": 0.0,
+			"State": "Sending data",
+			"Time": 0,
+			"User": "_3c6a84711da814e7",
+			"db": "_3c6a84711da814e7",
+		},
+	]
+
 	site = frappe.get_doc("Site", site)
 	dbserver = frappe.db.get_value("Server", site.server, "database_server")
 	db_doc = frappe.get_doc("Database Server", dbserver)
