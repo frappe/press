@@ -27,5 +27,5 @@ def rename_fields():
 	frappe.reload_doctype("Account Request")
 	rename_field("Account Request", "saas_product", "product_trial")
 
-	frappe.reload_doctype("Product Trial Request")
-	rename_field("Product Trial Request", "saas_product", "product_trial")
+	#frappe.reload_doctype("Product Trial Request")
+	#rename_field("Product Trial Request", "saas_product", "product_trial")

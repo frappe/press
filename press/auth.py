@@ -48,6 +48,8 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.core.doctype.user.user.test_password_strength",
 	"/api/method/frappe.core.doctype.user.user.update_password",
 	"/api/method/get_central_migration_data",
+	"/api/method/optibizpro.utils",
+ 	"/api/method/frappe.translate"
 ]
 
 ALLOWED_WILDCARD_PATHS = [
@@ -56,6 +58,8 @@ ALLOWED_WILDCARD_PATHS = [
 	"/api/method/wiki.",
 	"/api/method/frappe.integrations.oauth2_logins.",
 	"/api/method/press.www.marketplace.index.",
+ 	"/api/method/optibizpro.",
+	"/api/method/frappe.translate."
 ]
 
 DENIED_WILDCARD_PATHS = [
@@ -80,6 +84,7 @@ def hook():
 			for allowed in ALLOWED_WILDCARD_PATHS:
 				if path.startswith(allowed):
 					return
+			frappe.log_error("path",path)
 			if path in ALLOWED_PATHS:
 				return
 

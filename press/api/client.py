@@ -17,6 +17,7 @@ from press.utils import has_role
 from press.exceptions import TeamHeaderNotInRequestError
 
 ALLOWED_DOCTYPES = [
+    "Midtrans Payment Method",
 	"Site",
 	"Site App",
 	"Site Domain",
@@ -91,7 +92,7 @@ def get_list(
 
 	if filters is None:
 		filters = {}
-
+	
 	# these doctypes doesn't have a team field to filter by but are used in get or run_doc_method
 	if doctype in ["Team", "User SSH Key"]:
 		return []
@@ -99,7 +100,8 @@ def get_list(
 	check_permissions(doctype)
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
-
+	if doctype == "Midtrans Payment Method":
+		valid_fields = ['name', 'is_default', 'expiry_month', 'expiry_year', 'name_on_card', 'last_4', 'creation']
 	meta = frappe.get_meta(doctype)
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
 		frappe.throw("parenttype and parent are required to get child records")
@@ -388,7 +390,7 @@ def validate_fields(doctype, fields):
 	for field in fields:
 		if is_allowed_field(doctype, field):
 			filtered_fields.append(field)
-
+	frappe.log_error("filtered_fields",filtered_fields)
 	return filtered_fields
 
 
@@ -445,7 +447,7 @@ def is_allowed_table_field(doctype, field):
 def check_permissions(doctype):
 	if doctype not in ALLOWED_DOCTYPES:
 		raise_not_permitted()
-
+	
 	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it.",

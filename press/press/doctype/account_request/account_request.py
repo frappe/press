@@ -134,15 +134,15 @@ class AccountRequest(Document):
 	def send_verification_email(self):
 		url = self.get_verification_url()
 
-		if frappe.conf.developer_mode:
-			print(f"\nSetup account URL for {self.email}:")
-			print(url)
-			print(f"\nOTP for {self.email}:")
-			print(self.otp)
-			print()
-			return
+		# if frappe.conf.developer_mode:
+		# 	print(f"\nSetup account URL for {self.email}:")
+		# 	print(url)
+		# 	print(f"\nOTP for {self.email}:")
+		# 	print(self.otp)
+		# 	print()
+		# 	return
 
-		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
+		subject = f"{self.otp} - OTP for Optibizpro Cloud Account Verification"
 		args = {}
 		sender = ""
 

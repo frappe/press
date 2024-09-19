@@ -11,8 +11,9 @@ from tqdm import tqdm
 
 def execute():
 	IMAGE_FORMATS_TO_CONVERT = ["png", "jpeg", "jpg"]
-
+	return  
 	def convert_to_webp(screenshot):
+		return
 		if screenshot.startswith("files") or screenshot.startswith("/files"):
 			image_content = frappe.get_doc("File", {"file_url": screenshot}).get_content()
 			image = Image.open(BytesIO(image_content))

@@ -45,7 +45,7 @@
 			:message="$resources.createPaymentIntent.error || errorMessage"
 		/>
 		<div class="mt-4 flex w-full justify-between">
-			<StripeLogo />
+			<MidtransLogo />
 			<div v-if="step == 'Get Amount'">
 				<Button
 					variant="solid"
@@ -72,11 +72,13 @@
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import MidtransLogo from './MidtransLogo.vue';
 
 export default {
 	name: 'BuyPrepaidCredits',
 	components: {
-		StripeLogo
+		StripeLogo,
+		MidtransLogo
 	},
 	props: {
 		minimumAmount: {

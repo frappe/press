@@ -11,7 +11,7 @@
 		>
 			<template #prefix>
 				<div class="grid w-4 place-items-center text-sm text-gray-700">
-					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
+					{{ $team.doc.currency === 'INR' ? '₹' : 'Rp' }}
 				</div>
 			</template>
 		</FormControl>
@@ -68,6 +68,21 @@
 					alt="Stripe Logo"
 				/>
 			</button>
+			<button
+				@click="paymentGateway = 'MidTrans'"
+				label="Stripe"
+				class="flex h-10 items-center justify-center rounded border"
+				:class="{
+					'border-gray-300': paymentGateway !== 'MidTrans',
+					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Stripe'
+				}"
+			>
+				<img
+					class="h-7 w-24"
+					:src="`/assets/press/images/midtrans_logo.svg`"
+					alt="Midtrans Logo"
+				/>
+			</button>
 		</div>
 	</div>
 
@@ -87,16 +102,27 @@
 		@success="onSuccess"
 		@cancel="onCancel"
 	/>
+
+	<BuyPrepaidCreditsMidTrans
+		v-if="paymentGateway === 'MidTrans'"
+		:amount="creditsToBuy"
+		:minimumAmount="minimumAmount"
+		:isOnboarding="isOnboarding"
+		@success="onSuccess"
+		@cancel="onCancel"
+	/>
 </template>
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
+import BuyPrepaidCreditsMidTrans from './BuyPrepaidCreditsMidTrans.vue';
 
 export default {
 	name: 'BuyPrepaidCreditsDialog',
 	components: {
 		BuyPrepaidCreditsStripe,
-		BuyPrepaidCreditsRazorpay
+		BuyPrepaidCreditsRazorpay,
+		BuyPrepaidCreditsMidTrans
 	},
 	data() {
 		return {

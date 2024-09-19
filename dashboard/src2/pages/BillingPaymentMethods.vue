@@ -19,14 +19,13 @@ export default {
 	computed: {
 		options() {
 			return {
-				doctype: 'Stripe Payment Method',
+				doctype: 'Midtrans Payment Method',
 				fields: [
 					'name',
 					'is_default',
 					'expiry_month',
 					'expiry_year',
 					'brand',
-					'stripe_mandate_id'
 				],
 				columns: [
 					{
@@ -81,7 +80,7 @@ export default {
 						type: 'Component',
 						align: 'right',
 						component({ row }) {
-							if (row.is_default && row.stripe_payment_method) {
+							if (row.is_default && row.midtrans_payment_method) {
 								return h(
 									Tooltip,
 									{

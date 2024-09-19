@@ -1,42 +1,28 @@
 <template>
 	<Dialog
 		:modelValue="modelValue"
-		@update:modelValue="$emit('update:show', $event)"
+		@update:modelValue="$emit('update:modelValue', $event)"
+		:options="{
+			title: 'Buy Credits',
+			subtitle: paymentGateway ? '' : 'Choose your payment gateway'
+		}"
 	>
-		<template #body-title>
-			<h3 class="text-2xl font-semibold leading-6 text-gray-900">
-				Add money to your account
-			</h3>
-			<p class="mt-1 text-base text-gray-600">
-				{{ paymentGateway ? '' : 'Choose your payment gateway' }}
-			</p>
-		</template>
 		<template v-slot:body-content>
 			<BuyPrepaidCredits
 				v-if="paymentGateway === 'stripe'"
 				:minimumAmount="minimumAmount"
 				@success="$emit('success')"
-				@cancel="$emit('update:show', false)"
+				@cancel="$emit('update:modelValue', false)"
 			/>
 
 			<div v-if="paymentGateway === 'razorpay'">
-				<FormControl
+				<Input
 					:label="`Amount (Minimum Amount: ${minimumAmount})`"
-					class="mb-2"
 					v-model.number="creditsToBuy"
 					name="amount"
 					autocomplete="off"
 					type="number"
 					:min="minimumAmount"
-				/>
-
-				<FormControl
-					label="Total Amount + GST(if applicable)"
-					disabled
-					v-model="total"
-					name="total"
-					autocomplete="off"
-					type="number"
 				/>
 
 				<p class="mt-3 text-xs">
@@ -53,9 +39,42 @@
 					<Button @click="paymentGateway = null">Go Back</Button>
 					<div>
 						<Button
-							variant="solid"
+							appearance="primary"
 							:loading="$resources.createRazorpayOrder.loading"
 							@click="buyCreditsWithRazorpay"
+						>
+							Buy
+						</Button>
+					</div>
+				</div>
+			</div>
+			<div v-if="paymentGateway === 'midtrans'">
+				<Input
+					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					v-model.number="creditsToBuy"
+					name="amount"
+					autocomplete="off"
+					type="number"
+					:min="minimumAmount"
+				/>
+
+				<!-- <p class="mt-3 text-xs">
+					<span class="font-semibold">Note</span>: If you are using Net Banking,
+					it may take upto 5 days for balance to reflect.
+				</p> -->
+
+				<ErrorMessage
+					class="mt-3"
+					:message="$resources.createMidTransToken.error"
+				/>
+
+				<div class="mt-4 flex w-full justify-between">
+					<Button @click="paymentGateway = null">Go Back</Button>
+					<div>
+						<Button
+							appearance="primary"
+							:loading="$resources.createMidTransToken.loading"
+							@click="buyCreditsWithMidTrans"
 						>
 							Buy
 						</Button>
@@ -81,11 +100,18 @@
 							alt="Razorpay Logo"
 						/>
 					</Button>
-					<Button @click="paymentGateway = 'stripe'">
+					<!-- <Button @click="paymentGateway = 'stripe'">
 						<img
 							class="h-7 w-24"
 							src="../assets/stripe.svg"
 							alt="Stripe Logo"
+						/>
+					</Button> -->
+					<Button @click="paymentGateway = 'midtrans'">
+						<img
+							class="h-7 w-24"
+							src="../assets/midtrans_logo.svg"
+							alt="MidTrans Logo"
 						/>
 					</Button>
 				</div>
@@ -104,11 +130,14 @@ export default {
 	data() {
 		return {
 			paymentGateway: null,
-			creditsToBuy: this.minimumAmount,
-			total: this.minimumAmount
+			creditsToBuy: 0,
 		};
 	},
-	mounted() {
+	async mounted() {
+
+		let client_key = await this.$call(
+			'optibizpro.utils.get_client_key'
+		);
 		const razorpayCheckoutJS = document.createElement('script');
 		razorpayCheckoutJS.setAttribute(
 			'src',
@@ -117,18 +146,24 @@ export default {
 		razorpayCheckoutJS.async = true;
 		document.head.appendChild(razorpayCheckoutJS);
 
+		//get midtrans checkout
+		const midtransCheckoutJS = document.createElement('script');
+		midtransCheckoutJS.setAttribute(
+			'src',
+			'https://app.sandbox.midtrans.com/snap/snap.js'
+		);
+		midtransCheckoutJS.setAttribute(
+			'data-client-key',
+			client_key
+		);
+		midtransCheckoutJS.async = true;
+		document.head.appendChild(midtransCheckoutJS);
+
 		if (
 			this.$account.team.currency === 'USD' &&
-			!this.$account.team.razorpay_enabled
+			!this.$account.team.razorpay_enabled && !this.$account.team.midtrans_enabled
 		) {
-			this.paymentGateway = 'stripe';
-		}
-
-		this.updateTotal();
-	},
-	watch: {
-		creditsToBuy() {
-			this.updateTotal();
+			this.paymentGateway = null; //default to null not stripe
 		}
 	},
 	props: {
@@ -137,14 +172,14 @@ export default {
 		},
 		minimumAmount: {
 			type: Number,
-			default: 0
+			default: 10
 		}
 	},
-	emits: ['update:show', 'success'],
+	emits: ['update:modelValue', 'success'],
 	resources: {
 		createRazorpayOrder() {
 			return {
-				url: 'press.api.billing.create_razorpay_order',
+				method: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.creditsToBuy
 				},
@@ -158,9 +193,9 @@ export default {
 				}
 			};
 		},
-		handlePaymentSuccess() {
+		handlePaymentSuccess(response) {
 			return {
-				url: 'press.api.billing.handle_razorpay_payment_success',
+				method: 'press.api.billing.handle_razorpay_payment_success',
 				onSuccess() {
 					this.$emit('success');
 				}
@@ -168,28 +203,84 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				url: 'press.api.billing.handle_razorpay_payment_failed',
+				method: 'press.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
 				}
 			};
-		}
+		},
+		createMidTransToken(){
+			return {
+				method: 'optibizpro.utils.create_midtrans_token',
+				params: {
+					amount: this.creditsToBuy,
+					customer_name : this.$account.user.full_name,
+					customer_email : this.$account.user.email
+				},
+				onSuccess(data) {
+					this.processMidTransOrder(data); //this initializes the midtrans snap.js inline checkout
+				},
+				validate() {
+					if (this.creditsToBuy < this.minimumAmount) {
+						return 'Amount less than minimum amount required';
+					}
+				}
+			};
+		},
+		MidTransPaymentSuccess() {
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_success',
+				
+				onSuccess() {
+					this.$emit('success');
+				}
+			};
+		},
+		MidTransPaymentFailed() {
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_failed',
+				onSuccess() {
+					console.log('Payment Failed.');
+				}
+			};
+		},
 	},
 	methods: {
-		updateTotal() {
-			if (this.$account.team.currency === 'INR') {
-				this.total = Number(
-					(
-						this.creditsToBuy +
-						this.creditsToBuy * this.$account.billing_info.gst_percentage
-					).toFixed(2)
-				);
-			} else {
-				this.total = this.creditsToBuy;
-			}
-		},
 		buyCreditsWithRazorpay() {
 			this.$resources.createRazorpayOrder.submit();
+		},
+		buyCreditsWithMidTrans(){
+			this.$resources.createMidTransToken.submit();
+		},
+		processMidTransOrder(data){
+			var transaction_token = data.token
+			window.snap.pay(transaction_token, {
+				onSuccess: (result) => {
+					/* You may add your own implementation here */
+					
+					// alert("payment success!");
+					result["team"] = this.$account.team.name
+					result["user"] = this.$account.user.full_name
+					result["email"] = this.$account.user.email
+					this.$resources.MidTransPaymentSuccess.submit({result});
+
+				},
+				onPending: function(result){
+					/* You may add your own implementation here */
+					alert("awaiting  payment!"); console.log(result);
+				},
+				onError: function(result){
+					/* You may add your own implementation here */
+					result["team"] = this.$account.team.name
+					this.$resources.MidTransPaymentFailed.submit({result});
+
+					// alert("payment failed!"); console.log(result);
+				},
+				onClose: function(){
+					/* You may add your own implementation here */
+					alert('you closed the popup without finishing the payment');
+				}
+			})
 		},
 		processOrder(data) {
 			const options = {
@@ -219,6 +310,22 @@ export default {
 
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
+		},
+
+		// MidTransPaymentSuccess_b(response) {
+		// 	console.log("respppppppppp",response)
+		// 	this.$resources.MidTransPaymentSuccess.submit(response);
+		// 	this.$emit('success');
+		// },
+
+		// MidTransPaymentFailed(response) {
+		// 	this.$resources.MidTransPaymentFailed.submit({ response });
+		// }
+
+	},
+	watch: {
+		minimumAmount(amt) {
+			console.log(amt);
 		}
 	}
 };

@@ -4,18 +4,21 @@
 			<p class="text-sm mb-5 text-gray-700" v-if="message">
 				{{ message }}
 			</p>
-			<StripeCard2 @complete="show = false" />
+			<!-- <StripeCard2 @complete="show = false" /> -->
+			<MidTransCard @complete="show = false" />
 		</template>
 	</Dialog>
 </template>
 <script>
 import StripeCard from './StripeCard.vue';
+import MidTransCard from './MidtransCard.vue';
 export default {
 	name: 'StripeCardDialog',
 	props: ['modelValue', 'message'],
 	emits: ['update:modelValue'],
 	components: {
-		StripeCard2: StripeCard
+		StripeCard2: StripeCard,
+		MidTransCard : MidTransCard
 	},
 	data() {
 		return {

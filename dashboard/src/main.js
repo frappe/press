@@ -16,7 +16,7 @@ import {
 	pageMetaPlugin,
 	resourcesPlugin
 } from 'frappe-ui';
-
+import VueCreditCardValidation from 'vue-credit-card-validation';
 const app = createApp(App);
 let request = options => {
 	let _options = options || {};
@@ -30,6 +30,7 @@ let request = options => {
 setConfig('resourceFetcher', request);
 app.use(resourcesPlugin);
 app.use(pageMetaPlugin);
+app.use(VueCreditCardValidation)
 
 registerPlugins(app);
 registerGlobalComponents(app);

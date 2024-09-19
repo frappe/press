@@ -77,7 +77,7 @@ website_redirects = [
 		"target": "/api/method/press.api.handle_suspended_site_redirection",
 	},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
-	{"source": "/signup", "target": "/erpnext/signup"},
+	{"source": "/signup", "target": "/optibizpro/signup"},
 ]
 
 email_css = ["/assets/press/css/email.css"]

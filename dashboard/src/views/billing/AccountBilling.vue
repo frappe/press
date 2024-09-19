@@ -28,7 +28,7 @@ export default {
 	name: 'BillingScreen',
 	pageMeta() {
 		return {
-			title: 'Billing - Frappe Cloud'
+			title: 'Billing - Optibizro Cloud'
 		};
 	},
 	props: ['invoiceName'],

@@ -13,6 +13,7 @@ import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
 import './vendor/posthog.js';
+import VueCreditCardValidation from 'vue-credit-card-validation';
 
 let request = options => {
 	let _options = options || {};
@@ -39,6 +40,7 @@ getInitialData().then(() => {
 	app.use(router);
 	app.use(resourcesPlugin);
 	app.use(pageMetaPlugin);
+	app.use(VueCreditCardValidation)
 
 	socket = initSocket();
 	app.config.globalProperties.$socket = socket;

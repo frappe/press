@@ -4,7 +4,7 @@
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
 			<Dialog :options="{ title: 'Add new card' }" v-model="showAddCardDialog">
 				<template v-slot:body-content>
-					<StripeCard
+					<MidTransCard
 						class="mb-1"
 						v-if="showAddCardDialog"
 						@complete="
@@ -85,7 +85,7 @@
 					href="https://frappecloud.com/docs/billing/disable-account"
 					>cancelling subscription.</Link
 				>
-				Frappe Cloud is not responsible for any refund if the account is not
+				Optibizpro Cloud is not responsible for any refund if the account is not
 				closed properly.
 			</span>
 		</template>
@@ -109,15 +109,15 @@ export default {
 	},
 	resources: {
 		paymentMethods: {
-			url: 'press.api.billing.get_payment_methods',
+			url: 'optibizpro.utils.get_payment_methods',
 			auto: true
 		},
 		setAsDefault: {
-			url: 'press.api.billing.set_as_default'
+			url: 'optibizpro.utils.set_as_default'
 		},
 		remove() {
 			return {
-				url: 'press.api.billing.remove_payment_method',
+				url: 'optibizpro.utils.remove_payment_method',
 				onSuccess: data => {
 					if (data === 'Unpaid Invoices') {
 						this.showFinalizeDialog = true;
@@ -127,8 +127,8 @@ export default {
 		}
 	},
 	components: {
-		StripeCard: defineAsyncComponent(() =>
-			import('@/components/StripeCard.vue')
+		MidTransCard: defineAsyncComponent(() =>
+			import('@/components/MidtransCard.vue')
 		),
 		FinalizeInvoicesDialog
 	},
