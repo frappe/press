@@ -36,6 +36,7 @@
 
 	<div class="mt-4">
 		<div class="text-xs text-gray-600">Select Payment Gateway</div>
+		<h1></h1>
 		<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<button
 				v-if="$team.doc.currency === 'INR' || $team.doc.razorpay_enabled"
@@ -68,6 +69,22 @@
 					alt="Stripe Logo"
 				/>
 			</button>
+			<!-- --- -->
+			<button
+				@click="paymentGateway = 'Paymob'"
+				label="Paymob"
+				class="flex h-10 items-center justify-center rounded border"
+				:class="{
+					'border-gray-300': paymentGateway !== 'Stripe',
+					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Paymob'
+				}"
+			>
+				<img
+					class="h-7 w-24"
+					:src="`/assets/press/images/paymobLogo.png`"
+					alt="Stripe Logo"
+				/>
+			</button>
 		</div>
 	</div>
 
@@ -87,11 +104,12 @@
 		@success="onSuccess"
 		@cancel="onCancel"
 	/>
+	
+
 </template>
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
-
 export default {
 	name: 'BuyPrepaidCreditsDialog',
 	components: {
