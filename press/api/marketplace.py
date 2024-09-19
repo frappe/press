@@ -97,16 +97,6 @@ def get_install_app_options(marketplace_app: str) -> Dict:
 	)
 
 	for cluster in clusters:
-		cluster["bench"] = frappe.db.get_value(
-			"Bench",
-			filters={
-				"cluster": cluster["name"],
-				"status": "Active",
-				"group": latest_public_group,
-			},
-			order_by="creation desc",
-		)
-
 		cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
 	ReleasGroup = frappe.qb.DocType("Release Group")
@@ -184,7 +174,6 @@ def create_site_on_public_bench(
 	apps: list[Dict],
 	cluster: str,
 	site_plan: str,
-	bench: str,
 	latest_stable_version: str,
 	group: str = None,
 ) -> dict:
@@ -201,14 +190,28 @@ def create_site_on_public_bench(
 			pluck="release_group",
 			ignore_permissions=True,
 		)
-		group = frappe.db.get_value(
-			"Release Group",
-			{
-				"public": 1,
-				"version": latest_stable_version,
-				"name": ("not in", restricted_release_groups),
-			},
-		)
+
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupApp = frappe.qb.DocType("Release Group App")
+		if group := (
+			frappe.qb.from_(ReleaseGroup)
+			.join(ReleaseGroupApp)
+			.on(ReleaseGroup.name == ReleaseGroupApp.parent)
+			.select(ReleaseGroup.name)
+			.distinct()
+			.where(
+				ReleaseGroupApp.app.isin([app["app"] for app in apps if app["app"] != "frappe"])
+			)
+			.where(ReleaseGroup.version == latest_stable_version)
+			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.notin(restricted_release_groups or [""]))
+			.orderby(ReleaseGroup.creation, order=frappe.qb.asc)
+			.run(as_dict=True)
+		):
+			group = group[0].name
+		else:
+			frappe.throw("No release group found for the selected apps")
 
 	site = frappe.get_doc(
 		{
@@ -220,7 +223,6 @@ def create_site_on_public_bench(
 			"group": group,
 			"domain": frappe.db.get_single_value("Press Settings", "domain"),
 			"team": get_current_team(),
-			"bench": bench,
 			"app_plans": app_plans,
 		}
 	).insert()
@@ -315,7 +317,6 @@ def create_site_for_app(
 	apps: list[Dict],
 	cluster: str,
 	site_plan: str,
-	bench: Optional[str] = None,
 	group: Optional[str] = None,
 ):
 	"""Create a site for a marketplace app"""
@@ -326,7 +327,7 @@ def create_site_for_app(
 
 	if site_should_be_created_on_public_bench(apps):
 		return create_site_on_public_bench(
-			subdomain, apps, cluster, site_plan, bench, latest_stable_version, group
+			subdomain, apps, cluster, site_plan, latest_stable_version, group
 		)
 
 	else:

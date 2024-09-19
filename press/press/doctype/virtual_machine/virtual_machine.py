@@ -31,6 +31,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 import rq
+import time
 
 
 class VirtualMachine(Document):
@@ -41,7 +42,6 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
@@ -55,6 +55,7 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
+		platform: DF.Literal["x86_64", "arm64"]
 		private_dns_name: DF.Data | None
 		private_ip_address: DF.Data | None
 		public_dns_name: DF.Data | None
@@ -317,8 +318,9 @@ class VirtualMachine(Document):
 
 	def get_latest_ubuntu_image(self):
 		if self.cloud_provider == "AWS EC2":
+			architecture = {"x86_64": "amd64", "arm64": "arm64"}[self.platform]
 			return self.client("ssm").get_parameter(
-				Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
 		elif self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1026,6 +1028,109 @@ class VirtualMachine(Document):
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
+
+	def disable_delete_on_termination_for_all_volumes(self):
+		attached_volumes = self.client().describe_instance_attribute(
+			InstanceId=self.instance_id, Attribute="blockDeviceMapping"
+		)
+
+		modified_volumes = []
+		for volume in attached_volumes["BlockDeviceMappings"]:
+			volume["Ebs"]["DeleteOnTermination"] = False
+			volume["Ebs"].pop("AttachTime", None)
+			volume["Ebs"].pop("Status", None)
+			modified_volumes.append(volume)
+
+		self.client().modify_instance_attribute(
+			InstanceId=self.instance_id, BlockDeviceMappings=modified_volumes
+		)
+
+	@frappe.whitelist()
+	def convert_to_arm(self, virtual_machine_image, machine_type):
+		# Prerequisite - Series Compatible ARM Machine Image with all dependencies installed
+
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("This feature is only available for AWS EC2")
+
+		# Make sure the current machine is stopped.
+		# Stop to preserve EBS. Terminate will drop EBS (unless we do some extra work)
+		if self.status != "Stopped":
+			frappe.throw("Machine must be stopped before converting to ARM")
+
+		# Prepare volumes to attach to new machine
+		volumes = []
+		for index, volume in enumerate(self.volumes):
+			device_name_index = chr(ord("f") + index)
+			volumes.append(
+				{
+					"VolumeId": volume.volume_id,
+					"DeviceName": f"/dev/sd{device_name_index}",
+				}
+			)
+		self.add_comment(text=f"Volumes {volumes}")
+
+		# Create a copy of the current machine
+		# So we don't lose the instance ids
+		copy = frappe.copy_doc(self)
+		copy.insert(set_name=f"{self.name}-copy")
+
+		message = (
+			f"Converting to ARM <br><br>"
+			f"Instance ID: {self.instance_id} <br>"
+			f"EBS Volume IDs: {[volume.volume_id for volume in self.volumes]} <br>"
+			f"Copied Current State to: <a href='{copy.get_url()}'>{copy.name}</a><br>"
+		)
+		self.add_comment(text=message)
+
+		# Disable delete on termination for all volumes
+		# So we can safely terminate the instance without losing any data
+		copy.disable_delete_on_termination_for_all_volumes()
+
+		# Terminate the current machine
+		copy.disable_termination_protection()
+		copy.reload()
+		copy.terminate()
+
+		# Wait for the machine to terminate
+		# Private ip address is released when the machine is terminated
+		while copy.status != "Terminated":
+			copy.reload()
+			copy.sync()
+			time.sleep(1)
+
+		# Create new machine in place. So we retain Name, IP etc.
+		# Reset instance attributes
+		self.instance_id = None
+		self.volumes = []
+		self.public_ip_address = None
+
+		# Set new machine image to ARM compatible image
+		self.virtual_machine_image = virtual_machine_image
+		self.machine_type = machine_type
+		self.save()
+
+		# Start the new machine
+		self._provision_aws()
+
+		# Wait for the new machine to start (status = Running)
+		# We can't attach volumes to a machine that is not running
+		while self.status != "Running":
+			self.reload()
+			self.sync()
+			time.sleep(1)
+
+		# Attach volumes to new machine
+		for volume in volumes:
+			try:
+				self.client().attach_volume(
+					InstanceId=self.instance_id,
+					Device=volume["DeviceName"],
+					VolumeId=volume["VolumeId"],
+				)
+			except Exception as e:
+				print(e)
+
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

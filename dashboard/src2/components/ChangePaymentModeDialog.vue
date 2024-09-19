@@ -60,7 +60,7 @@ export default {
 	emits: ['update:modelValue'],
 	components: {
 		BillingInformationDialog: defineAsyncComponent(() =>
-			import('@/components/BillingInformationDialog.vue')
+			import('./billing/BillingInformationDialog.vue')
 		),
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('../components/BuyPrepaidCreditsDialog.vue')

@@ -1,10 +1,12 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
 import json
 import urllib.parse
 import frappe
 from frappe.model.document import Document
+from frappe.utils.data import now_datetime
 from frappe.utils.momentjs import get_all_timezones
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils.password import encrypt as encrypt_password
@@ -12,6 +14,7 @@ from frappe.utils.password import decrypt as decrypt_password
 from frappe.utils.password_strength import test_password_strength
 import urllib
 
+from frappe.utils.telemetry import capture, init_telemetry
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
@@ -30,6 +33,8 @@ class ProductTrialRequest(Document):
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
+		site_creation_completed_on: DF.Datetime | None
+		site_creation_started_on: DF.Datetime | None
 		status: DF.Literal[
 			"Pending",
 			"Wait for Site",
@@ -63,6 +68,37 @@ class ProductTrialRequest(Document):
 			"Enable Scheduler": "Just a moment",
 		},
 	}
+
+	def get_email(self):
+		return frappe.db.get_value("Team", self.team, "user")
+
+	def capture_posthog_event(self, event_name):
+		init_telemetry()
+		ph = getattr(frappe.local, "posthog", None)
+		with suppress(Exception):
+			ph and ph.capture(
+				distinct_id=self.get_email(),
+				event=f"fc_saas_{event_name}",
+				properties={
+					"product_trial_request_id": self.name,
+					"product_trial": self.product_trial,
+					"email": self.get_email(),
+				},
+			)
+
+	def after_insert(self):
+		self.capture_posthog_event("product_trial_request_created")
+
+	def on_update(self):
+		if self.has_value_changed("status"):
+			if self.status == "Error":
+				self.capture_posthog_event("product_trial_request_failed")
+			elif self.status == "Wait for Site":
+				self.capture_posthog_event("product_trial_request_initiated_site_creation")
+			elif self.status == "Completing Setup Wizard":
+				self.capture_posthog_event("product_trial_request_started_setup_wizard_completion")
+			elif self.status == "Site Created":
+				self.capture_posthog_event("product_trial_request_site_created")
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -160,6 +196,7 @@ class ProductTrialRequest(Document):
 		self.validate_signup_fields()
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		self.status = "Wait for Site"
+		self.site_creation_started_on = now_datetime()
 		self.save(ignore_permissions=True)
 		self.reload()
 		site, agent_job_name, _ = product.setup_trial_site(

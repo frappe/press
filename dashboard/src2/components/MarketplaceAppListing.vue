@@ -61,9 +61,9 @@
 							v-model="marketplaceApp.title"
 						/>
 					</div>
-					<div class="sm:col-span-4 pb-8">
+					<div class="pb-8 sm:col-span-4">
 						<span class="text-base font-medium">App Source</span>
-						<p class="text-xs pt-2">
+						<p class="pt-2 text-xs">
 							Note: Only open-source or source-available applications are
 							allowed on the Frappe Marketplace. You can keep your repository
 							private, but if a user requests the source code, you must provide
@@ -79,11 +79,11 @@
 							/>
 							<p
 								v-if="marketplaceApp.is_public_repo"
-								class="text-xs text-green-700 pt-3"
+								class="pt-3 text-xs text-green-700"
 							>
 								The GitHub repository is public.
 							</p>
-							<p v-else class="text-xs text-red-700 pt-3">
+							<p v-else class="pt-3 text-xs text-red-700">
 								The GitHub repository is private.
 							</p>
 						</div>
@@ -264,13 +264,10 @@ export default {
 				auto: true,
 				onSuccess(response) {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
-					this.setShowIsPublicGithubRepository(
-						this.marketplaceApp.github_repository_url
-					);
 				},
 				onError(e) {
 					toast.error(
-						e.messages.length
+						e.messages?.length
 							? e.messages.join('\n')
 							: e.message || 'Failed to fetch listing data'
 					);
@@ -299,7 +296,7 @@ export default {
 				},
 				loading: 'Updating listing...',
 				error: err => {
-					return err.messages.length
+					return err.messages?.length
 						? err.messages.join('\n')
 						: err.message || 'Failed to update listing';
 				}
@@ -323,7 +320,7 @@ export default {
 									return 'Screenshot deleted successfully';
 								},
 								error: err => {
-									return err.messages.length
+									return err.messages?.length
 										? err.messages.join('\n')
 										: err.message || 'Failed to delete screenshot';
 								}

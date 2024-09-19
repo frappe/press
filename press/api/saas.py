@@ -429,6 +429,7 @@ def signup(full_name, email, country, product, terms_accepted, referrer=None):
 			"last_name": last_name,
 			"country": country,
 			"role": "Press Admin",
+			"saas": 1,
 			"referrer_id": referrer,
 			"product_trial": product,
 			"send_email": True,
@@ -468,6 +469,8 @@ def setup_account_product_trial(key):
 		)
 	frappe.db.commit()
 	frappe.set_user(current_user)
+	# Telemetry: Created account
+	capture("completed_signup", "fc_saas", ar.email)
 	# login
 	frappe.local.login_manager.login_as(ar.email)
 	frappe.local.response["type"] = "redirect"

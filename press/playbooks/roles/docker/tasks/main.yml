@@ -25,6 +25,12 @@
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
 
+# This seems to be breaking on some servers
+- name: Add NGINX Repository Key
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+
 - name: Add Docker Repository
   apt_repository:
     repo: deb https://download.docker.com/linux/ubuntu focal stable

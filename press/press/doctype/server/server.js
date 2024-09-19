@@ -8,8 +8,14 @@ frappe.ui.form.on('Server', {
 			__('Visit Dashboard'),
 		);
 
-		[
+		const ping_actions = [
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
+			[
+				__('Ping Agent (Job)'),
+				'ping_agent_job',
+				false,
+				frm.doc.is_server_setup,
+			],
 			[__('Ping Ansible'), 'ping_ansible', true, !frm.doc.is_server_prepared],
 			[
 				__('Ping Ansible Unprepared'),
@@ -17,6 +23,34 @@ frappe.ui.form.on('Server', {
 				true,
 				!frm.doc.is_server_prepared,
 			],
+		];
+
+		for (const [label, method, confirm, condition] of ping_actions) {
+			if (!condition || typeof condition === 'undefined') {
+				continue;
+			}
+
+			async function callback() {
+				if (confirm && !(await frappe_confirm(label))) {
+					return;
+				}
+
+				const res = await frm.call(method);
+				if (res.message && method == 'ping_agent_job') {
+					frappe.msgprint(
+						`Agejt Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
+					);
+				} else if (res.message) {
+					frappe.msgprint(res.message);
+				} else {
+					frm.refresh();
+				}
+			}
+
+			frm.add_custom_button(label, callback, __('Ping'));
+		}
+
+		[
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
 				__('Update Agent Ansible'),
@@ -183,6 +217,7 @@ frappe.ui.form.on('Server', {
 				);
 			}
 		});
+
 		if (frm.doc.is_server_setup) {
 			frm.add_custom_button(
 				__('Increase Swap'),
@@ -217,3 +252,13 @@ frappe.ui.form.on('Server', {
 		press.set_hostname_abbreviation(frm);
 	},
 });
+
+async function frappe_confirm(label) {
+	return new Promise((r) => {
+		frappe.confirm(
+			`Are you sure you want to ${label.toLowerCase()}?`,
+			() => r(true),
+			() => r(false),
+		);
+	});
+}

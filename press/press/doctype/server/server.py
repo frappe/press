@@ -104,11 +104,11 @@ class BaseServer(Document, TagHelpers):
 	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
 		if server == self.name:
 			self.increase_disk_size(increment)
-			self.create_subscription_for_storage()
+			self.create_subscription_for_storage(increment)
 		else:
 			server_doc = frappe.get_doc("Database Server", server)
 			server_doc.increase_disk_size(increment)
-			server_doc.create_subscription_for_storage()
+			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, min: int, max: int) -> None:
@@ -322,6 +322,11 @@ class BaseServer(Document, TagHelpers):
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
+
+	@frappe.whitelist()
+	def ping_agent_job(self):
+		agent = Agent(self.name, self.doctype)
+		return agent.create_agent_job("Ping Job", "ping_job").name
 
 	@frappe.whitelist()
 	def update_agent(self):
@@ -642,15 +647,9 @@ class BaseServer(Document, TagHelpers):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def create_subscription_for_storage(self):
+	def create_subscription_for_storage(self, increment: int) -> None:
 		plan_type = "Server Storage Plan"
 		plan = frappe.get_value(plan_type, {"enabled": 1}, "name")
-
-		server_disk_size = frappe.db.get_value(
-			"Virtual Machine", self.virtual_machine, "disk_size"
-		)
-		plan_disk_size = frappe.db.get_value("Server Plan", self.plan, "disk")
-		current_additional_storage = int(server_disk_size) - int(plan_disk_size)
 
 		if existing_subscription := frappe.db.get_value(
 			"Subscription",
@@ -668,7 +667,7 @@ class BaseServer(Document, TagHelpers):
 				"Subscription",
 				existing_subscription.name,
 				"additional_storage",
-				current_additional_storage + int(existing_subscription.additional_storage),
+				increment + int(existing_subscription.additional_storage),
 			)
 		else:
 			frappe.get_doc(
@@ -679,7 +678,7 @@ class BaseServer(Document, TagHelpers):
 					"team": self.team,
 					"plan_type": plan_type,
 					"plan": plan,
-					"additional_storage": current_additional_storage,
+					"additional_storage": increment,
 				}
 			).insert()
 

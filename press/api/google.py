@@ -12,6 +12,7 @@ from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
+from oauthlib.oauth2 import AccessDeniedError
 
 from press.utils import log_error
 
@@ -47,10 +48,15 @@ def callback(code=None, state=None):
 	try:
 		flow = google_oauth_flow()
 		flow.fetch_token(authorization_response=frappe.request.url)
+	except AccessDeniedError:
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = "/dashboard/login"
+		return
 	except Exception as e:
 		log_error("Google Login failed", data=e)
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = "/dashboard/login"
+		return
 
 	# authenticated
 	frappe.cache().delete_value(cached_key)

@@ -97,7 +97,11 @@ class AccountRequest(Document):
 			# Telemetry: Account Request Created
 			capture("account_request_created", "fc_signup", self.email)
 
-		if self.is_saas_signup():
+		if self.is_saas_signup() and self.is_using_new_saas_flow():
+			# Telemetry: Account Request Created
+			capture("account_request_created", "fc_saas", self.email)
+
+		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
 			capture("verification_email_sent", "fc_signup", self.email)
 			capture("clicked_verify_link", "fc_signup", self.email)
@@ -148,7 +152,7 @@ class AccountRequest(Document):
 		if self.is_saas_signup() or custom_template:
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
-			# If product trial, get the product trial details
+			# If product trial(new saas flow), get the product trial details
 			if self.product_trial:
 				template = "product_trial_verify_account"
 				product_trial = frappe.get_doc("Product Trial", self.product_trial)
@@ -159,6 +163,11 @@ class AccountRequest(Document):
 				if product_trial.email_full_logo:
 					args.update({"image_path": get_url(product_trial.email_full_logo, True)})
 				args.update({"header_content": product_trial.email_header_content or ""})
+			# If saas_app is set, check for email account in saas settings of that app
+			elif self.saas_app:
+				email_account = frappe.get_value("Saas Settings", self.saas_app, "email_account")
+				if email_account:
+					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
 
@@ -215,6 +224,9 @@ class AccountRequest(Document):
 		return (
 			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
 		)
+
+	def is_using_new_saas_flow(self):
+		return bool(self.product_trial)
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)

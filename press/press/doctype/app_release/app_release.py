@@ -181,8 +181,8 @@ class AppRelease(Document):
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):
-		source = frappe.get_doc("App Source", self.source)
-		url = self._get_repo_url(source)
+		source: "AppSource" = frappe.get_doc("App Source", self.source)
+		url = source.get_repo_url()
 
 		self.output = ""
 		self.output += self.run("git init")

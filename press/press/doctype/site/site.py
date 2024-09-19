@@ -85,6 +85,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.server.server import BaseServer
 
+DOCTYPE_SERVER_TYPE_MAP = {
+	"Server": "Application",
+	"Database Server": "Database",
+	"Proxy Server": "Proxy",
+}
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -338,7 +344,7 @@ class Site(Document, TagHelpers):
 	def validate_bench(self):
 		if (
 			self.status not in ("Broken", "Archived")
-			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) != "Active"
+			and frappe.db.get_value("Bench", self.bench, "status", for_update=True) == "Archived"
 		):
 			frappe.throw(
 				f"Bench {self.bench} is not active. Please try again if you've deployed a new bench."
@@ -770,7 +776,7 @@ class Site(Document, TagHelpers):
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
 		if (diff := server.free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
 			if server.public:
 				self.try_increasing_disk(server, diff, msg)
 			else:
@@ -2807,6 +2813,7 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		)
 		if mode != "auto":
 			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
 			product_trial_request.save(ignore_permissions=True)
 		else:
 			product_trial_request.complete_setup_wizard()
@@ -2826,6 +2833,7 @@ def process_complete_setup_wizard_job_update(job):
 	)
 	if job.status == "Success":
 		product_trial_request.status = "Site Created"
+		product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"

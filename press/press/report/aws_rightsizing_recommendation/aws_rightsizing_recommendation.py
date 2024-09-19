@@ -1,18 +1,33 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+import json
 
-import frappe
 import boto3
+import frappe
+from frappe.utils import cint
 
 
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	columns = frappe.get_doc("Report", "AWS Rightsizing Recommendation").get_columns()
-	data = get_data()
+	resource_type = filters.get("resource_type")
+	columns_to_remove = []
+	if resource_type == "Compute":
+		columns_to_remove = [
+			"volume_id",
+			"current_iops",
+			"recommended_iops",
+			"current_throughput",
+			"recommended_throughput",
+		]
+	elif resource_type == "Storage":
+		columns_to_remove = ["current_instance_type", "recommended_instance_type"]
+	columns = [column for column in columns if column.fieldname not in columns_to_remove]
+	data = get_data(resource_type, filters.get("action_type"))
 	return columns, data
 
 
-def get_data():
+def get_data(resource_type, action_type):
 	settings = frappe.get_single("Press Settings")
 	client = boto3.client(
 		"cost-optimization-hub",
@@ -21,14 +36,21 @@ def get_data():
 		aws_secret_access_key=settings.get_password("aws_secret_access_key"),
 	)
 
+	resource_types = {
+		"Compute": ["Ec2Instance"],
+		"Storage": ["EbsVolume"],
+	}.get(resource_type, ["Ec2Instance", "EbsVolume"])
+
+	action_types = {
+		"Rightsize": ["Rightsize"],
+		"Migrate to Graviton": ["MigrateToGraviton"],
+	}.get(action_type)
+
 	paginator = client.get_paginator("list_recommendations")
 	response_iterator = paginator.paginate(
 		filter={
-			"resourceTypes": [
-				"Ec2Instance",
-				"EbsVolume",
-			],
-			"actionTypes": ["Rightsize"],
+			"resourceTypes": resource_types,
+			"actionTypes": action_types,
 		},
 	)
 
@@ -86,16 +108,58 @@ def get_data():
 				data["current_instance_type"] = row["currentResourceSummary"]
 				data["recommended_instance_type"] = row["recommendedResourceSummary"]
 			elif resource_type == "Virtual Machine Volume":
+				data["volume_id"] = row["resourceId"]
 				# Splits "99.0 GB Storage/3000.0 IOPS/125.0 MB/s Throughput" into
 				# ["99.0 GB Storage", "3000.0 IOPS", "125.0 MB", "/s Throughput"]
 				_, iops, throughput, _ = row["currentResourceSummary"].split("/")
-				data["current_iops"] = iops.split()[0]
-				data["current_throughput"] = throughput.split()[0]
+				data["current_iops"] = cint(iops.split()[0])
+				data["current_throughput"] = cint(throughput.split()[0])
 
 				_, iops, throughput, _ = row["recommendedResourceSummary"].split("/")
-				data["recommended_iops"] = iops.split()[0]
-				data["recommended_throughput"] = throughput.split()[0]
+				data["recommended_iops"] = cint(iops.split()[0])
+				data["recommended_throughput"] = cint(throughput.split()[0])
 
 			results.append(data)
 	results.sort(key=lambda x: x["estimated_savings"], reverse=True)
 	return results
+
+
+@frappe.whitelist()
+def rightsize(filters):
+	filters = frappe._dict(json.loads(filters))
+	if filters.resource_type == "Storage":
+		frappe.enqueue(
+			"press.press.report.aws_rightsizing_recommendation.aws_rightsizing_recommendation.rightsize_volumes",
+			filters=filters,
+			queue="long",
+		)
+
+
+def rightsize_volumes(filters):
+	for row in execute(filters)[1]:
+		row = frappe._dict(row)
+
+		machine = frappe.get_doc("Virtual Machine", row.virtual_machine)
+		volume = machine.volumes[0]
+
+		if volume.volume_id != row.volume_id:
+			# This volume is not managed by Press. Ignore
+			continue
+
+		# Always downgrade performance
+		iops = min(row.recommended_iops, volume.iops)
+		throughput = min(row.recommended_throughput, volume.throughput)
+
+		# Already at recommended performance. Ignore
+		if volume.iops == iops and volume.throughput == throughput:
+			continue
+
+		try:
+			machine.update_ebs_performance(iops, throughput)
+			machine.add_comment(
+				"Comment",
+				f"Rightsized EBS volume {volume.volume_id} from {volume.iops} IOPS and {volume.throughput} MB/s to {iops} IOPS and {throughput} MB/s",
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()

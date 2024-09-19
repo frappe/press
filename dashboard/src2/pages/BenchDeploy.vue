@@ -147,11 +147,11 @@ export default {
 			}
 		});
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
-			let rgDoc = getCachedDocumentResource(
+			const rgDoc = getCachedDocumentResource(
 				'Release Group',
 				this.$resources.deploy.doc?.group
 			);
-			rgDoc.reload();
+			if (rgDoc) rgDoc.reload();
 			this.$resources.deploy.reload();
 			this.$resources.errors.reload();
 		});

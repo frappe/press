@@ -83,7 +83,7 @@
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
 						? row => this.options.onRowClick(row, context)
-						: () => {},
+						: null,
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
 						: null,
