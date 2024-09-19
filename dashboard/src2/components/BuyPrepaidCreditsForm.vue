@@ -20,6 +20,23 @@
 				</div>
 			</template>
 		</FormControl>
+		<!-- New Conditional Field -->
+		<FormControl
+			v-if="$team.doc.currency === 'KES' || paymentGateway === 'Mpesa'"
+			:label="`Amount in KES`"
+			class="mb-3"
+			v-model.number="creditsToBuyKES"
+			name="amount_kes"
+			autocomplete="off"
+			type="number"
+			:min="minimumAmountKES"
+		>
+			<template #prefix>
+				<div class="grid w-3 place-items-center text-sm text-gray-700 mr-2 mr-3">
+					{{paymentGateway === 'Mpesa' ? 'Ksh.' : '$'  }}
+				</div>
+			</template>
+		</FormControl>
 		<!-- <FormControl
 			v-if="$team.doc.currency === 'INR'"
 			:label="`Total Amount + GST (${
@@ -42,7 +59,7 @@
 	:label="`Total Amount + ${$team.doc.currency === 'INR' ? 'GST' : 'VAT'} (${
 		$team.doc?.billing_info.gst_percentage * 100
 	}%)`"
-	disabled
+	
 	:modelValue="totalAmount"
 	name="total"
 	autocomplete="off"
@@ -133,6 +150,7 @@
 	<BuyPrepaidCreditMpesa
 	v-if="paymentGateway === 'Mpesa'"
 	:amount="creditsToBuy"
+	:amountKES="creditsToBuyKES"
 	:minimumAmount="minimumAmount"
 	@success="onSuccess"
 	@cancel="onCancel"
@@ -153,9 +171,31 @@ export default {
 	data() {
 		return {
 			paymentGateway: null,
-			creditsToBuy: this.minimumAmount
+			creditsToBuy: this.minimumAmount,
+			creditsToBuyKES:0,
+			exchangeRate:125,
 		};
 	},
+
+	watch: {
+	// Watch for USD Input (creditsToBuy)
+	creditsToBuy(newValue) {
+		const computedKES = (newValue * this.exchangeRate);
+		// Only update KES if the new value differs
+		if (this.creditsToBuyKES !== computedKES) {
+			this.creditsToBuyKES = computedKES;
+		}
+	},
+	// Watch for KES Input (creditsToBuyKES)
+	creditsToBuyKES(newValue) {
+		const computedUSD = (newValue / this.exchangeRate);
+		// Only update USD if the new value differs
+		if (this.creditsToBuy !== computedUSD) {
+			this.creditsToBuy = computedUSD;
+		}
+	}
+},
+
 	mounted() {
 		if (this.$team.doc.currency === 'USD' && !this.$team.doc.razorpay_enabled) {
 			this.paymentGateway = 'Stripe';

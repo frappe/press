@@ -70,3 +70,4 @@ export default async function call(method, args) {
 		throw e;
 	}
 }
+

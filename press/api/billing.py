@@ -726,7 +726,7 @@ def generate_stk_push(**kwargs):
 		)
 
 		mobile_number = sanitize_mobile_number(args.sender)
-		
+		print("Mobile number",mobile_number)
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
 			amount=args.request_amount,
@@ -781,10 +781,7 @@ def verify_mpesa_transaction(**kwargs):
 	else:
 		integration_request.handle_failure(transaction_response)
  
- 
-# @frappe.whitelist(allow_guest=True)
-# def hello_test():
-#     print("Hello sir")
+
 '''fetch parameters from the args'''
 def fetch_param_value(response, key, key_field):
 	"""Fetch the specified key from list of dictionary. Key is identified via the key field."""
@@ -820,31 +817,24 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 '''request for payments'''
 @frappe.whitelist(allow_guest=True)
 #def request_for_payment(**kwargs)
-def request_for_payment():
-		kwargs={
-  "partner": "ijlpjgrgr7",
-  "sender": "0740743521",
-  "request_amount": 1,
-  "reference_doctype": "Invoice",
-  "reference_docname": "INV-2024-00006",
-  "transaction_limit":150000
-}
+def request_for_payment(**kwargs):
+	kwargs.setdefault("reference_doctype", "Invoice")
+	kwargs.setdefault("reference_docname", "INV-2024-00006")
+	kwargs.setdefault("transaction_limit", 150000)
+	args = frappe._dict(kwargs)
+	request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
+	for i, amount in enumerate(request_amounts):
+		args.request_amount = amount
+		if frappe.flags.in_test:
+			from press.press.doctype.mpesa_settings.test_mpesa_settings import (
+				get_payment_request_response_payload,
+			)
 
-		args = frappe._dict(kwargs)
-		request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
-
-		for i, amount in enumerate(request_amounts):
-			args.request_amount = amount
-			if frappe.flags.in_test:
-				from press.press.doctype.mpesa_settings.test_mpesa_settings import (
-					get_payment_request_response_payload,
-				)
-
-				response = frappe._dict(get_payment_request_response_payload(amount))
-			else:
-				response = frappe._dict(generate_stk_push(**args))
-
-			handle_api_mpesa_response("CheckoutRequestID", args, response)
+			response = frappe._dict(get_payment_request_response_payload(amount))
+		else:
+			response = frappe._dict(generate_stk_push(**args))
+		handle_api_mpesa_response("CheckoutRequestID", args, response)
+	return response
 
 def handle_api_mpesa_response(global_id, request_dict, response):
 		"""Response received from API calls returns a global identifier for each transaction, this code is returned during the callback."""
