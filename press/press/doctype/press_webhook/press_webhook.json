@@ -46,15 +46,16 @@
    "reqd": 1
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Enabled"
+   "label": "Enabled",
+   "read_only_depends_on": "eval: !doc.enabled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 09:32:05.547606",
+ "modified": "2024-09-19 12:00:30.861798",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook",
