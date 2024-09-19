@@ -14,6 +14,7 @@ class PressWebhookLog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		endpoint: DF.Data
 		event: DF.Link
 		request_payload: DF.SmallText
 		response_body: DF.SmallText | None

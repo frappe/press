@@ -61,6 +61,7 @@ class PressWebhookQueue(Document):
 				"doctype": "Press Webhook Log",
 				"webhook": webhook_name,
 				"event": self.event,
+				"endpoint": url,
 				"status": "Sent" if sent else "Failed",
 				"request_payload": json.dumps(payload, default=str),
 				"response_body": response,
@@ -87,7 +88,7 @@ class PressWebhookQueue(Document):
 			PressWebhook = frappe.qb.DocType("Press Webhook")
 			query = (
 				frappe.qb.from_(PressWebhookSelectedEvent)
-				.select(PressWebhook.name, PressWebhook.callback_url, PressWebhook.secret)
+				.select(PressWebhook.name, PressWebhook.endpoint, PressWebhook.secret)
 				.left_join(PressWebhook)
 				.on(PressWebhookSelectedEvent.parent == PressWebhook.name)
 				.where(PressWebhookSelectedEvent.event == self.event)
@@ -106,7 +107,7 @@ class PressWebhookQueue(Document):
 				isSent = self._send_webhook_call(
 					webhook.name,
 					payload,
-					webhook.callback_url,
+					webhook.endpoint,
 					webhook.secret,
 				)
 				if isSent:
@@ -122,7 +123,7 @@ class PressWebhookQueue(Document):
 				else:
 					self.status = "Failed"
 					self.schedule_retry(save=False)
-		except Exception as e:
+		except Exception:
 			self.status = "Failed"
 			self.schedule_retry(save=False)
 
@@ -134,12 +135,12 @@ class PressWebhookQueue(Document):
 		successful_calls = []
 		for record in self.failed_webhook_calls:
 			webhook_data = frappe.get_value(
-				"Press Webhook", record.webhook, ["callback_url", "secret"], as_dict=True
+				"Press Webhook", record.webhook, ["endpoint", "secret"], as_dict=True
 			)
 			isSent = self._send_webhook_call(
 				record.webhook,
 				json.loads(self.data),
-				webhook_data.callback_url,
+				webhook_data.endpoint,
 				webhook_data.secret,
 			)
 			if isSent:

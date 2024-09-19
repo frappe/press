@@ -18,23 +18,23 @@ class PressWebhook(Document):
 			PressWebhookSelectedEvent,
 		)
 
-		callback_url: DF.Data
 		enabled: DF.Check
+		endpoint: DF.Data
 		events: DF.Table[PressWebhookSelectedEvent]
 		secret: DF.Data | None
 		team: DF.Link
 	# end: auto-generated types
 
 	def validate(self):
-		if self.has_value_changed("callback_url"):
+		if self.has_value_changed("endpoint"):
 			self.enabled = 0
 
-	def check_callback_url(self) -> dict:
+	def validate_endpoint(self) -> dict:
 		response = ""
 		response_status_code = 0
 		try:
 			req = requests.post(
-				self.callback_url,
+				self.endpoint,
 				timeout=5,
 				json={"event": "Webhook Test", "data": {}},
 				headers={"X-Webhook-Secret": self.secret},
@@ -54,7 +54,7 @@ class PressWebhook(Document):
 
 	@frappe.whitelist()
 	def activate(self):
-		result = self.check_callback_url()
+		result = self.validate_endpoint()
 		if result.get("success"):
 			self.enabled = 1
 			self.save()

@@ -5,11 +5,14 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "webhook",
+  "status",
   "column_break_uhnt",
   "event",
   "column_break_aqtt",
-  "status",
+  "section_break_zwyy",
+  "webhook",
+  "column_break_mrcq",
+  "endpoint",
   "section_break_nnsg",
   "request_payload",
   "response_status_code",
@@ -70,11 +73,25 @@
    "fieldtype": "Small Text",
    "label": "Response Body",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_zwyy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_mrcq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "endpoint",
+   "fieldtype": "Data",
+   "label": "Endpoint",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 10:00:14.235203",
+ "modified": "2024-09-19 12:15:43.052181",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Log",

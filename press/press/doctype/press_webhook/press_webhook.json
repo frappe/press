@@ -7,7 +7,7 @@
  "field_order": [
   "enabled",
   "team",
-  "callback_url",
+  "endpoint",
   "secret",
   "section_break_xbfh",
   "events"
@@ -19,13 +19,6 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
-  },
-  {
-   "fieldname": "callback_url",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Callback URL",
    "reqd": 1
   },
   {
@@ -51,11 +44,18 @@
    "fieldtype": "Check",
    "label": "Enabled",
    "read_only_depends_on": "eval: !doc.enabled"
+  },
+  {
+   "fieldname": "endpoint",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Endpoint",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 12:00:30.861798",
+ "modified": "2024-09-19 12:13:25.264342",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook",
