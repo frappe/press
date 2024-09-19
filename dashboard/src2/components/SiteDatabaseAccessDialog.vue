@@ -121,7 +121,6 @@ import { defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
 import ClickToCopyField from './ClickToCopyField.vue';
 import { pollJobStatus } from '../utils/agentJob';
-import { getPlan } from '../data/plans';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -188,7 +187,7 @@ export default {
 			return this.sitePlan?.database_access;
 		},
 		sitePlan() {
-			return getPlan(this.$site.doc.current_plan);
+			return this.$site.doc.current_plan;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
