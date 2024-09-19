@@ -98,8 +98,7 @@
    "fetch_if_empty": 1,
    "fieldname": "machine_image",
    "fieldtype": "Data",
-   "label": "Machine Image",
-   "set_only_once": 1
+   "label": "Machine Image"
   },
   {
    "fieldname": "machine_type",
@@ -200,7 +199,7 @@
    "fieldtype": "Link",
    "label": "Virtual Machine Image",
    "options": "Virtual Machine Image",
-   "set_only_once": 1
+   "read_only_depends_on": "eval: doc.virtual_machine_image"
   },
   {
    "default": "0",
@@ -319,7 +318,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-09-16 12:05:05.989784",
+ "modified": "2024-09-16 18:19:45.949070",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
