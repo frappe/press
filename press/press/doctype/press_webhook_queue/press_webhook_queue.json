@@ -10,7 +10,13 @@
   "column_break_qqjj",
   "team",
   "section_break_bkbk",
-  "data"
+  "data",
+  "section_break_wqvc",
+  "failed_webhook_calls",
+  "section_break_vyzs",
+  "retries",
+  "column_break_btzb",
+  "next_retry_at"
  ],
  "fields": [
   {
@@ -51,11 +57,41 @@
    "label": "Data",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_wqvc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.status == \"Failed\" || doc.status == \"Partially Sent\"",
+   "fieldname": "failed_webhook_calls",
+   "fieldtype": "Table",
+   "label": "Failed Webhook Calls",
+   "options": "Press Webhook Failed Call"
+  },
+  {
+   "fieldname": "section_break_vyzs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "retries",
+   "fieldtype": "Int",
+   "label": "Retries"
+  },
+  {
+   "fieldname": "column_break_btzb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 10:12:10.869562",
+ "modified": "2024-09-19 11:39:20.192930",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Queue",
