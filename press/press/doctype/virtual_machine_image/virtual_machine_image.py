@@ -89,7 +89,7 @@ class VirtualMachineImage(Document):
 				image = images[0]
 				self.status = self.get_aws_status_map(image["State"])
 				self.platform = image["Architecture"]
-				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
+				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
 				if volume and "VolumeSize" in volume["Ebs"]:
 					self.size = volume["Ebs"]["VolumeSize"]
 				if volume and "SnapshotId" in volume["Ebs"]:

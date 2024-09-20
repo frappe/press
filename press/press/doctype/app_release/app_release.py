@@ -134,9 +134,9 @@ class AppRelease(Document):
 		if self.invalid_release or not self.clone_directory or not os.path.isdir(self.clone_directory):
 			return
 
-		if syntax_error := check_python_syntax(self.clone_directory):
-			self.set_invalid(syntax_error)
-		elif syntax_error := check_pyproject_syntax(self.clone_directory):
+		if (syntax_error := check_python_syntax(self.clone_directory)) or (
+			syntax_error := check_pyproject_syntax(self.clone_directory)
+		):
 			self.set_invalid(syntax_error)
 
 	def set_invalid(self, reason: str):
@@ -364,10 +364,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team()
-	if doc.public or doc.team == team:
-		return True
-
-	return False
+	return bool(doc.public or doc.team == team)
 
 
 def get_prepared_clone_directory(

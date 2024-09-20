@@ -77,9 +77,11 @@ class AccountRequest(Document):
 		self.state = geo_location.get("regionName")
 
 		# check for US and EU
-		if geo_location.get("country") == "United States" or geo_location.get("continent") == "Europe":
-			self.is_us_eu = True
-		elif self.country == "United States":
+		if (
+			geo_location.get("country") == "United States"
+			or geo_location.get("continent") == "Europe"
+			or self.country == "United States"
+		):
 			self.is_us_eu = True
 		else:
 			self.is_us_eu = False

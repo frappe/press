@@ -64,7 +64,7 @@ def validate_team(team):
 
 
 def get_proxy_server_for_cluster(cluster=None):
-	cluster = get_hybrid_cluster() if not cluster else cluster
+	cluster = cluster if cluster else get_hybrid_cluster()
 
 	return frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 

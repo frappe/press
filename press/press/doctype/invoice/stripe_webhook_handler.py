@@ -26,7 +26,7 @@ class StripeWebhookHandler:
 		self.webhook_log = webhook_log
 
 	def process(self):
-		if self.webhook_log.event_type in DISPUTE_EVENT_TYPE_MAP.keys():
+		if self.webhook_log.event_type in DISPUTE_EVENT_TYPE_MAP:
 			event = frappe.parse_json(self.webhook_log.payload)
 			id = event["data"]["object"]["id"]
 			payment_intent = event["data"]["object"]["payment_intent"]
@@ -46,7 +46,7 @@ class StripeWebhookHandler:
 				log_error("Stripe Payment Dispute Event Error", event=event)
 				raise
 
-		if self.webhook_log.event_type not in EVENT_TYPE_MAP.keys():
+		if self.webhook_log.event_type not in EVENT_TYPE_MAP:
 			return
 
 		event = frappe.parse_json(self.webhook_log.payload)
@@ -59,9 +59,11 @@ class StripeWebhookHandler:
 
 		event_type = self.webhook_log.event_type
 		payment_status = "Unpaid"
-		if event_type == "invoice.payment_succeeded":
-			payment_status = "Paid"
-		elif event_type == "invoice.finalized" and stripe_invoice["status"] == "paid":
+		if (
+			event_type == "invoice.payment_succeeded"
+			or event_type == "invoice.finalized"
+			and stripe_invoice["status"] == "paid"
+		):
 			payment_status = "Paid"
 
 		try:

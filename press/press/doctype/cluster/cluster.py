@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import ipaddress
 import re
@@ -335,7 +336,7 @@ class Cluster(Document):
 		)
 		self.create_proxy_security_group()
 
-		try:
+		with contextlib.suppress(Exception):
 			# We don't care if the key already exists in this region
 			response = client.import_key_pair(
 				KeyName=self.ssh_key,
@@ -344,8 +345,6 @@ class Cluster(Document):
 					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key}]},
 				],
 			)
-		except Exception:
-			pass
 		self.save()
 
 	def create_proxy_security_group(self):

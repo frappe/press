@@ -82,10 +82,7 @@ def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:
 	if kwargs.get("doctype") != doctype:
 		return False
 
-	if kwargs.get("name") != name:
-		return False
-
-	return True
+	return kwargs.get("name") == name
 
 
 def has_job_timeout_exceeded() -> bool:

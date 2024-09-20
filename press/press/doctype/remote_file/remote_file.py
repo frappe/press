@@ -256,7 +256,7 @@ def delete_s3_files(buckets):
 	from press.utils import chunk
 
 	press_settings = frappe.get_single("Press Settings")
-	for bucket_name in buckets.keys():
+	for bucket_name in buckets:
 		s3 = resource(
 			"s3",
 			aws_access_key_id=press_settings.offsite_backups_access_key_id,

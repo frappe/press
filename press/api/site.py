@@ -1975,9 +1975,7 @@ def add_server_to_release_group(name, group_name, server=None):
 def validate_group_for_upgrade(name, group_name):
 	server = frappe.db.get_value("Site", name, "server")
 	rg = frappe.get_doc("Release Group", group_name)
-	if server not in [server.server for server in rg.servers]:
-		return False
-	return True
+	return server in [server.server for server in rg.servers]
 
 
 @frappe.whitelist()
@@ -2217,9 +2215,7 @@ def change_server_options(name):
 def is_server_added_in_group(name, server):
 	site_group = frappe.get_value("Site", name, "group")
 	rg = frappe.get_doc("Release Group", site_group)
-	if server not in [s.server for s in rg.servers]:
-		return False
-	return True
+	return server in [s.server for s in rg.servers]
 
 
 @frappe.whitelist()

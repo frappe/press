@@ -260,15 +260,13 @@ class Invoice(Document):
 		if self.amount_due == 0:
 			self.status = "Paid"
 
-		if self.status == "Paid":
-			if self.stripe_invoice_id and self.amount_paid == 0:
-				self.change_stripe_invoice_status("Void")
-				self.add_comment(
-					text=(
-						f"Stripe Invoice {self.stripe_invoice_id} voided because"
-						" payment is done via credits."
-					)
+		if self.status == "Paid" and self.stripe_invoice_id and self.amount_paid == 0:
+			self.change_stripe_invoice_status("Void")
+			self.add_comment(
+				text=(
+					f"Stripe Invoice {self.stripe_invoice_id} voided because" " payment is done via credits."
 				)
+			)
 
 		self.save()
 
@@ -459,33 +457,35 @@ class Invoice(Document):
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		if self.type == "Prepaid Credits":
-			if self.stripe_payment_intent_id and frappe.db.exists(
+		if (
+			self.type == "Prepaid Credits"
+			and self.stripe_payment_intent_id
+			and frappe.db.exists(
 				"Invoice",
 				{
 					"stripe_payment_intent_id": self.stripe_payment_intent_id,
 					"type": "Prepaid Credits",
 					"name": ("!=", self.name),
 				},
-			):
-				frappe.throw("Invoice with same Stripe payment intent exists", frappe.DuplicateEntryError)
+			)
+		):
+			frappe.throw("Invoice with same Stripe payment intent exists", frappe.DuplicateEntryError)
 
-		if self.type == "Subscription":
-			if self.period_start and self.period_end and self.is_new():
-				query = (
-					f"select `name` from `tabInvoice` where team = '{self.team}' and"
-					f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
-					f" `period_end` or '{self.period_end}' between `period_start` and"
-					" `period_end`)"
+		if self.type == "Subscription" and self.period_start and self.period_end and self.is_new():
+			query = (
+				f"select `name` from `tabInvoice` where team = '{self.team}' and"
+				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
+				f" `period_end` or '{self.period_end}' between `period_start` and"
+				" `period_end`)"
+			)
+
+			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
+
+			if intersecting_invoices:
+				frappe.throw(
+					f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
+					frappe.DuplicateEntryError,
 				)
-
-				intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
-
-				if intersecting_invoices:
-					frappe.throw(
-						f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
-						frappe.DuplicateEntryError,
-					)
 
 	def validate_team(self):
 		team = frappe.get_doc("Team", self.team)

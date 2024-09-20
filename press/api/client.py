@@ -172,11 +172,12 @@ def get(doctype, name):
 			return controller.on_not_found(name)
 		raise
 
-	if not (frappe.local.system_user() or has_role("Press Support Agent")) and frappe.get_meta(
-		doctype
-	).has_field("team"):
-		if doc.team != frappe.local.team().name:
-			raise_not_permitted()
+	if (
+		not (frappe.local.system_user() or has_role("Press Support Agent"))
+		and frappe.get_meta(doctype).has_field("team")
+		and doc.team != frappe.local.team().name
+	):
+		raise_not_permitted()
 
 	check_role_permissions(doctype, name)
 
@@ -211,9 +212,8 @@ def insert(doc=None):
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
 
-		if frappe.get_meta(parent.doctype).has_field("team"):
-			if parent.team != frappe.local.team().name:
-				raise_not_permitted()
+		if frappe.get_meta(parent.doctype).has_field("team") and parent.team != frappe.local.team().name:
+			raise_not_permitted()
 
 		parent.append(doc.parentfield, doc)
 		parent.save()
@@ -237,7 +237,7 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	check_permissions(doctype)
 	check_document_access(doctype, name)
 
-	for field in fieldname.keys():
+	for field in fieldname:
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
 		is_allowed_field(doctype, field)
 
@@ -398,10 +398,7 @@ def is_allowed_field(doctype, field):
 		return True
 	if isinstance(field, dict) and is_allowed_table_field(doctype, field):
 		return True
-	if field in [*default_fields, *child_table_fields]:
-		return True
-
-	return False
+	return field in [*default_fields, *child_table_fields]
 
 
 def is_allowed_linked_field(doctype, field):
@@ -416,10 +413,7 @@ def is_allowed_linked_field(doctype, field):
 		return False
 
 	linked_field_doctype = frappe.get_meta(doctype).get_field(linked_field).options
-	if not is_allowed_field(linked_field_doctype, linked_field_fieldname):
-		return False
-
-	return True
+	return is_allowed_field(linked_field_doctype, linked_field_fieldname)
 
 
 def is_allowed_table_field(doctype, field):

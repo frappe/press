@@ -120,10 +120,7 @@ def has_permission(doc, ptype, user):
 
 	team = get_current_team(True)
 	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
-	if doc.team == team.name or doc.team in child_team_members:
-		return True
-
-	return False
+	return bool(doc.team == team.name or doc.team in child_team_members)
 
 
 def get_permission_query_conditions_for_doctype_and_user(doctype, user):

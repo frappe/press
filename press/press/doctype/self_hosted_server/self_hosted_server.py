@@ -270,30 +270,31 @@ class SelfHostedServer(Document):
 		try:
 			for app in task_result:
 				branches.append(app["branch"])
-				if not frappe.db.exists("App Source", {"app": app["app"], "branch": app["branch"]}):
-					if not frappe.db.exists("App", {"_newname": app["app"]}):
-						app_doc = frappe.get_doc(
-							{
-								"doctype": "App",
-								"_newname": app["app"],
-								"title": app["app"].title(),
-								"name": app["app"],
-							}
-						)
-						app_doc.insert()
-						app_source_doc = frappe.get_doc(
-							{
-								"doctype": "App Source",
-								"app": app["app"],
-								"repository_url": app["remote"],
-								"team": "Administrator",
-								"branch": app["branch"],
-							}
-						)
-						app_source_doc.append("versions", {"version": self.frappe_version})
-						app_source_doc.insert()
-						frappe.db.commit()
-						release_group.append("apps", {"app": app["app"], "source": app_source_doc.name})
+				if frappe.db.exists(
+					"App Source", {"app": app["app"], "branch": app["branch"]}
+				) or frappe.db.exists("App", {"_newname": app["app"]}):
+					app_doc = frappe.get_doc(
+						{
+							"doctype": "App",
+							"_newname": app["app"],
+							"title": app["app"].title(),
+							"name": app["app"],
+						}
+					)
+					app_doc.insert()
+					app_source_doc = frappe.get_doc(
+						{
+							"doctype": "App Source",
+							"app": app["app"],
+							"repository_url": app["remote"],
+							"team": "Administrator",
+							"branch": app["branch"],
+						}
+					)
+					app_source_doc.append("versions", {"version": self.frappe_version})
+					app_source_doc.insert()
+					frappe.db.commit()
+					release_group.append("apps", {"app": app["app"], "source": app_source_doc.name})
 				release_group.append(
 					"apps",
 					{
@@ -324,10 +325,9 @@ class SelfHostedServer(Document):
 		if self.database_plan:
 			return
 
-		if not self.different_database_server:
-			if not frappe.db.exists("Server Plan", "Unlimited"):
-				self._create_server_plan("Unlimited")
-				self.database_plan = "Unlimited"
+		if not self.different_database_server and not frappe.db.exists("Server Plan", "Unlimited"):
+			self._create_server_plan("Unlimited")
+			self.database_plan = "Unlimited"
 
 	def _create_server_plan(self, plan_name):
 		plan = frappe.new_doc("Server Plan")
@@ -359,7 +359,7 @@ class SelfHostedServer(Document):
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
 					"cluster": self.cluster,
 					"agent_password": self.get_password("agent_password"),
-					"is_server_setup": False if self.new_server else True,
+					"is_server_setup": not self.new_server,
 					"plan": self.database_plan,
 				},
 			).insert()

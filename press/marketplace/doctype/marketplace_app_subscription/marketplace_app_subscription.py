@@ -107,9 +107,9 @@ class MarketplaceAppSubscription(Document):
 				"type": "JSON",
 			},
 		]
-		if "prepaid" == frappe.db.get_value(
+		if frappe.db.get_value(
 			"Saas Settings", self.app, "billing_type"
-		) and frappe.db.get_value("Site", self.site, "trial_end_date"):
+		) == "prepaid" and frappe.db.get_value("Site", self.site, "trial_end_date"):
 			config.append(
 				{
 					"key": "app_include_js",

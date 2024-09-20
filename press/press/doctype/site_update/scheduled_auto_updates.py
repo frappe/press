@@ -99,10 +99,7 @@ def should_update_trigger_for_daily(doc, current_datetime=None):
 		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
 	):
 		return False
-	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
-		return True
-
-	return False
+	return get_time(doc.update_trigger_time) <= get_time(current_datetime)
 
 
 def should_update_trigger_for_weekly(doc, current_datetime=None):
@@ -121,10 +118,7 @@ def should_update_trigger_for_weekly(doc, current_datetime=None):
 	):
 		return False
 
-	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
-		return True
-
-	return False
+	return get_time(doc.update_trigger_time) <= get_time(current_datetime)
 
 
 def should_update_trigger_for_monthly(doc, current_datetime=None):
@@ -147,10 +141,7 @@ def should_update_trigger_for_monthly(doc, current_datetime=None):
 	):
 		return False
 
-	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
-		return True
-
-	return False
+	return get_time(doc.update_trigger_time) <= get_time(current_datetime)
 
 
 def get_last_day_of_month(year, month):

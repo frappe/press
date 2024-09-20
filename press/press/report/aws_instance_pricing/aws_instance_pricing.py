@@ -64,9 +64,11 @@ def get_cluster_data(filters, cluster_name):
 	for response in response_iterator:
 		for item in response["PriceList"]:
 			product = json.loads(item)
-			if filters.processor:
-				if filters.processor not in product["product"]["attributes"]["physicalProcessor"]:
-					continue
+			if (
+				filters.processor
+				and filters.processor not in product["product"]["attributes"]["physicalProcessor"]
+			):
+				continue
 
 			row = {
 				"cluster": cluster.name,

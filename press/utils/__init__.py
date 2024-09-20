@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import re
@@ -74,15 +75,13 @@ def log_error(title, **kwargs):
 	if traceback := frappe.get_traceback(with_context=True):
 		message += f"Exception:\n{traceback}\n"
 
-	try:
+	with contextlib.suppress(Exception):
 		frappe.log_error(
 			title=title,
 			message=message,
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
-	except Exception:
-		pass
 
 
 def get_current_team(get_doc=False):
@@ -290,13 +289,15 @@ def chunk(iterable, size):
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
-	return open(migration_script).read()
+	with open(migration_script) as f:
+		return f.read()
 
 
 @cache(seconds=1800)
 def get_minified_script_2():
 	migration_script = "../apps/press/press/scripts/migrate_2.py"
-	return open(migration_script).read()
+	with open(migration_script) as f:
+		return f.read()
 
 
 def get_frappe_backups(url, email, password):

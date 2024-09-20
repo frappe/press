@@ -230,10 +230,7 @@ def has_method_permission(doctype: str, name: str, method: str, group_names: lis
 		# user does not have any restricted permissions set in any group
 		return True
 
-	if method in get_permitted_methods(doctype, name, group_names):
-		return True
-
-	return False
+	return method in get_permitted_methods(doctype, name, group_names)
 
 
 def get_permitted_methods(doctype: str, name: str, group_names: list | None = None) -> list:

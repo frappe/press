@@ -62,9 +62,7 @@ class MetricsRenderer:
 		return generate_latest(self.registry).decode("utf-8")
 
 	def can_render(self):
-		if self.path in ("metrics",):
-			return True
-		return False
+		return self.path in ("metrics",)
 
 	def render(self):
 		response = Response()

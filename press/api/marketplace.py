@@ -1278,34 +1278,30 @@ def remove_version(name, version):
 def review_steps(name):
 	app = frappe.get_doc("Marketplace App", name)
 	return [
-		{"step": "Add a logo for your app", "completed": True if app.image else False},
+		{"step": "Add a logo for your app", "completed": bool(app.image)},
 		{
 			"step": "Add links",
 			"completed": (
-				True
-				if app.website
-				and app.support
-				and app.documentation
-				and app.terms_of_service
-				and app.privacy_policy
-				else False
+				bool(
+					app.website
+					and app.support
+					and app.documentation
+					and app.terms_of_service
+					and app.privacy_policy
+				)
 			),
 		},
 		{
 			"step": "Update description and long description",
-			"completed": (
-				True if app.description.strip() and app.long_description.strip() != "<p></p>" else False
-			),
+			"completed": (bool(app.description.strip() and app.long_description.strip() != "<p></p>")),
 		},
 		{
 			"step": "Publish a release for version",
 			"completed": (
-				True
-				if (
+				bool(
 					frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
 					or frappe.db.exists("App Release", {"app": name, "status": "Approved"})
 				)
-				else False
 			),
 		},
 	]

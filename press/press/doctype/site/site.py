@@ -521,7 +521,7 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def retry_rename(self):
 		"""Retry rename with current subdomain"""
-		if not self.name == self._get_site_name(self.subdomain):
+		if self.name != self._get_site_name(self.subdomain):
 			self.rename(self._get_site_name(self.subdomain))
 		else:
 			frappe.throw("Please choose a different subdomain")
@@ -624,13 +624,15 @@ class Site(Document, TagHelpers):
 	def check_marketplace_app_installable(self, plan: str | None = None):
 		if not plan:
 			return
-		if not frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0:
-			if not frappe.local.team().can_install_paid_apps():
-				frappe.throw(
-					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
-				)
+		if (
+			not frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
+			and not frappe.local.team().can_install_paid_apps()
+		):
+			frappe.throw(
+				"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+			)
 
-				# TODO: check if app is available and can be installed
+			# TODO: check if app is available and can be installed
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
@@ -2543,7 +2545,7 @@ class Site(Document, TagHelpers):
 
 	@property
 	def pending_for_long(self) -> bool:
-		if not self.status == "Pending":
+		if self.status != "Pending":
 			return False
 		return (frappe.utils.now_datetime() - self.modified).total_seconds() > 60 * 60 * 4  # 4 hours
 
@@ -2656,9 +2658,7 @@ def process_new_site_job_update(job):
 	if "Success" == first == second:
 		updated_status = "Active"
 		marketplace_app_hook(site=job.site, op="install")
-	elif "Failure" in (first, second):
-		updated_status = "Broken"
-	elif "Delivery Failure" in (first, second):
+	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
 		updated_status = "Installing"
@@ -3233,7 +3233,5 @@ def sync_sites_setup_wizard_complete_status():
 def fetch_setup_wizard_complete_status_if_site_exists(site):
 	if not frappe.db.exists("Site", site):
 		return
-	try:
+	with suppress(frappe.DoesNotExistError):
 		frappe.get_doc("Site", site).fetch_setup_wizard_complete_status()
-	except frappe.DoesNotExistError:
-		pass

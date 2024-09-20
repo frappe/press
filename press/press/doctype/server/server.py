@@ -208,10 +208,13 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip:
-			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
-				self.create_dns_record()
-				self.update_virtual_machine_name()
+		if (
+			self.ip
+			and self.doctype not in ["Database Server", "Server", "Proxy Server"]
+			or not self.is_self_hosted
+		):
+			self.create_dns_record()
+			self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
@@ -448,14 +451,12 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def ping_ansible_unprepared(self):
 		try:
-			if self.provider == "Scaleway":
+			if self.provider == "Scaleway" or self.provider in ("AWS EC2", "OCI"):
 				ansible = Ansible(
 					playbook="ping.yml",
 					server=self,
 					user="ubuntu",
 				)
-			elif self.provider in ("AWS EC2", "OCI"):
-				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
@@ -875,10 +876,13 @@ class BaseServer(Document, TagHelpers):
 
 		filters = {"wildcard": True, "status": "Active", "domain": self.domain}
 
-		if hasattr(self, "is_self_hosted") and self.is_self_hosted:
-			if self.domain != self.self_hosted_server_domain:
-				filters["domain"] = self.name
-				del filters["wildcard"]
+		if (
+			hasattr(self, "is_self_hosted")
+			and self.is_self_hosted
+			and self.domain != self.self_hosted_server_domain
+		):
+			filters["domain"] = self.name
+			del filters["wildcard"]
 
 		certificate = frappe.get_last_doc("TLS Certificate", filters)
 
@@ -1612,7 +1616,7 @@ class Server(BaseServer):
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
 	def _auto_scale_workers_new(self, commit):
-		for bench in self.bench_workloads.keys():
+		for bench in self.bench_workloads:
 			try:
 				bench.reload()
 				bench.allocate_workers(

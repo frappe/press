@@ -55,16 +55,13 @@ def create_balance_transactions_for_team(name):
 		type = "Applied To Invoice" if transaction.type == "applied_to_invoice" else "Adjustment"
 		source = ""
 		invoice_name = ""
-		if type == "Adjustment":
-			if amount > 0:
-				free_credits = 1800 if transaction.currency == "inr" else 25
-				source = (
-					"Free Credits"
-					if team.free_credits_allocated
-					and amount == free_credits
-					and not free_credit_balance_created
-					else "Transferred Credits"
-				)
+		if type == "Adjustment" and amount > 0:
+			free_credits = 1800 if transaction.currency == "inr" else 25
+			source = (
+				"Free Credits"
+				if team.free_credits_allocated and amount == free_credits and not free_credit_balance_created
+				else "Transferred Credits"
+			)
 
 		if type == "Applied To Invoice":
 			invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": transaction.invoice})

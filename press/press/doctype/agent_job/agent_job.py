@@ -943,39 +943,29 @@ def process_job_updates(job_name: str, response_data: dict | None = None):
 			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
-		elif job.job_type == "Add Code Server to Upstream":
-			process_new_code_server_job_update(job)
-		elif job.job_type == "Setup Code Server":
+		elif job.job_type == "Add Code Server to Upstream" or job.job_type == "Setup Code Server":
 			process_new_code_server_job_update(job)
 		elif job.job_type == "Start Code Server":
 			process_start_code_server_job_update(job)
 		elif job.job_type == "Stop Code Server":
 			process_stop_code_server_job_update(job)
-		elif job.job_type == "Archive Code Server":
-			process_archive_code_server_job_update(job)
-		elif job.job_type == "Remove Code Server from Upstream":
+		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
 		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
-		elif job.job_type == "Archive Site":
-			process_archive_site_job_update(job)
-		elif job.job_type == "Remove Site from Upstream":
+		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
 		elif job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
-		elif job.job_type == "Update Site Migrate":
+		elif job.job_type == "Update Site Migrate" or job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
-		elif job.job_type == "Update Site Pull":
-			process_update_site_job_update(job)
-		elif job.job_type == "Recover Failed Site Migrate":
+		elif (
+			job.job_type == "Recover Failed Site Migrate"
+			or job.job_type == "Recover Failed Site Pull"
+			or job.job_type == "Recover Failed Site Update"
+		):
 			process_update_site_recover_job_update(job)
-		elif job.job_type == "Recover Failed Site Pull":
-			process_update_site_recover_job_update(job)
-		elif job.job_type == "Recover Failed Site Update":
-			process_update_site_recover_job_update(job)
-		elif job.job_type == "Rename Site":
-			process_rename_site_job_update(job)
-		elif job.job_type == "Rename Site on Upstream":
+		elif job.job_type == "Rename Site" or job.job_type == "Rename Site on Upstream":
 			process_rename_site_job_update(job)
 		elif job.job_type == "Setup ERPNext":
 			process_setup_erpnext_site_job_update(job)

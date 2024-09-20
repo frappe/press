@@ -60,7 +60,7 @@ class BackupTest:
 				"Bench", dict(status="Active", group=group, server=server), pluck="name"
 			)
 
-			for bench in benches.keys():
+			for bench in benches:
 				if bench in group_benches:
 					bench_list.append(bench)
 

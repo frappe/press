@@ -488,7 +488,7 @@ class ProxyServer(BaseServer):
 					"wireguard_private_key": False,
 					"wireguard_public_key": False,
 					"peers": "",
-					"reload_wireguard": True if self.is_wireguard_setup else False,
+					"reload_wireguard": bool(self.is_wireguard_setup),
 				},
 			)
 			play = ansible.run()

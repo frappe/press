@@ -315,9 +315,8 @@ class Team(Document):
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
 
-		if not team.via_erpnext:
-			if not account_request.invited_by_parent_team:
-				team.create_upcoming_invoice()
+		if not team.via_erpnext and not account_request.invited_by_parent_team:
+			team.create_upcoming_invoice()
 		return team
 
 	@staticmethod
@@ -416,12 +415,13 @@ class Team(Document):
 			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
-			if self.payment_mode == "Card":
-				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
-					frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits":
-				if self.get_balance() <= 0:
-					frappe.throw("Account does not have sufficient balance")
+			if (
+				self.payment_mode == "Card"
+				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
+			):
+				frappe.throw("No card added")
+			if self.payment_mode == "Prepaid Credits" and self.get_balance() <= 0:
+				frappe.throw("Account does not have sufficient balance")
 
 		if not self.is_new() and not self.default_payment_method:
 			# if default payment method is unset
@@ -454,9 +454,13 @@ class Team(Document):
 		self.update_draft_invoice_payment_mode()
 		self.validate_partnership_date()
 
-		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
-			if self.has_value_changed("billing_name"):
-				self.update_billing_details_on_frappeio()
+		if (
+			not self.is_new()
+			and self.billing_name
+			and not frappe.conf.allow_tests
+			and self.has_value_changed("billing_name")
+		):
+			self.update_billing_details_on_frappeio()
 
 	def validate_partnership_date(self):
 		if self.erpnext_partner or not self.partnership_date:
@@ -983,9 +987,7 @@ class Team(Document):
 	def is_payment_mode_set(self):
 		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
 			return True
-		if self.payment_mode == "Card" and self.default_payment_method and self.billing_address:
-			return True
-		return False
+		return bool(self.payment_mode == "Card" and self.default_payment_method and self.billing_address)
 
 	def get_onboarding(self):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
@@ -996,9 +998,7 @@ class Team(Document):
 			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if is_payment_mode_set:
-			complete = True
-		elif frappe.db.get_value("User", self.user, "user_type") == "System User":
+		if is_payment_mode_set or frappe.db.get_value("User", self.user, "user_type") == "System User":
 			complete = True
 		elif saas_site_request:
 			complete = False
@@ -1408,10 +1408,7 @@ def has_permission(doc, ptype, user):
 
 	team = get_current_team(True)
 	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
-	if doc.name == team.name or doc.name in child_team_members:
-		return True
-
-	return False
+	return bool(doc.name == team.name or doc.name in child_team_members)
 
 
 def validate_site_creation(doc, method):

@@ -46,7 +46,8 @@ except ImportError:
 		"requests-toolbelt",
 	]
 	install_command = shlex.split("{} -m pip install {}".format(sys.executable, " ".join(dependencies)))
-	subprocess.check_call(install_command, stdout=open(os.devnull, "w"))
+	with open(os.devnull, "w") as devnull:
+		subprocess.check_call(install_command, stdout=devnull)
 	import click
 	import html2text
 	import requests
@@ -137,7 +138,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		fields = payload["fields"]
 		key = fields["key"]
 		# upload remote file
-		fields["file"] = (file_name, open(file_path, "rb"))
+		fields["file"] = (file_name, open(file_path, "rb"))  # noqa: SIM115
 		multipart_payload = encoder.MultipartEncoder(fields=fields)
 		multipart_payload = encoder.MultipartEncoderMonitor(multipart_payload, _update_progress_bar)
 

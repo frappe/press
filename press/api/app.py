@@ -34,7 +34,7 @@ def new(app):
 		app["repository_url"],
 		app["branch"],
 		team,
-		app["github_installation_id"] if "github_installation_id" in app else None,
+		app.get("github_installation_id", None),
 	)
 
 	group.update_source(source)

@@ -224,10 +224,7 @@ def should_create_usage_record(subscription):
 	# Don't create for free plans
 	is_free = frappe.db.get_value("Saas App Plan", subscription.saas_app_plan, "is_free")
 
-	if is_free:
-		return False
-
-	return True
+	return not is_free
 
 
 def process_prepaid_saas_payment(event):

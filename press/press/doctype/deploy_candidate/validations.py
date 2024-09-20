@@ -201,7 +201,7 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 		if not hasattr(assign.targets[0], "id"):
 			continue
 
-		if not assign.targets[0].id == "required_apps":
+		if assign.targets[0].id != "required_apps":
 			continue
 
 		if not isinstance(assign.value, ast.List):

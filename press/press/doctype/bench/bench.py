@@ -1078,10 +1078,13 @@ def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue
 
-		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
-			if not get_scheduled_version_upgrades(bench):
-				try_archive(bench.name)
-				continue
+		if (
+			not bench.public
+			and bench.creation < frappe.utils.add_days(None, -3)
+			and not get_scheduled_version_upgrades(bench)
+		):
+			try_archive(bench.name)
+			continue
 
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.

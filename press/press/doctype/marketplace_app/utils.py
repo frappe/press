@@ -11,10 +11,7 @@ def number_k_format(number: int):
 	value = frappe.utils.rounded(number / 1000, precision=1)
 
 	# To handle cases like 8.0, 9.0 etc.
-	if value == (number // 1000):
-		value = int(value)
-	# To handle cases like 8999 -> 9k and not 9.0k
-	elif (value - 1) == (number // 1000):
+	if value == (number // 1000) or (value - 1) == (number // 1000):
 		value = int(value)
 
 	return f"{value}k"

@@ -75,10 +75,7 @@ def analyze_query(row, site):
 
 
 def check_if_all_fetch_column_stats_was_sucessful(doc):
-	for item in doc.tables_in_query:
-		if not item.status == "Success":
-			return False
-	return True
+	return all(item.status == "Success" for item in doc.tables_in_query)
 
 
 def fetch_column_stats_update(job, response_data):
@@ -147,17 +144,15 @@ def get_status_of_mariadb_analyze_query(name, query):
 
 
 def mariadb_analyze_query_already_exists(site, normalized_query):
-	if frappe.db.exists("MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}):
-		return True
-	return False
+	return bool(
+		frappe.db.exists("MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query})
+	)
 
 
 @frappe.whitelist()
 @protected("Site")
 def mariadb_analyze_query_already_running_for_site(name):
-	if frappe.db.exists("MariaDB Analyze Query", {"site": name, "status": "Running"}):
-		return True
-	return False
+	return bool(frappe.db.exists("MariaDB Analyze Query", {"site": name, "status": "Running"}))
 
 
 @frappe.whitelist()

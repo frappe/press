@@ -708,9 +708,7 @@ def can_switch_to_team(team):
 		return False
 	if frappe.local.system_user():
 		return True
-	if is_user_part_of_team(frappe.session.user, team):
-		return True
-	return False
+	return bool(is_user_part_of_team(frappe.session.user, team))
 
 
 @frappe.whitelist()

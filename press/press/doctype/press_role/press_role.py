@@ -141,10 +141,10 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	)
 
 	if doctype == "Marketplace App":
-		if roles := query.select(PressRole.allow_apps).run(as_dict=1):
-			# throw error if any of the roles don't have permission for apps
-			if not any(perm.allow_apps for perm in roles):
-				frappe.throw("Not permitted", frappe.PermissionError)
+		roles = query.select(PressRole.allow_apps).run(as_dict=1)
+		# throw error if any of the roles don't have permission for apps
+		if roles and not any(perm.allow_apps for perm in roles):
+			frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")

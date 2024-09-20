@@ -16,9 +16,7 @@ def doc_equal(self: Document, other: Document) -> bool:
 	"""Partial equality checking of Document object"""
 	if not isinstance(other, Document):
 		return False
-	if self.doctype == other.doctype and self.name == other.name:
-		return True
-	return False
+	return bool(self.doctype == other.doctype and self.name == other.name)
 
 
 def execute():

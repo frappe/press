@@ -80,9 +80,8 @@ class WireguardPeer(Document):
 				server=self,
 			)
 			play = ansible.run()
-			if play.status == "Success":
-				if not self.peer_private_network:
-					self.fetch_peer_private_network(play)
+			if play.status == "Success" and not self.peer_private_network:
+				self.fetch_peer_private_network(play)
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 

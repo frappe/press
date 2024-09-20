@@ -478,9 +478,7 @@ def is_site_in_deploy_hours(site):
 	site_time = server_time.astimezone(site_timezone)
 	deploy_hours = frappe.get_hooks("deploy_hours")
 
-	if site_time.hour in deploy_hours:
-		return True
-	return False
+	return site_time.hour in deploy_hours
 
 
 def process_update_site_job_update(job):

@@ -122,20 +122,16 @@ def setup_account(key, business_data=None):
 
 @frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain):
-	exists = bool(
-		frappe.db.exists(
-			"Site",
-			{
-				"subdomain": subdomain,
-				"domain": get_erpnext_domain(),
-				"status": ("!=", "Archived"),
-			},
-		)
+	exists = frappe.db.exists(
+		"Site",
+		{
+			"subdomain": subdomain,
+			"domain": get_erpnext_domain(),
+			"status": ("!=", "Archived"),
+		},
 	)
-	if exists:
-		return False
 
-	return True
+	return not bool(exists)
 
 
 @frappe.whitelist(allow_guest=True)

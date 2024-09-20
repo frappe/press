@@ -169,10 +169,7 @@ class DBTable:
 		)
 
 	def has_column(self, column: str) -> bool:
-		for col in self.schema:
-			if col.name == column:
-				return True
-		return False
+		return any(col.name == column for col in self.schema)
 
 
 @dataclass
@@ -219,9 +216,9 @@ class DBOptimizer:
 			possible_indexes.extend(join_columns)
 
 		# Top N query variant - Order by column can possibly speed up the query
-		if order_by_columns := self.parsed_query.columns_dict.get("order_by"):
-			if self.parsed_query.limit_and_offset:
-				possible_indexes.extend(order_by_columns)
+		order_by_columns = self.parsed_query.columns_dict.get("order_by")
+		if order_by_columns and self.parsed_query.limit_and_offset:
+			possible_indexes.extend(order_by_columns)
 
 		possible_db_indexes = [self._convert_to_db_index(i) for i in possible_indexes]
 		possible_db_indexes = [i for i in possible_db_indexes if i.column not in ("*", "name")]

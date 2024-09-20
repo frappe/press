@@ -316,9 +316,9 @@ class BillingAudit(Audit):
 			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
 		}
 
-		log = {a: [] for a in audits.keys()}
+		log = {a: [] for a in audits}
 		status = "Success"
-		for audit_name in audits.keys():
+		for audit_name in audits:
 			result = audits[audit_name]()
 			log[audit_name] += result
 			status = "Failure" if len(result) > 0 else status
@@ -442,9 +442,9 @@ class PartnerBillingAudit(Audit):
 			"Paid By Partner Teams with Unpaid Invoices": self.paid_by_partner_teams_with_unpaid_invoices,
 		}
 
-		log = {a: [] for a in audits.keys()}
+		log = {a: [] for a in audits}
 		status = "Success"
-		for audit_name in audits.keys():
+		for audit_name in audits:
 			result = audits[audit_name]()
 			log[audit_name] += result
 			status = "Failure" if len(result) > 0 else status

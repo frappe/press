@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import platform
 import re
@@ -38,10 +39,8 @@ def checks():
 		click.secho(f"An error occurred: {e}", fg="yellow")
 		return
 	finally:
-		try:
+		with contextlib.suppress(Exception):
 			chrome.quit()
-		except Exception:
-			pass
 
 
 def initialize_webdriver():
@@ -178,9 +177,8 @@ def extract_hyperlinks(address):
 			for link in BeautifulSoup(response, "html.parser", parse_only=SoupStrainer(key)):
 				if link.has_attr(value):
 					p = pattern_adjust(link[value], address)
-					if p:
-						if p not in hyperlinks:
-							hyperlinks.add(p)
+					if p and p not in hyperlinks:
+						hyperlinks.add(p)
 
 		except Exception as err:
 			click.secho(f"{address} ⚠️  ({err})", fg="yellow")

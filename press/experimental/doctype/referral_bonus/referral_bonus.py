@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 import frappe
@@ -58,7 +60,5 @@ def credit_referral_bonuses():
 
 	for rb in unallocated_referral_bonuses:
 		if team_has_spent(rb.for_team):
-			try:
+			with contextlib.suppress(Exception):
 				frappe.get_doc("Referral Bonus", rb.name).allocate_credits()
-			except Exception:
-				pass

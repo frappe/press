@@ -427,10 +427,7 @@ class DeployCandidate(Document):
 		if exc and should_build_retry_exc(exc):
 			return True
 
-		if job and should_build_retry_job(job):
-			return True
-
-		return False
+		return bool(job and should_build_retry_job(job))
 
 	def schedule_build_retry(self):
 		self.retry_count += 1
@@ -622,10 +619,7 @@ class DeployCandidate(Document):
 		if (usu := self.upload_step_updater) and usu.upload_step and usu.upload_step.status == "Failure":
 			return True
 
-		if self.get_first_step("status", "Failure"):
-			return True
-
-		return False
+		return bool(self.get_first_step("status", "Failure"))
 
 	def correct_upload_step_status(self):
 		if not (usu := self.upload_step_updater) or not usu.upload_step:
@@ -1529,11 +1523,8 @@ def pull_update_file_filter(file_path: str) -> bool:
 		if not file_path.endswith(ext):
 			continue
 
-		if "/www/" in file_path:
-			return True
-
 		# Probably requires build
-		return False
+		return "/www/" in file_path
 
 	return True
 
@@ -1878,13 +1869,10 @@ def should_build_retry_build_output(build_output: str):
 		return True
 
 	# NPM registry internal server error
-	if (
+	return bool(
 		"Error: https://registry.npmjs.org/" in build_output
 		and 'Request failed "500 Internal Server Error"' in build_output
-	):
-		return True
-
-	return False
+	)
 
 
 def should_build_retry_exc(exc: Exception):
@@ -1902,10 +1890,7 @@ def should_build_retry_exc(exc: Exception):
 	if "redis.exceptions.ConnectionError: Error 111" in error:
 		return True
 
-	if "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error:
-		return True
-
-	return False
+	return "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error
 
 
 def should_build_retry_job(job: AgentJob):
@@ -1921,10 +1906,7 @@ def should_build_retry_job(job: AgentJob):
 		return True
 
 	# Redis connection refused
-	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
-		return True
-
-	return False
+	return "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback
 
 
 def throw_no_build_server():

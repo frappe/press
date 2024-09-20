@@ -53,9 +53,8 @@ def account_request(
 		frappe.throw("Country field should be a valid country name")
 
 	team = frappe.db.get_value("Team", {"user": email})
-	if team:
-		if frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
-			frappe.throw(f"Account {email} already exists with unpaid invoices")
+	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
+		frappe.throw(f"Account {email} already exists with unpaid invoices")
 
 	try:
 		account_request = frappe.get_doc(
@@ -196,10 +195,7 @@ def check_subdomain_availability(subdomain, app):
 			},
 		)
 	)
-	if exists:
-		return False
-
-	return True
+	return not exists
 
 
 @frappe.whitelist(allow_guest=True)

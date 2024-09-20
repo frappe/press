@@ -93,7 +93,7 @@ def check_config_perm(config: dict, doctype: str, name: str, action: str, allowe
 
 
 def has_config_perm(config: dict, doctype: str, name: str, action: str, allowed: bool, ptype: str):
-	if doctype in config.keys():
+	if doctype in config:
 		docnames = config[doctype].keys()
 		if name in docnames:
 			name = name

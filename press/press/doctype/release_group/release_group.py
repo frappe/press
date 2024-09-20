@@ -466,18 +466,24 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 
 	def validate_max_min_workers(self):
-		if self.max_gunicorn_workers and self.min_gunicorn_workers:
-			if self.max_gunicorn_workers < self.min_gunicorn_workers:
-				frappe.throw(
-					"Max Gunicorn Workers can't be less than Min Gunicorn Workers",
-					frappe.ValidationError,
-				)
-		if self.max_background_workers and self.min_background_workers:
-			if self.max_background_workers < self.min_background_workers:
-				frappe.throw(
-					"Max Background Workers can't be less than Min Background Workers",
-					frappe.ValidationError,
-				)
+		if (
+			self.max_gunicorn_workers
+			and self.min_gunicorn_workers
+			and self.max_gunicorn_workers < self.min_gunicorn_workers
+		):
+			frappe.throw(
+				"Max Gunicorn Workers can't be less than Min Gunicorn Workers",
+				frappe.ValidationError,
+			)
+		if (
+			self.max_background_workers
+			and self.min_background_workers
+			and self.max_background_workers < self.min_background_workers
+		):
+			frappe.throw(
+				"Max Background Workers can't be less than Min Background Workers",
+				frappe.ValidationError,
+			)
 
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
@@ -882,10 +888,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return True
 
 		update_jobs = get_job_names(self.name, "Update Bench In Place", ["Pending", "Running"])
-		if len(update_jobs):
-			return True
-
-		return False
+		return bool(len(update_jobs))
 
 	@property
 	def status(self):

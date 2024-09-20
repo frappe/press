@@ -700,8 +700,6 @@ def is_public_github_repository(github_url):
 		data = response.json()
 
 		# Check if the repository is public
-		if data.get("private") is False:
-			return True
-		return False
+		return data.get("private") is False
 	except Exception:
 		return False

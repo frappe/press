@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import contextlib
 import os
 import shlex
 import subprocess
@@ -169,11 +170,9 @@ class TLSCertificate(Document):
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 
 	def trigger_self_hosted_server_callback(self):
-		try:
-			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+		with contextlib.suppress(Exception):
 			# need fix for hybrid servers
-		except Exception:
-			pass
+			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
 
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)

@@ -67,9 +67,7 @@ class SilencedAlert(Document):
 		auth_token = base64.b64encode(
 			f"frappe:{monitor_server.get_password('grafana_password')}".encode()
 		).decode("utf-8")
-		# keyword = f'{self.get_keyword_based_on_instance_type()}%3D%22{self.instance.replace(" ","%20")}%22'
-		keyword = f'{self.get_keyword_based_on_instance_type()}="{"erpdb.innoterra.co.in" or self.instance}"'
-		print(keyword)
+		keyword = f'{self.get_keyword_based_on_instance_type()}="{self.instance or "erpdb.innoterra.co.in"}"'
 		res = requests.get(
 			f"https://monitor.frappe.cloud/alertmanager/api/v2/alerts/groups?filter={keyword}&silenced=false&active=true",
 			headers={"Authorization": f"Basic {auth_token}"},
@@ -139,7 +137,7 @@ def check_silenced_alerts():
 		silences_from_alertmanager = req.json()
 		s_ids = [x["silence_id"] for x in silences]
 		for silence in silences_from_alertmanager:
-			if not silence["status"]["state"] == "active" and silence["id"] in s_ids:
+			if silence["status"]["state"] != "active" and silence["id"] in s_ids:
 				frappe.db.set_value("Silenced Alert", {"silence_id": silence["id"]}, "status", "Expired")
 		frappe.db.commit()
 	else:
