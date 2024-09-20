@@ -114,22 +114,6 @@ export default {
 					];
 				}
 			};
-		},
-		formatData() {
-			let binaryData = this.$resources.binaryLogs.data;
-			let data = [];
-			binaryData.forEach(row => {
-				let timestamp = this.formatDate(
-					row.timestamp,
-					'TIME_24_WITH_SHORT_OFFSET'
-				);
-				let out = [
-					{ name: 'Timestamp', value: timestamp, class: 'w-3/12' },
-					{ name: 'Query', value: row.query, class: 'w-9/12' }
-				];
-				data.push(out);
-			});
-			return data;
 		}
 	}
 };
