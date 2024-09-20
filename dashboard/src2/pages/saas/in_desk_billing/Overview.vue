@@ -295,7 +295,7 @@ export default {
 	computed: {
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
-			const minimumDefault = this.team?.data?.currency == 'INR' ? 800 : 10;
+			const minimumDefault = this.team?.data?.currency == 'INR' ? 410 : 5;
 
 			return Math.ceil(
 				unpaidAmount && unpaidAmount > minimumDefault
