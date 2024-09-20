@@ -61,24 +61,29 @@ export default {
 						label: 'Duration',
 						fieldname: 'duration',
 						class: 'text-gray-600',
-						width: 0.3
+						width: 0.3,
+						align: 'right',
+						format: value => value.toFixed(2)
 					},
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
 						class: 'text-gray-600',
+						align: 'right',
 						width: 0.3
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
 						class: 'text-gray-600',
+						align: 'right',
 						width: 0.3
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
 						class: 'text-gray-600',
+						align: 'right',
 						width: 0.3
 					}
 				],

@@ -58,12 +58,19 @@ export default {
 					{ label: 'Time', fieldname: 'time', width: 1 },
 					{ label: 'Method', fieldname: 'method', width: 0.5 },
 					{ label: 'Path', fieldname: 'path', width: 2, class: 'font-mono' },
-					{ label: 'Status Code', fieldname: 'status', width: 0.5 },
+					{
+						label: 'Status Code',
+						fieldname: 'status',
+						width: 0.5,
+						align: 'right'
+					},
 					{
 						label: 'CPU Time (seconds)',
 						fieldname: 'cpu_time',
 						width: 1,
-						class: 'text-gray-600'
+						class: 'text-gray-600',
+						align: 'right',
+						format: value => value.toFixed(2)
 					}
 				],
 				filterControls: () => [

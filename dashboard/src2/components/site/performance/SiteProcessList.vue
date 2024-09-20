@@ -32,12 +32,13 @@ export default {
 					{
 						label: 'ID',
 						fieldname: 'Id',
-						width: '6rem'
+						width: '4rem'
 					},
 					{
 						label: 'Time',
 						fieldname: 'Time',
-						width: '6rem'
+						width: '6rem',
+						align: 'right'
 					},
 					{
 						label: 'Command',
