@@ -89,6 +89,12 @@
 					v-model="showAddWebhookDialog"
 					@success="onNewWebhookSuccess"
 				/>
+				<ActivateWebhookDialog
+					v-if="showActivateWebhookDialog"
+					v-model="showActivateWebhookDialog"
+					@success="onWebHookActivated"
+					:webhook="selectedWebhook"
+				/>
 			</div>
 		</div>
 	</div>
@@ -104,10 +110,13 @@ import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
+import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
+const showActivateWebhookDialog = ref(false);
+const selectedWebhook = ref(null);
 
 const createSecret = createResource({
 	url: 'press.api.account.create_api_secret',
@@ -320,6 +329,14 @@ const webhookListOptions = computed(() => ({
 	rowActions({ row }) {
 		return [
 			{
+				label: 'Activate',
+				icon: 'play',
+				onClick() {
+					selectedWebhook.value = row;
+					showActivateWebhookDialog.value = true;
+				}
+			},
+			{
 				label: 'Delete',
 				icon: 'trash-2',
 				onClick() {
@@ -350,5 +367,10 @@ const webhookListOptions = computed(() => ({
 const onNewWebhookSuccess = () => {
 	webhookListResource.reload();
 	showAddWebhookDialog.value = false;
+};
+
+const onWebHookActivated = () => {
+	webhookListResource.reload();
+	showActivateWebhookDialog.value = false;
 };
 </script>

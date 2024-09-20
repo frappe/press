@@ -3,6 +3,7 @@
 
 import contextlib
 import ipaddress
+import json
 from urllib.parse import urlparse
 import frappe
 from press.api.client import dashboard_whitelist
@@ -32,7 +33,7 @@ class PressWebhook(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Press Webhook"
-	dashboard_fields = ["enabled", "endpoint", "secret", "events"]
+	dashboard_fields = ["enabled", "endpoint", "events"]
 
 	def validate(self):
 		if self.has_value_changed("endpoint"):
@@ -84,14 +85,16 @@ class PressWebhook(Document):
 			):
 				frappe.throw("Endpoint can't be localhost or local domain")
 
+	@dashboard_whitelist()
 	def validate_endpoint(self) -> dict:
 		response = ""
 		response_status_code = 0
+		payload = {"event": "Webhook Test", "data": {}}
 		try:
 			req = requests.post(
 				self.endpoint,
 				timeout=5,
-				json={"event": "Webhook Test", "data": {}},
+				json=payload,
 				headers={"X-Webhook-Secret": self.secret},
 			)
 			response = req.text or ""
@@ -102,12 +105,13 @@ class PressWebhook(Document):
 		return frappe._dict(
 			{
 				"success": response_status_code >= 200 and response_status_code < 300,
+				"request": json.dumps(payload, indent=2),
 				"response": response,
 				"response_status_code": response_status_code,
 			}
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def activate(self):
 		result = self.validate_endpoint()
 		if result.get("success"):
