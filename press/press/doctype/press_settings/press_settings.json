@@ -47,6 +47,7 @@
   "erpnext_api_secret",
   "column_break_38",
   "frappeio_authentication_section",
+  "disable_frappe_auth",
   "frappe_url",
   "frappeio_api_key",
   "column_break_39",
@@ -1227,6 +1228,12 @@
    "fieldname": "usage_record_creation_batch_size",
    "fieldtype": "Int",
    "label": "Usage Record Creation Batch Size"
+  },
+  {
+    "default": "0",
+    "fieldname": "disable_frappe_auth",
+    "fieldtype": "Check",
+    "label": "Disable Frappe Auth"
   }
  ],
  "issingle": 1,

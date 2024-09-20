@@ -138,6 +138,13 @@
     content: '{{ certificate_intermediate_chain }}'
     dest: /home/frappe/agent/tls/chain.pem
 
+- name: Setup TLS Mapper
+  become: yes
+  become_user: frappe
+  copy:
+    content: '{{ certificate_file_mapper }}'
+    dest: /home/frappe/agent/tls/tls_file_mapper.json
+
 - name: Setup Agent NGINX
   become: yes
   become_user: frappe

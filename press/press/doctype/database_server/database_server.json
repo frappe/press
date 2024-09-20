@@ -37,6 +37,8 @@
   "mariadb_section",
   "self_hosted_mariadb_server",
   "mariadb_root_password",
+  "data_dir",
+  "_old_data_directory",
   "server_id",
   "is_primary",
   "column_break_12",
@@ -517,11 +519,23 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "fieldname": "data_dir",
+   "fieldtype": "Data",
+   "label": "Data Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "_old_data_directory",
+   "fieldtype": "Data",
+   "label": "_Old Data Directory",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-13 11:02:07.399141",
+ "modified": "2024-08-29 14:35:57.852153",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

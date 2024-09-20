@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "default_cluster",
-  "column_break_4",
+  "column_break_exzq",
+  "obtain_wildcard_tls",
+  "section_break_hdal",
   "dns_provider",
   "aws_access_key_id",
   "aws_secret_access_key"
@@ -20,24 +22,20 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "DNS Provider",
-   "options": "AWS Route 53",
+   "options": "AWS Route 53\nGeneric",
    "reqd": 1
   },
   {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
+   "depends_on": "eval: doc.dns_provider=='AWS Route 53'",
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
-   "label": "AWS Access Key ID",
-   "reqd": 1
+   "label": "AWS Access Key ID"
   },
   {
+   "depends_on": "eval: doc.dns_provider=='AWS Route 53'",
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
-   "label": "AWS Secret Access Key",
-   "reqd": 1
+   "label": "AWS Secret Access Key"
   },
   {
    "fieldname": "default_cluster",
@@ -45,6 +43,22 @@
    "label": "Default Cluster",
    "options": "Cluster",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_exzq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "obtain_wildcard_tls",
+   "fieldtype": "Check",
+   "label": "Obtain Wildcard TLS",
+   "no_copy": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_hdal",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -80,10 +94,11 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2021-03-25 11:42:01.377832",
+ "modified": "2024-08-12 16:28:39.333589",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -101,5 +116,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

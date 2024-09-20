@@ -1197,15 +1197,23 @@ class Site(Document, TagHelpers):
 		if domains:
 			self.unset_redirects_in_proxy(domains)
 
+	def _get_server(self):
+		server = frappe.db.get_value("Server", self.server, ["proxy_server", "is_standalone"])
+
+		if server.is_standalone:
+			return frappe._dict({"server_type": "Server", "name": self.server})
+
+		return frappe._dict({"server_type": "Proxy Server", "name": server.proxy_server})
+
 	def set_redirects_in_proxy(self, domains: List[str]):
 		target = self.host_name
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		server = self._get_server()
+		agent = Agent(server.name, server_type=server.server_type)
 		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: List[str]):
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		server = self._get_server()
+		agent = Agent(server.name, server_type=server.server_type)
 		agent.remove_redirects(self.name, domains)
 
 	@dashboard_whitelist()
@@ -1231,11 +1239,9 @@ class Site(Document, TagHelpers):
 		self.save()
 		agent.archive_site(self, site_name, force)
 
-		server = frappe.get_all(
-			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
-		)[0]
+		server = self._get_server()
 
-		agent = Agent(server.proxy_server, server_type="Proxy Server")
+		agent = Agent(server.name, server_type=server.server_type)
 		agent.remove_upstream_file(
 			server=self.server,
 			site=self.name,
@@ -1999,8 +2005,8 @@ class Site(Document, TagHelpers):
 		agent.reset_site_usage(self)
 
 	def update_site_status_on_proxy(self, status, skip_reload=False):
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		server = self._get_server()
+		agent = Agent(server.name, server_type=server.server_type)
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):

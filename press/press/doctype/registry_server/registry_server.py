@@ -35,6 +35,8 @@ class RegistryServer(BaseServer):
 		registry_password: DF.Password | None
 		registry_username: DF.Data | None
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
@@ -61,14 +63,14 @@ class RegistryServer(BaseServer):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		monitoring_password = self.get_password("monitoring_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		certificate = self.get_certificate()
+
 		try:
 			ansible = Ansible(
 				playbook="registry.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"workers": 1,
@@ -82,6 +84,7 @@ class RegistryServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"certificate_file_mapper": certificate.tls_file_mapper,
 				},
 			)
 			play = ansible.run()

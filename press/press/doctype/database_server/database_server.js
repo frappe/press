@@ -273,6 +273,37 @@ frappe.ui.form.on('Database Server', {
 				},
 				__('Dangerous Actions'),
 			);
+			frm.add_custom_button(
+				__('Change Mariadb Data Directory'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Update Memory Allocator'),
+						fields: [
+							{
+								fieldtype: 'Data',
+								label: __('Data Directory'),
+								fieldname: 'data_dir',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Update'), (args) => {
+						frm.call({
+							method: 'change_data_directory',
+							doc: frm.doc,
+							args: args,
+							freeze: true,
+							callback: () => {
+								dialog.hide();
+								frm.refresh();
+							},
+						});
+					});
+					dialog.show();
+				},
+				__('Dangerous Actions'),
+			);
 		}
 	},
 

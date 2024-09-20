@@ -24,14 +24,17 @@ class RootDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		aws_access_key_id: DF.Data
-		aws_secret_access_key: DF.Password
+		aws_access_key_id: DF.Data | None
+		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
-		dns_provider: DF.Literal["AWS Route 53"]
+		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		obtain_wildcard_tls: DF.Check
 	# end: auto-generated types
 
 	def after_insert(self):
-		if not frappe.db.exists("TLS Certificate", {"wildcard": True, "domain": self.name}):
+		if self.obtain_wildcard_tls and not frappe.db.exists(
+			"TLS Certificate", {"wildcard": True, "domain": self.name}
+		):
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -54,6 +57,12 @@ class RootDomain(Document):
 			).insert()
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
+
+	@property
+	def generic(self):
+		if not hasattr(self, "_generic"):
+			self._generic = self.dns_provider == "Generic"
+		return self._generic
 
 	@property
 	def boto3_client(self):
@@ -128,6 +137,9 @@ class RootDomain(Document):
 				self.delete_dns_records(to_delete)
 
 	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+		if self.generic:
+			return  # No need to create DNS records for generic domains
+
 		# update records in batches of 500
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
@@ -154,4 +166,8 @@ def cleanup_cname_records():
 	domains = frappe.get_all("Root Domain", pluck="name")
 	for domain_name in domains:
 		domain = frappe.get_doc("Root Domain", domain_name)
+
+		if domain.generic:
+			continue  # No need to create DNS records for generic domains
+
 		domain.remove_unused_cname_records()

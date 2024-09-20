@@ -13,11 +13,11 @@ max-connect-errors              = 1000000
 innodb                          = FORCE
 
 # DATA STORAGE #
-datadir                         = /var/lib/mysql/
+datadir                         = {{ data_dir }}/
 
 # BINARY LOGGING #
-log-bin                         = /var/lib/mysql/mysql-bin
-log_bin_index                   = /var/lib/mysql/mysql-bin.index
+log-bin                         = {{ data_dir }}/mysql-bin
+log_bin_index                   = {{ data_dir }}/mysql-bin.index
 expire-logs-days                = 14
 sync-binlog                     = 1
 
@@ -53,10 +53,10 @@ character-set-client-handshake  = FALSE
 max_allowed_packet              = 512M
 
 # LOGGING #
-log-error                       = /var/lib/mysql/mysql-error.log
+log-error                       = {{ data_dir }}/mysql-error.log
 log-queries-not-using-indexes   = 0
 slow-query-log                  = 1
-slow-query-log-file             = /var/lib/mysql/mysql-slow.log
+slow-query-log-file             = {{ data_dir }}/mysql-slow.log
 
 # Networking
 bind-address                    = {{ private_ip }}

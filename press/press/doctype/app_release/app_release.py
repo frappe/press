@@ -506,12 +506,28 @@ def check_python_syntax(dirpath: str) -> str:
 	- -o: optimize level, 0 is no optimization
 	"""
 
-	command = f"python3 -m compileall -q -o 0 {dirpath}"
+	def _get_python_version():
+		proc = subprocess.run(
+			shlex.split("python3 --version"),
+			text=True,
+			capture_output=True,
+		)
+		return proc.stdout
+
+	python_version = _get_python_version()
+
+	if "Python 3.8" in python_version:
+		# In python3.8 compileall does not supports -o flag
+		command = f"python3 -m compileall -q {dirpath}"
+	else:
+		command = f"python3 -m compileall -q -o 0 {dirpath}"
+
 	proc = subprocess.run(
 		shlex.split(command),
 		text=True,
 		capture_output=True,
 	)
+
 	if proc.returncode == 0:
 		return ""
 

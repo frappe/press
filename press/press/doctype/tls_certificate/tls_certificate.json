@@ -11,6 +11,7 @@
   "column_break_3",
   "rsa_key_size",
   "wildcard",
+  "custom",
   "section_break_6",
   "issued_on",
   "column_break_8",
@@ -18,12 +19,13 @@
   "section_break_10",
   "decoded_certificate",
   "certificate",
-  "full_chain",
   "intermediate_chain",
+  "full_chain",
   "private_key",
   "section_break_cvcg",
-  "error",
-  "retry_count"
+  "retry_count",
+  "error_tab",
+  "error"
  ],
  "fields": [
   {
@@ -74,7 +76,7 @@
    "fieldtype": "Select",
    "label": "RSA Key Size",
    "options": "2048\n3072\n4096",
-   "read_only_depends_on": "eval: doc.wildcard",
+   "read_only_depends_on": "eval: doc.wildcard && doc.custom",
    "reqd": 1
   },
   {
@@ -147,11 +149,22 @@
    "fieldtype": "Int",
    "label": "Retry Count",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "custom",
+   "fieldtype": "Check",
+   "label": "Custom"
+  },
+  {
+   "fieldname": "error_tab",
+   "fieldtype": "Tab Break",
+   "label": "Error"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-10 10:43:33.881463",
+ "modified": "2024-08-14 18:40:35.252344",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",

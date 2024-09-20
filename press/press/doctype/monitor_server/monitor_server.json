@@ -24,6 +24,8 @@
   "grafana_section",
   "grafana_password",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -204,6 +206,16 @@
    "fieldname": "prometheus_data_directory",
    "fieldtype": "Data",
    "label": "Prometheus Data Directory"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [
@@ -212,7 +224,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2024-02-05 20:07:19.024804",
+ "modified": "2024-08-26 11:36:38.297902",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
