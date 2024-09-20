@@ -35,11 +35,6 @@ export default {
 						width: '6rem'
 					},
 					{
-						label: 'User',
-						fieldname: 'User',
-						width: '15rem'
-					},
-					{
 						label: 'Time',
 						fieldname: 'Time',
 						width: '6rem'
