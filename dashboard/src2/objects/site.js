@@ -1383,6 +1383,13 @@ export default {
 				label: 'Performance',
 				icon: icon('zap'),
 				route: 'performance',
+				childrenRoutes: [
+					'Site Performance Slow Queries',
+					'Site Performance Binary Logs',
+					'Site Performance Process List',
+					'Site Performance Slow Query Logs',
+					'Site Performance Request Logs'
+				],
 				type: 'Component',
 				condition() {
 					const team = getTeam();
@@ -1391,10 +1398,10 @@ export default {
 					);
 				},
 				component: defineAsyncComponent(() =>
-					import('../components/site/SitePerformance.vue')
+					import('../components/site/performance/SitePerformance.vue')
 				),
 				props: site => {
-					return { siteName: site.doc?.name, siteVersion: site.doc?.version };
+					return { site: site.doc?.name };
 				}
 			},
 			logsTab(),
@@ -1661,6 +1668,36 @@ export default {
 			name: 'Site Log',
 			path: 'logs/:logName',
 			component: () => import('../pages/LogPage.vue')
+		},
+		{
+			name: 'Site Performance Slow Queries',
+			path: 'performance/slow-queries',
+			component: () =>
+				import('../components/site/performance/SiteSlowQueries.vue')
+		},
+		{
+			name: 'Site Performance Binary Logs',
+			path: 'performance/binary-logs',
+			component: () =>
+				import('../components/site/performance/SiteBinaryLogs.vue')
+		},
+		{
+			name: 'Site Performance Process List',
+			path: 'performance/process-list',
+			component: () =>
+				import('../components/site/performance/SiteProcessList.vue')
+		},
+		{
+			name: 'Site Performance Request Logs',
+			path: 'performance/request-log',
+			component: () =>
+				import('../components/site/performance/SiteRequestLogs.vue')
+		},
+		{
+			name: 'Site Performance Deadlock Report',
+			path: 'performance/deadlock-report',
+			component: () =>
+				import('../components/site/performance/SiteDeadlockReport.vue')
 		}
 	]
 };

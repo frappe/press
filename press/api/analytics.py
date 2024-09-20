@@ -13,7 +13,6 @@ from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
 	get_datetime,
-	get_datetime_str,
 )
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone
@@ -22,17 +21,10 @@ from press.agent import Agent
 from press.api.site import protected
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
+	get_data as get_binary_log_data,
 	convert_user_timezone_to_utc,
-	get_files_in_timespan,
 )
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
-
-try:
-	from frappe.utils import convert_utc_to_user_timezone
-except ImportError:
-	from frappe.utils import (
-		convert_utc_to_system_timezone as convert_utc_to_user_timezone,
-	)
 
 
 @frappe.whitelist()
@@ -652,42 +644,18 @@ def request_logs(name, timezone, date, sort=None, start=0):
 
 @frappe.whitelist()
 @protected("Site")
-def binary_logs(name, start_time, end_time, pattern=".*", max_lines=4000):
-	site_doc = frappe.get_doc("Site", name)
+def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int = 4000):
+	filters = frappe._dict(
+		site=name,
+		database=frappe.db.get_value("Site", name, "database_name"),
+		start_datetime=start_time,
+		stop_datetime=end_time,
+		pattern=pattern,
+		max_lines=max_lines,
+	)
 
-	db_server = frappe.db.get_value("Server", site_doc.server, "database_server")
-	agent = Agent(db_server, "Database Server")
-
-	data = {
-		"database": site_doc.database_name,
-		"start_datetime": convert_user_timezone_to_utc(start_time),
-		"stop_datetime": convert_user_timezone_to_utc(end_time),
-		"search_pattern": pattern,
-		"max_lines": max_lines,
-	}
-
-	files = agent.get("database/binary/logs")
-
-	files_in_timespan = get_files_in_timespan(files, start_time, end_time)
-
-	out = []
-	for file in files_in_timespan:
-		print(file)
-		rows = agent.post(f"database/binary/logs/{file}", data=data)
-		print(rows)
-		for row in rows:
-			row["query"] = sqlparse.format(
-				row["query"].strip(), keyword_case="upper", reindent=True
-			)
-			row["timestamp"] = get_datetime_str(
-				convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
-			)
-			out.append(row)
-
-			if len(out) >= max_lines:
-				return out
-
-	return out
+	data = get_binary_log_data(filters)
+	return data
 
 
 @frappe.whitelist()

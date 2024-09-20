@@ -67,6 +67,7 @@ class SitePlan(Plan):
 		"database_access",
 		"support_included",
 		"private_benches",
+		"monitor_access",
 	]
 
 	def get_doc(self, doc):
