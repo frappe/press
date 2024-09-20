@@ -19,4 +19,5 @@ class PressWebhookEvent(Document):
 		title: DF.Data
 	# end: auto-generated types
 
-	pass
+	DOCTYPE = "Press Webhook Event"
+	dashboard_fields = ["name", "description"]

@@ -25,7 +25,8 @@
    "description": "Will be added in X-Webhook-Secret header of webhook request",
    "fieldname": "secret",
    "fieldtype": "Data",
-   "label": "Secret"
+   "label": "Secret",
+   "not_nullable": 1
   },
   {
    "fieldname": "section_break_xbfh",
@@ -55,7 +56,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 12:13:25.264342",
+ "modified": "2024-09-20 10:28:45.931824",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook",
@@ -70,6 +71,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }

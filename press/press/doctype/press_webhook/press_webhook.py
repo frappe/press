@@ -27,9 +27,12 @@ class PressWebhook(Document):
 		enabled: DF.Check
 		endpoint: DF.Data
 		events: DF.Table[PressWebhookSelectedEvent]
-		secret: DF.Data | None
+		secret: DF.Data
 		team: DF.Link
 	# end: auto-generated types
+
+	DOCTYPE = "Press Webhook"
+	dashboard_fields = ["enabled", "endpoint", "secret", "events"]
 
 	def validate(self):
 		if self.has_value_changed("endpoint"):

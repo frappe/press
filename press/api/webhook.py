@@ -5,17 +5,8 @@ from typing import List
 import frappe
 
 
-@frappe.whitelist()
-def get_webhooks():
-	return frappe.get_list(
-		"Press Webhook",
-		fields=["name", "enabled", "endpoint"],
-		order_by="creation desc",
-	)
-
-
 @frappe.whitelist(allow_guest=True)
-def get_events():
+def available_events():
 	return frappe.get_all(
 		"Press Webhook Event",
 		fields=["name", "description"],
@@ -25,7 +16,7 @@ def get_events():
 
 
 @frappe.whitelist()
-def add_webhook(endpoint: str, secret: str, events: List[str]):
+def add(endpoint: str, secret: str, events: List[str]):
 	doc = frappe.new_doc("Press Webhook")
 	doc.endpoint = endpoint
 	doc.secret = secret

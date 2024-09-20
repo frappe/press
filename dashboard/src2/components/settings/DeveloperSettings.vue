@@ -266,7 +266,11 @@ function renderAddNewKeyDialog(listResource) {
 }
 
 const webhookListResource = createResource({
-	url: 'press.api.webhook.get_webhooks',
+	url: 'press.api.client.get_list',
+	params: {
+		doctype: 'Press Webhook',
+		fields: ['name', 'enabled', 'endpoint']
+	},
 	initialData: [],
 	auto: true
 });

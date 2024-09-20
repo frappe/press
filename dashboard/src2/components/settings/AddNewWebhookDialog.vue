@@ -79,14 +79,14 @@ export default {
 	resources: {
 		events() {
 			return {
-				url: 'press.api.webhook.get_events',
+				url: 'press.api.webhook.available_events',
 				inititalData: [],
 				auto: true
 			};
 		},
 		addWebhook() {
 			return {
-				url: 'press.api.webhook.add_webhook',
+				url: 'press.api.webhook.add',
 				params: {
 					endpoint: this.endpoint,
 					secret: this.secret,
