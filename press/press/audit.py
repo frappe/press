@@ -91,7 +91,7 @@ class BenchFieldCheck(Audit):
 
 	def get_sites_only_on_press(self):
 		sites = []
-		for site, bench in self.press_map.items():
+		for site, _bench in self.press_map.items():
 			if site not in self.server_map:
 				sites.append(site)
 		return sites

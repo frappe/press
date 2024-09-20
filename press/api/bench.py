@@ -356,6 +356,7 @@ def update_dependencies(name: str, dependencies: str):
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
+		strict=False,
 	):
 		if dep.dependency != new["key"]:
 			frappe.throw(f"Invalid dependency: {new['key']}")
@@ -743,7 +744,8 @@ def update_inplace(
 
 @frappe.whitelist()
 @protected("Release Group")
-def create_deploy_candidate(name, apps_to_ignore=[]):
+def create_deploy_candidate(name, apps_to_ignore=None):
+	apps_to_ignore = [] if apps_to_ignore is None else apps_to_ignore
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	return rg.create_deploy_candidate(apps_to_ignore)
 

@@ -889,7 +889,7 @@ def update_emails(data):
 	from frappe.utils import validate_email_address
 
 	data = {x["type"]: x["value"] for x in json.loads(data)}
-	for key, value in data.items():
+	for _key, value in data.items():
 		validate_email_address(value, throw=True)
 
 	team_doc = get_current_team(get_doc=True)

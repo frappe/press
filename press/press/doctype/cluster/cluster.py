@@ -536,7 +536,7 @@ class Cluster(Document):
 					),
 				],
 			),
-		).data
+		)
 
 		time.sleep(1)
 		subnet = vcn_client.create_subnet(
@@ -746,7 +746,8 @@ class Cluster(Document):
 		return server, job
 
 	@classmethod
-	def get_all_for_new_bench(cls, extra_filters={}) -> list[dict[str, str]]:
+	def get_all_for_new_bench(cls, extra_filters=None) -> list[dict[str, str]]:
+		extra_filters = {} if extra_filters is None else extra_filters
 		cluster_names = unique(frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster"))
 		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(

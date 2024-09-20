@@ -25,8 +25,10 @@ class Plan(Document):
 		return frappe.utils.get_last_day(None).day
 
 	@classmethod
-	def get_plans(cls, doctype, fields=["*"], filters=None):
+	def get_plans(cls, doctype, fields=None, filters=None):
+		fields = fields or ["*"]
 		filters = filters or {}
+
 		fields.append("`tabHas Role`.role")
 		filters.update({"enabled": True})
 		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")

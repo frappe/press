@@ -33,7 +33,7 @@ class ERPNextSiteSettings(Document):
 		config = json.loads(site.config)
 		limits = config.get("limits", {})
 
-		limits.update(dict(zip(config_keys, values)))
+		limits.update(dict(zip(config_keys, values, strict=False)))
 
 		# remove null/empty values
 		limits = {k: v for k, v in limits.items() if v}

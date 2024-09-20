@@ -12,9 +12,10 @@ def create_test_ansible_play(
 	playbook: str = "",
 	server_type: str = "Server",
 	server: str = "",
-	vars: dict = {},
+	vars: dict | None = None,
 	status: str = "Success",
 ):
+	vars = {} if vars is None else vars
 	play = frappe.get_doc(
 		{
 			"doctype": "Ansible Play",

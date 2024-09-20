@@ -182,13 +182,12 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 	period_start, period_end = (
 		(period_start, period_end) if period_start and period_end else get_current_period_boundaries()
 	)
-	items = get_unaccounted_marketplace_invoice_items()
+	invoice_items = get_unaccounted_marketplace_invoice_items()
 
 	# Group by teams
-	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
+	for app_team, items in groupby(invoice_items, key=lambda x: x["app_team"]):
+		item_names = [i.name for i in items]
 		try:
-			item_names = [i.name for i in items]
-
 			po_exists = frappe.db.exists("Payout Order", {"team": app_team, "period_end": period_end})
 
 			if not po_exists:
@@ -211,7 +210,7 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 				frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error("Payout Order Creation Error", team=app_team, invoice_items=items)
+			log_error("Payout Order Creation Error", team=app_team, invoice_items=item_names)
 
 
 def get_current_period_boundaries():

@@ -1518,7 +1518,9 @@ class Server(BaseServer):
 		return cls.get_all_staging(limit=1)[0]
 
 	@classmethod
-	def get_prod_for_new_bench(cls, extra_filters={}) -> str | None:
+	def get_prod_for_new_bench(cls, extra_filters=None) -> str | None:
+		extra_filters = {} if extra_filters is None else extra_filters
+
 		filters = {"status": "Active", "use_for_new_benches": True}
 		servers = frappe.get_all("Server", {**filters, **extra_filters}, pluck="name", limit=1)
 		if servers:

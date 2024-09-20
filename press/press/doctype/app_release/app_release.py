@@ -209,7 +209,7 @@ class AppRelease(Document):
 			- If token is not received _get_repo_url throws
 			- Hence token was received, but app still cannot be cloned
 			"""
-			raise Exception("Repository could not be fetched", self.app)
+			raise Exception("Repository could not be fetched", self.app) from None
 
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")

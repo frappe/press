@@ -117,4 +117,4 @@ class UserSSHKey(Document):
 				.split(":")[1]
 			)
 		except subprocess.CalledProcessError as e:
-			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}")
+			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}") from None

@@ -68,7 +68,7 @@ class TestBench(FrappeTestCase):
 			create_test_subscription(site.name, plan.name, site.team)  # map site with plan
 			bench = site.bench
 			n -= 1
-		for i in range(n):
+		for _i in range(n):
 			site = create_test_site(bench=bench)
 			create_test_subscription(site.name, plan.name, site.team)
 		return frappe.get_doc("Bench", bench)

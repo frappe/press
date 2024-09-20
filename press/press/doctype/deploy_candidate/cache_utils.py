@@ -136,7 +136,7 @@ def copy_file_from_container(
 
 def remove_container(container_id: str) -> str:
 	args = shlex.split(f"docker rm -v {container_id}")
-	subprocess.run(
+	return subprocess.run(
 		args,
 		env=os.environ.copy(),
 		stdout=subprocess.PIPE,

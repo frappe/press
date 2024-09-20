@@ -22,7 +22,7 @@ def execute():
 		fields = ["backups", "database", "public", "private"]
 		current_values = frappe.db.get_value(doctype, record, fields)
 
-		for field, value in zip(fields, current_values):
+		for field, value in zip(fields, current_values, strict=False):
 			value = ceil(cint(value) / (1024**2))
 			frappe.get_doc(doctype, record).db_set(field, value, update_modified=False)
 

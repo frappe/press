@@ -205,7 +205,7 @@ class ProductTrial(Document):
 		if sites_to_create > self.standby_queue_size:
 			sites_to_create = self.standby_queue_size
 
-		for i in range(sites_to_create):
+		for _ in range(sites_to_create):
 			self.create_standby_site(cluster)
 			frappe.db.commit()
 

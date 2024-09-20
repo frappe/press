@@ -73,9 +73,8 @@ class BackupRotationScheme:
 				sites.append(site_conf.name)
 			self._expire_backups_of_site_in_bench(sites, config)
 
-	@functools.lru_cache(maxsize=128)
 	def _get_expiry(self, config: str):
-		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
+		return _get_expiry(config)
 
 	def _expire_backups_of_site_in_bench(self, sites: list[str], expiry: int):
 		if sites:
@@ -100,6 +99,11 @@ class BackupRotationScheme:
 		"""Expire backups according to the rotation scheme."""
 		expired_remote_files = self.expire_offsite_backups()
 		delete_remote_backup_objects(expired_remote_files)
+
+
+@functools.lru_cache(maxsize=128)
+def _get_expiry(config: str):
+	return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
 
 
 class FIFO(BackupRotationScheme):
@@ -238,7 +242,7 @@ class ScheduledBackupJob:
 
 	def _take_backups_in_round_robin(self, sites_by_server_cycle: ModifiableCycle):
 		limit = min(len(self.sites), self.limit)
-		for server, sites in sites_by_server_cycle:
+		for _, sites in sites_by_server_cycle:
 			try:
 				site = next(sites)
 				while not self.backup(site):

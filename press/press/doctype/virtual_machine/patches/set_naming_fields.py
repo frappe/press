@@ -16,9 +16,9 @@ def execute():
 			server = frappe.db.get_value(
 				server_type, {"virtual_machine": machine.name}, ["name", "domain"], as_dict=True
 			)
-			if server:
-				break
-		index = server.name.split("-")[0][1:]
-		frappe.db.set_value("Virtual Machine", machine.name, "series", series)
-		frappe.db.set_value("Virtual Machine", machine.name, "index", index)
-		frappe.db.set_value("Virtual Machine", machine.name, "domain", server.domain)
+			if not server:
+				continue
+			index = server.name.split("-")[0][1:]
+			frappe.db.set_value("Virtual Machine", machine.name, "series", series)
+			frappe.db.set_value("Virtual Machine", machine.name, "index", index)
+			frappe.db.set_value("Virtual Machine", machine.name, "domain", server.domain)

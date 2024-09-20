@@ -203,7 +203,8 @@ class DatabaseServer(BaseServer):
 			diff.get("added", [])
 		)
 
-	def _update_mariadb_system_variables(self, variables: list[DatabaseServerMariaDBVariable] = []):
+	def _update_mariadb_system_variables(self, variables: list[DatabaseServerMariaDBVariable] | None = None):
+		variables = [] if variables is None else variables
 		restart = False
 		for variable in variables:
 			variable.update_on_server()

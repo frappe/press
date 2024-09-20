@@ -14,7 +14,7 @@ select = [
   "W",
   "I",
   "UP",
-  # "B",
+  "B",
   # "RUF",
   # "FA",
   # "TCH",
@@ -29,10 +29,10 @@ ignore = [
   "F722",   # syntax error in forward type annotation, cause of DF.Literal
   "E501",   # line too long, cause hooks.py
   "W191",   # indentation contains tabs, cause when the world zigs, we zag
+  "B023",   # function doesn't bind loop variable - will have last iteration's value
 
   # "B017",   # assertRaises(Exception) - should be more specific
   # "B018",   # useless expression, not assigned to anything
-  # "B023",   # function doesn't bind loop variable - will have last iteration's value
   # "B904",   # raise inside except without from
   # "E101",   # indentation contains mixed spaces and tabs
   # "E402",   # module level import not at top of file

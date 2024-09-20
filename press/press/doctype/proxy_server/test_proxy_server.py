@@ -23,11 +23,13 @@ from press.utils.test import foreground_enqueue_doc
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
-	domains: list[dict[str, str]] = [{"domain": "fc.dev"}],
+	domains: list[dict[str, str]] | None = None,
 	cluster: str = "Default",
 	is_primary: bool = True,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
+	domains = [{"domain": "fc.dev"}] if domains is None else domains
+
 	create_test_press_settings()
 	server = frappe.get_doc(
 		{

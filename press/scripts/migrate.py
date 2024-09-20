@@ -479,8 +479,8 @@ def frappecloud_migrator(local_site, frappe_provider):
 	# get credentials + auth user + start session
 	try:
 		session = create_session()
-	except RetryError:
-		raise KeyboardInterrupt
+	except RetryError as e:
+		raise KeyboardInterrupt from e
 
 	restore_site(local_site)
 

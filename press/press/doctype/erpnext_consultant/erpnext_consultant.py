@@ -57,8 +57,6 @@ class ERPNextConsultant(Document):
 			return consultants[consultants.index(region.last_allocated_to) + 1]
 		except (IndexError, ValueError):
 			return consultants[0]
-		except IndexError:
-			return ""
 
 	@classmethod
 	def get_one_for_country(cls, country: str) -> str:

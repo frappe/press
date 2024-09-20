@@ -78,7 +78,7 @@ def razorpay_authorized_payment_handler():
 			title="Razorpay Authorized Payment Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
 		)
-		raise Exception
+		raise Exception from e
 
 
 @frappe.whitelist(allow_guest=True)
@@ -127,11 +127,11 @@ def razorpay_webhook_handler():
 			}
 		).insert(ignore_if_duplicate=True)
 
-	except Exception:
+	except Exception as e:
 		frappe.db.rollback()
 		log_error(
 			title="Razorpay Webhook Handler",
 			payment_id=form_dict["payload"]["payment"]["entity"]["id"],
 		)
 		frappe.set_user(current_user)
-		raise Exception
+		raise Exception from e

@@ -80,7 +80,7 @@ class PressPermissionGroup(Document):
 				if not restrictable_methods:
 					frappe.throw(f"{doctype} does not have any restrictable methods.")
 
-				for method, permitted in doc_perms.items():
+				for method, _permitted in doc_perms.items():
 					if method != "*" and method not in restrictable_methods:
 						frappe.throw(f"{method} is not a restrictable method of {doctype}")
 
@@ -287,7 +287,7 @@ def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
 
 	# first we parse the wildcard permissions
 	# if any group has *: True, then all methods are allowed
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		if permissions.get("*", None) is None:
 			continue
 		if permissions.get("*", None) is True:
@@ -298,13 +298,13 @@ def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
 
 	# now we restrict all the methods that are explicitly restricted
 	# so that we can allow all the methods that are explicitly allowed later
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		for method, permitted in permissions.items():
 			if not permitted and method != "*":
 				method_perms[method] = False
 
 	# now we allow all the methods that are explicitly allowed
-	for group_name, permissions in permissions_by_group.items():
+	for _group_name, permissions in permissions_by_group.items():
 		for method, permitted in permissions.items():
 			if permitted and method != "*":
 				method_perms[method] = True

@@ -1560,8 +1560,7 @@ def check_dns_cname(name, domain):
 	except Exception as e:
 		result["answer"] = str(e)
 		log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
-	finally:
-		return result
+	return result
 
 
 def check_dns_a(name, domain):
@@ -1591,8 +1590,7 @@ def check_dns_a(name, domain):
 	except Exception as e:
 		result["answer"] = str(e)
 		log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
-	finally:
-		return result
+	return result
 
 
 def ensure_dns_aaaa_record_doesnt_exist(domain: str):

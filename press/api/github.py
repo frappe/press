@@ -39,14 +39,14 @@ def hook(*args, **kwargs):
 	except Exception:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Insert Error", args=args, kwargs=kwargs)
-		raise Exception
+		raise Exception from None
 
 	try:
 		doc.handle_events()
 	except Exception:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Error", doc=doc)
-		raise Exception
+		raise Exception from None
 
 
 def get_jwt_token():

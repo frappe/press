@@ -38,9 +38,9 @@ def targets(token):
 		)
 	}
 	benches = []
-	for bench_name, sites in groupby(sites, lambda x: x.bench):
+	for bench_name, sites_ in groupby(sites, lambda x: x.bench):
 		bench = bench_map[bench_name]
-		bench.update({"sites": [site.name for site in sites]})
+		bench.update({"sites": [site.name for site in sites_]})
 		benches.append(bench)
 
 	servers = {}
@@ -100,6 +100,6 @@ def alert(*args, **kwargs):
 		doc.insert()
 	except Exception:
 		log_error("Alertmanager Webhook Error", args=args, kwargs=kwargs)
-		raise Exception
+		raise Exception from None
 	finally:
 		frappe.set_user(user)

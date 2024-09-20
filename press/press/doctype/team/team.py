@@ -1086,7 +1086,7 @@ class Team(Document):
 	def reallocate_workers_if_needed(
 		self, workloads_before: list[str, float, str], workloads_after: list[str, float, str]
 	):
-		for before, after in zip(workloads_before, workloads_after):
+		for before, after in zip(workloads_before, workloads_after, strict=False):
 			if after[1] - before[1] >= 8:  # 100 USD equivalent
 				frappe.enqueue_doc(
 					"Server",
