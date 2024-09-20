@@ -123,6 +123,11 @@ class PressWebhook(Document):
 			frappe.throw(title="Webhook endpoint is invalid", msg=message)
 
 	@dashboard_whitelist()
+	def disable(self):
+		self.enabled = False
+		self.save()
+
+	@dashboard_whitelist()
 	def delete(self):
 		frappe.db.sql("delete from `tabPress Webhook Log` where webhook = %s", (self.name,))
 		frappe.delete_doc("Press Webhook", self.name)

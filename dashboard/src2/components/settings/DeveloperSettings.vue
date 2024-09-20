@@ -331,9 +331,41 @@ const webhookListOptions = computed(() => ({
 			{
 				label: 'Activate',
 				icon: 'play',
+				condition: () => !Boolean(row.enabled),
 				onClick() {
 					selectedWebhook.value = row;
 					showActivateWebhookDialog.value = true;
+				}
+			},
+			{
+				label: 'Disable',
+				icon: 'pause',
+				condition: () => Boolean(row.enabled),
+				onClick: () => {
+					confirmDialog({
+						title: 'Disable Webhook',
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to disable the webhook ?<br>`,
+						primaryAction: {
+							label: 'Disable',
+							variant: 'solid',
+							onClick({ hide }) {
+								disableWebhook
+									.submit({
+										dt: 'Press Webhook',
+										dn: row.name,
+										method: 'disable'
+									})
+									.then(() => {
+										toast.success('Webhook disabled successfully');
+										webhookListResource.reload();
+										hide();
+									})
+									.catch(error => {
+										toast.error(error.message);
+									});
+							}
+						}
+					});
 				}
 			},
 			{
@@ -363,6 +395,21 @@ const webhookListOptions = computed(() => ({
 		};
 	}
 }));
+
+const disableWebhook = createResource({
+	url: 'press.api.client.run_doc_method',
+	onSuccess() {
+		toast.success('Webhook disabled successfully');
+		webhookListResource.reload();
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'Webhook could not be disabled'
+		);
+	}
+});
 
 const onNewWebhookSuccess = () => {
 	webhookListResource.reload();
