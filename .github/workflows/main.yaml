@@ -20,12 +20,12 @@ concurrency:
 
 jobs:
   format:
-    name: 'Black and Flake8'
+    name: 'Lint and Format'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -34,13 +34,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install flake8 git+https://github.com/adityahase/black
-      - name: Black Test
+          pip install ruff
+
+      - name: Lint Check
         run: |
-          black --check ${GITHUB_WORKSPACE}/press/press
-      - name: Flake8 Test
+          ruff check --output-format github
+
+      - name: Format Check
         run: |
-          flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
+          ruff format --check
 
   semgrep:
     name: Semgrep Rules
