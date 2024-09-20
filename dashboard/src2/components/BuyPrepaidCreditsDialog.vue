@@ -1,8 +1,5 @@
 <template>
-	<Dialog
-		:options="{ title: 'Add money to your account' }"
-		v-model="showDialog"
-	>
+	<Dialog :options="{ title: title }" v-model="showDialog">
 		<template v-slot:body-content>
 			<BuyPrepaidCreditsForm
 				@success="onSuccess"
@@ -15,7 +12,6 @@
 <script>
 import BuyPrepaidCreditsForm from './BuyPrepaidCreditsForm.vue';
 
-
 export default {
 	name: 'BuyPrepaidCreditsDialog',
 	components: {
@@ -25,6 +21,10 @@ export default {
 		minimumAmount: {
 			type: Number,
 			default: 0
+		},
+		title: {
+			type: String,
+			default: 'Add credits to your account'
 		}
 	},
 	emits: ['update:modelValue', 'success'],

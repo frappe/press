@@ -647,6 +647,10 @@ class Team(Document):
 	def update_billing_details(self, billing_details):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
+			if (address_doc.country != billing_details.country) and (
+				address_doc.country == "India" or billing_details.country == "India"
+			):
+				frappe.throw("Cannot change country of billing address")
 		else:
 			if self.account_request:
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
