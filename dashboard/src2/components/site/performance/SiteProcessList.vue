@@ -4,12 +4,18 @@
 	</div>
 	<div class="flex justify-center" v-else>
 		<span class="mt-16 text-base text-gray-700">
-			Your plan doesn't support this feature. Please upgrade your plan.
+			Your plan doesn't support this feature. Please
+			<span class="cursor-pointer underline" @click="showPlanChangeDialog"
+				>upgrade your plan</span
+			>
+			.
 		</span>
 	</div>
 </template>
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
+import { renderDialog } from '../../../utils/components';
 import ObjectList from '../../ObjectList.vue';
 
 export default {
@@ -17,6 +23,14 @@ export default {
 	props: ['name'],
 	components: {
 		ObjectList
+	},
+	methods: {
+		showPlanChangeDialog() {
+			const SitePlansDialog = defineAsyncComponent(() =>
+				import('../../ManageSitePlansDialog.vue')
+			);
+			renderDialog(h(SitePlansDialog, { site: this.name }));
+		}
 	},
 	computed: {
 		$site() {
