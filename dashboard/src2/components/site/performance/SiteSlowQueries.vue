@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<Report
+		<PerformanceReport
 			v-if="siteVersion !== 'Version 14'"
 			title="Slow Queries"
 			:site="name"
@@ -19,12 +19,12 @@
 import { defineAsyncComponent, h } from 'vue';
 import AlertBanner from '../../AlertBanner.vue';
 import { renderDialog } from '../../../utils/components';
-import Report from './Report.vue';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
 	props: ['name', 'siteVersion'],
 	components: {
-		Report,
+		PerformanceReport,
 		AlertBanner
 	},
 	computed: {

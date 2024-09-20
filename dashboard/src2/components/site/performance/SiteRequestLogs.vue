@@ -1,5 +1,5 @@
 <template>
-	<Report
+	<PerformanceReport
 		title="Request Logs"
 		:site="name"
 		:reportOptions="requestLogsOptions"
@@ -8,13 +8,13 @@
 
 <script>
 import dayjs from '../../../utils/dayjs';
-import Report from './Report.vue';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
 	name: 'SiteRequestLogs',
 	props: ['name'],
 	components: {
-		Report
+		PerformanceReport
 	},
 	data() {
 		return {

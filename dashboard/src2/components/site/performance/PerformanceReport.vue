@@ -26,7 +26,7 @@ import { renderDialog } from '../../../utils/components';
 import ObjectList from '../../ObjectList.vue';
 
 export default {
-	name: 'Report',
+	name: 'PerformanceReport',
 	props: {
 		title: {
 			type: String,

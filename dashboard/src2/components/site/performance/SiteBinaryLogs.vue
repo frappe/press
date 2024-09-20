@@ -1,15 +1,19 @@
 <template>
-	<Report title="Binary Logs" :site="name" :reportOptions="binaryLogsOptions" />
+	<PerformanceReport
+		title="Binary Logs"
+		:site="name"
+		:reportOptions="binaryLogsOptions"
+	/>
 </template>
 
 <script>
 import dayjs from '../../../utils/dayjs';
-import Report from './Report.vue';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
 	name: 'SiteBinaryLogs',
 	props: ['name'],
-	components: { Report },
+	components: { PerformanceReport },
 	data() {
 		return {
 			today: dayjs().format('YYYY-MM-DD HH:mm:ss'),

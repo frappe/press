@@ -1,16 +1,16 @@
 <template>
-	<Report :site="name" :reportOptions="deadlockReportOptions" />
+	<PerformanceReport :site="name" :reportOptions="deadlockReportOptions" />
 </template>
 
 <script>
 import dayjs from '../../../utils/dayjs';
-import Report from './Report.vue';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
 	name: 'SiteDeadlockReport',
 	props: ['name'],
 	components: {
-		Report
+		PerformanceReport
 	},
 	data() {
 		return {

@@ -1,5 +1,5 @@
 <template>
-	<Report
+	<PerformanceReport
 		title="Process List"
 		:site="name"
 		:reportOptions="processListOptions"
@@ -7,13 +7,13 @@
 </template>
 
 <script>
-import Report from './Report.vue';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
 	name: 'SiteMariaDBProcessList',
 	props: ['name'],
 	components: {
-		Report
+		PerformanceReport
 	},
 	computed: {
 		processListOptions() {
