@@ -298,11 +298,18 @@ const webhookListOptions = computed(() => ({
 			format: value => value.substring(0, 50)
 		}
 	],
-	primaryAction({ listResource }) {
+	primaryAction() {
 		return {
 			label: 'Add Webhook',
 			slots: { prefix: icon('plus') },
 			onClick: () => (showAddWebhookDialog.value = true)
+		};
+	},
+	secondaryAction() {
+		return {
+			label: 'Refresh',
+			slots: { prefix: icon('refresh-ccw') },
+			onClick: () => webhookListResource.reload()
 		};
 	}
 }));

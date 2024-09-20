@@ -6,7 +6,8 @@
 				{
 					label: 'Add Webhook',
 					variant: 'solid',
-					onClick: addWebhook
+					onClick: addWebhook,
+					loading: $resources?.addWebhook?.loading
 				}
 			]
 		}"
@@ -25,9 +26,9 @@
 						</template>
 					</FormControl>
 					<p class="mt-2 text-sm text-gray-700">
-						Note: Secret is optional. Check the
+						Note: Secret is optional. Check
 						<a href="//frappecloud.com/docs" class="underline" target="_blank"
-							>documentation here</a
+							>the documentation</a
 						>
 						to learn more
 					</p>

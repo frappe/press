@@ -805,3 +805,10 @@ V = TypeVar("V")
 
 def flatten(value_lists: "list[list[V]]") -> "list[V]":
 	return [value for values in value_lists for value in values]
+
+
+def is_valid_hostname(hostname):
+	if len(hostname) > 255:
+		return False
+	allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+	return all(allowed.match(x) for x in hostname.split("."))
