@@ -16,7 +16,10 @@
 						<div>Unpaid Amount</div>
 						<Button
 							:disabled="Boolean($resources.unpaidAmountDue.data == 0)"
-							@click="showPrepaidCreditsDialog = true"
+							@click="
+								showPrepaidCreditsDialog = true;
+								title = 'Pay your unpaid amount';
+							"
 							theme="gray"
 							iconLeft="credit-card"
 						>
@@ -110,6 +113,7 @@
 		<ChangePaymentModeDialog2 v-model="showChangeModeDialog" />
 
 		<BuyPrepaidCreditsDialog
+			:title="title"
 			v-if="showPrepaidCreditsDialog"
 			v-model="showPrepaidCreditsDialog"
 			:minimumAmount="minimumAmount"
@@ -177,7 +181,8 @@ export default {
 			showChangeModeDialog: false,
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
-			showUpcomingInvoiceDialog: false
+			showUpcomingInvoiceDialog: false,
+			title: 'Add credits to your account'
 		};
 	},
 	mounted() {
@@ -191,12 +196,10 @@ export default {
 	computed: {
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
-			const minimumDefault = this.$team.doc.currency == 'INR' ? 800 : 10;
+			const minimumDefault = this.$team.doc.currency == 'INR' ? 410 : 5;
 
 			return Math.ceil(
-				unpaidAmount && unpaidAmount > minimumDefault
-					? unpaidAmount
-					: minimumDefault
+				unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault
 			);
 		},
 		upcomingInvoice() {
