@@ -118,8 +118,10 @@ import ClickToCopyField from '../ClickToCopyField.vue';
 import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 import EditWebhookDialog from './EditWebhookDialog.vue';
+import { useRouter } from 'vue-router';
 
 const $team = getTeam();
+const router = useRouter();
 let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
 const showActivateWebhookDialog = ref(false);
@@ -373,6 +375,16 @@ const webhookListOptions = computed(() => ({
 									});
 							}
 						}
+					});
+				}
+			},
+			{
+				label: 'View Logs',
+				icon: 'list',
+				onClick: () => {
+					router.push({
+						name: 'WebhookLogs',
+						params: { id: row.name }
 					});
 				}
 			},

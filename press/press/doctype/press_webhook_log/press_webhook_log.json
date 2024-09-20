@@ -11,6 +11,7 @@
   "column_break_aqtt",
   "section_break_zwyy",
   "webhook",
+  "team",
   "column_break_mrcq",
   "endpoint",
   "section_break_nnsg",
@@ -87,11 +88,18 @@
    "fieldtype": "Data",
    "label": "Endpoint",
    "reqd": 1
+  },
+  {
+   "fetch_from": "webhook.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-20 14:47:24.010201",
+ "modified": "2024-09-20 15:35:44.305637",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Log",

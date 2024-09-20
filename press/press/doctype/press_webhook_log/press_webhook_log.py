@@ -21,6 +21,7 @@ class PressWebhookLog(Document):
 		response_body: DF.SmallText | None
 		response_status_code: DF.Data | None
 		status: DF.Literal["Sent", "Failed"]
+		team: DF.Link | None
 		webhook: DF.Link
 	# end: auto-generated types
 
@@ -33,6 +34,7 @@ class PressWebhookLog(Document):
 		"request_payload",
 		"response_body",
 		"response_status_code",
+		"creation",
 	]
 
 
