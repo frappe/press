@@ -9,7 +9,7 @@ import frappe
 def get_webhooks():
 	return frappe.get_list(
 		"Press Webhook",
-		fields=["enabled", "endpoint"],
+		fields=["name", "enabled", "endpoint"],
 		order_by="creation desc",
 	)
 

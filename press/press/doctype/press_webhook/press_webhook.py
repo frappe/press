@@ -5,6 +5,7 @@ import contextlib
 import ipaddress
 from urllib.parse import urlparse
 import frappe
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import is_valid_hostname
 import requests
@@ -113,6 +114,10 @@ class PressWebhook(Document):
 		else:
 			message = f"<b>Status Code -</b> {result.response_status_code}</br><b>Response -</b></br>{result.response}"
 			frappe.throw(title="Webhook endpoint is invalid", msg=message)
+
+	@dashboard_whitelist()
+	def delete(self):
+		frappe.delete_doc("Press Webhook", self.name)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

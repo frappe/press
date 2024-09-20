@@ -271,6 +271,21 @@ const webhookListResource = createResource({
 	auto: true
 });
 
+const deleteWebhook = createResource({
+	url: 'press.api.client.delete',
+	onSuccess() {
+		toast.success('Webhook deleted successfully');
+		webhookListResource.reload();
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'Webhook could not be deleted'
+		);
+	}
+});
+
 const webhookListOptions = computed(() => ({
 	data: () => webhookListResource.data,
 	columns: [
@@ -294,10 +309,24 @@ const webhookListOptions = computed(() => ({
 		{
 			label: 'Endpoint',
 			fieldname: 'endpoint',
-			width: 0.9,
+			width: 1,
 			format: value => value.substring(0, 50)
 		}
 	],
+	rowActions({ row }) {
+		return [
+			{
+				label: 'Delete',
+				icon: 'trash-2',
+				onClick() {
+					deleteWebhook.submit({
+						doctype: 'Press Webhook',
+						name: row.name
+					});
+				}
+			}
+		];
+	},
 	primaryAction() {
 		return {
 			label: 'Add Webhook',

@@ -67,6 +67,7 @@ ALLOWED_DOCTYPES = [
 	"Frappe Version",
 	"Dashboard Banner",
 	"App Release Approval Request",
+	"Press Webhook",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
