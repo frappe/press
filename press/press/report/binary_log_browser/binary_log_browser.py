@@ -87,7 +87,6 @@ def get_data(filters):
 			if len(results) > data["max_lines"]:
 				return results
 
-	print(filters)
 	return results
 
 
