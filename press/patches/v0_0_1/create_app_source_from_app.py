@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -21,16 +20,12 @@ def execute():
 	distinct_apps = frappe.get_all("App", ["title", "scrubbed"], group_by="scrubbed")
 
 	for distinct_app in distinct_apps:
-		apps = frappe.get_all(
-			"App", "*", {"scrubbed": distinct_app.scrubbed}, order_by="enabled desc"
-		)
+		apps = frappe.get_all("App", "*", {"scrubbed": distinct_app.scrubbed}, order_by="enabled desc")
 		for app in apps:
 			versions = set(frappe.get_all("Release Group", {"app": app.name}, pluck="version"))
 			if not versions:
 				groups = frappe.get_all("Bench", {"app": app.name}, pluck="group")
-				versions = set(
-					frappe.get_all("Release Group", {"name": ("in", groups)}, pluck="version")
-				)
+				versions = set(frappe.get_all("Release Group", {"name": ("in", groups)}, pluck="version"))
 			if not versions:
 				continue
 			source = {
@@ -80,6 +75,4 @@ def delete():
 		frappe.delete_doc("App Release Difference", difference.name)
 	for source in frappe.get_all("App Source"):
 		frappe.delete_doc("App Source", source.name)
-	frappe.db.delete(
-		"Patch Log", {"patch": "press.patches.v0_0_1.create_app_source_from_app"}
-	)
+	frappe.db.delete("Patch Log", {"patch": "press.patches.v0_0_1.create_app_source_from_app"})

@@ -21,9 +21,7 @@ except ImportError:
 
 def execute(filters=None):
 	frappe.only_for(["System Manager", "Site Manager"])
-	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"][
-		"db_name"
-	]
+	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"]["db_name"]
 
 	make_access_log(
 		doctype="Site",
@@ -67,21 +65,15 @@ def get_data(filters):
 
 	files = agent.get("database/binary/logs")
 
-	files_in_timespan = get_files_in_timespan(
-		files, data["start_datetime"], data["stop_datetime"]
-	)
+	files_in_timespan = get_files_in_timespan(files, data["start_datetime"], data["stop_datetime"])
 
 	results = []
 	for file in files_in_timespan:
 		rows = agent.post(f"database/binary/logs/{file}", data=data)
 		for row in rows:
 			if filters.format_queries:
-				row["query"] = sqlparse.format(
-					row["query"].strip(), keyword_case="upper", reindent=True
-				)
-			row["timestamp"] = get_datetime_str(
-				convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
-			)
+				row["query"] = sqlparse.format(row["query"].strip(), keyword_case="upper", reindent=True)
+			row["timestamp"] = get_datetime_str(convert_utc_to_user_timezone(get_datetime(row["timestamp"])))
 			results.append(row)
 
 			if len(results) > data["max_lines"]:
@@ -90,9 +82,7 @@ def get_data(filters):
 	return results
 
 
-def get_files_in_timespan(
-	files: list[dict[str, str]], start: str, stop: str
-) -> list[str]:
+def get_files_in_timespan(files: list[dict[str, str]], start: str, stop: str) -> list[str]:
 	files.sort(key=lambda f: f["modified"])
 
 	files_in_timespan = []

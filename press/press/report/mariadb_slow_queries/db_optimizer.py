@@ -3,10 +3,11 @@
 This is largely based on heuristics and known good practices for indexing.
 """
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
-import re
+
 import frappe
 from frappe.utils import cint, cstr, flt
 from sql_metadata import Parser
@@ -90,11 +91,7 @@ class DBIndex:
 	_score: float = 0.0
 
 	def __eq__(self, other: "DBIndex") -> bool:
-		return (
-			self.column == other.column
-			and self.sequence == other.sequence
-			and self.table == other.table
-		)
+		return self.column == other.column and self.sequence == other.sequence and self.table == other.table
 
 	def __repr__(self):
 		return f"DBIndex(`{self.table}`.`{self.column}`)"
@@ -132,9 +129,7 @@ class ColumnStat:
 			avg_frequency=data["avg_frequency"],
 			avg_length=data["avg_length"],
 			nulls_ratio=data["nulls_ratio"],
-			histogram=[flt(bin) for bin in data["histogram"].split(",")]
-			if data["histogram"]
-			else [],
+			histogram=[flt(bin) for bin in data["histogram"].split(",")] if data["histogram"] else [],
 		)
 
 
@@ -155,11 +150,7 @@ class DBTable:
 		"""Estimate cardinality using mysql.column_stat"""
 		for column_stat in column_stats:
 			for col in self.schema:
-				if (
-					col.name == column_stat.column_name
-					and not col.cardinality
-					and column_stat.avg_frequency
-				):
+				if col.name == column_stat.column_name and not col.cardinality and column_stat.avg_frequency:
 					# "hack" or "math" - average frequency is on average how frequently a row value appears.
 					# Avg = total_rows / cardinality, so...
 					col.cardinality = self.total_rows / column_stat.avg_frequency
@@ -231,9 +222,7 @@ class DBOptimizer:
 				possible_indexes.extend(order_by_columns)
 
 		possible_db_indexes = [self._convert_to_db_index(i) for i in possible_indexes]
-		possible_db_indexes = [
-			i for i in possible_db_indexes if i.column not in ("*", "name")
-		]
+		possible_db_indexes = [i for i in possible_db_indexes if i.column not in ("*", "name")]
 		possible_db_indexes.sort(key=lambda i: (i.table, i.column))
 
 		return self._remove_existing_indexes(possible_db_indexes)
@@ -266,9 +255,7 @@ class DBOptimizer:
 			matched_sub_index = []
 			for idx_part in list(idx):
 				matching_part = [
-					i
-					for i in potential_indexes
-					if i.column == idx_part.column and i.table == idx_part.table
+					i for i in potential_indexes if i.column == idx_part.column and i.table == idx_part.table
 				]
 				if not matching_part:
 					# pop and recurse

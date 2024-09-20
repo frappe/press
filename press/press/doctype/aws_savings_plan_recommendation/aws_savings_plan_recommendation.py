@@ -9,7 +9,6 @@ from frappe.utils import cint, flt
 
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
-
 AWS_HOURS_IN_A_MONTH = 730
 
 
@@ -65,9 +64,7 @@ class AWSSavingsPlanRecommendation(Document):
 		self.savings_percentage = flt(details["EstimatedSavingsPercentage"])
 		self.hourly_on_demand_spend = flt(details["CurrentAverageHourlyOnDemandSpend"])
 		self.monthly_on_demand_spend = self.hourly_on_demand_spend * AWS_HOURS_IN_A_MONTH
-		self.monthly_savings_amount = (
-			self.monthly_on_demand_spend * self.savings_percentage / 100
-		)
+		self.monthly_savings_amount = self.monthly_on_demand_spend * self.savings_percentage / 100
 
 		self.roi_percentage = self.monthly_savings_amount / self.monthly_commitment * 100
 

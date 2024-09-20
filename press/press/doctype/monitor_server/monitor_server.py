@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -138,9 +137,7 @@ class MonitorServer(BaseServer):
 
 	@frappe.whitelist()
 	def reconfigure_monitor_server(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_reconfigure_monitor_server", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_reconfigure_monitor_server", queue="long", timeout=1200)
 
 	def _reconfigure_monitor_server(self):
 		settings = frappe.get_single("Press Settings")

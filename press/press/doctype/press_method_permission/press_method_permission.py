@@ -24,9 +24,7 @@ class PressMethodPermission(Document):
 
 def available_actions():
 	result = {}
-	doctypes = frappe.get_all(
-		"Press Method Permission", pluck="document_type", distinct=True
-	)
+	doctypes = frappe.get_all("Press Method Permission", pluck="document_type", distinct=True)
 
 	for doctype in doctypes:
 		result[doctype] = {

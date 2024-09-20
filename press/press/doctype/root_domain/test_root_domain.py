@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
@@ -46,9 +45,7 @@ class TestRootDomain(unittest.TestCase):
 		from press.press.doctype.server.test_server import create_test_server
 
 		creation = creation or frappe.utils.now_datetime()
-		server = create_test_server(
-			create_test_proxy_server().name, create_test_database_server().name
-		)
+		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name)
 
 		job = frappe.get_doc(
 			{

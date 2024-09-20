@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
@@ -7,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+
 from press.press.doctype.app.app import new_app
 from press.utils import get_current_team
 
@@ -24,10 +24,10 @@ def new(app):
 	team = get_current_team()
 
 	if frappe.db.exists("App", name):
-		app_doc: "App" = frappe.get_doc("App", name)
+		app_doc: App = frappe.get_doc("App", name)
 	else:
-		app_doc: "App" = new_app(name, app["title"])
-	group: "ReleaseGroup" = frappe.get_doc("Release Group", app["group"])
+		app_doc: App = new_app(name, app["title"])
+	group: ReleaseGroup = frappe.get_doc("Release Group", app["group"])
 
 	source = app_doc.add_source(
 		group.version,

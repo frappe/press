@@ -1,5 +1,4 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
-from typing import Dict, List
 
 import frappe
 
@@ -21,7 +20,7 @@ def number_k_format(number: int):
 		return f"{value}k"
 
 
-def get_rating_percentage_distribution(reviews: List) -> Dict:
+def get_rating_percentage_distribution(reviews: list) -> dict:
 	"""
 	Takes a list of app reviews and returns percentage distribution for ratings 1-5
 	"""
@@ -32,9 +31,7 @@ def get_rating_percentage_distribution(reviews: List) -> Dict:
 		rating_frequencies[review.rating] += 1
 
 	if total_num_reviews > 0:
-		rating_percentages = dict(
-			(k, (v * 100 // total_num_reviews)) for k, v in rating_frequencies.items()
-		)
+		rating_percentages = dict((k, (v * 100 // total_num_reviews)) for k, v in rating_frequencies.items())
 		return rating_percentages
 	else:
 		# To handle the case when no reviews are present

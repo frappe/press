@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 import json
 
 import frappe
-from frappe.model.document import Document
 import rq
+from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.site import check_dns
@@ -69,9 +68,7 @@ class SiteDomain(Document):
 		site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
-			frappe.throw(
-				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError
-			)
+			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
 		site.set_redirects_in_proxy([self.name])
 
 	def remove_redirect_in_proxy(self):
@@ -146,9 +143,7 @@ class SiteDomain(Document):
 
 	def on_trash(self):
 		if self.domain == frappe.db.get_value("Site", self.site, "host_name"):
-			frappe.throw(
-				msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError
-			)
+			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
 		if not self.default:
@@ -224,6 +219,4 @@ def update_dns_type():
 			log_error("DNS Check Failed", domain=domain)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Site Domain"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Domain")

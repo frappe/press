@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -19,9 +18,7 @@ class Config(Document):
 			fields=["key", "title"],
 			filters={"key": ["in", [c.key for c in configs]]},
 		)
-		secret_keys = frappe.get_all(
-			"Site Config Key", filters={"type": "Password"}, pluck="key"
-		)
+		secret_keys = frappe.get_all("Site Config Key", filters={"type": "Password"}, pluck="key")
 		for config in configs:
 			if config.key in secret_keys:
 				config.value = "*******"

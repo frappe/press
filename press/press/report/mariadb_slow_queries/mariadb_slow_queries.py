@@ -150,9 +150,7 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	}
 
 	if search_pattern and search_pattern != ".*":
-		query["query"]["bool"]["filter"].append(
-			{"regexp": {"mysql.slowlog.query": search_pattern}}
-		)
+		query["query"]["bool"]["filter"].append({"regexp": {"mysql.slowlog.query": search_pattern}})
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
@@ -254,9 +252,7 @@ class OptimizeDatabaseQuery:
 
 	def fetch_explain(self) -> list[dict]:
 		site = frappe.get_cached_doc("Site", self.site)
-		db_server_name = frappe.db.get_value(
-			"Server", site.server, "database_server", cache=True
-		)
+		db_server_name = frappe.db.get_value("Server", site.server, "database_server", cache=True)
 		database_server = frappe.get_cached_doc("Database Server", db_server_name)
 		agent = Agent(database_server.name, "Database Server")
 
@@ -284,9 +280,7 @@ def _fetch_table_stats(site: str, table: str):
 @redis_cache(ttl=60 * 5)
 def _fetch_column_stats(site, table, doc_name):
 	site = frappe.get_cached_doc("Site", site)
-	db_server_name = frappe.db.get_value(
-		"Server", site.server, "database_server", cache=True
-	)
+	db_server_name = frappe.db.get_value("Server", site.server, "database_server", cache=True)
 	database_server = frappe.get_cached_doc("Database Server", db_server_name)
 	agent = Agent(database_server.name, "Database Server")
 
@@ -324,6 +318,4 @@ def _add_suggested_index(site_name, indexes):
 		site = frappe.get_cached_doc("Site", site_name)
 		agent = Agent(site.server)
 		agent.add_database_index(site, doctype=doctype, columns=[column])
-		frappe.msgprint(
-			f"Index {index} added on site {site_name} successfully", realtime=True
-		)
+		frappe.msgprint(f"Index {index} added on site {site_name} successfully", realtime=True)

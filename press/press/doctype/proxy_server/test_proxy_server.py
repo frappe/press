@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from typing import Dict, List
 from unittest.mock import Mock, patch
 
 import frappe
@@ -25,7 +23,7 @@ from press.utils.test import foreground_enqueue_doc
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
-	domains: List[Dict[str, str]] = [{"domain": "fc.dev"}],
+	domains: list[dict[str, str]] = [{"domain": "fc.dev"}],
 	cluster: str = "Default",
 	is_primary: bool = True,
 ) -> ProxyServer:
@@ -83,9 +81,7 @@ class TestProxyServer(FrappeTestCase):
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
-		update_dns_records_for_sites.assert_called_once_with(
-			root_domain, [site1.name], proxy2.name
-		)
+		update_dns_records_for_sites.assert_called_once_with(root_domain, [site1.name], proxy2.name)
 		proxy2.reload()
 		proxy1.reload()
 		self.assertTrue(proxy2.is_primary)

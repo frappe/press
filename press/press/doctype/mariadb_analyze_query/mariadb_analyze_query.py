@@ -13,6 +13,7 @@ class MariaDBAnalyzeQuery(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.mariadb_analyze_query_tables.mariadb_analyze_query_tables import (
 			MariaDBAnalyzeQueryTables,
 		)

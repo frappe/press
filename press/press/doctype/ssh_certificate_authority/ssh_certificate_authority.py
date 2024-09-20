@@ -6,11 +6,11 @@ import shlex
 import shutil
 import subprocess
 
-import docker
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cint
 
+import docker
 from press.utils import log_error
 
 
@@ -52,13 +52,9 @@ class SSHCertificateAuthority(Document):
 			raise
 
 	def generate_key_pair(self):
-		if not os.path.exists(self.private_key_file) and not os.path.exists(
-			self.public_key_file
-		):
+		if not os.path.exists(self.private_key_file) and not os.path.exists(self.public_key_file):
 			domain = frappe.db.get_value("Press Settings", None, "domain")
-			self.run(
-				f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory
-			)
+			self.run(f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory)
 
 		os.chmod(self.public_key_file, 0o400)
 		os.chmod(self.private_key_file, 0o400)
@@ -74,9 +70,7 @@ class SSHCertificateAuthority(Document):
 		if os.path.exists(self.directory):
 			shutil.rmtree(self.directory)
 
-	def sign(
-		self, identity, principals, duration, public_key_path, serial_number, host_key=False
-	):
+	def sign(self, identity, principals, duration, public_key_path, serial_number, host_key=False):
 		if principals is None:
 			principals = []
 
@@ -132,22 +126,16 @@ class SSHCertificateAuthority(Document):
 		with open(known_hosts_file, "w") as f:
 			f.write(f"@cert-authority * {self.public_key}")
 
-		self.run(
-			"ssh-keygen -t rsa -b 4096 -N '' -f ssh_host_rsa_key", directory=self.build_directory
-		)
+		self.run("ssh-keygen -t rsa -b 4096 -N '' -f ssh_host_rsa_key", directory=self.build_directory)
 
 		host_key_path = os.path.join(self.build_directory, "ssh_host_rsa_key.pub")
 
 		domain = frappe.db.get_value("Press Settings", None, "domain")
-		self.sign(
-			domain, None, "+52w", host_key_path, cint(self.docker_image_tag) + 1, host_key=True
-		)
+		self.sign(domain, None, "+52w", host_key_path, cint(self.docker_image_tag) + 1, host_key=True)
 
 	def _run_docker_build(self):
 		environment = os.environ
-		environment.update(
-			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
-		)
+		environment.update({"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"})
 
 		settings = frappe.db.get_value(
 			"Press Settings",

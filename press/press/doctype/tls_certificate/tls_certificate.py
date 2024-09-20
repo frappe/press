@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -62,7 +61,11 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
-		(user, session_data, team,) = (
+		(
+			user,
+			session_data,
+			team,
+		) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(),
@@ -89,9 +92,7 @@ class TLSCertificate(Document):
 				self.full_chain,
 				self.intermediate_chain,
 				self.private_key,
-			) = ca.obtain(
-				domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard
-			)
+			) = ca.obtain(domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard)
 			self._extract_certificate_details()
 			self.status = "Active"
 			self.retry_count = 0
@@ -132,9 +133,7 @@ class TLSCertificate(Document):
 		proxies_containing_domain = frappe.get_all(
 			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
 		)
-		proxies_using_domain = frappe.get_all(
-			"Proxy Server", {"domain": self.domain}, pluck="name"
-		)
+		proxies_using_domain = frappe.get_all("Proxy Server", {"domain": self.domain}, pluck="name")
 		proxies_containing_domain = set(proxies_containing_domain) - set(proxies_using_domain)
 		for proxy_name in proxies_containing_domain:
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
@@ -185,15 +184,11 @@ class TLSCertificate(Document):
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"TLS Certificate"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")
 
 
 def renew_tls_certificates():
-	tls_renewal_queue_size = frappe.db.get_single_value(
-		"Press Settings", "tls_renewal_queue_size"
-	)
+	tls_renewal_queue_size = frappe.db.get_single_value("Press Settings", "tls_renewal_queue_size")
 	pending = frappe.get_all(
 		"TLS Certificate",
 		fields=["name", "domain", "wildcard", "retry_count"],
@@ -209,9 +204,7 @@ def renew_tls_certificates():
 	for certificate in pending:
 		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
 			break
-		site = frappe.db.get_value(
-			"Site Domain", {"tls_certificate": certificate.name}, "site"
-		)
+		site = frappe.db.get_value("Site Domain", {"tls_certificate": certificate.name}, "site")
 		try:
 			should_renew = False
 			if certificate.wildcard:
@@ -408,9 +401,7 @@ class LetsEncrypt(BaseCA):
 
 	def run(self, command, environment=None):
 		try:
-			subprocess.check_output(
-				shlex.split(command), stderr=subprocess.STDOUT, env=environment
-			)
+			subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, env=environment)
 		except subprocess.CalledProcessError as e:
 			output = (e.output or b"").decode()
 			if "Another instance of Certbot is already running" not in output:

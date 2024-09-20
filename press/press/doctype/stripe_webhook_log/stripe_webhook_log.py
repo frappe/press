@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
@@ -45,16 +44,11 @@ class StripeWebhookLog(Document):
 
 		if invoice_id:
 			self.invoice_id = invoice_id
-			self.invoice = frappe.db.get_value(
-				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
-			)
+			self.invoice = frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "name")
 
 		if self.event_type == "payment_intent.payment_failed":
 			if payment_method := (
-				payload.get("data", {})
-				.get("object", {})
-				.get("last_payment_error", {})
-				.get("payment_method")
+				payload.get("data", {}).get("object", {}).get("last_payment_error", {}).get("payment_method")
 			):
 				payment_method_id = payment_method.get("id")
 

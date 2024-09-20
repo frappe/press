@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
 
 import unittest
-from typing import Optional
 from unittest.mock import patch
 
 import frappe
@@ -18,7 +16,7 @@ def create_test_account_request(
 	erpnext: bool = True,
 	creation=None,
 	saas: bool = False,
-	saas_app: Optional[str] = None,
+	saas_app: str | None = None,
 ):
 	creation = creation or frappe.utils.now_datetime()
 	email = email or frappe.mock("email")

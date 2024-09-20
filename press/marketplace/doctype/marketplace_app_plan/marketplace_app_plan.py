@@ -1,7 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import List
 
 import frappe
 from frappe import cint
@@ -77,7 +76,7 @@ class MarketplaceAppPlan(Plan):
 		).insert(ignore_permissions=True)
 
 
-def get_app_plan_features(app_plan: str) -> List[str]:
+def get_app_plan_features(app_plan: str) -> list[str]:
 	features = frappe.get_all(
 		"Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx"
 	)

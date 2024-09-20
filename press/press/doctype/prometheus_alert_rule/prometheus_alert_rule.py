@@ -117,10 +117,8 @@ class PrometheusAlertRule(Document):
 	def react(self, instance_type: str, instance: str):
 		return self.run_press_job(self.press_job_type, instance_type, instance)
 
-	def run_press_job(
-		self, job_name: str, server_type: str, server_name: str, arguments=None
-	):
-		server: "Server" = frappe.get_doc(server_type, server_name)
+	def run_press_job(self, job_name: str, server_type: str, server_name: str, arguments=None):
+		server: Server = frappe.get_doc(server_type, server_name)
 		if self.only_on_shared and not server.is_shared:
 			return
 		if find(self.ignore_on_clusters, lambda x: x.cluster == server.cluster):

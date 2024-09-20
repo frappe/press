@@ -36,9 +36,7 @@ def execute():
 
 	for marketplace_plan in frappe.get_all("Marketplace App Plan", pluck="name"):
 		map_doc = frappe.get_doc("Marketplace App Plan", marketplace_plan)
-		plan = frappe.get_all(
-			"Site Plan", {"name": map_doc.plan}, ["plan_title", "price_usd", "price_inr"]
-		)
+		plan = frappe.get_all("Site Plan", {"name": map_doc.plan}, ["plan_title", "price_usd", "price_inr"])
 
 		if plan:
 			plan = plan[0]

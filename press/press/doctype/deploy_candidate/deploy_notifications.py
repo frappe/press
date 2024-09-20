@@ -26,16 +26,14 @@ To handle an error:
 3. Update the details object with the correct values.
 """
 
-Details = TypedDict(
-	"Details",
-	{
-		"title": Optional[str],
-		"message": str,
-		"traceback": Optional[str],
-		"is_actionable": bool,
-		"assistance_url": Optional[str],
-	},
-)
+
+class Details(TypedDict):
+	title: str | None
+	message: str
+	traceback: str | None
+	is_actionable: bool
+	assistance_url: str | None
+
 
 # These strings are checked against the traceback or build_output
 MatchStrings = str | list[str]
@@ -60,8 +58,7 @@ if typing.TYPE_CHECKING:
 			...
 
 	class WillFailChecker(Protocol):
-		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
-			...
+		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None: ...
 
 	UserAddressableHandlerTuple = tuple[
 		MatchStrings,
@@ -260,9 +257,7 @@ def create_build_failed_notification(
 	doc.insert()
 	frappe.db.commit()
 
-	frappe.publish_realtime(
-		"press_notification", doctype="Press Notification", message={"team": dc.team}
-	)
+	frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": dc.team})
 
 	return details["is_actionable"]
 
@@ -272,7 +267,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	default_title = get_default_title(dc)
 	default_message = get_default_message(dc)
 
-	details: "Details" = dict(
+	details: Details = dict(
 		title=default_title,
 		message=default_message,
 		traceback=tb,
@@ -346,11 +341,7 @@ def update_with_import_error(
 
 	details["title"] = "App installation failed due to invalid import"
 
-	lines = [
-		line
-		for line in dc.build_output.split("\n")
-		if "ImportError: cannot import name" in line
-	]
+	lines = [line for line in dc.build_output.split("\n") if "ImportError: cannot import name" in line]
 	invalid_import = None
 	if len(lines) > 1 and len(parts := lines[0].split("From")) > 1:
 		imported = parts[0].strip().split(" ")[-1][1:-1]
@@ -392,11 +383,7 @@ def update_with_module_not_found(
 
 	details["title"] = "App installation failed due to missing module"
 
-	lines = [
-		line
-		for line in dc.build_output.split("\n")
-		if "ModuleNotFoundError: No module named" in line
-	]
+	lines = [line for line in dc.build_output.split("\n") if "ModuleNotFoundError: No module named" in line]
 	missing_module = None
 	if len(lines) > 1:
 		missing_module = lines[0].split(" ")[-1][1:-1]
@@ -435,11 +422,7 @@ def update_with_dependency_not_found(
 
 	details["title"] = "App installation failed due to dependency not being found"
 
-	lines = [
-		line
-		for line in dc.build_output.split("\n")
-		if "No matching distribution found for" in line
-	]
+	lines = [line for line in dc.build_output.split("\n") if "No matching distribution found for" in line]
 	missing_dep = None
 	if len(lines) > 1:
 		missing_dep = lines[0].split(" ")[-1]
@@ -619,9 +602,7 @@ def update_with_incompatible_node(
 	return True
 
 
-def check_incompatible_node(
-	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
-) -> None:
+def check_incompatible_node(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
 	old_node = old_dc.get_dependency_version("node")
 	new_node = new_dc.get_dependency_version("node")
 
@@ -655,9 +636,7 @@ def update_with_incompatible_python(
 	return True
 
 
-def check_incompatible_python(
-	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
-) -> None:
+def check_incompatible_python(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
 	old_node = old_dc.get_dependency_version("python")
 	new_node = new_dc.get_dependency_version("python")
 

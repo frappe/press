@@ -21,23 +21,19 @@ class MarketplaceAppSubscription(Document):
 
 	def create_site_config_key(self):
 		if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.app}"}):
-			frappe.get_doc(
-				doctype="Site Config Key", internal=True, key=f"sk_{self.app}"
-			).insert(ignore_permissions=True)
+			frappe.get_doc(doctype="Site Config Key", internal=True, key=f"sk_{self.app}").insert(
+				ignore_permissions=True
+			)
 
 	def validate_marketplace_app_plan(self):
 		app = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "app")
 
 		if app != self.app:
-			frappe.throw(
-				f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!"
-			)
+			frappe.throw(f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!")
 
 	def set_plan(self):
 		if not self.plan or self.has_value_changed("marketplace_app_plan"):
-			self.plan = frappe.db.get_value(
-				"Marketplace App Plan", self.marketplace_app_plan, "plan"
-			)
+			self.plan = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan")
 
 	def validate_duplicate_subscription(self):
 		if not self.site:
@@ -58,9 +54,7 @@ class MarketplaceAppSubscription(Document):
 
 	def on_update(self):
 		if self.has_value_changed("marketplace_app_plan"):
-			self.plan = frappe.db.get_value(
-				"Marketplace App Plan", self.marketplace_app_plan, "plan"
-			)
+			self.plan = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan")
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
 		if self.has_value_changed("team"):

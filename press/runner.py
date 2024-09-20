@@ -37,9 +37,7 @@ class AnsibleCallback(CallbackBase):
 	def process_task_success(self, result):
 		result, action = frappe._dict(result._result), result._task.action
 		if action == "user":
-			server_type, server = frappe.db.get_value(
-				"Ansible Play", self.play, ["server_type", "server"]
-			)
+			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])
 			server = frappe.get_doc(server_type, server)
 			if result.name == "root":
 				server.root_public_key = result.ssh_public_key
@@ -132,9 +130,7 @@ class AnsibleCallback(CallbackBase):
 	@reconnect_on_failure()
 	def on_async_poll(self, result):
 		job_id = result["ansible_job_id"]
-		task_name = frappe.get_value(
-			"Ansible Task", {"play": self.play, "job_id": job_id}, "name"
-		)
+		task_name = frappe.get_value("Ansible Task", {"play": self.play, "job_id": job_id}, "name")
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.result = json.dumps(result, indent=4)
 		task.duration = now() - task.start

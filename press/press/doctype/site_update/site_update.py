@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -46,9 +45,7 @@ class SiteUpdate(Document):
 		skipped_failing_patches: DF.Check
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
-		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"
-		]
+		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
 		team: DF.Link | None
 		update_job: DF.Link | None
 	# end: auto-generated types
@@ -72,9 +69,7 @@ class SiteUpdate(Document):
 		results = query.run(as_dict=True)
 		for result in results:
 			if result.updated_on:
-				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(
-					tzinfo=None
-				)
+				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(tzinfo=None)
 
 		return results
 
@@ -133,7 +128,7 @@ class SiteUpdate(Document):
 			self.difference = difference.name
 			self.deploy_type = "Pull"
 			difference_doc = frappe.get_doc("Deploy Candidate Difference", self.difference)
-			site_doc: "Site" = frappe.get_doc("Site", self.site)
+			site_doc: Site = frappe.get_doc("Site", self.site)
 			for site_app in site_doc.apps:
 				difference_app = find(difference_doc.apps, lambda x: x.app == site_app.app)
 				if difference_app and difference_app.deploy_type == "Migrate":
@@ -184,7 +179,7 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
-		site: "Site" = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		site.ready_for_move()
 		self.create_agent_request()
 
@@ -260,8 +255,7 @@ class SiteUpdate(Document):
 		workload_diff = dest_bench.workload - source_bench.workload
 		if (
 			server.new_worker_allocation
-			and workload_diff
-			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+			and workload_diff >= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
 			frappe.enqueue_doc(
 				"Server",
@@ -279,11 +273,11 @@ class SiteUpdate(Document):
 
 
 def trigger_recovery_job(site_update_name):
-	site_update: "SiteUpdate" = frappe.get_doc("Site Update", site_update_name)
+	site_update: SiteUpdate = frappe.get_doc("Site Update", site_update_name)
 	if site_update.recover_job:
 		return
 	agent = Agent(site_update.server)
-	site: "Site" = frappe.get_doc("Site", site_update.site)
+	site: Site = frappe.get_doc("Site", site_update.site)
 	job = None
 	if site.bench == site_update.destination_bench:
 		# The site is already on destination bench
@@ -332,9 +326,7 @@ def benches_with_available_update(site=None, server=None):
 		as_dict=True,
 	)
 
-	destination_candidates = list(
-		set(d["destination_candidate"] for d in source_benches_info)
-	)
+	destination_candidates = list(set(d["destination_candidate"] for d in source_benches_info))
 
 	destination_benches_info = frappe.get_all(
 		"Bench",
@@ -629,7 +621,5 @@ def send_job_failure_notification(job_name):
 
 
 def on_doctype_update():
-	frappe.db.add_index(
-		"Site Update", ["site", "source_candidate", "destination_candidate"]
-	)
+	frappe.db.add_index("Site Update", ["site", "source_candidate", "destination_candidate"])
 	frappe.db.add_index("Site Update", ["server", "status"])

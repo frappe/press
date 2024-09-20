@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -8,8 +7,8 @@ import secrets
 from datetime import datetime
 
 import frappe
-from frappe.exceptions import TooManyRequestsError, OutgoingEmailError, ValidationError
 import requests
+from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
 
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
@@ -61,9 +60,7 @@ def setup(site):
 
 	update_config(site, json.dumps(new_config))
 
-	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert(
-		ignore_permissions=True
-	)
+	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert(ignore_permissions=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -152,9 +149,7 @@ def send_mime_mail(**data):
 
 	validate_plan(data["sk_mail"])
 
-	api_key, domain = frappe.db.get_value(
-		"Press Settings", None, ["mailgun_api_key", "root_domain"]
-	)
+	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
@@ -217,8 +212,7 @@ def event_log():
 		)
 		status = event_data["event"]
 		delivery_message = (
-			event_data["delivery-status"]["message"]
-			or event_data["delivery-status"]["description"]
+			event_data["delivery-status"]["message"] or event_data["delivery-status"]["description"]
 		)
 		frappe.get_doc(
 			{

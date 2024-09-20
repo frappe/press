@@ -53,7 +53,5 @@ def create_test_stripe_credentials():
 	secret_key = os.environ.get("STRIPE_SECRET_KEY")
 
 	if publishable_key and secret_key:
-		frappe.db.set_single_value(
-			"Press Settings", "stripe_publishable_key", publishable_key
-		)
+		frappe.db.set_single_value("Press Settings", "stripe_publishable_key", publishable_key)
 		frappe.db.set_single_value("Press Settings", "stripe_secret_key", secret_key)

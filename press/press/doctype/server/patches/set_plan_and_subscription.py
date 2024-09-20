@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 import frappe
@@ -41,9 +40,7 @@ def execute():
 			if not subscription and not server.plan:
 				# Plan is not set and no subscription exists
 				# Find a plan based on the server's instance type
-				instance_type = frappe.db.get_value(
-					"Virtual Machine", server.virtual_machine, "machine_type"
-				)
+				instance_type = frappe.db.get_value("Virtual Machine", server.virtual_machine, "machine_type")
 				plan = frappe.get_all(
 					"Server Plan",
 					{

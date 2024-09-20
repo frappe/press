@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -133,6 +132,4 @@ class BalanceTransaction(Document):
 			)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Balance Transaction"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Balance Transaction")

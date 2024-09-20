@@ -2,10 +2,10 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.model.document import Document
-
 import frappe.utils
+from frappe.model.document import Document
 from frappe.utils.momentjs import get_all_timezones
+
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -18,6 +18,7 @@ class ProductTrial(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,

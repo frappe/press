@@ -56,14 +56,9 @@ def get_tags(repositories):
 		tag_requests.append(gget(f"{repository}/tags/list"))
 
 	print("Sending tags/list Requests")
-	for tag_response in tqdm(
-		grequests.imap(tag_requests, size=None), total=len(tag_requests)
-	):
+	for tag_response in tqdm(grequests.imap(tag_requests, size=None), total=len(tag_requests)):
 		tag_response = tag_response.json()
-		current = [
-			{"repository": tag_response["name"], "tag": tag}
-			for tag in tag_response.get("tags") or []
-		]
+		current = [{"repository": tag_response["name"], "tag": tag} for tag in tag_response.get("tags") or []]
 		tags.extend(current)
 
 	return tags
@@ -77,9 +72,7 @@ def get_layers(tags):
 		layer_requests.append(gget(f"{tag['repository']}/manifests/{tag['tag']}"))
 
 	print("Sending manifest Requests")
-	for layer_response in tqdm(
-		grequests.imap(layer_requests, size=None), total=len(layer_requests)
-	):
+	for layer_response in tqdm(grequests.imap(layer_requests, size=None), total=len(layer_requests)):
 		layer_response = layer_response.json()
 		current = [
 			{

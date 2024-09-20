@@ -18,12 +18,8 @@ class SaasSignupGenerator(WebsiteGenerator):
 		context.parents = [{"name": "Marketplace App"}]
 		country_info = get_country_info() or {}
 		country_name = country_info.get("country")
-		context.country_name = (
-			country_name if frappe.db.exists("Country", country_name) else ""
-		)
-		context.enable_google_oauth = frappe.db.get_single_value(
-			"Press Settings", "enable_google_oauth"
-		)
+		context.country_name = country_name if frappe.db.exists("Country", country_name) else ""
+		context.enable_google_oauth = frappe.db.get_single_value("Press Settings", "enable_google_oauth")
 
 		return context
 

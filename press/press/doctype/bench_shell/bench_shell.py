@@ -34,7 +34,7 @@ class BenchShell(Document):
 	def run_command(self):
 		frappe.only_for("System Manager")
 
-		bench: "Bench" = frappe.get_doc("Bench", self.bench)
+		bench: Bench = frappe.get_doc("Bench", self.bench)
 		try:
 			result = bench.docker_execute(
 				self.command,
@@ -57,6 +57,6 @@ class BenchShell(Document):
 
 @frappe.whitelist()
 def run_command(doc):
-	bench_shell: "BenchShell" = frappe.get_doc(json.loads(doc))
+	bench_shell: BenchShell = frappe.get_doc(json.loads(doc))
 	bench_shell.run_command()
 	return bench_shell.as_dict()

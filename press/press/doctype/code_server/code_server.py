@@ -40,15 +40,9 @@ class CodeServer(Document):
 
 		if self.has_value_changed("subdomain"):
 			if frappe.db.exists("Code Server", self.name):
-				frappe.throw(
-					f"Code Server {self.name} already exists please choose a different name"
-				)
-			if frappe.db.exists(
-				"Code Server", {"bench": self.bench, "status": ("!=", "Archived")}
-			):
-				frappe.throw(
-					"Code Server already exists for selected bench choose a different bench"
-				)
+				frappe.throw(f"Code Server {self.name} already exists please choose a different name")
+			if frappe.db.exists("Code Server", {"bench": self.bench, "status": ("!=", "Archived")}):
+				frappe.throw("Code Server already exists for selected bench choose a different bench")
 		if not self.proxy_server and self.has_value_changed("server"):
 			self.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 

@@ -47,12 +47,8 @@ def get(name, timezone, duration="7d"):
 	}[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
-	request_count_by_path_data = get_request_by_path(
-		name, "count", timezone, timespan, timegrain
-	)
-	request_duration_by_path_data = get_request_by_path(
-		name, "duration", timezone, timespan, timegrain
-	)
+	request_count_by_path_data = get_request_by_path(name, "count", timezone, timespan, timegrain)
+	request_duration_by_path_data = get_request_by_path(name, "duration", timezone, timespan, timegrain)
 	average_request_duration_by_path_data = get_request_by_path(
 		name, "average_duration", timezone, timespan, timegrain
 	)
@@ -69,9 +65,7 @@ def get(name, timezone, duration="7d"):
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
 	check = slow_logs_by_duration["datasets"]
 	SLOW_QUERY_DURATION_THRESHOLD = 50
-	has_slow_queries = any(
-		max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check
-	)
+	has_slow_queries = any(max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check)
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
@@ -266,9 +260,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			order={"path_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket(
-			"path_count", "value_count", field="json.request.path"
-		)
+		search.aggs["method_path"].bucket("path_count", "value_count", field="json.request.path")
 
 	elif query_type == "duration":
 		search.aggs.bucket(
@@ -277,9 +269,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			field="json.request.path",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
 
 	elif query_type == "average_duration":
@@ -289,9 +279,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			field="json.request.path",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"avg_of_duration", avg_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
@@ -346,9 +334,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			order={"method_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket(
-			"method_count", "value_count", field="json.job.method"
-		)
+		search.aggs["method_path"].bucket("method_count", "value_count", field="json.job.method")
 
 	elif query_type == "duration":
 		search.aggs.bucket(
@@ -357,9 +343,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			field="json.job.method",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
 
 	elif query_type == "average_duration":
@@ -369,9 +353,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			field="json.job.method",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"avg_of_duration", avg_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
@@ -441,14 +423,10 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 			field="mysql.slowlog.query",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	return get_stacked_histogram_chart_result(
-		search, query_type, start, end, timegrain, to_s_divisor=1e9
-	)
+	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain, to_s_divisor=1e9)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
@@ -575,7 +553,9 @@ def get_current_cpu_usage_for_sites_on_server(server):
 								"filter": [
 									{
 										"bool": {
-											"should": [{"term": {"json.transaction_type": {"value": "request"}}}],
+											"should": [
+												{"term": {"json.transaction_type": {"value": "request"}}}
+											],
 											"minimum_should_match": 1,
 										}
 									},
@@ -676,12 +656,8 @@ def binary_logs(name, start_time, end_time, pattern=".*", max_lines=4000):
 		rows = agent.post(f"database/binary/logs/{file}", data=data)
 		print(rows)
 		for row in rows:
-			row["query"] = sqlparse.format(
-				row["query"].strip(), keyword_case="upper", reindent=True
-			)
-			row["timestamp"] = get_datetime_str(
-				convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
-			)
+			row["query"] = sqlparse.format(row["query"].strip(), keyword_case="upper", reindent=True)
+			row["timestamp"] = get_datetime_str(convert_utc_to_user_timezone(get_datetime(row["timestamp"])))
 			out.append(row)
 
 			if len(out) >= max_lines:
@@ -706,9 +682,7 @@ def mariadb_processlist(site):
 
 	out = []
 	for row in rows:
-		row["Info"] = sqlparse.format(
-			(row["Info"] or "").strip(), keyword_case="upper", reindent=True
-		)
+		row["Info"] = sqlparse.format((row["Info"] or "").strip(), keyword_case="upper", reindent=True)
 		if row["db"] == site.database_name:
 			out.append(row)
 
@@ -793,9 +767,7 @@ def plausible_analytics(name):
 		if res.status_code == 200 and res.json().get("results"):
 			res = res.json().get("results")
 			if api_type == "aggregate":
-				response.update(
-					{"agg_pageviews": res["pageviews"], "agg_visitors": res["visitors"]}
-				)
+				response.update({"agg_pageviews": res["pageviews"], "agg_visitors": res["visitors"]})
 			elif api_type == "timeseries":
 				pageviews = [{"value": d["pageviews"], "date": d["date"]} for d in res]
 				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
@@ -837,9 +809,7 @@ def mariadb_add_suggested_index(name, table, column):
 		},
 	)
 	if record_exists:
-		frappe.throw(
-			"There is already a pending job for Add Database Index. Please wait until finished."
-		)
+		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)

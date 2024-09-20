@@ -6,9 +6,7 @@ import frappe
 
 
 def execute():
-	secret_keys = frappe.get_all(
-		"Site Config Key", filters={"type": "Password"}, pluck="key"
-	)
+	secret_keys = frappe.get_all("Site Config Key", filters={"type": "Password"}, pluck="key")
 
 	site_config_keys_that_should_be_secret = frappe.get_all(
 		"Site Config", filters={"key": ("in", secret_keys)}, pluck="name"

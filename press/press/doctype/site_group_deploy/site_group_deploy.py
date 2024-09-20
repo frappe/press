@@ -13,6 +13,7 @@ class SiteGroupDeploy(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_group_deploy_app.site_group_deploy_app import (
 			SiteGroupDeployApp,
 		)
@@ -57,9 +58,7 @@ class SiteGroupDeploy(Document):
 		if self.version:
 			return
 
-		self.version = frappe.db.get_value(
-			"Frappe Version", {"status": "stable"}, order_by="number desc"
-		)
+		self.version = frappe.db.get_value("Frappe Version", {"status": "stable"}, order_by="number desc")
 
 	def check_if_rg_or_site_exists(self):
 		from press.press.doctype.site.site import Site

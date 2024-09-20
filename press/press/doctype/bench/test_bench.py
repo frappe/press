@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
@@ -43,9 +42,7 @@ class TestStagingSite(unittest.TestCase):
 
 	def test_create_staging_site(self):
 		bench = create_test_bench()  # also creates press settings
-		frappe.db.set_single_value(
-			"Press Settings", "staging_plan", create_test_plan("Site").name
-		)
+		frappe.db.set_single_value("Press Settings", "staging_plan", create_test_plan("Site").name)
 		count_before = frappe.db.count("Site")
 
 		site = StagingSite(bench).insert()
@@ -56,17 +53,13 @@ class TestStagingSite(unittest.TestCase):
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
-@patch(
-	"press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc
-)
+@patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_bench_with_n_sites_with_cpu_time(
-		self, n: int, x: float, bench: str = None
-	) -> Bench:
+	def _create_bench_with_n_sites_with_cpu_time(self, n: int, x: float, bench: str = None) -> Bench:
 		"""Creates new bench if None given."""
 		plan = create_test_plan("Site", cpu_time=x)
 
@@ -130,9 +123,7 @@ class TestBench(FrappeTestCase):
 		scale_workers()
 		bench.reload()
 		self.assertEqual(bench.gunicorn_workers, 48)
-		bench2 = create_test_bench(
-			group=frappe.get_doc("Release Group", bench.group), server=bench.server
-		)
+		bench2 = create_test_bench(group=frappe.get_doc("Release Group", bench.group), server=bench.server)
 		self._create_bench_with_n_sites_with_cpu_time(3, 5, bench2.name)
 		scale_workers()
 		bench.reload()
@@ -179,9 +170,7 @@ class TestBench(FrappeTestCase):
 		bench.reload()
 		self.assertEqual(bench.gunicorn_workers, 12)
 		self.assertEqual(bench.background_workers, 6)
-		bench2 = create_test_bench(
-			group=frappe.get_doc("Release Group", bench.group), server=bench.server
-		)
+		bench2 = create_test_bench(group=frappe.get_doc("Release Group", bench.group), server=bench.server)
 		self._create_bench_with_n_sites_with_cpu_time(3, 5, bench2.name)
 		scale_workers()
 		bench.reload()
@@ -376,9 +365,7 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 		wraps=archive_obsolete_benches_for_server,
 	)
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
-	def test_benches_archived_for_multiple_servers_via_multiple_jobs(
-		self, mock_archive_by_server: MagicMock
-	):
+	def test_benches_archived_for_multiple_servers_via_multiple_jobs(self, mock_archive_by_server: MagicMock):
 		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
 		create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
 		priv_group2 = create_test_release_group(apps=[create_test_app()], public=False)

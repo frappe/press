@@ -39,9 +39,7 @@ class TeamChange(Document):
 				"team",
 				self.to_team,
 			)
-			frappe.db.set_value(
-				"Site Domain", {"site": self.document_name}, "team", self.to_team
-			)
+			frappe.db.set_value("Site Domain", {"site": self.document_name}, "team", self.to_team)
 
 		if self.document_type == "Release Group" and self.transfer_completed:
 			frappe.db.set_value("Release Group", self.document_name, "team", self.to_team)

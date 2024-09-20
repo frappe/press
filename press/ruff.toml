@@ -9,10 +9,10 @@ indent-style = "tab"
 
 [lint]
 select = [
-  # "F",
-  # "E",
-  # "W",
-  # "I",
+  "F",
+  "E",
+  "W",
+  "I",
   # "UP",
   # "B",
   # "RUF",

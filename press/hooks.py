@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
-
 
 from . import __version__ as app_version
 
@@ -106,23 +104,15 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Site Domain": (
-		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
-	),
+	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
-	"Subscription": (
-		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
-	),
+	"Subscription": ("press.press.doctype.subscription.subscription.get_permission_query_conditions"),
 	"Stripe Payment Method": "press.press.doctype.stripe_payment_method.stripe_payment_method.get_permission_query_conditions",
 	"Balance Transaction": "press.press.doctype.balance_transaction.balance_transaction.get_permission_query_conditions",
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
-	"App Source": (
-		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
-	),
-	"App Release": (
-		"press.press.doctype.app_release.app_release.get_permission_query_conditions"
-	),
+	"App Source": ("press.press.doctype.app_source.app_source.get_permission_query_conditions"),
+	"App Release": ("press.press.doctype.app_release.app_release.get_permission_query_conditions"),
 	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
 	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
 	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
@@ -174,9 +164,7 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"weekly_long": [
-		"press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"
-	],
+	"weekly_long": ["press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"],
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
@@ -284,9 +272,7 @@ scheduler_events = {
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
 		],
-		"0 0 1 */3 *": [
-			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
-		],
+		"0 0 1 */3 *": ["press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"],
 		"0 8 * * *": [
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
 		],

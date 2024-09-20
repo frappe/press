@@ -1,7 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals
 
 import json
 
@@ -25,9 +24,7 @@ def login(product=None):
 	payload = {"state": state}
 	if product:
 		payload["product"] = product
-	frappe.cache().set_value(
-		f"google_oauth_flow:{state}", payload, expires_in_sec=minutes * 60
-	)
+	frappe.cache().set_value(f"google_oauth_flow:{state}", payload, expires_in_sec=minutes * 60)
 	return authorization_url
 
 
@@ -39,11 +36,7 @@ def callback(code=None, state=None):
 		return invalid_login()
 
 	product = payload.get("product")
-	product_trial = (
-		frappe.db.get_value("Product Trial", product, ["name"], as_dict=1)
-		if product
-		else None
-	)
+	product_trial = frappe.db.get_value("Product Trial", product, ["name"], as_dict=1) if product else None
 
 	try:
 		flow = google_oauth_flow()
@@ -75,21 +68,15 @@ def callback(code=None, state=None):
 	# phone (this may return nothing if info doesn't exists)
 	phone_number = ""
 	if flow.credentials.refresh_token:  # returns only for the first authorization
-		credentials = Credentials.from_authorized_user_info(
-			json.loads(flow.credentials.to_json())
-		)
+		credentials = Credentials.from_authorized_user_info(json.loads(flow.credentials.to_json()))
 		service = build("people", "v1", credentials=credentials)
-		person = (
-			service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-		)
+		person = service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
 		if person:
 			phone = person.get("phoneNumbers")
 			if phone:
 				phone_number = phone[0].get("value")
 
-	team_name, team_enabled = frappe.db.get_value(
-		"Team", {"user": email}, ["name", "enabled"]
-	) or [0, 0]
+	team_name, team_enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
 
 	if team_name and team_enabled:
 		# login to existing account
@@ -129,9 +116,7 @@ def invalid_login():
 def google_oauth_flow():
 	google_credentials = get_google_credentials()
 	redirect_uri = google_credentials["web"].get("redirect_uris")[0]
-	redirect_uri = redirect_uri.replace(
-		"press.api.oauth.callback", "press.api.google.callback"
-	)
+	redirect_uri = redirect_uri.replace("press.api.oauth.callback", "press.api.google.callback")
 	print(redirect_uri)
 	flow = Flow.from_client_config(
 		client_config=google_credentials,

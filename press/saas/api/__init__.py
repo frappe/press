@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 from contextlib import suppress
+
+import frappe
 
 
 def whitelist_saas_api(func):
@@ -77,7 +77,7 @@ def whitelist_saas_api(func):
 		# remove cmd from kwargs
 		kwargsCopy = kwargs.copy()
 		kwargsCopy.pop("cmd", None)
-		
+
 		return func(*args, **kwargsCopy)
 
 	return whitelist_wrapper(auth_wrapper)

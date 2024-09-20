@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -8,32 +7,28 @@ import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
-from typing import Optional, TypedDict, TypeVar
+from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
 
-from babel.dates import format_timedelta
 import frappe
 import pytz
 import requests
 import wrapt
+from babel.dates import format_timedelta
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
 
-SupervisorProcess = TypedDict(
-	"SupervisorProcess",
-	{
-		"program": str,  # group and name
-		"name": str,
-		"status": str,
-		"uptime": Optional[float],  # in seconds
-		"uptime_string": Optional[str],
-		"message": Optional[str],  # when not running
-		"group": Optional[str],
-		"pid": Optional[int],
-	},
-)
+
+class SupervisorProcess(TypedDict):
+	program: str
+	name: str
+	status: str
+	uptime: float | None
+	uptime_string: str | None
+	message: str | None
+	group: str | None
+	pid: int | None
 
 
 def log_error(title, **kwargs):
@@ -118,15 +113,9 @@ def get_current_team(get_doc=False):
 		# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 		team = getattr(frappe.local, "team_name", "")
 
-	user_is_press_admin = frappe.db.exists(
-		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
-	)
+	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
 
-	if (
-		not team
-		and user_is_press_admin
-		and frappe.db.exists("Team", {"user": frappe.session.user})
-	):
+	if not team and user_is_press_admin and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
@@ -164,18 +153,14 @@ def _get_current_team():
 
 
 def _system_user():
-	return (
-		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
-	)
+	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
 
 def has_role(role, user=None):
 	if not user:
 		user = frappe.session.user
 
-	return frappe.db.exists(
-		"Has Role", {"parenttype": "User", "parent": user, "role": role}
-	)
+	return frappe.db.exists("Has Role", {"parenttype": "User", "parent": user, "role": role})
 
 
 @functools.lru_cache(maxsize=1024)
@@ -214,9 +199,7 @@ def get_valid_teams_for_user(user):
 
 def is_user_part_of_team(user, team):
 	"""Returns True if user is part of the team"""
-	return frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": user}
-	)
+	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
 
 
 def get_country_info():
@@ -425,8 +408,7 @@ class RemoteFrappeSite:
 		if missing_files:
 			missing_config = "site config and " if not self.backup_links.get("config") else ""
 			missing_backups = (
-				f"Missing {missing_config}backup files:"
-				f" {', '.join([x.title() for x in missing_files])}"
+				f"Missing {missing_config}backup files:" f" {', '.join([x.title() for x in missing_files])}"
 			)
 			frappe.throw(missing_backups)
 
@@ -636,13 +618,13 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	pid_rex = re.compile(r"^pid\s+\d+")
 
 	lines = output.split("\n")
-	parsed: list["SupervisorProcess"] = []
+	parsed: list[SupervisorProcess] = []
 
 	for line in lines:
 		if "DeprecationWarning:" in line or "pkg_resources is deprecated" in line:
 			continue
 
-		entry: "SupervisorProcess" = {
+		entry: SupervisorProcess = {
 			"program": "",
 			"status": "",
 		}
@@ -685,9 +667,9 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	return parsed
 
 
-def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
-	pid: Optional[int] = None
-	uptime: Optional[float] = None
+def parse_pid_uptime(s: str) -> tuple[int | None, float | None]:
+	pid: int | None = None
+	uptime: float | None = None
 	splits = strip_split(s, ",", maxsplit=1)
 
 	if len(splits) != 2:
@@ -714,7 +696,7 @@ def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
 	return pid, uptime, uptime_string
 
 
-def parse_uptime(s: str) -> Optional[float]:
+def parse_uptime(s: str) -> float | None:
 	# example `s`: "uptime 68 days, 6:10:37"
 	days = 0
 	hours = 0
@@ -795,7 +777,7 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			return possible_path
 
 
-def fmt_timedelta(td: Union[timedelta, int]):
+def fmt_timedelta(td: timedelta | int):
 	locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
 	return format_timedelta(td, locale=locale)
 

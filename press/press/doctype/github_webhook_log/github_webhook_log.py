@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -6,7 +5,7 @@
 import hashlib
 import hmac
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -120,7 +119,7 @@ class GitHubWebhookLog(Document):
 
 	def update_installation_ids(self, owner: str):
 		for name in get_sources(owner):
-			doc: "AppSource" = frappe.get_doc("App Source", name)
+			doc: AppSource = frappe.get_doc("App Source", name)
 			if not self.should_update_app_source(doc):
 				continue
 
@@ -199,12 +198,12 @@ class GitHubWebhookLog(Document):
 		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
 
 
-def set_uninstalled(owner: str, repository: Optional[str] = None):
+def set_uninstalled(owner: str, repository: str | None = None):
 	for name in get_sources(owner, repository):
 		frappe.db.set_value("App Source", name, "uninstalled", True)
 
 
-def get_sources(owner: str, repository: Optional[str] = None) -> "list[str]":
+def get_sources(owner: str, repository: str | None = None) -> "list[str]":
 	filters = {"repository_owner": owner}
 	if repository:
 		filters["repository"] = repository

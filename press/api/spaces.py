@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 import frappe
 
 from press.api.site import protected
@@ -7,7 +5,7 @@ from press.utils import get_current_team
 
 
 @frappe.whitelist()
-def spaces(space_filter: Dict | None) -> Dict:
+def spaces(space_filter: dict | None) -> dict:
 	"""
 	Returns all spaces and code servers for the current team
 	"""
@@ -163,9 +161,7 @@ def exists(subdomain, domain) -> bool:
 
 @frappe.whitelist()
 @protected("Code Server")
-def code_server_jobs(
-	filters=None, order_by=None, limit_start=None, limit_page_length=None
-) -> List:
+def code_server_jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None) -> list:
 	jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],

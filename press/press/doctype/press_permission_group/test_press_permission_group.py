@@ -35,25 +35,17 @@ class TestPressPermissionGroup(FrappeTestCase):
 	def test_add_user(self):
 		self.perm_group.add_user(self.team_member.name)
 		perm_group_users = self.perm_group.get_users()
-		perm_group_user_exists = any(
-			self.team_member.name == pg_user.name for pg_user in perm_group_users
-		)
+		perm_group_user_exists = any(self.team_member.name == pg_user.name for pg_user in perm_group_users)
 		self.assertTrue(perm_group_user_exists)
-		self.assertRaises(
-			frappe.ValidationError, self.perm_group.add_user, self.team_member.name
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_group.add_user, self.team_member.name)
 
 	def test_remove_user(self):
 		self.perm_group.add_user(self.team_member.name)
 		self.perm_group.remove_user(self.team_member.name)
 		perm_group_users = self.perm_group.get_users()
-		perm_group_user_exists = any(
-			self.team_member.name == pg_user.name for pg_user in perm_group_users
-		)
+		perm_group_user_exists = any(self.team_member.name == pg_user.name for pg_user in perm_group_users)
 		self.assertFalse(perm_group_user_exists)
-		self.assertRaises(
-			frappe.ValidationError, self.perm_group.remove_user, self.team_member.name
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_group.remove_user, self.team_member.name)
 
 	def test_update_permissions(self):
 		frappe.set_user("Administrator")
@@ -63,9 +55,7 @@ class TestPressPermissionGroup(FrappeTestCase):
 		self.assertEqual(has_method_permission("Site", "site1.test", "reinstall"), True)
 
 		frappe.set_user("Administrator")
-		self.perm_group.update_permissions(
-			{"Site": {"site1.test": {"*": True, "reinstall": False}}}
-		)
+		self.perm_group.update_permissions({"Site": {"site1.test": {"*": True, "reinstall": False}}})
 		frappe.set_user(self.team_member.name)
 		self.assertEqual(has_method_permission("Site", "site1.test", "reinstall"), False)
 
@@ -131,9 +121,7 @@ class TestPressPermissionGroup(FrappeTestCase):
 
 		# Test case 2: User does not belong to the permission group
 		frappe.set_user("user@example.com")
-		self.assertRaises(
-			frappe.ValidationError, self.perm_group.get_all_document_permissions, "Site"
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "Site")
 
 		# Test case 3: Invalid restrictable doctype
 		frappe.set_user("Administrator")
@@ -144,9 +132,7 @@ class TestPressPermissionGroup(FrappeTestCase):
 		)
 
 		# Test case 4: No restrictable methods for the doctype
-		self.assertRaises(
-			frappe.ValidationError, self.perm_group.get_all_document_permissions, "DocType2"
-		)
+		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "DocType2")
 
 
 # utils

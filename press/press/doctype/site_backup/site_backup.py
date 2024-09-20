@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 
 import json
 from datetime import datetime
-from typing import Dict
 
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
@@ -100,7 +98,7 @@ class SiteBackup(Document):
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: Dict):
+	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -113,9 +111,7 @@ class SiteBackup(Document):
 		return cls.backup_exists(site, day, {"with_files": True})
 
 
-def track_offsite_backups(
-	site: str, backup_data: dict, offsite_backup_data: dict
-) -> tuple:
+def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dict) -> tuple:
 	remote_files = {"database": None, "site_config": None, "public": None, "private": None}
 
 	if offsite_backup_data:
@@ -153,9 +149,7 @@ def track_offsite_backups(
 
 
 def process_backup_site_job_update(job):
-	backups = frappe.get_all(
-		"Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1
-	)
+	backups = frappe.get_all("Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1)
 	if not backups:
 		return
 	backup = backups[0]
@@ -211,9 +205,7 @@ def process_backup_site_job_update(job):
 
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all(
-		"Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1
-	)
+	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
 	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 
 	if region:

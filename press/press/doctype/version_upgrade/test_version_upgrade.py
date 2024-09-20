@@ -69,9 +69,7 @@ class TestVersionUpgrade(FrappeTestCase):
 
 		group2.add_server(server.name)
 
-		create_test_site_update(
-			site.name, group2.name, "Recovered"
-		)  # cause of failure not resolved
+		create_test_site_update(site.name, group2.name, "Recovered")  # cause of failure not resolved
 		site_updates_before = frappe.db.count("Site Update", {"site": site.name})
 		version_upgrade = create_test_version_upgrade(site.name, group2.name)
 		version_upgrade.start()  # simulate scheduled one. User will be admin

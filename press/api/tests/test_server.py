@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
@@ -71,9 +70,7 @@ def successful_ping_ansible(self: BaseServer):
 
 
 def successful_upgrade_mariadb(self: DatabaseServer):
-	create_test_ansible_play(
-		"Upgrade MariaDB", "upgrade_mariadb.yml", self.doctype, self.name
-	)
+	create_test_ansible_play("Upgrade MariaDB", "upgrade_mariadb.yml", self.doctype, self.name)
 
 
 def successful_upgrade_mariadb_patched(self: DatabaseServer):
@@ -101,9 +98,7 @@ def successful_wait_for_cloud_init(self: BaseServer):
 @patch.object(Ansible, "run", new=Mock())
 @patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
 @patch.object(DatabaseServer, "upgrade_mariadb", new=successful_upgrade_mariadb)
-@patch.object(
-	DatabaseServer, "upgrade_mariadb_patched", new=successful_upgrade_mariadb_patched
-)
+@patch.object(DatabaseServer, "upgrade_mariadb_patched", new=successful_upgrade_mariadb_patched)
 @patch.object(BaseServer, "wait_for_cloud_init", new=successful_wait_for_cloud_init)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
@@ -232,9 +227,7 @@ class TestAPIServer(FrappeTestCase):
 		app_plan_2.db_set("memory", 2048)
 		db_plan_2 = create_test_server_plan(document_type="Database Server")
 
-		self.team.allocate_credit_amount(
-			100000, source="Prepaid Credits", remark="Test Credits"
-		)
+		self.team.allocate_credit_amount(100000, source="Prepaid Credits", remark="Test Credits")
 		frappe.set_user(self.team.user)
 
 		new(
@@ -367,9 +360,7 @@ class TestAPIServerList(FrappeTestCase):
 		self.assertEqual(all(), [self.app_server_dict, self.db_server_dict])
 
 	def test_list_app_servers(self):
-		self.assertEqual(
-			all(server_filter={"server_type": "App Servers", "tag": ""}), [self.app_server_dict]
-		)
+		self.assertEqual(all(server_filter={"server_type": "App Servers", "tag": ""}), [self.app_server_dict])
 
 	def test_list_db_servers(self):
 		self.assertEqual(

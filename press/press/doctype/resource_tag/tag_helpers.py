@@ -1,6 +1,5 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
 
-from __future__ import unicode_literals
 
 import frappe
 
@@ -15,12 +14,8 @@ class TagHelpers:
 		if tag in existing_tags:
 			return
 
-		if not frappe.db.exists(
-			"Press Tag", {"tag": tag, "doctype_name": self.doctype, "team": team}
-		):
-			tag_doc = frappe.new_doc(
-				"Press Tag", tag=tag, doctype_name=self.doctype, team=team
-			).insert()
+		if not frappe.db.exists("Press Tag", {"tag": tag, "doctype_name": self.doctype, "team": team}):
+			tag_doc = frappe.new_doc("Press Tag", tag=tag, doctype_name=self.doctype, team=team).insert()
 		else:
 			tag_doc = frappe.get_doc(
 				"Press Tag",

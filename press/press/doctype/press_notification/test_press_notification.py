@@ -32,16 +32,20 @@ class TestPressNotification(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_test_deploy_candidate_differences(
-			bench2.candidate
-		)  # for site update to be available
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 
 		self.assertEqual(frappe.db.count("Press Notification"), 0)
-		with fake_agent_job("Update Site Pull", "Failure",), fake_agent_job(
-			"Recover Failed Site Update",
-			"Success",
+		with (
+			fake_agent_job(
+				"Update Site Pull",
+				"Failure",
+			),
+			fake_agent_job(
+				"Recover Failed Site Update",
+				"Success",
+			),
 		):
 			site.schedule_update()
 			poll_pending_jobs()

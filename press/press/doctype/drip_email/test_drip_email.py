@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Web Notes and Contributors
 # See license.txt
 
 
 import unittest
 from datetime import date, timedelta
-from typing import Optional
 
 import frappe
 
@@ -20,9 +18,7 @@ from press.press.doctype.marketplace_app.test_marketplace_app import (
 from press.press.doctype.site.test_site import create_test_site
 
 
-def create_test_drip_email(
-	send_after: int, saas_app: Optional[str] = None
-) -> DripEmail:
+def create_test_drip_email(send_after: int, saas_app: str | None = None) -> DripEmail:
 	drip_email = frappe.get_doc(
 		{
 			"doctype": "Drip Email",
@@ -57,9 +53,7 @@ class TestDripEmail(unittest.TestCase):
 		)
 		site1.save()
 
-		site2 = create_test_site(
-			"site2", account_request=create_test_account_request("site2").name
-		)
+		site2 = create_test_site("site2", account_request=create_test_account_request("site2").name)
 		site2.save()
 
 		create_test_site("site3")  # Note: site is not created
@@ -69,8 +63,6 @@ class TestDripEmail(unittest.TestCase):
 	def test_older_site_isnt_selected(self):
 		drip_email = create_test_drip_email(0)
 		site = create_test_site("site1")
-		site.account_request = create_test_account_request(
-			"site1", creation=date.today() - timedelta(1)
-		).name
+		site.account_request = create_test_account_request("site1", creation=date.today() - timedelta(1)).name
 		site.save()
 		self.assertNotEqual(drip_email.sites_to_send_drip, [site.name])

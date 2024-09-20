@@ -56,9 +56,7 @@ class DatabaseServerMariaDBVariable(Document):
 	@property
 	def dynamic(self) -> bool:
 		if not self.get("_dynamic"):
-			self._dynamic = frappe.db.get_value(
-				"MariaDB Variable", self.mariadb_variable, "dynamic"
-			)
+			self._dynamic = frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "dynamic")
 		return self._dynamic
 
 	@dynamic.setter
@@ -93,22 +91,16 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_value_field_set_is_correct(self):
 		if self.value_field != f"value_{self.datatype.lower()}":
-			frappe.throw(
-				f"Value field for {self.mariadb_variable} must be value_{self.datatype.lower()}"
-			)
+			frappe.throw(f"Value field for {self.mariadb_variable} must be value_{self.datatype.lower()}")
 
 	def validate_skipped_should_be_skippable(self):
 		if self.skip and not self.skippable:
-			frappe.throw(
-				f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable"
-			)
+			frappe.throw(f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable")
 
 	def set_default_value_if_no_value(self):
 		if self.value:
 			return
-		default_value = frappe.db.get_value(
-			"MariaDB Variable", self.mariadb_variable, "default_value"
-		)
+		default_value = frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "default_value")
 		if default_value:
 			self.set(f"value_{self.datatype.lower()}", default_value)
 
@@ -151,6 +143,4 @@ class DatabaseServerMariaDBVariable(Document):
 
 
 def on_doctype_update():
-	frappe.db.add_unique(
-		"Database Server MariaDB Variable", ("mariadb_variable", "parent")
-	)
+	frappe.db.add_unique("Database Server MariaDB Variable", ("mariadb_variable", "parent"))

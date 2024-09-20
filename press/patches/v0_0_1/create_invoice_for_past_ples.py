@@ -42,9 +42,7 @@ def migrate_team(team):
 
 def cancel_subscription(team):
 	stripe = get_stripe()
-	subscription_id = frappe.db.get_value(
-		"Subscription", {"team": team}, "stripe_subscription_id"
-	)
+	subscription_id = frappe.db.get_value("Subscription", {"team": team}, "stripe_subscription_id")
 	if subscription_id:
 		try:
 			stripe.Subscription.delete(subscription_id)
@@ -105,9 +103,9 @@ def create_past_invoices(team):
 		)
 		for e in entries:
 			ledger_entry = frappe.get_doc("Payment Ledger Entry", e.name)
-			TeamInvoice(
-				team, i.period_start.month, i.period_start.year
-			).update_ledger_entry_in_invoice(ledger_entry, i)
+			TeamInvoice(team, i.period_start.month, i.period_start.year).update_ledger_entry_in_invoice(
+				ledger_entry, i
+			)
 
 		i.reload()
 		if i.total == (invoice["total"] / 100):

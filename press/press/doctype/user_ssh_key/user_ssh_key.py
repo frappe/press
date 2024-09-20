@@ -60,9 +60,7 @@ class UserSSHKey(Document):
 		try:
 			key_type, key, *comment = self.ssh_public_key.strip().split()
 			if key_type not in self.valid_key_types:
-				raise SSHKeyValueError(
-					f"Key type has to be one of {', '.join(self.valid_key_types)}"
-				)
+				raise SSHKeyValueError(f"Key type has to be one of {', '.join(self.valid_key_types)}")
 			key_bytes = base64.b64decode(key)
 			self.check_embedded_key_type(key_type, key_bytes)
 			self.generate_ssh_fingerprint(self.ssh_public_key.encode())

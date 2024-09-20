@@ -164,14 +164,10 @@ def get_data(filters):
 			"cpu": available_data.get("vcpu", 0),
 			"cpu_used": rounded(used_data.get("vcpu", 0) * 100, 1),
 			"disk": rounded(available_data.get("disk", 0), 2),
-			"disk_used": rounded(
-				(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
-			),
+			"disk_used": rounded((used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1),
 			"disk_free": available_data.get("disk", 0) - used_data.get("disk", 0),
 			"memory": rounded(available_data.get("memory", 0) / 1024, 2),
-			"memory_used": rounded(
-				(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
-			),
+			"memory_used": rounded((used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1),
 			"swap": rounded(swap_memory.get("swap", 0), 1),
 			"swap_used": rounded(swap_memory.get("swap_used", 0), 1),
 			"memory_required": rounded(swap_memory.get("required", 0), 1),
@@ -190,8 +186,7 @@ def get_data(filters):
 					"new_worker_allocation": frappe.db.get_value(
 						server.server_type, server.name, "new_worker_allocation"
 					),
-					"ram_assigned": (frappe.db.get_value(server.server_type, server.name, "ram") or 0)
-					/ 1024,
+					"ram_assigned": (frappe.db.get_value(server.server_type, server.name, "ram") or 0) / 1024,
 				}
 			)
 		rows.append(row)

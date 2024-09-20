@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import List
 
 import frappe
 
@@ -75,7 +74,7 @@ class SitePlan(Plan):
 		return doc
 
 	@classmethod
-	def get_ones_without_offsite_backups(cls) -> List[str]:
+	def get_ones_without_offsite_backups(cls) -> list[str]:
 		return frappe.get_all("Site Plan", filters={"offsite_backups": False}, pluck="name")
 
 

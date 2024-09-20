@@ -1,7 +1,6 @@
 """Functions for automated audit of frappe cloud systems."""
 
 import json
-from typing import Dict, List
 
 import frappe
 from frappe.utils import rounded
@@ -22,9 +21,7 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	def log(
-		self, log: dict, status: str, telegram_group: str = None, telegram_topic: str = None
-	):
+	def log(self, log: dict, status: str, telegram_group: str = None, telegram_topic: str = None):
 		frappe.get_doc(
 			{
 				"doctype": "Audit Log",
@@ -37,7 +34,7 @@ class Audit:
 		).insert()
 
 
-def get_benches_in_server(server: str) -> List[Dict]:
+def get_benches_in_server(server: str) -> list[dict]:
 	agent = Agent(server)
 	return agent.get("/benches")
 
@@ -158,9 +155,7 @@ class AppServerReplicaDirsCheck(Audit):
 					log[bench] = {"Sites on primary only": bench_desc["sites"]}
 					continue
 
-				sites_on_primary_only = list(
-					set(bench_desc["sites"]) - set(replica_bench_desc["sites"])
-				)
+				sites_on_primary_only = list(set(bench_desc["sites"]) - set(replica_bench_desc["sites"]))
 				if sites_on_primary_only:
 					status = "Failure"
 					log[bench] = {"Sites on primary only": sites_on_primary_only}
@@ -239,7 +234,7 @@ class OffsiteBackupCheck(Audit):
 	audit_type = "Offsite Backup Check"
 	list_key = "Offsite Backup Remote Files unavailable in remote"
 
-	def _get_all_files_in_s3(self) -> List[str]:
+	def _get_all_files_in_s3(self) -> list[str]:
 		all_files = []
 		settings = frappe.get_single("Press Settings")
 		s3 = settings.boto3_offsite_backup_session.resource("s3")
@@ -327,9 +322,7 @@ class BillingAudit(Audit):
 
 	def subscriptions_without_usage_record(self):
 		free_sites = sites_with_free_hosting()
-		free_teams = frappe.get_all(
-			"Team", filters={"free_account": True, "enabled": True}, pluck="name"
-		)
+		free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
 
 		return frappe.db.get_all(
 			"Subscription",
@@ -362,14 +355,10 @@ class BillingAudit(Audit):
 			"team": ("not in", free_teams),
 		}
 
-		sites = frappe.db.get_all(
-			"Site", filters=filters, fields=["name", "team"], pluck="name"
-		)
+		sites = frappe.db.get_all("Site", filters=filters, fields=["name", "team"], pluck="name")
 
 		# Flake doesn't allow use of duplicate keys in same dictionary
-		return frappe.get_all(
-			"Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name"
-		)
+		return frappe.get_all("Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name")
 
 	def teams_with_active_sites_and_unpaid_invoices(self):
 		today = frappe.utils.getdate()
@@ -378,9 +367,7 @@ class BillingAudit(Audit):
 
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan)
-			.select(plan.name)
-			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 

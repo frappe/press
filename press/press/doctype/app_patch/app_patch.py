@@ -3,7 +3,7 @@
 
 import json
 import typing
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import frappe
 import requests
@@ -12,27 +12,22 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
-PatchConfig = TypedDict(
-	"PatchConfig",
-	{
-		"patch": Optional[str],
-		"filename": str,
-		"patch_url": str,
-		"build_assets": bool,
-		"patch_bench": Optional[str],
-		"patch_all_benches": bool,
-	},
-)
 
-AgentPatchConfig = TypedDict(
-	"AgentPatchConfig",
-	{
-		"patch": str,
-		"filename": str,
-		"build_assets": bool,
-		"revert": bool,
-	},
-)
+class PatchConfig(TypedDict):
+	patch: str | None
+	filename: str
+	patch_url: str
+	build_assets: bool
+	patch_bench: str | None
+	patch_all_benches: bool
+
+
+class AgentPatchConfig(TypedDict):
+	patch: str
+	filename: str
+	build_assets: bool
+	revert: bool
+
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob

@@ -3,9 +3,11 @@
 
 import base64
 import ipaddress
+import time
 
 import boto3
 import frappe
+import rq
 from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
@@ -30,8 +32,6 @@ from oci.exceptions import TransientServiceError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
-import rq
-import time
 
 
 class VirtualMachine(Document):
@@ -42,6 +42,7 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 			VirtualMachineVolume,
 		)
@@ -106,9 +107,7 @@ class VirtualMachine(Document):
 				self.private_ip_address = str(ip + index)
 			else:
 				offset = ["f", "m", "c", "p", "e", "r"].index(self.series)
-				self.private_ip_address = str(
-					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
-				)
+				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def on_trash(self):
 		snapshots = frappe.get_all(
@@ -174,9 +173,7 @@ class VirtualMachine(Document):
 			"UserData": self.get_cloud_init() if self.virtual_machine_image else "",
 		}
 		if self.machine_type.startswith("t"):
-			options["CreditSpecification"] = {
-				"CpuCredits": "unlimited" if self.series == "n" else "standard"
-			}
+			options["CreditSpecification"] = {"CpuCredits": "unlimited" if self.series == "n" else "standard"}
 		response = self.client().run_instances(**options)
 
 		self.instance_id = response["Instances"][0]["InstanceId"]
@@ -258,8 +255,7 @@ class VirtualMachine(Document):
 			mariadb_context = {
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": frappe.db.get_value("Server Plan", server.plan, "memory")
-				or 1024,
+				"ansible_memtotal_mb": frappe.db.get_value("Server Plan", server.plan, "memory") or 1024,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
@@ -428,15 +424,11 @@ class VirtualMachine(Document):
 
 			for vnic_attachment in (
 				self.client()
-				.list_vnic_attachments(
-					compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
-				)
+				.list_vnic_attachments(compartment_id=cluster.oci_tenancy, instance_id=self.instance_id)
 				.data
 			):
 				try:
-					vnic = (
-						self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
-					)
+					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
 					self.public_ip_address = vnic.public_ip
 				except Exception:
 					log_error(
@@ -449,9 +441,7 @@ class VirtualMachine(Document):
 			for volume in self.get_volumes():
 				try:
 					if hasattr(volume, "volume_id"):
-						volume = (
-							self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
-						)
+						volume = self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
 					else:
 						volume = (
 							self.client(BlockstorageClient)
@@ -537,9 +527,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
 
-			instance_type_response = self.client().describe_instance_types(
-				InstanceTypes=[self.machine_type]
-			)
+			instance_type_response = self.client().describe_instance_types(InstanceTypes=[self.machine_type])
 			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
 			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
 		else:
@@ -576,9 +564,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_image(self):
-		image = frappe.get_doc(
-			{"doctype": "Virtual Machine Image", "virtual_machine": self.name}
-		).insert()
+		image = frappe.get_doc({"doctype": "Virtual Machine Image", "virtual_machine": self.name}).insert()
 		return image.name
 
 	@frappe.whitelist()
@@ -595,9 +581,7 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}
-					],
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
 				},
 			],
 		)
@@ -611,9 +595,7 @@ class VirtualMachine(Document):
 					}
 				).insert()
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	def _create_snapshots_oci(self):
 		for volume in self.volumes:
@@ -654,9 +636,7 @@ class VirtualMachine(Document):
 				# Let's try again later
 				pass
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -882,9 +862,7 @@ class VirtualMachine(Document):
 	def get_security_groups(self):
 		groups = [self.security_group_id]
 		if self.series == "n":
-			groups.append(
-				frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id")
-			)
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
 		return groups
 
 	@frappe.whitelist()
@@ -922,15 +900,11 @@ class VirtualMachine(Document):
 			# Generate closed bounds for 25 indexes at a time
 			# (1, 25), (26, 50), (51, 75), ...
 			# We might have uneven chunks because of missing indexes
-			chunks = [
-				(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)
-			]
+			chunks = [(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)]
 			for start, end in chunks:
 				# Pick a random machine
 				# TODO: This probably should be a method on the Cluster
-				machines = cls._get_active_aws_machines_within_chunk_range(
-					cluster.cluster, start, end
-				)
+				machines = cls._get_active_aws_machines_within_chunk_range(cluster.cluster, start, end)
 				if not machines:
 					# There might not be any running machines in the chunk range
 					continue
@@ -948,13 +922,9 @@ class VirtualMachine(Document):
 
 	def bulk_sync_aws_cluster(self, start, end):
 		client = self.client()
-		machines = self.__class__._get_active_aws_machines_within_chunk_range(
-			self.cluster, start, end
-		)
+		machines = self.__class__._get_active_aws_machines_within_chunk_range(self.cluster, start, end)
 		instance_ids = [machine.instance_id for machine in machines]
-		response = client.describe_instances(
-			Filters=[{"Name": "instance-id", "Values": instance_ids}]
-		)
+		response = client.describe_instances(Filters=[{"Name": "instance-id", "Values": instance_ids}])
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
 				machine: VirtualMachine = frappe.get_doc(
@@ -1014,13 +984,10 @@ class VirtualMachine(Document):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
-			machine: VirtualMachine = frappe.get_doc(
-				"Virtual Machine", {"instance_id": instance.id}
-			)
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
 				return
 			try:
-
 				machine.sync(instance)
 				frappe.db.commit()  # release lock
 			except rq.timeouts.JobTimeoutException:
@@ -1133,9 +1100,7 @@ class VirtualMachine(Document):
 		self.sync()
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Virtual Machine"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
 
 @frappe.whitelist()

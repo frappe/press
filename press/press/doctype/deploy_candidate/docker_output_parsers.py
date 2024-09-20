@@ -12,7 +12,8 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
-	from typing import Any, Generator, Optional, TypedDict
+	from collections.abc import Generator
+	from typing import Any, TypedDict
 
 	from frappe.types import DF
 
@@ -41,7 +42,7 @@ class DockerBuildOutputParser:
 	when agent is polled, and so output is looped N! times.
 	"""
 
-	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"
+	_steps_by_step_slug: "dict[tuple[str, str], DeployCandidateBuildStep] | None"
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
@@ -50,16 +51,14 @@ class DockerBuildOutputParser:
 		# Used to generate output and track parser state
 		self.lines: list[str] = []
 		self.error_lines: list[str] = []
-		self.steps: dict[int, "DeployCandidateBuildStep"] = frappe._dict()
+		self.steps: dict[int, DeployCandidateBuildStep] = frappe._dict()
 		self._steps_by_step_slug = None
 
 	# Convenience map used to update build steps
 	@property
 	def steps_by_step_slug(self):
 		if not self._steps_by_step_slug:
-			self._steps_by_step_slug = {
-				(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps
-			}
+			self._steps_by_step_slug = {(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps}
 		return self._steps_by_step_slug
 
 	def parse_and_update(self, output: "BuildOutput"):
@@ -186,7 +185,7 @@ class DockerBuildOutputParser:
 
 		self.steps[index] = step
 
-	def _get_step_index_split(self, line: str) -> "Optional[IndexSplit]":
+	def _get_step_index_split(self, line: str) -> "IndexSplit | None":
 		splits = line.split(maxsplit=1)
 		keys = sorted(self.steps)
 		if len(splits) != 2 and len(keys) == 0:
@@ -278,7 +277,7 @@ class UploadStepUpdater:
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: 'Optional[DF.Literal["Success", "Failure"]]'):
+	def end(self, status: 'DF.Literal["Success", "Failure"] | None'):
 		if not self.upload_step:
 			return
 

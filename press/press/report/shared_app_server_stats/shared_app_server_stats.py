@@ -173,9 +173,7 @@ def get_data():
 				"cpu": available_data.get("vcpu", 0),
 				"cpu_used": rounded(used_data.get("vcpu", 0) * 100, 1),
 				"disk": rounded(available_data.get("disk", 0), 2),
-				"disk_used": rounded(
-					(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
-				),
+				"disk_used": rounded((used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1),
 				"disk_free": available_data.get("disk", 0) - used_data.get("disk", 0),
 				"memory": rounded(available_data.get("memory", 0) / 1024, 2),
 				"memory_used": rounded(
@@ -189,9 +187,7 @@ def get_data():
 					- rounded(available_data.get("memory", 0) / 1024, 2),
 					0,
 				),
-				"new_worker_allocation": frappe.db.get_value(
-					"Server", server, "new_worker_allocation"
-				),
+				"new_worker_allocation": frappe.db.get_value("Server", server, "new_worker_allocation"),
 				"ram_assigned": (frappe.db.get_value("Server", server, "ram") or 0) / 1024,
 				"load_1": rounded(load.get("load_1", 0), 1),
 				"load_5": rounded(load.get("load_5", 0), 1),

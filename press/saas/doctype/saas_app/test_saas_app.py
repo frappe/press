@@ -6,9 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 
 
 def create_test_saas_app(app: str):
-	return frappe.get_doc({"doctype": "Saas App", "app": app}).insert(
-		ignore_if_duplicate=True
-	)
+	return frappe.get_doc({"doctype": "Saas App", "app": app}).insert(ignore_if_duplicate=True)
 
 
 class TestSaasApp(FrappeTestCase):

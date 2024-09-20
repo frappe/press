@@ -6,9 +6,7 @@ import frappe
 def execute():
 	"""Convert site._site_usages Data field into individual fields"""
 	frappe.reload_doc("press", "doctype", "site")
-	non_archived_sites = frappe.get_all(
-		"Site", filters={"status": ("!=", "Archived")}, pluck="name"
-	)
+	non_archived_sites = frappe.get_all("Site", filters={"status": ("!=", "Archived")}, pluck="name")
 
 	for site in non_archived_sites:
 		site_doc = frappe.get_doc("Site", site)

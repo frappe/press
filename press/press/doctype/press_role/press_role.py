@@ -15,6 +15,7 @@ class PressRole(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		admin_access: DF.Check
@@ -44,9 +45,7 @@ class PressRole(Document):
 
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
-			frappe.throw(
-				"Role with title {0} already exists".format(self.title), frappe.DuplicateEntryError
-			)
+			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
 
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"

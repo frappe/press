@@ -88,9 +88,7 @@ class PressPermissionGroup(Document):
 		for user in self.users:
 			if user.user == "Administrator":
 				continue
-			user_belongs_to_team = frappe.db.exists(
-				"Team Member", {"parent": self.team, "user": user.user}
-			)
+			user_belongs_to_team = frappe.db.exists("Team Member", {"parent": self.team, "user": user.user})
 			if not user_belongs_to_team:
 				frappe.throw(f"{user.user} does not belong to {self.team}")
 
@@ -125,9 +123,7 @@ class PressPermissionGroup(Document):
 
 		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
 		if user_is_team_owner:
-			frappe.throw(
-				f"{user} cannot be added to {self.title} because they are the owner of {self.team}"
-			)
+			frappe.throw(f"{user} cannot be added to {self.title} because they are the owner of {self.team}")
 
 		self.append("users", {"user": user})
 		self.save()
@@ -214,9 +210,7 @@ class PressPermissionGroup(Document):
 		self.save()
 
 
-def has_method_permission(
-	doctype: str, name: str, method: str, group_names: list = None
-):
+def has_method_permission(doctype: str, name: str, method: str, group_names: list = None):
 	if frappe.local.system_user():
 		return True
 
@@ -250,9 +244,7 @@ def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> 
 	permissions_by_group = {}
 	permission_groups = group_names or get_permission_groups(user)
 	for group_name in set(permission_groups):
-		permissions_by_group[group_name] = get_method_perms_for_group(
-			doctype, name, group_name
-		)
+		permissions_by_group[group_name] = get_method_perms_for_group(doctype, name, group_name)
 
 	method_perms = resolve_doc_permissions(doctype, permissions_by_group)
 	permitted_methods = [method for method, permitted in method_perms.items() if permitted]

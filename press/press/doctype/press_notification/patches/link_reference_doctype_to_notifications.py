@@ -6,24 +6,18 @@ from tqdm import tqdm
 
 
 def execute():
-	notifications = frappe.db.get_all(
-		"Press Notification", ["name", "document_type", "document_name"]
-	)
+	notifications = frappe.db.get_all("Press Notification", ["name", "document_type", "document_name"])
 	for notification in tqdm(notifications):
 		if notification.document_type == "Agent Job":
 			reference_doctype = "Site"
 			reference_doc = frappe.db.get_value("Agent Job", notification.document_name, "site")
 			if not reference_doc:
 				reference_doctype = "Server"
-				reference_doc = frappe.db.get_value(
-					"Agent Job", notification.document_name, "server"
-				)
+				reference_doc = frappe.db.get_value("Agent Job", notification.document_name, "server")
 
 		elif notification.document_type == "Deploy Candidate":
 			reference_doctype = "Release Group"
-			reference_doc = frappe.db.get_value(
-				"Deploy Candidate", notification.document_name, "group"
-			)
+			reference_doc = frappe.db.get_value("Deploy Candidate", notification.document_name, "group")
 
 		frappe.db.set_value(
 			"Press Notification",

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -196,9 +195,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 		new_app_source = frappe.get_doc("App Source", rg.apps[0].source)
 		self.assertEqual(new_app_source.branch, "develop")
-		self.assertEqual(
-			new_app_source.versions[0].version, previous_app_source.versions[0].version
-		)
+		self.assertEqual(new_app_source.versions[0].version, previous_app_source.versions[0].version)
 		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
 		self.assertEqual(new_app_source.app, app.name)
 
@@ -210,18 +207,14 @@ class TestReleaseGroup(unittest.TestCase):
 				"doctype": "Release Group",
 				"title": "Test Group",
 				"version": "Version 14",
-				"apps": [
-					{"app": app.name, "source": create_test_app_source("Version 14", app).name}
-				],
+				"apps": [{"app": app.name, "source": create_test_app_source("Version 14", app).name}],
 				"team": self.team,
 			}
 		).insert()
 
 		self.assertEqual(
 			find(group.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
-			find(
-				frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION"
-			).version,
+			find(frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION").version,
 		)
 
 	def test_cant_set_min_greater_than_max_workers(self):
@@ -268,9 +261,7 @@ class TestReleaseGroup(unittest.TestCase):
 			filters={"parenttype": "Release Group", "parent": rg.name},
 		)
 		self.assertEqual(len(fetched_environment_variable_list), 2)
-		internal_environment_variables_keys = [
-			env["key"] for env in environment_variables if env["internal"]
-		]
+		internal_environment_variables_keys = [env["key"] for env in environment_variables if env["internal"]]
 		non_internal_environment_variables_keys = [
 			env["key"] for env in environment_variables if not env["internal"]
 		]
@@ -288,9 +279,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_update_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 0})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -301,9 +290,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_update_internal_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 1})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -319,9 +306,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_delete_internal_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 1})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -331,9 +316,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_delete_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 0})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
@@ -98,9 +97,9 @@ def after_job():
 
 
 def update_website_context(context):
-	if (
-		frappe.request and frappe.request.path.startswith("/docs")
-	) and not frappe.db.get_single_value("Press Settings", "publish_docs"):
+	if (frappe.request and frappe.request.path.startswith("/docs")) and not frappe.db.get_single_value(
+		"Press Settings", "publish_docs"
+	):
 		raise frappe.DoesNotExistError
 
 
@@ -121,9 +120,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team(True)
-	child_team_members = [
-		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
-	]
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
 	if doc.team == team.name or doc.team in child_team_members:
 		return True
 

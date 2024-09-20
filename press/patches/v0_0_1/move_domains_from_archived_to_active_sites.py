@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -13,9 +12,7 @@ def execute():
 		filters={"status": "Active", "site": ("like", "%.archived%")},
 	)
 	for domain in domains:
-		archived_site = frappe.get_value(
-			"Site", domain.site, ["status", "subdomain", "team"], as_dict=True
-		)
+		archived_site = frappe.get_value("Site", domain.site, ["status", "subdomain", "team"], as_dict=True)
 
 		if archived_site.status != "Archived":
 			continue

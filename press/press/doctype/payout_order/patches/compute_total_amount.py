@@ -21,8 +21,6 @@ def execute():
 				inr_in_usd = payout_order.net_total_inr / exchange_rate
 			total_amount = payout_order.net_total_usd + inr_in_usd
 		elif payout_order.recipient_currency == "INR":
-			total_amount = (
-				payout_order.net_total_inr + payout_order.net_total_usd * exchange_rate
-			)
+			total_amount = payout_order.net_total_inr + payout_order.net_total_usd * exchange_rate
 
 		frappe.db.set_value("Payout Order", payout_order.name, "total_amount", total_amount)

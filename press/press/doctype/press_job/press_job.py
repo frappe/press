@@ -73,9 +73,7 @@ class PressJob(Document):
 
 	def fail(self, arguments=None):
 		self.status = "Failure"
-		pending_steps = frappe.get_all(
-			"Press Job Step", {"job": self.name, "status": "Pending"}
-		)
+		pending_steps = frappe.get_all("Press Job Step", {"job": self.name, "status": "Pending"})
 		for step in pending_steps:
 			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
 		self.end = frappe.utils.now_datetime()

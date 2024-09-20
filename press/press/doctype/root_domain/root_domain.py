@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
 
 import json
+from collections.abc import Iterable
 from datetime import datetime, timedelta
-from typing import Iterable, List
 
 import boto3
 import frappe
@@ -41,9 +40,7 @@ class RootDomain(Document):
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
-			rsa_key_size = frappe.db.get_value(
-				"Press Settings", "Press Settings", "rsa_key_size"
-			)
+			rsa_key_size = frappe.db.get_value("Press Settings", "Press Settings", "rsa_key_size")
 			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
@@ -80,7 +77,7 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
 
-	def delete_dns_records(self, records: List[str]):
+	def delete_dns_records(self, records: list[str]):
 		try:
 			changes = []
 			for record in records:

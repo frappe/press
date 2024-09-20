@@ -29,9 +29,7 @@ class Plan(Document):
 		filters = filters or {}
 		fields.append("`tabHas Role`.role")
 		filters.update({"enabled": True})
-		plans = frappe.get_all(
-			doctype, filters=filters, fields=fields, order_by="price_usd asc"
-		)
+		plans = frappe.get_all(doctype, filters=filters, fields=fields, order_by="price_usd asc")
 		plans = filter_by_roles(plans)
 
 		return plans

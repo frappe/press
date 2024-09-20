@@ -14,17 +14,13 @@ def get_servers(server_filter):
 		server["security_updates_status"] = "Up to date"
 
 		if security_updates_count != 0:
-			server[
-				"security_updates_status"
-			] = f"{security_updates_count} security update(s) available"
+			server["security_updates_status"] = f"{security_updates_count} security update(s) available"
 
 	return servers
 
 
 @frappe.whitelist()
-def fetch_security_updates(
-	filters=None, order_by=None, limit_start=None, limit_page_length=None
-):
+def fetch_security_updates(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	return frappe.get_all(
 		"Security Update",
 		filters=filters,

@@ -24,6 +24,4 @@ def execute():
 				"Marketplace App", app, "average_rating", average_rating, update_modified=False
 			)
 		else:
-			frappe.db.set_value(
-				"Marketplace App", app, "average_rating", 0, update_modified=False
-			)
+			frappe.db.set_value("Marketplace App", app, "average_rating", 0, update_modified=False)

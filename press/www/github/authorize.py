@@ -29,9 +29,7 @@ def obtain_access_token(code, team):
 	response = None
 	try:
 		client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
-		client_secret = frappe.db.get_single_value(
-			"Press Settings", "github_app_client_secret"
-		)
+		client_secret = frappe.db.get_single_value("Press Settings", "github_app_client_secret")
 		data = {"client_id": client_id, "client_secret": client_secret, "code": code}
 		headers = {"Accept": "application/json"}
 		response = requests.post(

@@ -49,9 +49,7 @@ def account_request(
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team:
-		if frappe.db.exists(
-			"Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}
-		):
+		if frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
 			frappe.throw(f"Account {email} already exists with unpaid invoices")
 
 	try:
@@ -96,9 +94,7 @@ def create_or_rename_saas_site(app, account_request):
 
 	try:
 		enable_hybrid_pools = frappe.db.get_value("Saas Settings", app, "enable_hybrid_pools")
-		hybrid_saas_pool = (
-			get_hybrid_saas_pool(account_request) if enable_hybrid_pools else ""
-		)
+		hybrid_saas_pool = get_hybrid_saas_pool(account_request) if enable_hybrid_pools else ""
 
 		pooled_site = get_pooled_saas_site(app, hybrid_saas_pool)
 		if pooled_site:
@@ -155,9 +151,7 @@ def get_hybrid_saas_pool(account_request):
 	conditions
 	"""
 	hybrid_pool = ""
-	all_pools = frappe.get_all(
-		"Hybrid Saas Pool", {"app": account_request.saas_app}, pluck="name"
-	)
+	all_pools = frappe.get_all("Hybrid Saas Pool", {"app": account_request.saas_app}, pluck="name")
 	ar_rules = frappe.get_all(
 		"Account Request Rules",
 		{"parent": ("in", all_pools)},
@@ -188,9 +182,7 @@ def check_subdomain_availability(subdomain, app):
 		return False
 
 	exists = bool(
-		frappe.db.exists(
-			"Blocked Domain", {"name": subdomain, "root_domain": get_erpnext_domain()}
-		)
+		frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": get_erpnext_domain()})
 		or frappe.db.exists(
 			"Site",
 			{
@@ -212,9 +204,7 @@ def validate_account_request(key):
 		frappe.throw("Request Key not provided")
 
 	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
-	app_info = frappe.db.get_value(
-		"Saas Setup Account Generator", app, ["headless", "route"], as_dict=True
-	)
+	app_info = frappe.db.get_value("Saas Setup Account Generator", app, ["headless", "route"], as_dict=True)
 
 	if not app_info:
 		frappe.throw("App configurations are missing! Please contact support")
@@ -296,9 +286,7 @@ def headless_setup_account(key):
 	)
 
 	frappe.local.response["type"] = "redirect"
-	frappe.local.response[
-		"location"
-	] = f"/prepare-site?key={key}&app={account_request.saas_app}"
+	frappe.local.response["location"] = f"/prepare-site?key={key}&app={account_request.saas_app}"
 
 
 def create_marketplace_subscription(account_request):
@@ -392,10 +380,8 @@ def get_site_url_and_sid(key, app=None):
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 
-	name = frappe.db.get_value(
-		"Site", {"subdomain": account_request.subdomain, "domain": domain}
-	)
-	site: "Site" = frappe.get_doc("Site", name)
+	name = frappe.db.get_value("Site", {"subdomain": account_request.subdomain, "domain": domain})
+	site: Site = frappe.get_doc("Site", name)
 	if site.additional_system_user_created:
 		return site.login_as_team()
 	return site.login_as_admin()
@@ -561,9 +547,7 @@ def subscription(site):
 			plan.pop("roles", "")
 			filtered_plans.append(plan)
 
-	trial_end_date, current_plan = frappe.db.get_value(
-		"Site", site, ["trial_end_date", "plan"]
-	)
+	trial_end_date, current_plan = frappe.db.get_value("Site", site, ["trial_end_date", "plan"])
 	return {
 		"trial_end_date": trial_end_date,
 		"current_plan": current_plan,

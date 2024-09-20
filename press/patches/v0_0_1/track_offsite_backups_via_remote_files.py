@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -13,8 +12,7 @@ def execute():
 	frappe.reload_doc("press", "doctype", "site_backup")
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 	offsite_backups = [
-		frappe.get_doc("Site Backup", x["name"])
-		for x in frappe.get_all("Site Backup", {"offsite": 1})
+		frappe.get_doc("Site Backup", x["name"]) for x in frappe.get_all("Site Backup", {"offsite": 1})
 	]
 
 	for offsite_backup in offsite_backups:

@@ -114,12 +114,8 @@ class WireguardPeer(Document):
 					"wireguard_port": proxy.wireguard_port,
 					"interface_id": proxy.private_ip_interface_id,
 					"wireguard_network": self.peer_ip + "/" + self.wireguard_network.split("/")[1],
-					"wireguard_private_key": self.get_password("private_key")
-					if self.private_key
-					else False,
-					"wireguard_public_key": self.get_password("public_key")
-					if self.public_key
-					else False,
+					"wireguard_private_key": self.get_password("private_key") if self.private_key else False,
+					"wireguard_public_key": self.get_password("public_key") if self.public_key else False,
 					"peers": json.dumps(
 						[
 							{

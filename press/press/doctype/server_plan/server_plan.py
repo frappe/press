@@ -23,9 +23,7 @@ class ServerPlan(Plan):
 		price_inr: DF.Currency
 		price_usd: DF.Currency
 		roles: DF.Table[HasRole]
-		server_type: DF.Literal[
-			"Server", "Database Server", "Proxy Server", "Self Hosted Server"
-		]
+		server_type: DF.Literal["Server", "Database Server", "Proxy Server", "Self Hosted Server"]
 		title: DF.Data | None
 		vcpu: DF.Int
 	# end: auto-generated types

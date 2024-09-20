@@ -32,9 +32,7 @@ def approve_partner_request(key):
 
 @frappe.whitelist()
 def get_partner_request_status(team):
-	return frappe.db.get_value(
-		"Partner Approval Request", {"requested_by": team}, "status"
-	)
+	return frappe.db.get_value("Partner Approval Request", {"requested_by": team}, "status")
 
 
 @frappe.whitelist()
@@ -92,9 +90,7 @@ def transfer_credits(amount, customer, partner):
 	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
-		frappe.throw(
-			f"Insufficient Credits to transfer. Credits Available: {credits_available}"
-		)
+		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt

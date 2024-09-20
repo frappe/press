@@ -25,12 +25,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+INCIDENT_SCOPE = (
+	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+)
 
 DAY_HOURS = range(9, 18)
-CONFIRMATION_THRESHOLD_SECONDS_DAY = (
-	5 * 60
-)  # 5 minutes;time after which humans are called
+CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
 CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
 	10 * 60  # 10 minutes; time after which humans are called
 )
@@ -40,9 +40,7 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 )
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
-PAST_ALERT_COVER_MINUTES = (
-	15  # to cover alerts that fired before/triggered the incident
-)
+PAST_ALERT_COVER_MINUTES = 15  # to cover alerts that fired before/triggered the incident
 
 
 class Incident(WebsiteGenerator):
@@ -108,9 +106,7 @@ class Incident(WebsiteGenerator):
 		"""
 		Ignore incidents on server (Don't call)
 		"""
-		frappe.db.set_value(
-			"Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime()
-		)
+		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
 
 	def call_humans(self):
 		enqueue_doc(
@@ -132,9 +128,9 @@ class Incident(WebsiteGenerator):
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
-		if frappe.db.exists(
-			"Self Hosted Server", {"server": self.server}
-		) or frappe.db.get_value("Server", self.server, "is_self_hosted"):
+		if frappe.db.exists("Self Hosted Server", {"server": self.server}) or frappe.db.get_value(
+			"Server", self.server, "is_self_hosted"
+		):
 			users = incident_settings.self_hosted_users
 		users = incident_settings.users
 		ret = users
@@ -152,7 +148,7 @@ class Incident(WebsiteGenerator):
 
 	@property
 	def twilio_client(self):
-		press_settings: "PressSettings" = frappe.get_cached_doc("Press Settings")
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		try:
 			return press_settings.twilio_client
 		except Exception:
@@ -162,8 +158,7 @@ class Incident(WebsiteGenerator):
 
 	@retry(
 		retry=retry_if_not_result(
-			lambda result: result
-			in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
+			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(30),
@@ -360,20 +355,14 @@ where
 
 	@property
 	def time_to_call_for_help(self) -> bool:
-		return (
-			self.status == "Confirmed"
-			and frappe.utils.now_datetime() - self.creation
-			> timedelta(
-				seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
-			)
+		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
+			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
-		return (
-			self.status == "Acknowledged"
-			and frappe.utils.now_datetime() - self.modified
-			> timedelta(seconds=get_call_repeat_interval())
+		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
+			seconds=get_call_repeat_interval()
 		)
 
 
@@ -458,9 +447,7 @@ def notify_ignored_servers():
 
 	message = "The following servers are being ignored for incidents:\n\n"
 	for server in ignored_servers:
-		message += (
-			f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
-		)
+		message += f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
 	telegram = Telegram()
 	telegram.send(message)

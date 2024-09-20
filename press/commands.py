@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import click
 import frappe
 from frappe.commands import get_site, pass_context

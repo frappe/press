@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
@@ -83,9 +82,7 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.app = create_test_app("erpnext", "ERPNext")
 		self.team = create_test_press_admin_team()
 		self.version = "Version 14"
-		self.app_source = create_test_app_source(
-			version=self.version, app=self.app, team=self.team.name
-		)
+		self.app_source = create_test_app_source(version=self.version, app=self.app, team=self.team.name)
 		self.app_release = create_test_app_release(self.app_source)
 		self.marketplace_app = create_test_marketplace_app(
 			app=self.app.name,
@@ -306,9 +303,7 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_get_apps_with_plans(self):
 		frappe_app = create_test_app()
-		group2 = create_test_release_group(
-			[frappe_app, self.app], frappe_version=self.version
-		)
+		group2 = create_test_release_group([frappe_app, self.app], frappe_version=self.version)
 		create_test_marketplace_app(
 			app=frappe_app.name,
 			sources=[{"version": self.version, "source": group2.apps[0].source}],
@@ -342,9 +337,7 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_change_branch(self):
 		old_branch = self.app_source.branch
-		change_branch(
-			self.marketplace_app.name, self.app_source.name, "Version 14", "develop"
-		)
+		change_branch(self.marketplace_app.name, self.app_source.name, "Version 14", "develop")
 		self.app_source.reload()
 		self.assertNotEqual(old_branch, self.app_source.branch)
 

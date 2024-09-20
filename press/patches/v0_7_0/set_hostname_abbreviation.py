@@ -10,6 +10,4 @@ def execute():
 		for doc in frappe.get_all(doctype, fields=["name", "hostname"]):
 			abbr = get_hostname_abbreviation(doc.hostname)
 
-			frappe.db.set_value(
-				doctype, doc.name, "hostname_abbreviation", abbr, update_modified=False
-			)
+			frappe.db.set_value(doctype, doc.name, "hostname_abbreviation", abbr, update_modified=False)

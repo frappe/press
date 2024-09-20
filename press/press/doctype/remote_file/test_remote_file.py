@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
 import unittest
 from datetime import datetime
-from typing import Optional
 
 import frappe
 
 
 def create_test_remote_file(
-	site: Optional[str] = None,
+	site: str | None = None,
 	creation: datetime = None,
 	file_path: str = None,
 	file_size: int = 1024,

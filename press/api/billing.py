@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 from itertools import groupby
-from typing import Dict, List
 
 import frappe
 from frappe.core.utils import find
@@ -123,7 +122,7 @@ def balances():
 	return data
 
 
-def get_processed_balance_transactions(transactions: List[Dict]):
+def get_processed_balance_transactions(transactions: list[dict]):
 	"""Cleans up transactions and adjusts ending balances accordingly"""
 
 	cleaned_up_transations = get_cleaned_up_transactions(transactions)
@@ -142,7 +141,7 @@ def get_processed_balance_transactions(transactions: List[Dict]):
 	return list(reversed(processed_balance_transactions))
 
 
-def get_cleaned_up_transactions(transactions: List[Dict]):
+def get_cleaned_up_transactions(transactions: list[dict]):
 	"""Only picks Balance transactions that the users care about"""
 
 	cleaned_up_transations = []
@@ -328,9 +327,7 @@ def get_payment_methods():
 
 @frappe.whitelist()
 def set_as_default(name):
-	payment_method = frappe.get_doc(
-		"Stripe Payment Method", {"name": name, "team": get_current_team()}
-	)
+	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": get_current_team()})
 	payment_method.set_default()
 
 
@@ -456,7 +453,7 @@ def get_summary():
 	return invoices
 
 
-def get_grouped_invoice_items(invoices: List[str]) -> Dict:
+def get_grouped_invoice_items(invoices: list[str]) -> dict:
 	"""Takes a list of invoices (invoice names) and returns a dict of the form:
 	{ "<invoice_name1>": [<invoice_items>], "<invoice_name2>": [<invoice_items>], }
 	"""
@@ -528,9 +525,7 @@ def validate_gst(address, method=None):
 
 	if address.gstin and address.gstin != "Not Applicable":
 		if not GSTIN_FORMAT.match(address.gstin):
-			frappe.throw(
-				"Invalid GSTIN. The input you've entered does not match the format of GSTIN."
-			)
+			frappe.throw("Invalid GSTIN. The input you've entered does not match the format of GSTIN.")
 
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
@@ -557,10 +552,7 @@ def get_latest_unpaid_invoice():
 			["amount_due", "payment_mode", "amount_due", "currency"],
 			as_dict=True,
 		)
-		if (
-			unpaid_invoice.payment_mode == "Prepaid Credits"
-			and team_has_balance_for_invoice(unpaid_invoice)
-		):
+		if unpaid_invoice.payment_mode == "Prepaid Credits" and team_has_balance_for_invoice(unpaid_invoice):
 			return
 
 		return unpaid_invoice

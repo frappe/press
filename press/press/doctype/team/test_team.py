@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -34,9 +33,9 @@ def create_test_team(email: str = None, country="India") -> Team:
 		email = frappe.mock("email")
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
-	team = frappe.get_doc(
-		{"doctype": "Team", "user": user, "enabled": 1, "country": country}
-	).insert(ignore_if_duplicate=True)
+	team = frappe.get_doc({"doctype": "Team", "user": user, "enabled": 1, "country": country}).insert(
+		ignore_if_duplicate=True
+	)
 	team.reload()
 	return team
 
@@ -49,9 +48,7 @@ class TestTeam(unittest.TestCase):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
 		with patch.object(Team, "create_stripe_customer"):
-			Team.create_new(
-				account_request, "first name", "last name", "test@email.com", country="India"
-			)
+			Team.create_new(account_request, "first name", "last name", "test@email.com", country="India")
 		team_count_after = frappe.db.count("Team")
 		self.assertGreater(team_count_after, team_count_before)
 
@@ -70,6 +67,4 @@ class TestTeam(unittest.TestCase):
 		team = create_test_team()
 		email = "testuser@frappe.cloud"
 		team.create_user_for_member("test", "user", "testuser@frappe.cloud")
-		self.assertTrue(
-			team.has_member(email)
-		)  # kinda dumb because we assume has_member method is correct
+		self.assertTrue(team.has_member(email))  # kinda dumb because we assume has_member method is correct

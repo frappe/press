@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -15,8 +14,6 @@ import requests
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
-	from typing import Optional
-
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
 
@@ -26,7 +23,7 @@ def hook(*args, **kwargs):
 	# set user to Administrator, to not have to do ignore_permissions everywhere
 	frappe.set_user("Administrator")
 	headers = frappe.request.headers
-	doc: "GitHubWebhookLog" = frappe.get_doc(
+	doc: GitHubWebhookLog = frappe.get_doc(
 		{
 			"doctype": "GitHub Webhook Log",
 			"name": headers.get("X-Github-Delivery"),
@@ -62,7 +59,7 @@ def get_jwt_token():
 	return token
 
 
-def get_access_token(installation_id: "Optional[str]" = None):
+def get_access_token(installation_id: "str | None" = None):
 	if not installation_id:
 		return frappe.db.get_value(
 			"Press Settings",
@@ -174,9 +171,7 @@ def repository(owner, name, installation=None):
 	headers = {
 		"Authorization": f"token {token}",
 	}
-	repo = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}", headers=headers
-	).json()
+	repo = requests.get(f"https://api.github.com/repos/{owner}/{name}", headers=headers).json()
 
 	current_page, is_last_page = 1, False
 	branches = []
@@ -265,7 +260,7 @@ def branches(owner, name, installation=None):
 		frappe.throw("Error fetching branch list from GitHub: " + response.text)
 
 
-def get_auth_headers(installation_id: "Optional[str]" = None) -> "dict[str, str]":
+def get_auth_headers(installation_id: "str | None" = None) -> "dict[str, str]":
 	if token := get_access_token(installation_id):
 		return {"Authorization": f"token {token}"}
 	return {}

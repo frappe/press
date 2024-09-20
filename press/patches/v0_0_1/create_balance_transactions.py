@@ -15,9 +15,7 @@ def execute():
 	for i, name in enumerate(partners):
 		update_progress_bar("Creating Balance Transactions", i, len(partners))
 
-		if frappe.db.exists(
-			"Balance Transaction", {"team": name, "description": "Initial Balance"}
-		):
+		if frappe.db.exists("Balance Transaction", {"team": name, "description": "Initial Balance"}):
 			continue
 
 		team = frappe.get_doc("Team", name)
@@ -46,9 +44,7 @@ def get_free_credits_left(team):
 	invoices = frappe.db.get_all("Invoice", {"team": team.name, "status": ("!=", "Draft")})
 
 	settings = frappe.get_doc("Press Settings")
-	total_free_credits = (
-		settings.free_credits_inr if team.currency == "INR" else settings.free_credits_usd
-	)
+	total_free_credits = settings.free_credits_inr if team.currency == "INR" else settings.free_credits_usd
 
 	if not invoices:
 		return total_free_credits

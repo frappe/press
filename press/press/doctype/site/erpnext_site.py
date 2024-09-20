@@ -24,9 +24,7 @@ class ERPNextSite(Site):
 					"team": "Administrator",
 					"account_request": account_request.name,
 					"subscription_plan": get_erpnext_plan(),
-					"erpnext_consultant": ERPNextConsultant.get_one_for_country(
-						account_request.country
-					),
+					"erpnext_consultant": ERPNextConsultant.get_one_for_country(account_request.country),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -38,9 +36,7 @@ class ERPNextSite(Site):
 		self.trial_end_date = frappe.utils.add_days(None, 14)
 		plan = get_erpnext_plan()
 		self._update_configuration(self.get_plan_config(plan), save=False)
-		self.erpnext_consultant = ERPNextConsultant.get_one_for_country(
-			account_request.country
-		)
+		self.erpnext_consultant = ERPNextConsultant.get_one_for_country(account_request.country)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
 

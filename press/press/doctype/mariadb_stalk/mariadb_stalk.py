@@ -34,9 +34,7 @@ class MariaDBStalk(Document):
 	@staticmethod
 	def clear_old_logs(days=30):
 		table = frappe.qb.DocType("MariaDB Stalk")
-		stalks = frappe.db.get_values(
-			table, filters=table.creation < (Now() - Interval(days=days))
-		)
+		stalks = frappe.db.get_values(table, filters=table.creation < (Now() - Interval(days=days)))
 		for stalk in stalks:
 			try:
 				stalk = frappe.get_doc("MariaDB Stalk", stalk)
@@ -78,9 +76,9 @@ def fetch_stalks():
 def fetch_server_stalks(server):
 	server = frappe.get_cached_doc("Database Server", server)
 	for stalk in server.get_stalks():
-		timestamp = convert_utc_to_system_timezone(
-			datetime.fromisoformat(stalk["timestamp"])
-		).replace(tzinfo=None)
+		timestamp = convert_utc_to_system_timezone(datetime.fromisoformat(stalk["timestamp"])).replace(
+			tzinfo=None
+		)
 		# To avoid fetching incomplete stalks, wait for 5 minutes
 		if not now_datetime() > add_to_date(timestamp, minutes=5):
 			continue

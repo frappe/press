@@ -37,9 +37,7 @@ class TestDBOptimizer(FrappeTestCase):
 
 		self.assertIn(
 			"user",
-			possible_indexes(
-				"select `name` from `tabUser` u join `tabHas Role` h on h.user = u.name"
-			),
+			possible_indexes("select `name` from `tabUser` u join `tabHas Role` h on h.user = u.name"),
 		)
 
 	def test_suggestion_using_table_stats(self):

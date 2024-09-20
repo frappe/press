@@ -35,9 +35,7 @@ class TestScheduledBackupJob(FrappeTestCase):
 		return frappe.utils.now_datetime() - timedelta(hours=self.interval)
 
 	def _create_site_requiring_backup(self, **kwargs):
-		return create_test_site(
-			creation=self._interval_hrs_ago() - timedelta(hours=1), **kwargs
-		)
+		return create_test_site(creation=self._interval_hrs_ago() - timedelta(hours=1), **kwargs)
 
 	@patch.object(
 		ScheduledBackupJob,

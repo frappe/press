@@ -54,9 +54,7 @@ class StripePaymentEvent(Document):
 
 		invoice.update(
 			{
-				"payment_date": datetime.fromtimestamp(
-					stripe_invoice["status_transitions"]["paid_at"]
-				),
+				"payment_date": datetime.fromtimestamp(stripe_invoice["status_transitions"]["paid_at"]),
 				"status": "Paid",
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
@@ -84,9 +82,7 @@ class StripePaymentEvent(Document):
 			== 0
 		):
 			# unsuspend sites only if all invoices are paid
-			team.unsuspend_sites(
-				reason=f"Unsuspending sites because of successful payment of {self.invoice}"
-			)
+			team.unsuspend_sites(reason=f"Unsuspending sites because of successful payment of {self.invoice}")
 
 	def handle_payment_failed(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)

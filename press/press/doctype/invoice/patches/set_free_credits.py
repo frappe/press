@@ -9,9 +9,7 @@ from frappe.utils import update_progress_bar
 def execute():
 	frappe.reload_doc("press", "doctype", "invoice")
 	# only apply to invoices that has credits applied
-	invoices = frappe.db.get_all(
-		"Invoice", {"docstatus": 1, "applied_credits": (">", 0)}, pluck="name"
-	)
+	invoices = frappe.db.get_all("Invoice", {"docstatus": 1, "applied_credits": (">", 0)}, pluck="name")
 
 	total_invoices = len(invoices)
 	for i, inv in enumerate(invoices):

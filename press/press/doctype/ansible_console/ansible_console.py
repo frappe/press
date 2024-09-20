@@ -153,9 +153,7 @@ class AnsibleAdHoc:
 			tasks=self.tasks,
 		)
 
-		self.play = Play().load(
-			source, variable_manager=self.variable_manager, loader=self.loader
-		)
+		self.play = Play().load(source, variable_manager=self.variable_manager, loader=self.loader)
 
 		self.callback.nonce = nonce
 

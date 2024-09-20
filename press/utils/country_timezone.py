@@ -1,8 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals
-
 
 def get_country_from_timezone(timezone):
 	return TIMEZONE_COUNTRY_MAP.get(timezone)

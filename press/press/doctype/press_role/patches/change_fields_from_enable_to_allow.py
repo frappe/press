@@ -5,6 +5,4 @@ import frappe
 
 
 def execute():
-	frappe.db.sql(
-		"UPDATE `tabPress Role` SET allow_billing = enable_billing, allow_apps = enable_apps"
-	)
+	frappe.db.sql("UPDATE `tabPress Role` SET allow_billing = enable_billing, allow_apps = enable_apps")

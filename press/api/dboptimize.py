@@ -1,21 +1,20 @@
 import json
 
 import frappe
-from press.utils import log_error
 
 from press.api.site import protected
-
-from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
-	OptimizeDatabaseQuery,
-	_fetch_column_stats,
-	_fetch_table_stats,
-)
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	ColumnStat,
 	DBExplain,
 	DBOptimizer,
 	DBTable,
 )
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	OptimizeDatabaseQuery,
+	_fetch_column_stats,
+	_fetch_table_stats,
+)
+from press.utils import log_error
 
 
 @frappe.whitelist()
@@ -148,9 +147,7 @@ def get_status_of_mariadb_analyze_query(name, query):
 
 
 def mariadb_analyze_query_already_exists(site, normalized_query):
-	if frappe.db.exists(
-		"MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}
-	):
+	if frappe.db.exists("MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}):
 		return True
 	return False
 

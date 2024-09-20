@@ -77,9 +77,7 @@ class PartnerApprovalRequest(Document):
 			frappe.throw("Failed to create approval request. Please contact support.")
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
-		link = get_url(
-			f"/api/method/press.api.partner.approve_partner_request?key={self.key}"
-		)
+		link = get_url(f"/api/method/press.api.partner.approve_partner_request?key={self.key}")
 
 		frappe.sendmail(
 			subject="Partner Approval Request",

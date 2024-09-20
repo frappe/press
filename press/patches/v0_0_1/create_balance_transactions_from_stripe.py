@@ -33,17 +33,13 @@ def create_balance_transactions_for_team(name):
 	team = frappe.get_doc("Team", name)
 	stripe = get_stripe()
 	# skip if already done
-	if frappe.db.exists(
-		"Balance Transaction", {"source": "Free Credits", "team": team.name}
-	):
+	if frappe.db.exists("Balance Transaction", {"source": "Free Credits", "team": team.name}):
 		print(f"Skipping for {team.name}")
 		return
 
 	print(f"Creating Balance Transactions for {team.name}")
 
-	response = stripe.Customer.list_balance_transactions(
-		team.stripe_customer_id, limit=100
-	)
+	response = stripe.Customer.list_balance_transactions(team.stripe_customer_id, limit=100)
 	transactions = response.data
 	transactions.reverse()
 
@@ -56,9 +52,7 @@ def create_balance_transactions_for_team(name):
 	free_credit_balance_created = False
 	for transaction in transactions:
 		amount = transaction.amount * -1 / 100
-		type = (
-			"Applied To Invoice" if transaction.type == "applied_to_invoice" else "Adjustment"
-		)
+		type = "Applied To Invoice" if transaction.type == "applied_to_invoice" else "Adjustment"
 		source = ""
 		invoice_name = ""
 		if type == "Adjustment":
@@ -75,9 +69,7 @@ def create_balance_transactions_for_team(name):
 		if type == "Applied To Invoice":
 			invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": transaction.invoice})
 			invoice_name = invoice.name
-			free_credits_applied = apply_to_invoice(
-				invoice, amount, free_credits_left, balance_transactions
-			)
+			free_credits_applied = apply_to_invoice(invoice, amount, free_credits_left, balance_transactions)
 			free_credits_left = frappe.utils.rounded(free_credits_left - free_credits_applied, 2)
 
 		bt = create_balance_transaction(

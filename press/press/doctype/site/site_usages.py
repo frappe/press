@@ -1,7 +1,7 @@
 import functools
 
-import rq
 import frappe
+import rq
 
 from press.api.analytics import get_current_cpu_usage_for_sites_on_server
 from press.press.doctype.site_plan.site_plan import get_plan_config
@@ -20,9 +20,7 @@ def get_cpu_limits(plan):
 
 @functools.lru_cache(maxsize=128)
 def get_disk_limits(plan):
-	return frappe.db.get_value(
-		"Site Plan", plan, ["max_database_usage", "max_storage_usage"]
-	)
+	return frappe.db.get_value("Site Plan", plan, ["max_database_usage", "max_storage_usage"])
 
 
 @functools.lru_cache(maxsize=128)
@@ -32,9 +30,7 @@ def get_config(plan):
 
 def update_cpu_usages():
 	"""Update CPU Usages field Site.current_cpu_usage across all Active sites from Site Request Log"""
-	servers = frappe.get_all(
-		"Server", filters={"status": "Active", "is_primary": True}, pluck="name"
-	)
+	servers = frappe.get_all("Server", filters={"status": "Active", "is_primary": True}, pluck="name")
 	for server in servers:
 		frappe.enqueue(
 			"press.press.doctype.site.site_usages.update_cpu_usage_server",
@@ -70,9 +66,7 @@ def update_cpu_usage_server(server):
 			frappe.db.rollback()
 			return
 		except Exception:
-			log_error(
-				"Site CPU Usage Update Error", site=site, cpu_usage=cpu_usage, cpu_limit=cpu_limit
-			)
+			log_error("Site CPU Usage Update Error", site=site, cpu_usage=cpu_usage, cpu_limit=cpu_limit)
 			frappe.db.rollback()
 
 

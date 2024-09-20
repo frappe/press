@@ -1,6 +1,6 @@
 import ast
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import frappe
 import semantic_version as sv
@@ -145,7 +145,7 @@ class PreBuildValidations:
 				expected,
 			)
 
-	def _get_app_version(self, app: str) -> Optional[str]:
+	def _get_app_version(self, app: str) -> str | None:
 		pm = self.pmf.get(app)
 		if not pm:
 			return None

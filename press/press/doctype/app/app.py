@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
 
 import typing
 
-import rq
 import frappe
+import rq
 from frappe.model.document import Document
+
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
@@ -82,7 +82,7 @@ class App(Document):
 
 
 def new_app(name, title):
-	app: "App" = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
+	app: App = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
 	return app
 
 

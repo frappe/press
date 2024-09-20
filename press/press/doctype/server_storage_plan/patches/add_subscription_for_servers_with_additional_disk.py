@@ -26,9 +26,7 @@ def execute():
 
 	database_servers = (
 		frappe.qb.from_(DatabaseServer)
-		.select(
-			DatabaseServer.name, DatabaseServer.team, ServerPlan.disk, VirtualMachine.disk_size
-		)
+		.select(DatabaseServer.name, DatabaseServer.team, ServerPlan.disk, VirtualMachine.disk_size)
 		.join(VirtualMachine)
 		.on(DatabaseServer.virtual_machine == VirtualMachine.name)
 		.join(ServerPlan)
@@ -42,6 +40,4 @@ def execute():
 		frappe.get_doc("Server", server.name).create_subscription_for_storage()
 
 	for database_server in tqdm(database_servers):
-		frappe.get_doc(
-			"Database Server", database_server.name
-		).create_subscription_for_storage()
+		frappe.get_doc("Database Server", database_server.name).create_subscription_for_storage()

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -45,12 +44,8 @@ def targets(token):
 		benches.append(bench)
 
 	servers = {}
-	servers["proxy"] = frappe.get_all(
-		"Proxy Server", {"status": ("!=", "Archived")}, ["name", "cluster"]
-	)
-	servers["app"] = frappe.get_all(
-		"Server", {"status": ("!=", "Archived")}, ["name", "cluster"]
-	)
+	servers["proxy"] = frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+	servers["app"] = frappe.get_all("Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
 	servers["database"] = frappe.get_all(
 		"Database Server", {"status": ("!=", "Archived")}, ["name", "cluster"]
 	)

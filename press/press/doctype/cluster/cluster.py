@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -9,8 +8,8 @@ import ipaddress
 import re
 import time
 import typing
+from collections.abc import Generator
 from textwrap import wrap
-from typing import Dict, Generator, List, Optional
 
 import boto3
 import frappe
@@ -115,7 +114,7 @@ class Cluster(Document):
 			self.set_oci_availability_zone()
 
 	def validate_aws_credentials(self):
-		settings: "PressSettings" = frappe.get_single("Press Settings")
+		settings: PressSettings = frappe.get_single("Press Settings")
 		if self.public and not self.aws_access_key_id:
 			self.aws_access_key_id = settings.aws_access_key_id
 			self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
@@ -180,9 +179,7 @@ class Cluster(Document):
 	def validate_cidr_block(self):
 		if not self.cidr_block:
 			blocks = ipaddress.ip_network("10.0.0.0/8").subnets(new_prefix=16)
-			existing_blocks = ["10.0.0.0/16"] + frappe.get_all(
-				"Cluster", ["cidr_block"], pluck="cidr_block"
-			)
+			existing_blocks = ["10.0.0.0/16"] + frappe.get_all("Cluster", ["cidr_block"], pluck="cidr_block")
 			for block in blocks:
 				cidr_block = str(block)
 				if cidr_block not in existing_blocks:
@@ -245,9 +242,7 @@ class Cluster(Document):
 
 		self.internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
 
-		client.attach_internet_gateway(
-			InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id
-		)
+		client.attach_internet_gateway(InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id)
 
 		response = client.describe_route_tables(
 			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
@@ -402,9 +397,7 @@ class Cluster(Document):
 	def get_oci_config(self):
 		# Stupid Password field, replaces newines with spaces
 		private_key = (
-			self.get_password("oci_private_key")
-			.replace(" ", "\n")
-			.replace("\nPRIVATE\n", " PRIVATE ")
+			self.get_password("oci_private_key").replace(" ", "\n").replace("\nPRIVATE\n", " PRIVATE ")
 		)
 
 		config = {
@@ -419,9 +412,7 @@ class Cluster(Document):
 
 	def set_oci_availability_zone(self):
 		identiy_client = IdentityClient(self.get_oci_config())
-		availibility_domain = (
-			identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
-		)
+		availibility_domain = identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
 		self.availability_zone = availibility_domain
 
 	def provision_on_oci(self):
@@ -587,7 +578,7 @@ class Cluster(Document):
 
 		self.save()
 
-	def get_available_vmi(self, series) -> Optional[str]:
+	def get_available_vmi(self, series) -> str | None:
 		"""Virtual Machine Image available in region for given series"""
 		return VirtualMachineImage.get_available_for_series(series, self.region)
 
@@ -660,9 +651,7 @@ class Cluster(Document):
 				doctype,
 				"Test",
 			)
-			match (
-				doctype
-			):  # for populating Server doc's fields; assume the trio is created together
+			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
 					self.database_server = server.name
 				case "Proxy Server":
@@ -725,9 +714,7 @@ class Cluster(Document):
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
-		vm = self.create_vm(
-			plan.instance_type, plan.disk, domain, server_series[doctype], team
-		)
+		vm = self.create_vm(plan.instance_type, plan.disk, domain, server_series[doctype], team)
 		server = None
 		match doctype:
 			case "Database Server":
@@ -760,10 +747,8 @@ class Cluster(Document):
 		return server, job
 
 	@classmethod
-	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
-		cluster_names = unique(
-			frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
-		)
+	def get_all_for_new_bench(cls, extra_filters={}) -> list[dict[str, str]]:
+		cluster_names = unique(frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster"))
 		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(
 			"Cluster",

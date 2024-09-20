@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -21,9 +20,7 @@ class AgentJobStep(Document):
 		end: DF.Datetime | None
 		output: DF.Code | None
 		start: DF.Datetime | None
-		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Skipped", "Delivery Failure"
-		]
+		status: DF.Literal["Pending", "Running", "Success", "Failure", "Skipped", "Delivery Failure"]
 		step_name: DF.Data
 		traceback: DF.Code | None
 	# end: auto-generated types

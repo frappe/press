@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -12,9 +11,7 @@ def execute():
 	frappe.reload_doc("press", "doctype", "team")
 	frappe.reload_doc("press", "doctype", "team_member")
 
-	user_accounts = frappe.db.sql(
-		"SELECT user, account_key, creation FROM `tabUser Account`", as_dict=1
-	)
+	user_accounts = frappe.db.sql("SELECT user, account_key, creation FROM `tabUser Account`", as_dict=1)
 	enabled_users = [d.name for d in frappe.db.get_all("User", {"enabled": 1}, ["name"])]
 
 	users = [d.user for d in user_accounts]

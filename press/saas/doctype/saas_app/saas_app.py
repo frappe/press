@@ -71,8 +71,6 @@ def get_plan_prices(plan_name):
 
 
 def get_selected_plan(app, site):
-	sub_name = frappe.get_all(
-		"Saas App Subscription", {"app": app, "site": site}, pluck="saas_app_plan"
-	)
+	sub_name = frappe.get_all("Saas App Subscription", {"app": app, "site": site}, pluck="saas_app_plan")
 
 	return sub_name[0]

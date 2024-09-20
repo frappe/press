@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 from random import choice
-from typing import List
 
 import frappe
 
@@ -12,12 +11,10 @@ from press.press.doctype.server.server import Server
 
 class BackupTest:
 	def __init__(self) -> None:
-		self.trial_plans = frappe.get_all(
-			"Site Plan", dict(enabled=1, is_trial_plan=1), pluck="name"
-		)
+		self.trial_plans = frappe.get_all("Site Plan", dict(enabled=1, is_trial_plan=1), pluck="name")
 		self.sites = self.get_random_sites()
 
-	def get_random_sites(self) -> List:
+	def get_random_sites(self) -> list:
 		sites = []
 		servers = Server.get_all_primary_prod()
 		for server in servers:
@@ -49,14 +46,12 @@ class BackupTest:
 			except Exception:
 				frappe.log_error("Backup Restore Test insertion failed")
 
-	def get_benches(self, server: str) -> List[str]:
+	def get_benches(self, server: str) -> list[str]:
 		benches = get_benches_in_server(server)
 
 		# select all benches from central benches
 		# TODO: provision to run for all release groups
-		groups = frappe.get_all(
-			"Release Group", dict(enabled=1, central_bench=1), pluck="name"
-		)
+		groups = frappe.get_all("Release Group", dict(enabled=1, central_bench=1), pluck="name")
 
 		bench_list = []
 		for group in groups:

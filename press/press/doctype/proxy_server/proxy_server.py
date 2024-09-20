@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -26,6 +25,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import (
 			ProxyServerDomain,
 		)
@@ -133,23 +133,17 @@ class ProxyServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
 		try:
 			ansible = Ansible(
-				playbook="self_hosted_proxy.yml"
-				if getattr(self, "is_self_hosted", False)
-				else "proxy.yml",
+				playbook="self_hosted_proxy.yml" if getattr(self, "is_self_hosted", False) else "proxy.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
@@ -181,9 +175,7 @@ class ProxyServer(BaseServer):
 		self.save()
 
 	def _install_exporters(self):
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 		try:
 			ansible = Ansible(
 				playbook="proxy_exporters.yml",
@@ -201,9 +193,7 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200)
 
 	def _setup_ssh_proxy(self):
 		settings = frappe.db.get_value(
@@ -238,9 +228,7 @@ class ProxyServer(BaseServer):
 	def setup_fail2ban(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
 		try:
@@ -261,9 +249,7 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_proxysql(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_proxysql", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_proxysql", queue="long", timeout=1200)
 
 	def _setup_proxysql(self):
 		try:
@@ -294,9 +280,7 @@ class ProxyServer(BaseServer):
 	def setup_replication(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_replication", queue="long", timeout=1200)
 
 	def _setup_replication(self):
 		self._setup_secondary()
@@ -351,9 +335,7 @@ class ProxyServer(BaseServer):
 			return
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_trigger_failover", queue="long", timeout=3600
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_trigger_failover", queue="long", timeout=3600)
 
 	def stop_primary(self):
 		primary = frappe.get_doc("Proxy Server", self.primary)
@@ -387,9 +369,7 @@ class ProxyServer(BaseServer):
 			playbook="failover_remove_primary_access.yml",
 			server=self,
 			variables={
-				"primary_public_key": frappe.db.get_value(
-					"Proxy Server", self.primary, "frappe_public_key"
-				)
+				"primary_public_key": frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
 			},
 		)
 		ansible.run()
@@ -441,13 +421,11 @@ class ProxyServer(BaseServer):
 			.run(as_dict=True)
 		)
 		for bench_name in active_benches:
-			bench: "Bench" = frappe.get_doc("Bench", bench_name)
+			bench: Bench = frappe.get_doc("Bench", bench_name)
 			bench.add_ssh_user()
 
 	def update_app_servers(self):
-		frappe.db.set_value(
-			"Server", {"proxy_server": self.primary}, "proxy_server", self.name
-		)
+		frappe.db.set_value("Server", {"proxy_server": self.primary}, "proxy_server", self.name)
 
 	def switch_primary(self):
 		frappe.db.set_value("Proxy Server", self.primary, "is_primary", False)
@@ -458,9 +436,7 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_proxysql_monitor", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_proxysql_monitor", queue="long", timeout=1200)
 
 	def _setup_proxysql_monitor(self):
 		try:
@@ -486,9 +462,7 @@ class ProxyServer(BaseServer):
 	@frappe.whitelist()
 	def setup_wireguard(self):
 		if not self.private_ip_interface_id:
-			play = frappe.get_last_doc(
-				"Ansible Play", {"play": "Ping Server", "server": self.name}
-			)
+			play = frappe.get_last_doc("Ansible Play", {"play": "Ping Server", "server": self.name})
 			task = frappe.get_doc("Ansible Task", {"play": play.name, "task": "Gather Facts"})
 			import json
 
@@ -497,9 +471,7 @@ class ProxyServer(BaseServer):
 				if task_res[i]["ipv4"]["address"] == self.private_ip:
 					self.private_ip_interface_id = task_res[i]["device"]
 			self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_wireguard", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_wireguard", queue="long", timeout=1200)
 
 	def _setup_wireguard(self):
 		try:
@@ -536,9 +508,7 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def reload_wireguard(self):
-		frappe.enqueue_doc(
-			"Proxy Server", self.name, "_reload_wireguard", queue="default", timeout=1200
-		)
+		frappe.enqueue_doc("Proxy Server", self.name, "_reload_wireguard", queue="default", timeout=1200)
 
 	def _reload_wireguard(self):
 		import json

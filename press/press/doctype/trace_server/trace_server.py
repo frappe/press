@@ -65,9 +65,7 @@ class TraceServer(BaseServer):
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -115,9 +113,7 @@ class TraceServer(BaseServer):
 	def upgrade_server(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_upgrade_server", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_server", queue="long", timeout=2400)
 
 	def _upgrade_server(self):
 		try:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
@@ -15,9 +14,7 @@ if TYPE_CHECKING:
 
 
 def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> "App":
-	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(
-		ignore_if_duplicate=True
-	)
+	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(ignore_if_duplicate=True)
 
 
 class TestApp(unittest.TestCase):

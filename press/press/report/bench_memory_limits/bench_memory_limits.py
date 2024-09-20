@@ -66,9 +66,7 @@ def get_data(filters):
 	for bench_name in benches:
 		bench = frappe.get_doc("Bench", bench_name)
 
-		gn, bg = bench.allocate_workers(
-			server.workload, server.max_gunicorn_workers, server.max_bg_workers
-		)
+		gn, bg = bench.allocate_workers(server.workload, server.max_gunicorn_workers, server.max_bg_workers)
 		result.append(
 			{
 				"bench": bench_name,

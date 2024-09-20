@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -6,7 +5,6 @@ import json
 import os
 import random
 import traceback
-from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -19,6 +17,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
+
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -65,9 +64,7 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal[
-			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"
-		]
+		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -103,9 +100,7 @@ class AgentJob(Document):
 			is_owned_by_team("Release Group", group, raise_exception=True)
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
-			benches = (
-				frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
-			)
+			benches = frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
 			query = query.where(AgentJob.bench.isin(benches))
 
 		if server:
@@ -181,9 +176,9 @@ class AgentJob(Document):
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
-			self.job_id = agent.request(
-				self.request_method, self.request_path, data, files, agent_job=self
-			)["job"]
+			self.job_id = agent.request(self.request_method, self.request_path, data, files, agent_job=self)[
+				"job"
+			]
 
 			self.status = "Pending"
 			self.save()
@@ -390,15 +385,11 @@ def job_detail(job):
 
 def publish_update(job):
 	message = job_detail(job)
-	frappe.publish_realtime(
-		event="agent_job_update", doctype="Agent Job", docname=job, message=message
-	)
+	frappe.publish_realtime(event="agent_job_update", doctype="Agent Job", docname=job, message=message)
 
 	# publish event for agent job list to update in dashboard
 	# we are doing this since process agent job doesn't emit list_update for job due to set_value
-	frappe.publish_realtime(
-		event="list_update", message={"doctype": "Agent Job", "name": job}
-	)
+	frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job", "name": job})
 
 	# publish event for site to show job running on dashboard and update site
 	# we are doing this since process agent job doesn't emit doc_update for site due to set_value
@@ -423,9 +414,7 @@ def suspend_sites():
 	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
 		return
 
-	free_teams = frappe.get_all(
-		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
-	)
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
 	active_sites = frappe.get_all(
 		"Site",
 		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
@@ -627,9 +616,7 @@ def lock_doc_updated_by_job(job_name):
 		job_name,
 		["site", "bench", "server", "server_type", "job_type"],
 		as_dict=True,
-	)[
-		0
-	]  # relies on order of values to be site, bench..
+	)[0]  # relies on order of values to be site, bench..
 
 	if field_values["job_type"] not in get_pair_jobs():
 		return
@@ -778,9 +765,7 @@ def is_auto_retry_disabled(server):
 	_auto_retry_disabled = False
 
 	# Global Config
-	_auto_retry_disabled = frappe.db.get_single_value(
-		"Press Settings", "disable_auto_retry", cache=True
-	)
+	_auto_retry_disabled = frappe.db.get_single_value("Press Settings", "disable_auto_retry", cache=True)
 	if _auto_retry_disabled:
 		return True
 
@@ -800,9 +785,7 @@ def is_auto_retry_disabled(server):
 
 def update_job_and_step_status(job: str, status: str):
 	agent_job = frappe.qb.DocType("Agent Job")
-	frappe.qb.update(agent_job).set(agent_job.status, status).where(
-		agent_job.name == job
-	).run()
+	frappe.qb.update(agent_job).set(agent_job.status, status).where(agent_job.name == job).run()
 
 	agent_job_step = frappe.qb.DocType("Agent Job Step")
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, status).where(
@@ -881,8 +864,8 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
-	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
+def process_job_updates(job_name: str, response_data: "dict | None" = None):
+	job: AgentJob = frappe.get_doc("Agent Job", job_name)
 
 	try:
 		from press.api.dboptimize import (
@@ -1066,8 +1049,7 @@ def update_job_step_status():
 			GROUP_CONCAT(agent_job_step.name, alias="step_names"),
 		)
 		.where(
-			(agent_job.status.isin(["Failure", "Delivery Failure"]))
-			& (agent_job_step.status == "Pending")
+			(agent_job.status.isin(["Failure", "Delivery Failure"])) & (agent_job_step.status == "Pending")
 		)
 		.groupby(agent_job.name)
 		.limit(100)
@@ -1108,9 +1090,7 @@ def to_str(data) -> str:
 
 
 def flush():
-	log_file = os.path.join(
-		frappe.utils.get_bench_path(), "logs", f"{AGENT_LOG_KEY}.json.log"
-	)
+	log_file = os.path.join(frappe.utils.get_bench_path(), "logs", f"{AGENT_LOG_KEY}.json.log")
 	try:
 		# Fetch all entries without removing from cache
 		logs = frappe.cache().lrange(AGENT_LOG_KEY, 0, -1)

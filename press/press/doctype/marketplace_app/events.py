@@ -14,9 +14,7 @@ def auto_review_for_missing_steps():
 		pluck="name",
 	):
 		app_doc = frappe.get_doc("Marketplace App", app)
-		release = (
-			True if frappe.db.exists("App Release Approval Request", {"app": app}) else False
-		)
+		release = True if frappe.db.exists("App Release Approval Request", {"app": app}) else False
 		logo = True if app_doc.image else False
 		desc = True if ("Please add a short" not in app_doc.description) else False
 		links = (

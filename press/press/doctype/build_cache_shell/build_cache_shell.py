@@ -48,6 +48,6 @@ class BuildCacheShell(Document):
 
 @frappe.whitelist()
 def run_command(doc):
-	bench_shell: "BuildCacheShell" = frappe.get_doc(json.loads(doc))
+	bench_shell: BuildCacheShell = frappe.get_doc(json.loads(doc))
 	bench_shell.run_command()
 	return bench_shell.as_dict()

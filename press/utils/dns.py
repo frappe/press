@@ -21,9 +21,7 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(
-	method: str, domain: Document, proxy_server: str, record_name: str = None
-):
+def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str = None):
 	"""
 	Change dns record of site
 
@@ -36,9 +34,7 @@ def _change_dns_record(
 			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 		)
 		zones = client.list_hosted_zones_by_name()["HostedZones"]
-		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-			"Id"
-		]
+		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 		client.change_resource_record_sets(
 			ChangeBatch={
 				"Changes": [

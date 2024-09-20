@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -31,9 +30,7 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(
-				doctype="Usage Record", team=self.team.name, amount=amount
-			)
+			usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=amount)
 			usage_record.insert()
 			usage_record.submit()
 
@@ -57,9 +54,7 @@ class TestInvoice(unittest.TestCase):
 
 		usage_records = []
 		for amount in [10, 20, 30, 40]:
-			usage_record = frappe.get_doc(
-				doctype="Usage Record", team=self.team.name, amount=amount
-			)
+			usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=amount)
 			usage_record.insert()
 			usage_record.submit()
 			usage_records.append(usage_record)
@@ -86,9 +81,7 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(
-				doctype="Usage Record", team=self.team.name, amount=amount
-			)
+			usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=amount)
 			usage_record.insert()
 			usage_record.submit()
 
@@ -122,9 +115,7 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(
-				doctype="Usage Record", team=self.team.name, amount=amount
-			)
+			usage_record = frappe.get_doc(doctype="Usage Record", team=self.team.name, amount=amount)
 			usage_record.insert()
 			usage_record.submit()
 
@@ -294,9 +285,7 @@ class TestInvoice(unittest.TestCase):
 		with open(
 			Path(__file__).parent / "fixtures/stripe_payment_intent_succeeded_webhook.json", "r"
 		) as payload:
-			doc = frappe._dict(
-				{"event_type": "payment_intent.succeeded", "payload": payload.read()}
-			)
+			doc = frappe._dict({"event_type": "payment_intent.succeeded", "payload": payload.read()})
 
 		with patch.object(Invoice, "update_transaction_details", return_value=None):
 			process_stripe_webhook(doc, "")
@@ -329,9 +318,7 @@ class TestInvoice(unittest.TestCase):
 			period_end=add_days(today(), 10),
 		).insert()
 
-		invoice.append(
-			"items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount_percentage": 10}
-		)
+		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000, "discount_percentage": 10})
 		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
 		invoice.save()
 		invoice.reload()
@@ -507,8 +494,8 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			invoice.finalize_invoice()
-			self.assertEquals(invoice.amount_due, 10)
-			self.assertEquals(invoice.amount_due_with_tax, 11.8)
+			self.assertEqual(invoice.amount_due, 10)
+			self.assertEqual(invoice.amount_due_with_tax, 11.8)
 
 		finally:
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
@@ -528,10 +515,10 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			invoice.finalize_invoice()
-			self.assertEquals(invoice.total, 10)
-			self.assertEquals(invoice.applied_credits, 5)
-			self.assertEquals(invoice.amount_due, 5)
-			self.assertEquals(invoice.amount_due_with_tax, 5)
+			self.assertEqual(invoice.total, 10)
+			self.assertEqual(invoice.applied_credits, 5)
+			self.assertEqual(invoice.amount_due, 5)
+			self.assertEqual(invoice.amount_due_with_tax, 5)
 
 		finally:
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
@@ -554,10 +541,10 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			invoice.finalize_invoice()
-			self.assertEquals(invoice.total, 10)
-			self.assertEquals(invoice.applied_credits, 5)
-			self.assertEquals(invoice.amount_due, 5)
-			self.assertEquals(invoice.amount_due_with_tax, 5.9)
+			self.assertEqual(invoice.total, 10)
+			self.assertEqual(invoice.applied_credits, 5)
+			self.assertEqual(invoice.amount_due, 5)
+			self.assertEqual(invoice.amount_due_with_tax, 5.9)
 
 		finally:
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)
@@ -575,9 +562,9 @@ class TestInvoice(unittest.TestCase):
 			invoice.insert()
 
 			invoice.finalize_invoice()
-			self.assertEquals(invoice.total, 10)
-			self.assertEquals(invoice.amount_due, 10)
-			self.assertEquals(invoice.amount_due_with_tax, 10)
+			self.assertEqual(invoice.total, 10)
+			self.assertEqual(invoice.amount_due, 10)
+			self.assertEqual(invoice.amount_due_with_tax, 10)
 
 		finally:
 			frappe.db.set_single_value("Press Settings", "gst_percentage", 0)

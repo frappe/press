@@ -16,9 +16,7 @@ def execute():
 			}
 		).insert(ignore_permissions=True)
 
-	non_archived_sites = frappe.get_all(
-		"Site", filters={"status": ("!=", "Archived")}, pluck="name"
-	)
+	non_archived_sites = frappe.get_all("Site", filters={"status": ("!=", "Archived")}, pluck="name")
 
 	for site_name in tqdm(non_archived_sites):
 		try:

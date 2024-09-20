@@ -1,19 +1,17 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
 import json
 import re
 from collections import defaultdict
+from contextlib import suppress
 from datetime import datetime
 from functools import wraps
-from frappe.utils import add_to_date, now_datetime
-import pytz
-from typing import Any, Dict, List
-from contextlib import suppress
+from typing import Any
 
 import dateutil.parser
 import frappe
+import pytz
 import requests
 from frappe import _
 from frappe.core.utils import find
@@ -21,12 +19,14 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
+	add_to_date,
 	cint,
 	comma_and,
 	cstr,
 	flt,
 	get_datetime,
 	get_url,
+	now_datetime,
 	sbool,
 	time_diff_in_hours,
 )
@@ -82,8 +82,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.server.server import Server
-	from press.press.doctype.server.server import BaseServer
+	from press.press.doctype.server.server import BaseServer, Server
 
 DOCTYPE_SERVER_TYPE_MAP = {
 	"Server": "Application",
@@ -100,6 +99,7 @@ class Site(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
 		from press.press.doctype.site_config.site_config import SiteConfig
@@ -252,12 +252,8 @@ class Site(Document, TagHelpers):
 		)
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		server = frappe.get_value(
-			"Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1
-		)
-		doc.cluster = frappe.db.get_value(
-			"Cluster", self.cluster, ["title", "image"], as_dict=1
-		)
+		server = frappe.get_value("Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1)
+		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
@@ -273,7 +269,7 @@ class Site(Document, TagHelpers):
 
 		return doc
 
-	def site_action(allowed_status: List[str]):
+	def site_action(allowed_status: list[str]):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
@@ -327,8 +323,7 @@ class Site(Document, TagHelpers):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase"
-				" characters, numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase" " characters, numbers and hyphens"
 			)
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
@@ -358,9 +353,7 @@ class Site(Document, TagHelpers):
 
 		bench_server = frappe.db.get_value("Bench", self.bench, "server")
 		if bench_server != self.server:
-			frappe.throw(
-				f"Bench server {bench_server} is not the same as site server {self.server}."
-			)
+			frappe.throw(f"Bench server {bench_server} is not the same as site server {self.server}.")
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
@@ -393,9 +386,7 @@ class Site(Document, TagHelpers):
 		# update site._keys_removed_in_last_update value
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
-		self._keys_removed_in_last_update = json.dumps(
-			[x for x in old_keys if x not in new_keys]
-		)
+		self._keys_removed_in_last_update = json.dumps([x for x in old_keys if x not in new_keys])
 
 		# generate site.config from site.configuration
 		self.update_config_preview()
@@ -428,16 +419,10 @@ class Site(Document, TagHelpers):
 					"parent": self.subscription_plan,
 				},
 			)
-			clusters = frappe.db.get_all(
-				"Bench", pluck="cluster", filters={"group": ("in", release_groups)}
-			)
+			clusters = frappe.db.get_all("Bench", pluck="cluster", filters={"group": ("in", release_groups)})
 			is_valid = len(clusters) == 0 or self.cluster in clusters
 			if not is_valid:
-				frappe.throw(
-					"In {0}, you can't deploy site in {1} cluster".format(
-						self.subscription_plan, self.cluster
-					)
-				)
+				frappe.throw(f"In {self.subscription_plan}, you can't deploy site in {self.cluster} cluster")
 			"""
 			If `allowed_apps` in site plan is empty, then site can be deployed with any apps.
 			Otherwise, site can only be deployed with the apps mentioned in the site plan.
@@ -465,9 +450,7 @@ class Site(Document, TagHelpers):
 
 				for app in selected_apps:
 					if app not in allowed_apps:
-						frappe.throw(
-							"In {0}, you can't deploy site with {1} app".format(self.subscription_plan, app)
-						)
+						frappe.throw(f"In {self.subscription_plan}, you can't deploy site with {app} app")
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -496,9 +479,7 @@ class Site(Document, TagHelpers):
 
 				if team.account_request:
 					account_request = frappe.get_doc("Account Request", team.account_request)
-					if not (
-						account_request.is_saas_signup() or account_request.invited_by_parent_team
-					):
+					if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 						capture("first_site_status_changed_to_active", "fc_signup", team.user)
 
 	def generate_saas_communication_secret(self, create_agent_job=False):
@@ -576,9 +557,7 @@ class Site(Document, TagHelpers):
 			self.update_config_preview()
 			site_config = json.loads(self.config)
 			subsription_config = site_config.get("subscription", {})
-			job = agent.rename_site(
-				self, new_name, create_user, config={"subscription": subsription_config}
-			)
+			job = agent.rename_site(self, new_name, create_user, config={"subscription": subsription_config})
 			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
@@ -606,14 +585,10 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = (
-					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
-				)
+				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value
-					if isinstance(row.value, bool)
-					else bool(sbool(json.loads(cstr(row.value))))
+					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
 				)
 			elif key_type == "JSON":
 				key_value = json.loads(cstr(row.value))
@@ -626,9 +601,7 @@ class Site(Document, TagHelpers):
 
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(
-				self.name, app, plan, self.team
-			)
+			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan, self.team)
 		marketplace_app_hook(app=app, site=self.name, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
@@ -745,9 +718,7 @@ class Site(Document, TagHelpers):
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
-		_change_dns_record(
-			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
-		)
+		_change_dns_record(method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site)
 
 	def is_version_14_or_higher(self) -> bool:
 		group: ReleaseGroup = frappe.get_cached_doc("Release Group", self.group)
@@ -792,8 +763,8 @@ class Site(Document, TagHelpers):
 			)
 
 	def check_enough_space_on_server(self):
-		app: "Server" = frappe.get_doc("Server", self.server)
-		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+		app: Server = frappe.get_doc("Server", self.server)
+		db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
 
 		self.check_and_increase_disk(app, self.space_required_on_app_server)
 		self.check_and_increase_disk(db, self.space_required_on_db_server)
@@ -810,9 +781,7 @@ class Site(Document, TagHelpers):
 			else:
 				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
-		server = frappe.get_all(
-			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
-		)[0]
+		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_file(server=self.server, site=self.name)
@@ -895,9 +864,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
-			raise Exception(
-				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
-			)
+			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
@@ -1133,9 +1100,7 @@ class Site(Document, TagHelpers):
 	def remove_domain(self, domain):
 		if domain == self.name:
 			frappe.throw("Cannot delete default site_domain")
-		site_domain = frappe.get_all(
-			"Site Domain", filters={"site": self.name, "domain": domain}
-		)[0]
+		site_domain = frappe.get_all("Site Domain", filters={"site": self.name, "domain": domain})[0]
 		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
@@ -1153,9 +1118,7 @@ class Site(Document, TagHelpers):
 			site_domain.retry()
 
 	def _check_if_domain_belongs_to_site(self, domain: str):
-		if not frappe.db.exists(
-			{"doctype": "Site Domain", "site": self.name, "domain": domain}
-		):
+		if not frappe.db.exists({"doctype": "Site Domain", "site": self.name, "domain": domain}):
 			frappe.throw(
 				msg=f"Site Domain {domain} for site {self.name} does not exist",
 				exc=frappe.exceptions.LinkValidationError,
@@ -1164,9 +1127,7 @@ class Site(Document, TagHelpers):
 	def _check_if_domain_is_active(self, domain: str):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
-			frappe.throw(
-				msg="Only active domains can be primary", exc=frappe.LinkValidationError
-			)
+			frappe.throw(msg="Only active domains can be primary", exc=frappe.LinkValidationError)
 
 	def _validate_host_name(self):
 		"""Perform checks for primary domain."""
@@ -1179,7 +1140,7 @@ class Site(Document, TagHelpers):
 		self.host_name = domain
 		self.save()
 
-	def _get_redirected_domains(self) -> List[str]:
+	def _get_redirected_domains(self) -> list[str]:
 		"""Get list of redirected site domains for site."""
 		return frappe.get_all(
 			"Site Domain",
@@ -1197,13 +1158,13 @@ class Site(Document, TagHelpers):
 		if domains:
 			self.unset_redirects_in_proxy(domains)
 
-	def set_redirects_in_proxy(self, domains: List[str]):
+	def set_redirects_in_proxy(self, domains: list[str]):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.setup_redirects(self.name, domains, target)
 
-	def unset_redirects_in_proxy(self, domains: List[str]):
+	def unset_redirects_in_proxy(self, domains: list[str]):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
@@ -1231,9 +1192,7 @@ class Site(Document, TagHelpers):
 		self.save()
 		agent.archive_site(self, site_name, force)
 
-		server = frappe.get_all(
-			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
-		)[0]
+		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_file(
@@ -1276,9 +1235,7 @@ class Site(Document, TagHelpers):
 			},
 			pluck="name",
 			order_by="creation desc",
-		)[
-			1:
-		]  # Keep latest backup
+		)[1:]  # Keep latest backup
 		for backup_files in frappe.get_all(
 			"Site Backup",
 			filters={"name": ("in", site_backups)},
@@ -1448,16 +1405,14 @@ class Site(Document, TagHelpers):
 			"creation": last_usage.creation,
 		}
 
-	def _sync_config_info(self, fetched_config: Dict) -> bool:
+	def _sync_config_info(self, fetched_config: dict) -> bool:
 		"""Update site doc config with the fetched_config values.
 
 		:fetched_config: Generally data passed is the config part of the agent info response
 		:returns: True if value has changed
 		"""
 		config = {
-			key: fetched_config[key]
-			for key in fetched_config
-			if key not in get_client_blacklisted_keys()
+			key: fetched_config[key] for key in fetched_config if key not in get_client_blacklisted_keys()
 		}
 		new_config = {**json.loads(self.config or "{}"), **config}
 		current_config = json.dumps(new_config, indent=4)
@@ -1467,7 +1422,7 @@ class Site(Document, TagHelpers):
 			return True
 		return False
 
-	def _sync_usage_info(self, fetched_usage: Dict):
+	def _sync_usage_info(self, fetched_usage: dict):
 		"""Generate a Site Usage doc for the site using the fetched_usage data.
 
 		:fetched_usage: Requires backups, database, public, private keys with Numeric values
@@ -1501,9 +1456,7 @@ class Site(Document, TagHelpers):
 				equivalent_site_time = convert_utc_to_user_timezone(
 					dateutil.parser.parse(usage["timestamp"])
 				).replace(tzinfo=None)
-				if frappe.db.exists(
-					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
-				):
+				if frappe.db.exists("Site Usage", {"site": self.name, "creation": equivalent_site_time}):
 					return
 				if current_usages["creation"] and equivalent_site_time < current_usages["creation"]:
 					return
@@ -1612,9 +1565,7 @@ class Site(Document, TagHelpers):
 
 				if team.account_request:
 					account_request = frappe.get_doc("Account Request", team.account_request)
-					if not (
-						account_request.is_saas_signup() or account_request.invited_by_parent_team
-					):
+					if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 						capture("first_site_setup_wizard_completed", "fc_signup", team.user)
 
 		return setup_complete
@@ -1657,9 +1608,7 @@ class Site(Document, TagHelpers):
 		Args:
 		config (list): List of dicts with key, value, and type
 		"""
-		blacklisted_config = [
-			x for x in self.configuration if x.key in get_client_blacklisted_keys()
-		]
+		blacklisted_config = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
 		self.configuration = []
 
 		# Maintain keys that aren't accessible to Dashboard user
@@ -1687,9 +1636,7 @@ class Site(Document, TagHelpers):
 		"""
 		existing_keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
-			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(
-				value
-			)
+			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(value)
 			converted_value = convert(value)
 			if converted_value is None or cstr(converted_value).strip() == "":
 				continue
@@ -1717,9 +1664,7 @@ class Site(Document, TagHelpers):
 		sanitized_config = {}
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				frappe.throw(
-					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
-				)
+				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"
@@ -1818,9 +1763,7 @@ class Site(Document, TagHelpers):
 			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
 			subscription_doc.disable()
 
-		subscriptions = frappe.get_all(
-			"Subscription", {"site": self.name, "enabled": 1}, pluck="name"
-		)
+		subscriptions = frappe.get_all("Subscription", {"site": self.name, "enabled": 1}, pluck="name")
 		for subscription in subscriptions:
 			subscription_doc = frappe.get_doc("Subscription", subscription)
 			subscription_doc.disable()
@@ -1931,17 +1874,13 @@ class Site(Document, TagHelpers):
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
 			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
-			self.current_disk_usage = (
-				(usage.public + usage.private) / plan.max_storage_usage
-			) * 100
+			self.current_disk_usage = ((usage.public + usage.private) / plan.max_storage_usage) * 100
 			self.unsuspend(reason="Plan Upgraded")
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
-		plan = frappe.db.get_value(
-			"Site Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
-		)
+		plan = frappe.db.get_value("Site Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True)
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(_("Cannot deactivate site on a trial plan"))
 
@@ -2004,10 +1943,7 @@ class Site(Document, TagHelpers):
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def get_user_details(self):
-		if (
-			frappe.db.get_value("Team", self.team, "user") == "Administrator"
-			and self.account_request
-		):
+		if frappe.db.get_value("Team", self.team, "user") == "Administrator" and self.account_request:
 			ar = frappe.get_doc("Account Request", self.account_request)
 			user_email = ar.email
 			user_first_name = ar.first_name
@@ -2047,9 +1983,7 @@ class Site(Document, TagHelpers):
 
 	@property
 	def subscription(self):
-		name = frappe.db.get_value(
-			"Subscription", {"document_type": "Site", "document_name": self.name}
-		)
+		name = frappe.db.get_value("Subscription", {"document_type": "Site", "document_name": self.name})
 		return frappe.get_doc("Subscription", name) if name else None
 
 	def can_charge_for_subscription(self, subscription=None):
@@ -2059,9 +1993,7 @@ class Site(Document, TagHelpers):
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
-			and (
-				today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True
-			)
+			and (today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True)
 		)
 
 	def get_plan_name(self, plan=None):
@@ -2135,11 +2067,7 @@ class Site(Document, TagHelpers):
 				filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
 			)
 			if self.group in restricted_release_group_names:
-				frappe.throw(
-					"Site can't be deployed on this release group {} due to restrictions".format(
-						self.group
-					)
-				)
+				frappe.throw(f"Site can't be deployed on this release group {self.group} due to restrictions")
 			bench_query = bench_query.where(Bench.group == self.group)
 		if self.server:
 			bench_query = bench_query.where(Server.name == self.server)
@@ -2175,14 +2103,10 @@ class Site(Document, TagHelpers):
 			},
 			for_update=True,
 		):
-			frappe.throw(
-				"Database Access is already being enabled on this site. Please check after a while."
-			)
+			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
 
 	def check_db_access_enabled_already(self):
-		if frappe.db.get_value(
-			self.doctype, self.name, "is_database_access_enabled", for_update=True
-		):
+		if frappe.db.get_value(self.doctype, self.name, "is_database_access_enabled", for_update=True):
 			frappe.throw("Database Access already enabled. Reload the page and try.")
 
 	@dashboard_whitelist()
@@ -2291,7 +2215,7 @@ class Site(Document, TagHelpers):
 		if not out.update_available:
 			return out
 
-		bench: "Bench" = frappe.get_doc("Bench", self.bench)
+		bench: Bench = frappe.get_doc("Bench", self.bench)
 		source = bench.candidate
 		destinations = frappe.get_all(
 			"Deploy Candidate Difference",
@@ -2305,9 +2229,7 @@ class Site(Document, TagHelpers):
 
 		destination = destinations[0]
 
-		destination_candidate: "DeployCandidate" = frappe.get_doc(
-			"Deploy Candidate", destination
-		)
+		destination_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", destination)
 
 		current_apps = bench.apps
 		next_apps = destination_candidate.apps
@@ -2438,7 +2360,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@classmethod
-	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
+	def get_sites_without_backup_in_interval(cls, interval: int) -> list[str]:
 		"""Return active sites that haven't had backup taken in interval hours."""
 		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
 		all_sites = set(
@@ -2461,7 +2383,7 @@ class Site(Document, TagHelpers):
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
 
 	@classmethod
-	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> List[str]:
+	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> list[str]:
 		return frappe.get_all(
 			"Site Backup",
 			{
@@ -2472,7 +2394,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@classmethod
-	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
+	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> list[str]:
 		return frappe.get_all(
 			"Site Backup",
 			{
@@ -2624,9 +2546,7 @@ class Site(Document, TagHelpers):
 	def pending_for_long(self) -> bool:
 		if not self.status == "Pending":
 			return False
-		return (
-			frappe.utils.now_datetime() - self.modified
-		).total_seconds() > 60 * 60 * 4  # 4 hours
+		return (frappe.utils.now_datetime() - self.modified).total_seconds() > 60 * 60 * 4  # 4 hours
 
 	@frappe.whitelist()
 	def fetch_bench_from_agent(self):
@@ -2652,9 +2572,7 @@ class Site(Document, TagHelpers):
 			frappe.throw("Use <b>Archive Site</b> action to remove site from current bench")
 
 		# Mimic archive_site method in the agent.py
-		server, database_server = frappe.db.get_value(
-			"Bench", bench, ["server", "database_server"]
-		)
+		server, database_server = frappe.db.get_value("Bench", bench, ["server", "database_server"])
 		data = {
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
@@ -2664,9 +2582,7 @@ class Site(Document, TagHelpers):
 
 		response = {"server": server, "bench": bench}
 		agent = Agent(server)
-		result = agent.request(
-			"POST", f"benches/{bench}/sites/{self.name}/archive", data, raises=False
-		)
+		result = agent.request("POST", f"benches/{bench}/sites/{self.name}/archive", data, raises=False)
 		if "job" in result:
 			job = result["job"]
 			response["job"] = job
@@ -2780,9 +2696,7 @@ def process_new_site_job_update(job):
 		"Active",
 		"Broken",
 	):
-		update_product_trial_request_status_based_on_site_status(
-			job.site, updated_status == "Active"
-		)
+		update_product_trial_request_status_based_on_site_status(job.site, updated_status == "Active")
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -2793,20 +2707,14 @@ def process_new_site_job_update(job):
 		},
 	)
 	if site_group_deploy:
-		frappe.get_doc(
-			"Site Group Deploy", site_group_deploy
-		).update_site_group_deploy_on_process_job(job)
+		frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(job)
 
 
 def update_product_trial_request_status_based_on_site_status(site, is_site_active):
-	records = frappe.get_list(
-		"Product Trial Request", filters={"site": site}, fields=["name"]
-	)
+	records = frappe.get_list("Product Trial Request", filters={"site": site}, fields=["name"])
 	if not records:
 		return
-	product_trial_request = frappe.get_doc(
-		"Product Trial Request", records[0].name, for_update=True
-	)
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
 		mode = frappe.get_value(
 			"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
@@ -2823,14 +2731,10 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 
 
 def process_complete_setup_wizard_job_update(job):
-	records = frappe.get_list(
-		"Product Trial Request", filters={"site": job.site}, fields=["name"]
-	)
+	records = frappe.get_list("Product Trial Request", filters={"site": job.site}, fields=["name"])
 	if not records:
 		return
-	product_trial_request = frappe.get_doc(
-		"Product Trial Request", records[0].name, for_update=True
-	)
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
 		product_trial_request.status = "Site Created"
 		product_trial_request.site_creation_completed_on = now_datetime()
@@ -2943,9 +2847,7 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def process_marketplace_hooks_for_backup_restore(
-	apps_from_backup: set[str], site: Site
-):
+def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], site: Site):
 	site_apps = set([app.app for app in site.apps])
 	apps_to_install = apps_from_backup - site_apps
 	apps_to_uninstall = site_apps - apps_from_backup
@@ -2976,9 +2878,7 @@ def process_restore_job_update(job, force=False):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if force or updated_status != site_status:
 		if job.status == "Success":
-			apps_from_backup: list[str] = [
-				line.split()[0] for line in job.output.splitlines() if line
-			]
+			apps_from_backup: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
 			site = Site("Site", job.site)
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
@@ -3166,7 +3066,7 @@ def process_create_user_job_update(job):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
 
 
-def prepare_site(site: str, subdomain: str = None) -> Dict:
+def prepare_site(site: str, subdomain: str = None) -> dict:
 	# prepare site details
 	doc = frappe.get_doc("Site", site)
 	sitename = subdomain if subdomain else "brt-" + doc.subdomain
@@ -3200,11 +3100,9 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 
 
 @frappe.whitelist()
-def options_for_new(group: str = None, selected_values=None) -> Dict:
+def options_for_new(group: str = None, selected_values=None) -> dict:
 	domain = frappe.db.get_single_value("Press Settings", "domain")
-	selected_values = (
-		frappe.parse_json(selected_values) if selected_values else frappe._dict()
-	)
+	selected_values = frappe.parse_json(selected_values) if selected_values else frappe._dict()
 
 	versions = []
 	bench = None

@@ -1,7 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals
 
 import inspect
 
@@ -13,8 +12,8 @@ from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
-from press.utils import has_role
 from press.exceptions import TeamHeaderNotInRequestError
+from press.utils import has_role
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -104,9 +103,7 @@ def get_list(
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
 		frappe.throw("parenttype and parent are required to get child records")
 
-	apply_team_filter = not (
-		filters.get("skip_team_filter_for_system_user") and frappe.local.system_user()
-	)
+	apply_team_filter = not (filters.get("skip_team_filter_for_system_user") and frappe.local.system_user())
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
 
@@ -138,10 +135,7 @@ def get_list(
 
 		query = (
 			query.join(PressRolePermission)
-			.on(
-				PressRolePermission[field]
-				== QueriedDocType.name & PressRolePermission.role.isin(roles)
-			)
+			.on(PressRolePermission[field] == QueriedDocType.name & PressRolePermission.role.isin(roles))
 			.distinct()
 		)
 
@@ -177,9 +171,9 @@ def get(doctype, name):
 			return controller.on_not_found(name)
 		raise
 
-	if not (
-		frappe.local.system_user() or has_role("Press Support Agent")
-	) and frappe.get_meta(doctype).has_field("team"):
+	if not (frappe.local.system_user() or has_role("Press Support Agent")) and frappe.get_meta(
+		doctype
+	).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
 
@@ -211,9 +205,7 @@ def insert(doc=None):
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
 		if not (doc.parenttype and doc.parent and doc.parentfield):
-			frappe.throw(
-				frappe._("Parenttype, Parent and Parentfield are required to insert a child record")
-			)
+			frappe.throw(frappe._("Parenttype, Parent and Parentfield are required to insert a child record"))
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
@@ -474,9 +466,7 @@ def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
 	def wrapper(func):
 		global whitelisted_methods
 
-		decorated_func = frappe.whitelist(
-			allow_guest=allow_guest, xss_safe=xss_safe, methods=methods
-		)(func)
+		decorated_func = frappe.whitelist(allow_guest=allow_guest, xss_safe=xss_safe, methods=methods)(func)
 
 		def inner(*args, **kwargs):
 			return decorated_func(*args, **kwargs)

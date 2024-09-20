@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
@@ -59,9 +58,7 @@ BACKUP_JOB_RES = {
 
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
-@patch(
-	"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
-)
+@patch("press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock)
 class TestSiteMigration(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -80,17 +77,17 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration", "Success"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup"), fake_agent_job(
-			"Archive Site"
-		), fake_agent_job(
-			"Remove Site from Upstream"
-		), fake_agent_job(
-			"Add Site to Upstream"
-		), fake_agent_job(
-			"Update Site Configuration"
+		with (
+			fake_agent_job("Update Site Configuration", "Success"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup"),
+			fake_agent_job("Archive Site"),
+			fake_agent_job("Remove Site from Upstream"),
+			fake_agent_job("Add Site to Upstream"),
+			fake_agent_job("Update Site Configuration"),
 		):
 			site_migration.start()
 			poll_pending_jobs()
@@ -124,11 +121,14 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job(
-			"Archive Site"
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup", "Failure"),
+			fake_agent_job("Archive Site"),
 		):
 			site_migration.start()
 			poll_pending_jobs()
@@ -151,13 +151,17 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job(
-			"Archive Site",
-		), fake_agent_job(
-			"Update Site Configuration"
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup", "Failure"),
+			fake_agent_job(
+				"Archive Site",
+			),
+			fake_agent_job("Update Site Configuration"),
 		):
 			site_migration.start()
 			poll_pending_jobs()
@@ -183,15 +187,18 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup"), fake_agent_job(
-			"Archive Site",  # both archives
-		), fake_agent_job(
-			"Remove Site from Upstream"
-		), fake_agent_job(
-			"Add Site to Upstream", "Failure"
+		with (
+			fake_agent_job("Update Site Configuration"),
+			fake_agent_job(
+				"Backup Site",
+				data=BACKUP_JOB_RES,
+			),
+			fake_agent_job("New Site from Backup"),
+			fake_agent_job(
+				"Archive Site",  # both archives
+			),
+			fake_agent_job("Remove Site from Upstream"),
+			fake_agent_job("Add Site to Upstream", "Failure"),
 		):
 			site_migration.start()
 			poll_pending_jobs()

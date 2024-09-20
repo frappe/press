@@ -25,10 +25,7 @@ class RazorpayWebhookLog(Document):
 	def after_insert(self):
 		payment_record = frappe.get_doc("Razorpay Payment Record", {"order_id": self.name})
 
-		if (
-			self.event in ("order.paid", "payment.captured")
-			and payment_record.status != "Captured"
-		):
+		if self.event in ("order.paid", "payment.captured") and payment_record.status != "Captured":
 			payment_record.update({"payment_id": self.payment_id, "status": "Captured"})
 			payment_record.save(ignore_permissions=True)
 
@@ -41,9 +38,7 @@ def razorpay_authorized_payment_handler():
 	try:
 		payload = frappe.request.get_data()
 		signature = frappe.get_request_header("X-Razorpay-Signature")
-		webhook_secret = frappe.db.get_single_value(
-			"Press Settings", "razorpay_webhook_secret"
-		)
+		webhook_secret = frappe.db.get_single_value("Press Settings", "razorpay_webhook_secret")
 
 		client.utility.verify_webhook_signature(payload.decode(), signature, webhook_secret)
 		if form_dict["payload"]["payment"]["entity"]["status"] != "authorized":
@@ -53,9 +48,7 @@ def razorpay_authorized_payment_handler():
 		amount = form_dict["payload"]["payment"]["entity"]["amount"]
 		notes = form_dict["payload"]["payment"]["entity"]["notes"]
 
-		razorpay_payment_record = frappe.db.exists(
-			"Razorpay Payment Record", {"order_id": order_id}
-		)
+		razorpay_payment_record = frappe.db.exists("Razorpay Payment Record", {"order_id": order_id})
 		if not razorpay_payment_record:
 			# Don't log error if its not FrappeCloud order
 			# Example of valid notes
@@ -97,9 +90,7 @@ def razorpay_webhook_handler():
 	try:
 		payload = frappe.request.get_data()
 		signature = frappe.get_request_header("X-Razorpay-Signature")
-		webhook_secret = frappe.db.get_single_value(
-			"Press Settings", "razorpay_webhook_secret"
-		)
+		webhook_secret = frappe.db.get_single_value("Press Settings", "razorpay_webhook_secret")
 
 		client.utility.verify_webhook_signature(payload.decode(), signature, webhook_secret)
 
@@ -107,9 +98,7 @@ def razorpay_webhook_handler():
 		frappe.set_user("Administrator")
 
 		razorpay_order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
-		razorpay_payment_record = frappe.db.exists(
-			"Razorpay Payment Record", {"order_id": razorpay_order_id}
-		)
+		razorpay_payment_record = frappe.db.exists("Razorpay Payment Record", {"order_id": razorpay_order_id})
 
 		notes = form_dict["payload"]["payment"]["entity"]["notes"]
 		if not razorpay_payment_record:

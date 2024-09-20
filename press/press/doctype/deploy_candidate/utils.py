@@ -3,18 +3,17 @@ import re
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 import frappe
 
-PackageManagers = TypedDict(
-	"PackageManagers",
-	{
-		"repo_path": str,
-		"pyproject": Optional[dict[str, Any]],
-		"packagejsons": list[dict[str, Any]],
-	},
-)
+
+class PackageManagers(TypedDict):
+	repo_path: str
+	pyproject: dict[str, Any] | None
+	packagejsons: list[dict[str, Any]]
+
+
 PackageManagerFiles = dict[str, PackageManagers]
 
 
@@ -56,7 +55,7 @@ def _get_package_manager_files_from_repo(
 	repo_path: str,
 	recursive: bool,
 ) -> tuple[Path | None, list[Path]]:
-	pyproject_toml: Optional[Path] = None
+	pyproject_toml: Path | None = None
 	package_jsons: list[Path] = []  # An app can have multiple
 
 	for p in Path(repo_path).iterdir():
@@ -97,9 +96,7 @@ def load_package_json(app: str, package_json_path: str):
 			return json.load(f)
 		except json.JSONDecodeError:
 			# Do not edit without updating deploy_notifications.py
-			raise Exception(
-				"App has invalid package.json file", app, package_json_path
-			) from None
+			raise Exception("App has invalid package.json file", app, package_json_path) from None
 
 
 def get_error_key(error_substring: str | list[str]) -> str:
@@ -131,8 +128,7 @@ def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
 
 
-class BuildValidationError(frappe.ValidationError):
-	...
+class BuildValidationError(frappe.ValidationError): ...
 
 
 def get_build_server(group: str | None = None) -> str | None:

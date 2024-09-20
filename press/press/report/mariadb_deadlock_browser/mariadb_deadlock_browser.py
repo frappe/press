@@ -41,9 +41,7 @@ def execute(filters=None):
 
 def get_data(filters):
 	application_server = frappe.db.get_value("Site", filters.site, "server")
-	database_server_name = frappe.db.get_value(
-		"Server", application_server, "database_server"
-	)
+	database_server_name = frappe.db.get_value("Server", application_server, "database_server")
 
 	database_server = frappe.get_doc("Database Server", database_server_name)
 

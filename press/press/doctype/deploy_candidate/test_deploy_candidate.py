@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -98,9 +97,7 @@ class TestDeployCandidate(unittest.TestCase):
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	def test_first_deploy_creates_draft_deploy_candidate(
-		self, mock_enqueue_doc, mock_commit
-	):
+	def test_first_deploy_creates_draft_deploy_candidate(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if first deploy creates Deploy Candidate doc
 		"""
@@ -157,16 +154,12 @@ class TestDeployCandidate(unittest.TestCase):
 		second_release = create_test_app_release(source)
 		third_release = create_test_app_release(source)
 		group = frappe.get_doc("Release Group", bench.group)
-		candidate = group.create_deploy_candidate(
-			[{"app": source.app, "release": second_release.name}]
-		)
+		candidate = group.create_deploy_candidate([{"app": source.app, "release": second_release.name}])
 		self.assertEqual(candidate.apps[0].release, second_release.name)
 		self.assertNotEqual(candidate.apps[0].release, third_release.name)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	def test_deploy_with_new_app_creates_deploy_candidate_with_new_app(
-		self, mock_enqueue_doc, mock_commit
-	):
+	def test_deploy_with_new_app_creates_deploy_candidate_with_new_app(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if another deploy with new app creates Deploy Candidate with new app
 		"""
@@ -183,9 +176,7 @@ class TestDeployCandidate(unittest.TestCase):
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
-	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(
-		self, mock_enqueue_doc, mock_commit
-	):
+	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if creating a new app release with auto deploy creates a Deploy Candidate with most recent release of that app
 		"""
@@ -280,9 +271,7 @@ class TestDeployCandidate(unittest.TestCase):
 			self.assertTrue("Getting raven from cache" in build_output)
 
 
-def create_cache_test_release_group(
-	app_info_list: list["AppInfo"], team: "Team"
-) -> "ReleaseGroup":
+def create_cache_test_release_group(app_info_list: list["AppInfo"], team: "Team") -> "ReleaseGroup":
 	title = f"Test App Cache RG {random.getrandbits(20):x}"
 	doc_dict = {
 		"doctype": "Release Group",
@@ -294,7 +283,7 @@ def create_cache_test_release_group(
 		"use_app_cache": True,
 		"compress_app_cache": True,
 	}
-	release_group: "ReleaseGroup" = frappe.get_doc(doc_dict)
+	release_group: ReleaseGroup = frappe.get_doc(doc_dict)
 
 	# Set apps
 	for info in app_info_list:

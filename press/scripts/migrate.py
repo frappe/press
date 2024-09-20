@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # imports - standard imports
 import atexit
 import getpass
@@ -44,9 +43,7 @@ except ImportError:
 		"semantic-version",
 		"requests-toolbelt",
 	]
-	install_command = shlex.split(
-		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
-	)
+	install_command = shlex.split("{} -m pip install {}".format(sys.executable, " ".join(dependencies)))
 	subprocess.check_call(install_command, stdout=open(os.devnull, "w"))
 	import click
 	import html2text
@@ -67,29 +64,21 @@ if sys.version[0] == "2":
 	sys.setdefaultencoding("utf-8")
 
 
-@retry(
-	stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5)
-)
+@retry(stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5))
 def upload_backup_file(file_type, file_name, file_path):
 	def _update_progress_bar(monitor):
-		update_progress_bar(
-			"Uploading {} file".format(file_type), monitor.bytes_read, monitor.len
-		)
+		update_progress_bar(f"Uploading {file_type} file", monitor.bytes_read, monitor.len)
 
 	from math import ceil
 
 	K = 1024
 	M = K**2
 
-	max_size = (
-		100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
-	)
+	max_size = 100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
 	file_size = os.path.getsize(file_path) / M
 
 	total_size = ceil(file_size / 1024)  # in G
-	allowed_max_size = (
-		4  # in G: aws allows max 5G but we'll cap single requests at 4 instead
-	)
+	allowed_max_size = 4  # in G: aws allows max 5G but we'll cap single requests at 4 instead
 
 	parts = 1
 
@@ -120,7 +109,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		for count in range(parts):
 			signed_url = signed_urls[count]
 			file_data = get_file_data(file_path, count)
-			update_progress_bar("Uploading {} File".format(file_type), count, parts)
+			update_progress_bar(f"Uploading {file_type} File", count, parts)
 
 			res = requests.put(signed_url, data=file_data)
 			etag = res.headers["ETag"]
@@ -148,9 +137,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		# upload remote file
 		fields["file"] = (file_name, open(file_path, "rb"))
 		multipart_payload = encoder.MultipartEncoder(fields=fields)
-		multipart_payload = encoder.MultipartEncoderMonitor(
-			multipart_payload, _update_progress_bar
-		)
+		multipart_payload = encoder.MultipartEncoderMonitor(multipart_payload, _update_progress_bar)
 
 		upload_remote = session.post(
 			url,
@@ -209,7 +196,7 @@ def render_teams_table(teams):
 
 
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
-	message = message or "Request failed with error code {}".format(request.status_code)
+	message = message or f"Request failed with error code {request.status_code}"
 	response = html2text.html2text(request.text) if traceback else ""
 
 	print("{0}{1}".format(message, "\n" + response))
@@ -265,9 +252,7 @@ def select_site():
 		available_sites = render_site_table(all_sites, sites_version)
 
 		while True:
-			selected_site = click.prompt(
-				"Name of the site you want to restore to", type=str
-			).strip()
+			selected_site = click.prompt("Name of the site you want to restore to", type=str).strip()
 			if selected_site in available_sites:
 				site_data = available_sites[selected_site]
 				global has_external_files
@@ -283,7 +268,7 @@ def select_site():
 				else:
 					return site_data
 			else:
-				print("Site {} does not exist. Try again ❌".format(selected_site))
+				print(f"Site {selected_site} does not exist. Try again ❌")
 	else:
 		print("Couldn't retrive sites list...Try again later")
 		sys.exit(1)
@@ -305,7 +290,7 @@ def select_team(session):
 		idx = click.prompt("Select Team", type=click.IntRange(1, len(available_teams))) - 1
 		team = available_teams[idx]["name"]
 
-	print("Team '{}' set for current session".format(team))
+	print(f"Team '{team}' set for current session")
 
 	return team
 
@@ -317,9 +302,7 @@ def is_valid_subdomain(subdomain):
 	matched = re.match("^[a-z0-9][a-z0-9-]*[a-z0-9]$", subdomain)
 	if matched:
 		return True
-	print(
-		"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
-	)
+	print("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
 
 
 @add_line_after
@@ -329,8 +312,7 @@ def take_backup(local_site):
 	return [
 		(
 			"config",
-			getattr(odb, "site_config_backup_path", None)
-			or getattr(odb, "backup_path_conf", None),
+			getattr(odb, "site_config_backup_path", None) or getattr(odb, "backup_path_conf", None),
 		),
 		("database", odb.backup_path_db),
 		("public", odb.backup_path_files),
@@ -406,9 +388,7 @@ def restore_site(local_site):
 
 	# TODO: check if they can restore it
 
-	click.confirm(
-		"This is an irreversible action. Are you sure you want to continue?", abort=True
-	)
+	click.confirm("This is an irreversible action. Are you sure you want to continue?", abort=True)
 
 	# backup site
 	try:
@@ -423,13 +403,9 @@ def restore_site(local_site):
 	site_restore_request = session.post(restore_site_url, payload, headers=headers)
 
 	if site_restore_request.ok:
-		print("Your site {0} is being restored on {1} ✨".format(local_site, selected_site))
-		print(
-			"View your site dashboard at https://{}/dashboard/sites/{}".format(
-				remote_site, selected_site
-			)
-		)
-		print("Your site URL: https://{}".format(selected_site))
+		print(f"Your site {local_site} is being restored on {selected_site} ✨")
+		print(f"View your site dashboard at https://{remote_site}/dashboard/sites/{selected_site}")
+		print(f"Your site URL: https://{selected_site}")
 	else:
 		handle_request_failure(site_restore_request)
 
@@ -440,7 +416,7 @@ def restore_site(local_site):
 	| retry_if_exception_type(SystemExit) & retry_unless_exception_type(KeyboardInterrupt)
 )
 def create_session():
-	print("\nFrappe Cloud credentials @ {}".format(remote_site))
+	print(f"\nFrappe Cloud credentials @ {remote_site}")
 
 	# take user input from STDIN
 	username = click.prompt("Username").strip()
@@ -458,47 +434,47 @@ def create_session():
 		return session
 	else:
 		handle_request_failure(
-			message="Authorization Failed with Error Code {}".format(login_sc.status_code),
+			message=f"Authorization Failed with Error Code {login_sc.status_code}",
 			traceback=False,
 		)
 
 
 def frappecloud_migrator(local_site, frappe_provider):
-	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
+	global \
+		login_url, \
+		upload_url, \
+		remote_link_url, \
+		register_remote_url, \
+		options_url, \
+		site_exists_url, \
+		site_info_url, \
+		restore_site_url, \
+		account_details_url, \
+		all_site_url, \
+		finish_multipart_url
 	global session, remote_site, site_plans_url
-	global has_external_files, external_db_path, external_public_files_path, external_private_files_path, external_config_file_path
+	global \
+		has_external_files, \
+		external_db_path, \
+		external_public_files_path, \
+		external_private_files_path, \
+		external_config_file_path
 
 	remote_site = frappe_provider or frappe.conf.frappecloud_url
 	scheme = "https"
 
-	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
-	upload_url = "{}://{}/api/method/press.api.site.new".format(scheme, remote_site)
-	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
-		scheme, remote_site
-	)
-	register_remote_url = "{}://{}/api/method/press.api.site.uploaded_backup_info".format(
-		scheme, remote_site
-	)
-	options_url = "{}://{}/api/method/press.api.site.options_for_new".format(
-		scheme, remote_site
-	)
-	site_exists_url = "{}://{}/api/method/press.api.site.exists".format(
-		scheme, remote_site
-	)
-	site_info_url = "{}://{}/api/method/press.api.site.get".format(scheme, remote_site)
-	account_details_url = "{}://{}/api/method/press.api.account.get".format(
-		scheme, remote_site
-	)
-	all_site_url = "{}://{}/api/method/press.api.site.all".format(scheme, remote_site)
-	restore_site_url = "{}://{}/api/method/press.api.site.restore".format(
-		scheme, remote_site
-	)
-	finish_multipart_url = "{}://{}/api/method/press.api.site.multipart_exit".format(
-		scheme, remote_site
-	)
-	site_plans_url = "{}://{}/api/method/press.api.site.get_site_plans".format(
-		scheme, remote_site
-	)
+	login_url = f"{scheme}://{remote_site}/api/method/login"
+	upload_url = f"{scheme}://{remote_site}/api/method/press.api.site.new"
+	remote_link_url = f"{scheme}://{remote_site}/api/method/press.api.site.get_upload_link"
+	register_remote_url = f"{scheme}://{remote_site}/api/method/press.api.site.uploaded_backup_info"
+	options_url = f"{scheme}://{remote_site}/api/method/press.api.site.options_for_new"
+	site_exists_url = f"{scheme}://{remote_site}/api/method/press.api.site.exists"
+	site_info_url = f"{scheme}://{remote_site}/api/method/press.api.site.get"
+	account_details_url = f"{scheme}://{remote_site}/api/method/press.api.account.get"
+	all_site_url = f"{scheme}://{remote_site}/api/method/press.api.site.all"
+	restore_site_url = f"{scheme}://{remote_site}/api/method/press.api.site.restore"
+	finish_multipart_url = f"{scheme}://{remote_site}/api/method/press.api.site.multipart_exit"
+	site_plans_url = f"{scheme}://{remote_site}/api/method/press.api.site.get_site_plans"
 
 	# get credentials + auth user + start session
 	try:
@@ -523,19 +499,20 @@ def executed_from_temp_dir():
 
 @click.command()
 def main():
-	global has_external_files, external_db_path, external_public_files_path, external_private_files_path, external_config_file_path
+	global \
+		has_external_files, \
+		external_db_path, \
+		external_public_files_path, \
+		external_private_files_path, \
+		external_config_file_path
 	local_site = ""
 	if executed_from_temp_dir():
 		current_file = os.path.abspath(__file__)
 		atexit.register(cleanup, current_file)
 
-	frappe_provider = click.prompt(
-		"Frappe provider (default: frappecloud.com)", default="frappecloud.com"
-	)
+	frappe_provider = click.prompt("Frappe provider (default: frappecloud.com)", default="frappecloud.com")
 
-	restore_choice = click.prompt(
-		"Do you want to restore from external files? (yes/no)", default="no"
-	)
+	restore_choice = click.prompt("Do you want to restore from external files? (yes/no)", default="no")
 	if restore_choice.lower() in ["yes", "y"]:
 		has_external_files = True
 		try:

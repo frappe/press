@@ -16,9 +16,7 @@ class SaasApiHandler:
 		if not self.secret_key or not isinstance(self.secret_key, str):
 			raise_invalid_key_error()
 
-		app_subscription_name = frappe.db.exists(
-			"Saas App Subscription", {"secret_key": self.secret_key}
-		)
+		app_subscription_name = frappe.db.exists("Saas App Subscription", {"secret_key": self.secret_key})
 
 		if not app_subscription_name:
 			raise_invalid_key_error()
@@ -28,9 +26,7 @@ class SaasApiHandler:
 
 	def set_subscription_doc(self):
 		"""To be called after `secret_key` validation"""
-		self.app_subscription_doc = frappe.get_doc(
-			"Saas App Subscription", self.app_subscription_name
-		)
+		self.app_subscription_doc = frappe.get_doc("Saas App Subscription", self.app_subscription_name)
 
 	def get_subscription_status(self):
 		return self.app_subscription_doc.status
@@ -39,9 +35,7 @@ class SaasApiHandler:
 		return frappe.get_doc("Saas App Subscription", self.app_subscription_name)
 
 	def get_plan_config(self):
-		plan_doc = frappe.get_doc(
-			"Saas App Plan", self.app_subscription_doc.saas_app_plan
-		).config
+		plan_doc = frappe.get_doc("Saas App Plan", self.app_subscription_doc.saas_app_plan).config
 
 		return json.loads(plan_doc)
 
@@ -75,9 +69,7 @@ class SaasApiHandler:
 				}
 			).insert(ignore_permissions=True)
 
-		domain = frappe.db.get_value(
-			"Saas App", self.app_subscription_doc.app, "custom_domain"
-		)
+		domain = frappe.db.get_value("Saas App", self.app_subscription_doc.app, "custom_domain")
 		return f"https://{domain}/api/method/press.api.saas.login_via_token?token={token}&team={self.app_subscription_doc.team}"
 
 	def get_trial_expiry(self):

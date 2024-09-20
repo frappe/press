@@ -27,9 +27,7 @@ class VirtualDiskSnapshot(Document):
 		size: DF.Int
 		snapshot_id: DF.Data
 		start_time: DF.Datetime | None
-		status: DF.Literal[
-			"Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"
-		]
+		status: DF.Literal["Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"]
 		virtual_machine: DF.Link
 		volume_id: DF.Data | None
 	# end: auto-generated types
@@ -43,18 +41,16 @@ class VirtualDiskSnapshot(Document):
 	def set_credentials(self):
 		series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
 		if series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
-			self.mariadb_root_password = frappe.get_doc(
-				"Database Server", self.virtual_machine
-			).get_password("mariadb_root_password")
+			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
+				"mariadb_root_password"
+			)
 
 	@frappe.whitelist()
 	def sync(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			try:
-				snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])[
-					"Snapshots"
-				]
+				snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])["Snapshots"]
 				if snapshots:
 					snapshot = snapshots[0]
 					self.volume_id = snapshot["VolumeId"]

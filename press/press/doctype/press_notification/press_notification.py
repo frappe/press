@@ -114,6 +114,4 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"reference_name": reference_doc,
 			}
 		).insert()
-		frappe.publish_realtime(
-			"press_notification", doctype="Press Notification", message={"team": team}
-		)
+		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})

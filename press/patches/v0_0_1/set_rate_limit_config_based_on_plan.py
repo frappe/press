@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -10,9 +9,7 @@ from press.utils import log_error
 
 
 def execute():
-	sites = frappe.get_all(
-		"Site", fields=["name", "plan"], filters={"status": ("!=", "Archived")}
-	)
+	sites = frappe.get_all("Site", fields=["name", "plan"], filters={"status": ("!=", "Archived")})
 	for site in sites:
 		if not site.plan:
 			continue

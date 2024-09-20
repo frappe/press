@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import Optional
 
 import boto3
 import frappe
@@ -77,9 +76,9 @@ class VirtualMachineImage(Document):
 
 	def set_credentials(self):
 		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
-			self.mariadb_root_password = frappe.get_doc(
-				"Database Server", self.virtual_machine
-			).get_password("mariadb_root_password")
+			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
+				"mariadb_root_password"
+			)
 
 	@frappe.whitelist()
 	def sync(self):
@@ -163,9 +162,7 @@ class VirtualMachineImage(Document):
 			return ComputeClient(cluster.get_oci_config())
 
 	@classmethod
-	def get_available_for_series(
-		cls, series: str, region: Optional[str] = None
-	) -> Optional[str]:
+	def get_available_for_series(cls, series: str, region: str | None = None) -> str | None:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
