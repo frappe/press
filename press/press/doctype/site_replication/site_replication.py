@@ -1,6 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -23,7 +23,7 @@ class SiteReplication(Document):
 		release_group: DF.Link | None
 		server: DF.Link | None
 		site: DF.Link | None
-		status: DF.Literal["Not Started", "Running", "Success", "Failure"]
+		status: DF.Literal["Not Started", Running, Success, Failure]
 		subdomain: DF.Data | None
 	# end: auto-generated types
 

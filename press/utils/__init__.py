@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import functools
 import json
@@ -604,7 +605,7 @@ def reconnect_on_failure():
 	return wrapper
 
 
-def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
+def parse_supervisor_status(output: str) -> list[SupervisorProcess]:
 	# Note: this function is verbose due to supervisor status being kinda
 	# unstructured, and I'm not entirely sure of all possible input formats.
 	#
@@ -785,5 +786,5 @@ def fmt_timedelta(td: timedelta | int):
 V = TypeVar("V")
 
 
-def flatten(value_lists: "list[list[V]]") -> "list[V]":
+def flatten(value_lists: list[list[V]]) -> list[V]:
 	return [value for values in value_lists for value in values]

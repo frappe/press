@@ -1,4 +1,5 @@
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.core.utils import find
@@ -13,10 +14,12 @@ from press.press.doctype.site.saas_site import (
 	get_saas_site_plan,
 	set_site_in_subscription_docs,
 )
-from press.press.doctype.site.site import Site
 from press.press.doctype.team.team import Team
 from press.utils import get_current_team, group_children_in_result, log_error
 from press.utils.telemetry import capture, identify
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 # ----------------------------- SIGNUP APIs ---------------------------------
 

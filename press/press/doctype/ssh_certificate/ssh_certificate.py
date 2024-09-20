@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import binascii
@@ -31,7 +32,7 @@ class SSHCertificate(Document):
 		from frappe.types import DF
 
 		certificate_details: DF.Code | None
-		certificate_type: DF.Literal["User", "Host"]
+		certificate_type: DF.Literal[User, Host]
 		group: DF.Link | None
 		key_type: DF.Data | None
 		serial_number: DF.Int

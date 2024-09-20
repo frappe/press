@@ -1,8 +1,9 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import unittest
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
@@ -27,12 +28,14 @@ from press.press.doctype.server.server import scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
-from press.press.doctype.team.team import Team
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
+
+if TYPE_CHECKING:
+	from press.press.doctype.team.team import Team
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())

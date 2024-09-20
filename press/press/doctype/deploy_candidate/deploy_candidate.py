@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import glob
 import json
@@ -22,7 +23,6 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
-from rq.job import Job
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -45,7 +45,6 @@ from press.press.doctype.deploy_candidate.utils import (
 	load_pyproject,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
 
@@ -55,8 +54,11 @@ TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
 if typing.TYPE_CHECKING:
+	from rq.job import Job
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -115,7 +117,7 @@ class DeployCandidate(Document):
 		pending_start: DF.Datetime | None
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
-		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
+		status: DF.Literal[Draft, Scheduled, Pending, Preparing, Running, Success, Failure]
 		team: DF.Link
 		use_app_cache: DF.Check
 		use_rq_workerpool: DF.Check
@@ -387,7 +389,7 @@ class DeployCandidate(Document):
 	def handle_build_failure(
 		self,
 		exc: Exception | None = None,
-		job: "AgentJob | None" = None,
+		job: AgentJob | None = None,
 	) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
@@ -411,7 +413,7 @@ class DeployCandidate(Document):
 	def should_build_retry(
 		self,
 		exc: Exception | None,
-		job: "AgentJob | None",
+		job: AgentJob | None,
 	) -> bool:
 		if self.status != "Failure":
 			return False
@@ -562,7 +564,7 @@ class DeployCandidate(Document):
 		return upload_filename
 
 	@staticmethod
-	def process_run_build(job: "AgentJob", response_data: "dict | None"):
+	def process_run_build(job: AgentJob, response_data: dict | None):
 		request_data = json.loads(job.request_data)
 		dc: DeployCandidate = frappe.get_doc(
 			"Deploy Candidate",
@@ -572,7 +574,7 @@ class DeployCandidate(Document):
 
 	def _process_run_build(
 		self,
-		job: "AgentJob",
+		job: AgentJob,
 		request_data: dict,
 		response_data: dict | None,
 	):
@@ -613,7 +615,7 @@ class DeployCandidate(Document):
 		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
-	def has_remote_build_failed(self, job: "AgentJob", job_data: dict) -> bool:
+	def has_remote_build_failed(self, job: AgentJob, job_data: dict) -> bool:
 		if job.status == "Failure":
 			return True
 
@@ -641,7 +643,7 @@ class DeployCandidate(Document):
 		]:
 			self.upload_step_updater.end("Pending")
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob"):
+	def _update_status_from_remote_build_job(self, job: AgentJob):
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
@@ -923,7 +925,7 @@ class DeployCandidate(Document):
 		step.output = "Pre-build validations passed"
 		step.status = "Success"
 
-	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
+	def _clone_app_repo(self, app: DeployCandidateApp) -> str:
 		"""
 		Clones the app repository if it has not been cloned and
 		copies it into the build context directory.
@@ -967,7 +969,7 @@ class DeployCandidate(Document):
 
 		return target
 
-	def _clone_release_and_update_step(self, release: str, step: "DeployCandidateBuildStep"):
+	def _clone_release_and_update_step(self, release: str, step: DeployCandidateBuildStep):
 		# Start step
 		step.status = "Running"
 		start_time = now()
@@ -1303,7 +1305,7 @@ class DeployCandidate(Document):
 		for key, value in update_dict.items():
 			step.set(key, value)
 
-	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
+	def get_step(self, stage_slug: str, step_slug: str) -> DeployCandidateBuildStep | None:
 		return find(
 			self.build_steps,
 			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
@@ -1435,7 +1437,7 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def get_first_step(self, key: str, value: str | list[str]) -> "DeployCandidateBuildStep | None":
+	def get_first_step(self, key: str, value: str | list[str]) -> DeployCandidateBuildStep | None:
 		if isinstance(value, str):
 			value = [value]
 
@@ -1445,7 +1447,7 @@ class DeployCandidate(Document):
 			return build_step
 		return None
 
-	def get_duplicate_dc(self) -> "DeployCandidate | None":
+	def get_duplicate_dc(self) -> DeployCandidate | None:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		if not (dc := rg.create_deploy_candidate()):
 			return
@@ -1912,7 +1914,7 @@ def should_build_retry_exc(exc: Exception):
 	return False
 
 
-def should_build_retry_job(job: "AgentJob"):
+def should_build_retry_job(job: AgentJob):
 	if not job.traceback:
 		return False
 

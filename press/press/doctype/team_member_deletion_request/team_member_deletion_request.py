@@ -3,6 +3,8 @@
 
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -16,7 +18,7 @@ class TeamMemberDeletionRequest(Document):
 		from frappe.types import DF
 
 		anon_team_member: DF.Data | None
-		deletion_status: DF.Literal["Pending", "Deleted"]
+		deletion_status: DF.Literal[Pending, Deleted]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

@@ -1,10 +1,11 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import re
 import typing
 from textwrap import dedent
-from typing import Optional, Protocol, TypedDict
+from typing import Protocol, TypedDict
 
 import frappe
 import frappe.utils
@@ -51,14 +52,14 @@ if typing.TYPE_CHECKING:
 	class UserAddressableHandler(Protocol):
 		def __call__(
 			self,
-			details: "Details",
-			dc: "DeployCandidate",
+			details: Details,
+			dc: DeployCandidate,
 			exc: BaseException,
 		) -> bool:  # Return True if is_actionable
 			...
 
 	class WillFailChecker(Protocol):
-		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None: ...
+		def __call__(self, old_dc: DeployCandidate, new_dc: DeployCandidate) -> None: ...
 
 	UserAddressableHandlerTuple = tuple[
 		MatchStrings,
@@ -79,7 +80,7 @@ DOC_URLS = {
 }
 
 
-def handlers() -> "list[UserAddressableHandlerTuple]":
+def handlers() -> list[UserAddressableHandlerTuple]:
 	"""
 	Before adding anything here, view the type:
 	`UserAddressableHandlerTuple`
@@ -228,7 +229,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 
 
 def create_build_failed_notification(
-	dc: "DeployCandidate",
+	dc: DeployCandidate,
 	exc: BaseException | None,
 ) -> bool:
 	"""
@@ -262,7 +263,7 @@ def create_build_failed_notification(
 	return details["is_actionable"]
 
 
-def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
+def get_details(dc: DeployCandidate, exc: BaseException) -> Details:
 	tb = frappe.get_traceback(with_context=False)
 	default_title = get_default_title(dc)
 	default_message = get_default_message(dc)
@@ -300,8 +301,8 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 
 
 def update_with_vue_build_failed(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -332,8 +333,8 @@ def update_with_vue_build_failed(
 
 
 def update_with_import_error(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -374,8 +375,8 @@ def update_with_import_error(
 
 
 def update_with_module_not_found(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -413,8 +414,8 @@ def update_with_module_not_found(
 
 
 def update_with_dependency_not_found(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -453,8 +454,8 @@ def update_with_dependency_not_found(
 
 
 def update_with_error_on_pip_install(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -486,8 +487,8 @@ def update_with_error_on_pip_install(
 
 
 def update_with_invalid_pyproject_error(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
@@ -509,8 +510,8 @@ def update_with_invalid_pyproject_error(
 
 
 def update_with_invalid_package_json_error(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
@@ -537,8 +538,8 @@ def update_with_invalid_package_json_error(
 
 
 def update_with_app_not_fetchable(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	failed_step = get_failed_step(dc)
@@ -572,8 +573,8 @@ def update_with_app_not_fetchable(
 
 
 def update_with_incompatible_node(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ) -> None:
 	# Example line:
@@ -602,7 +603,7 @@ def update_with_incompatible_node(
 	return True
 
 
-def check_incompatible_node(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_incompatible_node(old_dc: DeployCandidate, new_dc: DeployCandidate) -> None:
 	old_node = old_dc.get_dependency_version("node")
 	new_node = new_dc.get_dependency_version("node")
 
@@ -616,8 +617,8 @@ def check_incompatible_node(old_dc: "DeployCandidate", new_dc: "DeployCandidate"
 
 
 def update_with_incompatible_python(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	details["title"] = "Incompatible Python version"
@@ -636,7 +637,7 @@ def update_with_incompatible_python(
 	return True
 
 
-def check_incompatible_python(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_incompatible_python(old_dc: DeployCandidate, new_dc: DeployCandidate) -> None:
 	old_node = old_dc.get_dependency_version("python")
 	new_node = new_dc.get_dependency_version("python")
 
@@ -650,8 +651,8 @@ def check_incompatible_python(old_dc: "DeployCandidate", new_dc: "DeployCandidat
 
 
 def update_with_incompatible_node_prebuild(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 5:
@@ -681,8 +682,8 @@ def update_with_incompatible_node_prebuild(
 
 
 def update_with_incompatible_python_prebuild(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 4:
@@ -706,8 +707,8 @@ def update_with_incompatible_python_prebuild(
 
 
 def update_with_incompatible_app_prebuild(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 5:
@@ -732,8 +733,8 @@ def update_with_incompatible_app_prebuild(
 
 
 def update_with_invalid_release_prebuild(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	if len(exc.args) != 4:
@@ -755,8 +756,8 @@ def update_with_invalid_release_prebuild(
 
 
 def update_with_required_app_not_found_prebuild(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	if len(exc.args) != 3:
@@ -779,8 +780,8 @@ def update_with_required_app_not_found_prebuild(
 
 
 def update_with_vite_not_found(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	details["title"] = "Vite not found"
@@ -810,8 +811,8 @@ def update_with_vite_not_found(
 
 
 def update_with_yarn_install_failed(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	details["title"] = "App frontend dependency install failed"
@@ -845,8 +846,8 @@ def update_with_yarn_install_failed(
 
 
 def update_with_yarn_build_failed(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	details["title"] = "App frontend build failed"
@@ -880,8 +881,8 @@ def update_with_yarn_build_failed(
 
 
 def update_with_file_not_found(
-	details: "Details",
-	dc: "DeployCandidate",
+	details: Details,
+	dc: DeployCandidate,
 	exc: BaseException,
 ):
 	details["title"] = "File not found in app"
@@ -920,7 +921,7 @@ def update_with_file_not_found(
 	return True
 
 
-def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_if_app_updated(old_dc: DeployCandidate, new_dc: DeployCandidate) -> None:
 	if not (failed_step := old_dc.get_first_step("status", "Failure")):
 		return
 
@@ -947,7 +948,7 @@ def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -
 	)
 
 
-def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":
+def get_dc_app(dc: DeployCandidate, app_name: str) -> DeployCandidateApp | None:
 	for app in dc.apps:
 		if app.app == app_name:
 			return app
@@ -959,7 +960,7 @@ def fmt(message: str) -> str:
 	return re.sub(r"\s+", " ", message)
 
 
-def get_build_output_line(dc: "DeployCandidate", needle: str):
+def get_build_output_line(dc: DeployCandidate, needle: str):
 	for line in dc.build_output.split("\n"):
 		if needle in line:
 			return line.strip()
@@ -978,27 +979,27 @@ def get_app_from_incompatible_build_output_line(line: str):
 	return splits[idx][:-1].split("@")[0]
 
 
-def get_default_title(dc: "DeployCandidate") -> str:
+def get_default_title(dc: DeployCandidate) -> str:
 	return "Build Failed"
 
 
-def get_default_message(dc: "DeployCandidate") -> str:
+def get_default_message(dc: DeployCandidate) -> str:
 	failed_step = dc.get_first_step("status", "Failure")
 	if failed_step:
 		return f"Image build failed at step <b>{failed_step.stage} - {failed_step.step}</b>."
 	return "Image build failed."
 
 
-def get_is_actionable(dc: "DeployCandidate", tb: str) -> bool:
+def get_is_actionable(dc: DeployCandidate, tb: str) -> bool:
 	return False
 
 
 def get_ct_row(
-	dc: "DeployCandidate",
+	dc: DeployCandidate,
 	match_value: str,
 	field: str,
 	ct_field: str,
-) -> Optional["Document"]:
+) -> Document | None:
 	ct = dc.get(field)
 	if not ct:
 		return
@@ -1008,5 +1009,5 @@ def get_ct_row(
 			return row
 
 
-def get_failed_step(dc: "DeployCandidate"):
+def get_failed_step(dc: DeployCandidate):
 	return dc.get_first_step("status", "Failure") or frappe._dict()

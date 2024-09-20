@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 import re
@@ -22,7 +22,7 @@ class AppReleaseDifference(Document):
 		from frappe.types import DF
 
 		app: DF.Link
-		deploy_type: DF.Literal["Pull", "Migrate", "Pending"]
+		deploy_type: DF.Literal[Pull, Migrate, Pending]
 		destination_hash: DF.Data | None
 		destination_release: DF.Link
 		files: DF.Code | None

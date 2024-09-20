@@ -2,13 +2,16 @@
 # For license information, please see license.txt
 
 from calendar import monthrange
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.utils import get_datetime, get_time, now_datetime
 
-from press.press.doctype.site.site import Site
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 def trigger():

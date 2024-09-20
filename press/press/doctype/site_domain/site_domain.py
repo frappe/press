@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 
@@ -25,12 +26,12 @@ class SiteDomain(Document):
 		from frappe.types import DF
 
 		dns_response: DF.Code | None
-		dns_type: DF.Literal["A", "NS", "CNAME"]
+		dns_type: DF.Literal[A, NS, CNAME]
 		domain: DF.Data
 		redirect_to_primary: DF.Check
 		retry_count: DF.Int
 		site: DF.Link
-		status: DF.Literal["Pending", "In Progress", "Active", "Broken"]
+		status: DF.Literal[Pending, "In Progress", Active, Broken]
 		team: DF.Link
 		tls_certificate: DF.Link | None
 	# end: auto-generated types

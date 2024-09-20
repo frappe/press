@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import typing
 
@@ -49,7 +49,7 @@ class App(Document):
 		github_installation_id=None,
 		public=False,
 		repository_owner=None,
-	) -> "AppSource":
+	) -> AppSource:
 		existing_source = frappe.get_all(
 			"App Source",
 			{"app": self.name, "repository_url": repository_url, "branch": branch, "team": team},

@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import os
 import secrets
@@ -35,7 +35,7 @@ class CertificateAuthority(Document):
 		organization: DF.Data
 		organizational_unit: DF.Data
 		parent_authority: DF.Link | None
-		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		rsa_key_size: DF.Literal[2048, 3072, 4096]
 		validity_days: DF.Int
 	# end: auto-generated types
 

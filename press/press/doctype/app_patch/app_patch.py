@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 import typing
@@ -50,7 +51,7 @@ class AppPatch(Document):
 		group: DF.Link
 		name: DF.Int | None
 		patch: DF.Code
-		status: DF.Literal["Not Applied", "In Process", "Failed", "Applied"]
+		status: DF.Literal["Not Applied", "In Process", Failed, Applied]
 		team: DF.Link
 		url: DF.Data | None
 	# end: auto-generated types
@@ -125,7 +126,7 @@ class AppPatch(Document):
 		self.save()
 
 	@staticmethod
-	def process_patch_app(agent_job: "AgentJob"):
+	def process_patch_app(agent_job: AgentJob):
 		request_data = json.loads(agent_job.request_data)
 		app_patch = frappe.get_last_doc(
 			"App Patch",

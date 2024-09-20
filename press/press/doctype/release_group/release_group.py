@@ -1,8 +1,8 @@
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from contextlib import suppress
-from datetime import datetime
 from functools import cached_property
 from itertools import chain
 from typing import TYPE_CHECKING, TypedDict
@@ -33,6 +33,9 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -432,7 +435,7 @@ class ReleaseGroup(Document, TagHelpers):
 		for app in self.apps:
 			self.validate_app_version(app)
 
-	def validate_app_version(self, app: "ReleaseGroupApp"):
+	def validate_app_version(self, app: ReleaseGroupApp):
 		source = frappe.get_doc("App Source", app.source)
 		if all(row.version != self.version for row in source.versions):
 			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
@@ -510,7 +513,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self,
 		apps_to_update=None,
 		run_will_fail_check=False,
-	) -> "DeployCandidate | None":
+	) -> DeployCandidate | None:
 		if not self.enabled:
 			return
 
@@ -892,7 +895,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self) -> "LastDeployInfo | None":
+	def last_dc_info(self) -> LastDeployInfo | None:
 		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (
@@ -909,7 +912,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return results[0]
 
 	@cached_property
-	def last_benches_info(self) -> "list[LastDeployInfo]":
+	def last_benches_info(self) -> list[LastDeployInfo]:
 		if not (name := (self.last_dc_info or {}).get("name")):
 			return []
 
@@ -1083,7 +1086,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def update_source(self, source: "AppSource", is_update: bool = False):
+	def update_source(self, source: AppSource, is_update: bool = False):
 		self.remove_app_if_invalid(source)
 		if is_update:
 			update_rg_app_source(self, source)
@@ -1091,7 +1094,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
-	def remove_app_if_invalid(self, source: "AppSource"):
+	def remove_app_if_invalid(self, source: AppSource):
 		"""
 		Remove app if previously added app has an invalid
 		repository URL and GitHub responds with a 404 when
@@ -1207,7 +1210,7 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate(self) -> "DeployCandidate":
+	def get_last_successful_candidate(self) -> DeployCandidate:
 		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
 
 	def get_last_deploy_candidate(self):
@@ -1456,7 +1459,7 @@ def can_use_release(app_src):
 	return app_src.status == "Approved"
 
 
-def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
+def update_rg_app_source(rg: ReleaseGroup, source: AppSource):
 	for app in rg.apps:
 		if app.app == source.app:
 			app.source = source.name

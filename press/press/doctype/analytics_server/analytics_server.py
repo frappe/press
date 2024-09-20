@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import os
@@ -38,9 +39,9 @@ class AnalyticsServer(BaseServer):
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		root_public_key: DF.Code | None
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 

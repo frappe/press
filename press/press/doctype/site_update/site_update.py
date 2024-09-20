@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import random
 from datetime import datetime
@@ -30,12 +31,12 @@ class SiteUpdate(Document):
 		from frappe.types import DF
 
 		cause_of_failure_is_resolved: DF.Check
-		deploy_type: DF.Literal["", "Pull", "Migrate"]
+		deploy_type: DF.Literal["", Pull, Migrate]
 		destination_bench: DF.Link | None
 		destination_candidate: DF.Link | None
 		destination_group: DF.Link | None
 		difference: DF.Link | None
-		difference_deploy_type: DF.Literal["", "Pull", "Migrate"]
+		difference_deploy_type: DF.Literal["", Pull, Migrate]
 		group: DF.Link | None
 		recover_job: DF.Link | None
 		scheduled_time: DF.Datetime | None
@@ -45,7 +46,7 @@ class SiteUpdate(Document):
 		skipped_failing_patches: DF.Check
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
+		status: DF.Literal[Pending, Running, Success, Failure, Recovered, Fatal, Scheduled]
 		team: DF.Link | None
 		update_job: DF.Link | None
 	# end: auto-generated types

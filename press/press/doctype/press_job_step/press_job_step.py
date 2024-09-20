@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 
@@ -25,7 +26,7 @@ class PressJobStep(Document):
 		name: DF.Int | None
 		result: DF.Code | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		status: DF.Literal[Pending, Running, Skipped, Success, Failure]
 		step_name: DF.Data
 		traceback: DF.Code | None
 		wait_until_true: DF.Check

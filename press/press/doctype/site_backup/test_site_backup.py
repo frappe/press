@@ -1,9 +1,9 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import json
-from datetime import datetime
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import frappe
@@ -12,6 +12,9 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())

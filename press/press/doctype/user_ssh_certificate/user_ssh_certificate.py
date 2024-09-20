@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import base64
 import binascii
@@ -30,7 +30,7 @@ class UserSSHCertificate(Document):
 		amended_from: DF.Link | None
 		certificate_details: DF.Code | None
 		reason: DF.SmallText
-		server_type: DF.Literal["Server", "Proxy Server", "Database Server"]
+		server_type: DF.Literal[Server, "Proxy Server", "Database Server"]
 		ssh_certificate: DF.Code | None
 		ssh_command: DF.Code | None
 		ssh_fingerprint: DF.Data | None

@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import json
@@ -29,7 +30,7 @@ class SilencedAlert(Document):
 		instance: DF.DynamicLink
 		instance_type: DF.Link | None
 		silence_id: DF.Data | None
-		status: DF.Literal["", "Preview", "Active", "Expired"]
+		status: DF.Literal["", Preview, Active, Expired]
 		to_time: DF.Datetime
 		total_alerts: DF.Data | None
 	# end: auto-generated types

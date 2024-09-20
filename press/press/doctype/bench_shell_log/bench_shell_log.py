@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from datetime import datetime
 from typing import TypedDict
@@ -44,7 +45,7 @@ class BenchShellLog(Document):
 
 
 def create_bench_shell_log(
-	res: "ExecuteResult",
+	res: ExecuteResult,
 	bench: str,
 	cmd: str,
 	subdir: str | None,

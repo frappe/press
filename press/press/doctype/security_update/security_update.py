@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import re
 
@@ -22,14 +23,14 @@ class SecurityUpdate(Document):
 
 		change_log: DF.Code | None
 		datetime: DF.Datetime | None
-		job_status: DF.Literal["Pending", "WIP", "Completed"]
+		job_status: DF.Literal[Pending, WIP, Completed]
 		package: DF.Data | None
 		package_meta: DF.Code | None
-		priority: DF.Literal["High", "Medium", "Low"]
-		priority_level: DF.Literal["1", "2", "3"]
-		security_update_status: DF.Literal["Pending", "Implemented"]
+		priority: DF.Literal[High, Medium, Low]
+		priority_level: DF.Literal[1, 2, 3]
+		security_update_status: DF.Literal[Pending, Implemented]
 		server: DF.DynamicLink | None
-		server_type: DF.Literal["Server", "Database Server", "Proxy Server"]
+		server_type: DF.Literal[Server, "Database Server", "Proxy Server"]
 		version: DF.Data | None
 	# end: auto-generated types
 

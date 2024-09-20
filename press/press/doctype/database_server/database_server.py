@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -52,7 +52,7 @@ class DatabaseServer(BaseServer):
 		is_stalk_setup: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
-		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
+		memory_allocator: DF.Literal[System, jemalloc, TCMalloc]
 		memory_allocator_version: DF.Data | None
 		memory_high: DF.Float
 		memory_max: DF.Float
@@ -62,7 +62,7 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -79,7 +79,7 @@ class DatabaseServer(BaseServer):
 		stalk_strace_collector: DF.Check
 		stalk_threshold: DF.Int
 		stalk_variable: DF.Data | None
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None

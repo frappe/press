@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -20,11 +21,11 @@ class BackupRestorationTest(Document):
 		date: DF.Date | None
 		site: DF.Link | None
 		status: DF.Literal[
-			"Pending",
-			"Running",
-			"Success",
-			"Failure",
-			"Undelivered",
+			Pending,
+			Running,
+			Success,
+			Failure,
+			Undelivered,
 			"Archive Successful",
 			"Archive Failed",
 		]

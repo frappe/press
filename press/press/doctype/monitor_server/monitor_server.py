@@ -1,6 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 
@@ -34,9 +34,9 @@ class MonitorServer(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		prometheus_data_directory: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		root_public_key: DF.Code | None
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 

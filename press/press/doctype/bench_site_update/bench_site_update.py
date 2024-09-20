@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -23,7 +25,7 @@ class BenchSiteUpdate(Document):
 		skip_backups: DF.Check
 		skip_failing_patches: DF.Check
 		source_candidate: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Failure", "Recovered", "Success", "Fatal"]
+		status: DF.Literal[Pending, Running, Failure, Recovered, Success, Fatal]
 	# end: auto-generated types
 
 	pass

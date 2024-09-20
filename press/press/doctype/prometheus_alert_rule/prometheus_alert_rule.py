@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
@@ -42,7 +43,7 @@ class PrometheusAlertRule(Document):
 		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
-		severity: DF.Literal["Critical", "Warning", "Information"]
+		severity: DF.Literal[Critical, Warning, Information]
 		silent: DF.Check
 	# end: auto-generated types
 

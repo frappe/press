@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from press.press.doctype.site_plan.plan import Plan
 
 

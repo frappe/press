@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -24,7 +25,7 @@ class SiteGroupDeploy(Document):
 		release_group: DF.Link | None
 		site: DF.Link | None
 		status: DF.Literal[
-			"Pending",
+			Pending,
 			"Deploying Bench",
 			"Bench Deployed",
 			"Bench Deploy Failed",

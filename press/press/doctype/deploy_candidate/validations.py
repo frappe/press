@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -18,10 +20,10 @@ if TYPE_CHECKING:
 
 
 class PreBuildValidations:
-	dc: "DeployCandidate"
+	dc: DeployCandidate
 	pmf: PackageManagerFiles
 
-	def __init__(self, dc: "DeployCandidate", pmf: PackageManagerFiles):
+	def __init__(self, dc: DeployCandidate, pmf: PackageManagerFiles):
 		self.dc = dc
 		self.pmf = pmf
 
@@ -210,7 +212,7 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 	return []
 
 
-def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
+def check_if_update_will_fail(rg: ReleaseGroup, new_dc: DeployCandidate):
 	if not (old_dc := rg.get_last_deploy_candidate()):
 		return
 

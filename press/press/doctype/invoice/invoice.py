@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe import _
@@ -58,7 +59,7 @@ class Invoice(Document):
 		payment_attempt_count: DF.Int
 		payment_attempt_date: DF.Date | None
 		payment_date: DF.Date | None
-		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "NEFT", "Partner Credits", "Paid By Partner"]
+		payment_mode: DF.Literal["", Card, "Prepaid Credits", NEFT, "Partner Credits", "Paid By Partner"]
 		period_end: DF.Date | None
 		period_start: DF.Date | None
 		razorpay_order_id: DF.Data | None
@@ -66,14 +67,14 @@ class Invoice(Document):
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
 		status: DF.Literal[
-			"Draft",
+			Draft,
 			"Invoice Created",
-			"Unpaid",
-			"Paid",
-			"Refunded",
-			"Uncollectible",
-			"Collected",
-			"Empty",
+			Unpaid,
+			Paid,
+			Refunded,
+			Uncollectible,
+			Collected,
+			Empty,
 		]
 		stripe_invoice_id: DF.Data | None
 		stripe_invoice_url: DF.Text | None
@@ -87,7 +88,7 @@ class Invoice(Document):
 		transaction_fee: DF.Currency
 		transaction_fee_details: DF.Table[InvoiceTransactionFee]
 		transaction_net: DF.Currency
-		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+		type: DF.Literal[Subscription, "Prepaid Credits", Service, Summary]
 		write_off_amount: DF.Float
 	# end: auto-generated types
 

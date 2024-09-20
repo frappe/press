@@ -1,19 +1,23 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import os
 import shlex
 import shutil
 import subprocess
-from datetime import datetime
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 from frappe.model.document import Document
 
 from press.api.github import get_access_token
-from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from datetime import datetime
+
+	from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppReleaseDict(TypedDict):
@@ -52,7 +56,7 @@ class AppRelease(Document):
 		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
-		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		status: DF.Literal[Draft, Approved, "Awaiting Approval", Rejected]
 		team: DF.Link
 		timestamp: DF.Datetime | None
 	# end: auto-generated types
@@ -214,7 +218,7 @@ class AppRelease(Document):
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
 
-	def _get_repo_url(self, source: "AppSource") -> str:
+	def _get_repo_url(self, source: AppSource) -> str:
 		if not source.github_installation_id:
 			return source.repository_url
 

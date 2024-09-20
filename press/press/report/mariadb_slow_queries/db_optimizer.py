@@ -3,6 +3,8 @@
 This is largely based on heuristics and known good practices for indexing.
 """
 
+from __future__ import annotations
+
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -45,7 +47,7 @@ class DBExplain:
 	extra: str | None = None
 
 	@classmethod
-	def from_frappe_ouput(cls, data) -> "DBExplain":
+	def from_frappe_ouput(cls, data) -> DBExplain:
 		return cls(
 			select_type=cstr(data["select_type"]).upper(),
 			table=data["table"],
@@ -68,7 +70,7 @@ class DBColumn:
 	data_type: str
 
 	@classmethod
-	def from_frappe_ouput(cls, data) -> "DBColumn":
+	def from_frappe_ouput(cls, data) -> DBColumn:
 		"Parse DBColumn from output of describe-database-table command in Frappe"
 		return cls(
 			name=data["column"],
@@ -90,14 +92,14 @@ class DBIndex:
 	nullable: bool = True
 	_score: float = 0.0
 
-	def __eq__(self, other: "DBIndex") -> bool:
+	def __eq__(self, other: DBIndex) -> bool:
 		return self.column == other.column and self.sequence == other.sequence and self.table == other.table
 
 	def __repr__(self):
 		return f"DBIndex(`{self.table}`.`{self.column}`)"
 
 	@classmethod
-	def from_frappe_ouput(cls, data, table) -> "DBIndex":
+	def from_frappe_ouput(cls, data, table) -> DBIndex:
 		"Parse DBIndex from output of describe-database-table command in Frappe"
 		return cls(
 			name=data["name"],
@@ -123,7 +125,7 @@ class ColumnStat:
 			self.histogram = []
 
 	@classmethod
-	def from_frappe_ouput(cls, data) -> "ColumnStat":
+	def from_frappe_ouput(cls, data) -> ColumnStat:
 		return cls(
 			column_name=data["column_name"],
 			avg_frequency=data["avg_frequency"],
@@ -156,7 +158,7 @@ class DBTable:
 					col.cardinality = self.total_rows / column_stat.avg_frequency
 
 	@classmethod
-	def from_frappe_ouput(cls, data) -> "DBTable":
+	def from_frappe_ouput(cls, data) -> DBTable:
 		"Parse DBTable from output of describe-database-table command in Frappe"
 		table_name = data["table_name"]
 		return cls(

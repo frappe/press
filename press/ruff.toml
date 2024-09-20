@@ -1,6 +1,6 @@
 line-length = 110
 indent-width = 4
-target-version = "py310"
+target-version = "py38"
 
 [format]
 quote-style = "double"
@@ -16,8 +16,8 @@ select = [
   "UP",
   "B",
   "RUF",
-  # "FA",
-  # "TCH",
+  "FA",
+  "TCH",
   # "C90",
   # "RET",
   # "SIM",

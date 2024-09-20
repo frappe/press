@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 from unittest.mock import MagicMock, Mock, patch
 

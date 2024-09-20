@@ -1,15 +1,18 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
 from press.agent import Agent
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 
 class SiteBackup(Document):
@@ -28,7 +31,7 @@ class SiteBackup(Document):
 		database_file: DF.Data | None
 		database_size: DF.Data | None
 		database_url: DF.Text | None
-		files_availability: DF.Literal["", "Available", "Unavailable"]
+		files_availability: DF.Literal["", Available, Unavailable]
 		job: DF.Link | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
@@ -44,7 +47,7 @@ class SiteBackup(Document):
 		remote_public_file: DF.Link | None
 		site: DF.Link
 		size: DF.Data | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[Pending, Running, Success, Failure]
 		team: DF.Link | None
 		url: DF.Data | None
 		with_files: DF.Check

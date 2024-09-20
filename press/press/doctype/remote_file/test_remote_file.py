@@ -1,11 +1,14 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import unittest
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
+
+if TYPE_CHECKING:
+	from datetime import datetime
 
 
 def create_test_remote_file(

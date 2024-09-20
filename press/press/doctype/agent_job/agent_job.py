@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 import os
@@ -57,14 +58,14 @@ class AgentJob(Document):
 		reference_name: DF.DynamicLink | None
 		request_data: DF.Code
 		request_files: DF.Code | None
-		request_method: DF.Literal["GET", "POST", "DELETE"]
+		request_method: DF.Literal[GET, POST, DELETE]
 		request_path: DF.Data
 		retry_count: DF.Int
 		server: DF.DynamicLink
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
+		status: DF.Literal[Undelivered, Pending, Running, Success, Failure, "Delivery Failure"]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
@@ -864,7 +865,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name: str, response_data: "dict | None" = None):
+def process_job_updates(job_name: str, response_data: dict | None = None):
 	job: AgentJob = frappe.get_doc("Agent Job", job_name)
 
 	try:

@@ -1,5 +1,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
 import _io
 import json
 import os
@@ -27,7 +29,7 @@ class Agent:
 
 		from requests import Response
 
-		response: "Response | None"
+		response: Response | None
 
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
@@ -155,7 +157,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def restore_site(self, site: "Site", skip_failing_patches=False):
+	def restore_site(self, site: Site, skip_failing_patches=False):
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 		public_link, private_link = None, None
@@ -240,7 +242,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+	def new_site_from_backup(self, site: Site, skip_failing_patches=False):
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 
@@ -792,7 +794,7 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result: "Response"):
+	def handle_request_failure(self, agent_job, result: Response):
 		if not agent_job:
 			return
 
@@ -1035,7 +1037,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)
 
-	def patch_app(self, app_patch: "AppPatch", data: "AgentPatchConfig"):
+	def patch_app(self, app_patch: AppPatch, data: AgentPatchConfig):
 		bench = app_patch.bench
 		app = app_patch.app
 		return self.create_agent_job(
@@ -1049,7 +1051,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def upload_build_context_for_docker_build(
 		self,
-		file: "BufferedReader",
+		file: BufferedReader,
 		dc_name: str,
 	) -> str | None:
 		if res := self.request("POST", f"builder/upload/{dc_name}", files={"build_context_file": file}):

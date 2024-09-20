@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import typing
 import unittest
@@ -31,7 +31,7 @@ def create_test_server(
 	cluster: str = "Default",
 	plan: str | None = None,
 	team: str | None = None,
-) -> "Server":
+) -> Server:
 	"""Create test Server doc."""
 	if not proxy_server:
 		proxy_server = create_test_proxy_server().name

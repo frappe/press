@@ -1,5 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
@@ -1173,8 +1174,8 @@ def check_for_updates(name):
 
 
 def get_updates_between_current_and_next_apps(
-	current_apps: "DF.Table[BenchApp]",
-	next_apps: "DF.Table[DeployCandidateApp]",
+	current_apps: DF.Table[BenchApp],
+	next_apps: DF.Table[DeployCandidateApp],
 ):
 	from press.utils import get_app_tag
 

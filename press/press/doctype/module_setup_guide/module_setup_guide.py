@@ -3,6 +3,8 @@
 
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -18,14 +20,14 @@ class ModuleSetupGuide(Document):
 		enabled: DF.Check
 		industry: DF.Literal[
 			"",
-			"Manufacturing",
-			"Distribution",
-			"Retail",
-			"Services",
-			"Education",
-			"Healthcare",
+			Manufacturing,
+			Distribution,
+			Retail,
+			Services,
+			Education,
+			Healthcare,
 			"Non Profit",
-			"Other",
+			Other,
 		]
 		parent: DF.Data
 		parentfield: DF.Data

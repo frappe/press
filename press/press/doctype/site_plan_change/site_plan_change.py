@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe import _
@@ -20,7 +21,7 @@ class SitePlanChange(Document):
 		team: DF.Link | None
 		timestamp: DF.Datetime | None
 		to_plan: DF.Link
-		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
+		type: DF.Literal["", "Initial Plan", Upgrade, Downgrade]
 	# end: auto-generated types
 
 	def validate(self):

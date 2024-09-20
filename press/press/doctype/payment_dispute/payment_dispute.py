@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage

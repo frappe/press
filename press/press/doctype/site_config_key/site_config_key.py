@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 from frappe.model.document import Document
 
@@ -18,7 +18,7 @@ class SiteConfigKey(Document):
 		internal: DF.Check
 		key: DF.Data
 		title: DF.Data | None
-		type: DF.Literal["Password", "String", "Number", "Boolean", "JSON"]
+		type: DF.Literal[Password, String, Number, Boolean, JSON]
 	# end: auto-generated types
 
 	dashboard_fields = ("key", "title", "description", "type", "internal")

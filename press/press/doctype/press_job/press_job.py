@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 
@@ -24,7 +25,7 @@ class PressJob(Document):
 		server: DF.DynamicLink | None
 		server_type: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		status: DF.Literal[Pending, Running, Skipped, Success, Failure]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 

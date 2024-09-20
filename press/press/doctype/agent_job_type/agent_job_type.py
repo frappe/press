@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -22,7 +23,7 @@ class AgentJobType(Document):
 
 		disabled_auto_retry: DF.Check
 		max_retry_count: DF.Int
-		request_method: DF.Literal["POST", "DELETE"]
+		request_method: DF.Literal[POST, DELETE]
 		request_path: DF.Data | None
 		steps: DF.Table[AgentJobTypeStep]
 	# end: auto-generated types

@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -68,13 +69,13 @@ class Incident(WebsiteGenerator):
 		show_in_website: DF.Check
 		sms_sent: DF.Check
 		status: DF.Literal[
-			"Validating",
-			"Confirmed",
-			"Acknowledged",
-			"Investigating",
-			"Resolved",
-			"Auto-Resolved",
-			"Press-Resolved",
+			Validating,
+			Confirmed,
+			Acknowledged,
+			Investigating,
+			Resolved,
+			Auto - Resolved,
+			Press - Resolved,
 		]
 		subject: DF.Data | None
 		type: DF.Literal["Site Down", "Bench Down", "Server Down"]
@@ -123,7 +124,7 @@ class Incident(WebsiteGenerator):
 
 	def get_humans(
 		self,
-	) -> list["IncidentSettingsUser"] | list["IncidentSettingsSelfHostedUser"]:
+	) -> list[IncidentSettingsUser] | list[IncidentSettingsSelfHostedUser]:
 		"""
 		Returns a list of users who are in the incident team
 		"""
@@ -175,7 +176,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			reraise=True,
 		)
 
-	def call_human(self, human: "IncidentSettingsUser | IncidentSettingsSelfHostedUser"):
+	def call_human(self, human: IncidentSettingsUser | IncidentSettingsSelfHostedUser):
 		try:
 			return self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
@@ -282,7 +283,7 @@ Incident URL: {incident_link}"""
 		return message
 
 	def add_acknowledgment_update(
-		self, human: "IncidentSettingsUser", call_status: str | None = None, acknowledged=False
+		self, human: IncidentSettingsUser, call_status: str | None = None, acknowledged=False
 	):
 		"""
 		Adds a new update to the Incident Document

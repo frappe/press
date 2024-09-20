@@ -1,10 +1,10 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
-from collections.abc import Iterable
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 import boto3
 import frappe
@@ -12,6 +12,9 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from collections.abc import Iterable
 
 
 class RootDomain(Document):

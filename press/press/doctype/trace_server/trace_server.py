@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 
@@ -28,7 +29,7 @@ class TraceServer(BaseServer):
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		root_public_key: DF.Code | None
 		sentry_admin_email: DF.Data | None
 		sentry_admin_password: DF.Password | None
@@ -39,7 +40,7 @@ class TraceServer(BaseServer):
 		sentry_oauth_client_id: DF.Data | None
 		sentry_oauth_client_secret: DF.Data | None
 		sentry_oauth_server_url: DF.Data | None
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 

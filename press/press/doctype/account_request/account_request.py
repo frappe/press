@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 import random

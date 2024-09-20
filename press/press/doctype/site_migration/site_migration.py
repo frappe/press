@@ -1,6 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -18,7 +18,6 @@ from press.exceptions import (
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
-from press.press.doctype.server.server import Server
 from press.press.doctype.site_backup.site_backup import (
 	SiteBackup,
 	process_backup_site_job_update,
@@ -28,6 +27,7 @@ from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
 
@@ -60,14 +60,14 @@ class SiteMigration(Document):
 		destination_bench: DF.Link
 		destination_cluster: DF.Link
 		destination_server: DF.Link
-		migration_type: DF.Literal["", "Bench", "Server", "Cluster"]
+		migration_type: DF.Literal["", Bench, Server, Cluster]
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
 		skip_failing_patches: DF.Check
 		source_bench: DF.Link
 		source_cluster: DF.Link
 		source_server: DF.Link
-		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[Scheduled, Pending, Running, Success, Failure]
 		steps: DF.Table[SiteMigrationStep]
 	# end: auto-generated types
 
@@ -599,7 +599,7 @@ class SiteMigration(Document):
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
 
-	def is_cleanup_done(self, job: "AgentJob") -> bool:
+	def is_cleanup_done(self, job: AgentJob) -> bool:
 		return (
 			job.job_type == "Archive Site" and job.status == "Success" and job.bench == self.destination_bench
 		)

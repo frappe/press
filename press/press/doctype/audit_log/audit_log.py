@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -27,7 +28,7 @@ class AuditLog(Document):
 			"Partner Billing Audit",
 		]
 		log: DF.Code | None
-		status: DF.Literal["Success", "Failure"]
+		status: DF.Literal[Success, Failure]
 		telegram_group: DF.Link | None
 		telegram_group_topic: DF.Data | None
 	# end: auto-generated types

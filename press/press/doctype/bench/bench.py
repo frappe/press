@@ -1,9 +1,9 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from collections import OrderedDict
-from collections.abc import Generator, Iterable
 from functools import cached_property
 from itertools import groupby
 from typing import TYPE_CHECKING, Literal
@@ -29,6 +29,8 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
+	from collections.abc import Generator, Iterable
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
@@ -86,7 +88,7 @@ class Bench(Document):
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
-		status: DF.Literal["Pending", "Installing", "Updating", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Updating, Active, Broken, Archived]
 		team: DF.Link
 		use_rq_workerpool: DF.Check
 		vcpu: DF.Int
@@ -603,7 +605,7 @@ class Bench(Document):
 
 	def supervisorctl(
 		self,
-		action: "SupervisorctlActions",
+		action: SupervisorctlActions,
 		programs: str | list[str] = "all",
 	) -> None:
 		"""
@@ -629,7 +631,7 @@ class Bench(Document):
 		processes = parse_supervisor_status(output)
 		return sort_supervisor_processes(processes)
 
-	def update_inplace(self, apps: "list[BenchUpdateApp]", sites: "list[str]") -> str:
+	def update_inplace(self, apps: list[BenchUpdateApp], sites: list[str]) -> str:
 		self.set_self_and_site_status(sites, status="Updating", site_status="Updating")
 		self.save()
 		job = Agent(self.server).create_agent_job(
@@ -644,7 +646,7 @@ class Bench(Document):
 		)
 		return job.name
 
-	def get_inplace_update_apps(self, apps: "list[BenchUpdateApp]"):
+	def get_inplace_update_apps(self, apps: list[BenchUpdateApp]):
 		inplace_update_apps = []
 		for app in apps:
 			source: AppSource = frappe.get_doc("App Source", app.source)
@@ -675,11 +677,11 @@ class Bench(Document):
 		return self.docker_image + f"{sep}{count:02}"
 
 	@staticmethod
-	def process_update_inplace(job: "AgentJob"):
+	def process_update_inplace(job: AgentJob):
 		bench: Bench = frappe.get_doc("Bench", job.bench)
 		bench._process_update_inplace(job)
 
-	def _process_update_inplace(self, job: "AgentJob"):
+	def _process_update_inplace(self, job: AgentJob):
 		req_data = json.loads(job.request_data) or {}
 		if job.status in ["Undelivered", "Delivery Failure"]:
 			self.set_self_and_site_status(
@@ -736,11 +738,11 @@ class Bench(Document):
 		)
 
 	@staticmethod
-	def process_recover_update_inplace(job: "AgentJob"):
+	def process_recover_update_inplace(job: AgentJob):
 		bench: Bench = frappe.get_doc("Bench", job.bench)
 		bench._process_recover_update_inplace(job)
 
-	def _process_recover_update_inplace(self, job: "AgentJob"):
+	def _process_recover_update_inplace(self, job: AgentJob):
 		self.resetting_bench = job.status not in ["Running", "Pending"]
 		if job.status != "Success" and job.status != "Failure":
 			return
@@ -754,7 +756,7 @@ class Bench(Document):
 			site_status=status,
 		)
 
-	def _handle_inplace_update_success(self, req_data: dict, job: "AgentJob"):
+	def _handle_inplace_update_success(self, req_data: dict, job: AgentJob):
 		if job.get_step_status("Bench Restart") == "Success":
 			docker_image = req_data.get("image")
 			self.inplace_update_docker_image = docker_image
@@ -1184,7 +1186,7 @@ def convert_user_timezone_to_utc(datetime):
 	return timezone.localize(datetime).astimezone(pytz.utc)
 
 
-def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
+def sort_supervisor_processes(processes: list[SupervisorProcess]):
 	"""
 	Sorts supervisor processes according to `status_order` and groups them
 	by process group.
@@ -1216,7 +1218,7 @@ def sort_supervisor_processes(processes: "list[SupervisorProcess]"):
 	return flatten(sorted_process_groups)
 
 
-def group_supervisor_processes(processes: "list[SupervisorProcess]"):
+def group_supervisor_processes(processes: list[SupervisorProcess]):
 	status_grouped: OrderedDict[str, OrderedDict[str, list[SupervisorProcess]]] = OrderedDict()
 	for p in processes:
 		status = p.get("status")

@@ -1,6 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -22,7 +22,7 @@ class PressUserPermission(Document):
 		document_name: DF.DynamicLink | None
 		document_type: DF.Link | None
 		group: DF.Link | None
-		type: DF.Literal["User", "Group", "Config"]
+		type: DF.Literal[User, Group, Config]
 		user: DF.Link | None
 	# end: auto-generated types
 

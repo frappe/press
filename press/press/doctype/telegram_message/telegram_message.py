@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import traceback
 
@@ -24,9 +25,9 @@ class TelegramMessage(Document):
 		error: DF.Code | None
 		group: DF.Data | None
 		message: DF.Code
-		priority: DF.Literal["High", "Medium", "Low"]
+		priority: DF.Literal[High, Medium, Low]
 		retry_count: DF.Int
-		status: DF.Literal["Queued", "Sent", "Error"]
+		status: DF.Literal[Queued, Sent, Error]
 		topic: DF.Data | None
 	# end: auto-generated types
 
@@ -78,7 +79,7 @@ class TelegramMessage(Document):
 		).insert(ignore_permissions=True)
 
 	@staticmethod
-	def get_one() -> "TelegramMessage | None":
+	def get_one() -> TelegramMessage | None:
 		first = frappe.get_all(
 			"Telegram Message",
 			filters={"status": "Queued"},

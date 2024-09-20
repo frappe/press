@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -37,7 +37,7 @@ class PressSettings(Document):
 		backup_limit: DF.Int
 		backup_offset: DF.Int
 		backup_region: DF.Data | None
-		backup_rotation_scheme: DF.Literal["FIFO", "Grandfather-father-son"]
+		backup_rotation_scheme: DF.Literal[FIFO, Grandfather - father - son]
 		bench_configuration: DF.Code
 		branch: DF.Data | None
 		build_directory: DF.Data | None
@@ -114,7 +114,7 @@ class PressSettings(Document):
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
-		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		rsa_key_size: DF.Literal[2048, 3072, 4096]
 		spaces_domain: DF.Link | None
 		ssh_certificate_authority: DF.Link | None
 		staging_expiry: DF.Int
@@ -145,7 +145,7 @@ class PressSettings(Document):
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
-		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		verify_cards_with_micro_charge: DF.Literal[No, "Only INR", "Only USD", "Both INR and USD"]
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 

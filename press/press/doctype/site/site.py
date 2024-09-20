@@ -1,11 +1,11 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 import re
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime
 from functools import wraps
 from typing import Any
 
@@ -39,7 +39,6 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
-from press.press.doctype.release_group.release_group import ReleaseGroup
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -79,9 +78,12 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, create_dns_record
 
 if TYPE_CHECKING:
+	from datetime import datetime
+
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server.server import BaseServer, Server
 
 DOCTYPE_SERVER_TYPE_MAP = {
@@ -120,7 +122,7 @@ class Site(Document, TagHelpers):
 		current_cpu_usage: DF.Int
 		current_database_usage: DF.Int
 		current_disk_usage: DF.Int
-		database_access_mode: DF.Literal["", "read_only", "read_write"]
+		database_access_mode: DF.Literal["", read_only, read_write]
 		database_access_password: DF.Password | None
 		database_access_user: DF.Data | None
 		database_name: DF.Data | None
@@ -153,14 +155,14 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
+			Pending,
+			Installing,
+			Updating,
+			Active,
+			Inactive,
+			Broken,
+			Archived,
+			Suspended,
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -170,10 +172,8 @@ class Site(Document, TagHelpers):
 		trial_end_date: DF.Date | None
 		update_end_of_month: DF.Check
 		update_on_day_of_month: DF.Int
-		update_on_weekday: DF.Literal[
-			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-		]
-		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
+		update_on_weekday: DF.Literal[Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+		update_trigger_frequency: DF.Literal[Daily, Weekly, Monthly]
 		update_trigger_time: DF.Time | None
 	# end: auto-generated types
 
@@ -745,7 +745,7 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
+	def check_and_increase_disk(self, server: BaseServer, space_required: int):
 		if (diff := server.free_space - space_required) <= 0:
 			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
 			if server.public:
@@ -753,7 +753,7 @@ class Site(Document, TagHelpers):
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
 
-	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
+	def try_increasing_disk(self, server: BaseServer, diff: int, err_msg: str):
 		try:
 			server.calculated_increase_disk_size(diff / 1024 / 1024 // 1024)
 		except VolumeResizeLimitError:

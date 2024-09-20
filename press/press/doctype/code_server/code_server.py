@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -26,7 +27,7 @@ class CodeServer(Document):
 		password: DF.Password | None
 		proxy_server: DF.Link
 		server: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Stopped", "Broken", "Archived"]
+		status: DF.Literal[Pending, Running, Stopped, Broken, Archived]
 		subdomain: DF.Data
 		team: DF.Link | None
 	# end: auto-generated types

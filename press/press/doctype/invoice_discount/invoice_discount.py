@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -15,7 +17,7 @@ class InvoiceDiscount(Document):
 		from frappe.types import DF
 
 		amount: DF.Currency
-		based_on: DF.Literal["Percent", "Amount"]
+		based_on: DF.Literal[Percent, Amount]
 		discount_type: DF.Literal["Flat On Total"]
 		note: DF.Data | None
 		parent: DF.Data

@@ -1,7 +1,9 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.core.utils import find
@@ -12,12 +14,7 @@ from press.api.site import (
 	is_prepaid_marketplace_app,
 	protected,
 )
-from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
-	MarketplaceAppPlan,
-)
 from press.press.doctype.app.app import new_app as new_app_doc
-from press.press.doctype.app_release.app_release import AppRelease
-from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import (
 	MarketplaceApp,
 	get_plans_for_app,
@@ -25,6 +22,13 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 from press.utils.billing import get_frappe_io_connection
+
+if TYPE_CHECKING:
+	from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
+		MarketplaceAppPlan,
+	)
+	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.app_source.app_source import AppSource
 
 
 @frappe.whitelist()

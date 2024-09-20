@@ -1,6 +1,6 @@
 # Copyright (c) 2015, Web Notes and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 from datetime import timedelta
 
@@ -27,9 +27,7 @@ class DripEmail(Document):
 
 		distribution: DF.Check
 		education: DF.Check
-		email_type: DF.Literal[
-			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
-		]
+		email_type: DF.Literal[Drip, "Sign Up", "Subscription Activation", "Whitepaper Feedback", Onboarding]
 		enabled: DF.Check
 		healthcare: DF.Check
 		manufacturing: DF.Check

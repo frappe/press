@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -23,7 +24,7 @@ class PartnerApprovalRequest(Document):
 		partner: DF.Link | None
 		requested_by: DF.Link | None
 		send_mail: DF.Check
-		status: DF.Literal["Pending", "Approved", "Rejected"]
+		status: DF.Literal[Pending, Approved, Rejected]
 	# end: auto-generated types
 
 	dashboard_fields = (

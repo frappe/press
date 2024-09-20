@@ -1,6 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 import shlex
@@ -1117,7 +1117,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -1130,7 +1130,7 @@ class Server(BaseServer):
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		staging: DF.Check
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -1581,7 +1581,7 @@ class Server(BaseServer):
 			self._auto_scale_workers_old()
 
 	@cached_property
-	def bench_workloads(self) -> dict["Bench", int]:
+	def bench_workloads(self) -> dict[Bench, int]:
 		bench_workloads = {}
 		benches = frappe.get_all(
 			"Bench",

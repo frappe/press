@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -15,9 +17,9 @@ class ProductTrialSignupField(Document):
 		from frappe.types import DF
 
 		fieldname: DF.Data
-		fieldtype: DF.Literal["Data", "Select", "Check", "Date", "Password"]
+		fieldtype: DF.Literal[Data, Select, Check, Date, Password]
 		label: DF.Data
-		min_password_score: DF.Literal["2", "3", "4"]
+		min_password_score: DF.Literal[2, 3, 4]
 		options: DF.SmallText | None
 		parent: DF.Data
 		parentfield: DF.Data

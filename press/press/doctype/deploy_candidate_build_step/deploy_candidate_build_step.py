@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -26,7 +26,7 @@ class DeployCandidateBuildStep(Document):
 		parenttype: DF.Data
 		stage: DF.Data
 		stage_slug: DF.Data
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[Pending, Running, Success, Failure]
 		step: DF.Data
 		step_index: DF.Int
 		step_slug: DF.Data

@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 import pprint
@@ -157,7 +157,7 @@ class RemoteFile(Document):
 		file_size: DF.Data | None
 		file_type: DF.Data | None
 		site: DF.Link | None
-		status: DF.Literal["Available", "Unavailable"]
+		status: DF.Literal[Available, Unavailable]
 		url: DF.Code | None
 	# end: auto-generated types
 

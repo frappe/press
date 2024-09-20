@@ -1,6 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -29,10 +29,10 @@ class VirtualMachineImage(Document):
 		platform: DF.Data | None
 		public: DF.Check
 		region: DF.Link
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		series: DF.Literal[n, f, m, c, p, e, r]
 		size: DF.Int
 		snapshot_id: DF.Data | None
-		status: DF.Literal["Pending", "Available", "Unavailable"]
+		status: DF.Literal[Pending, Available, Unavailable]
 		virtual_machine: DF.Link
 	# end: auto-generated types
 

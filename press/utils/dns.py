@@ -1,9 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import boto3
 import frappe
 from frappe.core.utils import find
-from frappe.model.document import Document
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from frappe.model.document import Document
 
 
 @frappe.whitelist()

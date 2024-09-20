@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -18,20 +18,20 @@ class SiteActivity(Document):
 		action: DF.Literal[
 			"Activate Site",
 			"Add Domain",
-			"Archive",
-			"Backup",
-			"Create",
+			Archive,
+			Backup,
+			Create,
 			"Clear Cache",
 			"Deactivate Site",
 			"Install App",
 			"Login as Administrator",
-			"Migrate",
-			"Reinstall",
-			"Restore",
+			Migrate,
+			Reinstall,
+			Restore,
 			"Suspend Site",
 			"Uninstall App",
 			"Unsuspend Site",
-			"Update",
+			Update,
 			"Update Configuration",
 			"Drop Offsite Backups",
 			"Enable Database Access",

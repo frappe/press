@@ -3,6 +3,7 @@
 
 from datetime import datetime
 from datetime import timezone as tz
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -11,10 +12,12 @@ from frappe.utils.password import get_decrypted_password
 
 from press.api.bench import all as all_benches
 from press.api.site import protected
-from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 def poly_get_doc(doctypes, name):

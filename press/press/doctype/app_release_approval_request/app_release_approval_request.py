@@ -1,9 +1,11 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import glob
 import json
 import re
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -12,7 +14,8 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter as HF
 from pygments.lexers import PythonLexer as PL
 
-from press.press.doctype.app_release.app_release import AppRelease
+if TYPE_CHECKING:
+	from press.press.doctype.app_release.app_release import AppRelease
 
 
 class AppReleaseApprovalRequest(Document):
@@ -40,8 +43,8 @@ class AppReleaseApprovalRequest(Document):
 		result: DF.Code | None
 		result_html: DF.Code | None
 		reviewed_by: DF.Link | None
-		screening_status: DF.Literal["Not Started", "Screening", "Complete"]
-		status: DF.Literal["Open", "Cancelled", "Approved", "Rejected"]
+		screening_status: DF.Literal["Not Started", Screening, Complete]
+		status: DF.Literal[Open, Cancelled, Approved, Rejected]
 		team: DF.Link | None
 	# end: auto-generated types
 

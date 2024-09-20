@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -18,7 +20,7 @@ class SaasSettings(Document):
 
 		app: DF.Link | None
 		apps: DF.Table[ERPNextApp]
-		billing_type: DF.Literal["prepaid", "postpaid"]
+		billing_type: DF.Literal[prepaid, postpaid]
 		cluster: DF.Link | None
 		default_team: DF.Link | None
 		domain: DF.Link | None

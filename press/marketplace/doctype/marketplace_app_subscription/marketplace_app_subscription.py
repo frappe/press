@@ -1,11 +1,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import TYPE_CHECKING
+
 import frappe
 import requests
 from frappe.model.document import Document
 
-from press.press.doctype.site.site import Site
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class MarketplaceAppSubscription(Document):

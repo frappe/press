@@ -1,5 +1,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import re
 from collections import OrderedDict
@@ -14,7 +15,6 @@ from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
-from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -33,6 +33,7 @@ from press.utils import (
 )
 
 if TYPE_CHECKING:
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 

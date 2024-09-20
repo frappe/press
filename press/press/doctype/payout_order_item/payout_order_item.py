@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -15,7 +17,7 @@ class PayoutOrderItem(Document):
 		from frappe.types import DF
 
 		commission: DF.Currency
-		currency: DF.Literal["USD", "INR"]
+		currency: DF.Literal[USD, INR]
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		gateway_fee: DF.Currency

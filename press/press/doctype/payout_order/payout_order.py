@@ -1,15 +1,20 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
-from datetime import date
 from itertools import groupby
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 
-from press.press.doctype.invoice_item.invoice_item import InvoiceItem
-from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from datetime import date
+
+	from press.press.doctype.invoice_item.invoice_item import InvoiceItem
+	from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 
 class PayoutOrder(Document):
@@ -30,17 +35,17 @@ class PayoutOrder(Document):
 		frappe_purchase_order: DF.Data | None
 		ignore_commission: DF.Check
 		items: DF.Table[PayoutOrderItem]
-		mode_of_payment: DF.Literal["Cash", "Credits", "Internal"]
+		mode_of_payment: DF.Literal[Cash, Credits, Internal]
 		net_total_inr: DF.Currency
 		net_total_usd: DF.Currency
 		notes: DF.SmallText | None
 		period_end: DF.Date | None
 		period_start: DF.Date | None
 		recipient_currency: DF.Data | None
-		status: DF.Literal["Draft", "Paid", "Commissioned"]
+		status: DF.Literal[Draft, Paid, Commissioned]
 		team: DF.Link
 		total_amount: DF.Currency
-		type: DF.Literal["Marketplace", "SaaS"]
+		type: DF.Literal[Marketplace, SaaS]
 	# end: auto-generated types
 
 	dashboard_fields = (

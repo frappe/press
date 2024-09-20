@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import hashlib
 import hmac
@@ -29,7 +29,7 @@ class GitHubWebhookLog(Document):
 
 		branch: DF.Data | None
 		event: DF.Data
-		git_reference_type: DF.Literal["tag", "branch"]
+		git_reference_type: DF.Literal[tag, branch]
 		github_installation_id: DF.Data | None
 		payload: DF.Code
 		repository: DF.Data | None
@@ -125,7 +125,7 @@ class GitHubWebhookLog(Document):
 
 			self.update_app_source_installation_id(doc)
 
-	def update_app_source_installation_id(self, doc: "AppSource"):
+	def update_app_source_installation_id(self, doc: AppSource):
 		doc.github_installation_id = self.github_installation_id
 		"""
 		These two are assumptions, they will be resolved when
@@ -139,7 +139,7 @@ class GitHubWebhookLog(Document):
 		doc.last_github_poll_failed = False
 		doc.db_update()
 
-	def should_update_app_source(self, doc: "AppSource"):
+	def should_update_app_source(self, doc: AppSource):
 		if doc.uninstalled or doc.last_github_poll_failed:
 			return True
 
@@ -203,7 +203,7 @@ def set_uninstalled(owner: str, repository: str | None = None):
 		frappe.db.set_value("App Source", name, "uninstalled", True)
 
 
-def get_sources(owner: str, repository: str | None = None) -> "list[str]":
+def get_sources(owner: str, repository: str | None = None) -> list[str]:
 	filters = {"repository_owner": owner}
 	if repository:
 		filters["repository"] = repository

@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import unittest
 from unittest.mock import Mock, patch

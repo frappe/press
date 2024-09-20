@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -32,7 +32,7 @@ class AnsiblePlay(Document):
 		server_type: DF.Link
 		skipped: DF.Int
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[Pending, Running, Success, Failure]
 		unreachable: DF.Int
 		variables: DF.Code
 	# end: auto-generated types

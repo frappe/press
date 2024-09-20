@@ -1,11 +1,10 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import json
 import typing
 import unittest
-from datetime import datetime
 from unittest.mock import Mock, PropertyMock, patch
 
 import frappe
@@ -18,7 +17,6 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -32,7 +30,10 @@ from press.telegram_utils import Telegram
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
+	from datetime import datetime
+
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_bench(
@@ -41,7 +42,7 @@ def create_test_bench(
 	server: str | None = None,
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,
-) -> "Bench":
+) -> Bench:
 	"""
 	Create test Bench doc.
 

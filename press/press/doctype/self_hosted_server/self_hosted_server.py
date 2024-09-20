@@ -1,6 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 
@@ -35,7 +35,7 @@ class SelfHostedServer(Document):
 		cluster: DF.Link | None
 		database_plan: DF.Link | None
 		database_server: DF.Link | None
-		database_service: DF.Literal["AWS - RDS"]
+		database_service: DF.Literal[AWS - RDS]
 		database_setup: DF.Check
 		db_ram: DF.Data | None
 		db_total_storage: DF.Data | None
@@ -70,7 +70,7 @@ class SelfHostedServer(Document):
 		sites: DF.Table[SelfHostedSiteApps]
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
-		status: DF.Literal["Active", "Pending", "Broken", "Archived", "Unreachable"]
+		status: DF.Literal[Active, Pending, Broken, Archived, Unreachable]
 		swap_total: DF.Data | None
 		team: DF.Link
 		title: DF.Data | None

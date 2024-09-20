@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import ipaddress
@@ -48,7 +49,7 @@ class VirtualMachine(Document):
 		)
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI"]
+		cloud_provider: DF.Literal["", "AWS EC2", OCI]
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -56,7 +57,7 @@ class VirtualMachine(Document):
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
 		machine_type: DF.Data
-		platform: DF.Literal["x86_64", "arm64"]
+		platform: DF.Literal[x86_64, arm64]
 		private_dns_name: DF.Data | None
 		private_ip_address: DF.Data | None
 		public_dns_name: DF.Data | None
@@ -64,9 +65,9 @@ class VirtualMachine(Document):
 		ram: DF.Int
 		region: DF.Link
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		series: DF.Literal[n, f, m, c, p, e, r]
 		ssh_key: DF.Link
-		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
+		status: DF.Literal[Draft, Pending, Running, Stopped, Terminated]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
 		team: DF.Link | None

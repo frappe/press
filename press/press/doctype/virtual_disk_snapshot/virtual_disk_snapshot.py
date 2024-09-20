@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -27,7 +28,7 @@ class VirtualDiskSnapshot(Document):
 		size: DF.Int
 		snapshot_id: DF.Data
 		start_time: DF.Datetime | None
-		status: DF.Literal["Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"]
+		status: DF.Literal[Pending, Completed, Error, Recovering, Recoverable, Unavailable]
 		virtual_machine: DF.Link
 		volume_id: DF.Data | None
 	# end: auto-generated types

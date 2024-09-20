@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -23,7 +25,7 @@ class VirtualMachineVolume(Document):
 		size: DF.Int
 		throughput: DF.Int
 		volume_id: DF.Data | None
-		volume_type: DF.Literal["gp3", "gp2"]
+		volume_type: DF.Literal[gp3, gp2]
 	# end: auto-generated types
 
 	pass

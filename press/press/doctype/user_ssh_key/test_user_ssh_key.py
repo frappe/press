@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
 import cryptography
 import frappe

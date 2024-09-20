@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import ipaddress
 import json
@@ -32,8 +33,8 @@ class WireguardPeer(Document):
 		private_key: DF.Password | None
 		public_key: DF.Data | None
 		server_name: DF.DynamicLink
-		server_type: DF.Literal["Server", "Database Server"]
-		status: DF.Literal["Active", "Broken", "Archived"]
+		server_type: DF.Literal[Server, "Database Server"]
+		status: DF.Literal[Active, Broken, Archived]
 		upstream_proxy: DF.Link
 		wireguard_network: DF.Data | None
 	# end: auto-generated types

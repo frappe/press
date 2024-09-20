@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 import frappe.utils
@@ -34,7 +35,7 @@ class ProductTrial(Document):
 		logo: DF.AttachImage | None
 		published: DF.Check
 		release_group: DF.Link
-		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
+		setup_wizard_completion_mode: DF.Literal[manual, auto]
 		setup_wizard_payload_generator_script: DF.Code | None
 		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int

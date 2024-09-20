@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import frappe
 
 from press.api.site import protected

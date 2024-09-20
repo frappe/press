@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from datetime import datetime, timedelta
 
@@ -24,7 +25,7 @@ class RazorpayPaymentRecord(Document):
 		order_id: DF.Data | None
 		payment_id: DF.Data | None
 		signature: DF.Data | None
-		status: DF.Literal["Captured", "Failed", "Pending"]
+		status: DF.Literal[Captured, Failed, Pending]
 		team: DF.Link | None
 	# end: auto-generated types
 

@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 import urllib
@@ -58,12 +59,12 @@ class ProductTrialRequest(Document):
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
 		status: DF.Literal[
-			"Pending",
+			Pending,
 			"Wait for Site",
 			"Completing Setup Wizard",
 			"Site Created",
-			"Error",
-			"Expired",
+			Error,
+			Expired,
 		]
 		team: DF.Link | None
 	# end: auto-generated types

@@ -1,6 +1,6 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
@@ -27,7 +27,7 @@ def create_test_cluster(
 	public: bool = False,
 	add_default_servers: bool = False,
 	hybrid: bool = False,
-) -> "Cluster":
+) -> Cluster:
 	"""Create test Cluster doc"""
 
 	if frappe.db.exists("Cluster", name):

@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -17,7 +19,7 @@ class DashboardBanner(Document):
 		enabled: DF.Check
 		message: DF.Data | None
 		title: DF.Data | None
-		type: DF.Literal["Info", "Success", "Error", "Warning"]
+		type: DF.Literal[Info, Success, Error, Warning]
 	# end: auto-generated types
 
 	dashboard_fields = ("enabled", "message", "title", "type")

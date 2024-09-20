@@ -1,7 +1,9 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 import pyotp
@@ -19,7 +21,6 @@ from frappe.website.utils import build_response
 from pypika.terms import ValueWrapper
 
 from press.api.site import protected
-from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -29,6 +30,9 @@ from press.press.doctype.team.team import (
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture
+
+if TYPE_CHECKING:
+	from press.press.doctype.account_request.account_request import AccountRequest
 
 
 @frappe.whitelist(allow_guest=True)

@@ -1,6 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import base64
 import hashlib
@@ -8,7 +8,6 @@ import ipaddress
 import re
 import time
 import typing
-from collections.abc import Generator
 from textwrap import wrap
 
 import boto3
@@ -36,6 +35,8 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 from press.utils import get_current_team, unique
 
 if typing.TYPE_CHECKING:
+	from collections.abc import Generator
+
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -68,7 +69,7 @@ class Cluster(Document):
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI"]
+		cloud_provider: DF.Literal["AWS EC2", Generic, OCI]
 		description: DF.Data | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -84,7 +85,7 @@ class Cluster(Document):
 		route_table_id: DF.Data | None
 		security_group_id: DF.Data | None
 		ssh_key: DF.Link | None
-		status: DF.Literal["Active", "Copying Images", "Archived"]
+		status: DF.Literal[Active, "Copying Images", Archived]
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
 		team: DF.Link | None
@@ -669,7 +670,7 @@ class Cluster(Document):
 
 	def create_vm(
 		self, machine_type: str, disk_size: int, domain: str, series: str, team: str
-	) -> "VirtualMachine":
+	) -> VirtualMachine:
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
@@ -706,7 +707,7 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
-		plan: "ServerPlan" = None,
+		plan: ServerPlan = None,
 		domain: str | None = None,
 		team: str | None = None,
 		create_subscription=True,

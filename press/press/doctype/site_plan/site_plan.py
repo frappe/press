@@ -1,6 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 
@@ -34,7 +34,7 @@ class SitePlan(Plan):
 		document_type: DF.Link
 		enabled: DF.Check
 		instance_type: DF.Data | None
-		interval: DF.Literal["Daily", "Monthly", "Annually"]
+		interval: DF.Literal[Daily, Monthly, Annually]
 		is_frappe_plan: DF.Check
 		is_trial_plan: DF.Check
 		max_database_usage: DF.Int

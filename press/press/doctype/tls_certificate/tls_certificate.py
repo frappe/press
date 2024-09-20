@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import os
 import shlex
@@ -37,8 +37,8 @@ class TLSCertificate(Document):
 		issued_on: DF.Datetime | None
 		private_key: DF.Code | None
 		retry_count: DF.Int
-		rsa_key_size: DF.Literal["2048", "3072", "4096"]
-		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
+		rsa_key_size: DF.Literal[2048, 3072, 4096]
+		status: DF.Literal[Pending, Active, Expired, Revoked, Failure]
 		team: DF.Link | None
 		wildcard: DF.Check
 	# end: auto-generated types

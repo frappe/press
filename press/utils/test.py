@@ -1,8 +1,13 @@
 """Utility methods for writing tests"""
 
-from collections.abc import Callable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import frappe
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
 
 def foreground_enqueue_doc(

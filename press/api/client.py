@@ -1,6 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
-
+from __future__ import annotations
 
 import inspect
 

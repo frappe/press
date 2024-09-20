@@ -3,6 +3,8 @@
 
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -20,7 +22,7 @@ class SiteMigrationStep(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Pending", "Running", "Success", "Failure", "Skipped", "Delivery Failure"]
+		status: DF.Literal[Pending, Running, Success, Failure, Skipped, "Delivery Failure"]
 		step_job: DF.Link | None
 		step_title: DF.Data
 	# end: auto-generated types

@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from functools import cached_property
@@ -62,8 +63,8 @@ class AlertmanagerWebhookLog(Document):
 		group_labels: DF.Code
 		payload: DF.Code
 		reaction_jobs: DF.Table[AlertmanagerWebhookLogReactionJob]
-		severity: DF.Literal["Critical", "Warning", "Information"]
-		status: DF.Literal["Firing", "Resolved"]
+		severity: DF.Literal[Critical, Warning, Information]
+		status: DF.Literal[Firing, Resolved]
 		truncated_alerts: DF.Int
 	# end: auto-generated types
 
@@ -119,7 +120,7 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def react_for_instance(self, instance) -> "PressJob":
+	def react_for_instance(self, instance) -> PressJob:
 		instance_type = self.guess_doctype(instance)
 		rule: PrometheusAlertRule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		rule.react(instance_type, instance)

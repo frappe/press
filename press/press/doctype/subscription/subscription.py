@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 import rq
@@ -26,7 +26,7 @@ class Subscription(Document):
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
-		interval: DF.Literal["Daily", "Monthly"]
+		interval: DF.Literal[Daily, Monthly]
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link

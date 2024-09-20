@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from datetime import datetime
 
@@ -18,9 +19,9 @@ class StripePaymentEvent(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		event_type: DF.Literal["Finalized", "Failed", "Succeeded"]
+		event_type: DF.Literal[Finalized, Failed, Succeeded]
 		invoice: DF.Link | None
-		payment_status: DF.Literal["Paid", "Unpaid"]
+		payment_status: DF.Literal[Paid, Unpaid]
 		stripe_invoice_id: DF.Data | None
 		stripe_invoice_object: DF.Code | None
 		team: DF.Link | None

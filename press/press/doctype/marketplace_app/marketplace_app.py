@@ -1,13 +1,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import re
 from base64 import b64decode
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
 from frappe.query_builder.functions import Cast_
-from frappe.types.DF import Data
 from frappe.utils.caching import redis_cache
 from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
@@ -24,6 +25,9 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import get_current_team, get_last_doc
+
+if TYPE_CHECKING:
+	from frappe.types.DF import Data
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -73,7 +77,7 @@ class MarketplaceApp(WebsiteGenerator):
 			"App Release Not Reviewed",
 			"Ready for Review",
 			"Ready to Publish",
-			"Rejected",
+			Rejected,
 		]
 		route: DF.Data | None
 		run_after_install_script: DF.Check
@@ -83,10 +87,10 @@ class MarketplaceApp(WebsiteGenerator):
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
-		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected"]
+		status: DF.Literal[Draft, Published, "In Review", "Attention Required", Rejected]
 		stop_auto_review: DF.Check
 		subject: DF.Data | None
-		subscription_type: DF.Literal["Free", "Paid", "Freemium"]
+		subscription_type: DF.Literal[Free, Paid, Freemium]
 		subscription_update_hook: DF.Data | None
 		support: DF.Data | None
 		team: DF.Link | None

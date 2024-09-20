@@ -1,6 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -28,7 +28,7 @@ class VersionUpgrade(Document):
 		site_update: DF.Link | None
 		skip_failing_patches: DF.Check
 		source_group: DF.Link | None
-		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		status: DF.Literal[Scheduled, Pending, Running, Success, Failure]
 	# end: auto-generated types
 
 	doctype = "Version Upgrade"
@@ -126,7 +126,7 @@ class VersionUpgrade(Document):
 		self.save()
 
 	@classmethod
-	def get_all_scheduled_before_now(cls) -> list["VersionUpgrade"]:
+	def get_all_scheduled_before_now(cls) -> list[VersionUpgrade]:
 		upgrades = frappe.get_all(
 			cls.doctype,
 			{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},

@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -8,13 +8,13 @@ import frappe
 from frappe.utils import unique
 
 from press.agent import Agent
-from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.root_domain.root_domain import RootDomain
 
 
 class ProxyServer(BaseServer):
@@ -53,7 +53,7 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal[Generic, Scaleway, "AWS EC2", OCI]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -62,7 +62,7 @@ class ProxyServer(BaseServer):
 		ssh_certificate_authority: DF.Link | None
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
-		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		status: DF.Literal[Pending, Installing, Active, Broken, Archived]
 		team: DF.Link | None
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None

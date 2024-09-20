@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import time
 from io import StringIO
@@ -21,25 +22,25 @@ class SerialConsoleLog(Document):
 		from frappe.types import DF
 
 		action: DF.Literal[
-			"help",
-			"reboot",
-			"crash",
-			"sync",
-			"show-all-timers",
-			"unmount",
-			"show-all-locks",
-			"show-backtrace-all-active-cpus",
-			"show-registers",
-			"show-task-states",
-			"show-blocked-tasks",
-			"dump-ftrace-buffer",
-			"show-memory-usage",
-			"terminate-all-tasks",
-			"memory-full-oom-kill",
-			"thaw-filesystems",
-			"kill-all-tasks",
-			"nice-all-RT-tasks",
-			"replay-kernel-logs",
+			help,
+			reboot,
+			crash,
+			sync,
+			show - all - timers,
+			unmount,
+			show - all - locks,
+			show - backtrace - all - active - cpus,
+			show - registers,
+			show - task - states,
+			show - blocked - tasks,
+			dump - ftrace - buffer,
+			show - memory - usage,
+			terminate - all - tasks,
+			memory - full - oom - kill,
+			thaw - filesystems,
+			kill - all - tasks,
+			nice - all - RT - tasks,
+			replay - kernel - logs,
 		]
 		command: DF.Data | None
 		message: DF.Data | None

@@ -1,16 +1,17 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class BenchUpdate(Document):

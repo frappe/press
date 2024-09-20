@@ -1,5 +1,6 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
 import random
 import typing
@@ -15,7 +16,6 @@ from press.press.doctype.app_release.test_app_release import create_test_app_rel
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -31,6 +31,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.app_source.app_source import AppSource
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.team.team import Team
 
 	class AppInfo(TypedDict):
@@ -269,7 +270,7 @@ class TestDeployCandidate(unittest.TestCase):
 			self.assertTrue("Getting raven from cache" in build_output)
 
 
-def create_cache_test_release_group(app_info_list: list["AppInfo"], team: "Team") -> "ReleaseGroup":
+def create_cache_test_release_group(app_info_list: list[AppInfo], team: Team) -> ReleaseGroup:
 	title = f"Test App Cache RG {random.getrandbits(20):x}"
 	doc_dict = {
 		"doctype": "Release Group",
@@ -300,7 +301,7 @@ def create_cache_test_release_group(app_info_list: list["AppInfo"], team: "Team"
 	return release_group
 
 
-def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
+def create_cache_test_apps(team: Team) -> dict[str, AppInfo]:
 	info = [
 		(
 			"https://github.com/frappe/frappe",

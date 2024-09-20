@@ -1,12 +1,11 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-
+from __future__ import annotations
 
 import json
 import unittest
-from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from unittest.mock import Mock, patch
 
 import frappe
@@ -18,6 +17,9 @@ from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_b
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
 
 def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):

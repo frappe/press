@@ -1,15 +1,19 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
 import unittest
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import frappe
 
-from press.press.doctype.app.app import App
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import get_current_team
+
+if TYPE_CHECKING:
+	from press.press.doctype.app.app import App
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)

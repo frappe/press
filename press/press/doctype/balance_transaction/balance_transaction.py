@@ -1,6 +1,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -33,12 +33,12 @@ class BalanceTransaction(Document):
 			"Prepaid Credits",
 			"Free Credits",
 			"Transferred Credits",
-			"Discount",
+			Discount,
 			"Referral Bonus",
 			"Marketplace Consumption",
 		]
 		team: DF.Link
-		type: DF.Literal["Adjustment", "Applied To Invoice"]
+		type: DF.Literal[Adjustment, "Applied To Invoice"]
 		unallocated_amount: DF.Currency
 	# end: auto-generated types
 
