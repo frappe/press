@@ -90,13 +90,13 @@ export default {
 				filterControls: () => {
 					return [
 						{
-							type: 'datetime-local',
+							type: 'datetime',
 							label: 'Start Time',
 							fieldname: 'start_time',
 							default: this.yesterday
 						},
 						{
-							type: 'datetime-local',
+							type: 'datetime',
 							label: 'End Time',
 							fieldname: 'end_time',
 							default: this.today
