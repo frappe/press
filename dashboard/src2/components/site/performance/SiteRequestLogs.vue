@@ -3,57 +3,34 @@
 		<ObjectList :options="requestLogsOptions" />
 	</div>
 	<div class="flex justify-center" v-else>
-		<span class="mt-16 text-base text-gray-700">
-			Your plan doesn't support this feature. Please upgrade your plan.
+		<span class="mt-16 p-2 text-base text-gray-800">
+			Your plan doesn't support this feature. Please
+			<span class="cursor-pointer underline" @click="showPlanChangeDialog"
+				>upgrade your plan</span
+			>
+			.
 		</span>
 	</div>
 </template>
 
 <script>
-import dayjs from '../../../utils/dayjs';
-import Report from '@/components/Report.vue';
 import { getCachedDocumentResource } from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
+import { renderDialog } from '../../../utils/components';
 import ObjectList from '../../ObjectList.vue';
+import dayjs from '../../../utils/dayjs';
 
 export default {
 	name: 'SiteRequestLogs',
 	props: ['name'],
 	components: {
-		Report,
 		ObjectList
 	},
 	data() {
 		return {
 			date: null,
-			sort: 'CPU Time (Descending)',
-			start: 0,
-			sortFilter: {
-				name: 'sort',
-				options: [
-					'Time (Ascending)',
-					'Time (Descending)',
-					'CPU Time (Descending)'
-				],
-				type: 'select',
-				value: 'CPU Time (Descending)'
-			},
-			dateFilter: {
-				name: 'date',
-				type: 'date',
-				value: null
-			}
+			start: 0
 		};
-	},
-	watch: {
-		sort(value) {
-			this.reset();
-		}
-	},
-	methods: {
-		reset() {
-			this.$resources.requestLogs.reset();
-			this.start = 0;
-		}
 	},
 	computed: {
 		$site() {
@@ -71,8 +48,8 @@ export default {
 							return {
 								name: this.name,
 								timezone: dayjs.tz.guess(),
-								sort: this.sortFilter.value,
-								date: this.dateFilter.value || this.today,
+								sort: 'CPU Time (Descending)',
+								date: this.today,
 								start: this.start
 							};
 						},
@@ -119,6 +96,7 @@ export default {
 						type: 'date',
 						label: 'Date',
 						fieldname: 'date',
+						class: !this.$isMobile ? 'w-48' : '',
 						default: this.today
 					}
 				],
@@ -134,7 +112,15 @@ export default {
 			};
 		},
 		today() {
-			return dayjs().toISOString();
+			return dayjs().format('YYYY-MM-DD');
+		}
+	},
+	methods: {
+		showPlanChangeDialog() {
+			const SitePlansDialog = defineAsyncComponent(() =>
+				import('../../ManageSitePlansDialog.vue')
+			);
+			renderDialog(h(SitePlansDialog, { site: this.name }));
 		}
 	}
 };
