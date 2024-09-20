@@ -38,7 +38,7 @@ class App(Document):
 		url: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["title"]
+	dashboard_fields = ("title",)
 
 	def add_source(
 		self,

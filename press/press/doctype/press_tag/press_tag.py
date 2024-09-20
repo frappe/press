@@ -19,4 +19,4 @@ class PressTag(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["tag", "doctype_name", "team"]
+	dashboard_fields = ("tag", "doctype_name", "team")

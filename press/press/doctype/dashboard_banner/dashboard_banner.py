@@ -20,4 +20,4 @@ class DashboardBanner(Document):
 		type: DF.Literal["Info", "Success", "Error", "Warning"]
 	# end: auto-generated types
 
-	dashboard_fields = ["enabled", "message", "title", "type"]
+	dashboard_fields = ("enabled", "message", "title", "type")

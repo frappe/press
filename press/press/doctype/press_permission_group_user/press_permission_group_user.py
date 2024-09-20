@@ -20,4 +20,4 @@ class PressPermissionGroupUser(Document):
 		user: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["user"]
+	dashboard_fields = ("user",)

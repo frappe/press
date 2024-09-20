@@ -17,7 +17,7 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_marketplace_app_subscription(
-	site: str = None, app: str = None, plan: str = None, team: str = None
+	site: str | None = None, app: str | None = None, plan: str | None = None, team: str | None = None
 ):
 	app = app if app and frappe.db.exists("Marketplace App", app) else create_test_app().name
 	create_test_marketplace_app(app)

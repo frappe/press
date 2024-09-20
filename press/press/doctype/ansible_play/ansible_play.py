@@ -37,7 +37,7 @@ class AnsiblePlay(Document):
 		variables: DF.Code
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"creation",
 		"status",
@@ -46,7 +46,7 @@ class AnsiblePlay(Document):
 		"duration",
 		"server",
 		"play",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

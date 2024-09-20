@@ -44,14 +44,14 @@ class ProductTrial(Document):
 		trial_plan: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"logo",
 		"description",
 		"domain",
 		"trial_days",
 		"trial_plan",
-	]
+	)
 
 	def get_doc(self, doc):
 		if not self.published:

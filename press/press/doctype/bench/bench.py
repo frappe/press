@@ -93,13 +93,13 @@ class Bench(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Bench"
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"group",
 		"status",
 		"is_ssh_proxy_setup",
 		"inplace_update_docker_image",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):
@@ -1020,7 +1020,7 @@ def try_archive(bench: str):
 		return False
 
 
-def archive_obsolete_benches(group: str = None, server: str = None):
+def archive_obsolete_benches(group: str | None = None, server: str | None = None):
 	query_substr = ""
 	if group and server:
 		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"

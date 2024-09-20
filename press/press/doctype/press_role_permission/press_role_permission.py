@@ -23,7 +23,7 @@ class PressRolePermission(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["site", "release_group", "server", "role"]
+	dashboard_fields = ("site", "release_group", "server", "role")
 
 	def before_insert(self):
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(

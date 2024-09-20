@@ -30,7 +30,7 @@ class PressPermissionGroup(Document):
 		users: DF.Table[PressPermissionGroupUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users"]
+	dashboard_fields = ("title", "users")
 
 	def get_doc(self, doc):
 		if doc.users:
@@ -210,7 +210,7 @@ class PressPermissionGroup(Document):
 		self.save()
 
 
-def has_method_permission(doctype: str, name: str, method: str, group_names: list = None):
+def has_method_permission(doctype: str, name: str, method: str, group_names: list | None = None):
 	if frappe.local.system_user():
 		return True
 
@@ -235,7 +235,7 @@ def has_method_permission(doctype: str, name: str, method: str, group_names: lis
 	return False
 
 
-def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> list:
+def get_permitted_methods(doctype: str, name: str, group_names: list | None = None) -> list:
 	user = frappe.session.user
 
 	if doctype not in get_all_restrictable_doctypes():
@@ -337,7 +337,7 @@ def get_all_restrictable_methods(doctype: str) -> list:
 	return methods.get(doctype, {})
 
 
-def get_permission_groups(user: str = None) -> list:
+def get_permission_groups(user: str | None = None) -> list:
 	if not user:
 		user = frappe.session.user
 

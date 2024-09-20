@@ -119,7 +119,7 @@ class ReleaseGroup(Document, TagHelpers):
 		version: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "version", "apps", "team", "public", "tags"]
+	dashboard_fields = ("title", "version", "apps", "team", "public", "tags")
 
 	@staticmethod
 	def get_list_query(query, filters, **list_args):

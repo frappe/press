@@ -129,7 +129,7 @@ class RootDomain(Document):
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
 			changes = []
-			for site in sites[i : i + batch_size]:  # noqa
+			for site in sites[i : i + batch_size]:
 				changes.append(
 					{
 						"Action": "UPSERT",

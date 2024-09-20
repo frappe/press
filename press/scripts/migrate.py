@@ -60,7 +60,7 @@ except ImportError:
 	)
 
 if sys.version[0] == "2":
-	reload(sys)  # noqa
+	reload(sys)
 	sys.setdefaultencoding("utf-8")
 
 
@@ -525,7 +525,7 @@ def main():
 			external_config_file_path = click.prompt("Enter full path to the config file")
 			external_file_checker(external_config_file_path, "config")
 		except ValueError as e:
-			print(f"Error while file validation ': {str(e)}")
+			print(f"Error while file validation ': {e!s}")
 			sys.exit()
 	else:
 		local_site = click.prompt("Name of the site you want to migrate")

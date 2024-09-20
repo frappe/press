@@ -30,7 +30,7 @@ class PressRole(Document):
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"users",
 		"admin_access",
@@ -41,7 +41,7 @@ class PressRole(Document):
 		"allow_bench_creation",
 		"allow_server_creation",
 		"team",
-	]
+	)
 
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):

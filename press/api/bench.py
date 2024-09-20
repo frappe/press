@@ -102,7 +102,7 @@ def all(server=None, bench_filter=None):
 
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
-	teams = [team] + child_teams
+	teams = [team, *child_teams]
 
 	group = frappe.qb.DocType("Release Group")
 	site = frappe.qb.DocType("Site")

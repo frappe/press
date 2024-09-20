@@ -57,7 +57,7 @@ class AppRelease(Document):
 		timestamp: DF.Datetime | None
 	# end: auto-generated types
 
-	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
+	dashboard_fields = ("app", "source", "message", "hash", "author", "status")
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

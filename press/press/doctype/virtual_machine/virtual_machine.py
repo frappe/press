@@ -76,13 +76,13 @@ class VirtualMachine(Document):
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
 
-	server_doctypes = [
+	server_doctypes = (
 		"Server",
 		"Database Server",
 		"Proxy Server",
 		"Monitor Server",
 		"Log Server",
-	]
+	)
 
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"

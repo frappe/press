@@ -42,7 +42,7 @@ class SiteActivity(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["action", "reason", "site"]
+	dashboard_fields = ("action", "reason", "site")
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:

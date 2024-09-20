@@ -7,7 +7,7 @@ from frappe.model.document import Document
 
 
 class Config(Document):
-	dashboard_fields = ["key", "type", "value"]
+	dashboard_fields = ("key", "type", "value")
 
 	def get_type(self):
 		return frappe.db.get_value("Site Config Key", self.key, "type")

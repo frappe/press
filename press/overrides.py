@@ -147,7 +147,7 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
-	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+	dashboard_fields = ("full_name", "email", "user_image", "enabled", "user_type")
 
 	@staticmethod
 	def get_list_query(query):

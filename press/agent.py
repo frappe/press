@@ -121,7 +121,7 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site, create_user: dict = None):
+	def new_site(self, site, create_user: dict | None = None):
 		apps = [app.app for app in site.apps]
 
 		data = {
@@ -183,7 +183,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None, config: dict = None):
+	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user

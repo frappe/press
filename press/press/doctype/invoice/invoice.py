@@ -91,7 +91,7 @@ class Invoice(Document):
 		write_off_amount: DF.Float
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"period_start",
 		"period_end",
 		"team",
@@ -113,7 +113,7 @@ class Invoice(Document):
 		"total_discount_amount",
 		"invoice_pdf",
 		"stripe_invoice_url",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

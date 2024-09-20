@@ -69,7 +69,7 @@ class AgentJob(Document):
 		upstream: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"job_type",
 		"creation",
@@ -82,7 +82,7 @@ class AgentJob(Document):
 		"server",
 		"job_id",
 		"output",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

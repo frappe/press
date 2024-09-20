@@ -55,7 +55,7 @@ class AppPatch(Document):
 		url: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"app",
 		"app_release",
@@ -66,7 +66,7 @@ class AppPatch(Document):
 		"build_assets",
 		"url",
 		"status",
-	]
+	)
 
 	def validate(self):
 		self.validate_bench()

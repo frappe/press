@@ -36,9 +36,9 @@ class UserSSHKey(Document):
 		user: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["ssh_fingerprint", "is_default", "user", "is_removed"]
+	dashboard_fields = ("ssh_fingerprint", "is_default", "user", "is_removed")
 
-	valid_key_types = [
+	valid_key_types = (
 		"ssh-rsa",
 		"ssh-ed25519",
 		"ecdsa-sha2-nistp256",
@@ -46,7 +46,7 @@ class UserSSHKey(Document):
 		"ecdsa-sha2-nistp521",
 		"sk-ecdsa-sha2-nistp256@openssh.com",
 		"sk-ssh-ed25519@openssh.com",
-	]
+	)
 
 	def check_embedded_key_type(self, key_type: str, key_bytes: bytes):
 		type_len = struct.unpack(">I", key_bytes[:4])[0]  # >I is big endian unsigned int
@@ -66,7 +66,7 @@ class UserSSHKey(Document):
 			self.generate_ssh_fingerprint(self.ssh_public_key.encode())
 		except SSHKeyValueError as e:
 			frappe.throw(
-				f"{str(e)}\n{msg}",
+				f"{e!s}\n{msg}",
 			)
 		except Exception:
 			frappe.throw(msg)

@@ -90,7 +90,7 @@ def fake_agent_job_req(
 		# TODO: make the next url regex for multiple job ids #
 		responses.add(
 			responses.GET,
-			f"https://{self.server}:443/agent/jobs/{str(job_id)}",
+			f"https://{self.server}:443/agent/jobs/{job_id!s}",
 			# TODO:  populate steps with data from agent job type #
 			json={
 				"data": data,
@@ -134,8 +134,8 @@ def fake_agent_job_req(
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
-	data: dict = None,
-	steps: list[dict] = None,
+	data: dict | None = None,
+	steps: list[dict] | None = None,
 ):
 	"""Fakes agent job request and response. Also polls the job.
 

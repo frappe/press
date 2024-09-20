@@ -15,7 +15,7 @@ from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 @patch.object(VirtualMachine, "client", new=MagicMock())
 def create_test_virtual_machine(
-	ip: str = None,
+	ip: str | None = None,
 	cluster: Cluster = None,
 	series: str = "m",
 ) -> VirtualMachine:

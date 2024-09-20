@@ -36,7 +36,7 @@ def create_ed25519_key() -> str:
 	return str_key[0].decode("utf-8")
 
 
-def create_test_user_ssh_key(user: str, str_key: str = None):
+def create_test_user_ssh_key(user: str, str_key: str | None = None):
 	"""Create a test SSH key for the given user."""
 	if not str_key:
 		str_key = create_rsa_key()

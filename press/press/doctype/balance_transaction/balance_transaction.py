@@ -42,7 +42,7 @@ class BalanceTransaction(Document):
 		unallocated_amount: DF.Currency
 	# end: auto-generated types
 
-	dashboard_fields = ["type", "amount", "ending_balance", "invoice", "source"]
+	dashboard_fields = ("type", "amount", "ending_balance", "invoice", "source")
 
 	def validate(self):
 		if self.amount == 0:

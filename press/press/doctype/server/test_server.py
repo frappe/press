@@ -26,11 +26,11 @@ if typing.TYPE_CHECKING:
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(
-	proxy_server: str = None,
-	database_server: str = None,
+	proxy_server: str | None = None,
+	database_server: str | None = None,
 	cluster: str = "Default",
-	plan: str = None,
-	team: str = None,
+	plan: str | None = None,
+	team: str | None = None,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:

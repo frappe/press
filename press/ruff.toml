@@ -15,7 +15,7 @@ select = [
   "I",
   "UP",
   "B",
-  # "RUF",
+  "RUF",
   # "FA",
   # "TCH",
   # "C90",

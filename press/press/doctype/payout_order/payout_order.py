@@ -43,7 +43,7 @@ class PayoutOrder(Document):
 		type: DF.Literal["Marketplace", "SaaS"]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"period_end",
 		"team",
 		"mode_of_payment",
@@ -52,7 +52,7 @@ class PayoutOrder(Document):
 		"status",
 		"total_amount",
 		"items",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):

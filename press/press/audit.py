@@ -1,6 +1,7 @@
 """Functions for automated audit of frappe cloud systems."""
 
 import json
+from typing import ClassVar
 
 import frappe
 from frappe.utils import rounded
@@ -21,7 +22,9 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	def log(self, log: dict, status: str, telegram_group: str = None, telegram_topic: str = None):
+	def log(
+		self, log: dict, status: str, telegram_group: str | None = None, telegram_topic: str | None = None
+	):
 		frappe.get_doc(
 			{
 				"doctype": "Audit Log",
@@ -43,8 +46,8 @@ class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
 	audit_type = "Bench Field Check"
-	server_map = {}
-	press_map = {}
+	server_map: ClassVar[dict] = {}
+	press_map: ClassVar[dict] = {}
 
 	def __init__(self):
 		log = {}

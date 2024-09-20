@@ -36,11 +36,11 @@ if typing.TYPE_CHECKING:
 
 
 def create_test_bench(
-	user: str = None,
+	user: str | None = None,
 	group: ReleaseGroup = None,
-	server: str = None,
+	server: str | None = None,
 	apps: list[dict] | None = None,
-	creation: datetime = None,
+	creation: datetime | None = None,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
@@ -86,10 +86,10 @@ def create_test_bench(
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
-	creation: datetime = None,
-	bench: str = None,
-	server: str = None,
-	team: str = None,
+	creation: datetime | None = None,
+	bench: str | None = None,
+	server: str | None = None,
+	team: str | None = None,
 	standby_for: str | None = None,
 	apps: list[str] | None = None,
 	remote_database_file=None,

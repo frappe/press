@@ -50,7 +50,7 @@ class SiteBackup(Document):
 		with_files: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"status",
 		"database_url",
 		"public_url",
@@ -67,7 +67,7 @@ class SiteBackup(Document):
 		"remote_public_file",
 		"remote_private_file",
 		"remote_config_file",
-	]
+	)
 
 	def before_insert(self):
 		if getattr(self, "force", False):

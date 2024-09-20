@@ -41,6 +41,19 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+base_servers = {
+	"Proxy Server": "n",
+	"Database Server": "m",
+	"Server": "f",  # App server is last as it needs both proxy and db server
+}
+
+private_servers = {
+	# TODO: Uncomment these when they are implemented
+	# "Monitor Server": "p",
+	# "Log Server": "e",
+}
+
+
 class Cluster(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -79,18 +92,8 @@ class Cluster(Document):
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "image"]
+	dashboard_fields = ("title", "image")
 
-	base_servers = {
-		"Proxy Server": "n",
-		"Database Server": "m",
-		"Server": "f",  # App server is last as it needs both proxy and db server
-	}
-	private_servers = {
-		# TODO: Uncomment these when they are implemented
-		# "Monitor Server": "p",
-		# "Log Server": "e",
-	}
 	wait_for_aws_creds_seconds = 20
 
 	@staticmethod
@@ -179,7 +182,7 @@ class Cluster(Document):
 	def validate_cidr_block(self):
 		if not self.cidr_block:
 			blocks = ipaddress.ip_network("10.0.0.0/8").subnets(new_prefix=16)
-			existing_blocks = ["10.0.0.0/16"] + frappe.get_all("Cluster", ["cidr_block"], pluck="cidr_block")
+			existing_blocks = ["10.0.0.0/16", *frappe.get_all("Cluster", ["cidr_block"], pluck="cidr_block")]
 			for block in blocks:
 				cidr_block = str(block)
 				if cidr_block not in existing_blocks:
@@ -584,9 +587,9 @@ class Cluster(Document):
 
 	@property
 	def server_doctypes(self):
-		server_doctypes = {**self.base_servers}
+		server_doctypes = {**base_servers}
 		if not self.public:
-			server_doctypes = {**server_doctypes, **self.private_servers}
+			server_doctypes = {**server_doctypes, **private_servers}
 		return server_doctypes
 
 	def get_same_region_vmis(self, get_series=False):
@@ -644,7 +647,7 @@ class Cluster(Document):
 		if self.status != "Active":
 			frappe.throw("Cluster is not active", frappe.ValidationError)
 
-		for doctype, _ in self.base_servers.items():
+		for doctype, _ in base_servers.items():
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
@@ -657,7 +660,7 @@ class Cluster(Document):
 					self.proxy_server = server.name
 		if self.public:
 			return
-		for doctype, _ in self.private_servers.items():
+		for doctype, _ in private_servers.items():
 			self.create_server(
 				doctype,
 				"Test",
@@ -704,13 +707,13 @@ class Cluster(Document):
 		doctype: str,
 		title: str,
 		plan: "ServerPlan" = None,
-		domain: str = None,
-		team: str = None,
+		domain: str | None = None,
+		team: str | None = None,
 		create_subscription=True,
 	):
 		"""Creates a server for the cluster"""
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
-		server_series = {**self.base_servers, **self.private_servers}
+		server_series = {**base_servers, **private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		vm = self.create_vm(plan.instance_type, plan.disk, domain, server_series[doctype], team)

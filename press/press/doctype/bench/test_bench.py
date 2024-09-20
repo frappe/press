@@ -59,7 +59,7 @@ class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_bench_with_n_sites_with_cpu_time(self, n: int, x: float, bench: str = None) -> Bench:
+	def _create_bench_with_n_sites_with_cpu_time(self, n: int, x: float, bench: str | None = None) -> Bench:
 		"""Creates new bench if None given."""
 		plan = create_test_plan("Site", cpu_time=x)
 

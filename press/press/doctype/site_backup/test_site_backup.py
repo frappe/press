@@ -17,7 +17,7 @@ from press.press.doctype.site.test_site import create_test_site
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 def create_test_site_backup(
 	site: str,
-	creation: datetime = None,
+	creation: datetime | None = None,
 	files_availability: str = "Available",
 	offsite: bool = True,
 	status: str = "Success",

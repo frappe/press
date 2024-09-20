@@ -32,7 +32,7 @@ class AppReleaseDifference(Document):
 		source_release: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["github_diff_url", "source_hash", "destination_hash"]
+	dashboard_fields = ("github_diff_url", "source_hash", "destination_hash")
 
 	def validate(self):
 		if self.source_release == self.destination_release:

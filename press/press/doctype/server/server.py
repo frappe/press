@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
 
 
 class BaseServer(Document, TagHelpers):
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"plan",
 		"cluster",
@@ -41,7 +41,7 @@ class BaseServer(Document, TagHelpers):
 		"is_self_hosted",
 		"auto_add_storage_min",
 		"auto_add_storage_max",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):

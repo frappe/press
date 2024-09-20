@@ -179,7 +179,7 @@ class Site(Document, TagHelpers):
 
 	DOCTYPE = "Site"
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"ip",
 		"status",
 		"group",
@@ -198,7 +198,7 @@ class Site(Document, TagHelpers):
 		"host_name",
 		"skip_auto_updates",
 		"additional_system_user_created",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -953,7 +953,7 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
-		scheduled_time: str = None,
+		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
 		doc = frappe.get_doc(
@@ -974,7 +974,7 @@ class Site(Document, TagHelpers):
 		name,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
-		scheduled_time: str = None,
+		scheduled_time: str | None = None,
 	):
 		doc = frappe.get_doc("Site Update", name)
 		doc.skipped_failing_patches = skip_failing_patches
@@ -3066,7 +3066,7 @@ def process_create_user_job_update(job):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
 
 
-def prepare_site(site: str, subdomain: str = None) -> dict:
+def prepare_site(site: str, subdomain: str | None = None) -> dict:
 	# prepare site details
 	doc = frappe.get_doc("Site", site)
 	sitename = subdomain if subdomain else "brt-" + doc.subdomain
@@ -3100,7 +3100,7 @@ def prepare_site(site: str, subdomain: str = None) -> dict:
 
 
 @frappe.whitelist()
-def options_for_new(group: str = None, selected_values=None) -> dict:
+def options_for_new(group: str | None = None, selected_values=None) -> dict:
 	domain = frappe.db.get_single_value("Press Settings", "domain")
 	selected_values = frappe.parse_json(selected_values) if selected_values else frappe._dict()
 

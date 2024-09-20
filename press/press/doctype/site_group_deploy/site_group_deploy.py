@@ -37,7 +37,7 @@ class SiteGroupDeploy(Document):
 		version: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["status", "site"]
+	dashboard_fields = ("status", "site")
 
 	def before_insert(self):
 		self.set_latest_version()

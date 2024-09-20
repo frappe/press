@@ -292,7 +292,7 @@ class DBOptimizer:
 			table = self.tables[index.table]
 
 			# Data type is not easily indexable - skip
-			column = [c for c in table.schema if c.name == index.column][0]
+			column = next(c for c in table.schema if c.name == index.column)
 			if "text" in column.data_type.lower() or "json" in column.data_type.lower():
 				potential_indexes.remove(index)
 			# Update cardinality from column so scoring can be done

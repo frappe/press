@@ -37,7 +37,7 @@ class StripePaymentMethod(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"is_default",
 		"expiry_month",
 		"expiry_year",
@@ -45,7 +45,7 @@ class StripePaymentMethod(Document):
 		"name_on_card",
 		"last_4",
 		"stripe_mandate_id",
-	]
+	)
 
 	def onload(self):
 		load_address_and_contact(self)

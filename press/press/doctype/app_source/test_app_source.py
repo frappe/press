@@ -18,7 +18,7 @@ def create_test_app_source(
 	app: App,
 	repository_url=None,
 	branch: str = "master",
-	team: str = None,
+	team: str | None = None,
 ) -> AppSource:
 	"""
 	Create test app source for app with given version.

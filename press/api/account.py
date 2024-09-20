@@ -218,7 +218,7 @@ def active_servers():
 
 
 @frappe.whitelist()
-def disable_account(totp_code: str = None):
+def disable_account(totp_code: str | None = None):
 	user = frappe.session.user
 	team = get_current_team(get_doc=True)
 
@@ -454,7 +454,7 @@ def current_team():
 def get_permissions():
 	user = frappe.session.user
 	groups = tuple(
-		frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent") + ["1", "2"]
+		[*frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent"), "1", "2"]
 	)  # [1, 2] is for avoiding singleton tuples
 	docperms = frappe.db.sql(
 		f"""

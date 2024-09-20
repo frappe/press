@@ -181,7 +181,7 @@ def get(doctype, name):
 
 	fields = list(default_fields)
 	if hasattr(doc, "dashboard_fields"):
-		fields += doc.dashboard_fields
+		fields += list(doc.dashboard_fields)
 
 	_doc = frappe._dict()
 	for fieldname in fields:
@@ -390,7 +390,7 @@ def is_allowed_field(doctype, field):
 		return False
 
 	controller = get_controller(doctype)
-	dashboard_fields = getattr(controller, "dashboard_fields", [])
+	dashboard_fields = getattr(controller, "dashboard_fields", ())
 
 	if field in dashboard_fields:
 		return True

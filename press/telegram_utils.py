@@ -9,7 +9,7 @@ from press.utils import log_error
 
 
 class Telegram:
-	def __init__(self, topic: str = None, group: str = None):
+	def __init__(self, topic: str | None = None, group: str | None = None):
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,

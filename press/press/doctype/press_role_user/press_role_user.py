@@ -22,4 +22,4 @@ class PressRoleUser(Document):
 		user_image: DF.AttachImage | None
 	# end: auto-generated types
 
-	dashboard_fields = ["user", "full_name", "user_image"]
+	dashboard_fields = ("user", "full_name", "user_image")

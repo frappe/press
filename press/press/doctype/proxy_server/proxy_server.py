@@ -83,7 +83,7 @@ class ProxyServer(BaseServer):
 		code_servers = [row.code_server for row in self.domains]
 		# Always include self.domain in the domains child table
 		# Remove duplicates
-		domains = unique([self.domain] + domains)
+		domains = unique([self.domain, *domains])
 		self.domains = []
 		for i, domain in enumerate(domains):
 			if not frappe.db.exists(

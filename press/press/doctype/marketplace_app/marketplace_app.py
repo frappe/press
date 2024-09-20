@@ -95,13 +95,13 @@ class MarketplaceApp(WebsiteGenerator):
 		website: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"image",
 		"title",
 		"status",
 		"description",
 		"review_stage",
-	]
+	)
 
 	def autoname(self):
 		self.name = self.app
@@ -597,7 +597,7 @@ class MarketplaceApp(WebsiteGenerator):
 			"commission": self.get_payout_amount(total_for="commission"),
 		}
 
-	def get_plans(self, frappe_version: str = None) -> list:
+	def get_plans(self, frappe_version: str | None = None) -> list:
 		return get_plans_for_app(self.name, frappe_version)
 
 	def can_charge_for_subscription(self, subscription):

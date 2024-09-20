@@ -75,7 +75,9 @@ def get_cluster_data(filters, cluster_name):
 				"memory": flt(product["product"]["attributes"]["memory"][:-4]),
 			}
 			for term in product["terms"].get("OnDemand", {}).values():
-				row["on_demand"] = flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
+				row["on_demand"] = (
+					flt(next(iter(term["priceDimensions"].values()))["pricePerUnit"]["USD"]) * 750
+				)
 			instance_type = parse_instance_type(row["instance"])
 			if not instance_type:
 				continue

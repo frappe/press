@@ -14,7 +14,7 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_press_admin_team(email: str = None) -> Team:
+def create_test_press_admin_team(email: str | None = None) -> Team:
 	"""Create test press admin user."""
 	if not email:
 		email = frappe.mock("email")
@@ -27,7 +27,7 @@ def create_test_press_admin_team(email: str = None) -> Team:
 
 @patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
 @patch.object(Team, "create_stripe_customer", new=Mock())
-def create_test_team(email: str = None, country="India") -> Team:
+def create_test_team(email: str | None = None, country="India") -> Team:
 	"""Create test team doc."""
 	if not email:
 		email = frappe.mock("email")

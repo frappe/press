@@ -28,14 +28,14 @@ class ServerPlan(Plan):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"price_inr",
 		"price_usd",
 		"vcpu",
 		"memory",
 		"disk",
-	]
+	)
 
 	def get_doc(self, doc):
 		doc["price_per_day_inr"] = self.get_price_per_day("INR")

@@ -27,7 +27,7 @@ class ReleaseGroupApp(Document):
 		title: DF.Data
 	# end: auto-generated types
 
-	dashboard_fields = ["app"]
+	dashboard_fields = ("app",)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

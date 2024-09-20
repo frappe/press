@@ -38,7 +38,7 @@ class PressNotification(Document):
 		]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"team",
 		"document_type",
 		"class",
@@ -51,7 +51,7 @@ class PressNotification(Document):
 		"message",
 		"traceback",
 		"assistance_url",
-	]
+	)
 
 	def after_insert(self):
 		if frappe.local.dev_server:

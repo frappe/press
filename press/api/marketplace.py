@@ -169,7 +169,7 @@ def create_site_on_public_bench(
 	cluster: str,
 	site_plan: str,
 	latest_stable_version: str,
-	group: str = None,
+	group: str | None = None,
 ) -> dict:
 	"""Create site on public bench"""
 
@@ -997,7 +997,7 @@ def get_subscriptions_list(marketplace_app: str) -> list:
 	usage_record = frappe.qb.DocType("Usage Record")
 	team = frappe.qb.DocType("Team")
 
-	conditions = app_plan.price_usd > 0  # noqa: E712
+	conditions = app_plan.price_usd > 0
 	conditions = conditions & (app_sub.document_name == marketplace_app)
 
 	query = (
@@ -1410,4 +1410,4 @@ def add_code_review_comment(name, filename, line_number, comment):
 		doc.save()
 		return {"status": "success", "message": "Comment added successfully."}
 	except Exception as e:
-		frappe.throw(f"Unable to add comment. Something went wrong: {str(e)}")
+		frappe.throw(f"Unable to add comment. Something went wrong: {e!s}")

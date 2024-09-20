@@ -35,13 +35,13 @@ class Subscription(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"site",
 		"enabled",
 		"document_type",
 		"document_name",
 		"team",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, **list_args):

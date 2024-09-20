@@ -128,7 +128,7 @@ class DeployCandidate(Document):
 		build_output_parser: DockerBuildOutputParser | None
 		upload_step_updater: UploadStepUpdater | None
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"status",
 		"creation",
@@ -141,7 +141,7 @@ class DeployCandidate(Document):
 		"apps",
 		"group",
 		"retry_count",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):
@@ -1689,7 +1689,7 @@ STEP_SLUG_MAP = {
 
 
 def get_build_stage_and_step(
-	stage_slug: str, step_slug: str, app_titles: dict[str, str] = None
+	stage_slug: str, step_slug: str, app_titles: dict[str, str] | None = None
 ) -> tuple[str, str]:
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug

@@ -21,7 +21,7 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str = None):
+def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str | None = None):
 	"""
 	Change dns record of site
 

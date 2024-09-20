@@ -35,7 +35,7 @@ class SiteDomain(Document):
 		tls_certificate: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
+	dashboard_fields = ("domain", "status", "dns_type", "site", "redirect_to_primary")
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

@@ -126,7 +126,7 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
-def _new(site, server: str = None, ignore_plan_validation: bool = False):
+def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -518,7 +518,7 @@ def app_details_for_new_public_site():
 
 
 @frappe.whitelist()
-def options_for_new(for_bench: str = None):
+def options_for_new(for_bench: str | None = None):
 	for_bench = str(for_bench) if for_bench else None
 	if for_bench:
 		version = frappe.db.get_value("Release Group", for_bench, "version")
@@ -676,7 +676,7 @@ def get_domain():
 
 
 @frappe.whitelist()
-def get_new_site_options(group: str = None):
+def get_new_site_options(group: str | None = None):
 	team = get_current_team()
 	apps = set()
 	filters = {"enabled": True}
@@ -978,7 +978,7 @@ def all(site_filter=None):
 		.orderby(Site.creation, order=frappe.qb.desc)
 	)
 	if child_teams:
-		sites_query = sites_query.where(Site.team.isin([team] + child_teams))
+		sites_query = sites_query.where(Site.team.isin([team, *child_teams]))
 	else:
 		sites_query = sites_query.where(Site.team == team)
 
@@ -2026,7 +2026,7 @@ def change_group_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def clone_group(name: str, new_group_title: str, server: str = None):
+def clone_group(name: str, new_group_title: str, server: str | None = None):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
 	cloned_group = frappe.new_doc("Release Group")

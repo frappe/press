@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
 
 def create_test_alertmanager_webhook_log(
 	alert: "PrometheusAlertRule" = None,
-	creation: datetime = None,
+	creation: datetime | None = None,
 	site: "Site" = None,
 	status: str = "firing",
 ):

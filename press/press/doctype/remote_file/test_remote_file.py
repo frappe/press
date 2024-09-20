@@ -10,8 +10,8 @@ import frappe
 
 def create_test_remote_file(
 	site: str | None = None,
-	creation: datetime = None,
-	file_path: str = None,
+	creation: datetime | None = None,
+	file_path: str | None = None,
 	file_size: int = 1024,
 ):
 	"""Create test remote file doc for required timestamp."""

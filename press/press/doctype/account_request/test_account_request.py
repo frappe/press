@@ -12,7 +12,7 @@ from press.press.doctype.account_request.account_request import AccountRequest
 
 def create_test_account_request(
 	subdomain: str,
-	email: str = None,
+	email: str | None = None,
 	erpnext: bool = True,
 	creation=None,
 	saas: bool = False,

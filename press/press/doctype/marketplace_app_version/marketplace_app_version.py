@@ -21,4 +21,4 @@ class MarketplaceAppVersion(Document):
 		version: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["name", "version", "source"]
+	dashboard_fields = ("name", "version", "source")

@@ -45,7 +45,7 @@ class AppReleaseApprovalRequest(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"marketplace_app",
 		"screening_status",
@@ -53,7 +53,7 @@ class AppReleaseApprovalRequest(Document):
 		"status",
 		"result",
 		"code_comments",
-	]
+	)
 
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
@@ -261,7 +261,7 @@ def get_context(lines, index, size=2):
 	length = len(lines)
 	start = max(0, index - size)
 	end = min(index + size, length)
-	lines = lines[start : end + 1]  # noqa
+	lines = lines[start : end + 1]
 	return {
 		"line_number": index + 1,
 		"line_range": list(range(start + 1, end + 2)),

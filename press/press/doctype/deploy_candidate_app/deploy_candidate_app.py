@@ -29,4 +29,4 @@ class DeployCandidateApp(Document):
 		use_cached: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = ["app"]
+	dashboard_fields = ("app",)

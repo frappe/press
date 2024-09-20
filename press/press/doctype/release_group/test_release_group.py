@@ -24,10 +24,10 @@ from press.press.doctype.team.test_team import create_test_team
 
 def create_test_release_group(
 	apps: list[App],
-	user: str = None,
+	user: str | None = None,
 	public=False,
 	frappe_version="Version 14",
-	servers: list[str] = None,
+	servers: list[str] | None = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.

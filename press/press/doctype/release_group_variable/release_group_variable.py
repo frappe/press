@@ -22,7 +22,7 @@ class ReleaseGroupVariable(Document):
 		value: DF.Data
 	# end: auto-generated types
 
-	dashboard_fields = ["key", "value"]
+	dashboard_fields = ("key", "value")
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

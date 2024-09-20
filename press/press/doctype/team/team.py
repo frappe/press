@@ -89,7 +89,7 @@ class Team(Document):
 		via_erpnext: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"enabled",
 		"team_title",
 		"user",
@@ -113,7 +113,7 @@ class Team(Document):
 		"is_developer",
 		"enable_performance_tuning",
 		"enable_inplace_updates",
-	]
+	)
 
 	def get_doc(self, doc):
 		if (
@@ -263,8 +263,8 @@ class Team(Document):
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
-		password: str = None,
-		country: str = None,
+		password: str | None = None,
+		country: str | None = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,

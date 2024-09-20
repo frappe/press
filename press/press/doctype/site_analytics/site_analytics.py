@@ -84,7 +84,7 @@ def create_site_analytics(site, data):
 	def get_sales_data(analytics):
 		sales_data = []
 		for row in analytics.get("activation", {}).get("sales_data", []):
-			doctype, count = tuple(row.items())[0]
+			doctype, count = next(iter(row.items()))
 			if count:
 				sales_data.append(
 					{

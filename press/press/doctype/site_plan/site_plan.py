@@ -52,7 +52,7 @@ class SitePlan(Plan):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"plan_title",
 		"document_type",
@@ -66,7 +66,7 @@ class SitePlan(Plan):
 		"database_access",
 		"support_included",
 		"private_benches",
-	]
+	)
 
 	def get_doc(self, doc):
 		doc["price_per_day_inr"] = self.get_price_per_day("INR")

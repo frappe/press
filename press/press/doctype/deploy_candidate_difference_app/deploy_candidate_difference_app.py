@@ -25,7 +25,7 @@ class DeployCandidateDifferenceApp(Document):
 		source_release: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["difference", "app"]
+	dashboard_fields = ("difference", "app")
 
 	def get_list_query(query):
 		apps = query.run(as_dict=True)

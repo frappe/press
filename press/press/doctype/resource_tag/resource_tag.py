@@ -21,4 +21,4 @@ class ResourceTag(Document):
 		tag_name: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["tag", "tag_name"]
+	dashboard_fields = ("tag", "tag_name")

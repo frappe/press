@@ -282,7 +282,7 @@ Incident URL: {incident_link}"""
 		return message
 
 	def add_acknowledgment_update(
-		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
+		self, human: "IncidentSettingsUser", call_status: str | None = None, acknowledged=False
 	):
 		"""
 		Adds a new update to the Incident Document

@@ -72,7 +72,7 @@ class AnsibleCallback(CallbackBase):
 		play = frappe.get_doc("Ansible Play", self.play)
 		if stats:
 			# Assume we're running on one host
-			host = list(stats.processed.keys())[0]
+			host = next(iter(stats.processed.keys()))
 			play.update(stats.summarize(host))
 			if play.failures or play.unreachable:
 				play.status = "Failure"

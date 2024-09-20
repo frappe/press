@@ -50,7 +50,7 @@ class SiteUpdate(Document):
 		update_job: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"status",
 		"site",
 		"destination_bench",
@@ -62,7 +62,7 @@ class SiteUpdate(Document):
 		"creation",
 		"skipped_backups",
 		"skipped_failing_patches",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):

@@ -21,4 +21,4 @@ class BenchDependencyVersion(Document):
 		version: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["version", "supported_frappe_version"]
+	dashboard_fields = ("version", "supported_frappe_version")

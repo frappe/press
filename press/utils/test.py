@@ -36,10 +36,10 @@ def foreground_enqueue(
 	now: bool = True,
 	enqueue_after_commit: bool = False,
 	*,
-	on_success: Callable = None,
-	on_failure: Callable = None,
+	on_success: Callable | None = None,
+	on_failure: Callable | None = None,
 	at_front: bool = False,
-	job_id: str = None,
+	job_id: str | None = None,
 	deduplicate: bool = False,
 	**kwargs,
 ):

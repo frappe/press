@@ -19,6 +19,27 @@ from frappe.utils.telemetry import init_telemetry
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 
+agent_job_step_to_frontend_step = {
+	"New Site": {
+		"New Site": "Building Site",
+		"Install Apps": "Installing Apps",
+		"Update Site Configuration": "Updating Configuration",
+		"Enable Scheduler": "Finalizing Site",
+		"Bench Setup Nginx": "Finalizing Site",
+		"Reload Nginx": "Just a moment",
+	},
+	"Rename Site": {
+		"Enable Maintenance Mode": "Starting",
+		"Wait for Enqueued Jobs": "Starting",
+		"Update Site Configuration": "Preparing Site",
+		"Rename Site": "Preparing Site",
+		"Bench Setup NGINX": "Preparing Site",
+		"Reload NGINX": "Finalizing Site",
+		"Disable Maintenance Mode": "Finalizing Site",
+		"Enable Scheduler": "Just a moment",
+	},
+}
+
 
 class ProductTrialRequest(Document):
 	# begin: auto-generated types
@@ -47,28 +68,7 @@ class ProductTrialRequest(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["site", "status", "product_trial"]
-
-	agent_job_step_to_frontend_step = {
-		"New Site": {
-			"New Site": "Building Site",
-			"Install Apps": "Installing Apps",
-			"Update Site Configuration": "Updating Configuration",
-			"Enable Scheduler": "Finalizing Site",
-			"Bench Setup Nginx": "Finalizing Site",
-			"Reload Nginx": "Just a moment",
-		},
-		"Rename Site": {
-			"Enable Maintenance Mode": "Starting",
-			"Wait for Enqueued Jobs": "Starting",
-			"Update Site Configuration": "Preparing Site",
-			"Rename Site": "Preparing Site",
-			"Bench Setup NGINX": "Preparing Site",
-			"Reload NGINX": "Finalizing Site",
-			"Disable Maintenance Mode": "Finalizing Site",
-			"Enable Scheduler": "Just a moment",
-		},
-	}
+	dashboard_fields = ("site", "status", "product_trial")
 
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
@@ -178,7 +178,7 @@ class ProductTrialRequest(Document):
 						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
-	def create_site(self, cluster: str = None, signup_values: dict = None):
+	def create_site(self, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
 		product = frappe.get_doc("Product Trial", self.product_trial)
@@ -249,7 +249,7 @@ class ProductTrialRequest(Document):
 			current_running_step = ""
 			for step in steps:
 				if step.status == "Running":
-					current_running_step = self.agent_job_step_to_frontend_step.get(job_type, {}).get(
+					current_running_step = agent_job_step_to_frontend_step.get(job_type, {}).get(
 						step.step_name, step.step_name
 					)
 					break

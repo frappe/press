@@ -16,7 +16,7 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 def create_test_virtual_machine_image(
-	ip: str = None,
+	ip: str | None = None,
 	cluster: Cluster = None,
 	series: str = "m",
 ) -> VirtualMachineImage:
