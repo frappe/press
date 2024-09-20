@@ -65,8 +65,7 @@ def past_invoices():
 @frappe.whitelist()
 def invoices_and_payments():
 	team = get_current_team(True)
-	invoices = team.get_past_invoices()
-	return invoices
+	return team.get_past_invoices()
 
 
 @frappe.whitelist()
@@ -309,7 +308,7 @@ def create_payment_intent_for_prepaid_app(amount, metadata):
 				"publishable_key": get_publishable_key(),
 				"client_secret": err.payment_intent.client_secret,
 			}
-		elif err.code:
+		if err.code:
 			# The card was declined for other reasons (e.g. insufficient funds)
 			# Bring the customer back on-session to ask them for a new payment method
 			return {
@@ -342,6 +341,7 @@ def remove_payment_method(name):
 
 	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": team})
 	payment_method.delete()
+	return None
 
 
 @frappe.whitelist()
@@ -360,7 +360,7 @@ def finalize_invoices():
 @frappe.whitelist()
 def unpaid_invoices():
 	team = get_current_team()
-	invoices = frappe.get_all(
+	return frappe.get_all(
 		"Invoice",
 		{
 			"team": team,
@@ -370,8 +370,6 @@ def unpaid_invoices():
 		["name", "status", "period_end", "currency", "amount_due", "total"],
 		order_by="creation asc",
 	)
-
-	return invoices
 
 
 @frappe.whitelist()
@@ -394,6 +392,7 @@ def change_payment_mode(mode):
 	if team.billing_team and mode != "Paid By Partner":
 		team.billing_team = ""
 	team.save()
+	return None
 
 
 @frappe.whitelist()
@@ -554,9 +553,10 @@ def get_latest_unpaid_invoice():
 			as_dict=True,
 		)
 		if unpaid_invoice.payment_mode == "Prepaid Credits" and team_has_balance_for_invoice(unpaid_invoice):
-			return
+			return None
 
 		return unpaid_invoice
+	return None
 
 
 def team_has_balance_for_invoice(prepaid_mode_invoice):

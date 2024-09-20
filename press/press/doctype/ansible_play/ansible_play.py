@@ -65,8 +65,7 @@ class AnsiblePlay(Document):
 			doctype = poly_get_doctype(["Server", "Database Server"], server)
 			is_owned_by_team(doctype, server, raise_exception=True)
 
-		results = query.run(as_dict=1)
-		return results
+		return query.run(as_dict=1)
 
 	def get_doc(self, doc):
 		doc["tasks"] = frappe.get_all(

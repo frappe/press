@@ -82,7 +82,9 @@ def download_chromedriver(version=None):
 
 		builds = releases["channels"]["Stable"]["downloads"]["chromedriver"]
 
-	platform = get_platform()
+	if not (platform := get_platform()):
+		return
+
 	download_url = find(builds, lambda x: x["platform"] == platform)["url"]
 
 	subprocess.check_output(f"curl -o chromedriver.zip {download_url}".split())
@@ -94,11 +96,11 @@ def download_chromedriver(version=None):
 def get_platform():
 	if platform.system().lower() == "linux":
 		return "linux64"
-	elif platform.system().lower() == "darwin":
+	if platform.system().lower() == "darwin":
 		if platform.machine().lower() == "arm64":
 			return "mac-arm64"
-		else:
-			return "mac-x64"
+		return "mac-x64"
+	return None
 
 
 def test_browser_assets():
@@ -155,8 +157,7 @@ def pattern_adjust(a, address):
 			if re.match("^//", d):
 				m = re.search(r"(?<=//)\S+", d)
 				d = m.group(0)
-				m = "https://" + d
-				return m
+				return "https://" + d
 		elif r.scheme == "" and r.netloc == "":
 			return address + a
 		else:

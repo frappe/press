@@ -56,8 +56,7 @@ def get_jwt_token():
 	now = datetime.now()
 	expiry = now + timedelta(minutes=9)
 	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
-	token = jwt.encode(payload, key.encode(), algorithm="RS256")
-	return token
+	return jwt.encode(payload, key.encode(), algorithm="RS256")
 
 
 def get_access_token(installation_id: str | None = None):
@@ -98,12 +97,11 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	options = {
+	return {
 		"authorized": bool(token),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
 	}
-	return options
 
 
 def installations(token):
@@ -257,8 +255,8 @@ def branches(owner, name, installation=None):
 
 	if response.ok:
 		return response.json()
-	else:
-		frappe.throw("Error fetching branch list from GitHub: " + response.text)
+	frappe.throw("Error fetching branch list from GitHub: " + response.text)
+	return None
 
 
 def get_auth_headers(installation_id: str | None = None) -> dict[str, str]:
@@ -307,6 +305,7 @@ def _get_app_name_and_title_from_hooks(
 		break
 
 	frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
+	return None
 
 
 def _generate_files_tree(files):

@@ -88,6 +88,7 @@ def protected(doctypes):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
+		return None
 
 	return wrapper
 
@@ -706,8 +707,7 @@ def get_new_site_options(group: str | None = None):
 		)
 		if not rg:
 			continue
-		else:
-			rg = rg[0]
+		rg = rg[0]
 
 		benches = frappe.get_all(
 			"Bench",
@@ -1038,9 +1038,8 @@ def get(name):
 		if site_name:
 			frappe.local.response["type"] = "redirect"
 			frappe.local.response["location"] = f"/api/method/press.api.site.get?name={site_name}"
-			return
-		else:
-			raise
+			return None
+		raise
 	rg_info = frappe.db.get_value("Release Group", site.group, ["team", "version", "public"], as_dict=True)
 	group_team = rg_info.team
 	frappe_version = rg_info.version
@@ -2020,9 +2019,7 @@ def change_group_options(name):
 			.distinct()
 		)
 
-	benches = query.run(as_dict=True)
-
-	return benches
+	return query.run(as_dict=True)
 
 
 @frappe.whitelist()
@@ -2159,9 +2156,7 @@ def get_private_groups_for_upgrade(name, version):
 			.distinct()
 		)
 
-	private_groups = query.run(as_dict=True)
-
-	return private_groups
+	return query.run(as_dict=True)
 
 
 @frappe.whitelist()

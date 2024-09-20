@@ -175,9 +175,7 @@ def normalize_query(query: str) -> str:
 	q = format_query(q, strip_comments=True)
 
 	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
-	q = re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
-
-	return q
+	return re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
 
 
 def format_query(q, strip_comments=False):
@@ -240,12 +238,12 @@ class OptimizeDatabaseQuery:
 			stats = _fetch_table_stats(self.site, table)
 			if not stats:
 				# Old framework version
-				return
+				return None
 			db_table = DBTable.from_frappe_ouput(stats)
 			column_stats = _fetch_column_stats(self.site, table)
 			if not column_stats:
 				# Failing due to large size, TODO: move this to a job
-				return
+				return None
 			db_table.update_cardinality(column_stats)
 			optimizer.update_table_data(db_table)
 

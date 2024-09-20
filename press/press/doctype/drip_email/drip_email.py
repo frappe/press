@@ -154,8 +154,7 @@ class DripEmail(Document):
 					{conditions}
 			"""
 		)
-		sites = [t[0] for t in sites]
-		return sites
+		return [t[0] for t in sites]
 
 	def send_to_sites(self):
 		sites = self.sites_to_send_drip

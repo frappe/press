@@ -131,7 +131,6 @@ def get_stripe_payment_url_for_invoice(name: str) -> str:
 		invoice = frappe.get_doc("Invoice", name)
 		if invoice.stripe_invoice_url:
 			return invoice.stripe_invoice_url
-		else:
-			return invoice.get_stripe_payment_url()
+		return invoice.get_stripe_payment_url()
 	except frappe.DoesNotExistError:
 		frappe.throw("Invoice not found")

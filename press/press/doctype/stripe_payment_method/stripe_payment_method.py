@@ -55,7 +55,7 @@ class StripePaymentMethod(Document):
 		StripeWebhookLog = frappe.qb.DocType("Stripe Webhook Log")
 		StripePaymentMethod = frappe.qb.DocType("Stripe Payment Method")
 
-		query = (
+		return (
 			query.select(StripeWebhookLog.stripe_payment_method)
 			.left_join(StripeWebhookLog)
 			.on(
@@ -64,8 +64,6 @@ class StripePaymentMethod(Document):
 			)
 			.distinct()
 		)
-
-		return query
 
 	@dashboard_whitelist()
 	def delete(self):

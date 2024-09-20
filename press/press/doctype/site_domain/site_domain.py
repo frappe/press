@@ -49,6 +49,7 @@ class SiteDomain(Document):
 					break
 			domains.sort(key=lambda domain: not domain.primary)
 			return domains
+		return None
 
 	def after_insert(self):
 		if not self.default:

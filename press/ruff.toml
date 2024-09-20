@@ -19,7 +19,7 @@ select = [
   "FA",
   "TCH",
   # "C90",
-  # "RET",
+  "RET",
   # "SIM",
 ]
 ignore = [

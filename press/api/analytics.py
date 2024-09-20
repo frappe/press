@@ -711,8 +711,7 @@ def mariadb_slow_queries(
 		}
 	)
 	columns, data = execute(filters=meta)
-	ret = {"columns": columns, "data": data}
-	return ret
+	return {"columns": columns, "data": data}
 
 
 @frappe.whitelist()
@@ -738,9 +737,7 @@ def deadlock_report(site, start, end, max_lines=20):
 
 	results = agent.post("database/deadlocks", data=data)
 
-	out = post_process(results)
-
-	return out
+	return post_process(results)
 
 
 # MARKETPLACE - Plausible

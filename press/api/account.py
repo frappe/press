@@ -66,6 +66,7 @@ def signup(email, product=None, referrer=None):
 	frappe.set_user(current_user)
 	if account_request:
 		return account_request.name
+	return None
 
 
 @frappe.whitelist(allow_guest=True)
@@ -240,6 +241,7 @@ def disable_account(totp_code: str | None = None):
 		return "Active Servers"
 
 	team.disable_account()
+	return None
 
 
 @frappe.whitelist()
@@ -343,6 +345,7 @@ def validate_request_key(key, timezone=None):
 			if product_trial_doc
 			else None,
 		}
+	return None
 
 
 @frappe.whitelist(allow_guest=True)
@@ -375,10 +378,12 @@ def get_account_request_from_key(key):
 	ar = frappe.get_doc("Account Request", {"request_key": key})
 	if ar.creation > frappe.utils.add_to_date(None, hours=-hours):
 		return ar
-	elif ar.subdomain and ar.saas_app:
+	if ar.subdomain and ar.saas_app:
 		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
 		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
 			return ar
+		return None
+	return None
 
 
 @frappe.whitelist()
@@ -386,10 +391,9 @@ def get():
 	cached = frappe.cache.get_value("cached-account.get", user=frappe.session.user)
 	if cached:
 		return cached
-	else:
-		value = _get()
-		frappe.cache.set_value("cached-account.get", value, user=frappe.session.user, expires_in_sec=60)
-		return value
+	value = _get()
+	frappe.cache.set_value("cached-account.get", value, user=frappe.session.user, expires_in_sec=60)
+	return value
 
 
 def _get():
@@ -720,6 +724,7 @@ def switch_team(team):
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
 		}
+	return None
 
 
 @frappe.whitelist()
@@ -776,14 +781,14 @@ def get_site_count(team):
 @frappe.whitelist()
 def user_prompts():
 	if frappe.local.dev_server:
-		return
+		return None
 
 	team = get_current_team(True)
 	doc = frappe.get_doc("Team", team.name)
 
 	onboarding = doc.get_onboarding()
 	if not onboarding["complete"]:
-		return
+		return None
 
 	if not doc.billing_address:
 		return [
@@ -797,6 +802,7 @@ def user_prompts():
 			"UpdateBillingDetails",
 			"If you have a registered GSTIN number, you are required to update it, so that we can generate a GST Invoice.",
 		]
+	return None
 
 
 @frappe.whitelist()
@@ -869,7 +875,7 @@ def get_frappe_io_auth_url() -> str | None:
 			"Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
 		)
 	except DoesNotExistError:
-		return
+		return None
 
 	if (
 		provider.base_url
@@ -878,14 +884,13 @@ def get_frappe_io_auth_url() -> str | None:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+	return None
 
 
 @frappe.whitelist()
 def get_emails():
 	team = get_current_team()
-	data = frappe.get_all("Communication Email", filters={"parent": team}, fields=["type", "value"])
-
-	return data
+	return frappe.get_all("Communication Email", filters={"parent": team}, fields=["type", "value"])
 
 
 @frappe.whitelist()
@@ -1150,8 +1155,8 @@ def verify_2fa(user, totp_code):
 
 	if verified:
 		return verified
-	else:
-		frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
+	frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
+	return None
 
 
 @frappe.whitelist()

@@ -89,12 +89,14 @@ class TelegramMessage(Document):
 		)
 		if first:
 			return frappe.get_doc("Telegram Message", first[0])
+		return None
 
 	@staticmethod
 	def send_one() -> None:
 		message = TelegramMessage.get_one()
 		if message:
 			return message.send()
+		return None
 
 	@staticmethod
 	def clear_old_logs(days=30):

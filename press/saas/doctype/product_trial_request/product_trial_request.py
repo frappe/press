@@ -214,8 +214,7 @@ class ProductTrialRequest(Document):
 		if is_secondary_user_created:
 			email = frappe.db.get_value("Team", self.team, "user")
 			return frappe.get_doc("Site", self.site).get_login_sid(user=email)
-		else:
-			return frappe.get_doc("Site", self.site).get_login_sid()
+		return frappe.get_doc("Site", self.site).get_login_sid()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):
@@ -233,7 +232,7 @@ class ProductTrialRequest(Document):
 			if self.status == "Site Created":
 				return {"progress": 100}
 			return {"progress": 90, "current_step": self.status}
-		elif status == "Running":
+		if status == "Running":
 			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
 			steps = frappe.db.get_all(
 				"Agent Job Step",
@@ -255,11 +254,10 @@ class ProductTrialRequest(Document):
 					)
 					break
 			return {"progress": progress + 0.1, "current_step": current_running_step}
-		elif self.status == "Error":
+		if self.status == "Error":
 			return {"progress": current_progress, "error": True}
-		else:
-			# If agent job is undelivered, pending
-			return {"progress": current_progress + 0.1}
+		# If agent job is undelivered, pending
+		return {"progress": current_progress + 0.1}
 
 	def complete_setup_wizard(self):
 		if self.status == "Completing Setup Wizard":

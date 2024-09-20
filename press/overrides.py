@@ -17,7 +17,7 @@ from press.utils import _get_current_team, _system_user
 @frappe.whitelist(allow_guest=True)
 def upload_file():
 	if frappe.session.user == "Guest":
-		return
+		return None
 
 	files = frappe.request.files
 	is_private = frappe.form_dict.is_private
@@ -42,22 +42,21 @@ def upload_file():
 		method = frappe.get_attr(method)
 		is_whitelisted(method)
 		return method()
-	else:
-		ret = frappe.get_doc(
-			{
-				"doctype": "File",
-				"attached_to_doctype": doctype,
-				"attached_to_name": docname,
-				"attached_to_field": fieldname,
-				"folder": folder,
-				"file_name": filename,
-				"file_url": file_url,
-				"is_private": cint(is_private),
-				"content": content,
-			}
-		)
-		ret.save()
-		return ret
+	ret = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": doctype,
+			"attached_to_name": docname,
+			"attached_to_field": fieldname,
+			"folder": folder,
+			"file_name": filename,
+			"file_url": file_url,
+			"is_private": cint(is_private),
+			"content": content,
+		}
+	)
+	ret.save()
+	return ret
 
 
 def on_session_creation():

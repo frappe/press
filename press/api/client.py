@@ -152,10 +152,11 @@ def get_list(
 	query = apply_custom_filters(doctype, query, **list_args)
 	if isinstance(query, QueryBuilder):
 		return query.run(as_dict=1, debug=debug)
-	elif isinstance(query, list):
+	if isinstance(query, list):
 		return query
-	elif query is None:
+	if query is None:
 		return []
+	return None
 
 
 @frappe.whitelist()
@@ -352,8 +353,7 @@ def apply_custom_filters(doctype, query, **list_args):
 	if hasattr(controller, "get_list_query"):
 		if inspect.getfullargspec(controller.get_list_query).varkw:
 			return controller.get_list_query(query, **list_args)
-		else:
-			return controller.get_list_query(query)
+		return controller.get_list_query(query)
 
 	return query
 
@@ -394,11 +394,11 @@ def is_allowed_field(doctype, field):
 
 	if field in dashboard_fields:
 		return True
-	elif "." in field and is_allowed_linked_field(doctype, field):
+	if "." in field and is_allowed_linked_field(doctype, field):
 		return True
-	elif isinstance(field, dict) and is_allowed_table_field(doctype, field):
+	if isinstance(field, dict) and is_allowed_table_field(doctype, field):
 		return True
-	elif field in [*default_fields, *child_table_fields]:
+	if field in [*default_fields, *child_table_fields]:
 		return True
 
 	return False

@@ -810,6 +810,8 @@ class SelfHostedServer(Document):
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)
+			return None
+		return None
 
 
 def fetch_private_ip_based_on_vendor(play_result: dict):

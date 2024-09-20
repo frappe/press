@@ -84,8 +84,7 @@ def run_command_in_docker_cache(
 		cache_target,
 	)
 	df_path = prep_dockerfile_path(dockerfile)
-	output = run_build_command(df_path, remove_image)
-	return output
+	return run_build_command(df_path, remove_image)
 
 
 def get_cache_check_dockerfile(command: str, cache_target: str) -> str:

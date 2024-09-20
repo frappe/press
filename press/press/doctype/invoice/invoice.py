@@ -368,16 +368,15 @@ class Invoice(Document):
 			if self.amount_due_with_tax == stripe_invoice_total:
 				# return if an invoice with the same amount is already created
 				return
-			else:
-				# if the amount is changed, void the stripe invoice and create a new one
-				self.change_stripe_invoice_status("Void")
-				formatted_amount = fmt_money(stripe_invoice_total, currency=self.currency)
-				self.add_comment(
-					text=(f"Stripe Invoice {self.stripe_invoice_id} of amount {formatted_amount} voided.")
-				)
-				self.stripe_invoice_id = ""
-				self.stripe_invoice_url = ""
-				self.save()
+			# if the amount is changed, void the stripe invoice and create a new one
+			self.change_stripe_invoice_status("Void")
+			formatted_amount = fmt_money(stripe_invoice_total, currency=self.currency)
+			self.add_comment(
+				text=(f"Stripe Invoice {self.stripe_invoice_id} of amount {formatted_amount} voided.")
+			)
+			self.stripe_invoice_id = ""
+			self.stripe_invoice_url = ""
+			self.save()
 
 		if self.amount_due_with_tax <= 0:
 			return
@@ -723,6 +722,7 @@ class Invoice(Document):
 
 		if not already_exists:
 			return frappe.get_doc(doctype="Invoice", team=self.team, period_start=next_start).insert()
+		return None
 
 	def get_pdf(self):
 		print_format = self.meta.default_print_format
@@ -733,20 +733,20 @@ class Invoice(Document):
 	@frappe.whitelist()
 	def create_invoice_on_frappeio(self):
 		if self.flags.skip_frappe_invoice:
-			return
+			return None
 		if self.status != "Paid":
-			return
+			return None
 		if self.amount_paid == 0:
-			return
+			return None
 		if self.frappe_invoice or self.frappe_partner_order:
-			return
+			return None
 
 		try:
 			team = frappe.get_doc("Team", self.team)
 			address = frappe.get_doc("Address", team.billing_address) if team.billing_address else None
 			if not address:
 				# don't create invoice if address is not set
-				return
+				return None
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
@@ -829,7 +829,7 @@ class Invoice(Document):
 
 	def update_transaction_details(self, stripe_charge=None):
 		if not stripe_charge:
-			return
+			return None
 		stripe = get_stripe()
 		charge = stripe.Charge.retrieve(stripe_charge)
 		if charge.balance_transaction:
@@ -850,6 +850,7 @@ class Invoice(Document):
 				)
 			self.save()
 			return True
+		return None
 
 	def update_razorpay_transaction_details(self, payment):
 		if not (payment["fee"] or payment["tax"]):
@@ -927,6 +928,7 @@ class Invoice(Document):
 		if self.stripe_invoice_id:
 			stripe = get_stripe()
 			return stripe.Invoice.retrieve(self.stripe_invoice_id)
+		return None
 
 
 def finalize_draft_invoices():

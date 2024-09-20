@@ -21,8 +21,7 @@ def get_data(filters):
 		"private_ip": server.private_ip,
 		"mariadb_root_password": server.get_password("mariadb_root_password"),
 	}
-	rows = agent.post("database/locks", data=data)
-	return rows
+	return agent.post("database/locks", data=data)
 
 
 def get_columns():

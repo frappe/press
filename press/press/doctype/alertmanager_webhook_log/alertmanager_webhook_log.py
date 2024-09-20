@@ -201,9 +201,7 @@ class AlertmanagerWebhookLog(Document):
 				instance["link"] = get_url_to_form(instance["doctype"], instance["name"])
 
 		context.update({"instances": self.instances, "labels": labels, "rule": rule})
-		message = frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
-
-		return message
+		return frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
 
 	def guess_doctype(self, name):
 		doctypes = [
@@ -222,6 +220,7 @@ class AlertmanagerWebhookLog(Document):
 		for doctype in doctypes:
 			if frappe.db.exists(doctype, name):
 				return doctype
+		return None
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
@@ -241,8 +240,7 @@ class AlertmanagerWebhookLog(Document):
 
 	@cached_property
 	def parsed_group_labels(self) -> dict:
-		parsed = json.loads(self.group_labels)
-		return parsed
+		return json.loads(self.group_labels)
 
 	def ongoing_incident_exists(self) -> bool:
 		ongoing_incident_status = frappe.db.get_value(

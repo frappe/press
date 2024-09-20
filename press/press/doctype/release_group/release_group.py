@@ -515,7 +515,7 @@ class ReleaseGroup(Document, TagHelpers):
 		run_will_fail_check=False,
 	) -> DeployCandidate | None:
 		if not self.enabled:
-			return
+			return None
 
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
@@ -910,6 +910,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if len(results) > 0:
 			return results[0]
+		return None
 
 	@cached_property
 	def last_benches_info(self) -> list[LastDeployInfo]:
@@ -1178,9 +1179,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_marketplace_app_sources(self) -> list[str]:
 		all_marketplace_sources = frappe.get_all("Marketplace App Version", pluck="source")
-		marketplace_app_sources = [app.source for app in self.apps if app.source in all_marketplace_sources]
-
-		return marketplace_app_sources
+		return [app.source for app in self.apps if app.source in all_marketplace_sources]
 
 	def get_clusters(self):
 		"""Get unique clusters corresponding to self.servers"""
@@ -1232,6 +1231,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.save()
 		if deploy:
 			return self.get_last_successful_candidate()._create_deploy([server])
+		return None
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1375,7 +1375,7 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 		servers = [{"server": server}]
 	else:
 		servers = []
-	group = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Release Group",
 			"title": title,
@@ -1386,7 +1386,6 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			"saas_app": saas_app,
 		}
 	).insert()
-	return group
 
 
 def get_status(name):

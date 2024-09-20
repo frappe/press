@@ -165,7 +165,7 @@ def parse_instance_type(instance_type):
 	instance_type, size = instance_type.split(".")
 	# Skip metal instances
 	if "metal" in size:
-		return
+		return None
 
 	family = None
 	for ff in FAMILIES:
@@ -175,7 +175,7 @@ def parse_instance_type(instance_type):
 
 	# Ignore other instance families
 	if family not in PREFERRED_FAMILIES:
-		return
+		return None
 
 	rest = instance_type.removeprefix(family)
 	generation = int(rest[0])
@@ -189,7 +189,7 @@ def parse_instance_type(instance_type):
 		processor = "i"
 
 	if rest:
-		return
+		return None
 
 	return family, generation, processor, size
 
@@ -202,6 +202,5 @@ def parse_size_multiplier(size):
 	}
 	if size in SIZES:
 		return SIZES[size]
-	else:
-		size = size.removesuffix("xlarge")
-		return float(size)
+	size = size.removesuffix("xlarge")
+	return float(size)

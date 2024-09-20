@@ -45,6 +45,7 @@ class DatabaseServerMariaDBVariable(Document):
 		for f in self.value_fields:
 			if self.get(f):
 				return f
+		return None
 
 	@property
 	def value(self) -> Any:

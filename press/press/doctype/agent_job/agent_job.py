@@ -253,7 +253,7 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry(self):
-		job = frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"status": "Undelivered",
@@ -270,7 +270,6 @@ class AgentJob(Document):
 				"request_method": self.request_method,
 			}
 		).insert()
-		return job
 
 	@frappe.whitelist()
 	def retry_in_place(self):
@@ -371,7 +370,7 @@ def job_detail(job):
 
 	current["total"] = len(steps)
 
-	message = {
+	return {
 		"id": job.name,
 		"name": job.job_type,
 		"server": job.server,
@@ -381,7 +380,6 @@ def job_detail(job):
 		"steps": steps,
 		"current": current,
 	}
-	return message
 
 
 def publish_update(job):
@@ -620,7 +618,7 @@ def lock_doc_updated_by_job(job_name):
 	)[0]  # relies on order of values to be site, bench..
 
 	if field_values["job_type"] not in get_pair_jobs():
-		return
+		return None
 
 	for field, value in field_values.items():
 		doctype = field.capitalize()
@@ -630,10 +628,11 @@ def lock_doc_updated_by_job(job_name):
 			"server_type",
 			"job_type",
 		):  # ideally will never happen, but for sanity
-			return
+			return None
 		if value:
 			frappe.db.get_value(doctype, value, "modified", for_update=True)
 			return value
+	return None
 
 
 def update_job(job_name, job):

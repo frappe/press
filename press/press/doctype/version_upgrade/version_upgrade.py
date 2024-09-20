@@ -69,7 +69,7 @@ class VersionUpgrade(Document):
 				"You are upgrading the site to Nightly Branch. Please note that Nightly might not be stable"
 			)
 			return
-		elif source_version == "Nightly":
+		if source_version == "Nightly":
 			frappe.throw(
 				f"Downgrading from Nightly to {dest_version.title()} is not allowed",
 				frappe.ValidationError,

@@ -290,12 +290,11 @@ def get_details(dc: DeployCandidate, exc: BaseException) -> Details:
 			details["is_actionable"] = True
 			dc.error_key = get_error_key(strs)
 			break
-		else:
-			details["title"] = default_title
-			details["message"] = default_message
-			details["traceback"] = tb
-			details["is_actionable"] = False
-			details["assistance_url"] = None
+		details["title"] = default_title
+		details["message"] = default_message
+		details["traceback"] = tb
+		details["is_actionable"] = False
+		details["assistance_url"] = None
 
 	return details
 
@@ -952,6 +951,7 @@ def get_dc_app(dc: DeployCandidate, app_name: str) -> DeployCandidateApp | None:
 	for app in dc.apps:
 		if app.app == app_name:
 			return app
+	return None
 
 
 def fmt(message: str) -> str:
@@ -1002,11 +1002,12 @@ def get_ct_row(
 ) -> Document | None:
 	ct = dc.get(field)
 	if not ct:
-		return
+		return None
 
 	for row in ct:
 		if row.get(ct_field) == match_value:
 			return row
+	return None
 
 
 def get_failed_step(dc: DeployCandidate):

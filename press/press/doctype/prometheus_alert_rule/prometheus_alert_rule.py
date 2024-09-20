@@ -58,24 +58,22 @@ class PrometheusAlertRule(Document):
 		annotations = json.loads(self.annotations)
 		annotations.update({"description": self.description})
 
-		rule = {
+		return {
 			"alert": self.name,
 			"expr": self.expression,
 			"for": self.get("for"),
 			"labels": labels,
 			"annotations": annotations,
 		}
-		return rule
 
 	def get_route(self):
-		route = {
+		return {
 			"group_by": json.loads(self.group_by),
 			"group_wait": self.group_wait,
 			"group_interval": self.group_interval,
 			"repeat_interval": self.repeat_interval,
 			"matchers": [f'alertname="{self.name}"'],
 		}
-		return route
 
 	def on_update(self):
 		rules = yaml.dump(self.get_rules())
@@ -121,9 +119,9 @@ class PrometheusAlertRule(Document):
 	def run_press_job(self, job_name: str, server_type: str, server_name: str, arguments=None):
 		server: Server = frappe.get_doc(server_type, server_name)
 		if self.only_on_shared and not server.is_shared:
-			return
+			return None
 		if find(self.ignore_on_clusters, lambda x: x.cluster == server.cluster):
-			return
+			return None
 
 		if arguments is None:
 			arguments = {}

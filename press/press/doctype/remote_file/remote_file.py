@@ -122,7 +122,7 @@ def delete_remote_backup_objects(remote_files):
 	"""Delete specified objects identified by keys in the backups bucket."""
 	remote_files = list(set([x for x in remote_files if x]))
 	if not remote_files:
-		return
+		return None
 
 	buckets = {bucket: [] for bucket in frappe.get_all("Backup Bucket", pluck="name")}
 	buckets.update({frappe.db.get_single_value("Press Settings", "aws_s3_bucket"): []})
@@ -166,7 +166,7 @@ class RemoteFile(Document):
 		if not self.bucket:
 			return None
 
-		elif self.bucket == frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"):
+		if self.bucket == frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"):
 			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
 			secret_access_key = get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
@@ -203,12 +203,11 @@ class RemoteFile(Document):
 				return True
 			self.db_set("status", "Unavailable")
 			return False
-		else:
-			try:
-				return self.s3_client.head_object(Bucket=self.bucket, Key=self.file_path)
-			except Exception:
-				self.db_set("status", "Unavailable")
-				return False
+		try:
+			return self.s3_client.head_object(Bucket=self.bucket, Key=self.file_path)
+		except Exception:
+			self.db_set("status", "Unavailable")
+			return False
 
 	@frappe.whitelist()
 	def delete_remote_object(self):
@@ -232,9 +231,8 @@ class RemoteFile(Document):
 	def get_content(self):
 		if self.url:
 			return json.loads(requests.get(self.url).content)
-		else:
-			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
-			return json.loads(obj["Body"].read().decode("utf-8"))
+		obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
+		return json.loads(obj["Body"].read().decode("utf-8"))
 
 	@property
 	def size(self) -> int:
@@ -245,11 +243,10 @@ class RemoteFile(Document):
 		"""
 		if int(self.file_size or 0):
 			return int(self.file_size or 0)
-		else:
-			response = requests.head(self.url)
-			self.file_size = int(response.headers.get("content-length", 0))
-			self.save()
-			return int(self.file_size)
+		response = requests.head(self.url)
+		self.file_size = int(response.headers.get("content-length", 0))
+		self.save()
+		return int(self.file_size)
 
 
 def delete_s3_files(buckets):

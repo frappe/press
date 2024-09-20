@@ -272,15 +272,13 @@ Incident URL: {incident_link}"""
 		acknowledged_by = "An engineer"
 		if self.acknowledged_by:
 			acknowledged_by = frappe.db.get_value("User", self.acknowledged_by, "first_name")
-		message = {
+		return {
 			"Validating": "We are noticing some issues with sites on your server. We are giving it a few minutes to confirm before escalating this incident to our engineers.",
 			"Auto-Resolved": "Your sites are now up! This incident has been auto-resolved. We will keep monitoring your sites for any further issues.",
 			"Confirmed": "We are still noticing issues with your sites. We are escalating this incident to our engineers.",
 			"Acknowledged": f"{acknowledged_by} from our team has acknowledged the incident and is actively investigating. Please allow them some time to diagnose and address the issue.",
 			"Resolved": f"Your sites are now up! {acknowledged_by} has resolved this incident. We will keep monitoring your sites for any further issues",
 		}[self.status]
-
-		return message
 
 	def add_acknowledgment_update(
 		self, human: IncidentSettingsUser, call_status: str | None = None, acknowledged=False

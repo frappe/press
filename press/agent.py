@@ -650,8 +650,7 @@ class Agent:
 				"Database Server", database_server, "mariadb_root_password"
 			),
 		}
-		credentials = self.post(f"benches/{site.bench}/sites/{site.name}/credentials", data=data)
-		return credentials
+		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials", data=data)
 
 	def revoke_database_access_credentials(self, site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
@@ -916,12 +915,10 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
-		status = self.post("monitor/rules", data=data)
-		return status
+		return self.post("monitor/rules", data=data)
 
 	def get_job_status(self, id):
-		status = self.get(f"jobs/{id}")
-		return status
+		return self.get(f"jobs/{id}")
 
 	def get_site_sid(self, site, user=None):
 		if user:
@@ -935,6 +932,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
@@ -943,6 +941,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
@@ -984,16 +983,13 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		return self.get("ping")["message"]
 
 	def fetch_monitor_data(self, bench):
-		data = self.post(f"benches/{bench}/monitor")["data"]
-		return data
+		return self.post(f"benches/{bench}/monitor")["data"]
 
 	def fetch_site_status(self, site):
-		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
-		return data
+		return self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
 
 	def fetch_bench_status(self, bench):
-		data = self.get(f"benches/{bench}/status")
-		return data
+		return self.get(f"benches/{bench}/status")
 
 	def run_after_migrate_steps(self, site):
 		data = {

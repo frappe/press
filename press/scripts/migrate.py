@@ -168,6 +168,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		return register_press.json()["message"]
 
 	handle_request_failure(register_press)
+	return None
 
 
 def render_site_table(sites_info, version_info):
@@ -216,13 +217,14 @@ def get_branch(info, app="frappe"):
 	for app in info.get("installed_apps", {}):
 		if app.get("frappe", 0) == 1:
 			return app.get("branch")
+	return None
 
 
 def get_version_from_branch(branch):
 	try:
 		return int(re.findall(r"[0-9]+", branch)[0])
 	except Exception:
-		return
+		return None
 
 
 def is_downgrade(cloud_data):
@@ -305,6 +307,7 @@ def is_valid_subdomain(subdomain):
 	if matched:
 		return True
 	print("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+	return None
 
 
 @add_line_after
@@ -368,7 +371,6 @@ def external_file_checker(file_path, file_type):
 
 @add_line_after
 def upload_backup(local_site):
-	files_uploaded = {}
 	if has_external_files:
 		print("Trying to upload externally added files to S3")
 		files_to_upload = [
@@ -379,8 +381,7 @@ def upload_backup(local_site):
 		]
 	else:
 		files_to_upload = take_backup(local_site)
-	files_uploaded = upload_files(files_to_upload)
-	return files_uploaded
+	return upload_files(files_to_upload)
 
 
 @add_line_after
@@ -434,11 +435,11 @@ def create_session():
 		team = select_team(session)
 		session.headers.update({"X-Press-Team": team, "Connection": "keep-alive"})
 		return session
-	else:
-		handle_request_failure(
-			message=f"Authorization Failed with Error Code {login_sc.status_code}",
-			traceback=False,
-		)
+	handle_request_failure(
+		message=f"Authorization Failed with Error Code {login_sc.status_code}",
+		traceback=False,
+	)
+	return None
 
 
 def frappecloud_migrator(local_site, frappe_provider):

@@ -13,7 +13,7 @@ from press.utils import log_error
 def targets(token):
 	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token")
 	if token != monitor_token:
-		return
+		return None
 
 	self_hosted_stand_alone_servers = frappe.get_all(
 		"Server",

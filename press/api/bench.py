@@ -248,8 +248,7 @@ def options():
 
 	clusters = Cluster.get_all_for_new_bench()
 
-	options = {"versions": versions, "clusters": clusters}
-	return options
+	return {"versions": versions, "clusters": clusters}
 
 
 @frappe.whitelist()
@@ -653,7 +652,7 @@ def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=
 @frappe.whitelist()
 def candidate(name):
 	if not name:
-		return
+		return None
 
 	candidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
@@ -864,10 +863,9 @@ def belongs_to_current_team(app: str) -> bool:
 def regions(name):
 	rg = frappe.get_doc("Release Group", name)
 	cluster_names = rg.get_clusters()
-	clusters = frappe.get_all(
+	return frappe.get_all(
 		"Cluster", fields=["name", "title", "image"], filters={"name": ("in", cluster_names)}
 	)
-	return clusters
 
 
 @frappe.whitelist()
@@ -935,6 +933,7 @@ def logs(name, bench):
 			return frappe.get_doc("Bench", bench).server_logs
 		except AgentRequestSkippedException:
 			return []
+	return None
 
 
 @frappe.whitelist()
@@ -942,6 +941,7 @@ def logs(name, bench):
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).get_server_log(log)
+	return None
 
 
 @frappe.whitelist()

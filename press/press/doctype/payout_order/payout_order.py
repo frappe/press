@@ -62,8 +62,7 @@ class PayoutOrder(Document):
 	@staticmethod
 	def get_list_query(query):
 		PayoutOrder = frappe.qb.DocType("Payout Order")
-		query = query.where(PayoutOrder.docstatus != 2)
-		return query
+		return query.where(PayoutOrder.docstatus != 2)
 
 	def validate(self):
 		self.validate_items()
@@ -251,7 +250,7 @@ def get_unaccounted_marketplace_invoice_items():
 	invoice_item = frappe.qb.DocType("Invoice Item")
 	marketplace_app = frappe.qb.DocType("Marketplace App")
 
-	items = (
+	return (
 		frappe.qb.from_(invoice_item)
 		.left_join(invoice)
 		.on(invoice_item.parent == invoice.name)
@@ -264,8 +263,6 @@ def get_unaccounted_marketplace_invoice_items():
 		.distinct()
 		.run(as_dict=True)
 	)
-
-	return items
 
 
 @frappe.whitelist()

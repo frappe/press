@@ -129,10 +129,10 @@ class Subscription(Document):
 	def create_usage_record(self):
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
-			return
+			return None
 
 		if self.is_usage_record_created():
-			return
+			return None
 
 		team = frappe.get_cached_doc("Team", self.team)
 

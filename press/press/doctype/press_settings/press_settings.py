@@ -181,7 +181,7 @@ class PressSettings(Document):
 			app_name = f"Frappe Cloud {frappe.generate_hash(length=6).upper()}"
 		else:
 			app_name = "Frappe Cloud"
-		manifest = {
+		return {
 			"name": app_name,
 			"url": "https://frappe.cloud",
 			"hook_attributes": {"url": get_url("api/method/press.api.github.hook")},
@@ -199,7 +199,6 @@ class PressSettings(Document):
 			"request_oauth_on_install": True,
 			"setup_on_update": True,
 		}
-		return manifest
 
 	@property
 	def boto3_offsite_backup_session(self) -> Session:

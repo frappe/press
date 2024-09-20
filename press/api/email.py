@@ -80,7 +80,7 @@ def get_analytics(**data):
 		if not value or not isinstance(value, str):
 			frappe.throw("Invalid Request")
 
-	result = frappe.get_all(
+	return frappe.get_all(
 		"Mail Log",
 		filters={
 			"site": site,
@@ -91,8 +91,6 @@ def get_analytics(**data):
 		fields=["date", "status", "message", "sender", "recipient"],
 		order_by="date asc",
 	)
-
-	return result
 
 
 def validate_plan(secret_key):
@@ -161,29 +159,29 @@ def send_mime_mail(**data):
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	else:
-		log_error("Email Delivery Service: Sending error", data=resp.text)
-		frappe.throw(
-			"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
-			EmailSendError,
-		)
+	log_error("Email Delivery Service: Sending error", data=resp.text)
+	frappe.throw(
+		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+		EmailSendError,
+	)
+	return None
 
 
 def is_valid_mailgun_event(event_data):
 	if not event_data:
-		return
+		return None
 
 	if event_data.get("user-variables", {}).get("sk_mail") is None:
 		# We don't know where to send this event
 		# TOOD: Investigate why this is happening
 		# Hint: Likely from other emails not sent via the email delivery app
-		return
+		return None
 
 	if "delivery-status" not in event_data:
-		return
+		return None
 
 	if "message" not in event_data["delivery-status"]:
-		return
+		return None
 
 	return True
 
@@ -197,7 +195,7 @@ def event_log():
 	event_data = data.get("event-data")
 
 	if not is_valid_mailgun_event(event_data):
-		return
+		return None
 
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
@@ -205,7 +203,7 @@ def event_log():
 		if "message-id" not in headers:
 			# We can't log this event without a message-id
 			# TOOD: Investigate why this is happening
-			return
+			return None
 		message_id = headers["message-id"]
 		site = (
 			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")

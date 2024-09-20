@@ -44,12 +44,12 @@ def callback(code=None, state=None):
 	except AccessDeniedError:
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = "/dashboard/login"
-		return
+		return None
 	except Exception as e:
 		log_error("Google Login failed", data=e)
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = "/dashboard/login"
-		return
+		return None
 
 	# authenticated
 	frappe.cache().delete_value(cached_key)
@@ -84,12 +84,16 @@ def callback(code=None, state=None):
 		frappe.local.response.type = "redirect"
 		if product_trial:
 			frappe.local.response.location = f"/dashboard/app-trial/setup/{product_trial.name}"
-		else:
-			frappe.local.response.location = "/dashboard"
-	elif team_name and not team_enabled:
+			return None
+		frappe.local.response.location = "/dashboard"
+		return None
+
+	if team_name and not team_enabled:
 		# cannot move forward because account is disabled
 		frappe.throw(_("Account {0} has been deactivated").format(email))
-	elif not team_name:
+		return None
+
+	if not team_name:
 		account_request = frappe.get_doc(
 			doctype="Account Request",
 			email=email,
@@ -106,6 +110,9 @@ def callback(code=None, state=None):
 		frappe.local.response.type = "redirect"
 		verification_url = account_request.get_verification_url()
 		frappe.local.response.location = verification_url
+		return None
+
+	return None
 
 
 def invalid_login():
@@ -118,7 +125,7 @@ def google_oauth_flow():
 	redirect_uri = google_credentials["web"].get("redirect_uris")[0]
 	redirect_uri = redirect_uri.replace("press.api.oauth.callback", "press.api.google.callback")
 	print(redirect_uri)
-	flow = Flow.from_client_config(
+	return Flow.from_client_config(
 		client_config=google_credentials,
 		scopes=[
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -127,7 +134,6 @@ def google_oauth_flow():
 		],
 		redirect_uri=redirect_uri,
 	)
-	return flow
 
 
 def get_google_credentials():

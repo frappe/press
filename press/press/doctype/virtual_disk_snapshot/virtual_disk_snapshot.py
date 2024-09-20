@@ -133,8 +133,9 @@ class VirtualDiskSnapshot(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif cluster.cloud_provider == "OCI":
+		if cluster.cloud_provider == "OCI":
 			return BlockstorageClient(cluster.get_oci_config())
+		return None
 
 
 def sync_snapshots():

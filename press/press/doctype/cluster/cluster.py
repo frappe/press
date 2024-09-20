@@ -102,12 +102,12 @@ class Cluster(Document):
 		if filters and filters.get("group"):
 			rg = frappe.get_doc("Release Group", filters.get("group"))
 			cluster_names = rg.get_clusters()
-			clusters = frappe.get_all(
+			return frappe.get_all(
 				"Cluster",
 				fields=["name", "title", "image", "beta"],
 				filters={"name": ("in", cluster_names)},
 			)
-			return clusters
+		return None
 
 	def validate(self):
 		self.validate_monitoring_password()
@@ -688,20 +688,19 @@ class Cluster(Document):
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
 		if plan:
 			return frappe.get_doc("Server Plan", f"Basic Cluster - {server_type}")
-		else:
-			return frappe.get_doc(
-				{
-					"doctype": "Server Plan",
-					"name": f"Basic Cluster - {server_type}",
-					"title": f"Basic Cluster - {server_type}",
-					"instance_type": "t2.medium",
-					"price_inr": 0,
-					"price_usd": 0,
-					"vcpu": 2,
-					"memory": 4096,
-					"disk": 50,
-				}
-			).insert(ignore_permissions=True, ignore_if_duplicate=True)
+		return frappe.get_doc(
+			{
+				"doctype": "Server Plan",
+				"name": f"Basic Cluster - {server_type}",
+				"title": f"Basic Cluster - {server_type}",
+				"instance_type": "t2.medium",
+				"price_inr": 0,
+				"price_usd": 0,
+				"vcpu": 2,
+				"memory": 4096,
+				"disk": 50,
+			}
+		).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
 	def create_server(
 		self,

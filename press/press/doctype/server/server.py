@@ -294,13 +294,11 @@ class BaseServer(Document, TagHelpers):
 	def get_agent_repository_url(self):
 		settings = frappe.get_single("Press Settings")
 		repository_owner = settings.agent_repository_owner or "frappe"
-		url = f"https://github.com/{repository_owner}/agent"
-		return url
+		return f"https://github.com/{repository_owner}/agent"
 
 	def get_agent_repository_branch(self):
 		settings = frappe.get_single("Press Settings")
-		branch = settings.branch or "master"
-		return branch
+		return settings.branch or "master"
 
 	@frappe.whitelist()
 	def ping_agent(self):
@@ -569,7 +567,7 @@ class BaseServer(Document, TagHelpers):
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
-			return
+			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -1074,6 +1072,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		if play.status == "Success":
 			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+		return None
 
 
 class Server(BaseServer):
@@ -1525,6 +1524,7 @@ class Server(BaseServer):
 		servers = frappe.get_all("Server", {**filters, **extra_filters}, pluck="name", limit=1)
 		if servers:
 			return servers[0]
+		return None
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")

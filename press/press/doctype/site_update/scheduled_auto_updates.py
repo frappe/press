@@ -80,9 +80,9 @@ def should_update_trigger(doc):
 	# Return based on the set frequency
 	if doc.update_trigger_frequency == "Daily":
 		return should_update_trigger_for_daily(doc)
-	elif doc.update_trigger_frequency == "Weekly":
+	if doc.update_trigger_frequency == "Weekly":
 		return should_update_trigger_for_weekly(doc)
-	elif doc.update_trigger_frequency == "Monthly":
+	if doc.update_trigger_frequency == "Monthly":
 		return should_update_trigger_for_monthly(doc)
 
 	return False
@@ -99,7 +99,7 @@ def should_update_trigger_for_daily(doc, current_datetime=None):
 		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
 	):
 		return False
-	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
+	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
 	return False

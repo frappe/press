@@ -46,9 +46,7 @@ class DeveloperApiHandler:
 			"site",
 		]
 
-		filtered_dict = {x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send}
-
-		return filtered_dict
+		return {x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send}
 
 	def get_subscription(self) -> dict:
 		team = self.app_subscription_doc.team

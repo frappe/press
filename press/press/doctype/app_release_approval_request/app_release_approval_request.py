@@ -283,8 +283,7 @@ def highlight_context(context):
 		hl_lines=[line_number - line_range[0] + 1],
 	)
 	lexer = PL(stripnl=False, tabsize=4)
-	highlighted = highlight(code, lexer, formatter)
-	return highlighted
+	return highlight(code, lexer, formatter)
 
 
 def get_configuration():

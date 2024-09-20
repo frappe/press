@@ -88,8 +88,7 @@ def get_customer_id(form_dict):
 		customer_id = re.search(r"cus_\w+", form_dict_str)
 		if customer_id:
 			return customer_id.group(0)
-		else:
-			return None
+		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture customer id from stripe webhook log")
 
@@ -100,8 +99,7 @@ def get_invoice_id(form_dict):
 		invoice_id = re.search(r"in_\w+", form_dict_str)
 		if invoice_id:
 			return invoice_id.group(0)
-		else:
-			return None
+		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture invoice id from stripe webhook log")
 

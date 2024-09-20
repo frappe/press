@@ -253,7 +253,7 @@ class DBOptimizer:
 		def remove_maximum_indexes(idx: list[DBIndex]):
 			"""Try to remove entire index from potential indexes, if not possible, reduce one part and try again until no parts are left."""
 			if not idx:
-				return
+				return None
 			matched_sub_index = []
 			for idx_part in list(idx):
 				matching_part = [
@@ -263,12 +263,12 @@ class DBOptimizer:
 					# pop and recurse
 					idx.pop()
 					return remove_maximum_indexes(idx)
-				else:
-					matched_sub_index.extend(matching_part)
+				matched_sub_index.extend(matching_part)
 
 			# Every part matched now, lets remove those parts
 			for i in matched_sub_index:
 				potential_indexes.remove(i)
+			return None
 
 		# Reconstruct multi-col index
 		for table in self.tables.values():
@@ -310,6 +310,7 @@ class DBOptimizer:
 			and best_index._score < INDEX_SCORE_THRESHOLD
 		):
 			return best_index
+		return None
 
 	def index_score(self, index: DBIndex) -> float:
 		"""Score an index from 0 to 1 based on usefulness.

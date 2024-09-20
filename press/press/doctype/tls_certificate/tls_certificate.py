@@ -387,7 +387,7 @@ class LetsEncrypt(BaseCA):
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"
 
-		command = (
+		return (
 			f"certbot certonly {plugin} {staging} --logs-dir"
 			f" {self.directory}/logs --work-dir {self.directory} --config-dir"
 			f" {self.directory} {force_renewal} --agree-tos --eff-email --email"
@@ -396,8 +396,6 @@ class LetsEncrypt(BaseCA):
 			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.domain} --domains"
 			f" {self.domain}"
 		)
-
-		return command
 
 	def run(self, command, environment=None):
 		try:

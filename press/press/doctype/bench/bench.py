@@ -140,9 +140,7 @@ class Bench(Document):
 	@staticmethod
 	def all_with_sites(fields=None, filters=None):
 		benches = frappe.get_all("Bench", filters=filters, fields=fields, pluck="name")
-		benches = [Bench.with_sites(b) for b in benches]
-
-		return benches
+		return [Bench.with_sites(b) for b in benches]
 
 	def autoname(self):
 		server_name_abbreviation, server_name = frappe.db.get_value(
@@ -158,9 +156,7 @@ class Bench(Document):
 		if len(bench_name) > 32:
 			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
 
-		bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
-
-		return bench_name
+		return append_number_if_name_exists("Bench", bench_name, separator="-")
 
 	def update_config_with_rg_config(self, config: dict):
 		release_group_common_site_config = frappe.db.get_value(

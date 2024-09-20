@@ -30,8 +30,7 @@ class BenchGetAppCache(Document):
 
 	@staticmethod
 	def get_data():
-		data = get_app_cache_items()
-		return data
+		return get_app_cache_items()
 
 	def load_from_db(self):
 		db = {v.name: v for v in BenchGetAppCache.get_data()}

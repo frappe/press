@@ -207,7 +207,7 @@ def create_site_on_public_bench(
 		else:
 			frappe.throw("No release group found for the selected apps")
 
-	site = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Site",
 			"subdomain": subdomain,
@@ -220,8 +220,6 @@ def create_site_on_public_bench(
 			"app_plans": app_plans,
 		}
 	).insert()
-
-	return site
 
 
 def create_site_on_private_bench(
@@ -289,7 +287,7 @@ def create_site_on_private_bench(
 			}
 		)
 
-	site_group_deploy = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Site Group Deploy",
 			"subdomain": subdomain,
@@ -299,8 +297,6 @@ def create_site_on_private_bench(
 			"team": get_current_team(),
 		}
 	).insert()
-
-	return site_group_deploy
 
 
 @frappe.whitelist()
@@ -320,8 +316,7 @@ def create_site_for_app(
 	if site_should_be_created_on_public_bench(apps):
 		return create_site_on_public_bench(subdomain, apps, cluster, site_plan, latest_stable_version, group)
 
-	else:
-		return create_site_on_private_bench(subdomain, apps, cluster)
+	return create_site_on_private_bench(subdomain, apps, cluster)
 
 
 @frappe.whitelist()
@@ -423,14 +418,12 @@ def frappe_versions():
 def get_apps() -> list[dict]:
 	"""Return list of apps developed by the current team"""
 	team = get_current_team()
-	apps = frappe.get_all(
+	return frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "app", "status", "description"],
 		filters={"team": team},
 		order_by="title",
 	)
-
-	return apps
 
 
 @frappe.whitelist()
@@ -501,9 +494,7 @@ def convert_to_webp(file_content: bytes) -> bytes:
 	image = image.convert("RGB")
 
 	image.save(image_bytes, "webp")
-	image_bytes = image_bytes.getvalue()
-
-	return image_bytes
+	return image_bytes.getvalue()
 
 
 @frappe.whitelist()
@@ -677,9 +668,7 @@ def get_latest_approval_request(app_release: str):
 	if len(approval_requests) == 0:
 		frappe.throw("No approval request exists for the given app release")
 
-	approval_request = frappe.get_doc("App Release Approval Request", approval_requests[0])
-
-	return approval_request
+	return frappe.get_doc("App Release Approval Request", approval_requests[0])
 
 
 @frappe.whitelist()
@@ -743,8 +732,7 @@ def get_marketplace_apps_for_onboarding() -> list[dict]:
 	for app in apps:
 		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
 	# sort by total installs
-	apps = sorted(apps, key=lambda x: x["total_installs"], reverse=True)
-	return apps
+	return sorted(apps, key=lambda x: x["total_installs"], reverse=True)
 
 
 def is_on_marketplace(app: str) -> bool:
@@ -822,7 +810,7 @@ def get_promotional_banners() -> list:
 	promotionalBanner = frappe.qb.DocType("Marketplace Promotional Banner")
 	marketplaceApp = frappe.qb.DocType("Marketplace App")
 
-	promotions = (
+	return (
 		frappe.qb.from_(promotionalBanner)
 		.left_join(marketplaceApp)
 		.on(promotionalBanner.marketplace_app == marketplaceApp.name)
@@ -838,8 +826,6 @@ def get_promotional_banners() -> list:
 		.where(promotionalBanner.is_active == True)  # noqa
 		.run(as_dict=True)
 	)
-
-	return promotions
 
 
 # PAID APPS APIs
@@ -1029,9 +1015,7 @@ def get_subscriptions_list(marketplace_app: str) -> list:
 		.orderby(app_sub.creation, order=frappe.qb.desc)
 	)
 
-	result = query.run(as_dict=True)
-
-	return result
+	return query.run(as_dict=True)
 
 
 @frappe.whitelist()
@@ -1107,7 +1091,7 @@ def reset_features_for_plan(app_plan_doc: MarketplaceAppPlan, feature_list: list
 @frappe.whitelist()
 def get_payouts_list() -> list[dict]:
 	team = get_current_team()
-	payouts = frappe.get_all(
+	return frappe.get_all(
 		"Payout Order",
 		filters={"recipient": team},
 		fields=[
@@ -1120,8 +1104,6 @@ def get_payouts_list() -> list[dict]:
 		],
 		order_by="period_end desc",
 	)
-
-	return payouts
 
 
 @frappe.whitelist()
@@ -1349,8 +1331,7 @@ def communication(name):
 		.where((comm.reference_doctype == "Marketplace App") & (comm.reference_name == name))
 		.orderby(comm.creation, order=frappe.qb.desc)
 	)
-	res = query.run(as_dict=True)
-	return res
+	return query.run(as_dict=True)
 
 
 @protected("Marketplace App")

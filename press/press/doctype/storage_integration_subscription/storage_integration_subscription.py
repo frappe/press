@@ -201,7 +201,7 @@ def get_analytics(**data):
 	from press.api.developer.marketplace import get_subscription_status
 
 	if get_subscription_status(data["secret_key"]) != "Active":
-		return
+		return None
 
 	site, available = frappe.db.get_value(
 		"Storage Integration Subscription", data["access_key"], ["site", "limit"]

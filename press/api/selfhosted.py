@@ -45,8 +45,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 		).insert()
 	except frappe.DuplicateEntryError as e:
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
-		server_name = e.args[1]
-		return server_name
+		return e.args[1]
 
 	return self_hosted_server.name
 
@@ -139,8 +138,7 @@ def setup(server):
 
 @frappe.whitelist()
 def get_plans():
-	server_plan = plans("Self Hosted Server")
-	return server_plan
+	return plans("Self Hosted Server")
 
 
 @frappe.whitelist()
@@ -169,5 +167,5 @@ def create_and_verify_selfhosted(server):
 		setup(self_hosted_server_name)
 		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
 
-	else:
-		frappe.throw("Server verification failed. Please check the server details and try again.")
+	frappe.throw("Server verification failed. Please check the server details and try again.")
+	return None

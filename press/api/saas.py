@@ -166,8 +166,7 @@ def get_hybrid_saas_pool(account_request):
 
 	for rule in ar_rules:
 		if eval(f"account_request.{rule.field} {rule.condition} '{rule.value}'"):
-			hybrid_pool = rule.parent
-			return hybrid_pool
+			return rule.parent
 
 	return hybrid_pool
 
@@ -370,8 +369,7 @@ def get_site_status(key, app=None):
 	if site:
 		capture("completed_site_allocation", "fc_saas", site.name)
 		return site
-	else:
-		return {"status": "Pending"}
+	return {"status": "Pending"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -492,6 +490,7 @@ def get_saas_product_info(product=None):
 			"domain": product_trial.domain,
 			"site_request": site_request,
 		}
+	return None
 
 
 @frappe.whitelist()

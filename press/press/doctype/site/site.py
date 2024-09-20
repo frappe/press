@@ -638,7 +638,7 @@ class Site(Document, TagHelpers):
 		self.check_marketplace_app_installable(plan)
 
 		if find(self.apps, lambda x: x.app == app):
-			return
+			return None
 
 		log_site_activity(self.name, "Install App", app)
 		agent = Agent(self.server)
@@ -1152,6 +1152,7 @@ class Site(Document, TagHelpers):
 		domains = self._get_redirected_domains()
 		if domains:
 			return self.set_redirects_in_proxy(domains)
+		return None
 
 	def _remove_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
@@ -1251,7 +1252,7 @@ class Site(Document, TagHelpers):
 			sites_remote_files += backup_files
 
 		if not sites_remote_files:
-			return
+			return None
 
 		frappe.db.set_value(
 			"Site Backup",
@@ -1333,8 +1334,8 @@ class Site(Document, TagHelpers):
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
 			return f"https://{self.host_name or self.name}/desk?sid={sid}"
-		else:
-			frappe.throw("No additional system user created for this site")
+		frappe.throw("No additional system user created for this site")
+		return None
 
 	@frappe.whitelist()
 	def login(self, reason=None):
@@ -1348,15 +1349,13 @@ class Site(Document, TagHelpers):
 
 	def create_user(self, email, first_name, last_name, password=None):
 		if self.additional_system_user_created:
-			return
+			return None
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
 	def get_connection_as_admin(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
-		conn = FrappeClient(f"https://{self.name}", "Administrator", password)
-
-		return conn
+		return FrappeClient(f"https://{self.name}", "Administrator", password)
 
 	def get_login_sid(self, user="Administrator"):
 		sid = None
@@ -1387,7 +1386,7 @@ class Site(Document, TagHelpers):
 	def fetch_analytics(self):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
-			return
+			return None
 		return agent.get_site_analytics(self)
 
 	def get_disk_usages(self):
@@ -1539,10 +1538,10 @@ class Site(Document, TagHelpers):
 			if self.ping().status_code == requests.codes.ok:
 				# Site is up but setup status fetch failed
 				log_error("Fetching Setup Status Failed", doc=self)
-			return
+			return None
 
 		if not value:
-			return
+			return None
 
 		setup_complete = cint(value["setup_complete"])
 		if not setup_complete:
@@ -1694,7 +1693,7 @@ class Site(Document, TagHelpers):
 	def delete_config(self, key, save=True):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
-			return
+			return None
 
 		updated_config = []
 		for row in self.configuration:
@@ -1704,6 +1703,7 @@ class Site(Document, TagHelpers):
 		self._set_configuration(updated_config)
 		if save:
 			return Agent(self.server).update_site_config(self)
+		return None
 
 	@frappe.whitelist()
 	def update_site_config(self, config=None):
@@ -2412,18 +2412,17 @@ class Site(Document, TagHelpers):
 		banned_domains = frappe.get_all("Blocked Domain", {"block_for_all": 1}, pluck="name")
 		if banned_domains and subdomain in banned_domains:
 			return True
-		else:
-			return bool(
-				frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": domain})
-				or frappe.db.exists(
-					"Site",
-					{
-						"subdomain": subdomain,
-						"domain": domain,
-						"status": ("!=", "Archived"),
-					},
-				)
+		return bool(
+			frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": domain})
+			or frappe.db.exists(
+				"Site",
+				{
+					"subdomain": subdomain,
+					"domain": domain,
+					"status": ("!=", "Archived"),
+				},
 			)
+		)
 
 	@frappe.whitelist()
 	def run_after_migrate_steps(self):
@@ -3086,7 +3085,7 @@ def prepare_site(site: str, subdomain: str | None = None) -> dict:
 		"public": backup.remote_public_file,
 		"private": backup.remote_private_file,
 	}
-	site_dict = {
+	return {
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 		"plan": doc.plan,
 		"name": sitename,
@@ -3095,8 +3094,6 @@ def prepare_site(site: str, subdomain: str | None = None) -> dict:
 		"apps": app_plans,
 		"files": files,
 	}
-
-	return site_dict
 
 
 @frappe.whitelist()

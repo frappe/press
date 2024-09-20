@@ -124,6 +124,7 @@ def get_will_fail_checker(error_key: str):
 	for error_substring, _, will_fail_checker in handlers():
 		if get_error_key(error_substring) == error_key:
 			return will_fail_checker
+	return None
 
 
 def is_suspended() -> bool:

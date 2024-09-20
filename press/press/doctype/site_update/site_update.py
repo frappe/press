@@ -351,7 +351,7 @@ def benches_with_available_update(site=None, server=None):
 @frappe.whitelist()
 def sites_with_available_update(server=None):
 	benches = benches_with_available_update(server=server)
-	sites = frappe.get_all(
+	return frappe.get_all(
 		"Site",
 		filters={
 			"status": ("in", ("Active", "Inactive", "Suspended")),
@@ -361,7 +361,6 @@ def sites_with_available_update(server=None):
 		},
 		fields=["name", "timezone", "bench", "server", "status"],
 	)
-	return sites
 
 
 def schedule_updates():

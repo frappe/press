@@ -65,8 +65,8 @@ def get_partner_details(partner_email):
 	)
 	if data:
 		return data[0]
-	else:
-		frappe.throw("Partner Details not found")
+	frappe.throw("Partner Details not found")
+	return None
 
 
 @frappe.whitelist()
@@ -161,6 +161,7 @@ def add_partner(referral_code: str):
 		}
 	)
 	doc.insert(ignore_permissions=True)
+	return None
 
 
 @frappe.whitelist()
@@ -178,9 +179,8 @@ def validate_partner_code(code):
 @frappe.whitelist()
 def get_partner_customers():
 	team = get_current_team(get_doc=True)
-	customers = frappe.get_all(
+	return frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
 		["name", "user", "payment_mode", "billing_name", "currency"],
 	)
-	return customers

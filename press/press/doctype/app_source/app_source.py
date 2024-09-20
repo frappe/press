@@ -106,14 +106,14 @@ class AppSource(Document):
 		commit_hash: str | None = None,
 	):
 		if self.last_github_poll_failed and not force:
-			return
+			return None
 
 		_commit_hash, commit_info, ok = self.get_commit_info(
 			commit_hash,
 		)
 
 		if not ok:
-			return
+			return None
 
 		try:
 			return self._create_release(

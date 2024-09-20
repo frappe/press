@@ -98,25 +98,23 @@ ROI Percentage: {cint(self.roi_percentage)} %"""
 	@property
 	def client(self):
 		settings = frappe.get_single("Press Settings")
-		client = boto3.client(
+		return boto3.client(
 			"ce",
 			region_name="us-east-1",
 			aws_access_key_id=settings.aws_access_key_id,
 			aws_secret_access_key=settings.get_password("aws_secret_access_key"),
 		)
-		return client
 
 	def generate_recommendation(self):
 		self.client.start_savings_plans_purchase_recommendation_generation()
 
 	def get_recommendation(self):
-		response = self.client.get_savings_plans_purchase_recommendation(
+		return self.client.get_savings_plans_purchase_recommendation(
 			SavingsPlansType="COMPUTE_SP",
 			TermInYears="THREE_YEARS",
 			PaymentOption="NO_UPFRONT",
 			LookbackPeriodInDays="SEVEN_DAYS",
 		)
-		return response
 
 	def validate_duplicate(self):
 		if frappe.db.exists(

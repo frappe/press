@@ -14,8 +14,7 @@ class SaasApp(Document):
 		self.name = self.app
 
 	def get_app_versions(self):
-		v = [ver.version_name for ver in self.app_versions]
-		return v
+		return [ver.version_name for ver in self.app_versions]
 
 	def get_plans(self, site):
 		return get_plans_for_app(self.name, site)
@@ -64,11 +63,7 @@ def get_plans_for_app(app, site):
 
 
 def get_plan_prices(plan_name):
-	plan_prices = frappe.db.get_value(
-		"Site Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
-	)
-
-	return plan_prices
+	return frappe.db.get_value("Site Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True)
 
 
 def get_selected_plan(app, site):

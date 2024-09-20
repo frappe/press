@@ -239,6 +239,7 @@ class SiteMigration(Document):
 			return ret
 		self.update_next_step_status("Skipped")
 		self.run_next_step()
+		return None
 
 	def add_steps_for_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
@@ -571,6 +572,7 @@ class SiteMigration(Document):
 		if job:
 			return job
 		self.run_next_step()
+		return None
 
 	def activate_site_on_destination_proxy(self):
 		"""Activate site on destination proxy"""

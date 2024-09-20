@@ -372,7 +372,7 @@ def options():
 
 @frappe.whitelist()
 def plans(name, cluster=None):
-	plans = Plan.get_plans(
+	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
 			"name",
@@ -388,8 +388,6 @@ def plans(name, cluster=None):
 		],
 		filters={"server_type": name, "cluster": cluster} if cluster else {"server_type": name},
 	)
-
-	return plans
 
 
 @frappe.whitelist()
@@ -454,7 +452,7 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	plays = frappe.get_all(
+	return frappe.get_all(
 		"Ansible Play",
 		fields=["name", "play", "creation", "status", "start", "end", "duration"],
 		filters=filters,
@@ -462,7 +460,6 @@ def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None)
 		limit=limit_page_length,
 		order_by=order_by or "creation desc",
 	)
-	return plays
 
 
 @frappe.whitelist()

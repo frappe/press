@@ -7,5 +7,4 @@ import frappe
 
 @frappe.whitelist()
 def all():
-	payments = frappe.get_all("Payment", fields=["name"], filters={"user": frappe.session.user})
-	return payments
+	return frappe.get_all("Payment", fields=["name"], filters={"user": frappe.session.user})

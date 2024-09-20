@@ -147,6 +147,7 @@ def get_saas_bench(app):
 	for bs in bench_servers:
 		if bs["server"] == lowest_cpu_server:
 			return bs["name"]
+	return None
 
 
 def get_saas_plan(app):

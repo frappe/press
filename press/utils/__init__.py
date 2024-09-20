@@ -188,14 +188,12 @@ def get_default_team_for_user(user):
 		# if user is part of multiple teams, send the first enabled one
 		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
 			return team
+	return None
 
 
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
-	valid_teams = frappe.db.get_all(
-		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
-	)
-	return valid_teams
+	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
 def is_user_part_of_team(user, team):
@@ -292,15 +290,13 @@ def chunk(iterable, size):
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	return open(migration_script).read()
 
 
 @cache(seconds=1800)
 def get_minified_script_2():
 	migration_script = "../apps/press/press/scripts/migrate_2.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	return open(migration_script).read()
 
 
 def get_frappe_backups(url, email, password):
@@ -467,8 +463,9 @@ def is_json(string):
 	if isinstance(string, str):
 		string = string.strip()
 		return string.startswith("{") and string.endswith("}")
-	elif isinstance(string, dict | list):
+	if isinstance(string, dict | list):
 		return True
+	return None
 
 
 def guess_type(value):
@@ -484,10 +481,9 @@ def guess_type(value):
 
 	if value_type in type_dict:
 		return type_dict[value_type]
-	else:
-		if is_json(value):
-			return "JSON"
-		return "String"
+	if is_json(value):
+		return "JSON"
+	return "String"
 
 
 def convert(string):
@@ -776,6 +772,7 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+	return None
 
 
 def fmt_timedelta(td: timedelta | int):

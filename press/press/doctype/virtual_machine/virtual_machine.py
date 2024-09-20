@@ -131,8 +131,9 @@ class VirtualMachine(Document):
 	def provision(self):
 		if self.cloud_provider == "AWS EC2":
 			return self._provision_aws()
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return self._provision_oci()
+		return None
 
 	def _provision_aws(self):
 		options = {
@@ -281,14 +282,14 @@ class VirtualMachine(Document):
 				}
 			)
 
-		init = frappe.render_template(cloud_init_template, context, is_path=True)
-		return init
+		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
 		for doctype in self.server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
+		return None
 
 	def get_aws_status_map(self):
 		return {
@@ -319,7 +320,7 @@ class VirtualMachine(Document):
 			return self.client("ssm").get_parameter(
 				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 			client = ComputeClient(cluster.get_oci_config())
 			images = client.list_images(
@@ -330,6 +331,7 @@ class VirtualMachine(Document):
 				lifecycle_state="AVAILABLE",
 			).data
 			return images[0].id
+		return None
 
 	@frappe.whitelist()
 	def reboot(self):
@@ -368,7 +370,7 @@ class VirtualMachine(Document):
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
 			)
 			return response["Volumes"]
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 			return (
 				self.client()
@@ -385,6 +387,7 @@ class VirtualMachine(Document):
 				)
 				.data
 			)
+		return None
 
 	def convert_to_gp3(self):
 		for volume in self.volumes:
@@ -405,11 +408,12 @@ class VirtualMachine(Document):
 		try:
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
 		except frappe.QueryTimeoutError:  # lock wait timeout
-			return
+			return None
 		if self.cloud_provider == "AWS EC2":
 			return self._sync_aws(*args, **kwargs)
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return self._sync_oci(*args, **kwargs)
+		return None
 
 	def _sync_oci(self, instance=None):
 		if not instance:
@@ -703,6 +707,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			volume = self.volumes[0]
 			return volume.iops, volume.throughput
+		return None
 
 	@frappe.whitelist()
 	def update_ebs_performance(self, iops, throughput):
@@ -721,8 +726,8 @@ class VirtualMachine(Document):
 	def get_oci_volume_performance(self):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
-			vpus = ((volume.iops / volume.size) - 45) / 1.5
-			return vpus
+			return ((volume.iops / volume.size) - 45) / 1.5
+		return None
 
 	@frappe.whitelist()
 	def update_oci_volume_performance(self, vpus):
@@ -749,8 +754,9 @@ class VirtualMachine(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+		return None
 
 	@frappe.whitelist()
 	def create_server(self):

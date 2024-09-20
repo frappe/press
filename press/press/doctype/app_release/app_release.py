@@ -87,13 +87,11 @@ class AppRelease(Document):
 		)
 
 		# Main query that selects app_release fields and the latest screening_status and name
-		query = query.select(
+		return query.select(
 			app_release.name,
 			latest_approval_request.as_("screening_status"),
 			approval_request_name.as_("approval_request_name"),
 		)
-
-		return query
 
 	def validate(self):
 		if not self.clone_directory:

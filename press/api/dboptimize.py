@@ -22,8 +22,7 @@ from press.utils import log_error
 @frappe.whitelist()
 @protected("Site")
 def mariadb_analyze_query(name, row):
-	suggested_index = analyze_query(row=row, site=name)
-	return suggested_index
+	return analyze_query(row=row, site=name)
 
 
 def analyze_query(row, site):
@@ -46,7 +45,7 @@ def analyze_query(row, site):
 		doc.status = "Failure"
 		doc.save()
 		frappe.db.commit()
-		return
+		return None
 
 	doc.save()
 	frappe.db.commit()
@@ -66,7 +65,7 @@ def analyze_query(row, site):
 			doc.status = "Failure"
 			doc.save()
 			frappe.db.commit()
-			return
+			return None
 
 		# This is an agent job. Remaining is processed in the callback.
 		_fetch_column_stats(analyzer.site, table, doc.get_title())
@@ -144,8 +143,7 @@ def get_status_of_mariadb_analyze_query(name, query):
 	)
 	if doc:
 		return doc[0]
-	else:
-		return None
+	return None
 
 
 def mariadb_analyze_query_already_exists(site, normalized_query):
@@ -165,13 +163,12 @@ def mariadb_analyze_query_already_running_for_site(name):
 @frappe.whitelist()
 @protected("Site")
 def get_suggested_index(name, normalized_query):
-	suggested_index = frappe.get_value(
+	return frappe.get_value(
 		"MariaDB Analyze Query",
 		{"site": name, "status": "Success", "normalized_query": normalized_query},
 		["site", "normalized_query", "suggested_index"],
 		as_dict=True,
 	)
-	return suggested_index
 
 
 def delete_all_occurences_of_mariadb_analyze_query(job):

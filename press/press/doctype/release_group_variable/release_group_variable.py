@@ -31,5 +31,4 @@ class ReleaseGroupVariable(Document):
 		query = query.where(environmentVariable.internal == 0).orderby(
 			environmentVariable.key, order=frappe.qb.asc
 		)
-		configs = query.run(as_dict=True)
-		return configs
+		return query.run(as_dict=True)

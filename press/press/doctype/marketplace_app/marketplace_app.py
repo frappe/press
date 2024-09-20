@@ -657,10 +657,9 @@ def get_script_name(app, op):
 	if op == "install" and frappe.db.get_value("Marketplace App", app, "run_after_install_script"):
 		return "after_install_script"
 
-	elif op == "uninstall" and frappe.db.get_value("Marketplace App", app, "run_after_uninstall_script"):
+	if op == "uninstall" and frappe.db.get_value("Marketplace App", app, "run_after_uninstall_script"):
 		return "after_uninstall_script"
-	else:
-		return ""
+	return ""
 
 
 def run_script(app, site, op):
@@ -703,7 +702,6 @@ def is_public_github_repository(github_url):
 		# Check if the repository is public
 		if data.get("private") is False:
 			return True
-		else:
-			return False
+		return False
 	except Exception:
 		return False

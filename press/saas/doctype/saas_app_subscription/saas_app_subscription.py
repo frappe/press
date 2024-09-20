@@ -127,7 +127,7 @@ class SaasAppSubscription(Document):
 
 	def create_usage_record(self):
 		if self.is_usage_record_created():
-			return
+			return None
 
 		team_name = frappe.db.get_value("Site", self.site, "team")
 		team = frappe.get_cached_doc("Team", team_name)

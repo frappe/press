@@ -28,7 +28,7 @@ class ReleaseGroupDependency(Document):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		if not filters or not (group := filters.get("parent")):
-			return
+			return None
 		is_owned_by_team("Release Group", group, raise_exception=True)
 
 		RGDependency = frappe.qb.DocType("Release Group Dependency")
@@ -45,5 +45,4 @@ class ReleaseGroupDependency(Document):
 				RGDependency.is_custom,
 			)
 		)
-		dependencies = query.run(as_dict=True)
-		return dependencies
+		return query.run(as_dict=True)

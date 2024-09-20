@@ -248,6 +248,7 @@ class Team(Document):
 			" do so, pass force=True with this call. Else, pass workflow=True to raise"
 			" a Team Deletion Request to trigger complete team deletion process."
 		)
+		return None
 
 	def disable_account(self):
 		self.suspend_sites("Account disabled")
@@ -523,8 +524,7 @@ class Team(Document):
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
-		start_date = frappe.utils.getdate(data.get("start_date"))
-		return start_date
+		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_new_invoice(self):
 		"""
@@ -562,11 +562,10 @@ class Team(Document):
 		):
 			# don't create invoice if new team or today is the last day of the month
 			return
-		else:
-			current_inv_doc.period_end = frappe.utils.add_days(today, -1)
-			current_inv_doc.flags.on_partner_conversion = True
-			current_inv_doc.save()
-			current_inv_doc.finalize_invoice()
+		current_inv_doc.period_end = frappe.utils.add_days(today, -1)
+		current_inv_doc.flags.on_partner_conversion = True
+		current_inv_doc.save()
+		current_inv_doc.finalize_invoice()
 
 		# create invoice
 		invoice = frappe.get_doc(
@@ -686,8 +685,7 @@ class Team(Document):
 		except FrappeioServerNotSet as e:
 			if frappe.conf.developer_mode or os.environ.get("CI"):
 				return
-			else:
-				raise e
+			raise e
 
 		previous_version = self.get_doc_before_save()
 
@@ -841,8 +839,7 @@ class Team(Document):
 	def get_stripe_balance(self):
 		stripe = get_stripe()
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
-		balance = (customer_object["balance"] * -1) / 100
-		return balance
+		return (customer_object["balance"] * -1) / 100
 
 	@dashboard_whitelist()
 	def get_team_members(self):
@@ -898,8 +895,7 @@ class Team(Document):
 		if self.is_saas_user and not self.payment_mode:
 			if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
 				return allow
-			else:
-				why = "You have already created trial site in the past"
+			why = "You have already created trial site in the past"
 
 		# allow user to create their first site without payment method
 		if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
@@ -912,14 +908,12 @@ class Team(Document):
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
-			else:
-				why = "Cannot create site due to insufficient balance"
+			why = "Cannot create site due to insufficient balance"
 
 		if self.payment_mode == "Card":
 			if self.default_payment_method:
 				return allow
-			else:
-				why = "Cannot create site without adding a card"
+			why = "Cannot create site without adding a card"
 
 		return (False, why)
 
@@ -982,16 +976,16 @@ class Team(Document):
 			legacy_contract = res.get("legacy_contract")
 			if partner_level:
 				return partner_level, legacy_contract
-		else:
-			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
+			return None
+		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
+		return None
 
 	def is_payment_mode_set(self):
 		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
 			return True
-		elif self.payment_mode == "Card" and self.default_payment_method and self.billing_address:
+		if self.payment_mode == "Card" and self.default_payment_method and self.billing_address:
 			return True
-		else:
-			return False
+		return False
 
 	def get_onboarding(self):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
@@ -1149,6 +1143,7 @@ class Team(Document):
 		)
 		if result:
 			return frappe.get_doc("Invoice", result[0], for_update=for_update)
+		return None
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
@@ -1265,6 +1260,7 @@ def get_child_team_members(team):
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
+	return None
 
 
 def process_stripe_webhook(doc, method):

@@ -162,10 +162,9 @@ class ProductTrial(Document):
 			pluck="Cluster",
 		)
 		clusters = list(set(clusters))
-		public_clusters = frappe.db.get_all(
+		return frappe.db.get_all(
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
-		return public_clusters
 
 	def get_standby_site(self, cluster=None):
 		filters = {
@@ -187,6 +186,7 @@ class ProductTrial(Document):
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
+		return None
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:

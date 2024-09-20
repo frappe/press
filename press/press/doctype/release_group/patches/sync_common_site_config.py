@@ -33,9 +33,10 @@ def execute():
 def get_type(value):
 	if isinstance(value, bool):
 		return "Boolean"
-	elif isinstance(value, str):
+	if isinstance(value, str):
 		return "String"
-	elif isinstance(value, int):
+	if isinstance(value, int):
 		return "Number"
-	elif isinstance(value, dict):
+	if isinstance(value, dict):
 		return "JSON"
+	return None

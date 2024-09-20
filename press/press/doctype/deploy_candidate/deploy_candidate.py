@@ -214,13 +214,11 @@ class DeployCandidate(Document):
 		)
 
 		# Unapproved app releases for marketplace apps
-		unpublished_releases = frappe.get_all(
+		return frappe.get_all(
 			"App Release",
 			filters={"name": ("in", dc_app_releases), "status": ("!=", "Approved")},
 			pluck="name",
 		)
-
-		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
 		# This should always be the first call in pre-build
@@ -557,8 +555,7 @@ class DeployCandidate(Document):
 			if agent.response:
 				message += f"\nagent response: {agent.response.text}"
 			raise Exception(message)
-		else:
-			step.status = "Success"
+		step.status = "Success"
 
 		step.duration = get_duration(start_time)
 		return upload_filename
@@ -1327,7 +1324,7 @@ class DeployCandidate(Document):
 		return self._create_deploy(servers).name
 
 	def _create_deploy(self, servers: list[str]):
-		deploy = frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
 				"group": self.group,
@@ -1335,7 +1332,6 @@ class DeployCandidate(Document):
 				"benches": [{"server": server} for server in servers],
 			}
 		).insert()
-		return deploy
 
 	def on_update(self):
 		if self.status == "Running":
@@ -1450,7 +1446,7 @@ class DeployCandidate(Document):
 	def get_duplicate_dc(self) -> DeployCandidate | None:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		if not (dc := rg.create_deploy_candidate()):
-			return
+			return None
 
 		# Set new DC apps to pull from the same sources
 		new_app_map = {a.app: a for a in dc.apps}
@@ -1537,8 +1533,7 @@ def pull_update_file_filter(file_path: str) -> bool:
 			return True
 
 		# Probably requires build
-		else:
-			return False
+		return False
 
 	return True
 
@@ -1608,17 +1603,16 @@ def delete_draft_candidates():
 			frappe.db.set_value("Deploy Candidate", dc, "status", "Success", update_modified=False)
 			frappe.db.commit()
 			continue
-		else:
-			try:
-				frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
-				frappe.db.commit()
-			except Exception:
-				log_error(
-					"Draft Deploy Candidate Deletion Error",
-					reference_doctype="Deploy Candidate",
-					reference_name=dc,
-				)
-				frappe.db.rollback()
+		try:
+			frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
+			frappe.db.commit()
+		except Exception:
+			log_error(
+				"Draft Deploy Candidate Deletion Error",
+				reference_doctype="Deploy Candidate",
+				reference_name=dc,
+			)
+			frappe.db.rollback()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Deploy Candidate")

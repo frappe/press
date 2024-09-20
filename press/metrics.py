@@ -64,6 +64,7 @@ class MetricsRenderer:
 	def can_render(self):
 		if self.path in ("metrics",):
 			return True
+		return False
 
 	def render(self):
 		response = Response()

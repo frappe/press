@@ -16,5 +16,4 @@ def generate(segment_length=3, num_segments=3, separator="-"):
 		segments.append(segment)
 
 	# Join segments with the separator
-	random_id = separator.join(segments)
-	return random_id
+	return separator.join(segments)

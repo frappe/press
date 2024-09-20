@@ -158,8 +158,9 @@ class VirtualMachineImage(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif cluster.cloud_provider == "OCI":
+		if cluster.cloud_provider == "OCI":
 			return ComputeClient(cluster.get_oci_config())
+		return None
 
 	@classmethod
 	def get_available_for_series(cls, series: str, region: str | None = None) -> str | None:
