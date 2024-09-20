@@ -36,6 +36,11 @@ class PressWebhook(Document):
 	dashboard_fields = ["enabled", "endpoint", "events"]
 
 	def validate(self):
+		if self.is_new():
+			# maximum 5 webhooks per team
+			if frappe.db.count("Press Webhook", {"team": self.team}) > 5:
+				frappe.throw("You have reached the maximum number of webhooks per team")
+
 		if self.has_value_changed("endpoint"):
 			self.enabled = 0
 		# should have atleast one event selected

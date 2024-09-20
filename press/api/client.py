@@ -68,6 +68,7 @@ ALLOWED_DOCTYPES = [
 	"Dashboard Banner",
 	"App Release Approval Request",
 	"Press Webhook",
+	"Press Webhook Log",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

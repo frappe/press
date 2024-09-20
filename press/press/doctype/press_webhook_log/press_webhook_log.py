@@ -3,6 +3,7 @@
 
 # import frappe
 from frappe.model.document import Document
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class PressWebhookLog(Document):
@@ -23,4 +24,18 @@ class PressWebhookLog(Document):
 		webhook: DF.Link
 	# end: auto-generated types
 
-	pass
+	DOCTYPE = "Press Webhook Log"
+	dashboard_fields = [
+		"webhook",
+		"event",
+		"status",
+		"endpoint",
+		"request_payload",
+		"response_body",
+		"response_status_code",
+	]
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Press Webhook Log"
+)
