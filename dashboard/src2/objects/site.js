@@ -1562,6 +1562,19 @@ export default {
 					}
 				},
 				{
+					label: 'Impersonate Site Owner',
+					slots: {
+						prefix: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc?.is_desk_user && site.doc.team !== $team.name,
+					onClick() {
+						switchToTeam(site.doc.team);
+					}
+				},
+				{
 					label: 'Visit Site',
 					slots: {
 						prefix: icon('external-link')
@@ -1638,17 +1651,6 @@ export default {
 											});
 									}
 								});
-							}
-						},
-						{
-							label: 'Impersonate Team',
-							icon: defineAsyncComponent(() =>
-								import('~icons/lucide/venetian-mask')
-							),
-							condition: () =>
-								$team.doc?.is_desk_user && site.doc.team !== $team.name,
-							onClick() {
-								switchToTeam(site.doc.team);
 							}
 						}
 					]
