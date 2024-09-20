@@ -24,3 +24,17 @@ def add(endpoint: str, secret: str, events: List[str]):
 	for event in events:
 		doc.append("events", {"event": event})
 	doc.save()
+
+
+@frappe.whitelist()
+def update(name: str, endpoint: str, secret: str, events: List[str]):
+	doc = frappe.get_doc("Press Webhook", name)
+	doc.endpoint = endpoint
+	if secret:
+		doc.secret = secret
+	# reset event list
+	doc.events = []
+	# add new events
+	for event in events:
+		doc.append("events", {"event": event})
+	doc.save()

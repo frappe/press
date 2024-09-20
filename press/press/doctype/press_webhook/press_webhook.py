@@ -46,10 +46,10 @@ class PressWebhook(Document):
 		# check for duplicate webhooks
 		webhooks = frappe.get_all(
 			"Press Webhook",
-			filters={"team": self.team, "endpoint": self.endpoint},
+			filters={"team": self.team, "endpoint": self.endpoint, "name": ("!=", self.name)},
 			pluck="name",
 		)
-		if len(webhooks) > 1:
+		if len(webhooks) != 0:
 			frappe.throw("You have already added webhook for this endpoint")
 
 	def validate_endpoint_url_format(self) -> dict:

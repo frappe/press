@@ -95,6 +95,12 @@
 					@success="onWebHookActivated"
 					:webhook="selectedWebhook"
 				/>
+				<EditWebhookDialog
+					v-if="showEditWebhookDialog"
+					v-model="showEditWebhookDialog"
+					@success="onWebHookUpdated"
+					:webhook="selectedWebhook"
+				/>
 			</div>
 		</div>
 	</div>
@@ -111,11 +117,13 @@ import { date } from '../../utils/format';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
+import EditWebhookDialog from './EditWebhookDialog.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
 const showActivateWebhookDialog = ref(false);
+const showEditWebhookDialog = ref(false);
 const selectedWebhook = ref(null);
 
 const createSecret = createResource({
@@ -369,6 +377,14 @@ const webhookListOptions = computed(() => ({
 				}
 			},
 			{
+				label: 'Edit',
+				icon: 'edit-2',
+				onClick() {
+					selectedWebhook.value = row;
+					showEditWebhookDialog.value = true;
+				}
+			},
+			{
 				label: 'Delete',
 				icon: 'trash-2',
 				onClick() {
@@ -419,5 +435,13 @@ const onNewWebhookSuccess = () => {
 const onWebHookActivated = () => {
 	webhookListResource.reload();
 	showActivateWebhookDialog.value = false;
+};
+
+const onWebHookUpdated = activationRequired => {
+	webhookListResource.reload();
+	showEditWebhookDialog.value = false;
+	if (activationRequired) {
+		showActivateWebhookDialog.value = true;
+	}
 };
 </script>
