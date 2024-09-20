@@ -986,17 +986,3 @@ def display_mpesa_payment_partners():
     mpesa_partners = query.run(as_dict=True)
 
     return [partner['user'] for partner in mpesa_partners]
-
-# def display_mpesa_payment_partners():
-# 	"""Display the list of partners in the system."""
-# 	partners = frappe.get_all("Team", filters={"country": "Kenya"}, pluck="name")
-# 	mpesa_settings=frappe.get_all("Mpesa Settings", filters={"sandbox": 1}, pluck="team")
-# 	mpesa_partners=[]
-# 	for partner in partners:
-		
-# 		# team_doc=frappe.get_doc("Team", partner)
-# 		if partner in mpesa_settings:
-# 			team=frappe.get_doc("Team", partner)
-# 			mpesa_partners.append(team.user)
-
-# 	return mpesa_partners
