@@ -1,19 +1,12 @@
 <template>
-	<div class="space-y-4">
-		<!-- Show this block if siteVersion is "Version 14" -->
-		<div v-if="siteVersion === 'Version 14'">
-			<AlertBanner
-				title="Great!! You do not seem to have any slow queries"
-				type="info"
-				v-if="show"
-			/>
-			<div>
-				<ObjectList :options="slowQueriesData" />
-			</div>
-		</div>
-
-		<!-- Show this alert banner for other versions (specifically Version 15) -->
-		<div v-else>
+	<div>
+		<PerformanceReport
+			v-if="siteVersion !== 'Version 14'"
+			title="Slow Queries"
+			:site="name"
+			:reportOptions="slowQueriesOptions"
+		/>
+		<div v-else class="m-5 space-y-4">
 			<AlertBanner
 				title="Performance Tuning coming soon for Version 15"
 				type="info"
@@ -24,39 +17,29 @@
 
 <script>
 import { defineAsyncComponent, h } from 'vue';
-import { ListView, FormControl, Dialog } from 'frappe-ui';
-import ObjectList from '../../../src2/components/ObjectList.vue';
-import AlertBanner from '../../../src2/components/AlertBanner.vue';
-import { renderDialog } from '../../utils/components';
+import AlertBanner from '../../AlertBanner.vue';
+import { renderDialog } from '../../../utils/components';
+import PerformanceReport from './PerformanceReport.vue';
 
 export default {
-	name: 'SitePerformance',
-	props: ['siteName', 'siteVersion'],
+	props: ['name', 'siteVersion'],
 	components: {
-		ListView,
-		FormControl,
-		Dialog,
-		ObjectList,
+		PerformanceReport,
 		AlertBanner
 	},
-	data() {
-		return {
-			show: null
-		};
-	},
 	computed: {
-		slowQueriesData() {
+		slowQueriesOptions() {
 			return {
 				experimental: true,
 				documentation: 'https://frappecloud.com/docs/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
 				onRowClick: row => {
 					const SlowQueryDialog = defineAsyncComponent(() =>
-						import('./SiteMariaDBSlowQueryDialog.vue')
+						import('./SiteSlowQueryDialog.vue')
 					);
 					renderDialog(
 						h(SlowQueryDialog, {
-							siteName: this.siteName,
+							siteName: this.name,
 							query: row.query,
 							duration: row.duration,
 							count: row.count,
@@ -66,36 +49,45 @@ export default {
 						})
 					);
 				},
+				emptyStateMessage: 'No slow queries found',
 				columns: [
 					{
 						label: 'Query',
 						fieldname: 'query',
 						class: 'font-mono',
-						width: '500px'
+						width: '600px'
 					},
 					{
 						label: 'Duration',
 						fieldname: 'duration',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
+					}
+				],
+				actions: () => [
+					{
+						label: 'Refresh',
+						icon: 'refresh-ccw',
+						loading: this.$resources.slowQueries.loading,
+						onClick: () => this.$resources.slowQueries.reload()
 					}
 				]
 			};
@@ -103,18 +95,12 @@ export default {
 	},
 	methods: {
 		getDateTimeRange() {
-			const now = new Date();
-			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 			const formatDateTime = date => {
-				const year = date.getFullYear();
-				const month = String(date.getMonth() + 1).padStart(2, '0');
-				const day = String(date.getDate()).padStart(2, '0');
-				const hours = String(date.getHours()).padStart(2, '0');
-				const minutes = String(date.getMinutes()).padStart(2, '0');
-				const seconds = String(date.getSeconds()).padStart(2, '0');
-				return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 			};
 
+			const now = new Date();
+			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 			const endDateTime = formatDateTime(now);
 			const startDateTimeFormatted = formatDateTime(startDateTime);
 
@@ -130,18 +116,13 @@ export default {
 			return {
 				url: 'press.api.analytics.mariadb_slow_queries',
 				params: {
-					name: this.siteName,
+					name: this.name,
 					start_datetime: startDateTime,
 					stop_datetime: endDateTime,
 					max_lines: 10,
 					search_pattern: '.*',
 					normalize_queries: true,
 					analyze: false
-				},
-				onSuccess(data) {
-					if (!data.data) {
-						this.show = true;
-					}
 				},
 				auto: true,
 				initialData: { columns: [], data: [] }

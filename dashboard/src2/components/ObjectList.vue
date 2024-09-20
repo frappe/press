@@ -436,16 +436,31 @@ export default {
 			return false;
 		},
 		onFilterControlChange(control) {
-			let filters = { ...this.$list.filters };
-			for (let c of this.filterControls) {
-				filters[c.fieldname] = c.value;
+			// update params directly if resource is provided
+			// else update filters in list resource
+			//
+			// Note: this needs makeParams method in list resource to work
+			// In makeParams, return params if it exists so that old params won't overwrite the one we are setting
+
+			if (this.options.resource) {
+				const params = {
+					...this.$list.params,
+					[control.fieldname]: control.value
+				};
+				this.$list.update({ params });
+				this.$list.reload();
+			} else {
+				let filters = { ...this.$list.filters };
+				for (let c of this.filterControls) {
+					filters[c.fieldname] = c.value;
+				}
+				this.$list.update({
+					filters,
+					start: 0,
+					pageLength: this.options.pageLength || 20
+				});
+				this.$list.reload();
 			}
-			this.$list.update({
-				filters,
-				start: 0,
-				pageLength: this.options.pageLength || 20
-			});
-			this.$list.reload();
 		}
 	}
 };

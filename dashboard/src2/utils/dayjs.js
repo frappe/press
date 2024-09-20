@@ -6,6 +6,7 @@ import isToday from 'dayjs/esm/plugin/isToday';
 import duration from 'dayjs/esm/plugin/duration';
 import utc from 'dayjs/esm/plugin/utc';
 import timezone from 'dayjs/esm/plugin/timezone';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
 
 dayjs.extend(updateLocale);
 dayjs.extend(relativeTime);
@@ -14,6 +15,7 @@ dayjs.extend(isToday);
 dayjs.extend(duration);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(advancedFormat);
 
 export function dayjsLocal(dateTimeString) {
 	let localTimezone = dayjs.tz.guess();
