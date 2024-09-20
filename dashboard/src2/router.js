@@ -281,11 +281,6 @@ let router = createRouter({
 				import('./components/marketplace/ReplyMarketplaceApp.vue'),
 			props: true
 		},
-		{
-			path: '/webhook/:id/logs',
-			name: 'WebhookLogs',
-			component: () => import('./pages/WebhookLogs.vue')
-		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',

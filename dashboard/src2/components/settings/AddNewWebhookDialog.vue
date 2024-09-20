@@ -26,7 +26,7 @@
 						</template>
 					</FormControl>
 					<p class="mt-2 text-sm text-gray-700">
-						Note: Secret is optional. Check
+						<strong>Note:</strong> Secret is optional. Check
 						<a href="//frappecloud.com/docs" class="underline" target="_blank"
 							>the documentation</a
 						>

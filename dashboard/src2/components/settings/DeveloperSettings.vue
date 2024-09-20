@@ -101,6 +101,11 @@
 					@success="onWebHookUpdated"
 					:webhook="selectedWebhook"
 				/>
+				<WebhookLogsDialog
+					v-if="showWebhookLogs"
+					v-model="showWebhookLogs"
+					:name="selectedWebhook.name"
+				/>
 			</div>
 		</div>
 	</div>
@@ -119,6 +124,7 @@ import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 import EditWebhookDialog from './EditWebhookDialog.vue';
 import { useRouter } from 'vue-router';
+import WebhookLogsDialog from './WebhookLogsDialog.vue';
 
 const $team = getTeam();
 const router = useRouter();
@@ -126,6 +132,7 @@ let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
 const showActivateWebhookDialog = ref(false);
 const showEditWebhookDialog = ref(false);
+const showWebhookLogs = ref(false);
 const selectedWebhook = ref(null);
 
 const createSecret = createResource({
@@ -223,7 +230,6 @@ const sshKeyListOptions = computed(() => ({
 		return [
 			{
 				label: 'Mark as Default',
-				icon: 'check',
 				condition: () => !row.is_default,
 				onClick() {
 					makeKeyDefault.submit({
@@ -233,7 +239,6 @@ const sshKeyListOptions = computed(() => ({
 			},
 			{
 				label: 'Delete',
-				icon: 'trash-2',
 				onClick() {
 					deleteSSHKey.submit({
 						doctype: 'User SSH Key',
@@ -313,11 +318,18 @@ const webhookListOptions = computed(() => ({
 	data: () => webhookListResource.data,
 	columns: [
 		{
+			label: 'Endpoint',
+			fieldname: 'endpoint',
+			width: 1,
+			format: value => value.substring(0, 50)
+		},
+		{
 			label: 'Status',
 			fieldname: 'enabled',
 			width: 0.1,
-			format: _ => '',
-			prefix(row) {
+			type: 'Component',
+			align: 'right',
+			component({ row }) {
 				return row.enabled
 					? h(Badge, {
 							label: 'Enabled',
@@ -328,19 +340,12 @@ const webhookListOptions = computed(() => ({
 							theme: 'red'
 					  });
 			}
-		},
-		{
-			label: 'Endpoint',
-			fieldname: 'endpoint',
-			width: 1,
-			format: value => value.substring(0, 50)
 		}
 	],
 	rowActions({ row }) {
 		return [
 			{
 				label: 'Activate',
-				icon: 'play',
 				condition: () => !Boolean(row.enabled),
 				onClick() {
 					selectedWebhook.value = row;
@@ -349,7 +354,6 @@ const webhookListOptions = computed(() => ({
 			},
 			{
 				label: 'Disable',
-				icon: 'pause',
 				condition: () => Boolean(row.enabled),
 				onClick: () => {
 					confirmDialog({
@@ -380,17 +384,13 @@ const webhookListOptions = computed(() => ({
 			},
 			{
 				label: 'View Logs',
-				icon: 'list',
 				onClick: () => {
-					router.push({
-						name: 'WebhookLogs',
-						params: { id: row.name }
-					});
+					selectedWebhook.value = row;
+					showWebhookLogs.value = true;
 				}
 			},
 			{
 				label: 'Edit',
-				icon: 'edit-2',
 				onClick() {
 					selectedWebhook.value = row;
 					showEditWebhookDialog.value = true;
@@ -398,7 +398,6 @@ const webhookListOptions = computed(() => ({
 			},
 			{
 				label: 'Delete',
-				icon: 'trash-2',
 				onClick() {
 					deleteWebhook.submit({
 						doctype: 'Press Webhook',
@@ -418,7 +417,7 @@ const webhookListOptions = computed(() => ({
 	secondaryAction() {
 		return {
 			label: 'Refresh',
-			slots: { prefix: icon('refresh-ccw') },
+			icon: 'refresh-ccw',
 			onClick: () => webhookListResource.reload()
 		};
 	}

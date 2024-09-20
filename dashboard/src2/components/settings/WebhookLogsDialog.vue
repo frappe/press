@@ -1,32 +1,39 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
-		<div class="flex items-center space-x-2">
-			<Breadcrumbs
-				:items="[
-					{
-						label: 'Webhook Logs',
-						route: '/webhook/' + this.$route.params.id + '/logs'
-					}
-				]"
+	<Dialog
+		:options="{
+			title: selectedWebhookLogId
+				? `Webhook Log - ${selectedWebhookLogId}`
+				: 'Webhook Logs',
+			size: '4xl'
+		}"
+	>
+		<template #body-content>
+			<ObjectList :options="listOptions" v-if="!selectedWebhookLogId" />
+			<Button
+				class="mb-2"
+				iconLeft="arrow-left"
+				v-if="selectedWebhookLogId"
+				@click="selectedWebhookLogId = null"
+			>
+				Back
+			</Button>
+			<WebhookLogDetails
+				:id="selectedWebhookLogId"
+				v-if="selectedWebhookLogId"
 			/>
-		</div>
-	</Header>
-	<ObjectList :options="options" class="mt-2 px-5" />
-	<WebhookLogDetails
-		:id="selectedWebhookLogId"
-		v-if="showWebhookLogDetails"
-		v-model="showWebhookLogDetails"
-	/>
+		</template>
+	</Dialog>
 </template>
 <script>
 import { Breadcrumbs, Badge } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import ObjectList from '../components/ObjectList.vue';
+import Header from '../Header.vue';
+import ObjectList from '../ObjectList.vue';
 import { h } from 'vue';
-import WebhookLogDetails from '../components/settings/WebhookLogDetails.vue';
+import WebhookLogDetails from '../settings/WebhookLogDetails.vue';
 
 export default {
 	name: 'WebhookLogs',
+	props: ['name'],
 	components: {
 		Header,
 		Breadcrumbs,
@@ -35,7 +42,6 @@ export default {
 	},
 	data() {
 		return {
-			showWebhookLogDetails: false,
 			selectedWebhookLogId: null
 		};
 	},
@@ -46,7 +52,7 @@ export default {
 				params: {
 					doctype: 'Press Webhook Log',
 					filters: {
-						webhook: this.$route.params.id
+						webhook: this.$props.name
 					},
 					fields: [
 						'name',
@@ -65,26 +71,27 @@ export default {
 		}
 	},
 	computed: {
-		options() {
+		listOptions() {
 			return {
 				data: () => this.$resources?.logs?.data || [],
 				columns: [
 					{
 						label: 'Event',
 						fieldname: 'event',
-						width: 0.2
+						width: 0.25
 					},
 					{
 						label: 'Endpoint',
 						fieldname: 'endpoint',
-						width: 0.5
+						width: 0.5,
+						format: value => value.substring(0, 50)
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						width: 0.1,
-						format: _ => '',
-						prefix(row) {
+						type: 'Component',
+						component({ row }) {
 							return row.status === 'Sent'
 								? h(Badge, {
 										label: row.status,
@@ -105,22 +112,14 @@ export default {
 					{
 						label: 'Timestamp',
 						fieldname: 'creation',
-						width: 0.2,
+						width: 0.3,
 						format(value) {
 							return new Date(value).toLocaleString();
 						}
 					}
 				],
-				rowActions: ({ row }) => {
-					return [
-						{
-							label: 'View',
-							onClick: () => {
-								this.selectedWebhookLogId = row.name;
-								this.showWebhookLogDetails = true;
-							}
-						}
-					];
+				onRowClick: row => {
+					this.selectedWebhookLogId = row.name;
 				}
 			};
 		}
