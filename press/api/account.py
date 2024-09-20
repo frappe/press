@@ -781,6 +781,10 @@ def get_billing_information(timezone=None):
 def update_billing_information(billing_details):
 	billing_details = frappe._dict(billing_details)
 	team = get_current_team(get_doc=True)
+	if (team.country != billing_details.country) and (
+		team.country == "India" or billing_details.country == "India"
+	):
+		frappe.throw("Cannot change country after registration")
 	team.update_billing_details(billing_details)
 
 
