@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-
 # import frappe
 from frappe.model.document import Document
 
@@ -14,7 +15,7 @@ class CloudRegion(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		provider: DF.Literal["AWS EC2", "OCI"]
+		provider: DF.Literal["AWS EC2", OCI]
 		region_name: DF.Data
 	# end: auto-generated types
 

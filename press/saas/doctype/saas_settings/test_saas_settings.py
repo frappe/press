@@ -1,15 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 # Copyright (c) 2022, Frappe and Contributors
 # See license.txt
-
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
+
+if TYPE_CHECKING:
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_saas_settings(group: ReleaseGroup = None):

@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
-
 import unittest
+from typing import TYPE_CHECKING
 
 import frappe
 
-from press.press.doctype.ssh_key.ssh_key import SSHKey
+if TYPE_CHECKING:
+	from press.press.doctype.ssh_key.ssh_key import SSHKey
 
 
 def create_test_ssh_key() -> SSHKey:

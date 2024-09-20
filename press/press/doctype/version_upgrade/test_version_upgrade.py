@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 # Copyright (c) 2022, Frappe and Contributors
 # See license.txt
-
 from unittest.mock import Mock, patch
 
 import frappe
@@ -14,7 +17,9 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_update.test_site_update import create_test_site_update
-from press.press.doctype.version_upgrade.version_upgrade import VersionUpgrade
+
+if TYPE_CHECKING:
+	from press.press.doctype.version_upgrade.version_upgrade import VersionUpgrade
 
 
 def create_test_version_upgrade(site: str, destination_group: str) -> VersionUpgrade:

@@ -1,12 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
-
-
 import frappe
 
-from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.erpnext_consultant.erpnext_consultant import ERPNextConsultant
 from press.press.doctype.site.site import Site
+
+if TYPE_CHECKING:
+	from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class ERPNextSite(Site):

@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -23,7 +23,7 @@ class DeployCandidateDifference(Document):
 		)
 
 		apps: DF.Table[DeployCandidateDifferenceApp]
-		deploy_type: DF.Literal["Pull", "Migrate"]
+		deploy_type: DF.Literal[Pull, Migrate]
 		destination: DF.Link
 		group: DF.Link
 		source: DF.Link

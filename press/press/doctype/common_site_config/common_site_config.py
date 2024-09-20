@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-
 import frappe
 
 from press.press.doctype.site_config.site_config import Config
@@ -20,7 +21,7 @@ class CommonSiteConfig(Config):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		type: DF.Literal["", "String", "Password", "Number", "Boolean", "JSON"]
+		type: DF.Literal["", String, Password, Number, Boolean, JSON]
 		value: DF.Code
 	# end: auto-generated types
 

@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-
 # import frappe
 import copy
 
@@ -33,7 +33,7 @@ class FrappeVersion(Document):
 		dependencies: DF.Table[FrappeVersionDependency]
 		number: DF.Int
 		public: DF.Check
-		status: DF.Literal["Develop", "Beta", "Stable", "End of Life"]
+		status: DF.Literal[Develop, Beta, Stable, "End of Life"]
 	# end: auto-generated types
 
 	def before_insert(self):

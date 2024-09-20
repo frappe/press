@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
-
 import json
 
 from frappe.tests.utils import FrappeTestCase

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
 from calendar import monthrange
 from typing import TYPE_CHECKING
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 OIDC_CLIENT_ID = "{{ sentry_oauth_client_id }}"
 OIDC_CLIENT_SECRET = "{{ sentry_oauth_client_secret }}"
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
-
 import typing
 
 import frappe
@@ -11,7 +12,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server_plan.server_plan import ServerPlan
 
 
-def create_test_server_plan(server_type: str = "Server") -> "ServerPlan":
+def create_test_server_plan(server_type: str = "Server") -> ServerPlan:
 	"""Create test Server Plan doc."""
 	server_plan = frappe.get_doc(
 		{

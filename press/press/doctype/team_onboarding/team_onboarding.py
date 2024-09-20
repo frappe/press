@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-
 # import frappe
 from frappe.model.document import Document
 
@@ -18,7 +18,7 @@ class TeamOnboarding(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Pending", "Skipped", "Completed", "Not Applicable"]
+		status: DF.Literal[Pending, Skipped, Completed, "Not Applicable"]
 		step_name: DF.Data
 	# end: auto-generated types
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-
 import frappe
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import convert_utc_to_timezone, get_system_timezone

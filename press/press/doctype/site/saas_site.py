@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import contextlib
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 
-from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.site.site import Site
+
+if TYPE_CHECKING:
+	from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class SaasSite(Site):

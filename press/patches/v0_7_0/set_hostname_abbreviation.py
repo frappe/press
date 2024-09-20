@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import frappe
 
 from press.press.doctype.server.server import get_hostname_abbreviation

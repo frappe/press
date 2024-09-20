@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
 from datetime import datetime
 from datetime import timezone as tz
 from typing import TYPE_CHECKING

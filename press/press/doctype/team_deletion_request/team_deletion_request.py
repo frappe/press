@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
 import frappe
 from frappe.core.utils import find
 from frappe.utils.verified_command import get_signed_params
@@ -35,7 +36,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		data_anonymized: DF.Check
 		deletion_steps: DF.Table[PersonalDataDeletionStep]
 		frappeio_data_deleted: DF.Check
-		status: DF.Literal["Pending Verification", "Deletion Verified", "Processing Deletion", "Deleted"]
+		status: DF.Literal["Pending Verification", "Deletion Verified", "Processing Deletion", Deleted]
 		stripe_data_deleted: DF.Check
 		team: DF.Link
 		team_disabled: DF.Check

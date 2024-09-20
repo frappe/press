@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
-
-
 import frappe
 
 from press.utils import get_default_team_for_user, get_valid_teams_for_user

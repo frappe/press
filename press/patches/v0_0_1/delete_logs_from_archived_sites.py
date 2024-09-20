@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-
 import frappe
 
 from press.press.doctype.site.site import delete_logs

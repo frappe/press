@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
+import frappe
+from frappe.utils import add_days, get_first_day, get_last_day, getdate
+
+from press.utils import log_error
 
 """
 Suspend Sites of defaulter accounts.
@@ -14,11 +20,6 @@ Defaulters are identified based on the following conditions:
 
 The `execute` method is the main method which is run by the scheduler on every day of the month.
 """
-
-import frappe
-from frappe.utils import add_days, get_first_day, get_last_day, getdate
-
-from press.utils import log_error
 
 
 def execute():

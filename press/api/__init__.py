@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import frappe
 
 from press.saas.doctype.product_trial_request.product_trial_request import (

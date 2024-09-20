@@ -1,5 +1,6 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+from __future__ import annotations
 
+# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 import frappe
 
 

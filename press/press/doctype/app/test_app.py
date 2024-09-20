@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
-
-
 import unittest
 from typing import TYPE_CHECKING
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
 
-def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> "App":
+def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> App:
 	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(ignore_if_duplicate=True)
 
 

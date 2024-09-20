@@ -1,9 +1,8 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
-
-
 # import frappe
-
 from .dashboard import _get_context
 
 base_template_path = "templates/www/dashboard-old.html"

@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
-
-
 import json
 from typing import TYPE_CHECKING
 

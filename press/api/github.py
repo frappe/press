@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
 import re
 from base64 import b64decode
 from datetime import datetime, timedelta
@@ -59,7 +60,7 @@ def get_jwt_token():
 	return token
 
 
-def get_access_token(installation_id: "str | None" = None):
+def get_access_token(installation_id: str | None = None):
 	if not installation_id:
 		return frappe.db.get_value(
 			"Press Settings",
@@ -260,7 +261,7 @@ def branches(owner, name, installation=None):
 		frappe.throw("Error fetching branch list from GitHub: " + response.text)
 
 
-def get_auth_headers(installation_id: "str | None" = None) -> "dict[str, str]":
+def get_auth_headers(installation_id: str | None = None) -> dict[str, str]:
 	if token := get_access_token(installation_id):
 		return {"Authorization": f"token {token}"}
 	return {}
@@ -272,7 +273,7 @@ def _get_app_name_and_title_from_hooks(
 	branch_info,
 	headers,
 	tree,
-) -> "tuple[str, str]":
+) -> tuple[str, str]:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:

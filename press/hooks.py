@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from press.api.account import get_frappe_io_auth_url
 
 from . import __version__ as app_version

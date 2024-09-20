@@ -1,10 +1,12 @@
-"""Add domains key in press's site configuration (No agent job)."""
+from __future__ import annotations
+
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
-
 from itertools import groupby
 
 import frappe
+
+"""Add domains key in press's site configuration (No agent job)."""
 
 
 def execute():

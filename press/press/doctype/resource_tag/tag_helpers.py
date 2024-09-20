@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
-
-
 import frappe
 
 from press.api.client import dashboard_whitelist

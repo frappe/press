@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import typing
 
@@ -39,9 +41,9 @@ class DockerBuildOutputParser:
 	when agent is polled, and so output is looped N! times.
 	"""
 
-	_steps_by_step_slug: "dict[tuple[str, str], DeployCandidateBuildStep] | None"
+	_steps_by_step_slug: dict[tuple[str, str], DeployCandidateBuildStep] | None
 
-	def __init__(self, dc: "DeployCandidate") -> None:
+	def __init__(self, dc: DeployCandidate) -> None:
 		self.dc = dc
 		self.last_updated = now_datetime()
 
@@ -58,7 +60,7 @@ class DockerBuildOutputParser:
 			self._steps_by_step_slug = {(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps}
 		return self._steps_by_step_slug
 
-	def parse_and_update(self, output: "BuildOutput"):
+	def parse_and_update(self, output: BuildOutput):
 		for raw_line in output:
 			self._parse_line_handle_exc(raw_line)
 		self._end_parsing()
@@ -134,7 +136,7 @@ class DockerBuildOutputParser:
 	def _set_docker_image_id(self, line: str):
 		self.dc.docker_image_id = line.split()[2].split(":")[1]
 
-	def _update_dc_build_step(self, split: "IndexSplit"):
+	def _update_dc_build_step(self, split: IndexSplit):
 		step = self.steps.get(split["index"])
 		if not step:
 			return
@@ -157,7 +159,7 @@ class DockerBuildOutputParser:
 			_, _, output = line.partition(" ")
 			step.output += output + "\n"
 
-	def _add_step_to_steps_dict(self, split: "IndexSplit"):
+	def _add_step_to_steps_dict(self, split: IndexSplit):
 		line = split["line"]
 		if not line.startswith("[stage-"):
 			return
@@ -182,7 +184,7 @@ class DockerBuildOutputParser:
 
 		self.steps[index] = step
 
-	def _get_step_index_split(self, line: str) -> "IndexSplit | None":
+	def _get_step_index_split(self, line: str) -> IndexSplit | None:
 		splits = line.split(maxsplit=1)
 		keys = sorted(self.steps)
 		if len(splits) != 2 and len(keys) == 0:
@@ -235,9 +237,9 @@ class UploadStepUpdater:
 	a remote (agent) or local (press) builder docker push.
 	"""
 
-	_upload_step: "DeployCandidateBuildStep | None"
+	_upload_step: DeployCandidateBuildStep | None
 
-	def __init__(self, dc: "DeployCandidate") -> None:
+	def __init__(self, dc: DeployCandidate) -> None:
 		self.dc = dc
 		self.output: list[dict] = []
 
@@ -247,7 +249,7 @@ class UploadStepUpdater:
 		self._upload_step = None
 
 	@property
-	def upload_step(self) -> "DeployCandidateBuildStep | None":
+	def upload_step(self) -> DeployCandidateBuildStep | None:
 		if not self._upload_step:
 			self._upload_step = self.dc.get_step("upload", "image")
 		return self._upload_step
@@ -262,7 +264,7 @@ class UploadStepUpdater:
 		self.upload_step.status = "Running"
 		self.flush_output()
 
-	def process(self, output: "PushOutput"):
+	def process(self, output: PushOutput):
 		if not self.upload_step:
 			return
 
@@ -274,7 +276,7 @@ class UploadStepUpdater:
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: 'DF.Literal["Success", "Failure"] | None'):
+	def end(self, status: DF.Literal[Success, Failure] | None):
 		if not self.upload_step:
 			return
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import click
 import frappe
 from frappe.commands import get_site, pass_context

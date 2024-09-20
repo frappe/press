@@ -1,7 +1,9 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-
-
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
@@ -9,10 +11,12 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils.test import foreground_enqueue_doc
+
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())

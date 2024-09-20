@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
-
 import frappe
 from frappe.core.utils import find
 from frappe.geo.country_info import get_country_timezone_info

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import frappe
 
 from press.press.doctype.press_role.press_role import check_role_permissions

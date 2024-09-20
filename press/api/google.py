@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
-
-
 import json
 
 import frappe
