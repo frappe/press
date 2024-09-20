@@ -199,7 +199,7 @@ def handle_request_failure(request=None, message=None, traceback=True, exit_code
 	message = message or f"Request failed with error code {request.status_code}"
 	response = html2text.html2text(request.text) if traceback else ""
 
-	print("{0}{1}".format(message, "\n" + response))
+	print(f"{message}\n{response}")
 	sys.exit(exit_code)
 
 

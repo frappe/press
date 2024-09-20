@@ -486,7 +486,7 @@ class BaseServer(Document, TagHelpers):
 				"build_server": self.name,
 			},
 		)
-		if isinstance(count, (int, float)):
+		if isinstance(count, int | float):
 			return count > 0
 		return False
 

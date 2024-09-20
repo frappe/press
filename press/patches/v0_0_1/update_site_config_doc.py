@@ -18,7 +18,7 @@ def execute():
 		print(f"Updating Site Config for {site.name}")
 		config = json.loads(site.config)
 		for key, value in config.items():
-			if isinstance(value, (dict, list)):
+			if isinstance(value, dict | list):
 				value = json.dumps(value)
 			else:
 				value = value

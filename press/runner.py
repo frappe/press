@@ -31,7 +31,7 @@ def reconnect_on_failure():
 
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
-		super(AnsibleCallback, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 
 	@reconnect_on_failure()
 	def process_task_success(self, result):

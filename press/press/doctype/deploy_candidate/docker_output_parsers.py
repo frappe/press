@@ -24,14 +24,11 @@ if typing.TYPE_CHECKING:
 
 	BuildOutput = list[str] | Generator[str, Any, None]
 	PushOutput = list[dict] | Generator[dict, Any, None]
-	IndexSplit = TypedDict(
-		"IndexSplit",
-		{
-			"index": int,
-			"line": str,
-			"is_unusual": bool,
-		},
-	)
+
+	class IndexSplit(TypedDict):
+		index: int
+		line: str
+		is_unusual: bool
 
 
 class DockerBuildOutputParser:

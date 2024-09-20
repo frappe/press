@@ -631,8 +631,7 @@ class Cluster(Document):
 				).copy_image(self.name)
 			)
 			frappe.db.commit()
-		for copy in copies:
-			yield copy
+		yield from copies
 
 	@frappe.whitelist()
 	def create_servers(self):

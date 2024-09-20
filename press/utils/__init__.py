@@ -466,7 +466,7 @@ def is_json(string):
 	if isinstance(string, str):
 		string = string.strip()
 		return string.startswith("{") and string.endswith("}")
-	elif isinstance(string, (dict, list)):
+	elif isinstance(string, dict | list):
 		return True
 
 
@@ -490,7 +490,7 @@ def guess_type(value):
 
 
 def convert(string):
-	if isinstance(string, (dict, list)):
+	if isinstance(string, dict | list):
 		return json.dumps(string)
 	return string
 

@@ -61,8 +61,7 @@ def get_job_ids(
 			except ValueError:
 				return
 
-			for jid in job_ids:
-				yield jid
+			yield from job_ids
 
 
 def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:

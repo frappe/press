@@ -1220,8 +1220,7 @@ class DeployCandidate(Document):
 			cwd=directory or self.build_directory,
 			universal_newlines=True,
 		)
-		for line in process.stdout:
-			yield line
+		yield from process.stdout
 		process.stdout.close()
 		return_code = process.wait()
 		if return_code:

@@ -33,12 +33,10 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.team.team import Team
 
-	AppInfo = TypedDict(
-		"AppInfo",
-		app=App,
-		source=AppSource,
-		release=AppRelease,
-	)
+	class AppInfo(TypedDict):
+		app: App
+		source: AppSource
+		release: AppRelease
 
 
 def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:

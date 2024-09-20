@@ -179,10 +179,9 @@ class CustomUser(User):
 					has_fields.append(d.get("name"))
 			for field in has_fields:
 				frappe.db.sql(
-					"""UPDATE `%s`
-					SET `%s` = %s
-					WHERE `%s` = %s"""
-					% (tab, field, "%s", field, "%s"),
+					f"""UPDATE `{tab}`
+					SET `{field}` = %s
+					WHERE `{field}` = %s""",
 					(new_name, old_name),
 				)
 

@@ -585,7 +585,7 @@ class Site(Document, TagHelpers):
 			row.type = key_type
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				key_value = int(row.value) if isinstance(row.value, float | int) else json.loads(row.value)
 			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(sbool(json.loads(cstr(row.value))))
@@ -1618,7 +1618,7 @@ class Site(Document, TagHelpers):
 
 		for d in config:
 			d = frappe._dict(d)
-			if isinstance(d.value, (dict, list)):
+			if isinstance(d.value, dict | list):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
@@ -1666,11 +1666,11 @@ class Site(Document, TagHelpers):
 			if key in get_client_blacklisted_keys():
 				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated"))
 
-			if isinstance(value, (dict, list)):
+			if isinstance(value, dict | list):
 				_type = "JSON"
 			elif isinstance(value, bool):
 				_type = "Boolean"
-			elif isinstance(value, (int, float)):
+			elif isinstance(value, int | float):
 				_type = "Number"
 			else:
 				_type = "String"
