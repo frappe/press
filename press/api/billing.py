@@ -10,6 +10,9 @@ from frappe.core.utils import find
 from frappe.utils import fmt_money
 import json 
 
+import frappe
+from frappe.query_builder import DocType
+
 from press.press.doctype.team.team import (
 	has_unsettled_invoices,
 )
@@ -700,9 +703,11 @@ def split_request_amount_according_to_transaction_limit(amount, transaction_limi
 def generate_stk_push(**kwargs):
 	"""Generate stk push by making a API call to the stk push API."""
 	args = frappe._dict(kwargs)
- 
 	# Fetch the team document
-	partner = frappe.get_doc("Team", args.partner)
+	partner_=frappe.get_all("Team", filters={"user": args.partner}, pluck="name")
+	if not partner_:
+		frappe.throw(_("Partner not found"), title=_("Mpesa Express Error"))
+	partner = frappe.get_doc("Team", partner_[0])	
 	
 	# Get Mpesa settings for the partner's team
 	mpesa_settings = get_mpesa_settings_for_team(partner.name)
@@ -748,6 +753,7 @@ def generate_stk_push(**kwargs):
 
 def get_mpesa_settings_for_team(team_name):
 	"""Fetch Mpesa settings for a given team."""
+	
 	mpesa_settings = frappe.get_all("Mpesa Settings", filters={"team": team_name}, pluck="name")
 	if not mpesa_settings:
 		frappe.throw(_("Mpesa Settings not configured for this team"), title=_("Mpesa Express Error"))
@@ -962,4 +968,35 @@ def get_team_and_partner_from_integration_request(transaction_id):
 	
 	return team, partner
 
+@frappe.whitelist(allow_guest=True)
+def display_mpesa_payment_partners():
+    """Display the list of partners in the system with Mpesa integration enabled."""
+    
+    Team = DocType("Team")
+    MpesaSettings = DocType("Mpesa Settings")
 
+    query = (
+        frappe.qb.from_(Team)
+        .join(MpesaSettings)
+        .on(Team.name == MpesaSettings.team)
+        .select(Team.user)
+        .where((Team.country == "Kenya") & (MpesaSettings.sandbox == 1))
+    )
+
+    mpesa_partners = query.run(as_dict=True)
+
+    return [partner['user'] for partner in mpesa_partners]
+
+# def display_mpesa_payment_partners():
+# 	"""Display the list of partners in the system."""
+# 	partners = frappe.get_all("Team", filters={"country": "Kenya"}, pluck="name")
+# 	mpesa_settings=frappe.get_all("Mpesa Settings", filters={"sandbox": 1}, pluck="team")
+# 	mpesa_partners=[]
+# 	for partner in partners:
+		
+# 		# team_doc=frappe.get_doc("Team", partner)
+# 		if partner in mpesa_settings:
+# 			team=frappe.get_doc("Team", partner)
+# 			mpesa_partners.append(team.user)
+
+# 	return mpesa_partners

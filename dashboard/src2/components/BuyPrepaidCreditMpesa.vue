@@ -10,157 +10,32 @@
 // The user will receive a confirmation message from the platform
 // The user will receive a confirmation email from the platform
 </script>
- -->
-<!-- 
- <template>
-    <div>
-        <label class="block"
-        :class="{
-            'pointer-events-none h-0.5 opacity-0': step!='Add Payment Details',
-            'mt-4':step=='Add Payment Details'
-        }">
-        <span class="text-sm leading-4 text-gray-700">
-                M-Pesa Payments
-        </span>
-        <ErrorMessage class="mt-1" :message="paymentErrorMessage"/>
-        </label>
-
-        <div v-if="step == 'setting up M-Pesa'" class="mt-8 flex justify-center">
-            <Spinner class="h-4 w-4 text-gray-600"/>
-        </div>
-
-        <ErrorMessage class="mt-2" :message="errorMessage"/>
-
-        <div class="mt-4 flex w-full justify-between">
-            <div></div>
-            <div v-if="step=='Get Amount'">
-                <Button
-                variant="solid"
-                @click="$resources.requestForPayment.submit()"
-                :loading="$resources.requestForPayment.loading"
-                >
-                Proceed to payment using M-Pesa
-                </Button>
-            </div>
-
-            <div v-if="step=='Add Payment Details'">
-                <button
-                class="ml-2"
-                variant="solid"
-                @click="onPayClick"
-                :loading="paymentInProgress"
-                >
-                Make payment via M-Pesa
-                </button>
-            </div>
-
-        </div>
-
-    </div>
-</template>
-
-<script>
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../utils/error';
-export default {
-    name:'BuyPrepaidCreditMpesa',
-    props:{
-        amount:{
-            type:Number,
-            required:true
-        },
-        minimumAmount:{
-            type:Number,
-            required:true,
-            default: 10
-        },
-        partner:{
-            type:String,
-            required:true
-        },
-        phoneNumber:{
-            type:String,
-            required:true
-        }
-    },
-
-    data(){
-        return{
-            step: 'Get Amount',
-            paymentErrorMessage:null,
-            errorMessage:null,
-            paymentInProgress:false
-        };
-    },
-
-    resources:{
-        requestForPayment(){
-            return{
-                url: 'press.api.billing.request_for_payment',
-                params:{
-                    amount:this.amount,
-                    phone_number:this.phoneNumber,
-                    partner:this.partner
-                },
-                validate(){
-                    if(this.amount < this.minimumAmount){
-                        throw new DashboardError(`Amount is less than the minimum allowed: ${this.minimumAmount}`);
-                    }
-                },
-                async onSuccess(data){
-                    this.step='Add Payment Details';
-                    toast.success(data.message || 'Please follow the instructions on your phone');
-                }
-            }
-        }
-    },
-
-    methods:{
-        async onPayClick(){
-            this.paymentInProgress = true;
-            try{
-                const response = await this.$resources.requestForPayment.submit();
-                toast.success(response.data.message || 'Payment successful');
-                this.$emit('success');
-            }
-            catch(error){
-                this.paymentErrorMessage = error.message?.data?.message || 'Payment failed. Please try again.';
-            }
-            finally{
-                this.paymentInProgress = false;
-            }
-        }
-
-    }
-}
-</script> -->
+-->
 
 <template>
     <div>
       <label class="block mt-4">
         <span class="text-sm leading-4 text-gray-700">
-          M-Pesa Payments
+          <!-- M-Pesa Payments -->
         </span>
         <ErrorMessage class="mt-1" :message="paymentErrorMessage" />
       </label>
   
       <ErrorMessage class="mt-2" :message="errorMessage" />
   
-      <!-- Input field for Partner using FormControl -->
-      <FormControl
-        label="Partner"
-        v-model="partnerInput"
-        name="partner"
-        autocomplete="off"
-        class="mb-3"
-        placeholder="Enter partner name"
-      >
-        <template #prefix>
-          <div class="grid w-4 place-items-center text-sm text-gray-700">
-            <!-- Prefix could be optional if needed -->
-          </div>
-        </template>
-      </FormControl>
+        <!-- Select field for Partner -->
+     <!-- Select field for Partner -->
+     <label for="partner" class="block mb-2 text-sm text-gray-700">Partner</label>
+    <select 
+      id="partner" 
+      v-model="partnerInput" 
+      class="form-select w-full mb-6">
+      <option disabled value="">Select a partner</option>
+      <option v-for="partner in partners" :key="partner" :value="partner">
+        {{ partner }}
+      </option>
+    </select>
+
   
       <!-- Input field for M-Pesa Phone Number using FormControl -->
       <FormControl
@@ -168,7 +43,7 @@ export default {
         v-model.number="phoneNumberInput"
         name="phone_number"
         autocomplete="off"
-        class="mb-3"
+        class="mb-5"
         type="tel"
         placeholder="Enter phone number"
       >
@@ -185,7 +60,7 @@ export default {
         v-model="taxIdInput"
         name="tax_id"
         autocomplete="off"
-        class="mb-3"
+        class="mb-5"
         type="string"
         placeholder="Enter company's Tax ID"
       >
@@ -212,7 +87,7 @@ export default {
   <script>
   import { toast } from 'vue-sonner';
   import { DashboardError } from '../utils/error';
-  
+
   export default {
     name: 'BuyPrepaidCreditMpesa',
     props: {
@@ -222,7 +97,8 @@ export default {
       },
       amountKES:{
         type: Number,
-        required: true
+        required: true,
+        default:1
       },
       minimumAmount: {
         type: Number,
@@ -239,9 +115,19 @@ export default {
       paymentInProgress: false,
       partnerInput: '', // initialize partner input
       phoneNumberInput: '', // initialize phone number input
-      taxIdInput: '' // initialize tax id input
+      taxIdInput: '', // initialize tax id input
+      partners: ['Administrator', 'Partner B', 'Partner C'] // Dummy data for partners
     };
   },
+
+  // async mounted(){
+  //   try{
+
+  //       await this.$resources.fetchMpesaPartners.load();
+  //   }catch(error){
+  //     this.errorMessage = error.message || 'Failed to load partners details';
+  //   }
+  // },
 
   resources: {
     requestForPayment() {
@@ -273,7 +159,20 @@ export default {
   }
         }
       };
-    }
+    },
+
+    // fetchMpesaPartners(){
+    //   return{
+    //     url: 'press.api.billing.display_mpesa_payment_partners',
+    //     async onSuccess(data){
+    //       this.partners = data || [];
+    //     },
+    //     validate(){
+    //       // No validation needed
+    //     }
+    //   };
+      
+    // }
   },
 
   methods: {
