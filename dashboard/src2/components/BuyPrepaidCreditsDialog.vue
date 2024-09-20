@@ -24,7 +24,7 @@ export default {
 		},
 		title: {
 			type: String,
-			default: 'Add money to your account'
+			default: 'Add credits to your account'
 		}
 	},
 	emits: ['update:modelValue', 'success'],
