@@ -1,14 +1,12 @@
 <template>
-	<div class="m-5 space-y-4">
-		<!-- Show this block if siteVersion is "Version 14" -->
-		<div v-if="siteVersion !== 'Version 14'">
-			<div>
-				<ObjectList :options="slowQueriesData" />
-			</div>
-		</div>
-
-		<!-- Show this alert banner for other versions (specifically Version 15) -->
-		<div v-else>
+	<div>
+		<Report
+			v-if="siteVersion !== 'Version 14'"
+			title="Slow Queries"
+			:site="name"
+			:reportOptions="slowQueriesOptions"
+		/>
+		<div v-else class="m-5 space-y-4">
 			<AlertBanner
 				title="Performance Tuning coming soon for Version 15"
 				type="info"
@@ -19,22 +17,18 @@
 
 <script>
 import { defineAsyncComponent, h } from 'vue';
-import { ListView, FormControl, Dialog } from 'frappe-ui';
-import ObjectList from '../../ObjectList.vue';
 import AlertBanner from '../../AlertBanner.vue';
 import { renderDialog } from '../../../utils/components';
+import Report from './Report.vue';
 
 export default {
 	props: ['name', 'siteVersion'],
 	components: {
-		ListView,
-		FormControl,
-		Dialog,
-		ObjectList,
+		Report,
 		AlertBanner
 	},
 	computed: {
-		slowQueriesData() {
+		slowQueriesOptions() {
 			return {
 				experimental: true,
 				documentation: 'https://frappecloud.com/docs/performance-tuning',
@@ -61,39 +55,39 @@ export default {
 						label: 'Query',
 						fieldname: 'query',
 						class: 'font-mono',
-						width: '500px'
+						width: '600px'
 					},
 					{
 						label: 'Duration',
 						fieldname: 'duration',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
 						class: 'text-gray-600',
-						width: 0.5
+						width: 0.3
 					}
 				],
 				actions: () => [
 					{
-						label: 'Back',
-						icon: 'arrow-left',
-						onClick: () =>
-							this.$router.push({ name: 'Site Detail Performance' })
+						label: 'Refresh',
+						icon: 'refresh-ccw',
+						loading: this.$resources.slowQueries.loading,
+						onClick: () => this.$resources.slowQueries.reload()
 					}
 				]
 			};

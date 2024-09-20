@@ -1,29 +1,16 @@
 <template>
-	<div v-if="$site.doc?.current_plan?.monitor_access" class="m-5">
-		<ObjectList :options="deadlockReportOptions" />
-	</div>
-	<div class="flex justify-center" v-else>
-		<span class="mt-16 text-base text-gray-700">
-			Your plan doesn't support this feature. Please
-			<span class="cursor-pointer underline" @click="showPlanChangeDialog"
-				>upgrade your plan</span
-			>
-			.
-		</span>
-	</div>
+	<Report :site="name" :reportOptions="deadlockReportOptions" />
 </template>
+
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { renderDialog } from '../../../utils/components';
-import ObjectList from '../../ObjectList.vue';
 import dayjs from '../../../utils/dayjs';
+import Report from './Report.vue';
 
 export default {
 	name: 'SiteDeadlockReport',
 	props: ['name'],
 	components: {
-		ObjectList
+		Report
 	},
 	data() {
 		return {
@@ -32,18 +19,7 @@ export default {
 			max_lines: 20
 		};
 	},
-	methods: {
-		showPlanChangeDialog() {
-			const SitePlansDialog = defineAsyncComponent(() =>
-				import('../../ManageSitePlansDialog.vue')
-			);
-			renderDialog(h(SitePlansDialog, { site: this.name }));
-		}
-	},
 	computed: {
-		$site() {
-			return getCachedDocumentResource('Site', this.name);
-		},
 		deadlockReportOptions() {
 			return {
 				resource: () => {

@@ -1,30 +1,20 @@
 <template>
-	<div v-if="$site.doc?.current_plan?.monitor_access" class="m-5">
-		<ObjectList :options="requestLogsOptions" />
-	</div>
-	<div class="flex justify-center" v-else>
-		<span class="mt-16 p-2 text-base text-gray-800">
-			Your plan doesn't support this feature. Please
-			<span class="cursor-pointer underline" @click="showPlanChangeDialog"
-				>upgrade your plan</span
-			>
-			.
-		</span>
-	</div>
+	<Report
+		title="Request Logs"
+		:site="name"
+		:reportOptions="requestLogsOptions"
+	/>
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { renderDialog } from '../../../utils/components';
-import ObjectList from '../../ObjectList.vue';
 import dayjs from '../../../utils/dayjs';
+import Report from './Report.vue';
 
 export default {
 	name: 'SiteRequestLogs',
 	props: ['name'],
 	components: {
-		ObjectList
+		Report
 	},
 	data() {
 		return {
@@ -33,9 +23,6 @@ export default {
 		};
 	},
 	computed: {
-		$site() {
-			return getCachedDocumentResource('Site', this.name);
-		},
 		requestLogsOptions() {
 			return {
 				resource: () => {
@@ -99,28 +86,11 @@ export default {
 						class: !this.$isMobile ? 'w-48' : '',
 						default: this.today
 					}
-				],
-				actions: () => [
-					{
-						label: 'Back',
-						icon: 'arrow-left',
-						onClick: () => {
-							this.$router.push({ name: 'Site Detail Performance' });
-						}
-					}
 				]
 			};
 		},
 		today() {
 			return dayjs().format('YYYY-MM-DD');
-		}
-	},
-	methods: {
-		showPlanChangeDialog() {
-			const SitePlansDialog = defineAsyncComponent(() =>
-				import('../../ManageSitePlansDialog.vue')
-			);
-			renderDialog(h(SitePlansDialog, { site: this.name }));
 		}
 	}
 };

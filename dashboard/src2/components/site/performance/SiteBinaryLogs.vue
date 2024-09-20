@@ -1,29 +1,15 @@
 <template>
-	<div v-if="$site.doc.current_plan.monitor_access" class="m-5">
-		<ObjectList :options="binaryLogsOptions" />
-	</div>
-	<div class="flex justify-center" v-else>
-		<span class="mt-16 text-base text-gray-700">
-			Your plan doesn't support this feature. Please
-			<span class="cursor-pointer underline" @click="showPlanChangeDialog"
-				>upgrade your plan</span
-			>
-			.
-		</span>
-	</div>
+	<Report title="Binary Logs" :site="name" :reportOptions="binaryLogsOptions" />
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { renderDialog } from '../../../utils/components';
-import ObjectList from '../../ObjectList.vue';
 import dayjs from '../../../utils/dayjs';
+import Report from './Report.vue';
 
 export default {
 	name: 'SiteBinaryLogs',
 	props: ['name'],
-	components: { ObjectList },
+	components: { Report },
 	data() {
 		return {
 			today: dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -31,18 +17,7 @@ export default {
 			max_lines: 4000
 		};
 	},
-	methods: {
-		showPlanChangeDialog() {
-			const SitePlansDialog = defineAsyncComponent(() =>
-				import('../../ManageSitePlansDialog.vue')
-			);
-			renderDialog(h(SitePlansDialog, { site: this.name }));
-		}
-	},
 	computed: {
-		$site() {
-			return getCachedDocumentResource('Site', this.name);
-		},
 		binaryLogsOptions() {
 			return {
 				resource: () => {
@@ -75,17 +50,6 @@ export default {
 						}
 					},
 					{ label: 'Query', fieldname: 'query', class: 'font-mono' }
-				],
-				actions: () => [
-					{
-						label: 'Back',
-						icon: 'arrow-left',
-						onClick: () => {
-							this.$router.push({
-								name: 'Site Detail Performance'
-							});
-						}
-					}
 				],
 				filterControls: () => {
 					return [

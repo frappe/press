@@ -9,7 +9,7 @@
 		<template #body-content>
 			<h2 class="font-semibold">Query</h2>
 			<pre
-				class="mt-2 rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
 				>{{ query }}</pre
 			>
 			<div class="flex p-2 text-sm">
