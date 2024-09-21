@@ -8,7 +8,7 @@
 						<span
 							class="select-none text-xl font-semibold tracking-tight text-gray-900"
 						>
-							Frappe Cloud
+							Optibizpro Cloud
 						</span>
 					</div>
 				</slot>
@@ -27,7 +27,7 @@
 			</div>
 		</div>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
-			<FrappeLogo class="h-4" />
+			<FrappeLogo class="h-6" />
 		</div>
 	</div>
 </template>
