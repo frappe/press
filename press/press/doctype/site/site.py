@@ -504,6 +504,7 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("status"):
 			dispatch_webhook_event("Site Status Update", self, self.team)
+			dispatch_webhook_event("Site Status Update", self, self.owner)
 
 	def generate_saas_communication_secret(self, create_agent_job=False):
 		if not self.standby_for and not self.standby_for_product:

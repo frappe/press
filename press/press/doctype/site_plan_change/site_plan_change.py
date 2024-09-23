@@ -5,6 +5,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from press.utils.webhook import dispatch_webhook_event
 
 
 class SitePlanChange(Document):
@@ -23,6 +24,8 @@ class SitePlanChange(Document):
 		to_plan: DF.Link
 		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
 	# end: auto-generated types
+
+	dashboard_fields = ["from_plan", "to_plan", "type", "site", "timestamp"]
 
 	def validate(self):
 		if not self.from_plan and self.to_plan:
@@ -45,6 +48,11 @@ class SitePlanChange(Document):
 			self.from_plan = ""
 
 	def after_insert(self):
+		dispatch_webhook_event("Site Plan Change", self, self.team)
+		dispatch_webhook_event(
+			"Site Plan Change", self, frappe.db.get_value("Site", self.site, "owner")
+		)
+
 		if self.type == "Initial Plan":
 			self.create_subscription()
 			return
