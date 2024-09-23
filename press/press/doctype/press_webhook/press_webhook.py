@@ -140,7 +140,7 @@ class PressWebhook(Document):
 		if frappe.conf.developer_mode:
 			print(f"Emailing {email}")
 			print(f"{self.name} webhook has been disabled")
-			# return
+			return
 
 		frappe.sendmail(
 			recipients=email,
