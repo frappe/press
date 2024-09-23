@@ -33,24 +33,25 @@
 						to learn more
 					</p>
 				</div>
-				<p class="text-base text-gray-900">Select the webhook events</p>
-				<div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-2">
-					<button
+				<p class="text-base font-medium text-gray-900">
+					Select the webhook events
+				</p>
+				<div
+					class="text-center text-sm leading-10 text-gray-500"
+					v-if="$resources.events.loading"
+				>
+					Loading...
+				</div>
+				<div class="mt-6 flex flex-col gap-4" v-else>
+					<Switch
 						v-for="event in $resources.events.data"
 						:key="event.name"
-						class="flex items-start gap-2.5 text-start"
-						@click.stop="selectEvent(event.name)"
-					>
-						<FormControl
-							type="checkbox"
-							@click.stop="selectEvent(event.name)"
-							:modelValue="isEventSelected(event.name)"
-						/>
-						<div>
-							<p class="text-base text-gray-900">{{ event.name }}</p>
-							<p class="mt-1 text-sm text-gray-700">{{ event.description }}</p>
-						</div>
-					</button>
+						:label="event.name"
+						:description="event.description"
+						:modelValue="isEventSelected(event.name)"
+						@update:modelValue="selectEvent(event.name)"
+						size="sm"
+					/>
 				</div>
 				<ErrorMessage :message="errorMessage || $resources.addWebhook.error" />
 			</div>
