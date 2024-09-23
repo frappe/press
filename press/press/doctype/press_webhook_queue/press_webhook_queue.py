@@ -179,7 +179,6 @@ def process_webhook_queue():
 			record,
 			method="send",
 			queue="long",
-			# job_id=f"webhook_queue:{record}",
-			# deduplicate=True,
-			now=True,
+			job_id=f"webhook_queue:{record}",
+			deduplicate=True
 		)
