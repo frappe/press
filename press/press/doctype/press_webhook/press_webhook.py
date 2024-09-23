@@ -63,7 +63,7 @@ class PressWebhook(Document):
 		if len(webhooks) != 0:
 			frappe.throw("You have already added webhook for this endpoint")
 
-	def validate_endpoint_url_format(self) -> dict:
+	def validate_endpoint_url_format(self):
 		url = urlparse(self.endpoint)
 		if not url.netloc:
 			frappe.throw("Endpoint should be a valid url")
@@ -71,6 +71,10 @@ class PressWebhook(Document):
 		# protocol should be http or https
 		if url.scheme not in ["http", "https"]:
 			frappe.throw("Endpoint should start with http:// or https://")
+
+		# dont allow query params
+		if url.query:
+			frappe.throw("Endpoint should not have query params")
 
 		isIPAddress = False
 		# If endpoint target is ip address, it should be a public ip address
