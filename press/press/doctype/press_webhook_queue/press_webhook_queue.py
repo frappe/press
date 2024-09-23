@@ -19,7 +19,9 @@ class PressWebhookQueue(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import PressWebhookFailedCall
+		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import (
+			PressWebhookFailedCall,
+		)
 
 		data: DF.SmallText
 		event: DF.Link
@@ -178,9 +180,7 @@ def process_webhook_queue():
 		limit=100,
 	)
 	# set status of these records to Queued
-	frappe.db.set_value("Press Webhook Queue", {
-		"name": ("in", records)
-	}, "status", "Queued")
+	frappe.db.set_value("Press Webhook Queue", {"name": ("in", records)}, "status", "Queued")
 	# enqueue these records
 	for record in records:
 		frappe.enqueue_doc(
