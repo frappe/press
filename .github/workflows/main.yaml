@@ -37,10 +37,14 @@ jobs:
           pip install ruff
 
       - name: Get changed files
-        id: changed-files
+        id: changed-python-files
         uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.py
 
       - name: List all changed files
+        if: steps.changed-python-files.outputs.any_changed == 'true'
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
@@ -49,12 +53,14 @@ jobs:
           done
 
       - name: Lint Check
+        if: steps.changed-python-files.outputs.any_changed == 'true'
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           ruff check --output-format github ${ALL_CHANGED_FILES}
 
       - name: Format Check
+        if: steps.changed-python-files.outputs.any_changed == 'true'
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
