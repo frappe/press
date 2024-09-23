@@ -38,8 +38,11 @@ class SitePlanChange(Document):
 			to_plan_value = frappe.db.get_value("Site Plan", self.to_plan, "price_usd")
 			self.type = "Downgrade" if from_plan_value > to_plan_value else "Upgrade"
 
-		if self.from_plan and self.to_plan and self.type == "Downgrade" and not frappe.db.get_value(
-			"Site Plan", self.to_plan, "allow_downgrading_from_other_plan"
+		if (
+			self.from_plan
+			and self.to_plan
+			and self.type == "Downgrade"
+			and not frappe.db.get_value("Site Plan", self.to_plan, "allow_downgrading_from_other_plan")
 		):
 			frappe.throw(f"Sorry, you cannot downgrade to {self.to_plan} from {self.from_plan}")
 
@@ -48,9 +51,7 @@ class SitePlanChange(Document):
 
 	def after_insert(self):
 		dispatch_webhook_event("Site Plan Change", self, self.team)
-		dispatch_webhook_event(
-			"Site Plan Change", self, frappe.db.get_value("Site", self.site, "owner")
-		)
+		dispatch_webhook_event("Site Plan Change", self, frappe.db.get_value("Site", self.site, "owner"))
 
 		if self.type == "Initial Plan":
 			self.create_subscription()

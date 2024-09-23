@@ -41,9 +41,7 @@ class PressWebhookLog(Document):
 	)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Press Webhook Log"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Press Webhook Log")
 
 
 def clean_logs_older_than_24_hours():

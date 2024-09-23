@@ -111,15 +111,9 @@ def get_current_team(get_doc=False):  # noqa: C901
 		# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 		team = getattr(frappe.local, "team_name", "")
 
-	user_is_press_admin = frappe.db.exists(
-		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
-	)
+	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
 
-	if (
-		not team
-		and user_is_press_admin
-		and frappe.db.exists("Team", {"user": frappe.session.user})
-	):
+	if not team and user_is_press_admin and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
@@ -157,18 +151,14 @@ def _get_current_team():
 
 
 def _system_user():
-	return (
-		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
-	)
+	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
 
 def has_role(role, user=None):
 	if not user:
 		user = frappe.session.user
 
-	return frappe.db.exists(
-		"Has Role", {"parenttype": "User", "parent": user, "role": role}
-	)
+	return frappe.db.exists("Has Role", {"parenttype": "User", "parent": user, "role": role})
 
 
 @functools.lru_cache(maxsize=1024)
@@ -200,16 +190,12 @@ def get_default_team_for_user(user):
 
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
-	return frappe.db.get_all(
-		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
-	)
+	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
 def is_user_part_of_team(user, team):
 	"""Returns True if user is part of the team"""
-	return frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": user}
-	)
+	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
 
 
 def get_country_info():
@@ -418,8 +404,7 @@ class RemoteFrappeSite:
 		if missing_files:
 			missing_config = "site config and " if not self.backup_links.get("config") else ""
 			missing_backups = (
-				f"Missing {missing_config}backup files:"
-				f" {', '.join([x.title() for x in missing_files])}"
+				f"Missing {missing_config}backup files:" f" {', '.join([x.title() for x in missing_files])}"
 			)
 			frappe.throw(missing_backups)
 

@@ -43,7 +43,7 @@ class PressWebhook(Document):
 	def validate(self):
 		# maximum 5 webhooks per team
 		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:
-				frappe.throw("You have reached the maximum number of webhooks per team")
+			frappe.throw("You have reached the maximum number of webhooks per team")
 
 		if self.has_value_changed("endpoint"):
 			self.enabled = 0
@@ -84,9 +84,7 @@ class PressWebhook(Document):
 				frappe.throw("Endpoint address should be a valid domain")
 
 			# Endpoint can't be any local domain
-			if not frappe.conf.developer_mode and (
-				"localhost" in url.hostname or ".local" in url.hostname
-			):
+			if not frappe.conf.developer_mode and ("localhost" in url.hostname or ".local" in url.hostname):
 				frappe.throw("Endpoint can't be localhost or local domain")
 
 	@dashboard_whitelist()

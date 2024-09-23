@@ -26,9 +26,7 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 
 		query = (
 			frappe.qb.from_(PressWebhookSelectedEvent)
-			.select(
-				frappe.query_builder.functions.Count(PressWebhookSelectedEvent.name).as_("count")
-			)
+			.select(frappe.query_builder.functions.Count(PressWebhookSelectedEvent.name).as_("count"))
 			.left_join(PressWebhook)
 			.on(PressWebhookSelectedEvent.parent == PressWebhook.name)
 			.where(PressWebhookSelectedEvent.event == event)
@@ -52,7 +50,8 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 		frappe.log_error("failed to queue webhook event")
 		return False
 
-def _process_document_payload(doc: Document):
+
+def _process_document_payload(payload: Document):
 	# convert payload to dict
 	# send fields mentioned in dashboard_fields, as other fields can have sensitive information
 	fields = list(default_fields)
