@@ -1438,9 +1438,9 @@ class Site(Document, TagHelpers):
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
-				self._insert_usage(usage)
+				self._insert_site_usage(usage)
 		else:
-			self._insert_usage(fetched_usage)
+			self._insert_site_usage(fetched_usage)
 
 	def _insert_site_usage(self, usage: dict):
 		current_usages = self.get_disk_usages()
