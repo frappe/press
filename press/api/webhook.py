@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 import frappe
 
 
@@ -19,7 +17,7 @@ def available_events():
 
 
 @frappe.whitelist()
-def add(endpoint: str, secret: str, events: List[str]):
+def add(endpoint: str, secret: str, events: list[str]):
 	doc = frappe.new_doc("Press Webhook")
 	doc.endpoint = endpoint
 	doc.secret = secret
@@ -30,7 +28,7 @@ def add(endpoint: str, secret: str, events: List[str]):
 
 
 @frappe.whitelist()
-def update(name: str, endpoint: str, secret: str, events: List[str]):
+def update(name: str, endpoint: str, secret: str, events: list[str]):
 	doc = frappe.get_doc("Press Webhook", name)
 	doc.endpoint = endpoint
 	if secret:

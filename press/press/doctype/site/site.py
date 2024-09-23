@@ -1471,51 +1471,51 @@ class Site(Document, TagHelpers):
 		:fetched_usage: Requires backups, database, public, private keys with Numeric values
 		"""
 
-		def _insert_usage(usage: dict):
-			current_usages = self.get_disk_usages()
-			site_usage_data = {
-				"site": self.name,
-				"backups": usage["backups"],
-				"database": usage["database"],
-				"database_free": usage.get("database_free", 0),
-				"database_free_tables": json.dumps(usage.get("database_free_tables", []), indent=1),
-				"public": usage["public"],
-				"private": usage["private"],
-			}
-
-			same_as_last_usage = (
-				current_usages["backups"] == site_usage_data["backups"]
-				and current_usages["database"] == site_usage_data["database"]
-				and current_usages["public"] == site_usage_data["public"]
-				and current_usages["private"] == site_usage_data["private"]
-				and current_usages["database_free"] == site_usage_data["private"]
-			)
-
-			if same_as_last_usage:
-				return
-
-			equivalent_site_time = None
-			if usage.get("timestamp"):
-				equivalent_site_time = convert_utc_to_user_timezone(
-					dateutil.parser.parse(usage["timestamp"])
-				).replace(tzinfo=None)
-				if frappe.db.exists(
-					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
-				):
-					return
-				if current_usages["creation"] and equivalent_site_time < current_usages["creation"]:
-					return
-
-			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
-
-			if equivalent_site_time:
-				site_usage.db_set("creation", equivalent_site_time)
-
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
-				_insert_usage(usage)
+				self._insert_usage(usage)
 		else:
-			_insert_usage(fetched_usage)
+			self._insert_usage(fetched_usage)
+
+	def _insert_site_usage(self, usage: dict):
+		current_usages = self.get_disk_usages()
+		site_usage_data = {
+			"site": self.name,
+			"backups": usage["backups"],
+			"database": usage["database"],
+			"database_free": usage.get("database_free", 0),
+			"database_free_tables": json.dumps(usage.get("database_free_tables", []), indent=1),
+			"public": usage["public"],
+			"private": usage["private"],
+		}
+
+		same_as_last_usage = (
+			current_usages["backups"] == site_usage_data["backups"]
+			and current_usages["database"] == site_usage_data["database"]
+			and current_usages["public"] == site_usage_data["public"]
+			and current_usages["private"] == site_usage_data["private"]
+			and current_usages["database_free"] == site_usage_data["private"]
+		)
+
+		if same_as_last_usage:
+			return
+
+		equivalent_site_time = None
+		if usage.get("timestamp"):
+			equivalent_site_time = convert_utc_to_user_timezone(
+				dateutil.parser.parse(usage["timestamp"])
+			).replace(tzinfo=None)
+			if frappe.db.exists(
+				"Site Usage", {"site": self.name, "creation": equivalent_site_time}
+			):
+				return
+			if current_usages["creation"] and equivalent_site_time < current_usages["creation"]:
+				return
+
+		site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
+
+		if equivalent_site_time:
+			site_usage.db_set("creation", equivalent_site_time)
 
 	def _sync_timezone_info(self, timezone: str) -> bool:
 		"""Update site doc timezone with the passed value of timezone.

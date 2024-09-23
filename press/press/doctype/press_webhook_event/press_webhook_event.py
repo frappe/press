@@ -20,4 +20,4 @@ class PressWebhookEvent(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Press Webhook Event"
-	dashboard_fields = ["name", "description"]
+	dashboard_fields = ("name", "description")
