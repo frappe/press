@@ -180,7 +180,7 @@ class Cluster(Document):
 				NetworkSubnet(
 					type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
 					ip_range=self.subnet_cidr_block,
-					network_zone=self.region,
+					network_zone=self.availability_zone,
 				)
 			]
 
@@ -197,7 +197,8 @@ class Cluster(Document):
 				subnets=subnets,
 				routes=[],
 			)
-			self.vpc_id = network.id_or_name
+			self.vpc_id = network.id
+			self.save()
 
 		except APIException as e:
 			frappe.throw(f"Failed to provision network on Hetzner: {str(e)}")

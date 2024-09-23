@@ -140,11 +140,12 @@ class VirtualMachine(Document):
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		server_type = self.client().server_types.get_by_name("cpx11")
-		location = self.client().locations.get_by_name("sin")
+		server_type = self.client().server_types.get_by_name(self.machine_type)
+		location = self.client().locations.get_by_name(cluster.region)
 		network = self.client().networks.get_by_id(cluster.vpc_id)
 		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
-
+		ssh_key_name = self.ssh_key
+		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
 		server_response = self.client().servers.create(
 			name=f"{self.name}",
 			server_type=server_type,
@@ -152,17 +153,15 @@ class VirtualMachine(Document):
 			networks=[network],
 			location=location,
 			public_net=public_net,
+			ssh_keys=[ssh_key],
 		)
-
 		server = server_response.server
+		# We assing only one private IP, so should be fine
+		self.private_ip_address = server.private_net[0].ip
 
-		# volume = client().volumes.create(
-		# name="meow1234",
-		# size=100,
-		# format="ext4",
-		# automount=True,
-		# server=server,
-		# )
+		self.public_ip_address = server.public_net.ipv4.ip
+
+		self.save()
 
 	def _provision_aws(self):
 		options = {
