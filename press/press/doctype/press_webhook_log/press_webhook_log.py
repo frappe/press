@@ -1,7 +1,7 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -41,3 +41,12 @@ class PressWebhookLog(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Press Webhook Log"
 )
+
+
+def clean_logs_older_than_24_hours():
+	frappe.db.sql(
+		"""
+		DELETE FROM `tabPress Webhook Log`
+		WHERE creation < NOW() - INTERVAL 24 HOUR
+		"""
+	)

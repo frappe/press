@@ -198,6 +198,7 @@ scheduler_events = {
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
+		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
