@@ -82,7 +82,7 @@ def log_error(title, **kwargs):
 		)
 
 
-def get_current_team(get_doc=False):  # noqa: C901
+def get_current_team(get_doc=False):
 	if frappe.session.user == "Guest":
 		frappe.throw("Not Permitted", frappe.AuthenticationError)
 
@@ -105,11 +105,10 @@ def get_current_team(get_doc=False):  # noqa: C901
 	system_user = frappe.session.data.user_type == "System User"
 
 	# get team passed via request header
-	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		# check if `team_name` is available in frappe.local
-		# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
-		team = getattr(frappe.local, "team_name", "")
+	x_press_team = frappe.get_request_header("X-Press-Team")
+	# In case if X-Press-Team is not passed, check if `team_name` is available in frappe.local
+	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
+	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
 	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
 
@@ -121,9 +120,8 @@ def get_current_team(get_doc=False):  # noqa: C901
 			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
 		)
 
-	if not team:
-		# if team is not passed via header, get the default team for user
-		team = get_default_team_for_user(frappe.session.user)
+	# if team is not passed via header, get the default team for user
+	team = team if team else get_default_team_for_user(frappe.session.user)
 
 	if not system_user and not is_user_part_of_team(frappe.session.user, team):
 		# if user is not part of the team, get the default team for user
