@@ -132,6 +132,41 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 	files = site.get("files", {})
 
+	apps = [{"app": app} for app in site["apps"]]
+
+	if localisation_country := site.get("localisation_country"):
+		# if localisation country is selected, move site to a public bench with the same localisation app
+		localisation_app = frappe.db.get_value(
+			"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
+		)
+		restricted_release_group_names = frappe.db.get_all(
+			"Site Plan Release Group",
+			pluck="release_group",
+			filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+		)
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupApp = frappe.qb.DocType("Release Group App")
+		if group := (
+			frappe.qb.from_(ReleaseGroup)
+			.select(ReleaseGroup.name)
+			.join(ReleaseGroupApp)
+			.on(ReleaseGroup.name == ReleaseGroupApp.parent)
+			.where(ReleaseGroupApp.app == localisation_app)
+			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.notin(restricted_release_group_names))
+			.where(ReleaseGroup.version == site.get("version"))
+			.run(pluck="name")
+		):
+			apps.append({"app": localisation_app})
+			group = group[0]
+		else:
+			frappe.throw(
+				f"Localisation app for {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
+			)
+	else:
+		group = site.get("group")
+
 	domain = site.get("domain")
 	if not (domain and frappe.db.exists("Root Domain", {"name": domain})):
 		frappe.throw("No root domain for site")
@@ -187,10 +222,11 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			"doctype": "Site",
 			"subdomain": site["name"],
 			"domain": domain,
-			"group": site["group"],
+			"group": group,
 			"server": server,
 			"cluster": cluster,
-			"apps": [{"app": app} for app in site["apps"]],
+			"apps": apps,
+			"app_plans": app_plans,
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
@@ -435,20 +471,29 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def app_details_for_new_public_site():
+	fields = [
+		"name",
+		"title",
+		"image",
+		"description",
+		"app",
+		"route",
+		"subscription_type",
+		{"sources": ["source", "version"]},
+	]
+	if frappe.db.get_value(
+		"Team", get_current_team(), "auto_install_localisation_app_enabled"
+	):
+		fields += [
+			{"localisation_apps": ["marketplace_app", "country"]},
+		]
+
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",
-		fields=[
-			"name",
-			"title",
-			"image",
-			"description",
-			"app",
-			"route",
-			"subscription_type",
-			{"sources": ["source", "version"]},
-		],
+		fields=fields,
 		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
+
 	marketplace_app_sources = [
 		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
 	]
@@ -528,7 +573,7 @@ def options_for_new(for_bench: str = None):
 			"Release Group",
 			fieldname=["name", "`default`", "title", "public"],
 			filters=filters,
-			order_by="creation desc",
+			order_by="creation asc",
 			as_dict=1,
 		)
 		version.group = release_group
@@ -2008,6 +2053,8 @@ def validate_group_for_upgrade(name, group_name):
 @frappe.whitelist()
 @protected("Site")
 def change_group_options(name):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	team = get_current_team()
 	group, server, plan = frappe.db.get_value("Site", name, ["group", "server", "plan"])
 
@@ -2018,20 +2065,34 @@ def change_group_options(name):
 
 	version = frappe.db.get_value("Release Group", group, "version")
 
-	benches = frappe.qb.DocType("Bench")
-	groups = frappe.qb.DocType("Release Group")
-	benches = (
-		frappe.qb.from_(benches)
-		.select(benches.group.as_("name"), groups.title)
-		.inner_join(groups)
-		.on(groups.name == benches.group)
-		.where(benches.status == "Active")
-		.where(groups.name != group)
-		.where(groups.version == version)
-		.where(groups.team == team)
-		.where(benches.server == server)
-		.groupby(benches.group)
-	).run(as_dict=True)
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	query = (
+		frappe.qb.from_(Bench)
+		.select(Bench.group.as_("name"), ReleaseGroup.title)
+		.inner_join(ReleaseGroup)
+		.on(ReleaseGroup.name == Bench.group)
+		.where(Bench.status == "Active")
+		.where(ReleaseGroup.name != group)
+		.where(ReleaseGroup.version == version)
+		.where(ReleaseGroup.team == team)
+		.where(Bench.server == server)
+		.groupby(Bench.group)
+	)
+
+	if roles := check_role_permissions("Release Group"):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission.release_group
+				== ReleaseGroup.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	benches = query.run(as_dict=True)
 
 	return benches
 
@@ -2132,6 +2193,8 @@ def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=F
 @frappe.whitelist()
 @protected("Site")
 def get_private_groups_for_upgrade(name, version):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2147,7 +2210,7 @@ def get_private_groups_for_upgrade(name, version):
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 
-	private_groups = (
+	query = (
 		frappe.qb.from_(ReleaseGroup)
 		.select(ReleaseGroup.name, ReleaseGroup.title)
 		.join(ReleaseGroupServer)
@@ -2157,7 +2220,21 @@ def get_private_groups_for_upgrade(name, version):
 		.where(ReleaseGroup.public == 0)
 		.where(ReleaseGroup.version == next_version)
 		.distinct()
-	).run(as_dict=True)
+	)
+
+	if roles := check_role_permissions("Release Group"):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission.release_group
+				== ReleaseGroup.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	private_groups = query.run(as_dict=True)
 
 	return private_groups
 

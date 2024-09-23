@@ -237,7 +237,7 @@ export default {
 									? 'Update Available'
 									: 'Latest Version';
 							},
-							width: 0.8
+							width: 0.5
 						}
 					],
 					rowActions({
@@ -516,8 +516,10 @@ export default {
 											bench: bench.name,
 											onSuccess(candidate) {
 												bench.doc.deploy_information.deploy_in_progress = true;
-												bench.doc.deploy_information.last_deploy.name =
-													candidate;
+												if (candidate) {
+													bench.doc.deploy_information.last_deploy.name =
+														candidate;
+												}
 											}
 										})
 									);
@@ -967,7 +969,9 @@ export default {
 									bench: bench.name,
 									onSuccess(candidate) {
 										bench.doc.deploy_information.deploy_in_progress = true;
-										bench.doc.deploy_information.last_deploy.name = candidate;
+										if (candidate) {
+											bench.doc.deploy_information.last_deploy.name = candidate;
+										}
 									}
 								})
 							);

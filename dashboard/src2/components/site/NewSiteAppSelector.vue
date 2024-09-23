@@ -66,7 +66,7 @@ export default {
 		},
 		publicApps() {
 			if (!this.availableApps) return;
-			let publicApps = this.availableApps.filter(
+			const publicApps = this.availableApps.filter(
 				app => (app.public || app.plans?.length) && app.image
 			);
 
@@ -92,7 +92,7 @@ export default {
 										class: 'h-6 w-6 rounded-sm',
 										src: row.image
 									}),
-									h('span', { class: 'ml-2' }, row.app_title),
+									h('span', { class: 'ml-2' }, row.title || row.app_title),
 									row.subscription_type !== 'Free'
 										? h(Badge, {
 												class: 'ml-2',
@@ -131,7 +131,7 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps.map(a => a.app).includes(app.app);
+							const isAppAdded = this.apps.map(a => a.app).includes(app.app);
 
 							return {
 								label: isAppAdded ? 'check' : 'plus',
@@ -170,7 +170,7 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps
+							const isAppAdded = this.apps
 								.map(a => a.app)
 								.includes(app.app || app.app_title);
 							return {

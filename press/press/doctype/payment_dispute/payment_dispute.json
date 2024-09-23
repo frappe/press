@@ -10,7 +10,10 @@
   "dispute_id",
   "event_type",
   "payment_intent",
-  "email"
+  "column_break_crci",
+  "email",
+  "reason",
+  "status"
  ],
  "fields": [
   {
@@ -40,11 +43,25 @@
    "in_preview": 1,
    "label": "Event Type",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_crci",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-30 16:37:39.145201",
+ "modified": "2024-09-23 12:27:14.065913",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Dispute",

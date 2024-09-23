@@ -84,6 +84,12 @@
    "width": 0
   },
   {
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "label": "Volume ID",
+   "width": 0
+  },
+  {
    "fieldname": "region",
    "fieldtype": "Data",
    "label": "Region",
@@ -152,7 +158,7 @@
  "is_standard": "Yes",
  "json": "",
  "letterhead": null,
- "modified": "2024-09-13 10:56:35.626625",
+ "modified": "2024-09-17 15:45:42.606684",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Rightsizing Recommendation",

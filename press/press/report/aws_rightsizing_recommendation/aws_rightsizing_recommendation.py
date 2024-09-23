@@ -1,8 +1,10 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+import json
 
-import frappe
 import boto3
+import frappe
+from frappe.utils import cint
 
 
 def execute(filters=None):
@@ -12,6 +14,7 @@ def execute(filters=None):
 	columns_to_remove = []
 	if resource_type == "Compute":
 		columns_to_remove = [
+			"volume_id",
 			"current_iops",
 			"recommended_iops",
 			"current_throughput",
@@ -105,16 +108,58 @@ def get_data(resource_type, action_type):
 				data["current_instance_type"] = row["currentResourceSummary"]
 				data["recommended_instance_type"] = row["recommendedResourceSummary"]
 			elif resource_type == "Virtual Machine Volume":
+				data["volume_id"] = row["resourceId"]
 				# Splits "99.0 GB Storage/3000.0 IOPS/125.0 MB/s Throughput" into
 				# ["99.0 GB Storage", "3000.0 IOPS", "125.0 MB", "/s Throughput"]
 				_, iops, throughput, _ = row["currentResourceSummary"].split("/")
-				data["current_iops"] = iops.split()[0]
-				data["current_throughput"] = throughput.split()[0]
+				data["current_iops"] = cint(iops.split()[0])
+				data["current_throughput"] = cint(throughput.split()[0])
 
 				_, iops, throughput, _ = row["recommendedResourceSummary"].split("/")
-				data["recommended_iops"] = iops.split()[0]
-				data["recommended_throughput"] = throughput.split()[0]
+				data["recommended_iops"] = cint(iops.split()[0])
+				data["recommended_throughput"] = cint(throughput.split()[0])
 
 			results.append(data)
 	results.sort(key=lambda x: x["estimated_savings"], reverse=True)
 	return results
+
+
+@frappe.whitelist()
+def rightsize(filters):
+	filters = frappe._dict(json.loads(filters))
+	if filters.resource_type == "Storage":
+		frappe.enqueue(
+			"press.press.report.aws_rightsizing_recommendation.aws_rightsizing_recommendation.rightsize_volumes",
+			filters=filters,
+			queue="long",
+		)
+
+
+def rightsize_volumes(filters):
+	for row in execute(filters)[1]:
+		row = frappe._dict(row)
+
+		machine = frappe.get_doc("Virtual Machine", row.virtual_machine)
+		volume = machine.volumes[0]
+
+		if volume.volume_id != row.volume_id:
+			# This volume is not managed by Press. Ignore
+			continue
+
+		# Always downgrade performance
+		iops = min(row.recommended_iops, volume.iops)
+		throughput = min(row.recommended_throughput, volume.throughput)
+
+		# Already at recommended performance. Ignore
+		if volume.iops == iops and volume.throughput == throughput:
+			continue
+
+		try:
+			machine.update_ebs_performance(iops, throughput)
+			machine.add_comment(
+				"Comment",
+				f"Rightsized EBS volume {volume.volume_id} from {volume.iops} IOPS and {volume.throughput} MB/s to {iops} IOPS and {throughput} MB/s",
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()

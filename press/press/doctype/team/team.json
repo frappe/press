@@ -53,6 +53,7 @@
   "referrer_id",
   "ssh_access_enabled",
   "skip_backups",
+  "enable_inplace_updates",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -62,6 +63,7 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
+  "auto_install_localisation_app_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -425,6 +427,20 @@
    "fieldname": "enforce_2fa",
    "fieldtype": "Check",
    "label": "Enforce 2FA"
+  },
+  {
+   "default": "0",
+   "description": "Allows team members to install localisation app along with ERPNext on New Site creation",
+   "fieldname": "auto_install_localisation_app_enabled",
+   "fieldtype": "Check",
+   "label": "Auto Install Localisation App Enabled"
+  },
+  {
+   "default": "0",
+   "description": "Allows bypassing build to update a Bench (if conditions are met)",
+   "fieldname": "enable_inplace_updates",
+   "fieldtype": "Check",
+   "label": "Enable In Place Updates"
   }
  ],
  "links": [
@@ -484,7 +500,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-05 15:06:48.179274",
+ "modified": "2024-09-13 11:55:07.048543",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

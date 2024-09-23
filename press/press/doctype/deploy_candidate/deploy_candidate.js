@@ -15,6 +15,10 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
+		if (frm.doc.status === 'Success') {
+			set_handler(frm, 'Deploy', 'deploy', {}, 'Deploy');
+		}
+
 		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
 			set_handler(
 				frm,
@@ -105,6 +109,19 @@ function get_handler(frm, method, args) {
 					`<a href="/app/deploy-candidate/${data?.message}">Deploy Candidate</a>`,
 				]),
 			});
+		}
+
+		if (method === 'deploy' && data) {
+			frappe.msgprint({
+				title: 'Deploy Created',
+				indicator: 'green',
+				message: __(
+					`{0} been created (or found) from current Deploy Candidate`,
+					[`<a href="/app/deploy/${data}">Deploy</a>`],
+				),
+			});
+		} else if (method === 'deploy' && !data) {
+			frappe.msgprint({ title: 'Deploy could not be created' });
 		}
 
 		frm.refresh();

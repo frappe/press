@@ -15,6 +15,7 @@ from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
@@ -33,7 +34,6 @@ from press.utils import (
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.bench_update.bench_update import BenchUpdate
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
@@ -196,50 +196,45 @@ def exists(title):
 
 
 @frappe.whitelist()
-def options(only_by_current_team=False):
-	or_conditions = ""
-	# Also, include other public sources
-	if not only_by_current_team:
-		or_conditions = "OR source.public = 1"
-
-	team = get_current_team()
-	rows = frappe.db.sql(
-		f"""
-	SELECT
-		version.name as version,
-		version.status as status,
-		version.default,
-		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
-		source.app_title as title, source.frappe
-	FROM
-		`tabApp Source Version` AS source_version
-	LEFT JOIN
-		`tabApp Source` AS source
-	ON
-		source.name = source_version.parent
-	LEFT JOIN
-		`tabFrappe Version` AS version
-	ON
-		source_version.version = version.name
-	WHERE
-		version.public = 1 AND source.enabled=1 AND
-		(source.team = %(team)s {or_conditions})
-	ORDER BY source.creation
-	""",
-		{"team": team},
-		as_dict=True,
+def options():
+	AppSource = frappe.qb.DocType("App Source")
+	FrappeVersion = frappe.qb.DocType("Frappe Version")
+	AppSourceVersion = frappe.qb.DocType("App Source Version")
+	rows = (
+		frappe.qb.from_(AppSourceVersion)
+		.left_join(AppSource)
+		.on(AppSourceVersion.parent == AppSource.name)
+		.left_join(FrappeVersion)
+		.on(AppSourceVersion.version == FrappeVersion.name)
+		.where(
+			(AppSource.enabled == 1)
+			& (AppSource.public == 1)
+			& (FrappeVersion.public == 1)
+			& (AppSource.frappe == 1)
+		)
+		.select(
+			FrappeVersion.name.as_("version"),
+			FrappeVersion.status,
+			FrappeVersion.default,
+			AppSource.name.as_("source"),
+			AppSource.app,
+			AppSource.repository_url,
+			AppSource.repository,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.app_title.as_("title"),
+			AppSource.frappe,
+		)
+		.orderby(AppSource.creation)
+		.run(as_dict=True)
 	)
 
-	approved_apps = frappe.get_all(
-		"Marketplace App", filters={"frappe_approved": 1}, pluck="app"
-	)
 	version_list = unique(rows, lambda x: x.version)
 	versions = []
 	for d in version_list:
 		version_dict = {"name": d.version, "status": d.status, "default": d.default}
 		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
-		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
 			app_dict = {"name": app, "title": app_rows[0].title}
@@ -731,44 +726,42 @@ def deploy(name, apps):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps, sites=None, run_will_fail_check=True):
-	if sites is None:
-		sites = []
+def deploy_and_update(
+	name: str,
+	apps: list,
+	sites: list | None = None,
+	run_will_fail_check: bool = True,
+):
+	# Returns name of the Deploy Candidate that is running the build
+	return get_bench_update(
+		name,
+		apps,
+		sites,
+		False,
+	).deploy(run_will_fail_check)
 
-	team = get_current_team(True)
-	rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != team.name:
-		frappe.throw(
-			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
-		)
-	bench_update: "BenchUpdate" = frappe.get_doc(
-		{
-			"doctype": "Bench Update",
-			"group": name,
-			"apps": apps,
-			"sites": [
-				{
-					"site": site["name"],
-					"server": site["server"],
-					"skip_failing_patches": site["skip_failing_patches"],
-					"skip_backups": site["skip_backups"],
-					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
-				}
-				for site in sites
-			],
-		}
-	).insert(ignore_permissions=True)
-	return bench_update.deploy(run_will_fail_check)
+@frappe.whitelist()
+@protected("Release Group")
+def update_inplace(
+	name: str,
+	apps: list,
+	sites: list,
+):
+	# Returns name of the Agent Job name that runs the inplace update
+	return get_bench_update(
+		name,
+		apps,
+		sites,
+		True,
+	).update_inplace()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def create_deploy_candidate(name, apps_to_ignore=[]):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	candidate = rg.create_deploy_candidate(apps_to_ignore)
-
-	return candidate
+	return rg.create_deploy_candidate(apps_to_ignore)
 
 
 @frappe.whitelist()

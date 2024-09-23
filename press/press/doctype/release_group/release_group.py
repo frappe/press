@@ -8,6 +8,7 @@ from itertools import chain
 from typing import TYPE_CHECKING, List, Optional, TypedDict
 
 import frappe
+import frappe.query_builder
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
@@ -51,8 +52,8 @@ LastDeployInfo = TypedDict(
 
 
 if TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.app.app import App
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -163,6 +164,7 @@ class ReleaseGroup(Document, TagHelpers):
 		doc.status = self.status
 		doc.actions = self.get_actions()
 		doc.are_builds_suspended = are_builds_suspended()
+
 		if len(self.servers) == 1:
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
@@ -170,6 +172,12 @@ class ReleaseGroup(Document, TagHelpers):
 			doc.server = self.servers[0].server
 			doc.server_title = server.title
 			doc.server_team = server.team
+
+		doc.enable_inplace_updates = frappe.get_value(
+			"Team",
+			self.team,
+			"enable_inplace_updates",
+		)
 
 	def get_actions(self):
 		return [
@@ -892,13 +900,19 @@ class ReleaseGroup(Document, TagHelpers):
 			TRANSITORY_STATES as DC_TRANSITORY,
 		)
 
-		if not self.last_dc_info:
-			return False
-
-		if self.last_dc_info.status in DC_TRANSITORY:
+		if self.last_dc_info and self.last_dc_info.status in DC_TRANSITORY:
 			return True
 
-		return any(i["status"] in BENCH_TRANSITORY for i in self.last_benches_info)
+		if any(i["status"] in BENCH_TRANSITORY for i in self.last_benches_info):
+			return True
+
+		update_jobs = get_job_names(
+			self.name, "Update Bench In Place", ["Pending", "Running"]
+		)
+		if len(update_jobs):
+			return True
+
+		return False
 
 	@property
 	def status(self):
@@ -1503,3 +1517,21 @@ def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):
 		if app.app == source.app:
 			app.source = source.name
 			break
+
+
+def get_job_names(rg: str, job_type: str, job_status: list[str]):
+	b = frappe.qb.DocType("Bench")
+	aj = frappe.qb.DocType("Agent Job")
+
+	jobs = (
+		frappe.qb.from_(b)
+		.inner_join(aj)
+		.on(b.name == aj.bench)
+		.where(b.group == rg)
+		.where(aj.job_type == job_type)
+		.where(aj.status.isin(job_status))
+		.select(aj.name)
+		.orderby(aj.modified, order=frappe.query_builder.Order.desc)
+	).run()
+
+	return [j[0] for j in jobs]

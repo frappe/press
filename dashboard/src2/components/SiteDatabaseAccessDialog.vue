@@ -2,7 +2,7 @@
 	<Dialog :options="{ title: 'Manage Database Access' }" v-model="show">
 		<template #body-content>
 			<!-- Not available on current plan, upsell higher plans -->
-			<div v-if="!sitePlan?.database_access">
+			<div v-if="!planSupportsDatabaseAccess">
 				<div>
 					<p class="text-base">
 						Database access is not available on your current plan. Please
@@ -121,7 +121,6 @@ import { defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
 import ClickToCopyField from './ClickToCopyField.vue';
 import { pollJobStatus } from '../utils/agentJob';
-import { getPlan } from '../data/plans';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -188,7 +187,7 @@ export default {
 			return this.sitePlan?.database_access;
 		},
 		sitePlan() {
-			return getPlan(this.$site.doc.plan);
+			return this.$site.doc.current_plan;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);

@@ -12,7 +12,6 @@ from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_fullname, get_url_to_form, random_string
-
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
@@ -42,6 +41,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		auto_install_localisation_app_enabled: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
@@ -54,6 +54,7 @@ class Team(Document):
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
+		enable_inplace_updates: DF.Check
 		enable_performance_tuning: DF.Check
 		enabled: DF.Check
 		enforce_2fa: DF.Check
@@ -111,6 +112,7 @@ class Team(Document):
 		"parent_team",
 		"is_developer",
 		"enable_performance_tuning",
+		"enable_inplace_updates",
 	]
 
 	def get_doc(self, doc):
@@ -645,6 +647,10 @@ class Team(Document):
 	def update_billing_details(self, billing_details):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
+			if (address_doc.country != billing_details.country) and (
+				address_doc.country == "India" or billing_details.country == "India"
+			):
+				frappe.throw("Cannot change country of billing address")
 		else:
 			if self.account_request:
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)

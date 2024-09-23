@@ -211,6 +211,58 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		[
+			[
+				__('Convert to ARM'),
+				'convert_to_arm',
+				frm.doc.cloud_provider == 'AWS EC2' && frm.doc.platform == 'x86_64',
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Link',
+									label: 'Virtual Machine Image',
+									fieldname: 'virtual_machine_image',
+									options: 'Virtual Machine Image',
+									reqd: 1,
+									get_query: function () {
+										return {
+											filters: {
+												platform: 'arm64',
+												cluster: frm.doc.cluster,
+												status: 'Available',
+												series: frm.doc.series,
+											},
+										};
+									},
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Machine Type',
+									fieldname: 'machine_type',
+									reqd: 1,
+								},
+							],
+							({ virtual_machine_image, machine_type }) => {
+								frm
+									.call(method, {
+										virtual_machine_image,
+										machine_type,
+									})
+									.then((r) => frm.refresh());
+							},
+							__(label),
+						);
+					},
+					__('Actions'),
+				);
+			}
+		});
 		if (frm.doc.instance_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(

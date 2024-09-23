@@ -86,7 +86,7 @@ export default {
 						!this.$team.doc.erpnext_partner
 					) {
 						throw new DashboardError(
-							`Amount must be greater than ${this.minimumAmount}`
+							`Amount must be greater than or equal to ${this.minimumAmount}`
 						);
 					}
 				},
