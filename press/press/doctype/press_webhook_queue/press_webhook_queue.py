@@ -29,6 +29,10 @@ class PressWebhookQueue(Document):
 		team: DF.Link
 	# end: auto-generated types
 
+	def validate(self):
+		if not self.next_retry_at:
+			self.next_retry_at = frappe.utils.now()
+
 	def _send_webhook_call(self, webhook_name, payload, url, secret) -> bool:
 		response = ""
 		response_status_code = 0
@@ -83,6 +87,7 @@ class PressWebhookQueue(Document):
 		if self.status in ["Failed", "Partially Sent"]:
 			self._retry_failed_calls()
 			return
+		print("hello")
 		try:
 			PressWebhookSelectedEvent = frappe.qb.DocType("Press Webhook Selected Event")
 			PressWebhook = frappe.qb.DocType("Press Webhook")
@@ -118,7 +123,7 @@ class PressWebhookQueue(Document):
 			else:
 				if sent == total:
 					self.status = "Sent"
-				elif sent != total:
+				elif sent != total and sent != 0:
 					self.status = "Partially Sent"
 				else:
 					self.status = "Failed"
@@ -164,6 +169,7 @@ def process_webhook_queue():
 		filters={
 			"status": ["in", ["Pending", "Failed", "Partially Sent"]],
 			"retries": ["<=", 3],
+			"next_retry_at": ["<=", frappe.utils.now()],
 		},
 		pluck="name",
 	)
@@ -173,6 +179,7 @@ def process_webhook_queue():
 			record,
 			method="send",
 			queue="long",
-			job_id=f"webhook_queue:{record}",
-			deduplicate=True,
+			# job_id=f"webhook_queue:{record}",
+			# deduplicate=True,
+			now=True,
 		)
