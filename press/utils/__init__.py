@@ -1,39 +1,36 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
-from typing import Optional, TypedDict, TypeVar
+from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
 
-from babel.dates import format_timedelta
 import frappe
 import pytz
 import requests
 import wrapt
+from babel.dates import format_timedelta
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
 
-SupervisorProcess = TypedDict(
-	"SupervisorProcess",
-	{
-		"program": str,  # group and name
-		"name": str,
-		"status": str,
-		"uptime": Optional[float],  # in seconds
-		"uptime_string": Optional[str],
-		"message": Optional[str],  # when not running
-		"group": Optional[str],
-		"pid": Optional[int],
-	},
-)
+
+class SupervisorProcess(TypedDict):
+	program: str
+	name: str
+	status: str
+	uptime: float | None
+	uptime_string: str | None
+	message: str | None
+	group: str | None
+	pid: int | None
 
 
 def log_error(title, **kwargs):
@@ -59,11 +56,9 @@ def log_error(title, **kwargs):
 		reference_name = doc.name
 		del kwargs["doc"]
 
-	try:
+	with contextlib.suppress(Exception):
 		kwargs["user"] = frappe.session.user
 		kwargs["team"] = frappe.local.team()
-	except Exception:
-		pass
 
 	message = ""
 	if serialized := json.dumps(
@@ -78,18 +73,16 @@ def log_error(title, **kwargs):
 	if traceback := frappe.get_traceback(with_context=True):
 		message += f"Exception:\n{traceback}\n"
 
-	try:
+	with contextlib.suppress(Exception):
 		frappe.log_error(
 			title=title,
 			message=message,
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
-	except Exception:
-		pass
 
 
-def get_current_team(get_doc=False):
+def get_current_team(get_doc=False):  # noqa: C901
 	if frappe.session.user == "Guest":
 		frappe.throw("Not Permitted", frappe.AuthenticationError)
 
@@ -202,14 +195,14 @@ def get_default_team_for_user(user):
 		# if user is part of multiple teams, send the first enabled one
 		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
 			return team
+	return None
 
 
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
-	valid_teams = frappe.db.get_all(
+	return frappe.db.get_all(
 		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
 	)
-	return valid_teams
 
 
 def is_user_part_of_team(user, team):
@@ -302,21 +295,21 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 def chunk(iterable, size):
 	"""Creates list of elements split into groups of n."""
 	for i in range(0, len(iterable), size):
-		yield iterable[i : i + size]  # noqa
+		yield iterable[i : i + size]
 
 
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	with open(migration_script) as f:
+		return f.read()
 
 
 @cache(seconds=1800)
 def get_minified_script_2():
 	migration_script = "../apps/press/press/scripts/migrate_2.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	with open(migration_script) as f:
+		return f.read()
 
 
 def get_frappe_backups(url, email, password):
@@ -484,8 +477,9 @@ def is_json(string):
 	if isinstance(string, str):
 		string = string.strip()
 		return string.startswith("{") and string.endswith("}")
-	elif isinstance(string, (dict, list)):
+	if isinstance(string, (dict, list)):
 		return True
+	return None
 
 
 def guess_type(value):
@@ -501,10 +495,9 @@ def guess_type(value):
 
 	if value_type in type_dict:
 		return type_dict[value_type]
-	else:
-		if is_json(value):
-			return "JSON"
-		return "String"
+	if is_json(value):
+		return "JSON"
+	return "String"
 
 
 def convert(string):
@@ -685,9 +678,9 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	return parsed
 
 
-def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
-	pid: Optional[int] = None
-	uptime: Optional[float] = None
+def parse_pid_uptime(s: str) -> tuple[int | None, float | None]:
+	pid: int | None = None
+	uptime: float | None = None
 	splits = strip_split(s, ",", maxsplit=1)
 
 	if len(splits) != 2:
@@ -714,7 +707,7 @@ def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
 	return pid, uptime, uptime_string
 
 
-def parse_uptime(s: str) -> Optional[float]:
+def parse_uptime(s: str) -> float | None:
 	# example `s`: "uptime 68 days, 6:10:37"
 	days = 0
 	hours = 0
@@ -793,9 +786,10 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+	return None
 
 
-def fmt_timedelta(td: Union[timedelta, int]):
+def fmt_timedelta(td: timedelta | int):
 	locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
 	return format_timedelta(td, locale=locale)
 

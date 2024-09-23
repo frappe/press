@@ -1,7 +1,10 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 from typing import List
+
 import frappe
 
 

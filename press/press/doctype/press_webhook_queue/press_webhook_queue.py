@@ -1,11 +1,14 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.utils import now, add_to_date
-import requests
+from __future__ import annotations
+
 import json
+
+import frappe
+import requests
 from frappe.model.document import Document
+from frappe.utils import add_to_date, now
 
 
 class PressWebhookQueue(Document):
@@ -16,6 +19,7 @@ class PressWebhookQueue(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import (
 			PressWebhookFailedCall,
 		)
@@ -87,7 +91,9 @@ class PressWebhookQueue(Document):
 		if self.status in ["Failed", "Partially Sent"]:
 			self._retry_failed_calls()
 			return
-		print("hello")
+		self._process_webhook_call()
+
+	def _process_webhook_call(self):
 		try:
 			PressWebhookSelectedEvent = frappe.qb.DocType("Press Webhook Selected Event")
 			PressWebhook = frappe.qb.DocType("Press Webhook")

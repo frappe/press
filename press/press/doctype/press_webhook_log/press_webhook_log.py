@@ -1,8 +1,11 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import frappe
 from frappe.model.document import Document
+
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -26,7 +29,7 @@ class PressWebhookLog(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Press Webhook Log"
-	dashboard_fields = [
+	dashboard_fields = (
 		"webhook",
 		"event",
 		"status",
@@ -35,7 +38,7 @@ class PressWebhookLog(Document):
 		"response_body",
 		"response_status_code",
 		"creation",
-	]
+	)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

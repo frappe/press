@@ -1,16 +1,20 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import contextlib
 import ipaddress
 import json
 from urllib.parse import urlparse
+
 import frappe
+import requests
+from frappe.model.document import Document
+
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import is_valid_hostname
-import requests
-from frappe.model.document import Document
 
 
 class PressWebhook(Document):
@@ -21,6 +25,7 @@ class PressWebhook(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_webhook_selected_event.press_webhook_selected_event import (
 			PressWebhookSelectedEvent,
 		)
@@ -33,12 +38,11 @@ class PressWebhook(Document):
 	# end: auto-generated types
 
 	DOCTYPE = "Press Webhook"
-	dashboard_fields = ["enabled", "endpoint", "events"]
+	dashboard_fields = ("enabled", "endpoint", "events")
 
 	def validate(self):
-		if self.is_new():
-			# maximum 5 webhooks per team
-			if frappe.db.count("Press Webhook", {"team": self.team}) > 5:
+		# maximum 5 webhooks per team
+		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:
 				frappe.throw("You have reached the maximum number of webhooks per team")
 
 		if self.has_value_changed("endpoint"):
@@ -78,11 +82,6 @@ class PressWebhook(Document):
 			# domain should be a fqdn
 			if not is_valid_hostname(url.hostname):
 				frappe.throw("Endpoint address should be a valid domain")
-
-			try:
-				url.port
-			except ValueError:
-				frappe.throw("Port no of the endpoint is invalid")
 
 			# Endpoint can't be any local domain
 			if not frappe.conf.developer_mode and (

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
-
 
 from . import __version__ as app_version
 

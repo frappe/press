@@ -1,9 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
+from __future__ import annotations
+
 import json
+
+import frappe
 from frappe.model import default_fields
 from frappe.model.document import Document
 
@@ -14,20 +16,7 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 		if isinstance(payload, dict):
 			data = frappe._dict(payload)
 		elif isinstance(payload, Document):
-			# convert payload to dict
-			# send fields mentioned in dashboard_fields, as other fields can have sensitive information
-			fields = list(default_fields)
-			if hasattr(payload, "dashboard_fields"):
-				fields += payload.dashboard_fields
-			_doc = frappe._dict()
-			for fieldname in fields:
-				_doc[fieldname] = payload.get(fieldname)
-
-			if hasattr(payload, "get_doc"):
-				result = payload.get_doc(_doc)
-				if isinstance(result, dict):
-					_doc.update(result)
-			data = _doc
+			data = _process_document_payload(payload)
 		else:
 			frappe.throw("Invalid data type")
 
@@ -62,3 +51,20 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 	except Exception:
 		frappe.log_error("failed to queue webhook event")
 		return False
+
+def _process_document_payload(doc: Document):
+	# convert payload to dict
+	# send fields mentioned in dashboard_fields, as other fields can have sensitive information
+	fields = list(default_fields)
+	if hasattr(payload, "dashboard_fields"):
+		fields += payload.dashboard_fields
+	_doc = frappe._dict()
+	for fieldname in fields:
+		_doc[fieldname] = payload.get(fieldname)
+
+	if hasattr(payload, "get_doc"):
+		result = payload.get_doc(_doc)
+		if isinstance(result, dict):
+			_doc.update(result)
+
+	return _doc
