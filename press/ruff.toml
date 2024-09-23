@@ -30,6 +30,8 @@ ignore = [
   "E501",   # line too long, cause hooks.py
   "W191",   # indentation contains tabs, cause when the world zigs, we zag
   "B023",   # function doesn't bind loop variable - will have last iteration's value
+  "UP037",  # remove quotes from annotations, messes up DF.Literal typing
+  "SIM103", # return condition directly, readability suffers at times
 ]
 
 
