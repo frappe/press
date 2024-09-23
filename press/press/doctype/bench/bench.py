@@ -179,6 +179,9 @@ class Bench(Document):
 			return
 
 		for release in candidate.apps:
+			app_release = release.release
+			app_hash = release.hash
+
 			if release.pullable_release and release.pullable_hash:
 				app_release = release.pullable_release
 				app_hash = release.pullable_hash
