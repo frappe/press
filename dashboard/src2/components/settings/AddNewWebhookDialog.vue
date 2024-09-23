@@ -129,7 +129,7 @@ export default {
 				return;
 			}
 			if (!this.selectedEvents.length) {
-				this.errorMessage = 'Select at least one event';
+				this.errorMessage = 'Please enable at least one event';
 				return;
 			}
 			this.errorMessage = '';

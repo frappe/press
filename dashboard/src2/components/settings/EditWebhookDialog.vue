@@ -122,7 +122,7 @@ export default {
 				url: 'press.api.webhook.update',
 				validate: () => {
 					if (!this.selectedEvents) {
-						return 'Please select at least one event';
+						return 'Please enable at least one event';
 					}
 				},
 				makeParams: () => {
