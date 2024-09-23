@@ -1,17 +1,39 @@
-indent-width = 1
+line-length = 110
+indent-width = 4
+target-version = "py38"
 
 [format]
+quote-style = "double"
 indent-style = "tab"
+
 
 [lint]
 select = [
-    "F",
-    "E",
-    "W",
-    "I",
+  "F",
+  "E",
+  "W",
+  "I",
+  "UP",
+  "B",
+  "RUF",
+  "FA",
+  "TCH",
+  "C90",
+  "RET",
+  "SIM",
 ]
 ignore = [
-    "E501", # line too long
-    "W191", # indentation contains tabs
+  "UP015",  # Unnecessary open mode parameters
+  "SIM108", # Use ternary operator {contents} instead of if-else-block
+  "F821",   # Undefined name, cause of DF.Literal
+  "F722",   # syntax error in forward type annotation, cause of DF.Literal
+  "E501",   # line too long, cause hooks.py
+  "W191",   # indentation contains tabs, cause when the world zigs, we zag
+  "B023",   # function doesn't bind loop variable - will have last iteration's value
+  "UP037",  # remove quotes from annotations, messes up DF.Literal typing
+  "SIM103", # return condition directly, readability suffers at times
 ]
-typing-modules = ["frappe.types.DF"]
+
+
+[lint.mccabe]
+max-complexity = 8
