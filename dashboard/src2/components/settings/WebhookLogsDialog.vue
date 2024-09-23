@@ -8,6 +8,9 @@
 		}"
 	>
 		<template #body-content>
+			<p class="text-sm mb-2 text-gray-700" v-if="!selectedWebhookLogId">
+				<strong>Note:</strong> You can only view logs of last 24 hours
+			</p>
 			<ObjectList :options="listOptions" v-if="!selectedWebhookLogId" />
 			<Button
 				class="mb-2"
