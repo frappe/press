@@ -9,15 +9,6 @@
   "title": "Site Plan Change"
  },
  {
-  "description": "Pending, Installing, Updating, Active, Broken, Archived",
-  "docstatus": 0,
-  "doctype": "Press Webhook Event",
-  "enabled": 1,
-  "modified": "2024-09-23 12:16:32.881258",
-  "name": "Bench Status Update",
-  "title": "Bench Status Update"
- },
- {
   "description": "Pending, Installing, Updating, Active, Inactive, Broken, Archived, Suspended",
   "docstatus": 0,
   "doctype": "Press Webhook Event",
