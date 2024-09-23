@@ -1032,7 +1032,7 @@ def archive_obsolete_benches(group: str | None = None, server: str | None = None
 	benches = frappe.db.sql(
 		f"""
 		SELECT
-			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, bench.resetting_bench, g.public, g.central_bench
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -1073,7 +1073,7 @@ def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 			continue
 
 		if (
-			not bench.public
+			not (bench.public or bench.central_bench)
 			and bench.creation < frappe.utils.add_days(None, -3)
 			and not get_scheduled_version_upgrades(bench)
 		):
