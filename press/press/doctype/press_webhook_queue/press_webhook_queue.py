@@ -19,6 +19,7 @@ class PressWebhookQueue(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import (
 			PressWebhookFailedCall,
 		)
