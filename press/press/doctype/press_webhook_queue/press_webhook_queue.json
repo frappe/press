@@ -24,7 +24,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nSent\nPartially Sent\nFailed",
+   "options": "Pending\nQueued\nSent\nPartially Sent\nFailed",
    "reqd": 1
   },
   {
@@ -91,7 +91,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-19 11:39:20.192930",
+ "modified": "2024-09-23 15:36:39.746598",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Queue",

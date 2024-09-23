@@ -19,17 +19,14 @@ class PressWebhookQueue(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import (
-			PressWebhookFailedCall,
-		)
+		from press.press.doctype.press_webhook_failed_call.press_webhook_failed_call import PressWebhookFailedCall
 
 		data: DF.SmallText
 		event: DF.Link
 		failed_webhook_calls: DF.Table[PressWebhookFailedCall]
 		next_retry_at: DF.Datetime | None
 		retries: DF.Int
-		status: DF.Literal["Pending", "Sent", "Partially Sent", "Failed"]
+		status: DF.Literal["Pending", "Queued", "Sent", "Partially Sent", "Failed"]
 		team: DF.Link
 	# end: auto-generated types
 
@@ -178,7 +175,13 @@ def process_webhook_queue():
 			"next_retry_at": ["<=", frappe.utils.now()],
 		},
 		pluck="name",
+		limit=100,
 	)
+	# set status of these records to Queued
+	frappe.db.set_value("Press Webhook Queue", {
+		"name": ("in", records)
+	}, "status", "Queued")
+	# enqueue these records
 	for record in records:
 		frappe.enqueue_doc(
 			"Press Webhook Queue",
