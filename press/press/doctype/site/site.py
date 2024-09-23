@@ -1534,7 +1534,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):  # noqa: C901
+	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True
 
@@ -1556,9 +1556,15 @@ class Site(Document, TagHelpers):
 		self.reload()
 		self.setup_wizard_complete = 1
 
-		if self.team == "Administrator":
-			user = frappe.db.get_value("Account Request", self.account_request, "email")
-			self.team = frappe.db.get_value("Team", {"user": user}, "name")
+		self.team = (
+			frappe.db.get_value(
+				"Team",
+				{"user": frappe.db.get_value("Account Request", self.account_request, "email")},
+				"name",
+			)
+			if self.team == "Administrator"
+			else self.team
+		)
 
 		self.save()
 
