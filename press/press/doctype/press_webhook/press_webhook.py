@@ -9,6 +9,8 @@ import json
 from urllib.parse import urlparse
 
 import frappe
+import frappe.query_builder
+import frappe.query_builder.functions
 import requests
 from frappe.model.document import Document
 
@@ -130,9 +132,47 @@ class PressWebhook(Document):
 		self.save()
 
 	@dashboard_whitelist()
+	def disable_and_notify(self):
+		self.disable()
+		email = frappe.db.get_value("Team", self.team, "user")
+		if not email:
+			return
+		if frappe.conf.developer_mode:
+			print(f"Emailing {email}")
+			print(f"{self.name} webhook has been disabled")
+			# return
+
+		frappe.sendmail(
+			recipients=email,
+			subject="Important: Your Configured Webhook on Frappe Cloud is disabled",
+			template="press_webhook_disabled",
+			args={"endpoint": self.endpoint},
+			now=True,
+		)
+
+	@dashboard_whitelist()
 	def delete(self):
 		frappe.db.sql("delete from `tabPress Webhook Log` where webhook = %s", (self.name,))
 		frappe.delete_doc("Press Webhook", self.name)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
+
+
+def auto_disable_high_delivery_failure_webhooks():
+	# In past hour, if 70% of webhook deliveries has failed, disable the webhook and notify the user
+	data = frappe.db.sql(
+		"""
+SELECT `endpoint`
+FROM `tabPress Webhook Log`
+WHERE `creation` >= NOW() - INTERVAL 1 HOUR
+GROUP BY `endpoint`
+HAVING (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;
+""",
+		as_dict=True,
+	)
+	endpoints = [row.endpoint for row in data]
+	doc_names = frappe.get_all("Press Webhook", filters={"endpoint": ("in", endpoints)}, pluck="name")
+	for doc_name in doc_names:
+		doc = frappe.get_doc("Press Webhook", doc_name)
+		doc.disable_and_notify()
