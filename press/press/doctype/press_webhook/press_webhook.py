@@ -97,7 +97,7 @@ class PressWebhook(Document):
 	def validate_endpoint(self) -> dict:
 		response = ""
 		response_status_code = 0
-		payload = {"event": "Webhook Test", "data": {}}
+		payload = {"event": "Webhook Validate", "data": {}}
 		try:
 			req = requests.post(
 				self.endpoint,
