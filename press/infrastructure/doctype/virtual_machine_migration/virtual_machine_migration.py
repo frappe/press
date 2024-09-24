@@ -49,6 +49,7 @@ class VirtualMachineMigration(Document):
 	def before_insert(self):
 		self.add_steps()
 		self.add_volumes()
+		self.create_machine_copy()
 
 	def after_insert(self):
 		self.execute()
@@ -70,6 +71,25 @@ class VirtualMachineMigration(Document):
 					"device_name": f"/dev/sd{device_name_index}",
 				},
 			)
+
+	def create_machine_copy(self):
+		# Create a copy of the current machine
+		# So we don't lose the instance ids
+		self.copied_virtual_machine = f"{self.virtual_machine}-copy"
+
+		if frappe.db.exists("Virtual Machine", self.copied_virtual_machine):
+			frappe.delete_doc("Virtual Machine", self.copied_virtual_machine)
+
+		copied_machine = frappe.copy_doc(self.machine)
+		copied_machine.insert(set_name=self.copied_virtual_machine)
+
+	@property
+	def machine(self):
+		return frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+	@property
+	def copied_machine(self):
+		return frappe.get_doc("Virtual Machine", self.copied_virtual_machine)
 
 	@property
 	def migration_steps(self):
