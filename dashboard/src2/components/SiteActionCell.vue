@@ -54,7 +54,7 @@ function getSiteActionHandler(action) {
 			import('./site/SiteVersionUpgradeDialog.vue')
 		),
 		'Change bench group': defineAsyncComponent(() =>
-			import('./site/SiteChangeBenchDialog.vue')
+			import('./site/SiteChangeGroupDialog.vue')
 		),
 		'Change region': defineAsyncComponent(() =>
 			import('./site/SiteChangeRegionDialog.vue')
