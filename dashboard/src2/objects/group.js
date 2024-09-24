@@ -5,9 +5,9 @@ import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
-import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
-import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
-import AddAppDialog from '../components/bench/AddAppDialog.vue';
+import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/group/PatchAppDialog.vue';
+import AddAppDialog from '../components/group/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideRocket from '~icons/lucide/rocket';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
@@ -511,11 +511,11 @@ export default {
 										'Deploy is in progress. Please wait for it to complete.'
 									);
 								} else if (bench.doc.deploy_information.update_available) {
-									let UpdateBenchDialog = defineAsyncComponent(() =>
-										import('../components/bench/UpdateBenchDialog.vue')
+									let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
+										import('../components/group/UpdateReleaseGroupDialog.vue')
 									);
 									renderDialog(
-										h(UpdateBenchDialog, {
+										h(UpdateReleaseGroupDialog, {
 											bench: bench.name,
 											onSuccess(candidate) {
 												bench.doc.deploy_information.deploy_in_progress = true;
@@ -700,7 +700,7 @@ export default {
 				route: 'actions',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../components/bench/ReleaseGroupActions.vue')
+					import('../components/group/ReleaseGroupActions.vue')
 				),
 				props: releaseGroup => {
 					return { releaseGroup: releaseGroup.name };
@@ -747,7 +747,7 @@ export default {
 							},
 							onClick() {
 								let AddRegionDialog = defineAsyncComponent(() =>
-									import('../components/bench/AddRegionDialog.vue')
+									import('../components/group/AddRegionDialog.vue')
 								);
 								renderDialog(
 									h(AddRegionDialog, {
@@ -814,7 +814,7 @@ export default {
 								label: 'Edit',
 								onClick() {
 									let DependencyEditorDialog = defineAsyncComponent(() =>
-										import('../components/bench/DependencyEditorDialog.vue')
+										import('../components/group/DependencyEditorDialog.vue')
 									);
 									renderDialog(
 										h(DependencyEditorDialog, {
@@ -964,11 +964,11 @@ export default {
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
 						if (bench.doc?.deploy_information?.last_deploy) {
-							let UpdateBenchDialog = defineAsyncComponent(() =>
-								import('../components/bench/UpdateBenchDialog.vue')
+							let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
+								import('../components/group/UpdateReleaseGroupDialog.vue')
 							);
 							renderDialog(
-								h(UpdateBenchDialog, {
+								h(UpdateReleaseGroupDialog, {
 									bench: bench.name,
 									onSuccess(candidate) {
 										bench.doc.deploy_information.deploy_in_progress = true;

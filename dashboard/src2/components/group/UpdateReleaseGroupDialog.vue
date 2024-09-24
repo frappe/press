@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			size: '4xl',
-			title: 'Update Bench'
+			title: 'Update Bench Group'
 		}"
 	>
 		<template #body-content>
@@ -122,7 +122,7 @@ import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
 
 export default {
-	name: 'UpdateBenchDialog',
+	name: 'UpdateReleaseGroupDialog',
 	props: ['bench'],
 	components: {
 		GenericList,
