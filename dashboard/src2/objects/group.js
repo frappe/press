@@ -40,7 +40,7 @@ export default {
 	},
 	list: {
 		route: '/benches',
-		title: 'Benches',
+		title: 'Bench Groups',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
 		filterControls() {
