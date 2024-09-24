@@ -48,6 +48,7 @@ class VirtualMachineMigration(Document):
 
 	def before_insert(self):
 		self.add_steps()
+		self.add_volumes()
 
 	def after_insert(self):
 		self.execute()
@@ -56,6 +57,19 @@ class VirtualMachineMigration(Document):
 		for step in self.migration_steps:
 			step.update({"status": "Pending"})
 			self.append("steps", step)
+
+	def add_volumes(self):
+		# Prepare volumes to attach to new machine
+		for index, volume in enumerate(self.machine.volumes):
+			device_name_index = chr(ord("f") + index)
+			self.append(
+				"volumes",
+				{
+					"status": "Unattached",
+					"volume_id": volume.volume_id,
+					"device_name": f"/dev/sd{device_name_index}",
+				},
+			)
 
 	@property
 	def migration_steps(self):
