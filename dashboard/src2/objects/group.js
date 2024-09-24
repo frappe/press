@@ -700,7 +700,7 @@ export default {
 				route: 'actions',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../components/bench/BenchActions.vue')
+					import('../components/bench/ReleaseGroupActions.vue')
 				),
 				props: releaseGroup => {
 					return { releaseGroup: releaseGroup.name };
