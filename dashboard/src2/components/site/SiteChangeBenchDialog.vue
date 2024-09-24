@@ -174,7 +174,7 @@ export default {
 					this.showCloneBenchDialog = false;
 
 					this.$router.push({
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: {
 							name: data.bench_name,
 							id: data.candidate_name

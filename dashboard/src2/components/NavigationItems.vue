@@ -75,7 +75,7 @@ export default {
 							'Release Group Detail',
 							'New Release Group',
 							'Release Group New Site',
-							'Bench Deploy'
+							'Deploy Candidate'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
 					disabled: !onboardingComplete || enforce2FA

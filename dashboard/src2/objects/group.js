@@ -404,11 +404,14 @@ export default {
 				label: 'Deploys',
 				route: 'deploys',
 				icon: icon('package'),
-				childrenRoutes: ['Bench Deploy'],
+				childrenRoutes: ['Deploy Candidate'],
 				type: 'list',
 				list: {
 					doctype: 'Deploy Candidate',
-					route: row => ({ name: 'Bench Deploy', params: { id: row.name } }),
+					route: row => ({
+						name: 'Deploy Candidate',
+						params: { id: row.name }
+					}),
 					filters: releaseGroup => {
 						return {
 							group: releaseGroup.name
@@ -1006,7 +1009,7 @@ export default {
 					theme: 'green',
 					condition: () => bench.doc.deploy_information.deploy_in_progress,
 					route: {
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: { id: bench.doc?.deploy_information?.last_deploy?.name }
 					}
 				},
@@ -1042,9 +1045,9 @@ export default {
 	},
 	routes: [
 		{
-			name: 'Bench Deploy',
+			name: 'Deploy Candidate',
 			path: 'deploys/:id',
-			component: () => import('../pages/BenchDeploy.vue')
+			component: () => import('../pages/DeployCandidate.vue')
 		},
 		{
 			name: 'Bench Job',

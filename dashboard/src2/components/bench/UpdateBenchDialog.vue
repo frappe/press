@@ -479,7 +479,7 @@ export default {
 				},
 				onSuccess(candidate) {
 					this.$router.push({
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: {
 							id: candidate
 						}
