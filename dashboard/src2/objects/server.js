@@ -392,7 +392,7 @@ export default {
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
 						return {
-							label: 'New Bench',
+							label: 'New Bench Group',
 							slots: {
 								prefix: icon('plus')
 							},

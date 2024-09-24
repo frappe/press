@@ -14,13 +14,13 @@
 									route: `/servers/${server}`
 								},
 								{
-									label: 'New Bench',
+									label: 'New Bench Group',
 									route: '/benches/new'
 								}
 						  ]
 						: [
 								{ label: 'Bench Groups', route: '/benches' },
-								{ label: 'New Bench', route: '/benches/new' }
+								{ label: 'New Bench Group', route: '/benches/new' }
 						  ]
 				"
 			/>
@@ -146,7 +146,7 @@
 					"
 					:loading="$resources.createBench.loading"
 				>
-					Create Bench
+					Create Bench Group
 				</Button>
 			</div>
 		</div>

@@ -46,7 +46,7 @@
 				:disabled="
 					benchHasCommonServer || !privateReleaseGroup.value || !nextVersion
 				"
-				label="Add Server to Bench"
+				label="Add Server to Bench Group"
 				@click="$resources.addServerToReleaseGroup.submit()"
 				:loading="
 					$resources.addServerToReleaseGroup.loading ||
@@ -202,7 +202,7 @@ export default {
 					group_name: this.privateReleaseGroup.value
 				},
 				onSuccess(data) {
-					toast.success('Server Added to the Bench', {
+					toast.success('Server Added to the Bench Group', {
 						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`
 					});
 					this.$router.push({

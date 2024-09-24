@@ -100,7 +100,7 @@ export default {
 		],
 		primaryAction({ listResource: benches }) {
 			return {
-				label: 'New Bench',
+				label: 'New Bench Group',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus')

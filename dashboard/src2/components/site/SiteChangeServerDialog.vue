@@ -6,7 +6,7 @@
 			title: 'Move Site to another Server',
 			actions: [
 				{
-					label: 'Add Server to Bench',
+					label: 'Add Server to Bench Group',
 					loading: $resources.addServerToReleaseGroup.loading,
 					disabled: $resources.isServerAddedInGroup.data || !targetServer.value,
 					onClick: () => $resources.addServerToReleaseGroup.submit()
