@@ -205,7 +205,7 @@ export default {
 						},
 						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
-							name: 'Bench New Site',
+							name: 'Release Group New Site',
 							params: { bench: this.releaseGroup }
 						}
 					};

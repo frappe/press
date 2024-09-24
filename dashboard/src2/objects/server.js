@@ -398,7 +398,7 @@ export default {
 							},
 							onClick() {
 								router.push({
-									name: 'Server New Bench',
+									name: 'Server New Release Group',
 									params: { server: server.doc.name }
 								});
 							}

@@ -637,7 +637,10 @@ export default {
 					},
 					{
 						label: 'New Site',
-						route: { name: 'Bench New Site', params: { bench: this.bench } }
+						route: {
+							name: 'Release Group New Site',
+							params: { bench: this.bench }
+						}
 					}
 				];
 			}
