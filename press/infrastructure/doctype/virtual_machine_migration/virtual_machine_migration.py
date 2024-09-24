@@ -115,6 +115,16 @@ class VirtualMachineMigration(Document):
 	def migration_steps(self):
 		return [
 			{
+				"step": self.stop_machine.__doc__,
+				"method": self.stop_machine.__name__,
+				"wait_for_completion": True,
+			},
+			{
+				"step": self.wait_for_machine_to_stop.__doc__,
+				"method": self.wait_for_machine_to_stop.__name__,
+				"wait_for_completion": True,
+			},
+			{
 				"step": self.disable_delete_on_termination_for_all_volumes.__doc__,
 				"method": self.disable_delete_on_termination_for_all_volumes.__name__,
 			},
@@ -146,6 +156,26 @@ class VirtualMachineMigration(Document):
 				"method": self.attach_volumes.__name__,
 			},
 		]
+
+	def stop_machine(self) -> StepStatus:
+		"Stop machine"
+		machine = self.machine
+		machine.sync()
+		if machine.status == "Stopped":
+			return StepStatus.Success
+		if machine.status == "Pending":
+			return StepStatus.Pending
+		machine.stop()
+		return StepStatus.Success
+
+	def wait_for_machine_to_stop(self) -> StepStatus:
+		"Wait for machine to stop"
+		# We need to make sure the machine is stopped before we proceed
+		machine = self.machine
+		machine.sync()
+		if machine.status == "Stopped":
+			return StepStatus.Success
+		return StepStatus.Pending
 
 	def disable_delete_on_termination_for_all_volumes(self) -> StepStatus:
 		"Disable Delete-on-Termination for all volumes"
