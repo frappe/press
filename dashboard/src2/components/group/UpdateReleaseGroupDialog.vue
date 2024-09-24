@@ -501,7 +501,7 @@ export default {
 				},
 				onSuccess(id) {
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: { id }
 					});
 

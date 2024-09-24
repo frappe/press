@@ -206,7 +206,7 @@ export default {
 						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`
 					});
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: {
 							name: this.privateReleaseGroup.value,
 							id: data

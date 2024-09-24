@@ -170,7 +170,7 @@ export default {
 					);
 
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: {
 							name: this.$site.doc?.group,
 							id: data

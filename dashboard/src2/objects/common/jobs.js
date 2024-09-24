@@ -5,7 +5,7 @@ import { duration } from '../../utils/format';
 function getJobRoute(doctype) {
 	if (doctype === 'Site') return 'Site Job';
 	else if (doctype === 'Server') return 'Server Job';
-	else if (doctype === 'Release Group') return 'Bench Job';
+	else if (doctype === 'Release Group') return 'Release Group Job';
 }
 
 export function jobTab(doctype) {

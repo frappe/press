@@ -1050,7 +1050,7 @@ export default {
 			component: () => import('../pages/DeployCandidate.vue')
 		},
 		{
-			name: 'Bench Job',
+			name: 'Release Group Job',
 			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		}
