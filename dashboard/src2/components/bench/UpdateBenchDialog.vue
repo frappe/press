@@ -10,7 +10,7 @@
 			<AlertBanner
 				v-if="benchDocResource.doc.are_builds_suspended"
 				class="mb-4"
-				title="<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume."
+				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
 			<!-- Update Steps -->
