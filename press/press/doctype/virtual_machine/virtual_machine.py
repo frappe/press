@@ -1,11 +1,13 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import ipaddress
 
 import boto3
 import frappe
+import rq
 from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
@@ -30,8 +32,14 @@ from oci.exceptions import TransientServiceError
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
-import rq
-import time
+
+server_doctypes = [
+	"Server",
+	"Database Server",
+	"Proxy Server",
+	"Monitor Server",
+	"Log Server",
+]
 
 
 class VirtualMachine(Document):
@@ -42,9 +50,8 @@ class VirtualMachine(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
-			VirtualMachineVolume,
-		)
+
+		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI"]
@@ -75,14 +82,6 @@ class VirtualMachine(Document):
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
 
-	server_doctypes = [
-		"Server",
-		"Database Server",
-		"Proxy Server",
-		"Monitor Server",
-		"Log Server",
-	]
-
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
@@ -106,9 +105,7 @@ class VirtualMachine(Document):
 				self.private_ip_address = str(ip + index)
 			else:
 				offset = ["f", "m", "c", "p", "e", "r"].index(self.series)
-				self.private_ip_address = str(
-					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
-				)
+				self.private_ip_address = str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
 
 	def on_trash(self):
 		snapshots = frappe.get_all(
@@ -131,8 +128,9 @@ class VirtualMachine(Document):
 	def provision(self):
 		if self.cloud_provider == "AWS EC2":
 			return self._provision_aws()
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return self._provision_oci()
+		return None
 
 	def _provision_aws(self):
 		options = {
@@ -174,9 +172,7 @@ class VirtualMachine(Document):
 			"UserData": self.get_cloud_init() if self.virtual_machine_image else "",
 		}
 		if self.machine_type.startswith("t"):
-			options["CreditSpecification"] = {
-				"CpuCredits": "unlimited" if self.series == "n" else "standard"
-			}
+			options["CreditSpecification"] = {"CpuCredits": "unlimited" if self.series == "n" else "standard"}
 		response = self.client().run_instances(**options)
 
 		self.instance_id = response["Instances"][0]["InstanceId"]
@@ -258,8 +254,7 @@ class VirtualMachine(Document):
 			mariadb_context = {
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": frappe.db.get_value("Server Plan", server.plan, "memory")
-				or 1024,
+				"ansible_memtotal_mb": frappe.db.get_value("Server Plan", server.plan, "memory") or 1024,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
@@ -284,14 +279,14 @@ class VirtualMachine(Document):
 				}
 			)
 
-		init = frappe.render_template(cloud_init_template, context, is_path=True)
-		return init
+		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
 		for doctype in self.server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
+		return None
 
 	def get_aws_status_map(self):
 		return {
@@ -322,7 +317,7 @@ class VirtualMachine(Document):
 			return self.client("ssm").get_parameter(
 				Name=f"/aws/service/canonical/ubuntu/server/20.04/stable/current/{architecture}/hvm/ebs-gp2/ami-id"
 			)["Parameter"]["Value"]
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 			client = ComputeClient(cluster.get_oci_config())
 			images = client.list_images(
@@ -333,6 +328,7 @@ class VirtualMachine(Document):
 				lifecycle_state="AVAILABLE",
 			).data
 			return images[0].id
+		return None
 
 	@frappe.whitelist()
 	def reboot(self):
@@ -371,7 +367,7 @@ class VirtualMachine(Document):
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
 			)
 			return response["Volumes"]
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 			return (
 				self.client()
@@ -388,6 +384,7 @@ class VirtualMachine(Document):
 				)
 				.data
 			)
+		return None
 
 	def convert_to_gp3(self):
 		for volume in self.volumes:
@@ -408,13 +405,14 @@ class VirtualMachine(Document):
 		try:
 			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
 		except frappe.QueryTimeoutError:  # lock wait timeout
-			return
+			return None
 		if self.cloud_provider == "AWS EC2":
 			return self._sync_aws(*args, **kwargs)
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return self._sync_oci(*args, **kwargs)
+		return None
 
-	def _sync_oci(self, instance=None):
+	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
 			instance = self.client().get_instance(instance_id=self.instance_id).data
 		if instance and instance.lifecycle_state != "TERMINATED":
@@ -428,15 +426,11 @@ class VirtualMachine(Document):
 
 			for vnic_attachment in (
 				self.client()
-				.list_vnic_attachments(
-					compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
-				)
+				.list_vnic_attachments(compartment_id=cluster.oci_tenancy, instance_id=self.instance_id)
 				.data
 			):
 				try:
-					vnic = (
-						self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
-					)
+					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
 					self.public_ip_address = vnic.public_ip
 				except Exception:
 					log_error(
@@ -449,9 +443,7 @@ class VirtualMachine(Document):
 			for volume in self.get_volumes():
 				try:
 					if hasattr(volume, "volume_id"):
-						volume = (
-							self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
-						)
+						volume = self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
 					else:
 						volume = (
 							self.client(BlockstorageClient)
@@ -494,7 +486,7 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
-	def _sync_aws(self, response=None):
+	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
 			response = self.client().describe_instances(InstanceIds=[self.instance_id])
 		if response["Reservations"]:
@@ -508,6 +500,7 @@ class VirtualMachine(Document):
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
+			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
 			for volume in self.get_volumes():
@@ -537,9 +530,7 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
 
-			instance_type_response = self.client().describe_instance_types(
-				InstanceTypes=[self.machine_type]
-			)
+			instance_type_response = self.client().describe_instance_types(InstanceTypes=[self.machine_type])
 			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
 			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
 		else:
@@ -576,9 +567,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_image(self):
-		image = frappe.get_doc(
-			{"doctype": "Virtual Machine Image", "virtual_machine": self.name}
-		).insert()
+		image = frappe.get_doc({"doctype": "Virtual Machine Image", "virtual_machine": self.name}).insert()
 		return image.name
 
 	@frappe.whitelist()
@@ -595,9 +584,7 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}
-					],
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
 				},
 			],
 		)
@@ -611,9 +598,7 @@ class VirtualMachine(Document):
 					}
 				).insert()
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	def _create_snapshots_oci(self):
 		for volume in self.volumes:
@@ -654,9 +639,7 @@ class VirtualMachine(Document):
 				# Let's try again later
 				pass
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -722,6 +705,7 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			volume = self.volumes[0]
 			return volume.iops, volume.throughput
+		return None
 
 	@frappe.whitelist()
 	def update_ebs_performance(self, iops, throughput):
@@ -740,8 +724,8 @@ class VirtualMachine(Document):
 	def get_oci_volume_performance(self):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
-			vpus = ((volume.iops / volume.size) - 45) / 1.5
-			return vpus
+			return ((volume.iops / volume.size) - 45) / 1.5
+		return None
 
 	@frappe.whitelist()
 	def update_oci_volume_performance(self, vpus):
@@ -768,8 +752,9 @@ class VirtualMachine(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif self.cloud_provider == "OCI":
+		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+		return None
 
 	@frappe.whitelist()
 	def create_server(self):
@@ -882,9 +867,7 @@ class VirtualMachine(Document):
 	def get_security_groups(self):
 		groups = [self.security_group_id]
 		if self.series == "n":
-			groups.append(
-				frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id")
-			)
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
 		return groups
 
 	@frappe.whitelist()
@@ -922,15 +905,11 @@ class VirtualMachine(Document):
 			# Generate closed bounds for 25 indexes at a time
 			# (1, 25), (26, 50), (51, 75), ...
 			# We might have uneven chunks because of missing indexes
-			chunks = [
-				(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)
-			]
+			chunks = [(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)]
 			for start, end in chunks:
 				# Pick a random machine
 				# TODO: This probably should be a method on the Cluster
-				machines = cls._get_active_aws_machines_within_chunk_range(
-					cluster.cluster, start, end
-				)
+				machines = cls._get_active_aws_machines_within_chunk_range(cluster.cluster, start, end)
 				if not machines:
 					# There might not be any running machines in the chunk range
 					continue
@@ -948,13 +927,9 @@ class VirtualMachine(Document):
 
 	def bulk_sync_aws_cluster(self, start, end):
 		client = self.client()
-		machines = self.__class__._get_active_aws_machines_within_chunk_range(
-			self.cluster, start, end
-		)
+		machines = self.__class__._get_active_aws_machines_within_chunk_range(self.cluster, start, end)
 		instance_ids = [machine.instance_id for machine in machines]
-		response = client.describe_instances(
-			Filters=[{"Name": "instance-id", "Values": instance_ids}]
-		)
+		response = client.describe_instances(Filters=[{"Name": "instance-id", "Values": instance_ids}])
 		for reservation in response["Reservations"]:
 			for instance in reservation["Instances"]:
 				machine: VirtualMachine = frappe.get_doc(
@@ -1014,13 +989,10 @@ class VirtualMachine(Document):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
-			machine: VirtualMachine = frappe.get_doc(
-				"Virtual Machine", {"instance_id": instance.id}
-			)
+			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
 				return
 			try:
-
 				machine.sync(instance)
 				frappe.db.commit()  # release lock
 			except rq.timeouts.JobTimeoutException:
@@ -1047,95 +1019,15 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):
-		# Prerequisite - Series Compatible ARM Machine Image with all dependencies installed
-
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
-
-		# Make sure the current machine is stopped.
-		# Stop to preserve EBS. Terminate will drop EBS (unless we do some extra work)
-		if self.status != "Stopped":
-			frappe.throw("Machine must be stopped before converting to ARM")
-
-		# Prepare volumes to attach to new machine
-		volumes = []
-		for index, volume in enumerate(self.volumes):
-			device_name_index = chr(ord("f") + index)
-			volumes.append(
-				{
-					"VolumeId": volume.volume_id,
-					"DeviceName": f"/dev/sd{device_name_index}",
-				}
-			)
-		self.add_comment(text=f"Volumes {volumes}")
-
-		# Create a copy of the current machine
-		# So we don't lose the instance ids
-		copy = frappe.copy_doc(self)
-		copy.insert(set_name=f"{self.name}-copy")
-
-		message = (
-			f"Converting to ARM <br><br>"
-			f"Instance ID: {self.instance_id} <br>"
-			f"EBS Volume IDs: {[volume.volume_id for volume in self.volumes]} <br>"
-			f"Copied Current State to: <a href='{copy.get_url()}'>{copy.name}</a><br>"
-		)
-		self.add_comment(text=message)
-
-		# Disable delete on termination for all volumes
-		# So we can safely terminate the instance without losing any data
-		copy.disable_delete_on_termination_for_all_volumes()
-
-		# Terminate the current machine
-		copy.disable_termination_protection()
-		copy.reload()
-		copy.terminate()
-
-		# Wait for the machine to terminate
-		# Private ip address is released when the machine is terminated
-		while copy.status != "Terminated":
-			copy.reload()
-			copy.sync()
-			time.sleep(1)
-
-		# Create new machine in place. So we retain Name, IP etc.
-		# Reset instance attributes
-		self.instance_id = None
-		self.volumes = []
-		self.public_ip_address = None
-
-		# Set new machine image to ARM compatible image
-		self.virtual_machine_image = virtual_machine_image
-		self.machine_type = machine_type
-		self.save()
-
-		# Start the new machine
-		self._provision_aws()
-
-		# Wait for the new machine to start (status = Running)
-		# We can't attach volumes to a machine that is not running
-		while self.status != "Running":
-			self.reload()
-			self.sync()
-			time.sleep(1)
-
-		# Attach volumes to new machine
-		for volume in volumes:
-			try:
-				self.client().attach_volume(
-					InstanceId=self.instance_id,
-					Device=volume["DeviceName"],
-					VolumeId=volume["VolumeId"],
-				)
-			except Exception as e:
-				print(e)
-
-		self.sync()
+		return frappe.new_doc(
+			"Virtual Machine Migration",
+			virtual_machine=self.name,
+			virtual_machine_image=virtual_machine_image,
+			machine_type=machine_type,
+		).insert()
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Virtual Machine"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
 
 @frappe.whitelist()

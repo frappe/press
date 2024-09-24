@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import frappe
@@ -93,7 +94,113 @@ class VirtualMachineMigration(Document):
 
 	@property
 	def migration_steps(self):
-		return []
+		return [
+			{
+				"step": self.disable_delete_on_termination_for_all_volumes.__doc__,
+				"method": self.disable_delete_on_termination_for_all_volumes.__name__,
+			},
+			{
+				"step": self.terminate_previous_machine.__doc__,
+				"method": self.terminate_previous_machine.__name__,
+				"wait_for_completion": True,
+			},
+			{
+				"step": self.wait_for_previous_machine_to_terminate.__doc__,
+				"method": self.wait_for_previous_machine_to_terminate.__name__,
+				"wait_for_completion": True,
+			},
+			{
+				"step": self.reset_virtual_machine_attributes.__doc__,
+				"method": self.reset_virtual_machine_attributes.__name__,
+			},
+			{
+				"step": self.provision_new_machine.__doc__,
+				"method": self.provision_new_machine.__name__,
+			},
+			{
+				"step": self.wait_for_machine_to_start.__doc__,
+				"method": self.wait_for_machine_to_start.__name__,
+				"wait_for_completion": True,
+			},
+			{
+				"step": self.attach_volumes.__doc__,
+				"method": self.attach_volumes.__name__,
+			},
+		]
+
+	def disable_delete_on_termination_for_all_volumes(self) -> StepStatus:
+		"Disable Delete-on-Termination for all volumes"
+		# After this we can safely terminate the instance without losing any data
+		copied_machine = self.copied_machine
+		if copied_machine.volumes:
+			copied_machine.disable_delete_on_termination_for_all_volumes()
+		return StepStatus.Success
+
+	def terminate_previous_machine(self) -> StepStatus:
+		"Terminate previous machine"
+		copied_machine = self.copied_machine
+		if copied_machine.status == "Terminated":
+			return StepStatus.Success
+		if copied_machine.status == "Pending":
+			return StepStatus.Pending
+
+		copied_machine.disable_termination_protection()
+		copied_machine.reload()
+		copied_machine.terminate()
+		return StepStatus.Success
+
+	def wait_for_previous_machine_to_terminate(self) -> StepStatus:
+		"Wait for previous machine to terminate"
+		# Private ip address is released when the machine is terminated
+		copied_machine = self.copied_machine
+		copied_machine.sync()
+		if copied_machine.status == "Terminated":
+			return StepStatus.Success
+		return StepStatus.Pending
+
+	def reset_virtual_machine_attributes(self) -> StepStatus:
+		"Reset virtual machine attributes"
+		machine = self.machine
+		machine.instance_id = None
+		machine.public_ip_address = None
+		machine.volumes = []
+
+		# Set new machine image and machine type
+		machine.virtual_machine_image = self.virtual_machine_image
+		machine.machine_type = self.machine_type
+		machine.save()
+		return StepStatus.Success
+
+	def provision_new_machine(self) -> StepStatus:
+		"Provision new machine"
+		# Create new machine in place. So we retain Name, IP etc.
+		self.machine._provision_aws()
+		return StepStatus.Success
+
+	def wait_for_machine_to_start(self) -> StepStatus:
+		"Wait for new machine to start"
+		# We can't attach volumes to a machine that is not running
+		machine = self.machine
+		machine.sync()
+		if machine.status == "Running":
+			return StepStatus.Success
+		return StepStatus.Pending
+
+	def attach_volumes(self):
+		"Attach volumes"
+		machine = self.machine
+		for volume in self.volumes:
+			try:
+				machine.client().attach_volume(
+					InstanceId=machine.instance_id,
+					Device=volume.device_name,
+					VolumeId=volume.volume_id,
+				)
+				volume.status = "Attached"
+			except Exception as e:
+				self.add_comment(text=f"Error attaching volume {volume.volume_id}: {e}")
+		machine.sync()
+		return StepStatus.Success
 
 	def execute(self):
 		self.status = "Running"
