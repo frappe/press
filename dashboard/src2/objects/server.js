@@ -320,7 +320,7 @@ export default {
 				}
 			},
 			{
-				label: 'Benches',
+				label: 'Bench Groups',
 				icon: icon('package'),
 				route: 'benches',
 				type: 'list',

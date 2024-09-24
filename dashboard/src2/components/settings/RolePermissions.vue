@@ -69,7 +69,7 @@ const docInsert = createResource({
 const dropdownOptions = [
 	{ label: 'Allowed Sites', doctype: 'Site', fieldname: 'site' },
 	{
-		label: 'Allowed Benches',
+		label: 'Allowed Bench Groups',
 		doctype: 'Release Group',
 		fieldname: 'release_group'
 	},

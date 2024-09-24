@@ -19,7 +19,7 @@
 								}
 						  ]
 						: [
-								{ label: 'Benches', route: '/benches' },
+								{ label: 'Bench Groups', route: '/benches' },
 								{ label: 'New Bench', route: '/benches/new' }
 						  ]
 				"

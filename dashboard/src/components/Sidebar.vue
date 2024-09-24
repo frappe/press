@@ -183,7 +183,7 @@ export default {
 					icon: FCIcons.SiteIcon
 				},
 				{
-					label: 'Benches',
+					label: 'Bench Groups',
 					route: '/benches',
 					highlight: () => {
 						return this.$route.fullPath.startsWith('/benches');

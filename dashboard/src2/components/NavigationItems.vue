@@ -66,7 +66,7 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Benches',
+					name: 'Bench Groups',
 					icon: () => h(Package),
 					route: '/benches',
 					isActive:
