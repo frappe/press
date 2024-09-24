@@ -8,6 +8,7 @@ import secrets
 from datetime import datetime
 
 import frappe
+from frappe.exceptions import TooManyRequestsError, OutgoingEmailError, ValidationError
 import requests
 
 from press.api.developer.marketplace import get_subscription_info
@@ -15,8 +16,16 @@ from press.api.site import site_config, update_config
 from press.utils import log_error
 
 
-class PlanExpiredError(Exception):
-	http_status_code = 401
+class EmailLimitExceeded(TooManyRequestsError):
+	pass
+
+
+class EmailSendError(OutgoingEmailError):
+	pass
+
+
+class EmailConfigError(ValidationError):
+	http_status_code = 400
 
 
 @frappe.whitelist(allow_guest=True)
@@ -94,42 +103,43 @@ def validate_plan(secret_key):
 	#TODO: get activation date
 	"""
 
-	if not secret_key or not isinstance(secret_key, str):
-		frappe.throw("Invalid Secret Key")
-
-	if frappe.db.exists("Subscription", {"secret_key": secret_key}):
-		return True
-
 	# TODO: replace this with plan attributes
 	plan_label_map = frappe.conf.email_plans
+
+	if not secret_key:
+		frappe.throw(
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			EmailConfigError,
+		)
 
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
 		frappe.throw(e)
 
-	if subscription["enabled"]:
-		# TODO: add a date filter(use start date from plan)
-		first_day = str(datetime.now().replace(day=1).date())
-		count = frappe.db.count(
-			"Mail Log",
-			filters={
-				"site": subscription["site"],
-				"status": "delivered",
-				"creation": (">=", first_day),
-				"subscription_key": secret_key,
-			},
+	if not subscription["enabled"]:
+		frappe.throw(
+			"Your subscription is not active. Try activating it from, "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			EmailConfigError,
 		)
-		if count < plan_label_map[subscription["plan"]]:
-			return True
-		else:
-			frappe.throw(
-				"Your plan for email delivery service has expired try upgrading it from, "
-				f"https://frappecloud.com/dashboard/sites/{subscription['site']}/overview",
-				PlanExpiredError,
-			)
 
-	return False
+	# TODO: add a date filter(use start date from plan)
+	first_day = str(frappe.utils.now_datetime().replace(day=1).date())
+	count = frappe.db.count(
+		"Mail Log",
+		filters={
+			"site": subscription["site"],
+			"creation": (">=", first_day),
+			"subscription_key": secret_key,
+		},
+	)
+	if not count < plan_label_map[subscription["plan"]]:
+		frappe.throw(
+			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			EmailLimitExceeded,
+		)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -140,32 +150,30 @@ def send_mime_mail(**data):
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
 
-	if validate_plan(data["sk_mail"]):
-		api_key, domain = frappe.db.get_value(
-			"Press Settings", None, ["mailgun_api_key", "root_domain"]
+	validate_plan(data["sk_mail"])
+
+	api_key, domain = frappe.db.get_value(
+		"Press Settings", None, ["mailgun_api_key", "root_domain"]
+	)
+
+	resp = requests.post(
+		f"https://api.mailgun.net/v3/{domain}/messages.mime",
+		auth=("api", f"{api_key}"),
+		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		files={"message": files["mime"].read()},
+	)
+
+	if resp.status_code == 200:
+		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
+	else:
+		log_error("Email Delivery Service: Sending error", data=resp.text)
+		frappe.throw(
+			"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+			EmailSendError,
 		)
 
-		resp = requests.post(
-			f"https://api.mailgun.net/v3/{domain}/messages.mime",
-			auth=("api", f"{api_key}"),
-			data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-			files={"message": files["mime"].read()},
-		)
 
-		if resp.status_code == 200:
-			return "Sending"
-
-	return "Error"
-
-
-@frappe.whitelist(allow_guest=True)
-def event_log():
-	"""
-	log the webhook and forward it to site
-	"""
-	data = json.loads(frappe.request.data)
-	event_data = data.get("event-data")
-
+def is_valid_mailgun_event(event_data):
 	if not event_data:
 		return
 
@@ -176,6 +184,23 @@ def event_log():
 		return
 
 	if "delivery-status" not in event_data:
+		return
+
+	if "message" not in event_data["delivery-status"]:
+		return
+
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def event_log():
+	"""
+	log the webhook and forward it to site
+	"""
+	data = json.loads(frappe.request.data)
+	event_data = data.get("event-data")
+
+	if not is_valid_mailgun_event(event_data):
 		return
 
 	try:
@@ -191,7 +216,10 @@ def event_log():
 			or message_id.split("@")[1]
 		)
 		status = event_data["event"]
-
+		delivery_message = (
+			event_data["delivery-status"]["message"]
+			or event_data["delivery-status"]["description"]
+		)
 		frappe.get_doc(
 			{
 				"doctype": "Mail Log",
@@ -202,8 +230,7 @@ def event_log():
 				"site": site,
 				"status": event_data["event"],
 				"subscription_key": secret_key,
-				"message": event_data["delivery-status"]["message"]
-				or event_data["delivery-status"]["description"],
+				"message": delivery_message,
 				"log": json.dumps(data),
 			}
 		).insert(ignore_permissions=True)
@@ -212,7 +239,12 @@ def event_log():
 		log_error("Mail App: Event log error", data=data)
 		raise
 
-	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
+	data = {
+		"status": status,
+		"message_id": message_id,
+		"delivery_message": delivery_message,
+		"secret_key": secret_key,
+	}
 
 	try:
 		host_name = frappe.db.get_value("Site", site, "host_name") or site
@@ -222,6 +254,5 @@ def event_log():
 		)
 	except Exception as e:
 		log_error("Mail App: Email status update error", data=e)
-		return "Successful", 200
 
 	return "Successful", 200

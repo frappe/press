@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-05-03 13:15:29.685134",
+  "modified": "2024-07-30 16:26:28.217044",
   "name": "Create Server",
   "steps": [
    {
@@ -97,7 +97,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\nserver.update_filebeat()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
     "step_name": "Set additional config",
     "wait_until_true": 0
    }
@@ -314,14 +314,14 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-05-11 02:11:49.716655",
+  "modified": "2024-08-07 10:54:29.752755",
   "name": "Increase Disk Size",
   "steps": [
    {
     "parent": "Increase Disk Size",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing disk on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)}) by {server.size_to_increase_by_for_20_percent_available}G\")\nserver.calculated_increase_disk_size()\n    ",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.calculated_increase_disk_size()\n    ",
     "step_name": "Increase Disk Size",
     "wait_until_true": 0
    },

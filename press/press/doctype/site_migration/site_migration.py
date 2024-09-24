@@ -79,7 +79,9 @@ class SiteMigration(Document):
 		self.validate_bench()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
-			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+			frappe.throw(
+				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists."
+			)
 
 	def validate_bench(self):
 		if (
@@ -125,6 +127,7 @@ class SiteMigration(Document):
 				MissingAppsInBench,
 			)
 
+	@frappe.whitelist()
 	def start(self):
 		self.status = "Pending"
 		self.save()
@@ -342,10 +345,9 @@ class SiteMigration(Document):
 				self.restore_site_on_destination_server.__name__,
 				self.restore_site_on_destination_proxy.__name__,
 			]
-			and site.status_before_update == "Active"
+			and site.status_before_update != "Inactive"
 		):
 			site.activate()
-			site.status_before_update = None
 			if self.migration_type == "Cluster":
 				site.create_dns_record()
 

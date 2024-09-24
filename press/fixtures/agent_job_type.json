@@ -34,7 +34,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.057519",
+  "modified": "2024-08-09 10:07:51.319214",
   "name": "Rename Site",
   "request_method": "POST",
   "request_path": "benches/{site.bench}/sites/{site.name}/rename",
@@ -86,6 +86,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Enable Scheduler"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create User"
    }
   ]
  },
@@ -1546,24 +1552,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.663533",
-  "name": "Update Site Configuration",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/config",
-  "steps": [
-   {
-    "parent": "Update Site Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Site Configuration"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:19.023648",
   "name": "New Bench",
   "request_method": "POST",
@@ -1592,66 +1580,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Bench Setup NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.587094",
-  "name": "Remove Site from Upstream",
-  "request_method": "DELETE",
-  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
-  "steps": [
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Remove Site File from Upstream Directory"
-   },
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.510770",
-  "name": "Archive Site",
-  "request_method": null,
-  "request_path": null,
-  "steps": [
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Archive Site"
-   },
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
    }
   ]
  },
@@ -1864,24 +1792,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2024-06-11 19:43:45.877056",
-  "name": "Create User",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/create-user",
-  "steps": [
-   {
-    "parent": "Create User",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Create User"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
   "modified": "2024-07-11 12:04:37.550558",
   "name": "Add Database Index",
   "request_method": "POST",
@@ -1892,84 +1802,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Add Database Index With Bench Command"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:19.781844",
-  "name": "New Site",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites",
-  "steps": [
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "New Site"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Install Apps"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Site Configuration"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Enable Scheduler"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "New Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.626647",
-  "name": "Add Site to Upstream",
-  "request_method": "POST",
-  "request_path": "/proxy/upstreams/{upstream}/sites",
-  "steps": [
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Add Site File to Upstream Directory"
-   },
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
    }
   ]
  },
@@ -2036,6 +1868,318 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-07-18 17:49:54.294402",
+  "name": "Column Statistics",
+  "request_method": "POST",
+  "request_path": "/database/column-stats",
+  "steps": [
+   {
+    "parent": "Column Statistics",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Fetch Column Statistics"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-08-09 12:03:58.145567",
+  "name": "Complete Setup Wizard",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/complete-setup-wizard",
+  "steps": [
+   {
+    "parent": "Complete Setup Wizard",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Complete Setup Wizard"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-06-11 19:43:45.877056",
+  "name": "Create User",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/create-user",
+  "steps": [
+   {
+    "parent": "Create User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create User"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2024-08-09 10:10:41.301700",
+  "name": "New Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites",
+  "steps": [
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "New Site"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Install Apps"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create User"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.626647",
+  "name": "Add Site to Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites",
+  "steps": [
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Site File to Upstream Directory"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.663533",
+  "name": "Update Site Configuration",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/config",
+  "steps": [
+   {
+    "parent": "Update Site Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.587094",
+  "name": "Remove Site from Upstream",
+  "request_method": "DELETE",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
+  "steps": [
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.510770",
+  "name": "Archive Site",
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Archive Site"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-10 12:11:38.844112",
+  "name": "Recover Update In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/recover_update_inplace",
+  "steps": [
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Recover Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Recover Sites"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-11 13:28:32.120581",
+  "name": "Ping Job",
+  "request_method": "POST",
+  "request_path": "ping_job",
+  "steps": [
+   {
+    "parent": "Ping Job",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Ping Step"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-08-20 12:51:05.293373",
+  "name": "Update Bench In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/update_inplace",
+  "steps": [
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Pull App Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Sites"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Commit Container Changes"
+   },
+   {
+    "parent": "Update Bench In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
    }
   ]
  }

@@ -12,12 +12,22 @@
 			<Button
 				class="ml-auto"
 				variant="outline"
-				@click="loginAsAdmin"
+				@click="loginAsTeam"
 				:loading="$site.loginAsAdmin.loading"
 			>
 				Login
 			</Button>
 		</AlertBanner>
+		<DismissableBanner
+			v-if="!$site.doc.current_plan?.private_benches && $site.doc.group_public"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			:id="$site.name"
+		>
+			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
+				Upgrade Plan
+			</Button>
+		</DismissableBanner>
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -168,6 +178,7 @@
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
 import InfoIcon from '~icons/lucide/info';
+import DismissableBanner from './DismissableBanner.vue';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -176,7 +187,7 @@ import { trialDays } from '../utils/site';
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
-	components: { SiteDailyUsage, Progress, AlertBanner },
+	components: { SiteDailyUsage, Progress, AlertBanner, DismissableBanner },
 	data() {
 		return {
 			isSetupWizardComplete: true
@@ -204,6 +215,15 @@ export default {
 				.submit({ reason: '' })
 				.then(url => window.open(url, '_blank'));
 		},
+		loginAsTeam() {
+			if (this.$site.doc?.additional_system_user_created) {
+				this.$site.loginAsTeam
+					.submit({ reason: '' })
+					.then(url => window.open(url, '_blank'));
+			} else {
+				this.loginAsAdmin();
+			}
+		},
 		trialDays
 	},
 	computed: {
@@ -211,28 +231,28 @@ export default {
 			return [
 				{
 					label: 'Owned by',
-					value: this.$site.doc.owner_email
+					value: this.$site.doc?.owner_email
 				},
 				{
 					label: 'Created by',
-					value: this.$site.doc.owner
+					value: this.$site.doc?.owner
 				},
 				{
 					label: 'Created on',
-					value: this.$format.date(this.$site.doc.creation)
+					value: this.$format.date(this.$site.doc?.creation)
 				},
 				{
 					label: 'Region',
-					value: this.$site.doc.cluster.title,
+					value: this.$site.doc?.cluster.title,
 					prefix: h('img', {
-						src: this.$site.doc.cluster.image,
-						alt: this.$site.doc.cluster.title,
+						src: this.$site.doc?.cluster.image,
+						alt: this.$site.doc?.cluster.title,
 						class: 'h-4 w-4'
 					})
 				},
 				{
 					label: 'Inbound IP',
-					value: this.$site.doc.inbound_ip,
+					value: this.$site.doc?.inbound_ip,
 					suffix: h(
 						Tooltip,
 						{
@@ -243,7 +263,7 @@ export default {
 				},
 				{
 					label: 'Outbound IP',
-					value: this.$site.doc.outbound_ip,
+					value: this.$site.doc?.outbound_ip,
 					suffix: h(
 						Tooltip,
 						{
@@ -255,8 +275,9 @@ export default {
 			];
 		},
 		currentPlan() {
-			if (!this.$site.doc.current_plan) return null;
-			let currency = this.$team.doc.currency;
+			if (!this.$site.doc?.current_plan && this.$team?.doc) return null;
+
+			const currency = this.$team.doc.currency;
 			return {
 				price:
 					currency === 'INR'
@@ -266,12 +287,12 @@ export default {
 					currency === 'INR'
 						? this.$site.doc.current_plan.price_per_day_inr
 						: this.$site.doc.current_plan.price_per_day_usd,
-				currency: currency == 'INR' ? '₹' : '$',
+				currency: currency === 'INR' ? '₹' : '$',
 				...this.$site.doc.current_plan
 			};
 		},
 		currentUsage() {
-			return this.$site.doc.current_usage;
+			return this.$site.doc?.current_usage;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);

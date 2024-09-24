@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from contextlib import suppress
 import _io
 import json
 import os
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader
 
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site.site import Site
 
 
@@ -124,7 +126,7 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site):
+	def new_site(self, site, create_user: dict = None):
 		apps = [app.app for app in site.apps]
 
 		data = {
@@ -135,6 +137,9 @@ class Agent:
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
+
+		if create_user:
+			data["create_user"] = create_user
 
 		return self.create_agent_job(
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
@@ -183,10 +188,14 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None):
+	def rename_site(
+		self, site, new_name: str, create_user: dict = None, config: dict = None
+	):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
+		if config:
+			data["config"] = config
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
@@ -205,6 +214,15 @@ class Agent:
 		return self.create_agent_job(
 			"Create User",
 			f"benches/{site.bench}/sites/{site.name}/create-user",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def complete_setup_wizard(self, site, data):
+		return self.create_agent_job(
+			"Complete Setup Wizard",
+			f"benches/{site.bench}/sites/{site.name}/complete-setup-wizard",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -809,14 +827,18 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result):
+	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
 			return
 
+		reason = None
+		with suppress(TypeError, ValueError):
+			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+
 		message = f"""
-			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
-			Response: {getattr(result, 'text', 'Unknown')}
-		"""
+Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Response: {reason or getattr(result, 'text', 'Unknown')}
+"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 
@@ -862,7 +884,7 @@ class Agent:
 			if job:
 				return job
 
-		job = frappe.get_doc(
+		job: "AgentJob" = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"server_type": self.server_type,

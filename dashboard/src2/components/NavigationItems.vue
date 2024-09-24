@@ -21,25 +21,26 @@ export default {
 	computed: {
 		navigation() {
 			if (!this.$team?.doc) return [];
-			let routeName = this.$route?.name || '';
-			let disabled = !this.$team.doc.onboarding.complete;
+
+			const routeName = this.$route?.name || '';
+			const onboardingComplete = this.$team.doc.onboarding.complete;
+			const enforce2FA = Boolean(
+				this.$team.doc.enforce_2fa && !this.$team.doc.user_info?.is_2fa_enabled
+			);
+
 			return [
 				{
 					name: 'Welcome',
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !(
-						this.$team.doc.onboarding.complete &&
-						this.$team.doc.onboarding.site_created
-					)
+					condition: !this.$team.doc.onboarding.complete
 				},
 				{
 					name: 'Notifications',
 					icon: () => h(Notification),
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
-					condition: this.$team.doc.onboarding.complete,
 					badge: () => {
 						if (unreadNotificationsCount.data > 0) {
 							return h(
@@ -53,7 +54,7 @@ export default {
 							);
 						}
 					},
-					disabled
+					disabled: enforce2FA
 				},
 				{
 					name: 'Sites',
@@ -62,7 +63,7 @@ export default {
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
-					disabled: !(this.$team.doc.onboarding.complete || this.$team.doc.onboarding.site_created)
+					disabled: enforce2FA
 				},
 				{
 					name: 'Benches',
@@ -77,7 +78,7 @@ export default {
 							'Bench Deploy'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					disabled
+					disabled: !onboardingComplete || enforce2FA
 				},
 				{
 					name: 'Servers',
@@ -86,7 +87,7 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					disabled
+					disabled: !onboardingComplete || enforce2FA
 				},
 				{
 					name: 'Marketplace',
@@ -94,9 +95,9 @@ export default {
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
 					condition:
-						this.$team.doc.is_desk_user ||
+						this.$team.doc?.is_desk_user ||
 						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
-					disabled
+					disabled: enforce2FA
 				},
 				{
 					name: 'Billing',
@@ -104,8 +105,8 @@ export default {
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
 					condition:
-						this.$team.doc.is_desk_user || this.$session.hasBillingAccess,
-					disabled
+						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
+					disabled: enforce2FA
 				},
 				{
 					name: 'Partners',
@@ -115,14 +116,14 @@ export default {
 					condition:
 						// this.$session.hasPartnerAccess &&
 						Boolean(this.$team.doc.erpnext_partner),
-					disabled
+					disabled: !onboardingComplete || enforce2FA
 				},
 				{
 					name: 'Settings',
 					icon: () => h(Settings),
 					route: '/settings',
 					isActive: routeName.startsWith('Settings'),
-					disabled
+					disabled: enforce2FA
 				}
 			].filter(item => item.condition !== false);
 		}

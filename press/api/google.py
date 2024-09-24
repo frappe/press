@@ -12,6 +12,7 @@ from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
+from oauthlib.oauth2 import AccessDeniedError
 
 from press.utils import log_error
 
@@ -47,10 +48,15 @@ def callback(code=None, state=None):
 	try:
 		flow = google_oauth_flow()
 		flow.fetch_token(authorization_response=frappe.request.url)
+	except AccessDeniedError:
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = "/dashboard/login"
+		return
 	except Exception as e:
 		log_error("Google Login failed", data=e)
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = "/dashboard/login"
+		return
 
 	# authenticated
 	frappe.cache().delete_value(cached_key)
@@ -90,7 +96,7 @@ def callback(code=None, state=None):
 		frappe.local.login_manager.login_as(email)
 		frappe.local.response.type = "redirect"
 		if product_trial:
-			frappe.local.response.location = f"/dashboard/app-trial/{product_trial.name}"
+			frappe.local.response.location = f"/dashboard/app-trial/setup/{product_trial.name}"
 		else:
 			frappe.local.response.location = "/dashboard"
 	elif team_name and not team_enabled:
@@ -103,7 +109,6 @@ def callback(code=None, state=None):
 			first_name=id_info.get("given_name"),
 			last_name=id_info.get("family_name"),
 			phone_number=phone_number,
-			new_signup_flow=1,
 			role="Press Admin",
 		)
 		if product_trial:

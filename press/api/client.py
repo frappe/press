@@ -14,6 +14,7 @@ from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 
 from press.utils import has_role
+from press.exceptions import TeamHeaderNotInRequestError
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -24,6 +25,7 @@ ALLOWED_DOCTYPES = [
 	"Site Config",
 	"Site Plan",
 	"Site Update",
+	"Site Group Deploy",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -64,6 +66,7 @@ ALLOWED_DOCTYPES = [
 	"User SSH Key",
 	"Frappe Version",
 	"Dashboard Banner",
+	"App Release Approval Request",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
@@ -263,7 +266,7 @@ def delete(doctype: str, name: str):
 
 
 @frappe.whitelist()
-def run_doc_method(dt: str, dn: str, method: str, args: dict | str | None = None):
+def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
@@ -445,7 +448,8 @@ def check_permissions(doctype):
 
 	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
-			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
+			"current_team is not set. Use X-PRESS-TEAM header in the request to set it.",
+			TeamHeaderNotInRequestError,
 		)
 
 	return True

@@ -5,12 +5,21 @@
     state: directory
     mode: 0755
 
-- name: Download cAdvisor Binary
+- name: Download cAdvisor Binary (amd64)
   get_url:
-    url: https://github.com/google/cadvisor/releases/download/v0.37.5/cadvisor
-    checksum: sha256:0becc44bc1f4bdf82485b1136897b421604c474a2cf7c1106fd2c032cbf6f5cb
+    url: https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-amd64
+    checksum: sha256:c63976400ca980b4b34bd074ef93c5321650050e45e6dc4d0cb1baf7dc772639
     dest: /opt/cadvisor/cadvisor
     mode: 0755
+  when: ansible_architecture == "x86_64"
+
+- name: Download cAdvisor Binary (arm64)
+  get_url:
+    url: https://github.com/google/cadvisor/releases/download/v0.50.0/cadvisor-v0.50.0-linux-arm64
+    checksum: sha256:37c998d54dc0e8b1635d9be4c0ab15dfc3123aa41805ad0bd909c896d5a1a89b
+    dest: /opt/cadvisor/cadvisor
+    mode: 0755
+  when: ansible_architecture == "arm64"
 
 - name: Create cAdvisor Systemd Service File
   template:

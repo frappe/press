@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2024-08-28 14:35:33.621134",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "team",
+  "site_section",
+  "site",
+  "subdomain",
+  "release_group_section",
+  "release_group",
+  "version",
+  "column_break_smfr",
+  "cluster",
+  "bench",
+  "apps_section",
+  "apps_column",
+  "apps"
+ ],
+ "fields": [
+  {
+   "fieldname": "site_section",
+   "fieldtype": "Section Break",
+   "label": "Site"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "release_group_section",
+   "fieldtype": "Section Break",
+   "label": "Release Group"
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subdomain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "release_group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
+  },
+  {
+   "fieldname": "apps_section",
+   "fieldtype": "Section Break",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Link",
+   "label": "Version",
+   "options": "Frappe Version"
+  },
+  {
+   "fieldname": "apps_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Site Group Deploy App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nDeploying Bench\nBench Deployed\nBench Deploy Failed\nCreating Site\nSite Created\nSite Creation Failed"
+  },
+  {
+   "fieldname": "column_break_smfr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-02 10:30:41.897673",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Group Deploy",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

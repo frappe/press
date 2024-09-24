@@ -62,32 +62,6 @@ export default {
 		log() {
 			return this.$resources.log.data;
 		}
-	},
-	// mounted() {
-	// 	this.$socket.on('log_update', data => {
-	// 		if (data.log === this.log) {
-	// 			this.reload();
-	// 		}
-	// 	});
-	// 	// reload log every minute, in case socket is not working
-	// 	this.reloadInterval = setInterval(() => {
-	// 		this.reload();
-	// 	}, 1000 * 60);
-	// },
-	// beforeUnmount() {
-	// 	this.$socket.off('log_update');
-	// 	clearInterval(this.reloadInterval);
-	// },
-	methods: {
-		// reload() {
-		// 	if (
-		// 		!this.$resources.log.loading &&
-		// 		// reload if log was loaded more than 5 seconds ago
-		// 		Date.now() - this.lastLoaded > 5000
-		// 	) {
-		// 		this.$resources.log.reload();
-		// 	}
-		// }
 	}
 };
 </script>

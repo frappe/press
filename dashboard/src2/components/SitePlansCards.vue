@@ -14,7 +14,8 @@ export default {
 		'isDedicatedServerSite',
 		'selectedCluster',
 		'selectedApps',
-		'selectedVersion'
+		'selectedVersion',
+		'hideRestrictedPlans'
 	],
 	emits: ['update:modelValue'],
 	components: {
@@ -77,6 +78,9 @@ export default {
 					};
 				});
 			}
+			if (this.hideRestrictedPlans) {
+				plans = plans.filter(plan => !plan.restricted_plan);
+			}
 
 			return plans.map(plan => {
 				return {
@@ -100,6 +104,9 @@ export default {
 							label: 'Disk',
 							condition: !plan.name.includes('Unlimited'),
 							value: this.$format.bytes(plan.max_storage_usage, 1, 2)
+						},
+						{
+							value: 'Product Warranty'
 						},
 						{
 							value: plan.support_included ? 'Support Included' : ''

@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "autoname": "field:gateway",
+ "creation": "2024-09-13 13:25:09.836216",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "column_break_kvnc",
+  "currency",
+  "column_break_pwgv",
+  "gateway",
+  "ui_configuration_section",
+  "integration_logo",
+  "partner_integration_section",
+  "url",
+  "column_break_oefu",
+  "api_key",
+  "column_break_slwm",
+  "api_secret",
+  "taxes_section",
+  "taxes_and_charges"
+ ],
+ "fields": [
+  {
+   "fieldname": "gateway",
+   "fieldtype": "Data",
+   "label": "Gateway",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_kvnc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_pwgv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "taxes_section",
+   "fieldtype": "Section Break",
+   "label": "Taxes"
+  },
+  {
+   "fieldname": "taxes_and_charges",
+   "fieldtype": "Percent",
+   "label": "Taxes and Charges"
+  },
+  {
+   "fieldname": "partner_integration_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Integration"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "URL"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Data",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret"
+  },
+  {
+   "fieldname": "column_break_oefu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_slwm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ui_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "UI Configuration"
+  },
+  {
+   "fieldname": "integration_logo",
+   "fieldtype": "Attach Image",
+   "label": "Integration Logo"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-17 15:39:34.507841",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Payment Gateway",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

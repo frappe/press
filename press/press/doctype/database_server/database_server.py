@@ -27,13 +27,14 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		agent_password: DF.Password | None
+		auto_add_storage_max: DF.Int
+		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -819,6 +820,8 @@ class DatabaseServer(BaseServer):
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
 			server=self.name,
 			job_id=f"fetch_mariadb_stalk:{self.name}",
+			deduplicate=True,
+			queue="long",
 		)
 
 	def get_stalks(self):
@@ -830,6 +833,8 @@ class DatabaseServer(BaseServer):
 		return result
 
 	def get_stalk(self, name):
+		if self.agent.should_skip_requests():
+			return {}
 		return self.agent.get(f"database/stalks/{name}")
 
 	def _rename_server(self):

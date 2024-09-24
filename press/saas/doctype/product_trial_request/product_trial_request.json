@@ -9,11 +9,17 @@
  "field_order": [
   "product_trial",
   "team",
-  "account_request",
-  "agent_job",
+  "site",
   "column_break_cubd",
   "status",
-  "site"
+  "account_request",
+  "agent_job",
+  "section_break_zlzx",
+  "site_creation_started_on",
+  "column_break_bvut",
+  "site_creation_completed_on",
+  "signup_info_tab",
+  "signup_details"
  ],
  "fields": [
   {
@@ -21,7 +27,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "search_index": 1
   },
   {
    "fieldname": "account_request",
@@ -39,7 +46,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nSite Created\nError\nExpired"
+   "options": "Pending\nWait for Site\nCompleting Setup Wizard\nSite Created\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -59,12 +66,42 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Product Trial",
-   "options": "Product Trial"
+   "options": "Product Trial",
+   "search_index": 1
+  },
+  {
+   "fieldname": "signup_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "Signup Info"
+  },
+  {
+   "default": "{}",
+   "fieldname": "signup_details",
+   "fieldtype": "JSON",
+   "label": "Signup Details"
+  },
+  {
+   "fieldname": "section_break_zlzx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "site_creation_started_on",
+   "fieldtype": "Datetime",
+   "label": "Site Creation Started On"
+  },
+  {
+   "fieldname": "column_break_bvut",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "site_creation_completed_on",
+   "fieldtype": "Datetime",
+   "label": "Site Creation Completed On"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 17:29:05.620825",
+ "modified": "2024-09-12 11:32:08.901183",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

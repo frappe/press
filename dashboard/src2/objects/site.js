@@ -1,8 +1,7 @@
 import {
 	createListResource,
 	LoadingIndicator,
-	frappeRequest,
-	Tooltip
+	createResource
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
@@ -12,7 +11,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, date, userCurrency } from '../utils/format';
+import { bytes, date, planTitle, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
@@ -42,6 +41,7 @@ export default {
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
 		loginAsAdmin: 'login_as_admin',
+		loginAsTeam: 'login_as_team',
 		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
@@ -51,6 +51,8 @@ export default {
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
+		editScheduledUpdate: 'edit_scheduled_update',
+		cancelUpdate: 'cancel_scheduled_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
@@ -221,14 +223,14 @@ export default {
 			if (
 				(site.doc.server_team == $team.doc?.name &&
 					site.doc.group_team == $team.doc?.name) ||
-				$team.doc.is_desk_user
+				$team.doc?.is_desk_user
 			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc.is_desk_user) {
+			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
@@ -279,7 +281,7 @@ export default {
 					columns: [
 						{
 							label: 'App',
-							fieldname: 'app',
+							fieldname: 'title',
 							width: 1,
 							suffix(row) {
 								if (!row.is_app_patched) {
@@ -287,14 +289,23 @@ export default {
 								}
 
 								return h(
-									Tooltip,
+									'div',
 									{
-										text: 'App has been patched',
-										placement: 'top',
+										title: 'App has been patched',
 										class: 'rounded-full bg-gray-100 p-1'
 									},
-									() => h(icon('alert-circle', 'w-3 h-3'))
+									h(icon('alert-circle', 'w-3 h-3'))
 								);
+							}
+						},
+						{
+							label: 'Plan',
+							width: 0.75,
+							class: 'text-gray-600 text-sm',
+							format(_, row) {
+								const planText = planTitle(row.plan_info);
+								if (planText) return `${planText}/mo`;
+								else return 'Free';
 							}
 						},
 						{
@@ -324,6 +335,12 @@ export default {
 							width: '34rem'
 						}
 					],
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
+					},
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
@@ -331,141 +348,17 @@ export default {
 								prefix: icon('plus')
 							},
 							onClick() {
+								const InstallAppDialog = defineAsyncComponent(() =>
+									import('../components/site/InstallAppDialog.vue')
+								);
+
 								renderDialog(
-									h(
-										GenericDialog,
-										{
-											options: {
-												title: 'Install app on your site',
-												size: '4xl'
-											}
-										},
-										{
-											default: () =>
-												h(ObjectList, {
-													options: {
-														label: 'App',
-														fieldname: 'app',
-														fieldtype: 'ListSelection',
-														emptyStateMessage:
-															'No apps found' +
-															(!site.doc?.group_public
-																? '. Please add them from your bench.'
-																: ''),
-														columns: [
-															{
-																label: 'Title',
-																fieldname: 'title',
-																class: 'font-medium',
-																width: 2
-															},
-															{
-																label: 'Repo',
-																fieldname: 'repository_owner',
-																class: 'text-gray-600'
-															},
-															{
-																label: 'Branch',
-																fieldname: 'branch',
-																class: 'text-gray-600'
-															},
-															{
-																label: '',
-																fieldname: '',
-																align: 'right',
-																type: 'Button',
-																width: '5rem',
-																Button({ row }) {
-																	return {
-																		label: 'Install',
-																		onClick() {
-																			if (site.installApp.loading) return;
-
-																			if (row.plans) {
-																				let SiteAppPlanSelectDialog =
-																					defineAsyncComponent(() =>
-																						import(
-																							'../components/site/SiteAppPlanSelectDialog.vue'
-																						)
-																					);
-
-																				renderDialog(
-																					h(SiteAppPlanSelectDialog, {
-																						app: row,
-																						currentPlan: null,
-																						onPlanSelected(plan) {
-																							toast.promise(
-																								site.installApp.submit({
-																									app: row.app,
-																									plan: plan.name
-																								}),
-																								{
-																									loading: 'Installing app...',
-																									success: jobId => {
-																										apps.reload();
-																										router.push({
-																											name: 'Site Job',
-																											params: {
-																												name: site.name,
-																												id: jobId
-																											}
-																										});
-																										return 'App will be installed shortly';
-																									},
-																									error: e => {
-																										return e.messages?.length
-																											? e.messages.join('\n')
-																											: e.message;
-																									}
-																								}
-																							);
-																						}
-																					})
-																				);
-																			} else {
-																				toast.promise(
-																					site.installApp.submit({
-																						app: row.app
-																					}),
-																					{
-																						loading: 'Installing app...',
-																						success: jobId => {
-																							apps.reload();
-																							router.push({
-																								name: 'Site Job',
-																								params: {
-																									name: site.name,
-																									id: jobId
-																								}
-																							});
-																							return 'App will be installed shortly';
-																						},
-																						error: e => {
-																							return e.messages?.length
-																								? e.messages.join('\n')
-																								: e.message;
-																						}
-																					}
-																				);
-																			}
-																		}
-																	};
-																}
-															}
-														],
-														resource() {
-															return {
-																url: 'press.api.site.available_apps',
-																params: {
-																	name: site.doc?.name
-																},
-																auto: true
-															};
-														}
-													}
-												})
+									h(InstallAppDialog, {
+										site: site.name,
+										onInstalled() {
+											apps.reload();
 										}
-									)
+									})
 								);
 							}
 						};
@@ -476,7 +369,7 @@ export default {
 						return [
 							{
 								label: 'View in Desk',
-								condition: () => $team.doc.is_desk_user,
+								condition: () => $team.doc?.is_desk_user,
 								onClick() {
 									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
@@ -667,7 +560,7 @@ export default {
 							},
 							{
 								label: 'Set Primary',
-								condition: () => !row.primary,
+								condition: () => !row.primary && row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Set Primary Domain`,
@@ -697,7 +590,10 @@ export default {
 							},
 							{
 								label: 'Redirect to Primary',
-								condition: () => !row.primary && !row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									!row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Redirect Domain`,
@@ -727,7 +623,10 @@ export default {
 							},
 							{
 								label: 'Remove Redirect',
-								condition: () => !row.primary && row.redirect_to_primary,
+								condition: () =>
+									!row.primary &&
+									row.redirect_to_primary &&
+									row.status === 'Active',
 								onClick() {
 									confirmDialog({
 										title: `Remove Redirect`,
@@ -851,6 +750,31 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
+						function getFileName(file) {
+							if (file == 'database') return 'database';
+							if (file == 'public') return 'public files';
+							if (file == 'private') return 'private files';
+							if (file == 'config') return 'config file';
+						}
+
+						function confirmDownload(backup, file) {
+							confirmDialog({
+								title: 'Download Backup',
+								message: `You will be downloading the ${getFileName(
+									file
+								)} backup of the site <b>${
+									site.doc?.host_name || site.doc?.name
+								}</b> that was created on ${date(backup.creation, 'llll')}.${
+									!backup.offsite
+										? '<br><br><div class="p-2 bg-gray-100 border-gray-200 rounded">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										: ''
+								}`,
+								onSuccess() {
+									downloadBackup(backup, file);
+								}
+							});
+						}
+
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
 							if (backup.offsite) {
@@ -866,11 +790,17 @@ export default {
 									}
 								);
 							} else {
-								let url =
+								const url =
 									file == 'config'
 										? backup.config_file_url
 										: backup[file + '_url'];
-								window.open(url);
+
+								const domainRegex = /^(https?:\/\/)?([^/]+)\/?/;
+								const newUrl = url.replace(
+									domainRegex,
+									`$1${site.doc.host_name}/`
+								);
+								window.open(newUrl);
 							}
 						}
 
@@ -881,27 +811,27 @@ export default {
 									{
 										label: 'Download Database',
 										onClick() {
-											return downloadBackup(row, 'database');
+											return confirmDownload(row, 'database');
 										}
 									},
 									{
 										label: 'Download Public',
 										onClick() {
-											return downloadBackup(row, 'public');
+											return confirmDownload(row, 'public');
 										},
 										condition: () => row.public_url
 									},
 									{
 										label: 'Download Private',
 										onClick() {
-											return downloadBackup(row, 'private');
+											return confirmDownload(row, 'private');
 										},
 										condition: () => row.private_url
 									},
 									{
 										label: 'Download Config',
 										onClick() {
-											return downloadBackup(row, 'config');
+											return confirmDownload(row, 'config');
 										},
 										condition: () => row.config_file_url
 									}
@@ -963,17 +893,18 @@ export default {
 												h(SelectSiteForRestore, {
 													site: site.name,
 													onRestore(siteName) {
+														const restoreSite = createResource({
+															url: 'press.api.site.restore'
+														});
+
 														return toast.promise(
-															frappeRequest({
-																url: 'press.api.site.restore',
-																params: {
-																	name: siteName,
-																	files: {
-																		database: row.remote_database_file,
-																		public: row.remote_public_file,
-																		private: row.remote_private_file,
-																		config: row.remote_config_file
-																	}
+															restoreSite.submit({
+																name: siteName,
+																files: {
+																	database: row.remote_database_file,
+																	public: row.remote_public_file,
+																	private: row.remote_private_file,
+																	config: row.remote_config_file
 																}
 															}),
 															{
@@ -1039,6 +970,12 @@ export default {
 								});
 							}
 						};
+					},
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
 					}
 				}
 			},
@@ -1230,7 +1167,52 @@ export default {
 					rowActions({ row, documentResource: site }) {
 						return [
 							{
+								label: 'Edit',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let SiteUpdateDialog = defineAsyncComponent(() =>
+										import('../components/SiteUpdateDialog.vue')
+									);
+									renderDialog(
+										h(SiteUpdateDialog, {
+											site: site.doc?.name,
+											existingUpdate: row.name
+										})
+									);
+								}
+							},
+							{
+								label: 'Cancel',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									confirmDialog({
+										title: 'Cancel Update',
+										message: `Are you sure you want to cancel the scheduled update?`,
+										onSuccess({ hide }) {
+											if (site.cancelUpdate.loading) return;
+											toast.promise(
+												site.cancelUpdate.submit({ site_update: row.name }),
+												{
+													loading: 'Cancelling update...',
+													success: () => {
+														hide();
+														site.reload();
+														return 'Update cancelled';
+													},
+													error: e => {
+														return e.messages?.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
 								label: 'View Job',
+								condition: () => row.status !== 'Scheduled',
 								onClick() {
 									router.push({
 										name: 'Site Job',
@@ -1387,6 +1369,12 @@ export default {
 								}
 							}
 						];
+					},
+					banner({ documentResource: site }) {
+						const bannerTitle =
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+
+						return upsellBanner(site, bannerTitle);
 					}
 				}
 			},
@@ -1398,13 +1386,15 @@ export default {
 				type: 'Component',
 				condition() {
 					const team = getTeam();
-					return !!team.doc?.enable_performance_tuning;
+					return (
+						!!team.doc?.enable_performance_tuning || team.doc?.is_desk_user
+					);
 				},
 				component: defineAsyncComponent(() =>
 					import('../components/site/SitePerformance.vue')
 				),
 				props: site => {
-					return { siteName: site.doc?.name };
+					return { siteName: site.doc?.name, siteVersion: site.doc?.version };
 				}
 			},
 			logsTab(),
@@ -1530,12 +1520,13 @@ export default {
 				},
 				{
 					label: 'Update Available',
-					variant: 'solid',
+					variant: site.doc?.setup_wizard_complete ? 'solid' : 'subtle',
 					slots: {
 						prefix: icon('alert-circle')
 					},
 					condition() {
 						return (
+							!site.doc?.has_scheduled_updates &&
 							site.doc.update_information?.update_available &&
 							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
 								site.doc.status
@@ -1551,6 +1542,19 @@ export default {
 					}
 				},
 				{
+					label: 'Update Scheduled',
+					slots: {
+						prefix: icon('calendar')
+					},
+					condition: () => site.doc?.has_scheduled_updates,
+					onClick() {
+						router.push({
+							name: 'Site Detail Updates',
+							params: { name: site.name }
+						});
+					}
+				},
+				{
 					label: 'Impersonate Site Owner',
 					slots: {
 						prefix: defineAsyncComponent(() =>
@@ -1558,7 +1562,7 @@ export default {
 						)
 					},
 					condition: () =>
-						$team.doc.is_desk_user && site.doc.team != $team.name,
+						$team.doc?.is_desk_user && site.doc.team !== $team.name,
 					onClick() {
 						switchToTeam(site.doc.team);
 					}
@@ -1568,9 +1572,30 @@ export default {
 					slots: {
 						prefix: icon('external-link')
 					},
-					condition: () => site.doc.status !== 'Archived',
+					condition: () =>
+						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
 					onClick() {
 						window.open(`https://${site.name}`, '_blank');
+					}
+				},
+				{
+					label: 'Setup Site',
+					slots: {
+						prefix: icon('external-link')
+					},
+					variant: 'solid',
+					condition: () =>
+						site.doc.status === 'Active' && !site.doc?.setup_wizard_complete,
+					onClick() {
+						if (site.doc.additional_system_user_created) {
+							site.loginAsTeam
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
+						} else {
+							site.loginAsAdmin
+								.submit({ reason: '' })
+								.then(url => window.open(url, '_blank'));
+						}
 					}
 				},
 				{
@@ -1580,7 +1605,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: 'external-link',
-							condition: () => $team.doc.is_desk_user,
+							condition: () => $team.doc?.is_desk_user,
 							onClick: () => {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
@@ -1639,3 +1664,23 @@ export default {
 		}
 	]
 };
+
+function upsellBanner(site, title) {
+	if (!site.doc.current_plan?.private_benches && site.doc.group_public) {
+		return {
+			title: title,
+			dismissable: true,
+			id: site.name,
+			button: {
+				label: 'Upgrade Plan',
+				variant: 'outline',
+				onClick() {
+					let SitePlansDialog = defineAsyncComponent(() =>
+						import('../components/ManageSitePlansDialog.vue')
+					);
+					renderDialog(h(SitePlansDialog, { site: site.name }));
+				}
+			}
+		};
+	}
+}

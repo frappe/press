@@ -36,7 +36,8 @@
    "label": "Virtual Machine",
    "options": "Virtual Machine",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fetch_from": "virtual_machine.cluster",
@@ -77,7 +78,8 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nCompleted\nError\nRecovering\nRecoverable\nUnavailable",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "start_time",
@@ -119,7 +121,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-11 18:24:35.112153",
+ "modified": "2024-08-26 14:00:36.492512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

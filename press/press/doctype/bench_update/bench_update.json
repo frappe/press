@@ -8,9 +8,12 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
-  "status",
   "column_break_wff5",
   "candidate",
+  "in_place_update_section",
+  "is_inplace_update",
+  "column_break_bdov",
+  "bench",
   "section_break_nfd1",
   "apps",
   "sites"
@@ -29,13 +32,6 @@
    "fieldtype": "Table",
    "label": "Sites",
    "options": "Bench Site Update"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Pending\nRunning\nBuild Successful\nFailure\nSuccess"
   },
   {
    "fieldname": "column_break_wff5",
@@ -57,11 +53,36 @@
    "fieldtype": "Table",
    "label": "Apps",
    "options": "Bench Update App"
+  },
+  {
+   "fieldname": "in_place_update_section",
+   "fieldtype": "Section Break",
+   "label": "In Place Update"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.is_inplace_update",
+   "description": "A new build is not run in this case, instead container is updated using <code>docker container commit</code> which creates a new image.",
+   "fieldname": "is_inplace_update",
+   "fieldtype": "Check",
+   "label": "Is In Place Update"
+  },
+  {
+   "fieldname": "column_break_bdov",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.bench",
+   "description": "Bench that will be updated in place.",
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-05 11:22:49.776499",
+ "modified": "2024-08-23 12:20:58.651546",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Update",

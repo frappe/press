@@ -1,5 +1,5 @@
 <template>
-	<Card title="Profile">
+	<Card title="Profile" v-if="user" class="mx-auto max-w-3xl">
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar size="2xl" :label="user.first_name" :image="user.user_image" />
@@ -47,6 +47,20 @@
 				<template #actions>
 					<Button @click="confirmPublisherAccount">
 						<span>Become a Publisher</span>
+					</Button>
+				</template>
+			</ListItem>
+			<ListItem
+				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
+				:subtitle="
+					user.is_2fa_enabled
+						? 'Disable two-factor authentication for your account'
+						: 'Enable two-factor authentication for your account to add an extra layer of security'
+				"
+			>
+				<template #actions>
+					<Button @click="show2FADialog = true">
+						{{ user.is_2fa_enabled ? 'Disable' : 'Enable' }}
 					</Button>
 				</template>
 			</ListItem>
@@ -108,7 +122,10 @@
 						variant: 'solid',
 						theme: 'red',
 						loading: $resources.disableAccount.loading,
-						onClick: () => $resources.disableAccount.submit()
+						onClick: () =>
+							$resources.disableAccount.submit({
+								totp_code: disableAccount2FACode
+							})
 					}
 				]
 			}"
@@ -127,6 +144,12 @@
 					</ul>
 					You can enable your account later anytime. Do you want to continue?
 				</div>
+				<FormControl
+					v-if="user.is_2fa_enabled"
+					class="mt-4"
+					label="Enter your 2FA code to confirm"
+					v-model="disableAccount2FACode"
+				/>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
 		</Dialog>
@@ -160,29 +183,38 @@
 		</Dialog>
 	</Card>
 	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
+	<ActiveServersDialog v-model="showActiveServersDialog" />
+	<TFADialog v-model="show2FADialog" />
 </template>
 
 <script>
 import { toast } from 'vue-sonner';
+import { h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
 import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
 import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
-import { h } from 'vue';
+import ActiveServersDialog from '../../ActiveServersDialog.vue';
+import TFADialog from './TFADialog.vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
+		TFADialog,
 		FileUploader,
 		FinalizeInvoicesDialog,
-		ChurnFeedbackDialog
+		ChurnFeedbackDialog,
+		ActiveServersDialog
 	},
 	data() {
 		return {
+			show2FADialog: false,
+			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
-			showFinalizeInvoicesDialog: false
+			showFinalizeInvoicesDialog: false,
+			showActiveServersDialog: false
 		};
 	},
 	computed: {
@@ -216,6 +248,8 @@ export default {
 
 				if (data === 'Unpaid Invoices') {
 					this.showFinalizeInvoicesDialog = true;
+				} else if (data === 'Active Servers') {
+					this.showActiveServersDialog = true;
 				} else {
 					renderDialog(
 						h(ChurnFeedbackDialog, {

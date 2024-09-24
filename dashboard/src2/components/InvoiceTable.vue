@@ -34,9 +34,12 @@
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
 								{{
-									['Site', 'Release Group', 'Server'].includes(
-										row.document_type
-									)
+									[
+										'Site',
+										'Release Group',
+										'Server',
+										'Database Server'
+									].includes(row.document_type)
 										? $format.plural(row.quantity, 'day', 'days')
 										: ''
 								}}

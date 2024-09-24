@@ -34,7 +34,8 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam();
-		if (row.name === team.doc.user) return [];
+		if (row.name === team.doc.user || row.name === team.doc.user_info?.name)
+			return [];
 		return [
 			{
 				label: 'Remove Member',
@@ -65,18 +66,30 @@ const teamMembersListOptions = ref({
 			}
 		];
 	},
-	primaryAction() {
-		return {
-			label: 'Add Member',
-			variant: 'solid',
-			iconLeft: 'plus',
-			onClick() {
-				const InviteTeamMemberDialog = defineAsyncComponent(() =>
-					import('./InviteTeamMemberDialog.vue')
-				);
-				renderDialog(h(InviteTeamMemberDialog));
+	actions() {
+		return [
+			{
+				label: 'Settings',
+				iconLeft: 'settings',
+				onClick() {
+					const TeamSettingsDialog = defineAsyncComponent(() =>
+						import('./TeamSettingsDialog.vue')
+					);
+					renderDialog(h(TeamSettingsDialog));
+				}
+			},
+			{
+				label: 'Add Member',
+				variant: 'solid',
+				iconLeft: 'plus',
+				onClick() {
+					const InviteTeamMemberDialog = defineAsyncComponent(() =>
+						import('./InviteTeamMemberDialog.vue')
+					);
+					renderDialog(h(InviteTeamMemberDialog));
+				}
 			}
-		};
+		];
 	}
 });
 </script>

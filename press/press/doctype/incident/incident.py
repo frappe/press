@@ -117,9 +117,12 @@ class Incident(WebsiteGenerator):
 			self.doctype,
 			self.name,
 			"_call_humans",
-			queue="long",
+			queue="default",
+			timeout=1800,
 			enqueue_after_commit=True,
 			at_front=True,
+			job_id=f"call_humans:{self.name}",
+			deduplicate=True,
 		)
 
 	def get_humans(
@@ -171,7 +174,7 @@ class Incident(WebsiteGenerator):
 	def notify_unable_to_reach_twilio(self):
 		telegram = Telegram()
 		telegram.send(
-			f"""Unable to reach Twilio for Incident in f{self.server}
+			f"""Unable to reach Twilio for Incident in {self.server}
 
 Likely due to insufficient balance or incorrect credentials""",
 			reraise=True,

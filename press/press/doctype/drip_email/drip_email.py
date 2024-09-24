@@ -5,10 +5,14 @@
 
 from datetime import timedelta
 from typing import Dict, List
+import rq
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils.make_random import get_random
+import rq.exceptions
+import rq.timeouts
+from press.utils import log_error
 
 
 class DripEmail(Document):
@@ -159,9 +163,24 @@ class DripEmail(Document):
 		return sites
 
 	def send_to_sites(self):
-		for site in self.sites_to_send_drip:
-			self.send(site)
-			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
+		sites = self.sites_to_send_drip
+		for site in sites:
+			try:
+				# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
+				self.send(site)
+				frappe.db.commit()
+			except rq.timeouts.JobTimeoutException:
+				log_error(
+					"Drip Email Timeout",
+					drip_email=self.name,
+					site=site,
+					total_sites=len(self.sites),
+				)
+				frappe.db.rollback()
+				return
+			except Exception:
+				frappe.db.rollback()
+				log_error("Drip Email Error", drip_email=self.name, site=site)
 
 
 def send_drip_emails():
@@ -170,8 +189,14 @@ def send_drip_emails():
 		"Drip Email", {"enabled": 1, "email_type": ("in", ("Drip", "Onboarding"))}
 	)
 	for drip_email_name in drip_emails:
-		drip_email = frappe.get_doc("Drip Email", drip_email_name)
-		drip_email.send_to_sites()
+		frappe.enqueue_doc(
+			"Drip Email",
+			drip_email_name,
+			"send_to_sites",
+			queue="long",
+			job_id=f"drip_email_send_to_sites:{drip_email_name}",
+			deduplicate=True,
+		)
 
 
 def send_welcome_email():

@@ -12,8 +12,7 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
-import { toast } from 'vue-sonner';
-import './vendor/posthog.js'
+import './vendor/posthog.js';
 
 let request = options => {
 	let _options = options || {};
@@ -31,11 +30,6 @@ setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
-setConfig('fallbackErrorHandler', error => {
-	toast.error(
-		error.messages?.length ? error.messages.join('\n') : error.message
-	);
-});
 
 let app;
 let socket;
@@ -59,19 +53,43 @@ getInitialData().then(() => {
 		Sentry.init({
 			app,
 			dsn: window.press_dashboard_sentry_dsn,
-			integrations: [Sentry.browserTracingIntegration({ router })],
+			integrations: [
+				Sentry.browserTracingIntegration({ router }),
+				Sentry.replayIntegration({
+					maskAllText: false,
+					blockAllMedia: false
+				}),
+				Sentry.thirdPartyErrorFilterIntegration({
+					// Specify the application keys that you specified in the Sentry bundler plugin
+					filterKeys: ['press-dashboard'],
+
+					// Defines how to handle errors that contain third party stack frames.
+					// Possible values are:
+					// - 'drop-error-if-contains-third-party-frames'
+					// - 'drop-error-if-exclusively-contains-third-party-frames'
+					// - 'apply-tag-if-contains-third-party-frames'
+					// - 'apply-tag-if-exclusively-contains-third-party-frames'
+					behaviour: 'apply-tag-if-contains-third-party-frames'
+				})
+			],
+			replaysSessionSampleRate: 0.1,
+			replaysOnErrorSampleRate: 1.0,
 			beforeSend(event, hint) {
 				const ignoreErrors = [
 					/api\/method\/press.api.client/,
 					/dynamically imported module/,
 					/NetworkError when attempting to fetch resource/,
+					/Failed to fetch/,
 					/Load failed/,
+					/frappe is not defined/,
 					/Importing a module script failed./
 				];
 				const ignoreErrorTypes = [
 					'BuildValidationError',
 					'ValidationError',
 					'PermissionError',
+					'SecurityException',
+					'AAAARecordExists',
 					'AuthenticationError'
 				];
 				const error = hint.originalException;
@@ -80,13 +98,16 @@ getInitialData().then(() => {
 					error?.name === 'DashboardError' ||
 					ignoreErrorTypes.includes(error?.exc_type) ||
 					(error?.message && ignoreErrors.some(re => re.test(error.message)))
-				)
+				) {
 					return null;
+				}
 
 				return event;
 			},
 			logErrors: true
 		});
+
+		Sentry.setTag('team', localStorage.getItem('current_team'));
 	}
 
 	if (

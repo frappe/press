@@ -2,9 +2,13 @@
 	<div
 		:class="`flex items-center rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
 	>
-		<i-lucide-alert-triangle :class="`h-4 w-4 text-${color}-600`" />
+		<i-lucide-alert-triangle
+			v-if="showIcon"
+			:class="`h-4 w-8 text-${color}-600`"
+		/>
 		<div
-			class="ml-3 text-p-base font-medium text-gray-800"
+			:class="{ 'ml-3': showIcon }"
+			class="text-p-base font-medium text-gray-800"
 			v-html="title"
 		></div>
 
@@ -27,6 +31,10 @@ export default {
 		type: {
 			type: String,
 			default: 'info'
+		},
+		showIcon: {
+			type: Boolean,
+			default: true
 		}
 	},
 	computed: {

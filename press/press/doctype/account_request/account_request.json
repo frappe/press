@@ -9,36 +9,36 @@
   "team",
   "email",
   "oauth_signup",
+  "send_email",
+  "otp",
   "column_break_4",
   "role",
   "invited_by",
   "ip_address",
   "invited_by_parent_team",
   "press_roles",
+  "saas_sign_up_section",
+  "saas",
+  "saas_app",
+  "product_trial",
+  "column_break_eaxp",
+  "first_name",
+  "last_name",
+  "country",
   "section_break_8",
   "erpnext",
   "subdomain",
   "plan",
-  "first_name",
-  "last_name",
   "phone_number",
+  "company",
   "designation",
   "column_break_14",
-  "company",
   "no_of_users",
   "no_of_employees",
   "industry",
-  "country",
   "state",
   "is_us_eu",
   "agreed_to_partner_consent",
-  "saas_sign_up_section",
-  "send_email",
-  "saas",
-  "product_trial",
-  "saas_app",
-  "saas_signup_values",
-  "new_signup_flow",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -50,7 +50,8 @@
   {
    "fieldname": "email",
    "fieldtype": "Data",
-   "label": "Email"
+   "label": "Email",
+   "search_index": 1
   },
   {
    "fieldname": "request_key",
@@ -238,26 +239,15 @@
    "label": "Oauth Signup"
   },
   {
-   "fieldname": "saas_signup_values",
-   "fieldtype": "Small Text",
-   "label": "SaaS Signup Values"
-  },
-  {
    "fieldname": "saas_app",
    "fieldtype": "Link",
    "label": "Saas App",
    "options": "Marketplace App"
   },
   {
-   "default": "0",
-   "fieldname": "new_signup_flow",
-   "fieldtype": "Check",
-   "label": "New Signup Flow"
-  },
-  {
    "fieldname": "product_trial",
    "fieldtype": "Link",
-   "label": "Product Trial",
+   "label": "Product Trial (New)",
    "options": "Product Trial"
   },
   {
@@ -265,11 +255,20 @@
    "fieldtype": "Table MultiSelect",
    "label": "Press Roles",
    "options": "Account Request Press Role"
+  },
+  {
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP"
+  },
+  {
+   "fieldname": "column_break_eaxp",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-06 23:40:30.636251",
+ "modified": "2024-09-11 17:33:21.986307",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

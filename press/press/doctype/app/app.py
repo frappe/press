@@ -5,8 +5,10 @@
 
 import typing
 
+import rq
 import frappe
 from frappe.model.document import Document
+from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -80,7 +82,7 @@ class App(Document):
 
 
 def new_app(name, title):
-	app = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
+	app: "App" = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
 	return app
 
 
@@ -90,9 +92,14 @@ def poll_new_releases():
 		{"enabled": True, "last_github_poll_failed": False},
 		order_by="last_synced",
 	):
+		if has_job_timeout_exceeded():
+			return
 		try:
 			source = frappe.get_doc("App Source", source.name)
 			source.create_release()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			frappe.db.rollback()
+			return
 		except Exception:
 			frappe.db.rollback()

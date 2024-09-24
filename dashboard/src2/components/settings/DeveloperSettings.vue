@@ -1,7 +1,9 @@
 <template>
 	<div class="p-5">
 		<div class="grid grid-cols-1 gap-5">
-			<div class="space-y-6 rounded-md border p-4">
+			<div
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">API Access</div>
 					<Button @click="showCreateSecretDialog = true">{{
@@ -67,7 +69,9 @@
 					</template>
 				</Dialog>
 			</div>
-			<div class="space-y-6 rounded-md border p-4">
+			<div
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">SSH Keys</div>
 				</div>
@@ -78,14 +82,14 @@
 </template>
 
 <script setup>
-import { createResource } from 'frappe-ui';
+import { Badge, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import { confirmDialog, icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
-import ClickToCopyField from '../../../src/components/ClickToCopyField.vue';
+import ClickToCopyField from '../ClickToCopyField.vue';
 
 const $team = getTeam();
 let showCreateSecretDialog = ref(false);
@@ -156,22 +160,22 @@ const sshKeyListOptions = computed(() => ({
 			label: 'SSH Fingerprint',
 			fieldname: 'ssh_fingerprint',
 			class: 'font-mono',
-			format: value => `SHA256:${value}`
+			format: value => `SHA256:${value}`,
+			suffix(row) {
+				return row.is_default
+					? h(Badge, {
+							label: 'Default',
+							theme: 'green',
+							class: 'ml-2'
+					  })
+					: null;
+			}
 		},
 		{
 			label: 'Added On',
 			fieldname: 'creation',
-			width: 0.5,
-			format: value => date(value, 'lll')
-		},
-		{
-			label: 'Default',
-			fieldname: 'is_default',
-			type: 'Icon',
-			Icon(value) {
-				return value ? 'check' : '';
-			},
-			width: 0.1
+			width: 0.1,
+			format: value => date(value, 'll')
 		}
 	],
 	primaryAction({ listResource }) {

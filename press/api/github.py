@@ -262,7 +262,7 @@ def branches(owner, name, installation=None):
 	if response.ok:
 		return response.json()
 	else:
-		frappe.throw("Error fetching branch list from GitHub")
+		frappe.throw("Error fetching branch list from GitHub: " + response.text)
 
 
 def get_auth_headers(installation_id: "Optional[str]" = None) -> "dict[str, str]":

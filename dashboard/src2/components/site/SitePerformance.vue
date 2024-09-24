@@ -1,12 +1,23 @@
 <template>
 	<div class="space-y-4">
-		<AlertBanner
-			title="Great!! You do not seem to have any slow queries"
-			type="info"
-			v-if="show"
-		/>
-		<div>
-			<ObjectList :options="slowQueriesData" />
+		<!-- Show this block if siteVersion is "Version 14" -->
+		<div v-if="siteVersion === 'Version 14'">
+			<AlertBanner
+				title="Great!! You do not seem to have any slow queries"
+				type="info"
+				v-if="show"
+			/>
+			<div>
+				<ObjectList :options="slowQueriesData" />
+			</div>
+		</div>
+
+		<!-- Show this alert banner for other versions (specifically Version 15) -->
+		<div v-else>
+			<AlertBanner
+				title="Performance Tuning coming soon for Version 15"
+				type="info"
+			/>
 		</div>
 	</div>
 </template>
@@ -20,7 +31,7 @@ import { renderDialog } from '../../utils/components';
 
 export default {
 	name: 'SitePerformance',
-	props: ['siteName'],
+	props: ['siteName', 'siteVersion'],
 	components: {
 		ListView,
 		FormControl,
@@ -36,8 +47,10 @@ export default {
 	computed: {
 		slowQueriesData() {
 			return {
+				experimental: true,
+				documentation: 'https://frappecloud.com/docs/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
-				onRowClick: (row) => {
+				onRowClick: row => {
 					const SlowQueryDialog = defineAsyncComponent(() =>
 						import('./SiteMariaDBSlowQueryDialog.vue')
 					);

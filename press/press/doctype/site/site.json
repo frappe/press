@@ -13,10 +13,11 @@
   "server",
   "archive_failed",
   "column_break_3",
-  "admin_password",
   "bench",
   "group",
   "cluster",
+  "admin_password",
+  "additional_system_user_created",
   "config_tab",
   "hide_config",
   "host_name",
@@ -26,7 +27,6 @@
   "config",
   "billing_tab",
   "team",
-  "setup_wizard_complete",
   "plan",
   "free",
   "column_break_15",
@@ -66,6 +66,11 @@
   "update_on_weekday",
   "update_end_of_month",
   "update_on_day_of_month",
+  "setup_wizard_status_section",
+  "setup_wizard_complete",
+  "column_break_vbgj",
+  "setup_wizard_status_check_retries",
+  "setup_wizard_status_check_next_retry_on",
   "database_section",
   "is_database_access_enabled",
   "database_access_mode",
@@ -78,6 +83,7 @@
   "standby_for_product",
   "column_break_63",
   "hybrid_saas_pool",
+  "saas_communication_secret",
   "backups_section",
   "backup_time",
   "column_break_zgig",
@@ -261,8 +267,7 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain",
-   "set_only_once": 1
+   "options": "Root Domain"
   },
   {
    "fieldname": "_site_usages",
@@ -590,6 +595,39 @@
    "fieldname": "only_update_at_specified_time",
    "fieldtype": "Check",
    "label": "Only update at specified time"
+  },
+  {
+   "default": "0",
+   "fieldname": "additional_system_user_created",
+   "fieldtype": "Check",
+   "label": "Additional System User Created"
+  },
+  {
+   "description": "This key will be used to validate requests from saas site for billing & configuration purpose",
+   "fieldname": "saas_communication_secret",
+   "fieldtype": "Data",
+   "label": "SaaS Communication Secret"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "setup_wizard_status_section",
+   "fieldtype": "Section Break",
+   "label": "Setup Wizard Status"
+  },
+  {
+   "fieldname": "column_break_vbgj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wizard_status_check_retries",
+   "fieldtype": "Int",
+   "label": "Retries"
+  },
+  {
+   "fieldname": "setup_wizard_status_check_next_retry_on",
+   "fieldtype": "Datetime",
+   "label": "Next Retry On"
   }
  ],
  "links": [
@@ -652,9 +690,14 @@
    "group": "Related Documents",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Access Token",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2024-06-28 16:18:55.869153",
+ "modified": "2024-09-10 15:32:56.518075",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

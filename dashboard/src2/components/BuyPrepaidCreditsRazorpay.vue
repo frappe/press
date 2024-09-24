@@ -118,7 +118,6 @@ export default {
 		handlePaymentSuccess() {
 			this.isPaymentComplete = true;
 			if (this.isOnboarding) {
-				console.log('Onboarding');
 				this.checkForOnboardingPaymentCompletion();
 			} else {
 				this.$emit('success');

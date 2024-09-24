@@ -1,0 +1,136 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-13 13:15:49.154039",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_details_section",
+  "payment_partner",
+  "column_break_manc",
+  "payment_gateway",
+  "column_break_ejza",
+  "team",
+  "transaction_details_section",
+  "amount",
+  "column_break_xqsh",
+  "currency",
+  "column_break_jyxx",
+  "exchange_rate",
+  "section_break_yhqq",
+  "payment_transaction_details",
+  "section_break_7oh3",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_7oh3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Payment Partner Balance Transaction",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "transaction_details_section",
+   "fieldtype": "Section Break",
+   "label": "Transaction Details"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "column_break_xqsh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Team Details"
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Link",
+   "label": "Payment Partner",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_ejza",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_jyxx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
+  },
+  {
+   "fieldname": "column_break_manc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_gateway",
+   "fieldtype": "Link",
+   "label": "Payment Gateway",
+   "options": "Payment Gateway"
+  },
+  {
+   "fieldname": "section_break_yhqq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "payment_transaction_details",
+   "fieldtype": "JSON",
+   "label": "Payment Transaction Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-09-13 13:38:50.952893",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Payment Partner Balance Transaction",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -9,7 +9,14 @@ let router = createRouter({
 			path: '/',
 			name: 'Home',
 			component: () => import('./pages/Home.vue'),
-			redirect: { name: 'Welcome' }
+			beforeEnter: (to, from, next) => {
+				next({
+					name: 'Welcome',
+					query: {
+						is_redirect: true
+					}
+				});
+			}
 		},
 		{
 			path: '/welcome',
@@ -52,9 +59,43 @@ let router = createRouter({
 			}
 		},
 		{
+			path: '/in-desk-billing/:accessToken',
+			name: 'IntegratedBilling',
+			component: () => import('./pages/saas/InDeskBilling.vue'),
+			children: [
+				{
+					path: '',
+					redirect: { name: 'IntegratedBillingOverview' }
+				},
+				{
+					path: 'overview',
+					name: 'IntegratedBillingOverview',
+					component: () => import('./pages/saas/in_desk_billing/Overview.vue')
+				},
+				{
+					path: 'invoices',
+					name: 'IntegratedBillingInvoices',
+					component: () => import('./pages/saas/in_desk_billing/Invoices.vue')
+				}
+			],
+			props: false,
+			meta: {
+				isLoginPage: true
+			}
+		},
+		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
+			props: true,
+			meta: {
+				hideSidebar: true
+			}
+		},
+		{
+			name: 'Enable2FA',
+			path: '/enable-2fa',
+			component: () => import('./pages/Enable2FA.vue'),
 			props: true,
 			meta: {
 				hideSidebar: true
@@ -189,10 +230,24 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppTrial',
-			path: '/app-trial/:productId',
-			component: () => import('./pages/NewAppTrial.vue'),
-			props: true
+			name: 'AppTrial',
+			path: '/app-trial',
+			redirect: { name: 'Home' },
+			children: [
+				{
+					name: 'AppTrialSignup',
+					path: 'signup/:productId',
+					component: () => import('./pages/saas/Signup.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'AppTrialSetup',
+					path: 'setup/:productId',
+					component: () => import('./pages/saas/Setup.vue'),
+					props: true
+				}
+			]
 		},
 		{
 			name: 'Impersonate',
@@ -204,6 +259,12 @@ let router = createRouter({
 			name: 'InstallApp',
 			path: '/install-app/:app',
 			component: () => import('./pages/InstallApp.vue'),
+			props: true
+		},
+		{
+			name: 'CreateSiteForMarketplaceApp',
+			path: '/create-site/:app',
+			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
 			props: true
 		},
 		{
@@ -235,25 +296,55 @@ router.beforeEach(async (to, from, next) => {
 		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
+	if (to.name.startsWith('IntegratedBilling')) {
+		next();
+		return;
+	}
+
 	if (isLoggedIn) {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
-		let visitingSiteOrBillingOrSettings =
-			to.name.startsWith('Site') ||
-			to.name.startsWith('Billing') ||
-			to.name.startsWith('NewAppTrial') ||
-			to.name.startsWith('Settings');
+		// identify user in posthog
+		if (window.posthog?.__loaded) {
+			try {
+				window.posthog.identify($team.doc.user, {
+					app: 'frappe_cloud'
+				});
+			} catch (e) {
+				console.error(e);
+			}
+		}
 
-		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+		// If user is logged in and was moving to app trial signup, redirect to app trial setup
+		if (to.name == 'AppTrialSignup') {
+			next({ name: 'AppTrialSetup', params: to.params });
+			return;
+		}
+
+		// if team owner/admin enforce 2fa and user has not enabled 2fa, redirect to enable 2fa
+		const Enable2FARoute = 'Enable2FA';
 		if (
-			onboardingIncomplete &&
-			to.name != onboardingRoute &&
-			!visitingSiteOrBillingOrSettings
+			to.name !== Enable2FARoute &&
+			$team.doc.enforce_2fa &&
+			!$team.doc.user_info.is_2fa_enabled
+		) {
+			next({ name: Enable2FARoute });
+			return;
+		}
+
+		// if team owner/admin doesn't enforce 2fa don't allow user to visit Enable2FA route
+		if (to.name === Enable2FARoute && !$team.doc.enforce_2fa) {
+			next({ name: defaultRoute });
+			return;
+		}
+
+		if (
+			!onboardingComplete &&
+			(to.name.startsWith('Release Group') || to.name.startsWith('Server'))
 		) {
 			next({ name: onboardingRoute });
 			return;
@@ -268,7 +359,14 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			next({ name: 'Login' });
+			if (to.name == 'AppTrialSetup') {
+				next({
+					name: 'AppTrialSignup',
+					params: to.params
+				});
+			} else {
+				next({ name: 'Login' });
+			}
 		}
 	}
 });

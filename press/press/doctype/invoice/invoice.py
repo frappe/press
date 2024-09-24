@@ -193,7 +193,10 @@ class Invoice(Document):
 	def stripe_payment_url(self):
 		if not self.stripe_invoice_id:
 			return
+		frappe.response.location = self.get_stripe_payment_url()
+		frappe.response.type = "redirect"
 
+	def get_stripe_payment_url(self):
 		stripe_link_expired = (
 			self.status == "Unpaid"
 			and frappe.utils.date_diff(frappe.utils.now(), self.due_date) > 30
@@ -204,9 +207,7 @@ class Invoice(Document):
 			url = stripe_invoice.hosted_invoice_url
 		else:
 			url = self.stripe_invoice_url
-
-		frappe.response.location = url
-		frappe.response.type = "redirect"
+		return url
 
 	def validate(self):
 		self.validate_team()
@@ -221,6 +222,9 @@ class Invoice(Document):
 			frappe.throw("Invoice must be Paid to be submitted")
 
 	def calculate_values(self):
+		if self.status == "Paid" and self.docstatus == 1:
+			# don't calculate if already invoice is paid and already submitted
+			return
 		self.calculate_total()
 		self.calculate_discounts()
 		self.calculate_amount_due()
@@ -788,8 +792,9 @@ class Invoice(Document):
 				invoice = res.get("message")
 
 				if invoice:
-					frappe.db.set_value("Invoice", self.name, "frappe_invoice", invoice)
+					self.frappe_invoice = invoice
 					self.fetch_invoice_pdf()
+					self.save()
 					return invoice
 			else:
 				from bs4 import BeautifulSoup
@@ -846,7 +851,7 @@ class Invoice(Document):
 					}
 				)
 				ret.save(ignore_permissions=True)
-				frappe.db.set_value("Invoice", self.name, "invoice_pdf", ret.file_url)
+				self.invoice_pdf = ret.file_url
 
 	def get_frappeio_connection(self):
 		if not hasattr(self, "frappeio_connection"):

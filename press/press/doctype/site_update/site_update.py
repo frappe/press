@@ -63,6 +63,8 @@ class SiteUpdate(Document):
 		"update_job",
 		"scheduled_time",
 		"creation",
+		"skipped_backups",
+		"skipped_failing_patches",
 	]
 
 	@staticmethod
@@ -268,6 +270,7 @@ class SiteUpdate(Document):
 				job_id=f"auto_scale_workers:{server.name}",
 				deduplicate=True,
 				enqueue_after_commit=True,
+				at_front=True,
 			)
 
 	@frappe.whitelist()
@@ -276,11 +279,11 @@ class SiteUpdate(Document):
 
 
 def trigger_recovery_job(site_update_name):
-	site_update = frappe.get_doc("Site Update", site_update_name)
+	site_update: "SiteUpdate" = frappe.get_doc("Site Update", site_update_name)
 	if site_update.recover_job:
 		return
 	agent = Agent(site_update.server)
-	site = frappe.get_doc("Site", site_update.site)
+	site: "Site" = frappe.get_doc("Site", site_update.site)
 	job = None
 	if site.bench == site_update.destination_bench:
 		# The site is already on destination bench
@@ -419,8 +422,11 @@ def schedule_updates_server(server):
 			},
 		):
 			continue
+
 		try:
 			site = frappe.get_doc("Site", site.name)
+			if site.site_migration_scheduled():
+				continue
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
@@ -528,6 +534,9 @@ def process_update_site_job_update(job):
 			else:
 				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
 
+	if job.status == "Failure":
+		send_job_failure_notification(job.name)
+
 
 def process_update_site_recover_job_update(job):
 	updated_status = {
@@ -556,6 +565,9 @@ def process_update_site_recover_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+
+	if job.status == "Failure":
+		send_job_failure_notification(job.name)
 
 
 def mark_stuck_updates_as_fatal():
@@ -586,6 +598,34 @@ def run_scheduled_updates():
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)
 			frappe.db.rollback()
+
+
+def send_job_failure_notification(job_name):
+	from press.press.doctype.press_notification.press_notification import (
+		create_new_notification,
+	)
+
+	job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
+	notification_type, message = "", ""
+
+	if job_type == "Update Site Migrate":
+		notification_type = "Site Migrate"
+		message = f"Site <b>{job_site}</b> failed to migrate"
+	elif job_type == "Update Site Pull":
+		notification_type = "Site Update"
+		message = f"Site <b>{job_site}</b> failed to update"
+	elif job_type.startswith("Recover Failed"):
+		notification_type = "Site Recovery"
+		message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
+
+	if notification_type:
+		create_new_notification(
+			frappe.get_value("Site", job_site, "team"),
+			notification_type,
+			"Agent Job",
+			job_name,
+			message,
+		)
 
 
 def on_doctype_update():
