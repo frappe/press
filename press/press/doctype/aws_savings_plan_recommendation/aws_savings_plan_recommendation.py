@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -8,7 +9,7 @@ from frappe.model.document import Document
 from frappe.utils import cint, flt
 
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-
+from press.utils import log_error
 
 AWS_HOURS_IN_A_MONTH = 730
 
@@ -49,6 +50,9 @@ class AWSSavingsPlanRecommendation(Document):
 		).replace(tzinfo=None)
 
 		recommendation = response["SavingsPlansPurchaseRecommendation"]
+		if not recommendation:
+			return
+
 		self.lookback_period = recommendation["LookbackPeriodInDays"]
 		self.payment_option = recommendation["PaymentOption"]
 		self.term = recommendation["TermInYears"]
@@ -65,9 +69,7 @@ class AWSSavingsPlanRecommendation(Document):
 		self.savings_percentage = flt(details["EstimatedSavingsPercentage"])
 		self.hourly_on_demand_spend = flt(details["CurrentAverageHourlyOnDemandSpend"])
 		self.monthly_on_demand_spend = self.hourly_on_demand_spend * AWS_HOURS_IN_A_MONTH
-		self.monthly_savings_amount = (
-			self.monthly_on_demand_spend * self.savings_percentage / 100
-		)
+		self.monthly_savings_amount = self.monthly_on_demand_spend * self.savings_percentage / 100
 
 		self.roi_percentage = self.monthly_savings_amount / self.monthly_commitment * 100
 
@@ -100,19 +102,18 @@ ROI Percentage: {cint(self.roi_percentage)} %"""
 	@property
 	def client(self):
 		settings = frappe.get_single("Press Settings")
-		client = boto3.client(
+		return boto3.client(
 			"ce",
 			region_name="us-east-1",
 			aws_access_key_id=settings.aws_access_key_id,
 			aws_secret_access_key=settings.get_password("aws_secret_access_key"),
 		)
-		return client
 
 	def generate_recommendation(self):
 		self.client.start_savings_plans_purchase_recommendation_generation()
 
 	def get_recommendation(self):
-		response = self.client.get_savings_plans_purchase_recommendation(
+		return self.client.get_savings_plans_purchase_recommendation(
 			SavingsPlansType="COMPUTE_SP",
 			TermInYears="THREE_YEARS",
 			PaymentOption="NO_UPFRONT",
@@ -143,5 +144,4 @@ def create():
 	except frappe.DuplicateEntryError:
 		pass
 	except Exception:
-		# Ignore all exceptions till this works
-		pass
+		log_error("AWS Savings Plan Recommendation Error")
