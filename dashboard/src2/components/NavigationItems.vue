@@ -74,7 +74,7 @@ export default {
 							'Release Group List',
 							'Release Group Detail',
 							'New Release Group',
-							'Bench New Site',
+							'Bench Group New Site',
 							'Bench Deploy'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),

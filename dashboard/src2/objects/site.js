@@ -96,7 +96,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench',
+					label: 'Bench Group',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group'
@@ -180,7 +180,7 @@ export default {
 				}
 			},
 			{
-				label: 'Bench',
+				label: 'Bench Group',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {

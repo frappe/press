@@ -119,7 +119,10 @@ const rolePermissions = ref({
 	columns: [
 		{
 			label: computed(() =>
-				currentDropdownOption.value.doctype.replace('Release Group', 'Bench')
+				currentDropdownOption.value.doctype.replace(
+					'Release Group',
+					'Bench Group'
+				)
 			),
 			format(_value, row) {
 				return (
@@ -175,7 +178,7 @@ const rolePermissions = ref({
 							{
 								label: `Select ${currentDropdownOption.value.doctype.replace(
 									'Release Group',
-									'Bench'
+									'Bench Group'
 								)}`,
 								type: 'link',
 								fieldname: 'document_name',
