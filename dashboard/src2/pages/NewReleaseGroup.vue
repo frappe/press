@@ -158,7 +158,7 @@ import Header from '../components/Header.vue';
 import { DashboardError } from '../utils/error';
 
 export default {
-	name: 'NewBench',
+	name: 'NewReleaseGroup',
 	components: {
 		Summary,
 		Header
