@@ -282,7 +282,7 @@ class VirtualMachine(Document):
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
-		for doctype in self.server_doctypes:
+		for doctype in server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
@@ -545,7 +545,7 @@ class VirtualMachine(Document):
 			"Terminated": "Archived",
 			"Stopped": "Pending",
 		}
-		for doctype in self.server_doctypes:
+		for doctype in server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]
