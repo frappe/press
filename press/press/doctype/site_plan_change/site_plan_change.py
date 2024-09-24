@@ -50,8 +50,14 @@ class SitePlanChange(Document):
 			self.from_plan = ""
 
 	def after_insert(self):
-		dispatch_webhook_event("Site Plan Change", self, self.team)
-		dispatch_webhook_event("Site Plan Change", self, frappe.db.get_value("Site", self.site, "owner"))
+		if self.team != "Administrator":
+			dispatch_webhook_event("Site Plan Change", self, self.team)
+
+			owner = frappe.db.get_value("Site", self.site, "owner")
+			if owner != "Administrator" and owner != self.team:
+				dispatch_webhook_event(
+					"Site Plan Change", self, frappe.db.get_value("Site", self.site, "owner")
+				)
 
 		if self.type == "Initial Plan":
 			self.create_subscription()
