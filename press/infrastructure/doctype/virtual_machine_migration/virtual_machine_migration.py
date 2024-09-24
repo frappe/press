@@ -48,6 +48,8 @@ class VirtualMachineMigration(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
+		self.validate_aws_only()
+		self.validate_existing_migration()
 		self.add_steps()
 		self.add_volumes()
 		self.create_machine_copy()
@@ -83,6 +85,23 @@ class VirtualMachineMigration(Document):
 
 		copied_machine = frappe.copy_doc(self.machine)
 		copied_machine.insert(set_name=self.copied_virtual_machine)
+
+	def validate_aws_only(self):
+		if self.machine.cloud_provider != "AWS EC2":
+			frappe.throw("This feature is only available for AWS EC2")
+
+	def validate_existing_migration(self):
+		if existing := frappe.get_all(
+			self.doctype,
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"virtual_machine": self.virtual_machine,
+				"name": ("!=", self.name),
+			},
+			pluck="status",
+			limit=1,
+		):
+			frappe.throw(f"An existing migration is already {existing[0].lower()}.")
 
 	@property
 	def machine(self):
