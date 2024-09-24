@@ -155,6 +155,11 @@ class VirtualMachineMigration(Document):
 				"step": self.attach_volumes.__doc__,
 				"method": self.attach_volumes.__name__,
 			},
+			{
+				"step": self.wait_for_machine_to_be_accessible.__doc__,
+				"method": self.wait_for_machine_to_be_accessible.__name__,
+				"wait_for_completion": True,
+			},
 		]
 
 	def stop_machine(self) -> StepStatus:
@@ -250,6 +255,22 @@ class VirtualMachineMigration(Document):
 				self.add_comment(text=f"Error attaching volume {volume.volume_id}: {e}")
 		machine.sync()
 		return StepStatus.Success
+
+	def wait_for_machine_to_be_accessible(self):
+		"Wait for machine to be accessible"
+		server = self.machine.get_server()
+		server.ping_ansible()
+
+		plays = frappe.get_all(
+			"Ansible Play",
+			{"server": server.name, "play": "Ping Server"},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if plays and plays[0].status == "Success":
+			return StepStatus.Success
+		return StepStatus.Pending
 
 	def execute(self):
 		self.status = "Running"
