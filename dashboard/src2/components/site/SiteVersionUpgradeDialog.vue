@@ -13,7 +13,7 @@
 				<FormControl
 					v-else-if="privateReleaseGroups.length > 0 && nextVersion"
 					variant="outline"
-					:label="`Please select a ${nextVersion} bench to upgrade your site from ${$site.doc.version}`"
+					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
 					type="autocomplete"
 					:options="privateReleaseGroups"
@@ -132,9 +132,9 @@ export default {
 			else if (!this.privateReleaseGroup.value) {
 				return '';
 			} else if (!this.$site.doc?.group_public && !this.benchHasCommonServer)
-				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
+				return `The selected bench group and your site doesn't have a common server. Please add site's server to the bench.`;
 			else if (!this.$site.doc?.group_public && this.benchHasCommonServer)
-				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
+				return `The selected bench group and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
 			else return '';
 		},
 		datetimeInIST() {
@@ -203,7 +203,7 @@ export default {
 				},
 				onSuccess(data) {
 					toast.success('Server Added to the Bench', {
-						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the bench to complete the deploy.`
+						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`
 					});
 					this.$router.push({
 						name: 'Bench Job',

@@ -60,7 +60,7 @@
 					class="mt-4 text-sm text-gray-600"
 				>
 					If the region you're looking for isn't available, please add from the
-					Bench dashboard.
+					Bench Group dashboard.
 				</p>
 			</div>
 			<ErrorMessage class="mt-3" :message="$resources.changeRegion.error" />

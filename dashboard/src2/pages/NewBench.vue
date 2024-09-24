@@ -99,7 +99,7 @@
 			</div>
 			<div v-if="benchVersion && (benchRegion || server)" class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
-					Enter Bench Title
+					Enter Bench Group Title
 				</h2>
 				<div class="mt-2">
 					<FormControl v-model="benchTitle" type="text" />
@@ -188,7 +188,7 @@ export default {
 				url: 'press.api.bench.new',
 				validate() {
 					if (!this.benchTitle) {
-						throw new DashboardError('Bench Title cannot be blank');
+						throw new DashboardError('Bench Group Title cannot be blank');
 					}
 					if (!this.benchVersion) {
 						throw new DashboardError('Select a version to create bench');

@@ -98,7 +98,7 @@ export default {
 				this.targetServer.value &&
 				!this.$resources.isServerAddedInGroup.data
 			) {
-				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
+				return "The chosen server isn't added to the bench group yet. Please add the server to the bench groupfirst.";
 			} else if (
 				this.targetServer.value &&
 				this.$resources.isServerAddedInGroup.data

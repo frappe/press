@@ -439,7 +439,7 @@ export default {
 						if (releaseGroup.doc.are_builds_suspended) {
 							return {
 								title:
-									'<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume.',
+									'<b>Builds Suspended:</b> updates will be scheduled to run when builds resume.',
 								type: 'warning'
 							};
 						} else {
@@ -505,7 +505,7 @@ export default {
 							onClick() {
 								if (bench.doc.deploy_information.deploy_in_progress) {
 									return toast.error(
-										'Another deploy is in progress. Please wait for it to complete.'
+										'Deploy is in progress. Please wait for it to complete.'
 									);
 								} else if (bench.doc.deploy_information.update_available) {
 									let UpdateBenchDialog = defineAsyncComponent(() =>
@@ -525,16 +525,16 @@ export default {
 									);
 								} else {
 									confirmDialog({
-										title: 'Deploy Bench',
+										title: 'Deploy without app updates?',
 										message:
-											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
+											'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
 										onSuccess: ({ hide }) => {
 											toast.promise(bench.redeploy.submit(), {
 												loading: 'Deploying...',
 												success: () => {
 													hide();
 													deploys.reload();
-													return 'Bench Deployed';
+													return 'Changes Deployed';
 												},
 												error: e => {
 													return e.messages.length
@@ -977,8 +977,8 @@ export default {
 							);
 						} else {
 							confirmDialog({
-								title: 'Deploy Bench',
-								message: "Let's deploy this bench now?",
+								title: 'Deploy',
+								message: "Let's deploy now?",
 								onSuccess({ hide }) {
 									toast.promise(
 										bench.initialDeploy.submit(null, {
@@ -988,9 +988,9 @@ export default {
 											}
 										}),
 										{
-											success: 'Bench deploy scheduled successfully',
-											error: 'Failed to schedule a bench deploy',
-											loading: 'Scheduling a bench deploy...'
+											success: 'Deploy scheduled successfully',
+											error: 'Failed to schedule deploy',
+											loading: 'Scheduling deploy...'
 										}
 									);
 								}
