@@ -14,6 +14,9 @@ class CurrencyExchange(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-
+		date: DF.Date
+		exchange_rate: DF.Float
+		from_currency: DF.Link
+		to_currency: DF.Link
 	# end: auto-generated types
 	pass

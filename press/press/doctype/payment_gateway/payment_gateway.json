@@ -12,6 +12,10 @@
   "gateway",
   "ui_configuration_section",
   "integration_logo",
+  "column_break_jcag",
+  "gateway_settings",
+  "column_break_noki",
+  "gateway_controller",
   "partner_integration_section",
   "url",
   "column_break_oefu",
@@ -35,6 +39,7 @@
   {
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Team",
    "options": "Team"
   },
@@ -95,11 +100,32 @@
    "fieldname": "integration_logo",
    "fieldtype": "Attach Image",
    "label": "Integration Logo"
+  },
+  {
+   "fieldname": "column_break_jcag",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gateway_settings",
+   "fieldtype": "Link",
+   "label": "Gateway Settings",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "column_break_noki",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gateway_controller",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Gateway Controller",
+   "options": "gateway_settings"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-17 15:39:34.507841",
+ "modified": "2024-09-24 16:57:14.240442",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Gateway",

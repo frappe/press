@@ -23,7 +23,6 @@
   
       <ErrorMessage class="mt-2" :message="errorMessage" />
   
-        <!-- Select field for Partner -->
      <!-- Select field for Partner -->
      <label for="partner" class="block mb-2 text-sm text-gray-700">Partner</label>
     <select 
@@ -36,7 +35,19 @@
       </option>
     </select>
 
-  
+  <!--select-->
+  <!-- <div class="p-2">
+  <FormControl
+    type="autocomplete"
+    :options="PartnerResources.fetch()"
+    size="sm"
+    variant="subtle"
+    placeholder="Placeholder"
+    :disabled="false"
+    label="Label"
+    v-model="autocompleteValue"
+  />
+</div> -->
       <!-- Input field for M-Pesa Phone Number using FormControl -->
       <FormControl
         label="M-Pesa Phone Number"
@@ -87,6 +98,8 @@
   <script>
   import { toast } from 'vue-sonner';
   import { DashboardError } from '../utils/error';
+  import { ErrorMessage} from 'frappe-ui';
+  import {createListResource} from 'frappe-ui';
 
   export default {
     name: 'BuyPrepaidCreditMpesa',
@@ -113,18 +126,33 @@
       paymentErrorMessage: null,
       errorMessage: null,
       paymentInProgress: false,
-      partnerInput: '', // initialize partner input
-      phoneNumberInput: '', // initialize phone number input
-      taxIdInput: '', // initialize tax id input
-      partners: ['Administrator', 'Partner B', 'Partner C'] // Dummy data for partners
+      partnerInput: '', 
+      phoneNumberInput: '', 
+      taxIdInput: '', 
+      partners: ['Administrator', 'Partner B', 'Partner C'], 
+      PartnerResources: createListResource({
+        doctype: 'Team',
+        fields: ['user'],
+        filters: { enabled: 1, country:'Kenya' },
+        auto: true
+      })
     };
   },
 
-  // async mounted(){
-  //   try{
 
-  //       await this.$resources.fetchMpesaPartners.load();
-  //   }catch(error){
+  //  async mounted() {
+  //   try {
+  //     // Fetch the partners from the resource
+  //     console.log("Hapa", this.PartnerResources.fetch())
+  //     this.partnerOptions=["Mania"]
+  //     const partnersData = await this.PartnerResources.fetch();
+  //     // Map the fetched data into a format suitable for the autocomplete field
+  //     this.partnerOptions = partnersData.map(partner => ({
+  //       label: partner.user, // Adjust according to the field you're fetching
+  //       value: partner.user
+  //     }));
+  //     console.log("Data", this.partnerOptions)
+  //   } catch (error) {
   //     this.errorMessage = error.message || 'Failed to load partners details';
   //   }
   // },
@@ -134,9 +162,9 @@
       return {
         url: 'press.api.billing.request_for_payment',
         params: {
-          request_amount: this.amountKES, // use amount in KES
-          sender: this.phoneNumberInput, // use input value for phone number
-          partner: this.partnerInput, // use input value for partner
+          request_amount: this.amountKES, 
+          sender: this.phoneNumberInput, 
+          partner: this.partnerInput, 
           tax_id:this.taxIdInput
         },
         validate() {
@@ -160,22 +188,10 @@
         }
       };
     },
-
-    // fetchMpesaPartners(){
-    //   return{
-    //     url: 'press.api.billing.display_mpesa_payment_partners',
-    //     async onSuccess(data){
-    //       this.partners = data || [];
-    //     },
-    //     validate(){
-    //       // No validation needed
-    //     }
-    //   };
-      
-    // }
   },
 
   methods: {
+  
     async onPayClick() {
   this.paymentInProgress = true;
   try {
@@ -202,3 +218,4 @@
 };
 </script>
   
+

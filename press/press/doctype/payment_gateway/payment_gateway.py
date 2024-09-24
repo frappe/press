@@ -18,6 +18,8 @@ class PaymentGateway(Document):
 		api_secret: DF.Password | None
 		currency: DF.Link | None
 		gateway: DF.Data | None
+		gateway_controller: DF.DynamicLink | None
+		gateway_settings: DF.Link | None
 		integration_logo: DF.AttachImage | None
 		taxes_and_charges: DF.Percent
 		team: DF.Link | None

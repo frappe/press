@@ -109,6 +109,24 @@
 					alt="Stripe Logo"
 				/>
 			</button>
+
+			<!--M-Pesa button-->
+			<button 
+			@click="paymentGateway = 'Mpesa'"
+			label="Mpesa"
+			class="flex h-10 items-center justify-center rounded border"
+			:class="{
+				'border-gray-300': paymentGateway !== 'Mpesa',
+				'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Mpesa'
+			}"
+
+			>
+			<img
+					class="h-7 w-24"
+					:src="`/assets/press/images/mpesa.svg`"
+					alt="M-pesa Logo"
+				/>
+		</button>
 		</div>
 	</div>
 
@@ -144,6 +162,7 @@
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
+import BuyPrepaidCreditMpesa from './BuyPrepaidCreditMpesa.vue';
 
 export default {
 	name: 'BuyPrepaidCreditsDialog',
