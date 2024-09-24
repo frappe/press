@@ -1,10 +1,10 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Move Site to another Bench',
+			title: 'Move Site to another Bench Group',
 			actions: [
 				{
-					label: 'Change Bench',
+					label: 'Change Bench Group',
 					loading: $resources.changeGroup.loading,
 					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
@@ -16,7 +16,7 @@
 						})
 				},
 				{
-					label: 'Clone current Bench',
+					label: 'Clone current Bench Group',
 					onClick: () => {
 						$emit('update:modelValue', false);
 						showCloneBenchDialog = true;
@@ -37,7 +37,7 @@
 			>
 				<FormControl
 					variant="outline"
-					label="Select Bench"
+					label="Select Bench Group"
 					type="select"
 					:options="
 						$resources.changeGroupOptions.data.map(group => ({
@@ -54,18 +54,18 @@
 				/>
 			</div>
 			<p v-else-if="!errorMessage" class="text-md text-base text-gray-800">
-				There are no other benches that you own for this site to move to. You
-				can clone this bench to move the site.
+				There are no other bench groups that you own for this site to move to.
+				You can clone this bench group to move the site.
 			</p>
 			<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
 	<Dialog
 		:options="{
-			title: 'Clone Bench',
+			title: 'Clone Bench Group',
 			actions: [
 				{
-					label: 'Clone Bench',
+					label: 'Clone Bench Group',
 					variant: 'solid',
 					loading: $resources.cloneGroup.loading,
 					onClick: () =>
@@ -79,7 +79,7 @@
 		v-model="showCloneBenchDialog"
 	>
 		<template #body-content>
-			<FormControl label="New Bench Name" v-model="newGroupTitle" />
+			<FormControl label="New Bench Group Name" v-model="newGroupTitle" />
 			<ErrorMessage :message="$resources.cloneGroup.error" />
 		</template>
 	</Dialog>
@@ -128,7 +128,7 @@ export default {
 						).title;
 
 					notify({
-						title: 'Scheduled Bench Change',
+						title: 'Scheduled Bench Group Change',
 						message: `Site scheduled to be moved to <b>${destinationGroupTitle}</b>`,
 						color: 'green',
 						icon: 'check'
@@ -156,8 +156,8 @@ export default {
 				url: 'press.api.site.clone_group',
 				onSuccess(data) {
 					notify({
-						title: 'Cloned Bench',
-						message: `The current bench has been cloned successfully. Redirecting to the new bench...`,
+						title: 'Cloned Bench Group',
+						message: `The current bench group has been cloned successfully. Redirecting to the new bench group...`,
 						color: 'green',
 						icon: 'check'
 					});

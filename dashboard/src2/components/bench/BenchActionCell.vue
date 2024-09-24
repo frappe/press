@@ -42,9 +42,9 @@ const releaseGroup = getCachedDocumentResource(
 
 function getBenchActionHandler(action) {
 	const actionHandlers = {
-		'Rename Bench': onRenameBench,
-		'Transfer Bench': onTransferBench,
-		'Drop Bench': onDropBench
+		'Rename Bench Group': onRenameBench,
+		'Transfer Bench Group': onTransferBench,
+		'Drop Bench Group': onDropBench
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
