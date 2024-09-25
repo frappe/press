@@ -26,6 +26,7 @@ def create_webhook_event(event: str, payload: dict | Document, team: str) -> boo
 				"data": data,
 			},
 			default=str,
+			indent=4,
 		)
 
 		# Check if team has configured webhook against this event
@@ -72,6 +73,9 @@ def _process_document_payload(payload: Document):
 	if hasattr(payload, "get_doc"):
 		result = payload.get_doc(_doc)
 		if isinstance(result, dict):
+			# if doctype is Site, remove `actions` key
+			if payload.doctype == "Site":
+				result.pop("actions", None)
 			_doc.update(result)
 
 	return _doc
