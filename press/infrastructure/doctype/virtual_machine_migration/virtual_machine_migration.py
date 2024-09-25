@@ -39,6 +39,7 @@ class VirtualMachineMigration(Document):
 		end: DF.Datetime | None
 		machine_type: DF.Data
 		name: DF.Int | None
+		root_volume_replacement_task_id: DF.Data | None
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
@@ -52,7 +53,6 @@ class VirtualMachineMigration(Document):
 		self.validate_existing_migration()
 		self.add_steps()
 		self.add_volumes()
-		self.create_machine_copy()
 
 	def after_insert(self):
 		self.execute()
@@ -74,17 +74,6 @@ class VirtualMachineMigration(Document):
 					"device_name": f"/dev/sd{device_name_index}",
 				},
 			)
-
-	def create_machine_copy(self):
-		# Create a copy of the current machine
-		# So we don't lose the instance ids
-		self.copied_virtual_machine = f"{self.virtual_machine}-copy"
-
-		if frappe.db.exists("Virtual Machine", self.copied_virtual_machine):
-			frappe.delete_doc("Virtual Machine", self.copied_virtual_machine)
-
-		copied_machine = frappe.copy_doc(self.machine)
-		copied_machine.insert(set_name=self.copied_virtual_machine)
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
@@ -115,36 +104,13 @@ class VirtualMachineMigration(Document):
 	def migration_steps(self):
 		return [
 			{
-				"step": self.stop_machine.__doc__,
-				"method": self.stop_machine.__name__,
+				"step": self.replace_root_volume.__doc__,
+				"method": self.replace_root_volume.__name__,
+			},
+			{
+				"step": self.wait_for_volume_replacement.__doc__,
+				"method": self.wait_for_volume_replacement.__name__,
 				"wait_for_completion": True,
-			},
-			{
-				"step": self.wait_for_machine_to_stop.__doc__,
-				"method": self.wait_for_machine_to_stop.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.disable_delete_on_termination_for_all_volumes.__doc__,
-				"method": self.disable_delete_on_termination_for_all_volumes.__name__,
-			},
-			{
-				"step": self.terminate_previous_machine.__doc__,
-				"method": self.terminate_previous_machine.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.wait_for_previous_machine_to_terminate.__doc__,
-				"method": self.wait_for_previous_machine_to_terminate.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.reset_virtual_machine_attributes.__doc__,
-				"method": self.reset_virtual_machine_attributes.__name__,
-			},
-			{
-				"step": self.provision_new_machine.__doc__,
-				"method": self.provision_new_machine.__name__,
 			},
 			{
 				"step": self.wait_for_machine_to_start.__doc__,
@@ -162,74 +128,26 @@ class VirtualMachineMigration(Document):
 			},
 		]
 
-	def stop_machine(self) -> StepStatus:
-		"Stop machine"
+	def replace_root_volume(self) -> StepStatus:
+		"Replace root volume"
 		machine = self.machine
-		machine.sync()
-		if machine.status == "Stopped":
-			return StepStatus.Success
-		if machine.status == "Pending":
-			return StepStatus.Pending
-		machine.stop()
+		image_id = frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "image_id")
+		response = machine.client().create_replace_root_volume_task(
+			InstanceId=machine.instance_id, ImageId=image_id, DeleteReplacedRootVolume=False
+		)
+		self.root_volume_replacement_task_id = response["ReplaceRootVolumeTasks"]["ReplaceRootVolumeTaskId"]
 		return StepStatus.Success
 
-	def wait_for_machine_to_stop(self) -> StepStatus:
-		"Wait for machine to stop"
-		# We need to make sure the machine is stopped before we proceed
-		machine = self.machine
-		machine.sync()
-		if machine.status == "Stopped":
+	def wait_for_volume_replacement(self) -> StepStatus:
+		"Wait for volume replacement"
+		response = self.machine.client().describe_replace_root_volume_tasks(
+			ReplaceRootVolumeTaskIds=[
+				self.root_volume_replacement_task_id,
+			],
+		)
+		if response["ReplaceRootVolumeTasks"]["TaskState"] == "succeeded":
 			return StepStatus.Success
 		return StepStatus.Pending
-
-	def disable_delete_on_termination_for_all_volumes(self) -> StepStatus:
-		"Disable Delete-on-Termination for all volumes"
-		# After this we can safely terminate the instance without losing any data
-		copied_machine = self.copied_machine
-		if copied_machine.volumes:
-			copied_machine.disable_delete_on_termination_for_all_volumes()
-		return StepStatus.Success
-
-	def terminate_previous_machine(self) -> StepStatus:
-		"Terminate previous machine"
-		copied_machine = self.copied_machine
-		if copied_machine.status == "Terminated":
-			return StepStatus.Success
-		if copied_machine.status == "Pending":
-			return StepStatus.Pending
-
-		copied_machine.disable_termination_protection()
-		copied_machine.reload()
-		copied_machine.terminate()
-		return StepStatus.Success
-
-	def wait_for_previous_machine_to_terminate(self) -> StepStatus:
-		"Wait for previous machine to terminate"
-		# Private ip address is released when the machine is terminated
-		copied_machine = self.copied_machine
-		copied_machine.sync()
-		if copied_machine.status == "Terminated":
-			return StepStatus.Success
-		return StepStatus.Pending
-
-	def reset_virtual_machine_attributes(self) -> StepStatus:
-		"Reset virtual machine attributes"
-		machine = self.machine
-		machine.instance_id = None
-		machine.public_ip_address = None
-		machine.volumes = []
-
-		# Set new machine image and machine type
-		machine.virtual_machine_image = self.virtual_machine_image
-		machine.machine_type = self.machine_type
-		machine.save()
-		return StepStatus.Success
-
-	def provision_new_machine(self) -> StepStatus:
-		"Provision new machine"
-		# Create new machine in place. So we retain Name, IP etc.
-		self.machine._provision_aws()
-		return StepStatus.Success
 
 	def wait_for_machine_to_start(self) -> StepStatus:
 		"Wait for new machine to start"
