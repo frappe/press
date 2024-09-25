@@ -144,6 +144,7 @@ has_permission = {
 	"Database Server": "press.overrides.has_permission",
 	"Press Webhook": "press.overrides.has_permission",
 	"Press Webhook Log": "press.overrides.has_permission",
+	"Press Webhook Attempt": "press.press.doctype.press_webhook_attempt.press_webhook_attempt.has_permission",
 }
 
 # Document Events
@@ -234,7 +235,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
-			"press.press.doctype.press_webhook_queue.press_webhook_queue.process_webhook_queue",
+			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
 		"0 */6 * * *": [

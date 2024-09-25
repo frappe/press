@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import frappe
 
 
@@ -39,3 +41,37 @@ def update(name: str, endpoint: str, secret: str, events: list[str]):
 	for event in events:
 		doc.append("events", {"event": event})
 	doc.save()
+
+
+@frappe.whitelist()
+def attempts(webhook: str):
+	doc = frappe.get_doc("Press Webhook", webhook)
+	doc.has_permission("read")
+
+	PressWebhookAttempt = frappe.qb.DocType("Press Webhook Attempt")
+	PressWebhookLog = frappe.qb.DocType("Press Webhook Log")
+	query = (
+		frappe.qb.from_(PressWebhookAttempt)
+		.select(
+			PressWebhookAttempt.name,
+			PressWebhookAttempt.endpoint,
+			PressWebhookLog.event,
+			PressWebhookAttempt.status,
+			PressWebhookAttempt.response_status_code,
+			PressWebhookAttempt.timestamp,
+		)
+		.left_join(PressWebhookLog)
+		.on(PressWebhookAttempt.parent == PressWebhookLog.name)
+		.where(PressWebhookAttempt.webhook == doc.name)
+		.orderby(PressWebhookAttempt.timestamp, order=frappe.qb.desc)
+	)
+	return query.run(as_dict=1)
+
+
+@frappe.whitelist()
+def attempt(name: str):
+	doc = frappe.get_doc("Press Webhook Attempt", name)
+	doc.has_permission("read")
+	data = doc.as_dict()
+	data.request_payload = json.loads(frappe.get_value("Press Webhook Log", doc.parent, "request_payload"))
+	return data

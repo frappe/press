@@ -7,7 +7,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from press.utils.webhook import dispatch_webhook_event
+from press.utils.webhook import create_webhook_event
 
 
 class SitePlanChange(Document):
@@ -51,11 +51,11 @@ class SitePlanChange(Document):
 
 	def after_insert(self):
 		if self.team != "Administrator":
-			dispatch_webhook_event("Site Plan Change", self, self.team)
+			create_webhook_event("Site Plan Change", self, self.team)
 
 			site_owner = frappe.db.get_value("Site", self.site, "owner")
 			if site_owner != "Administrator" and site_owner != self.team:
-				dispatch_webhook_event("Site Plan Change", self, site_owner)
+				create_webhook_event("Site Plan Change", self, site_owner)
 
 		if self.type == "Initial Plan":
 			self.create_subscription()

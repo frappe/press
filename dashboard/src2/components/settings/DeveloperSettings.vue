@@ -101,9 +101,9 @@
 					@success="onWebHookUpdated"
 					:webhook="selectedWebhook"
 				/>
-				<WebhookLogsDialog
-					v-if="showWebhookLogs"
-					v-model="showWebhookLogs"
+				<WebhookAttemptsDialog
+					v-if="showWebhookAttempts"
+					v-model="showWebhookAttempts"
 					:name="selectedWebhook.name"
 				/>
 			</div>
@@ -124,7 +124,7 @@ import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 import EditWebhookDialog from './EditWebhookDialog.vue';
 import { useRouter } from 'vue-router';
-import WebhookLogsDialog from './WebhookLogsDialog.vue';
+import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue';
 
 const $team = getTeam();
 const router = useRouter();
@@ -132,7 +132,7 @@ let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
 const showActivateWebhookDialog = ref(false);
 const showEditWebhookDialog = ref(false);
-const showWebhookLogs = ref(false);
+const showWebhookAttempts = ref(false);
 const selectedWebhook = ref(null);
 
 const createSecret = createResource({
@@ -362,6 +362,7 @@ const webhookListOptions = computed(() => ({
 						primaryAction: {
 							label: 'Disable',
 							variant: 'solid',
+							theme: 'red',
 							onClick({ hide }) {
 								disableWebhook
 									.submit({
@@ -377,16 +378,17 @@ const webhookListOptions = computed(() => ({
 									.catch(error => {
 										toast.error(error.message);
 									});
+								return disableWebhook.promise;
 							}
 						}
 					});
 				}
 			},
 			{
-				label: 'View Logs',
+				label: 'Attempts',
 				onClick: () => {
 					selectedWebhook.value = row;
-					showWebhookLogs.value = true;
+					showWebhookAttempts.value = true;
 				}
 			},
 			{
@@ -399,9 +401,23 @@ const webhookListOptions = computed(() => ({
 			{
 				label: 'Delete',
 				onClick() {
-					deleteWebhook.submit({
-						doctype: 'Press Webhook',
-						name: row.name
+					confirmDialog({
+						title: 'Delete Webhook',
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook ?<br>`,
+						primaryAction: {
+							label: 'Delete',
+							variant: 'solid',
+							theme: 'red',
+							onClick({ hide }) {
+								deleteWebhook
+									.submit({
+										doctype: 'Press Webhook',
+										name: row.name
+									})
+									.then(hide);
+								return deleteWebhook.promise;
+							}
+						}
 					});
 				}
 			}
