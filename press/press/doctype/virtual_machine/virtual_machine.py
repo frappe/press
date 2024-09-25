@@ -514,6 +514,8 @@ class VirtualMachine(Document):
 				row.volume_type = volume["VolumeType"]
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
+				row.device = volume["Attachments"][0]["Device"]
+
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
 
