@@ -198,11 +198,7 @@ def process():
 
 
 def clean_logs_older_than_24_hours():
-	return
-	# TODO: remove child table webhook attempts as well
-	frappe.db.sql(
-		"""
-		DELETE FROM `tabPress Webhook Log`
-		WHERE creation < NOW() - INTERVAL 24 HOUR
-		"""
+	names = frappe.get_all(
+		"Press Webhook Log", filters={"creation": ["<", frappe.utils.add_days(None, -1)]}, pluck="name"
 	)
+	frappe.delete_doc("Press Webhook Log", names)
