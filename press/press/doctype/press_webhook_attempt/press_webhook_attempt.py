@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import frappe
 from frappe.model.document import Document
 
 
@@ -25,3 +26,9 @@ class PressWebhookAttempt(Document):
 		timestamp: DF.Datetime
 		webhook: DF.Link
 	# end: auto-generated types
+
+
+def has_permission(doc, ptype, user):
+	if ptype != "read":
+		return False
+	return frappe.get_doc("Press Webhook", doc.webhook).has_permission("read", user)

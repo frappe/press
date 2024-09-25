@@ -144,6 +144,7 @@ has_permission = {
 	"Database Server": "press.overrides.has_permission",
 	"Press Webhook": "press.overrides.has_permission",
 	"Press Webhook Log": "press.overrides.has_permission",
+	"Press Webhook Attempt": "press.overrides.has_permission",
 }
 
 # Document Events
