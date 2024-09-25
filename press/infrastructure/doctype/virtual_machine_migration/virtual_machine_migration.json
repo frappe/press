@@ -11,7 +11,6 @@
   "virtual_machine_image",
   "machine_type",
   "copied_virtual_machine",
-  "root_volume_replacement_task_id",
   "column_break_tjrh",
   "start",
   "end",
@@ -114,17 +113,11 @@
    "fieldtype": "Duration",
    "label": "Duration",
    "read_only": 1
-  },
-  {
-   "fieldname": "root_volume_replacement_task_id",
-   "fieldtype": "Data",
-   "label": "Root Volume Replacement Task ID",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-25 12:16:12.257390",
+ "modified": "2024-09-20 15:27:50.984335",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration",
