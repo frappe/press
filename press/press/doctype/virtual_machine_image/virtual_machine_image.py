@@ -21,6 +21,10 @@ class VirtualMachineImage(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_image_volume.virtual_machine_image_volume import (
+			VirtualMachineImageVolume,
+		)
+
 		cluster: DF.Link
 		copied_from: DF.Link | None
 		image_id: DF.Data | None
@@ -34,6 +38,7 @@ class VirtualMachineImage(Document):
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]
 		virtual_machine: DF.Link
+		volumes: DF.Table[VirtualMachineImageVolume]
 	# end: auto-generated types
 
 	DOCTYPE = "Virtual Machine Image"
@@ -83,7 +88,7 @@ class VirtualMachineImage(Document):
 			)
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self):  # noqa: C901
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
@@ -92,10 +97,34 @@ class VirtualMachineImage(Document):
 				self.status = self.get_aws_status_map(image["State"])
 				self.platform = image["Architecture"]
 				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
+				# This information is not accurate for images created from multiple volumes
 				if volume and "VolumeSize" in volume["Ebs"]:
 					self.size = volume["Ebs"]["VolumeSize"]
 				if volume and "SnapshotId" in volume["Ebs"]:
 					self.snapshot_id = volume["Ebs"]["SnapshotId"]
+				for volume in image["BlockDeviceMappings"]:
+					if "Ebs" not in volume:
+						# We don't care about non-EBS (instance store) volumes
+						continue
+					snapshot_id = volume["Ebs"]["SnapshotId"]
+					existing = find(self.volumes, lambda x: x.snapshot_id == snapshot_id)
+					device = volume["DeviceName"]
+					volume_type = volume["Ebs"]["VolumeType"]
+					size = volume["Ebs"]["VolumeSize"]
+					if existing:
+						existing.device = device
+						existing.volume_type = volume_type
+						existing.size = size
+					elif "Ebs":
+						self.append(
+							"volumes",
+							{
+								"snapshot_id": snapshot_id,
+								"device": device,
+								"volume_type": volume_type,
+								"size": size,
+							},
+						)
 			else:
 				self.status = "Unavailable"
 		elif cluster.cloud_provider == "OCI":

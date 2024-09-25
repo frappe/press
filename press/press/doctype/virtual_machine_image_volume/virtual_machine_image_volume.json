@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-09-25 14:07:29.049839",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "snapshot_id",
+  "device",
+  "column_break_ygbk",
+  "volume_type",
+  "size"
+ ],
+ "fields": [
+  {
+   "fieldname": "volume_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Volume Type",
+   "options": "gp3\ngp2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ygbk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Snapshot ID",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-25 14:23:33.386098",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Machine Image Volume",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
