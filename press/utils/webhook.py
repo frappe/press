@@ -10,7 +10,7 @@ from frappe.model import default_fields
 from frappe.model.document import Document
 
 
-def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> bool:
+def create_webhook_event(event: str, payload: dict | Document, team: str) -> bool:
 	try:
 		data = {}
 		if isinstance(payload, dict):
@@ -46,7 +46,7 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 		if result and result[0].get("count") > 0:
 			frappe.get_doc(
 				{
-					"doctype": "Press Webhook Queue",
+					"doctype": "Press Webhook Log",
 					"status": "Pending",
 					"event": event,
 					"team": team,

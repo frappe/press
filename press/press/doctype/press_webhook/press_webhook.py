@@ -168,7 +168,7 @@ def auto_disable_high_delivery_failure_webhooks():
 	data = frappe.db.sql(
 		"""
 SELECT `endpoint`
-FROM `tabPress Webhook Log`
+FROM `tabPress Webhook Attempt`
 WHERE `creation` >= NOW() - INTERVAL 1 HOUR
 GROUP BY `endpoint`
 HAVING (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;
