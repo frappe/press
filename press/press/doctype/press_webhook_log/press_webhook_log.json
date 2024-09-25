@@ -9,14 +9,14 @@
   "event",
   "column_break_qqjj",
   "team",
-  "section_break_bkbk",
-  "request_payload",
-  "section_break_wqvc",
-  "attempts",
   "section_break_vyzs",
   "retries",
   "column_break_btzb",
-  "next_retry_at"
+  "next_retry_at",
+  "section_break_wqvc",
+  "attempts",
+  "section_break_bkbk",
+  "request_payload"
  ],
  "fields": [
   {
@@ -76,7 +76,7 @@
   },
   {
    "fieldname": "request_payload",
-   "fieldtype": "Small Text",
+   "fieldtype": "JSON",
    "label": "Request Payload",
    "reqd": 1
   },
@@ -89,7 +89,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-24 17:24:25.393936",
+ "modified": "2024-09-25 16:11:01.102311",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Log",
