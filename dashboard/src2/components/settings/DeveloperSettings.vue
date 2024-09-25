@@ -101,9 +101,9 @@
 					@success="onWebHookUpdated"
 					:webhook="selectedWebhook"
 				/>
-				<WebhookLogsDialog
-					v-if="showWebhookLogs"
-					v-model="showWebhookLogs"
+				<WebhookAttemptsDialog
+					v-if="showWebhookAttempts"
+					v-model="showWebhookAttempts"
 					:name="selectedWebhook.name"
 				/>
 			</div>
@@ -124,7 +124,7 @@ import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
 import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 import EditWebhookDialog from './EditWebhookDialog.vue';
 import { useRouter } from 'vue-router';
-import WebhookLogsDialog from './WebhookLogsDialog.vue';
+import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue';
 
 const $team = getTeam();
 const router = useRouter();
@@ -132,7 +132,7 @@ let showCreateSecretDialog = ref(false);
 const showAddWebhookDialog = ref(false);
 const showActivateWebhookDialog = ref(false);
 const showEditWebhookDialog = ref(false);
-const showWebhookLogs = ref(false);
+const showWebhookAttempts = ref(false);
 const selectedWebhook = ref(null);
 
 const createSecret = createResource({
@@ -383,10 +383,10 @@ const webhookListOptions = computed(() => ({
 				}
 			},
 			{
-				label: 'View Logs',
+				label: 'Attempts',
 				onClick: () => {
 					selectedWebhook.value = row;
-					showWebhookLogs.value = true;
+					showWebhookAttempts.value = true;
 				}
 			},
 			{
