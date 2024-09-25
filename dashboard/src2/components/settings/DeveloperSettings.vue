@@ -362,6 +362,7 @@ const webhookListOptions = computed(() => ({
 						primaryAction: {
 							label: 'Disable',
 							variant: 'solid',
+							theme: 'red',
 							onClick({ hide }) {
 								disableWebhook
 									.submit({
@@ -377,6 +378,7 @@ const webhookListOptions = computed(() => ({
 									.catch(error => {
 										toast.error(error.message);
 									});
+								return disableWebhook.promise;
 							}
 						}
 					});
@@ -399,9 +401,23 @@ const webhookListOptions = computed(() => ({
 			{
 				label: 'Delete',
 				onClick() {
-					deleteWebhook.submit({
-						doctype: 'Press Webhook',
-						name: row.name
+					confirmDialog({
+						title: 'Delete Webhook',
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook ?<br>`,
+						primaryAction: {
+							label: 'Delete',
+							variant: 'solid',
+							theme: 'red',
+							onClick({ hide }) {
+								deleteWebhook
+									.submit({
+										doctype: 'Press Webhook',
+										name: row.name
+									})
+									.then(hide);
+								return deleteWebhook.promise;
+							}
+						}
 					});
 				}
 			}
