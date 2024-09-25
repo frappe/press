@@ -370,14 +370,7 @@ const webhookListOptions = computed(() => ({
 										dn: row.name,
 										method: 'disable'
 									})
-									.then(() => {
-										toast.success('Webhook disabled successfully');
-										webhookListResource.reload();
-										hide();
-									})
-									.catch(error => {
-										toast.error(error.message);
-									});
+									.then(hide);
 								return disableWebhook.promise;
 							}
 						}
