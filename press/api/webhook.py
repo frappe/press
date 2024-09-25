@@ -44,7 +44,7 @@ def update(name: str, endpoint: str, secret: str, events: list[str]):
 
 
 @frappe.whitelist()
-def attempts(webhook: str, page_length: int = 20, offset: int = 0):
+def attempts(webhook: str):
 	doc = frappe.get_doc("Press Webhook", webhook)
 	doc.has_permission("read")
 
@@ -64,8 +64,6 @@ def attempts(webhook: str, page_length: int = 20, offset: int = 0):
 		.on(PressWebhookAttempt.parent == PressWebhookLog.name)
 		.where(PressWebhookAttempt.webhook == doc.name)
 		.orderby(PressWebhookAttempt.timestamp, order=frappe.qb.desc)
-		.offset(offset)
-		.limit(page_length)
 	)
 	return query.run(as_dict=1)
 
