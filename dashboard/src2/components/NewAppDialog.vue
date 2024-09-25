@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Update bench apps',
+			title: 'Add app from GitHub',
 			size: 'xl',
 			actions: [
 				{

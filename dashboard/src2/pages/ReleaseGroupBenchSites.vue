@@ -23,7 +23,7 @@ import {
 } from 'frappe-ui';
 import ObjectList from '../components/ObjectList.vue';
 import Badge from '@/components/global/Badge.vue';
-import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
+import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { toast } from 'vue-sonner';
 import { trialDays } from '../utils/site';
@@ -205,7 +205,7 @@ export default {
 						},
 						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
-							name: 'Bench New Site',
+							name: 'Release Group New Site',
 							params: { bench: this.releaseGroup }
 						}
 					};
@@ -319,7 +319,7 @@ export default {
 					condition: () => bench.status === 'Active',
 					onClick: () => {
 						let BenchLogsDialog = defineAsyncComponent(() =>
-							import('../components/bench/BenchLogsDialog.vue')
+							import('../components/group/BenchLogsDialog.vue')
 						);
 
 						renderDialog(
@@ -460,7 +460,7 @@ export default {
 					condition: () => bench.status === 'Active',
 					onClick: () => {
 						let SupervisorProcessesDialog = defineAsyncComponent(() =>
-							import('../components/bench/SupervisorProcessesDialog.vue')
+							import('../components/group/SupervisorProcessesDialog.vue')
 						);
 
 						renderDialog(
