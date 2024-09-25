@@ -627,7 +627,7 @@ export default {
 			if (this.bench) {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
-					{ label: 'Benches', route: '/benches' },
+					{ label: 'Bench Groups', route: '/benches' },
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {
@@ -637,7 +637,10 @@ export default {
 					},
 					{
 						label: 'New Site',
-						route: { name: 'Bench New Site', params: { bench: this.bench } }
+						route: {
+							name: 'Release Group New Site',
+							params: { bench: this.bench }
+						}
 					}
 				];
 			}

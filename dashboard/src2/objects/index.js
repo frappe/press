@@ -1,5 +1,5 @@
 import site from './site';
-import bench from './bench';
+import bench from './group';
 import marketplace from './marketplace';
 import server from './server';
 import notification from './notification';

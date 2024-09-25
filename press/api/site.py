@@ -2053,6 +2053,8 @@ def validate_group_for_upgrade(name, group_name):
 @frappe.whitelist()
 @protected("Site")
 def change_group_options(name):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	team = get_current_team()
 	group, server, plan = frappe.db.get_value("Site", name, ["group", "server", "plan"])
 
@@ -2063,20 +2065,34 @@ def change_group_options(name):
 
 	version = frappe.db.get_value("Release Group", group, "version")
 
-	benches = frappe.qb.DocType("Bench")
-	groups = frappe.qb.DocType("Release Group")
-	benches = (
-		frappe.qb.from_(benches)
-		.select(benches.group.as_("name"), groups.title)
-		.inner_join(groups)
-		.on(groups.name == benches.group)
-		.where(benches.status == "Active")
-		.where(groups.name != group)
-		.where(groups.version == version)
-		.where(groups.team == team)
-		.where(benches.server == server)
-		.groupby(benches.group)
-	).run(as_dict=True)
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	query = (
+		frappe.qb.from_(Bench)
+		.select(Bench.group.as_("name"), ReleaseGroup.title)
+		.inner_join(ReleaseGroup)
+		.on(ReleaseGroup.name == Bench.group)
+		.where(Bench.status == "Active")
+		.where(ReleaseGroup.name != group)
+		.where(ReleaseGroup.version == version)
+		.where(ReleaseGroup.team == team)
+		.where(Bench.server == server)
+		.groupby(Bench.group)
+	)
+
+	if roles := check_role_permissions("Release Group"):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission.release_group
+				== ReleaseGroup.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	benches = query.run(as_dict=True)
 
 	return benches
 
@@ -2177,6 +2193,8 @@ def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=F
 @frappe.whitelist()
 @protected("Site")
 def get_private_groups_for_upgrade(name, version):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2192,7 +2210,7 @@ def get_private_groups_for_upgrade(name, version):
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 
-	private_groups = (
+	query = (
 		frappe.qb.from_(ReleaseGroup)
 		.select(ReleaseGroup.name, ReleaseGroup.title)
 		.join(ReleaseGroupServer)
@@ -2202,7 +2220,21 @@ def get_private_groups_for_upgrade(name, version):
 		.where(ReleaseGroup.public == 0)
 		.where(ReleaseGroup.version == next_version)
 		.distinct()
-	).run(as_dict=True)
+	)
+
+	if roles := check_role_permissions("Release Group"):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission.release_group
+				== ReleaseGroup.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
+		)
+
+	private_groups = query.run(as_dict=True)
 
 	return private_groups
 

@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-19 09:33:43.941516",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_uhnt",
+  "event",
+  "column_break_aqtt",
+  "section_break_zwyy",
+  "webhook",
+  "team",
+  "column_break_mrcq",
+  "endpoint",
+  "section_break_nnsg",
+  "request_payload",
+  "response_status_code",
+  "response_body"
+ ],
+ "fields": [
+  {
+   "fieldname": "webhook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Webhook",
+   "options": "Press Webhook",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_uhnt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Event",
+   "options": "Press Webhook Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_aqtt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Sent\nFailed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_nnsg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Request Payload",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "response_status_code",
+   "fieldtype": "Data",
+   "label": "Response Status Code"
+  },
+  {
+   "fieldname": "response_body",
+   "fieldtype": "Small Text",
+   "label": "Response Body",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_zwyy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_mrcq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "endpoint",
+   "fieldtype": "Data",
+   "label": "Endpoint",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "webhook.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-20 15:35:44.305637",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Webhook Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

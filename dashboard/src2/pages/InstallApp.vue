@@ -44,7 +44,7 @@
 
 					<div v-if="options.private_groups.length">
 						<h2 class="text-base font-medium leading-6 text-gray-900">
-							Select Bench
+							Select Bench Group
 							<span class="text-sm text-gray-500"> (Optional) </span>
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -162,7 +162,8 @@
 				</div>
 				<div class="flex space-x-1">
 					<div class="text-sm text-gray-600">
-						Want to install <b>{{ appDoc.title }}</b> on an existing Site/Bench?
+						Want to install <b>{{ appDoc.title }}</b> on an existing Site or
+						Bench Group?
 					</div>
 					<a
 						class="text-sm underline"

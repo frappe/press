@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -29,9 +28,7 @@ from press.press.doctype.subscription.test_subscription import create_test_subsc
 @patch.object(SiteUpdate, "start", new=Mock())
 def create_test_site_update(site: str, destination_group: str, status: str):
 	return frappe.get_doc(
-		dict(
-			doctype="Site Update", site=site, destination_group=destination_group, status=status
-		)
+		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
 	).insert(ignore_if_duplicate=True)
 
 
@@ -54,17 +51,13 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_test_deploy_candidate_differences(
-			bench2.candidate
-		)  # for site update to be available
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
 
 		agent_job = frappe.get_last_doc("Agent Job", dict(job_type=("like", "Update Site %")))
-		self.assertLess(
-			dict(skip_search_index=False).items(), json.loads(agent_job.request_data).items()
-		)
+		self.assertLess(dict(skip_search_index=False).items(), json.loads(agent_job.request_data).items())
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_of_non_v12_site_doesnt_skip_search_index(self):
@@ -81,17 +74,13 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_test_deploy_candidate_differences(
-			bench2.candidate
-		)  # for site update to be available
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
 
 		agent_job = frappe.get_last_doc("Agent Job", dict(job_type=("like", "Update Site %")))
-		self.assertLess(
-			dict(skip_search_index=True).items(), json.loads(agent_job.request_data).items()
-		)
+		self.assertLess(dict(skip_search_index=True).items(), json.loads(agent_job.request_data).items())
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_site_update_throws_when_destination_doesnt_have_all_the_apps_in_the_site(
@@ -109,9 +98,7 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2.apps.pop()
 		bench2.save()
 
-		create_test_deploy_candidate_differences(
-			bench2.candidate
-		)  # for site update to be available
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 
@@ -133,9 +120,7 @@ class TestSiteUpdate(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_test_deploy_candidate_differences(
-			bench2.candidate
-		)  # for site update to be available
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		plan = create_test_plan(site.doctype, cpu_time=8)
@@ -143,6 +128,8 @@ class TestSiteUpdate(FrappeTestCase):
 		site.reload()
 
 		server = frappe.get_doc("Server", bench1.server)
+		server.disable_agent_job_auto_retry = True
+		server.save()
 		server.auto_scale_workers()
 		bench1.reload()
 		bench2.reload()

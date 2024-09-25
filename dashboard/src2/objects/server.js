@@ -256,7 +256,7 @@ export default {
 							},
 							{
 								type: 'link',
-								label: 'Bench',
+								label: 'Bench Group',
 								fieldname: 'group',
 								options: {
 									doctype: 'Release Group'
@@ -307,7 +307,7 @@ export default {
 							}
 						},
 						{
-							label: 'Bench',
+							label: 'Bench Group',
 							fieldname: 'group_title',
 							width: '15rem'
 						},
@@ -320,7 +320,7 @@ export default {
 				}
 			},
 			{
-				label: 'Benches',
+				label: 'Bench Groups',
 				icon: icon('package'),
 				route: 'benches',
 				type: 'list',
@@ -392,13 +392,13 @@ export default {
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
 						return {
-							label: 'New Bench',
+							label: 'New Bench Group',
 							slots: {
 								prefix: icon('plus')
 							},
 							onClick() {
 								router.push({
-									name: 'Server New Bench',
+									name: 'Server New Release Group',
 									params: { server: server.doc.name }
 								});
 							}

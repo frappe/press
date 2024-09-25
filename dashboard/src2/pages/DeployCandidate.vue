@@ -104,7 +104,7 @@ import dayjs from 'dayjs';
 import { toast } from 'vue-sonner';
 
 export default {
-	name: 'BenchDeploy',
+	name: 'DeployCandidate',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,

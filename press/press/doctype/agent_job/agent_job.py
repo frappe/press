@@ -6,7 +6,7 @@ import json
 import os
 import random
 import traceback
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -30,10 +30,6 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 )
 from press.utils import has_role, log_error
-
-if TYPE_CHECKING:
-	from press.press.doctype.agent_job_step.agent_job_step import AgentJobStep
-	from press.press.doctype.agent_job_type.agent_job_type import AgentJobType
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -333,27 +329,15 @@ class AgentJob(Document):
 			{"document_type": self.doctype, "document_name": self.name},
 		)
 
-	def get_step(self, step_status: str):
-		"""Returns first `AgentJobStep` in sequence with the given `step_status`"""
-		steps = frappe.get_all(
+	def get_step_status(self, step_name: str):
+		if statuses := frappe.get_all(
 			"Agent Job Step",
-			fields=["name", "step_name"],
-			filters={
-				"agent_job": self.name,
-				"status": step_status,
-			},
-		)
-
-		if not steps:
-			return None
-
-		step_map = {s.step_name: s.name for s in steps}
-		job_type: "AgentJobType" = frappe.get_doc("Agent Job Type", self.job_type)
-
-		for step in job_type.steps:
-			if name := step_map.get(step.step_name):
-				job_step: "AgentJobStep" = frappe.get_doc("Agent Job Step", name)
-				return job_step
+			fields=["status"],
+			filters={"agent_job": self.name, "step_name": step_name},
+			pluck="status",
+			limit=1,
+		):
+			return statuses[0]
 
 		return None
 

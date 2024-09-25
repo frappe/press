@@ -3,14 +3,14 @@
 		v-model="show"
 		:options="{
 			size: '4xl',
-			title: 'Update Bench'
+			title: 'Update Bench Group'
 		}"
 	>
 		<template #body-content>
 			<AlertBanner
 				v-if="benchDocResource.doc.are_builds_suspended"
 				class="mb-4"
-				title="<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume."
+				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
 				type="warning"
 			/>
 			<!-- Update Steps -->
@@ -122,7 +122,7 @@ import { DashboardError } from '../../utils/error';
 import AlertBanner from '../AlertBanner.vue';
 
 export default {
-	name: 'UpdateBenchDialog',
+	name: 'UpdateReleaseGroupDialog',
 	props: ['bench'],
 	components: {
 		GenericList,
@@ -479,7 +479,7 @@ export default {
 				},
 				onSuccess(candidate) {
 					this.$router.push({
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: {
 							id: candidate
 						}
@@ -501,7 +501,7 @@ export default {
 				},
 				onSuccess(id) {
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: { id }
 					});
 

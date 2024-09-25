@@ -96,7 +96,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench',
+					label: 'Bench Group',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group'
@@ -180,7 +180,7 @@ export default {
 				}
 			},
 			{
-				label: 'Bench',
+				label: 'Bench Group',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
@@ -1372,7 +1372,7 @@ export default {
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return upsellBanner(site, bannerTitle);
 					}
@@ -1383,6 +1383,13 @@ export default {
 				label: 'Performance',
 				icon: icon('zap'),
 				route: 'performance',
+				childrenRoutes: [
+					'Site Performance Slow Queries',
+					'Site Performance Binary Logs',
+					'Site Performance Process List',
+					'Site Performance Slow Query Logs',
+					'Site Performance Request Logs'
+				],
 				type: 'Component',
 				condition() {
 					const team = getTeam();
@@ -1391,10 +1398,10 @@ export default {
 					);
 				},
 				component: defineAsyncComponent(() =>
-					import('../components/site/SitePerformance.vue')
+					import('../components/site/performance/SitePerformance.vue')
 				),
 				props: site => {
-					return { siteName: site.doc?.name, siteVersion: site.doc?.version };
+					return { site: site.doc?.name };
 				}
 			},
 			logsTab(),
@@ -1661,6 +1668,36 @@ export default {
 			name: 'Site Log',
 			path: 'logs/:logName',
 			component: () => import('../pages/LogPage.vue')
+		},
+		{
+			name: 'Site Performance Slow Queries',
+			path: 'performance/slow-queries',
+			component: () =>
+				import('../components/site/performance/SiteSlowQueries.vue')
+		},
+		{
+			name: 'Site Performance Binary Logs',
+			path: 'performance/binary-logs',
+			component: () =>
+				import('../components/site/performance/SiteBinaryLogs.vue')
+		},
+		{
+			name: 'Site Performance Process List',
+			path: 'performance/process-list',
+			component: () =>
+				import('../components/site/performance/SiteProcessList.vue')
+		},
+		{
+			name: 'Site Performance Request Logs',
+			path: 'performance/request-log',
+			component: () =>
+				import('../components/site/performance/SiteRequestLogs.vue')
+		},
+		{
+			name: 'Site Performance Deadlock Report',
+			path: 'performance/deadlock-report',
+			component: () =>
+				import('../components/site/performance/SiteDeadlockReport.vue')
 		}
 	]
 };
