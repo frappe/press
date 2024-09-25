@@ -20,6 +20,14 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 		else:
 			frappe.throw("Invalid data type")
 
+		request_payload = json.dumps(
+			{
+				"event": event,
+				"data": data,
+			},
+			default=str,
+		)
+
 		# Check if team has configured webhook against this event
 		PressWebhookSelectedEvent = frappe.qb.DocType("Press Webhook Selected Event")
 		PressWebhook = frappe.qb.DocType("Press Webhook")
@@ -42,7 +50,7 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 					"status": "Pending",
 					"event": event,
 					"team": team,
-					"data": json.dumps(data, default=str),
+					"request_payload": request_payload,
 				}
 			).insert(ignore_permissions=True)
 		return True

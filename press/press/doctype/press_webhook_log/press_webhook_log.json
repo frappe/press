@@ -1,36 +1,31 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-09-19 09:33:43.941516",
+ "creation": "2024-09-18 16:34:27.110549",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "column_break_uhnt",
   "event",
-  "column_break_aqtt",
-  "section_break_zwyy",
-  "webhook",
+  "column_break_qqjj",
   "team",
-  "column_break_mrcq",
-  "endpoint",
-  "section_break_nnsg",
+  "section_break_bkbk",
   "request_payload",
-  "response_status_code",
-  "response_body"
+  "section_break_wqvc",
+  "attempts",
+  "section_break_vyzs",
+  "retries",
+  "column_break_btzb",
+  "next_retry_at"
  ],
  "fields": [
   {
-   "fieldname": "webhook",
-   "fieldtype": "Link",
+   "fieldname": "status",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Webhook",
-   "options": "Press Webhook",
+   "label": "Status",
+   "options": "Pending\nQueued\nSent\nPartially Sent\nFailed",
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_uhnt",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "event",
@@ -41,65 +36,60 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_aqtt",
+   "fieldname": "column_break_qqjj",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
+   "fieldname": "team",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Status",
-   "options": "Sent\nFailed",
+   "label": "Team",
+   "options": "Team",
    "reqd": 1
   },
   {
-   "fieldname": "section_break_nnsg",
+   "fieldname": "section_break_bkbk",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_wqvc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_vyzs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "retries",
+   "fieldtype": "Int",
+   "label": "Retries"
+  },
+  {
+   "fieldname": "column_break_btzb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At"
   },
   {
    "fieldname": "request_payload",
    "fieldtype": "Small Text",
-   "in_list_view": 1,
    "label": "Request Payload",
-   "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "response_status_code",
-   "fieldtype": "Data",
-   "label": "Response Status Code"
-  },
-  {
-   "fieldname": "response_body",
-   "fieldtype": "Small Text",
-   "label": "Response Body",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_zwyy",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_mrcq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "endpoint",
-   "fieldtype": "Data",
-   "label": "Endpoint",
-   "reqd": 1
-  },
-  {
-   "fetch_from": "webhook.team",
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
+   "fieldname": "attempts",
+   "fieldtype": "Table",
+   "label": "Attempts",
+   "options": "Press Webhook Attempt"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-20 15:35:44.305637",
+ "modified": "2024-09-24 17:24:25.393936",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Webhook Log",
@@ -116,15 +106,6 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1
   }
  ],
  "sort_field": "creation",
