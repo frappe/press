@@ -216,6 +216,9 @@ class TestBench(FrappeTestCase):
 		bench1 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
 		bench2 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
 
+		frappe.db.set_value("Server", bench1.server, "set_bench_memory_limits", False)
+		frappe.db.set_value("Server", bench2.server, "set_bench_memory_limits", False)
+
 		scale_workers()
 
 		bench1.reload()
