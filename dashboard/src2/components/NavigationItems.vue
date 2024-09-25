@@ -66,7 +66,7 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Benches',
+					name: 'Bench Groups',
 					icon: () => h(Package),
 					route: '/benches',
 					isActive:
@@ -74,8 +74,8 @@ export default {
 							'Release Group List',
 							'Release Group Detail',
 							'New Release Group',
-							'Bench New Site',
-							'Bench Deploy'
+							'Release Group New Site',
+							'Deploy Candidate'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
 					disabled: !onboardingComplete || enforce2FA

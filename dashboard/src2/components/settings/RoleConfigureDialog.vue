@@ -97,7 +97,7 @@
 							/>
 							<Switch
 								v-model="allowBenchCreation"
-								label="Allow Bench Creation"
+								label="Allow Bench Group Creation"
 								:disabled="adminAccess"
 							/>
 							<Switch

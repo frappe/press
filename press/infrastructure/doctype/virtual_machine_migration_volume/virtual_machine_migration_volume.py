@@ -18,7 +18,7 @@ class VirtualMachineMigrationVolume(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Un-attached", "Attached"]
+		status: DF.Literal["Unattached", "Attached"]
 		volume_id: DF.Data
 	# end: auto-generated types
 

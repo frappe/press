@@ -581,6 +581,10 @@ class Bench(Document):
 				)
 				self.memory_max = self.memory_high + gunicorn_memory + bg_memory
 			self.memory_swap = self.memory_max * 2
+		else:
+			self.memory_high = 0
+			self.memory_max = 0
+			self.memory_swap = 0
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 

@@ -42,9 +42,9 @@ const releaseGroup = getCachedDocumentResource(
 
 function getBenchActionHandler(action) {
 	const actionHandlers = {
-		'Rename Bench': onRenameBench,
-		'Transfer Bench': onTransferBench,
-		'Drop Bench': onDropBench
+		'Rename Bench Group': onRenameBench,
+		'Transfer Bench Group': onTransferBench,
+		'Drop Bench Group': onDropBench
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -53,10 +53,10 @@ function getBenchActionHandler(action) {
 
 function onRenameBench() {
 	confirmDialog({
-		title: 'Rename Bench',
+		title: 'Rename Bench Group',
 		fields: [
 			{
-				label: 'Enter new bench name',
+				label: 'Enter new bench group name',
 				fieldname: 'newBenchName'
 			}
 		],
@@ -74,13 +74,13 @@ function onRenameBench() {
 						}
 					),
 					{
-						loading: 'Renaming bench...',
-						success: 'Bench renamed successfully',
-						error: 'Failed to rename bench'
+						loading: 'Renaming bench group...',
+						success: 'Bench group renamed successfully',
+						error: 'Failed to rename bench group'
 					}
 				);
 			} else {
-				toast.error('Please enter a valid bench name');
+				toast.error('Please enter a valid bench group name');
 			}
 		}
 	});
@@ -88,11 +88,11 @@ function onRenameBench() {
 
 function onTransferBench() {
 	confirmDialog({
-		title: 'Transfer Bench Ownership',
+		title: 'Transfer Bench Group Ownership',
 		fields: [
 			{
 				label:
-					'Enter email address of the team for transfer of bench ownership',
+					'Enter email address of the team for transfer of bench group ownership',
 				fieldname: 'email'
 			},
 			{
@@ -124,13 +124,13 @@ function onTransferBench() {
 
 function onDropBench() {
 	confirmDialog({
-		title: 'Drop Bench',
-		message: `Are you sure you want to drop the bench <b>${
+		title: 'Drop Bench Group',
+		message: `Are you sure you want to drop the bench group <b>${
 			releaseGroup.doc.title || releaseGroup.name
 		}</b>?`,
 		fields: [
 			{
-				label: 'Please type the bench name to confirm',
+				label: 'Please type the bench group name to confirm',
 				fieldname: 'confirmBenchName'
 			}
 		],
@@ -140,7 +140,7 @@ function onDropBench() {
 			onClick: ({ hide, values }) => {
 				if (releaseGroup.delete.loading) return;
 				if (values.confirmBenchName !== releaseGroup.doc.title) {
-					throw new Error('Bench name does not match');
+					throw new Error('Bench group name does not match');
 				}
 				toast.promise(
 					releaseGroup.delete.submit(null, {
@@ -150,12 +150,12 @@ function onDropBench() {
 						}
 					}),
 					{
-						loading: 'Dropping bench...',
-						success: 'Bench dropped successfully',
+						loading: 'Dropping bench group...',
+						success: 'Bench group dropped successfully',
 						error: error =>
 							error.messages.length
 								? error.messages.join('\n')
-								: 'Failed to drop bench'
+								: 'Failed to drop bench group'
 					}
 				);
 			}

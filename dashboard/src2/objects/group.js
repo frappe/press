@@ -5,9 +5,9 @@ import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
-import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
-import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
-import AddAppDialog from '../components/bench/AddAppDialog.vue';
+import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/group/PatchAppDialog.vue';
+import AddAppDialog from '../components/group/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideRocket from '~icons/lucide/rocket';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
@@ -40,7 +40,7 @@ export default {
 	},
 	list: {
 		route: '/benches',
-		title: 'Benches',
+		title: 'Bench Groups',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
 		filterControls() {
@@ -100,7 +100,7 @@ export default {
 		],
 		primaryAction({ listResource: benches }) {
 			return {
-				label: 'New Bench',
+				label: 'New Bench Group',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus')
@@ -404,11 +404,14 @@ export default {
 				label: 'Deploys',
 				route: 'deploys',
 				icon: icon('package'),
-				childrenRoutes: ['Bench Deploy'],
+				childrenRoutes: ['Deploy Candidate'],
 				type: 'list',
 				list: {
 					doctype: 'Deploy Candidate',
-					route: row => ({ name: 'Bench Deploy', params: { id: row.name } }),
+					route: row => ({
+						name: 'Deploy Candidate',
+						params: { id: row.name }
+					}),
 					filters: releaseGroup => {
 						return {
 							group: releaseGroup.name
@@ -439,7 +442,7 @@ export default {
 						if (releaseGroup.doc.are_builds_suspended) {
 							return {
 								title:
-									'<b>Builds Suspended:</b> Bench updates will be scheduled to run when builds resume.',
+									'<b>Builds Suspended:</b> updates will be scheduled to run when builds resume.',
 								type: 'warning'
 							};
 						} else {
@@ -505,14 +508,14 @@ export default {
 							onClick() {
 								if (bench.doc.deploy_information.deploy_in_progress) {
 									return toast.error(
-										'Another deploy is in progress. Please wait for it to complete.'
+										'Deploy is in progress. Please wait for it to complete.'
 									);
 								} else if (bench.doc.deploy_information.update_available) {
-									let UpdateBenchDialog = defineAsyncComponent(() =>
-										import('../components/bench/UpdateBenchDialog.vue')
+									let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
+										import('../components/group/UpdateReleaseGroupDialog.vue')
 									);
 									renderDialog(
-										h(UpdateBenchDialog, {
+										h(UpdateReleaseGroupDialog, {
 											bench: bench.name,
 											onSuccess(candidate) {
 												bench.doc.deploy_information.deploy_in_progress = true;
@@ -525,16 +528,16 @@ export default {
 									);
 								} else {
 									confirmDialog({
-										title: 'Deploy Bench',
+										title: 'Deploy without app updates?',
 										message:
-											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
+											'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
 										onSuccess: ({ hide }) => {
 											toast.promise(bench.redeploy.submit(), {
 												loading: 'Deploying...',
 												success: () => {
 													hide();
 													deploys.reload();
-													return 'Bench Deployed';
+													return 'Changes Deployed';
 												},
 												error: e => {
 													return e.messages.length
@@ -697,7 +700,7 @@ export default {
 				route: 'actions',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../components/bench/BenchActions.vue')
+					import('../components/group/ReleaseGroupActions.vue')
 				),
 				props: releaseGroup => {
 					return { releaseGroup: releaseGroup.name };
@@ -744,7 +747,7 @@ export default {
 							},
 							onClick() {
 								let AddRegionDialog = defineAsyncComponent(() =>
-									import('../components/bench/AddRegionDialog.vue')
+									import('../components/group/AddRegionDialog.vue')
 								);
 								renderDialog(
 									h(AddRegionDialog, {
@@ -811,7 +814,7 @@ export default {
 								label: 'Edit',
 								onClick() {
 									let DependencyEditorDialog = defineAsyncComponent(() =>
-										import('../components/bench/DependencyEditorDialog.vue')
+										import('../components/group/DependencyEditorDialog.vue')
 									);
 									renderDialog(
 										h(DependencyEditorDialog, {
@@ -961,11 +964,11 @@ export default {
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
 						if (bench.doc?.deploy_information?.last_deploy) {
-							let UpdateBenchDialog = defineAsyncComponent(() =>
-								import('../components/bench/UpdateBenchDialog.vue')
+							let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
+								import('../components/group/UpdateReleaseGroupDialog.vue')
 							);
 							renderDialog(
-								h(UpdateBenchDialog, {
+								h(UpdateReleaseGroupDialog, {
 									bench: bench.name,
 									onSuccess(candidate) {
 										bench.doc.deploy_information.deploy_in_progress = true;
@@ -977,8 +980,8 @@ export default {
 							);
 						} else {
 							confirmDialog({
-								title: 'Deploy Bench',
-								message: "Let's deploy this bench now?",
+								title: 'Deploy',
+								message: "Let's deploy now?",
 								onSuccess({ hide }) {
 									toast.promise(
 										bench.initialDeploy.submit(null, {
@@ -988,9 +991,9 @@ export default {
 											}
 										}),
 										{
-											success: 'Bench deploy scheduled successfully',
-											error: 'Failed to schedule a bench deploy',
-											loading: 'Scheduling a bench deploy...'
+											success: 'Deploy scheduled successfully',
+											error: 'Failed to schedule deploy',
+											loading: 'Scheduling deploy...'
 										}
 									);
 								}
@@ -1006,7 +1009,7 @@ export default {
 					theme: 'green',
 					condition: () => bench.doc.deploy_information.deploy_in_progress,
 					route: {
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: { id: bench.doc?.deploy_information?.last_deploy?.name }
 					}
 				},
@@ -1042,12 +1045,12 @@ export default {
 	},
 	routes: [
 		{
-			name: 'Bench Deploy',
+			name: 'Deploy Candidate',
 			path: 'deploys/:id',
-			component: () => import('../pages/BenchDeploy.vue')
+			component: () => import('../pages/DeployCandidate.vue')
 		},
 		{
-			name: 'Bench Job',
+			name: 'Release Group Job',
 			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		}

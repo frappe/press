@@ -1,10 +1,10 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Move Site to another Bench',
+			title: 'Move Site to another Bench Group',
 			actions: [
 				{
-					label: 'Change Bench',
+					label: 'Change Bench Group',
 					loading: $resources.changeGroup.loading,
 					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
@@ -16,7 +16,7 @@
 						})
 				},
 				{
-					label: 'Clone current Bench',
+					label: 'Clone current Bench Group',
 					onClick: () => {
 						$emit('update:modelValue', false);
 						showCloneBenchDialog = true;
@@ -37,7 +37,7 @@
 			>
 				<FormControl
 					variant="outline"
-					label="Select Bench"
+					label="Select Bench Group"
 					type="autocomplete"
 					:options="
 						$resources.changeGroupOptions.data.map(group => ({
@@ -55,18 +55,18 @@
 				/>
 			</div>
 			<p v-else-if="!errorMessage" class="text-md text-base text-gray-800">
-				There are no other benches that you own for this site to move to. You
-				can clone this bench to move the site.
+				There are no other bench groups that you own for this site to move to.
+				You can clone this bench group to move the site.
 			</p>
 			<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
 	<Dialog
 		:options="{
-			title: 'Clone Bench',
+			title: 'Clone Bench Group',
 			actions: [
 				{
-					label: 'Clone Bench',
+					label: 'Clone Bench Group',
 					variant: 'solid',
 					loading: $resources.cloneGroup.loading,
 					onClick: () =>
@@ -81,7 +81,7 @@
 		v-model="showCloneBenchDialog"
 	>
 		<template #body-content>
-			<FormControl label="New Bench Name" v-model="newGroupTitle" />
+			<FormControl label="New Bench Group Name" v-model="newGroupTitle" />
 			<FormControl
 				v-if="$resources.serverOptions.data.length > 0"
 				class="mt-4"
@@ -133,7 +133,7 @@ export default {
 						).title;
 
 					toast.success(
-						`The site has been scheduled to move to the ${destinationGroupTitle} bench successfully.`
+						`The site has been scheduled to move to the ${destinationGroupTitle} bench group successfully.`
 					);
 
 					this.$router.push({
@@ -169,12 +169,12 @@ export default {
 				url: 'press.api.site.clone_group',
 				onSuccess(data) {
 					toast.success(
-						'The current bench has been cloned successfully. Redirecting to the new bench...'
+						'The current bench group has been cloned successfully. Redirecting to the new bench group...'
 					);
 					this.showCloneBenchDialog = false;
 
 					this.$router.push({
-						name: 'Bench Deploy',
+						name: 'Deploy Candidate',
 						params: {
 							name: data.bench_name,
 							id: data.candidate_name

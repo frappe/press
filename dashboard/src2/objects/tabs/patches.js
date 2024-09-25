@@ -2,7 +2,7 @@ import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
 import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { h } from 'vue';
-import PatchAppDialog from '../../components/bench/PatchAppDialog.vue';
+import PatchAppDialog from '../../components/group/PatchAppDialog.vue';
 
 const STATUS_THEME = {
 	Applied: 'green',
