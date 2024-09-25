@@ -23,31 +23,20 @@
   
       <ErrorMessage class="mt-2" :message="errorMessage" />
   
-     <!-- Select field for Partner -->
-     <label for="partner" class="block mb-2 text-sm text-gray-700">Partner</label>
-    <select 
-      id="partner" 
-      v-model="partnerInput" 
-      class="form-select w-full mb-6">
-      <option disabled value="">Select a partner</option>
-      <option v-for="partner in partners" :key="partner" :value="partner">
-        {{ partner }}
-      </option>
-    </select>
-
   <!--select-->
-  <!-- <div class="p-2">
-  <FormControl
+  
+    <FormControl
     type="autocomplete"
-    :options="PartnerResources.fetch()"
+    :options="teams" 
     size="sm"
     variant="subtle"
-    placeholder="Placeholder"
+    placeholder="Select a partner"
     :disabled="false"
-    label="Label"
-    v-model="autocompleteValue"
-  />
-</div> -->
+    label="Select Partner"
+    v-model="partnerInput" 
+    class="mb-5"
+/>
+
       <!-- Input field for M-Pesa Phone Number using FormControl -->
       <FormControl
         label="M-Pesa Phone Number"
@@ -57,6 +46,7 @@
         class="mb-5"
         type="tel"
         placeholder="Enter phone number"
+        
       >
         <template #prefix>
           <div class="grid w-4 place-items-center text-sm text-gray-700">
@@ -81,7 +71,21 @@
           </div>
         </template>
       </FormControl>
+<!--Show amount after tax-->
+      <div v-if="showTaxInfo" >
 
+      <div class="mt-4">
+        <p class="text-sm leading-4 text-gray-700">Tax(%):</p>
+        <p class="text-md text-red-500">{{ taxPercentage }}%</p>
+      </div>
+      
+      <!--Tax percentage-->
+      <div class="mt-4">
+        <p class="text-sm leading-4 text-gray-700">Total Amount With Tax:</p>
+        <p class="text-md text-red-500">Ksh. {{ amountWithTax }}</p>
+      </div>
+
+    </div>
       <!-- Button to make payment -->
       <div class="mt-4 flex w-full justify-end">
         <Button
@@ -93,13 +97,30 @@
         </Button>
       </div>
     </div>
+
+        <ErrorMessage v-if="errorMessage" :message="errorMessage" />
+    
   </template>
   
   <script>
   import { toast } from 'vue-sonner';
   import { DashboardError } from '../utils/error';
   import { ErrorMessage} from 'frappe-ui';
-  import {createListResource} from 'frappe-ui';
+  import { frappeRequest } from 'frappe-ui';
+
+  let request = options => {
+    let _options = options || {};
+    _options.headers = options.headers || {};
+
+    // Example of setting team header
+    let currentTeam = localStorage.getItem('current_team') || window.default_team;
+    if (currentTeam) {
+        _options.headers['X-Press-Team'] = currentTeam;
+    }
+
+    // Perform the request
+    return frappeRequest(_options);
+};
 
   export default {
     name: 'BuyPrepaidCreditMpesa',
@@ -129,42 +150,21 @@
       partnerInput: '', 
       phoneNumberInput: '', 
       taxIdInput: '', 
-      partners: ['Administrator', 'Partner B', 'Partner C'], 
-      PartnerResources: createListResource({
-        doctype: 'Team',
-        fields: ['user'],
-        filters: { enabled: 1, country:'Kenya' },
-        auto: true
-      })
+      teams:[],
+      taxPercentage:1,
+      amountWithTax:0,
+      showTaxInfo:false,
     };
   },
 
-
-  //  async mounted() {
-  //   try {
-  //     // Fetch the partners from the resource
-  //     console.log("Hapa", this.PartnerResources.fetch())
-  //     this.partnerOptions=["Mania"]
-  //     const partnersData = await this.PartnerResources.fetch();
-  //     // Map the fetched data into a format suitable for the autocomplete field
-  //     this.partnerOptions = partnersData.map(partner => ({
-  //       label: partner.user, // Adjust according to the field you're fetching
-  //       value: partner.user
-  //     }));
-  //     console.log("Data", this.partnerOptions)
-  //   } catch (error) {
-  //     this.errorMessage = error.message || 'Failed to load partners details';
-  //   }
-  // },
-
   resources: {
-    requestForPayment() {
+   requestForPayment() {
       return {
         url: 'press.api.billing.request_for_payment',
         params: {
           request_amount: this.amountKES, 
           sender: this.phoneNumberInput, 
-          partner: this.partnerInput, 
+          partner: this.partnerInput.value, 
           tax_id:this.taxIdInput
         },
         validate() {
@@ -191,7 +191,19 @@
   },
 
   methods: {
-  
+    request(options) {
+      let _options = options || {};
+      _options.headers = options.headers || {};
+
+      let currentTeam = localStorage.getItem('current_team') || window.default_team;
+      if (currentTeam) {
+        _options.headers['X-Press-Team'] = currentTeam;
+      }
+
+      return frappeRequest(_options);
+    },
+
+
     async onPayClick() {
   this.paymentInProgress = true;
   try {
@@ -211,9 +223,62 @@
   } finally {
     this.paymentInProgress = false;
   }
-}
+},
+async fetchTeams() {
+        try {
+            const response = await request({
+                url: '/api/method/press.api.billing.display_mpesa_payment_partners',
+                method: 'GET',
+                
+            });
+            if (Array.isArray(response)) {
+            this.teams = response; 
+        } else {
+            console.log("No Data");
+        }
+        } catch (error) {
+            this.errorMessage = `Failed to fetch teams ${error.message}`;
+        }
+    },
+
+    async fetchTaxPercentage(){
+      try{
+          const taxPercentage= await request({
+            url: '/api/method/press.api.billing.get_tax_percentage',
+            method: 'GET',
+            params: {
+              payment_partner: this.partnerInput.value
+          }
+          });
+          console.log("Tax Percentage:", taxPercentage);
+          this.taxPercentage = taxPercentage;
+          
+      }catch(error){
+        this.errorMessage = `Failed to fetch tax percentage ${error.message}`;
+      }
+    },
+
+   totalAmountWithTax(){
+    console.log("nafoka")
+    const amountWithTax= this.amountKES + (this.amountKES * (this.taxPercentage)/100);
+    this.amountWithTax = amountWithTax;
 
 }
+  },
+watch: {
+  partnerInput: function(){
+    this.fetchTaxPercentage();
+    this.totalAmountWithTax();
+    this.showTaxInfo = true;
+  },
+  amountKES: function(){
+    this.totalAmountWithTax();
+  }
+},
+
+mounted() {
+  this.fetchTeams();
+},
 
 };
 </script>

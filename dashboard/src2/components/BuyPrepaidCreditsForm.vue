@@ -157,7 +157,6 @@
 	@cancel="onCancel"
 	/>
 	
-
 </template>
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
@@ -175,7 +174,7 @@ export default {
 		return {
 			paymentGateway: null,
 			creditsToBuy: this.minimumAmount,
-			creditsToBuyKES:0,
+			creditsToBuyKES:1250,
 			exchangeRate:125,
 		};
 	},

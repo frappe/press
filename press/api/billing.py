@@ -710,8 +710,10 @@ def split_request_amount_according_to_transaction_limit(amount, transaction_limi
 def generate_stk_push(**kwargs):
 	"""Generate stk push by making a API call to the stk push API."""
 	args = frappe._dict(kwargs)
-	# Fetch the team document
-	partner_=frappe.get_all("Team", filters={"user": args.partner}, pluck="name")
+	partner_value = args.partner
+
+	# Fetch the team document based on the extracted partner value
+	partner_ = frappe.get_all("Team", filters={"user": partner_value}, pluck="name")
 	if not partner_:
 		frappe.throw(_("Partner not found"), title=_("Mpesa Express Error"))
 	partner = frappe.get_doc("Team", partner_[0])	
@@ -738,10 +740,10 @@ def generate_stk_push(**kwargs):
 		)
 
 		mobile_number = sanitize_mobile_number(args.sender)
-		print("Mobile number",mobile_number)
+		
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount=args.request_amount,
+			amount=1,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
@@ -977,19 +979,31 @@ def get_team_and_partner_from_integration_request(transaction_id):
 
 @frappe.whitelist(allow_guest=True)
 def display_mpesa_payment_partners():
-    """Display the list of partners in the system with Mpesa integration enabled."""
-    
-    Team = DocType("Team")
-    MpesaSettings = DocType("Mpesa Settings")
+	"""Display the list of partners in the system with Mpesa integration enabled."""
+	
+	Team = DocType("Team")
+	MpesaSettings = DocType("Mpesa Settings")
 
-    query = (
-        frappe.qb.from_(Team)
-        .join(MpesaSettings)
-        .on(Team.name == MpesaSettings.team)
-        .select(Team.user)
-        .where((Team.country == "Kenya") & (MpesaSettings.sandbox == 1))
-    )
+	query = (
+		frappe.qb.from_(Team)
+		.join(MpesaSettings)
+		.on(Team.name == MpesaSettings.team)
+		.select(Team.user)
+		.where((Team.country == "Kenya") & (MpesaSettings.sandbox == 1))
+	)
 
-    mpesa_partners = query.run(as_dict=True)
+	mpesa_partners = query.run(as_dict=True)
 
-    return [partner['user'] for partner in mpesa_partners]
+	return [partner['user'] for partner in mpesa_partners]
+
+@frappe.whitelist(allow_guest=True)
+def get_tax_percentage(payment_partner):
+	team_doc = frappe.get_doc("Team", {"user": payment_partner})
+	mpesa_settings=frappe.get_all("Mpesa Settings", filters={"api_type":"Mpesa Express", "team":team_doc.name}, fields=["name"])
+	for mpesa_setting in mpesa_settings:
+		payment_gateways = frappe.get_all("Payment Gateway", filters={"gateway_settings":"Mpesa settings","gateway_controller":mpesa_setting }, fields=["taxes_and_charges"])
+		print("hello",payment_gateways)
+		if payment_gateways:
+			taxes_and_charges = payment_gateways[0].taxes_and_charges
+	return taxes_and_charges
+	
