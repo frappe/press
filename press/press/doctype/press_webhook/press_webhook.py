@@ -107,8 +107,14 @@ class PressWebhook(Document):
 			)
 			response = req.text or ""
 			response_status_code = req.status_code
+		except requests.exceptions.ConnectionError:
+			response = "Failed to connect to the webhook endpoint"
+		except requests.exceptions.SSLError:
+			response = "SSL Error. Please check if SSL the certificate of the webhook is valid."
+		except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout):
+			response = "Request Timeout. Please check if the webhook is reachable."
 		except Exception as e:
-			response = e.__str__()
+			response = str(e)
 
 		return frappe._dict(
 			{
