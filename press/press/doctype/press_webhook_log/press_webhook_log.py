@@ -21,6 +21,7 @@ class PressWebhookLog(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.press_webhook_attempt.press_webhook_attempt import PressWebhookAttempt
 
 		attempts: DF.Table[PressWebhookAttempt]
