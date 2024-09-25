@@ -97,7 +97,11 @@ export default {
 						label: 'Code',
 						fieldname: 'response_status_code',
 						width: 0.1,
-						format: val => val || '-'
+						format: val => {
+							if (!val || parseInt(val) === 0) return '-';
+							return val;
+						},
+						align: 'center'
 					},
 					{
 						label: 'Timestamp',
