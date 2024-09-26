@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import ipaddress
-import time
 
 import boto3
 import frappe
@@ -318,7 +317,7 @@ class VirtualMachine(Document):
 					),
 				}
 			)
-      
+
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
@@ -342,7 +341,6 @@ class VirtualMachine(Document):
 			"unknown": "Pending",
 		}
 
-  
 	def get_aws_status_map(self):
 		return {
 			"pending": "Pending",
@@ -485,7 +483,7 @@ class VirtualMachine(Document):
 		else:
 			self.status = "Terminated"
 		self.save()
-    
+
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
 			instance = self.client().get_instance(instance_id=self.instance_id).data
@@ -834,7 +832,7 @@ class VirtualMachine(Document):
 			settings = frappe.get_single("Press Settings")
 			api_token = settings.get_password("hetzner_api_token")
 			return Client(token=api_token)
-   
+
 		return None
 
 	@frappe.whitelist()
