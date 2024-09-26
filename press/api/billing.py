@@ -836,6 +836,7 @@ def request_for_payment(**kwargs):
 	kwargs.setdefault("reference_doctype", "Invoice")
 	kwargs.setdefault("reference_docname", "INV-2024-00006")
 	kwargs.setdefault("transaction_limit", 150000)
+	kwargs.setdefault('team', 'Administrator')
 	args = frappe._dict(kwargs)
 	request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
 	for i, amount in enumerate(request_amounts):
@@ -881,18 +882,22 @@ def create_mpesa_payment_register_entry(transaction_response):
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
 	team, partner = get_team_and_partner_from_integration_request(transaction_id)
-	
-	# Create a new entry in Mpesa Payment Record
+	print("Partner", partner)
+	amount_usd, exchange_rate=convert("KES", "USD", amount)
+	# Create a new entry in M-pesa Payment Record
 	new_entry = frappe.get_doc({
 		"doctype": "Mpesa Payment Record",
 		"transaction_id": transaction_id,
 		"trans_time": trans_time,
 		"transaction_type":"Mpesa Express",
-		"team": 'ijlpjgrgr7',
+		"team": team,
 		"msisdn": msisdn,
 		"trans_amount": amount,
 		"merchant_request_id": request_id,
 		"payment_partner": partner,
+		"amount_usd": amount_usd,
+		"exchange_rate": exchange_rate,
+		"payment_partner":partner,
   
 	})
 
@@ -958,15 +963,15 @@ def after_save_mpesa_payment_record(doc, method=None):
 def get_team_and_partner_from_integration_request(transaction_id):
 	"""Get the team and partner associated with the integration request."""
 	integration_request = frappe.get_doc("Integration Request", transaction_id)
-	
-	request_data = integration_request.get("request_data")
-	
+	request_data = integration_request.data
 	# Parse the request_data as a dictionary
 	if request_data:
 		try:
 			request_data_dict = json.loads(request_data)  
-			team = request_data_dict.get("team")
-			partner = request_data_dict.get("partner")
+			team_ = request_data_dict.get("team")
+			team = frappe.get_value("Team", {"user": team_}, "name")
+			partner_ = request_data_dict.get("partner")
+			partner = frappe.get_value("Team", {"user": partner_}, "name")
 		except json.JSONDecodeError:
 			frappe.throw(_("Invalid JSON format in request_data"))
 			team = None
@@ -1007,3 +1012,9 @@ def get_tax_percentage(payment_partner):
 			taxes_and_charges = payment_gateways[0].taxes_and_charges
 	return taxes_and_charges
 	
+def convert(from_currency, to_currency, amount):
+	"""Convert the given amount from one currency to another."""
+	exchange_rate = frappe.get_value("Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate")
+	converted_amount = amount * exchange_rate
+	
+	return converted_amount, exchange_rate

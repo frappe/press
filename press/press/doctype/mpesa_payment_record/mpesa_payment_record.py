@@ -15,18 +15,18 @@ class MpesaPaymentRecord(Document):
 		from frappe.types import DF
 
 		amended_from: DF.Link | None
-		amountusd: DF.Currency
+		amount_usd: DF.Float
 		balance_transaction: DF.Link | None
 		bill_ref_number: DF.Data | None
-		company: DF.Link | None
 		default_currency: DF.Data | None
 		exchange_rate: DF.Float
 		invoice_number: DF.Data | None
 		merchant_request_id: DF.Data | None
 		msisdn: DF.Data | None
-		payment_partner: DF.Data | None
+		payment_partner: DF.Link | None
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
+		team: DF.Link | None
 		trans_amount: DF.Float
 		trans_id: DF.Data | None
 		trans_time: DF.Data | None

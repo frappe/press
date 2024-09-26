@@ -9,13 +9,13 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "company",
+  "team",
   "merchant_request_id",
   "trans_id",
   "transaction_type",
   "trans_time",
   "trans_amount",
-  "amountusd",
+  "amount_usd",
   "bill_ref_number",
   "exchange_rate",
   "column_break_14",
@@ -62,12 +62,6 @@
    "label": "Posting Time",
    "no_copy": 1,
    "read_only": 1
-  },
-  {
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
   },
   {
    "default": "KES",
@@ -140,20 +134,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "payment_partner",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Payment Partner",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "amountusd",
-   "fieldtype": "Currency",
-   "label": "Amount(USD)"
-  },
-  {
    "fieldname": "exchange_rate",
    "fieldtype": "Float",
    "label": "Exchange Rate",
@@ -164,13 +144,30 @@
    "fieldtype": "Link",
    "label": "Balance Transaction",
    "options": "Balance Transaction"
+  },
+  {
+   "fieldname": "amount_usd",
+   "fieldtype": "Float",
+   "label": "Amount(USD)"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Link",
+   "label": "Payment Partner",
+   "options": "Team"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-10 17:37:45.538455",
+ "modified": "2024-09-26 17:45:57.203592",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",
