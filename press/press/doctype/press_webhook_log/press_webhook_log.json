@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-18 16:34:27.110549",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "event",
+  "column_break_qqjj",
+  "team",
+  "section_break_vyzs",
+  "retries",
+  "column_break_btzb",
+  "next_retry_at",
+  "section_break_wqvc",
+  "attempts",
+  "section_break_bkbk",
+  "request_payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nQueued\nSent\nPartially Sent\nFailed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Event",
+   "options": "Press Webhook Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qqjj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_bkbk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_wqvc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_vyzs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "retries",
+   "fieldtype": "Int",
+   "label": "Retries"
+  },
+  {
+   "fieldname": "column_break_btzb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At"
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "JSON",
+   "label": "Request Payload",
+   "reqd": 1
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Table",
+   "label": "Attempts",
+   "options": "Press Webhook Attempt"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-25 16:11:01.102311",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Webhook Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

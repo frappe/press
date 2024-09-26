@@ -156,7 +156,8 @@ export default {
 		},
 		validate() {
 			if (!this.$resources.benches.data.length) {
-				this.error = 'This bench has no deploys, patch cannot be applied.';
+				this.error =
+					'This bench group has no benches, patch cannot be applied.';
 				return false;
 			}
 
@@ -278,7 +279,8 @@ export default {
 						return;
 					}
 
-					this.error = 'This bench has no deploys, patch cannot be applied.';
+					this.error =
+						'This bench group has no benches, patch cannot be applied.';
 				},
 				onError(data) {
 					this.error = data;

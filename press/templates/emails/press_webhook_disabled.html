@@ -1,0 +1,18 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p class="mb-4">
+            Due to a high number of failed webhook deliveries in the past hour, we have disabled one of your configured webhooks.<br>
+		</p>
+		<p class="mt-2 mb-3">Suspended webhook endpoint : <strong>{{ endpoint }}</strong></p>
+        <p>Please visit the <a href="https://frappecloud.com//dashboard/settings/developer">Frappe Cloud Dashboard</a> to review the webhook attempts and identify the issue. Once resolved, you can reactivate it directly from the dashboard. </p>
+        {{ utils.separator() }}
+		{{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}

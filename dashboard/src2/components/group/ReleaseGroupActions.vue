@@ -11,7 +11,7 @@
 				v-for="row in group.actions"
 				:key="row.action"
 			>
-				<BenchActionCell
+				<ReleaseGroupActionCell
 					:benchName="releaseGroup"
 					:group="group.group"
 					:actionLabel="row.action"
@@ -25,11 +25,11 @@
 </template>
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import BenchActionCell from './BenchActionCell.vue';
+import ReleaseGroupActionCell from './ReleaseGroupActionCell.vue';
 
 export default {
 	props: ['releaseGroup'],
-	components: { BenchActionCell },
+	components: { ReleaseGroupActionCell },
 	computed: {
 		$releaseGroup() {
 			return getCachedDocumentResource('Release Group', this.releaseGroup);

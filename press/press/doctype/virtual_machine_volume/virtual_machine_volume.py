@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+from __future__ import annotations
+
 from frappe.model.document import Document
 
 
@@ -14,6 +16,7 @@ class VirtualMachineVolume(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		device: DF.Data | None
 		iops: DF.Int
 		last_updated_at: DF.Datetime | None
 		name: DF.Int | None

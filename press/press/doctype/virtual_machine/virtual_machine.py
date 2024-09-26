@@ -37,6 +37,14 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
+server_doctypes = [
+	"Server",
+	"Database Server",
+	"Proxy Server",
+	"Monitor Server",
+	"Log Server",
+]
+
 
 class VirtualMachine(Document):
 	# begin: auto-generated types
@@ -47,9 +55,7 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
-			VirtualMachineVolume,
-		)
+		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
 		cloud_provider: DF.Literal["AWS EC2", "OCI", "Hetzner"]
@@ -79,15 +85,6 @@ class VirtualMachine(Document):
 		virtual_machine_image: DF.Link | None
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
-
-	server_doctypes = (
-		"Server",
-		"Database Server",
-		"Proxy Server",
-		"Monitor Server",
-		"Log Server",
-		"Devbox Server",
-	)
 
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
@@ -321,10 +318,11 @@ class VirtualMachine(Document):
 					),
 				}
 			)
+      
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
-		for doctype in self.server_doctypes:
+		for doctype in server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
@@ -344,6 +342,7 @@ class VirtualMachine(Document):
 			"unknown": "Pending",
 		}
 
+  
 	def get_aws_status_map(self):
 		return {
 			"pending": "Pending",
@@ -486,7 +485,7 @@ class VirtualMachine(Document):
 		else:
 			self.status = "Terminated"
 		self.save()
-
+    
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
 			instance = self.client().get_instance(instance_id=self.instance_id).data
@@ -575,6 +574,7 @@ class VirtualMachine(Document):
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
+			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
 			for volume in self.get_volumes():
@@ -588,6 +588,8 @@ class VirtualMachine(Document):
 				row.volume_type = volume["VolumeType"]
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
+				row.device = volume["Attachments"][0]["Device"]
+
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
 
@@ -619,7 +621,7 @@ class VirtualMachine(Document):
 			"Terminated": "Archived",
 			"Stopped": "Pending",
 		}
-		for doctype in self.server_doctypes:
+		for doctype in server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]
@@ -658,12 +660,7 @@ class VirtualMachine(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "snapshot",
-					"Tags": [
-						{
-							"Key": "Name",
-							"Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
-						}
-					],
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}],
 				},
 			],
 		)
@@ -677,11 +674,7 @@ class VirtualMachine(Document):
 					}
 				).insert()
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error",
-					virtual_machine=self.name,
-					snapshot=snapshot,
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	def _create_snapshots_oci(self):
 		for volume in self.volumes:
@@ -722,11 +715,7 @@ class VirtualMachine(Document):
 				# Let's try again later
 				pass
 			except Exception:
-				log_error(
-					title="Virtual Disk Snapshot Error",
-					virtual_machine=self.name,
-					snapshot=snapshot,
-				)
+				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -845,6 +834,7 @@ class VirtualMachine(Document):
 			settings = frappe.get_single("Press Settings")
 			api_token = settings.get_password("hetzner_api_token")
 			return Client(token=api_token)
+   
 		return None
 
 	@frappe.whitelist()
@@ -1113,90 +1103,12 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def convert_to_arm(self, virtual_machine_image, machine_type):
-		# Prerequisite - Series Compatible ARM Machine Image with all dependencies installed
-
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
-
-		# Make sure the current machine is stopped.
-		# Stop to preserve EBS. Terminate will drop EBS (unless we do some extra work)
-		if self.status != "Stopped":
-			frappe.throw("Machine must be stopped before converting to ARM")
-
-		# Prepare volumes to attach to new machine
-		volumes = []
-		for index, volume in enumerate(self.volumes):
-			device_name_index = chr(ord("f") + index)
-			volumes.append(
-				{
-					"VolumeId": volume.volume_id,
-					"DeviceName": f"/dev/sd{device_name_index}",
-				}
-			)
-		self.add_comment(text=f"Volumes {volumes}")
-
-		# Create a copy of the current machine
-		# So we don't lose the instance ids
-		copy = frappe.copy_doc(self)
-		copy.insert(set_name=f"{self.name}-copy")
-
-		message = (
-			f"Converting to ARM <br><br>"
-			f"Instance ID: {self.instance_id} <br>"
-			f"EBS Volume IDs: {[volume.volume_id for volume in self.volumes]} <br>"
-			f"Copied Current State to: <a href='{copy.get_url()}'>{copy.name}</a><br>"
-		)
-		self.add_comment(text=message)
-
-		# Disable delete on termination for all volumes
-		# So we can safely terminate the instance without losing any data
-		copy.disable_delete_on_termination_for_all_volumes()
-
-		# Terminate the current machine
-		copy.disable_termination_protection()
-		copy.reload()
-		copy.terminate()
-
-		# Wait for the machine to terminate
-		# Private ip address is released when the machine is terminated
-		while copy.status != "Terminated":
-			copy.reload()
-			copy.sync()
-			time.sleep(1)
-
-		# Create new machine in place. So we retain Name, IP etc.
-		# Reset instance attributes
-		self.instance_id = None
-		self.volumes = []
-		self.public_ip_address = None
-
-		# Set new machine image to ARM compatible image
-		self.virtual_machine_image = virtual_machine_image
-		self.machine_type = machine_type
-		self.save()
-
-		# Start the new machine
-		self._provision_aws()
-
-		# Wait for the new machine to start (status = Running)
-		# We can't attach volumes to a machine that is not running
-		while self.status != "Running":
-			self.reload()
-			self.sync()
-			time.sleep(1)
-
-		# Attach volumes to new machine
-		for volume in volumes:
-			try:
-				self.client().attach_volume(
-					InstanceId=self.instance_id,
-					Device=volume["DeviceName"],
-					VolumeId=volume["VolumeId"],
-				)
-			except Exception as e:
-				print(e)
-
-		self.sync()
+		return frappe.new_doc(
+			"Virtual Machine Migration",
+			virtual_machine=self.name,
+			virtual_machine_image=virtual_machine_image,
+			machine_type=machine_type,
+		).insert()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

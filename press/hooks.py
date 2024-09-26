@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 from press.api.account import get_frappe_io_auth_url
-
 
 from . import __version__ as app_version
 
@@ -106,23 +104,15 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Site Domain": (
-		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
-	),
+	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
-	"Subscription": (
-		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
-	),
+	"Subscription": ("press.press.doctype.subscription.subscription.get_permission_query_conditions"),
 	"Stripe Payment Method": "press.press.doctype.stripe_payment_method.stripe_payment_method.get_permission_query_conditions",
 	"Balance Transaction": "press.press.doctype.balance_transaction.balance_transaction.get_permission_query_conditions",
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
-	"App Source": (
-		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
-	),
-	"App Release": (
-		"press.press.doctype.app_release.app_release.get_permission_query_conditions"
-	),
+	"App Source": ("press.press.doctype.app_source.app_source.get_permission_query_conditions"),
+	"App Release": ("press.press.doctype.app_release.app_release.get_permission_query_conditions"),
 	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
 	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
 	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
@@ -131,6 +121,8 @@ permission_query_conditions = {
 	"Server": "press.press.doctype.server.server.get_permission_query_conditions",
 	"Database Server": "press.press.doctype.database_server.database_server.get_permission_query_conditions",
 	"Virtual Machine": "press.press.doctype.virtual_machine.virtual_machine.get_permission_query_conditions",
+	"Press Webhook": "press.press.doctype.press_webhook.press_webhook.get_permission_query_conditions",
+	"Press Webhook Log": "press.press.doctype.press_webhook_log.press_webhook_log.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
@@ -150,6 +142,9 @@ has_permission = {
 	"Bench": "press.overrides.has_permission",
 	"Server": "press.overrides.has_permission",
 	"Database Server": "press.overrides.has_permission",
+	"Press Webhook": "press.overrides.has_permission",
+	"Press Webhook Log": "press.overrides.has_permission",
+	"Press Webhook Attempt": "press.press.doctype.press_webhook_attempt.press_webhook_attempt.has_permission",
 }
 
 # Document Events
@@ -174,9 +169,7 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"weekly_long": [
-		"press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"
-	],
+	"weekly_long": ["press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"],
 	"daily": [
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
@@ -194,6 +187,7 @@ scheduler_events = {
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
+		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -217,6 +211,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
+		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 	],
 	"all": [
 		"press.auth.flush",
@@ -240,6 +235,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
 		"0 */6 * * *": [
@@ -284,9 +280,7 @@ scheduler_events = {
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
 		],
-		"0 0 1 */3 *": [
-			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
-		],
+		"0 0 1 */3 *": ["press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"],
 		"0 8 * * *": [
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
 		],
@@ -315,6 +309,7 @@ fixtures = [
 	"Press Method Permission",
 	"Bench Dependency",
 	"Server Storage Plan",
+	"Press Webhook Event",
 ]
 # Testing
 # -------

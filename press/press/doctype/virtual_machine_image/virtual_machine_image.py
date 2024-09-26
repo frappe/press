@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
-from typing import Optional
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -22,6 +21,10 @@ class VirtualMachineImage(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_image_volume.virtual_machine_image_volume import (
+			VirtualMachineImageVolume,
+		)
+
 		cluster: DF.Link
 		copied_from: DF.Link | None
 		image_id: DF.Data | None
@@ -35,6 +38,7 @@ class VirtualMachineImage(Document):
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]
 		virtual_machine: DF.Link
+		volumes: DF.Table[VirtualMachineImageVolume]
 	# end: auto-generated types
 
 	DOCTYPE = "Virtual Machine Image"
@@ -49,9 +53,11 @@ class VirtualMachineImage(Document):
 	def create_image(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
+			volumes = self.get_volumes_from_virtual_machine()
 			response = self.client.create_image(
 				InstanceId=self.instance_id,
 				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+				BlockDeviceMappings=volumes,
 			)
 			self.image_id = response["ImageId"]
 		elif cluster.cloud_provider == "OCI":
@@ -77,12 +83,12 @@ class VirtualMachineImage(Document):
 
 	def set_credentials(self):
 		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
-			self.mariadb_root_password = frappe.get_doc(
-				"Database Server", self.virtual_machine
-			).get_password("mariadb_root_password")
+			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
+				"mariadb_root_password"
+			)
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self):  # noqa: C901
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
@@ -90,11 +96,35 @@ class VirtualMachineImage(Document):
 				image = images[0]
 				self.status = self.get_aws_status_map(image["State"])
 				self.platform = image["Architecture"]
-				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
+				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
+				# This information is not accurate for images created from multiple volumes
 				if volume and "VolumeSize" in volume["Ebs"]:
 					self.size = volume["Ebs"]["VolumeSize"]
 				if volume and "SnapshotId" in volume["Ebs"]:
 					self.snapshot_id = volume["Ebs"]["SnapshotId"]
+				for volume in image["BlockDeviceMappings"]:
+					if "Ebs" not in volume:
+						# We don't care about non-EBS (instance store) volumes
+						continue
+					snapshot_id = volume["Ebs"]["SnapshotId"]
+					existing = find(self.volumes, lambda x: x.snapshot_id == snapshot_id)
+					device = volume["DeviceName"]
+					volume_type = volume["Ebs"]["VolumeType"]
+					size = volume["Ebs"]["VolumeSize"]
+					if existing:
+						existing.device = device
+						existing.volume_type = volume_type
+						existing.size = size
+					elif "Ebs":
+						self.append(
+							"volumes",
+							{
+								"snapshot_id": snapshot_id,
+								"device": device,
+								"volume_type": volume_type,
+								"size": size,
+							},
+						)
 			else:
 				self.status = "Unavailable"
 		elif cluster.cloud_provider == "OCI":
@@ -149,6 +179,22 @@ class VirtualMachineImage(Document):
 			"DELETED": "Unavailable",
 		}.get(status, "Unavailable")
 
+	def get_volumes_from_virtual_machine(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		volumes = []
+		for volume in machine.volumes:
+			volumes.append(
+				{
+					"DeviceName": volume.device,
+					"Ebs": {
+						"DeleteOnTermination": True,
+						"VolumeSize": volume.size,
+						"VolumeType": volume.volume_type,
+					},
+				}
+			)
+		return volumes
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -159,13 +205,12 @@ class VirtualMachineImage(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif cluster.cloud_provider == "OCI":
+		if cluster.cloud_provider == "OCI":
 			return ComputeClient(cluster.get_oci_config())
+		return None
 
 	@classmethod
-	def get_available_for_series(
-		cls, series: str, region: Optional[str] = None
-	) -> Optional[str]:
+	def get_available_for_series(cls, series: str, region: str | None = None) -> str | None:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)

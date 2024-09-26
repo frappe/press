@@ -6,7 +6,7 @@
 			title: 'Move Site to another Server',
 			actions: [
 				{
-					label: 'Add Server to Bench',
+					label: 'Add Server to Bench Group',
 					loading: $resources.addServerToReleaseGroup.loading,
 					disabled: $resources.isServerAddedInGroup.data || !targetServer.value,
 					onClick: () => $resources.addServerToReleaseGroup.submit()
@@ -98,7 +98,7 @@ export default {
 				this.targetServer.value &&
 				!this.$resources.isServerAddedInGroup.data
 			) {
-				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
+				return "The chosen server isn't added to the bench group yet. Please add the server to the bench groupfirst.";
 			} else if (
 				this.targetServer.value &&
 				this.$resources.isServerAddedInGroup.data
@@ -170,7 +170,7 @@ export default {
 					);
 
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: {
 							name: this.$site.doc?.group,
 							id: data

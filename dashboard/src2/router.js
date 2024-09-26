@@ -107,7 +107,7 @@ let router = createRouter({
 			component: () => import('./pages/NewSite.vue')
 		},
 		{
-			name: 'Bench New Site',
+			name: 'Release Group New Site',
 			path: '/benches/:bench/sites/new',
 			component: () => import('./pages/NewSite.vue'),
 			props: true
@@ -115,12 +115,12 @@ let router = createRouter({
 		{
 			name: 'New Release Group',
 			path: '/benches/new',
-			component: () => import('./pages/NewBench.vue')
+			component: () => import('./pages/NewReleaseGroup.vue')
 		},
 		{
-			name: 'Server New Bench',
+			name: 'Server New Release Group',
 			path: '/servers/:server/benches/new',
-			component: () => import('./pages/NewBench.vue'),
+			component: () => import('./pages/NewReleaseGroup.vue'),
 			props: true
 		},
 		{
