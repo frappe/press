@@ -3270,7 +3270,6 @@ def fetch_setup_wizard_complete_status_if_site_exists(site):
 
 def create_site_status_update_webhook_event(site: str):
 	record = frappe.get_doc("Site", site)
-	if record.team != "Administrator":
-		create_webhook_event("Site Status Update", record, record.team)
-	if record.owner != "Administrator" and record.owner != record.team:
-		create_webhook_event("Site Status Update", record, record.owner)
+	if record.team == "Administrator":
+		return
+	create_webhook_event("Site Status Update", record, record.team)
