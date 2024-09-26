@@ -78,6 +78,7 @@
 				<ObjectList :options="sshKeyListOptions" />
 			</div>
 			<div
+				v-if="$session.hasWebhookConfigurationAccess"
 				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
 			>
 				<div class="flex items-center justify-between">
