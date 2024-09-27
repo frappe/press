@@ -209,10 +209,8 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if (
-			self.ip
-			and self.doctype not in ["Database Server", "Server", "Proxy Server"]
-			or not self.is_self_hosted
+		if self.ip and (
+			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
 		):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
