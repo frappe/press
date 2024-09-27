@@ -89,10 +89,10 @@ class Cluster(Document):
 		"Server": "f",  # App server is last as it needs both proxy and db server
 	}
 
-	private_server: ClassVar[dict] = {
+	private_servers: ClassVar[dict] = {
 		# TODO: Uncomment these when they are implemented
 		# "Monitor Server": "p",
-		# "Log Server": "e",
+		# "Log Server": "e,
 	}
 
 	wait_for_aws_creds_seconds = 20
