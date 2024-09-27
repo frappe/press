@@ -49,7 +49,7 @@ def update(name: str, endpoint: str, secret: str, events: list[str]):
 
 @frappe.whitelist()
 def attempts(webhook: str):
-	check_role_permissions("Press Webhook")
+	check_role_permissions("Press Webhook Log")
 	doc = frappe.get_doc("Press Webhook", webhook)
 	doc.has_permission("read")
 
@@ -75,7 +75,7 @@ def attempts(webhook: str):
 
 @frappe.whitelist()
 def attempt(name: str):
-	check_role_permissions("Press Webhook")
+	check_role_permissions("Press Webhook Attempt")
 	doc = frappe.get_doc("Press Webhook Attempt", name)
 	doc.has_permission("read")
 	data = doc.as_dict()

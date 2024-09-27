@@ -126,7 +126,15 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	"""
 	from press.utils import has_role
 
-	if doctype not in ["Site", "Release Group", "Server", "Marketplace App", "Press Webhook"]:
+	if doctype not in [
+		"Site",
+		"Release Group",
+		"Server",
+		"Marketplace App",
+		"Press Webhook",
+		"Press Webhook Log",
+		"Press Webhook Attempt",
+	]:
 		return []
 
 	if frappe.local.system_user() or has_role("Press Support Agent"):
@@ -152,7 +160,7 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 		frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif (
-		doctype in ["Press Webhook", "Press Webhook Log"]
+		doctype in ["Press Webhook", "Press Webhook Log", "Press Webhook Attempt"]
 		and (roles := query.select(PressRole.allow_webhook_configuration).run(as_dict=1))
 		and not any(perm.allow_webhook_configuration for perm in roles)
 	):
