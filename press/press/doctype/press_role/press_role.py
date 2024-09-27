@@ -126,7 +126,7 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	"""
 	from press.utils import has_role
 
-	if doctype not in ["Site", "Release Group", "Server", "Marketplace App"]:
+	if doctype not in ["Site", "Release Group", "Server", "Marketplace App", "Press Webhook"]:
 		return []
 
 	if frappe.local.system_user() or has_role("Press Support Agent"):
@@ -143,12 +143,21 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 		.where(PressRole.team == frappe.local.team().name)
 	)
 
-	if doctype == "Marketplace App":
-		if roles := query.select(PressRole.allow_apps).run(as_dict=1) and not any(
-			perm.allow_apps for perm in roles
-		):
-			# throw error if any of the roles don't have permission for apps
-			frappe.throw("Not permitted", frappe.PermissionError)
+	if (
+		doctype == "Marketplace App"
+		and (roles := query.select(PressRole.allow_apps).run(as_dict=1))
+		and not any(perm.allow_apps for perm in roles)
+	):
+		# throw error if any of the roles don't have permission for apps
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+	elif (
+		doctype in ["Press Webhook", "Press Webhook Log"]
+		and (roles := query.select(PressRole.allow_webhook_configuration).run(as_dict=1))
+		and not any(perm.allow_webhook_configuration for perm in roles)
+	):
+		# throw error if any of the roles don't have permission for webhooks
+		frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")
