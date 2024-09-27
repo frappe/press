@@ -78,6 +78,7 @@
 				<ObjectList :options="sshKeyListOptions" />
 			</div>
 			<div
+				v-if="$session.hasWebhookConfigurationAccess"
 				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
 			>
 				<div class="flex items-center justify-between">
@@ -114,7 +115,7 @@
 <script setup>
 import { Badge, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed, h, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { confirmDialog, icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
@@ -125,6 +126,7 @@ import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
 import EditWebhookDialog from './EditWebhookDialog.vue';
 import { useRouter } from 'vue-router';
 import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue';
+import { session } from '../../data/session';
 
 const $team = getTeam();
 const router = useRouter();
@@ -296,7 +298,7 @@ const webhookListResource = createResource({
 		fields: ['name', 'enabled', 'endpoint']
 	},
 	initialData: [],
-	auto: true
+	auto: false
 });
 
 const deleteWebhook = createResource({
@@ -464,4 +466,10 @@ const onWebHookUpdated = activationRequired => {
 		showActivateWebhookDialog.value = true;
 	}
 };
+
+onMounted(() => {
+	if (session.hasWebhookConfigurationAccess) {
+		webhookListResource.fetch();
+	}
+});
 </script>
