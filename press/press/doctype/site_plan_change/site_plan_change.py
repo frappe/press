@@ -53,10 +53,6 @@ class SitePlanChange(Document):
 		if self.team != "Administrator":
 			create_webhook_event("Site Plan Change", self, self.team)
 
-			site_owner = frappe.db.get_value("Site", self.site, "owner")
-			if site_owner != "Administrator" and site_owner != self.team:
-				create_webhook_event("Site Plan Change", self, site_owner)
-
 		if self.type == "Initial Plan":
 			self.create_subscription()
 			return
