@@ -607,9 +607,10 @@ class SiteMigration(Document):
 			plan_change = self.upgrade_plan(site, dest_server) or self.downgrade_plan(site, dest_server)
 		except CannotChangePlan:
 			self.update_next_step_status("Failure")
-		else:
+
+		if plan_change:
 			self.update_next_step_status("Success")
-		if not plan_change:
+		else:
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
 
