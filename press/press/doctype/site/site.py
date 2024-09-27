@@ -7,7 +7,7 @@ import json
 import re
 from collections import defaultdict
 from contextlib import suppress
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Any
 
 import dateutil.parser
@@ -1830,7 +1830,7 @@ class Site(Document, TagHelpers):
 			plan_config["app_include_js"] = []
 
 		self._update_configuration(plan_config)
-		frappe.get_doc(
+		ret = frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
@@ -1857,6 +1857,7 @@ class Site(Document, TagHelpers):
 			"revoke_database_access_on_plan_change",
 			enqueue_after_commit=True,
 		)
+		return ret
 
 	def revoke_database_access_on_plan_change(self):
 		# If the new plan doesn't have database access, disable it
@@ -2573,7 +2574,7 @@ class Site(Document, TagHelpers):
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
-	@property
+	@cached_property
 	def is_on_dedicated_plan(self):
 		return bool(frappe.db.get_value("Site Plan", self.plan, "dedicated_server_plan"))
 
