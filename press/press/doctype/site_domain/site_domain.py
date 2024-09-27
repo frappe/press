@@ -204,9 +204,10 @@ def update_dns_type():
 			return
 		try:
 			response = check_dns(domain.site, domain.domain)
-			if response["matched"] and response["type"] != domain.dns_type:
+			dns_type = "A" if response["type"] == "AAAA" else response["type"]
+			if response["matched"] and dns_type != domain.dns_type:
 				frappe.db.set_value(
-					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
+					"Site Domain", domain.name, "dns_type", dns_type, update_modified=False
 				)
 			pretty_response = json.dumps(response, indent=4, default=str)
 			frappe.db.set_value(
