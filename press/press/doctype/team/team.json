@@ -28,6 +28,7 @@
   "child_team_members",
   "section_break_9",
   "send_notifications",
+  "billing_email",
   "column_break_9",
   "notify_email",
   "last_used_team",
@@ -116,7 +117,8 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "fieldname": "default_payment_method",
@@ -207,13 +209,11 @@
    "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
-   "depends_on": "eval:doc.send_notifications;",
    "fetch_from": "user.email",
    "fetch_if_empty": 1,
    "fieldname": "notify_email",
    "fieldtype": "Data",
-   "label": "Notify Email",
-   "mandatory_depends_on": "eval:doc.send_notifications;"
+   "label": "Notify Email"
   },
   {
    "fieldname": "column_break_9",
@@ -441,6 +441,12 @@
    "fieldname": "enable_inplace_updates",
    "fieldtype": "Check",
    "label": "Enable In Place Updates"
+  },
+  {
+   "fetch_from": "user.email",
+   "fieldname": "billing_email",
+   "fieldtype": "Data",
+   "label": "Billing Email"
   }
  ],
  "links": [
@@ -500,7 +506,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-13 11:55:07.048543",
+ "modified": "2024-09-27 11:55:44.193800",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

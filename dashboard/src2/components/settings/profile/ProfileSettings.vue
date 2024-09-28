@@ -4,6 +4,7 @@
 			<AccountProfile />
 			<AccountReferral />
 			<AccountPartner />
+			<AccountEmails />
 		</div>
 	</div>
 </template>
@@ -12,6 +13,7 @@
 import AccountProfile from './AccountProfile.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountPartner from './AccountPartner.vue';
+import AccountEmails from './AccountEmails.vue';
 
 document.title = 'Settings - Profile';
 </script>

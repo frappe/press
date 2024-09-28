@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import os
 from hashlib import blake2b
-from typing import List
 
 import frappe
 from frappe import _
@@ -12,9 +12,9 @@ from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_fullname, get_url_to_form, random_string
+
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
-from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, log_error
 from press.utils.billing import (
@@ -29,14 +29,14 @@ class Team(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING, ClassVar, Optional
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
+		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
-		from press.press.doctype.communication_email.communication_email import (
-			CommunicationEmail,
-		)
+		from press.press.doctype.communication_email.communication_email import CommunicationEmail
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
@@ -44,6 +44,7 @@ class Team(Document):
 		auto_install_localisation_app_enabled: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
+		billing_email: DF.Data | None
 		billing_name: DF.Data | None
 		billing_team: DF.Link | None
 		child_team_members: DF.Table[ChildTeamMember]
@@ -89,7 +90,7 @@ class Team(Document):
 		via_erpnext: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = ClassVar[
 		"enabled",
 		"team_title",
 		"user",
@@ -184,11 +185,17 @@ class Team(Document):
 		self.validate_billing_team()
 
 	def before_insert(self):
-		if not self.notify_email:
-			self.notify_email = self.user
+		self.set_notification_emails()
 
 		if not self.referrer_id:
 			self.set_referrer_id()
+
+	def set_notification_emails(self):
+		if not self.notify_email:
+			self.notify_email = self.user
+
+		if not self.billing_email:
+			self.billing_email = self.user
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
@@ -233,19 +240,18 @@ class Team(Document):
 			)
 
 	def delete(self, force=False, workflow=False):
+		if not (force or workflow):
+			frappe.throw(
+				f"You are only deleting the Team Document for {self.name}. To continue to"
+				" do so, pass force=True with this call. Else, pass workflow=True to raise"
+				" a Team Deletion Request to trigger complete team deletion process."
+			)
+
 		if force:
 			return super().delete()
 
-		if workflow:
-			return frappe.get_doc(
-				{"doctype": "Team Deletion Request", "team": self.name}
-			).insert()
-
-		frappe.throw(
-			f"You are only deleting the Team Document for {self.name}. To continue to"
-			" do so, pass force=True with this call. Else, pass workflow=True to raise"
-			" a Team Deletion Request to trigger complete team deletion process."
-		)
+		# if workflow is True, create a Team Deletion Request
+		return frappe.get_doc({"doctype": "Team Deletion Request", "team": self.name}).insert()
 
 	def disable_account(self):
 		self.suspend_sites("Account disabled")
@@ -265,8 +271,8 @@ class Team(Document):
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
-		password: str = None,
-		country: str = None,
+		password: str | None,
+		country: str | None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
@@ -298,9 +304,7 @@ class Team(Document):
 		team.append("team_members", {"user": user.name})
 		if not account_request.invited_by_parent_team:
 			team.append("communication_emails", {"type": "invoices", "value": user.name})
-			team.append(
-				"communication_emails", {"type": "marketplace_notifications", "value": user.name}
-			)
+			team.append("communication_emails", {"type": "marketplace_notifications", "value": user.name})
 		else:
 			team.parent_team = account_request.invited_by
 
@@ -314,9 +318,8 @@ class Team(Document):
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
 
-		if not team.via_erpnext:
-			if not account_request.invited_by_parent_team:
-				team.create_upcoming_invoice()
+		if not team.via_erpnext and not account_request.invited_by_parent_team:
+			team.create_upcoming_invoice()
 		return team
 
 	@staticmethod
@@ -410,17 +413,18 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
-	def validate_payment_mode(self):
+	def validate_payment_mode(self):  # noqa: C901
 		if not self.payment_mode and self.get_balance() > 0:
 			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
-			if self.payment_mode == "Card":
-				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
-					frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits":
-				if self.get_balance() <= 0:
-					frappe.throw("Account does not have sufficient balance")
+			if (
+				self.payment_mode == "Card"
+				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
+			):
+				frappe.throw("No card added")
+			if self.payment_mode == "Prepaid Credits" and self.get_balance() <= 0:
+				frappe.throw("Account does not have sufficient balance")
 
 		if not self.is_new() and not self.default_payment_method:
 			# if default payment method is unset
@@ -442,11 +446,7 @@ class Team(Document):
 		):
 			old_doc = self.get_doc_before_save()
 			# Validate that the team has no payment method set previously or it was set to Free Credits
-			if (
-				(not old_doc)
-				or (not old_doc.payment_mode)
-				or old_doc.payment_mode == "Free Credits"
-			):
+			if (not old_doc) or (not old_doc.payment_mode) or old_doc.payment_mode == "Free Credits":
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
 				# Only capture if it's not a saas signup or invited by parent team
 				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
@@ -456,10 +456,15 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.validate_partnership_date()
+		self.set_notification_emails()
 
-		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
-			if self.has_value_changed("billing_name"):
-				self.update_billing_details_on_frappeio()
+		if (
+			not self.is_new()
+			and self.billing_name
+			and not frappe.conf.allow_tests
+			and self.has_value_changed("billing_name")
+		):
+			self.update_billing_details_on_frappeio()
 
 	def validate_partnership_date(self):
 		if self.erpnext_partner or not self.partnership_date:
@@ -472,9 +477,7 @@ class Team(Document):
 				"frappe_partnership_date",
 			)
 			if frappe_partnership_date and frappe_partnership_date > self.partnership_date:
-				frappe.throw(
-					"Partnership date cannot be less than the partnership date of the partner"
-				)
+				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
@@ -529,8 +532,8 @@ class Team(Document):
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
-		start_date = frappe.utils.getdate(data.get("start_date"))
-		return start_date
+
+		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_new_invoice(self):
 		"""
@@ -538,9 +541,7 @@ class Team(Document):
 		to track the partner achivements
 		"""
 		# check if any active user with an invoice
-		if not frappe.get_all(
-			"Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"
-		):
+		if not frappe.get_all("Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"):
 			return
 		today = frappe.utils.getdate()
 		current_invoice = frappe.db.get_value(
@@ -559,9 +560,7 @@ class Team(Document):
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
 
-		if (
-			current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email
-		):
+		if current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email:
 			# don't create new invoice if partner email is set
 			return
 
@@ -572,11 +571,10 @@ class Team(Document):
 		):
 			# don't create invoice if new team or today is the last day of the month
 			return
-		else:
-			current_inv_doc.period_end = frappe.utils.add_days(today, -1)
-			current_inv_doc.flags.on_partner_conversion = True
-			current_inv_doc.save()
-			current_inv_doc.finalize_invoice()
+		current_inv_doc.period_end = frappe.utils.add_days(today, -1)
+		current_inv_doc.flags.on_partner_conversion = True
+		current_inv_doc.save()
+		current_inv_doc.finalize_invoice()
 
 		# create invoice
 		invoice = frappe.get_doc(
@@ -686,9 +684,7 @@ class Team(Document):
 		self.update_billing_details_on_draft_invoices()
 
 	def update_billing_details_on_draft_invoices(self):
-		draft_invoices = frappe.get_all(
-			"Invoice", {"team": self.name, "docstatus": 0}, pluck="name"
-		)
+		draft_invoices = frappe.get_all("Invoice", {"team": self.name, "docstatus": 0}, pluck="name")
 		for draft_invoice in draft_invoices:
 			# Invoice.customer_name set by Invoice.validate()
 			frappe.get_doc("Invoice", draft_invoice).save()
@@ -702,8 +698,8 @@ class Team(Document):
 		except FrappeioServerNotSet as e:
 			if frappe.conf.developer_mode or os.environ.get("CI"):
 				return
-			else:
-				raise e
+
+			raise e
 
 		previous_version = self.get_doc_before_save()
 
@@ -716,13 +712,9 @@ class Team(Document):
 		if previous_billing_name and previous_billing_name != self.billing_name:
 			try:
 				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
-				frappe.msgprint(
-					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
-				)
+				frappe.msgprint(f"Renamed customer from {previous_billing_name} to {self.billing_name}")
 			except Exception:
-				log_error(
-					"Failed to rename customer on frappe.io", traceback=frappe.get_traceback()
-				)
+				log_error("Failed to rename customer on frappe.io", traceback=frappe.get_traceback())
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
@@ -828,9 +820,7 @@ class Team(Document):
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
 			invoice.stripe_link_expired = False
 			if invoice.status == "Unpaid":
-				invoice.formatted_amount_due = frappe.utils.fmt_money(
-					invoice.amount_due, 2, invoice.currency
-				)
+				invoice.formatted_amount_due = frappe.utils.fmt_money(invoice.amount_due, 2, invoice.currency)
 				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
 				if days_diff > 30:
 					invoice.stripe_link_expired = True
@@ -858,15 +848,13 @@ class Team(Document):
 		def get_stripe_balance():
 			return self.get_stripe_balance()
 
-		return frappe.cache().hget(
-			"customer_available_credits", self.name, generator=get_stripe_balance
-		)
+		return frappe.cache().hget("customer_available_credits", self.name, generator=get_stripe_balance)
 
 	def get_stripe_balance(self):
 		stripe = get_stripe()
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
 		balance = (customer_object["balance"] * -1) / 100
-		return balance
+		return balance  # noqa: RET504
 
 	@dashboard_whitelist()
 	def get_team_members(self):
@@ -876,9 +864,7 @@ class Team(Document):
 	def invite_team_member(self, email, roles=None):
 		frappe.utils.validate_email_address(email, True)
 
-		if frappe.db.exists(
-			"Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}
-		):
+		if frappe.db.exists("Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}):
 			frappe.throw(_("Team member already exists"))
 
 		account_request = frappe.get_doc(
@@ -910,7 +896,7 @@ class Team(Document):
 			return 0
 		return res[0]
 
-	def can_create_site(self):
+	def can_create_site(self):  # noqa: C901
 		why = ""
 		allow = (True, "")
 
@@ -924,8 +910,7 @@ class Team(Document):
 		if self.is_saas_user and not self.payment_mode:
 			if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
 				return allow
-			else:
-				why = "You have already created trial site in the past"
+			why = "You have already created trial site in the past"
 
 		# allow user to create their first site without payment method
 		if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
@@ -938,14 +923,12 @@ class Team(Document):
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
-			else:
-				why = "Cannot create site due to insufficient balance"
+			why = "Cannot create site due to insufficient balance"
 
 		if self.payment_mode == "Card":
 			if self.default_payment_method:
 				return allow
-			else:
-				why = "Cannot create site without adding a card"
+			why = "Cannot create site without adding a card"
 
 		return (False, why)
 
@@ -954,9 +937,7 @@ class Team(Document):
 			return True
 
 		return bool(
-			frappe.db.exists(
-				"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
-			)
+			frappe.db.exists("Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"})
 		)
 
 	def billing_info(self):
@@ -975,14 +956,10 @@ class Team(Document):
 				)
 			),
 			"has_paid_before": bool(
-				frappe.db.exists(
-					"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
-				)
+				frappe.db.exists("Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"})
 			),
 			"has_unpaid_invoices": bool(
-				frappe.db.exists(
-					"Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}
-				)
+				frappe.db.exists("Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"})
 			),
 		}
 
@@ -1014,18 +991,17 @@ class Team(Document):
 			legacy_contract = res.get("legacy_contract")
 			if partner_level:
 				return partner_level, legacy_contract
-		else:
-			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
+
+		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
+		return None, None
 
 	def is_payment_mode_set(self):
-		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
-			return True
-		elif (
+		if (self.payment_mode in ("Prepaid Credits", "Paid By Partner")) or (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
 		):
 			return True
-		else:
-			return False
+
+		return False
 
 	def get_onboarding(self):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
@@ -1036,9 +1012,7 @@ class Team(Document):
 			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if is_payment_mode_set:
-			complete = True
-		elif frappe.db.get_value("User", self.user, "user_type") == "System User":
+		if is_payment_mode_set or frappe.db.get_value("User", self.user, "user_type") == "System User":
 			complete = True
 		elif saas_site_request:
 			complete = False
@@ -1062,9 +1036,7 @@ class Team(Document):
 			if pending_site_request:
 				product_trial = pending_site_request.product_trial
 			else:
-				product_trial = frappe.db.get_value(
-					"Account Request", self.account_request, "product_trial"
-				)
+				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
 			if product_trial:
 				return f"/app-trial/setup/{product_trial}"
 
@@ -1108,9 +1080,7 @@ class Team(Document):
 	def get_sites_to_suspend(self):
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan)
-			.select(plan.name)
-			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 
@@ -1185,8 +1155,9 @@ class Team(Document):
 			limit=1,
 			pluck="name",
 		)
-		if result:
-			return frappe.get_doc("Invoice", result[0], for_update=for_update)
+		if not result:
+			return None
+		return frappe.get_doc("Invoice", result[0], for_update=for_update)
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
@@ -1194,7 +1165,7 @@ class Team(Document):
 			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
 		).insert()
 
-	def notify_with_email(self, recipients: List[str], **kwargs):
+	def notify_with_email(self, recipients: list[str], **kwargs):
 		if not self.send_notifications:
 			return
 		if not recipients:
@@ -1207,8 +1178,7 @@ class Team(Document):
 		team_url = get_url_to_form("Team", self.name)
 		invoice_url = get_url_to_form("Invoice", invoice)
 		message = (
-			f"Failed Invoice Payment [{invoice}]({invoice_url}) of"
-			f" Partner: [{self.name}]({team_url})"
+			f"Failed Invoice Payment [{invoice}]({invoice_url}) of" f" Partner: [{self.name}]({team_url})"
 		)
 		TelegramMessage.enqueue(message=message)
 
@@ -1216,9 +1186,7 @@ class Team(Document):
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)
 		email = (
-			frappe.db.get_value(
-				"Communication Email", {"parent": self.name, "type": "invoices"}, "value"
-			)
+			frappe.db.get_value("Communication Email", {"parent": self.name, "type": "invoices"}, "value")
 			or self.user
 		)
 		payment_method = self.default_payment_method
@@ -1285,9 +1253,7 @@ def get_child_team_members(team):
 	if frappe.get_value("Team", team, "parent_team"):
 		return []
 
-	child_team_members = [
-		d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])
-	]
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])]
 
 	child_teams = []
 	if child_team_members:
@@ -1306,8 +1272,10 @@ def get_child_team_members(team):
 
 
 def get_default_team(user):
-	if frappe.db.exists("Team", user):
-		return user
+	if not frappe.db.exists("Team", user):
+		return None
+
+	return user
 
 
 def process_stripe_webhook(doc, method):
@@ -1332,7 +1300,7 @@ def process_stripe_webhook(doc, method):
 	handle_payment_intent_succeeded(payment_intent)
 
 
-def handle_payment_intent_succeeded(payment_intent):
+def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 	from datetime import datetime
 
 	if isinstance(payment_intent, str):
@@ -1340,9 +1308,7 @@ def handle_payment_intent_succeeded(payment_intent):
 		payment_intent = stripe.PaymentIntent.retrieve(payment_intent)
 
 	metadata = payment_intent.get("metadata")
-	if frappe.db.exists(
-		"Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}
-	):
+	if frappe.db.exists("Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}):
 		# ignore creating if already allocated
 		return
 
@@ -1456,9 +1422,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team(True)
-	child_team_members = [
-		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
-	]
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
 	if doc.name == team.name or doc.name in child_team_members:
 		return True
 

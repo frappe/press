@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -11,7 +10,7 @@ class SiteActivity(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING, ClassVar
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -43,12 +42,12 @@ class SiteActivity(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["action", "reason", "site"]
+	dashboard_fields = ClassVar["action", "reason", "site"]
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:
 			d = frappe.get_all("Site", {"name": self.site}, ["notify_email", "team"])[0]
-			recipient = d.notify_email or frappe.get_doc("Team", d.team).user
+			recipient = d.notify_email or frappe.get_doc("Team", d.team).notify_email
 			if recipient:
 				team = frappe.get_doc("Team", d.team)
 				team.notify_with_email(
