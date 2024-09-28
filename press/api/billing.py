@@ -882,9 +882,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
 	team, partner = get_team_and_partner_from_integration_request(transaction_id)
-	print("Partner", partner)
 	amount_usd, exchange_rate=convert("KES", "USD", amount)
-	# Create a new entry in M-pesa Payment Record
+	# Create a new entry in M-Pesa Payment Record
 	new_entry = frappe.get_doc({
 		"doctype": "Mpesa Payment Record",
 		"transaction_id": transaction_id,
@@ -941,10 +940,10 @@ def create_balance_transaction(team, amount, invoice=None):
 
  
 def after_save_mpesa_payment_record(doc, method=None):
-	
 	try:
 		team = doc.team
-		amount = doc.trans_amount
+		# amount = doc.trans_amount
+		amount = doc.amount_usd
 		
 		balance_transaction_name = create_balance_transaction(team, amount)
 		
@@ -1007,7 +1006,6 @@ def get_tax_percentage(payment_partner):
 	mpesa_settings=frappe.get_all("Mpesa Settings", filters={"api_type":"Mpesa Express", "team":team_doc.name}, fields=["name"])
 	for mpesa_setting in mpesa_settings:
 		payment_gateways = frappe.get_all("Payment Gateway", filters={"gateway_settings":"Mpesa settings","gateway_controller":mpesa_setting }, fields=["taxes_and_charges"])
-		print("hello",payment_gateways)
 		if payment_gateways:
 			taxes_and_charges = payment_gateways[0].taxes_and_charges
 	return taxes_and_charges
@@ -1018,3 +1016,82 @@ def convert(from_currency, to_currency, amount):
 	converted_amount = amount * exchange_rate
 	
 	return converted_amount, exchange_rate
+
+@frappe.whitelist(allow_guest=True)
+def webhook_trial():
+	print("Receiving webhook data...")
+	
+	rawdata = frappe.local.request.get_data(as_text=True)
+	
+	try:
+		data = json.loads(rawdata)
+	except Exception as e:
+		frappe.log_error(f"Webhook data could not be parsed: {e}")
+		frappe.throw(_("Error parsing the webhook data"))
+	
+	transaction_id = data.get("transaction_id")
+	trans_amount = data.get("trans_amount")
+	msisdn = data.get("msisdn")
+	team = data.get("team")
+	default_currency = data.get("default_currency")
+	
+	if not transaction_id or not trans_amount:
+		frappe.throw(_("Invalid transaction data received"))
+
+	# Step 3: Create a new Sales Invoice
+	try:
+		sales_invoice = frappe.get_doc({
+			"doctype": "Invoice",
+			"team": team,  
+			"due_date": frappe.utils.nowdate(),
+			"currency": default_currency,
+			"items": [{
+				"item_name": "Mpesa Payment",
+				"description": f"Payment via Mpesa transaction {transaction_id}",
+				"quantity": 1,
+				"rate": float(trans_amount)
+			}],
+			"remarks": f"Mpesa Transaction ID: {transaction_id}",
+			"mpesa_transaction_id": transaction_id, 
+			"status":"Paid"
+		})
+
+		# Step 4: Insert the Sales Invoice into the database
+		sales_invoice.insert(ignore_permissions=True)
+		sales_invoice.submit()
+		frappe.db.commit()
+		frappe.msgprint(_("Sales Invoice created successfully"))
+
+		return {"status": "success", "invoice_id": sales_invoice.name}
+	
+	except Exception as e:
+		print(f"Error creating Sales Invoice: {e}")
+		frappe.throw(_("Failed to create Sales Invoice"))
+
+@frappe.whitelist(allow_guest=True)
+def create_mpesa_settings(**kwargs):
+	"""Create Mpesa Settings for the team."""
+	team = get_current_team()
+
+	try:
+		mpesa_settings = frappe.get_doc({
+			"doctype": "Mpesa Settings",
+			"team": team,  
+			"payment_gateway_name": kwargs.get("payment_gateway_name"),
+			"api_type": "Mpesa Express",
+			"consumer_key": kwargs.get("consumer_key"),  
+			"consumer_secret": kwargs.get("consumer_secret"),  
+			"business_shortcode": kwargs.get("short_code"),  
+			"till_number": kwargs.get("till_number"), 
+			"online_passkey": kwargs.get("pass_key"), 
+			"security_credential": kwargs.get("security_credential"),
+			"sandbox": 1 if kwargs.get("sandbox") else 0,
+		})
+
+		mpesa_settings.insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		return mpesa_settings.name 
+	except Exception as e:
+		frappe.log_error(message=f"Error creating Mpesa Settings: {str(e)}", title="M-Pesa Settings Creation Error")
+		return None  

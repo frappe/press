@@ -90,6 +90,21 @@
 						<span v-else class="font-normal text-gray-600">Not set</span>
 					</div>
 				</div>
+<!-- Adding Mpesa Details -->
+<div class="flex flex-col gap-2 rounded-md border p-4">
+  <div class="flex justify-between items-center text-sm text-gray-700">
+    <div>Add M-Pesa Express Credentials</div>
+    <Button @click="showAddMpesaDialog = true">Add</Button>
+  </div>
+  <div class="overflow-hidden text-ellipsis text-base font-medium">
+    <span class="font-normal text-gray-600">Not set</span>
+  </div>
+</div>
+<!-- End of M-Pesa Adding -->
+
+<!-- Add the dialog component -->
+<AddMpesaCredentials v-model="showAddMpesaDialog" @closeDialog="showAddMpesaDialog = false" />
+
 			</div>
 
 			<div class="mt-1">
@@ -146,6 +161,7 @@
 import { defineAsyncComponent } from 'vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import UpdateBillingDetails from '../components/UpdateBillingDetails.vue';
+import AddMpesaCredentials from '../components/AddMpesaCredentials.vue';
 
 export default {
 	name: 'BillingOverview',
@@ -160,6 +176,9 @@ export default {
 		),
 		StripeCardDialog: defineAsyncComponent(() =>
 			import('../components/StripeCardDialog.vue')
+		),
+		AddMpesaCredentials: defineAsyncComponent(() =>
+			import('../components/AddMpesaCredentials.vue')
 		)
 	},
 	resources: {
@@ -177,7 +196,8 @@ export default {
 			showChangeModeDialog: false,
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
-			showUpcomingInvoiceDialog: false
+			showUpcomingInvoiceDialog: false,
+			showAddMpesaDialog: false
 		};
 	},
 	mounted() {
