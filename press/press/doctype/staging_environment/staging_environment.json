@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "staging_release_group",
+  "staging_bench_group",
   "staging_site",
   "column_break_uubx",
   "team",
@@ -60,23 +60,23 @@
    "options": "Site"
   },
   {
-   "fieldname": "staging_release_group",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Staging Release Group",
-   "options": "Release Group"
-  },
-  {
    "fieldname": "site_creation_method",
    "fieldtype": "Select",
    "label": "Site Creation Method",
    "options": "New Site\nRestore From Backup",
    "reqd": 1
+  },
+  {
+   "fieldname": "staging_bench_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Staging Bench Group",
+   "options": "Release Group"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-30 11:11:40.505952",
+ "modified": "2024-09-30 14:51:18.766040",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Staging Environment",

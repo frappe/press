@@ -27,7 +27,7 @@ class StagingEnvironment(Document):
 		site: DF.Link
 		site_backup: DF.Link | None
 		site_creation_method: DF.Literal["New Site", "Restore From Backup"]
-		staging_release_group: DF.Link | None
+		staging_bench_group: DF.Link | None
 		staging_site: DF.Link | None
 		team: DF.Link
 	# end: auto-generated types
@@ -41,8 +41,8 @@ class StagingEnvironment(Document):
 
 	@frappe.whitelist()
 	def create_release_group(self):
-		if self.staging_release_group:
-			frappe.throw("Staging release group already exists")
+		if self.staging_bench_group:
+			frappe.throw("Staging bench group already exists")
 
 		site = frappe.get_doc("Site", self.site)
 		group = frappe.get_doc("Release Group", site.group)
@@ -73,7 +73,7 @@ class StagingEnvironment(Document):
 
 		candidate = staging_group.create_deploy_candidate()
 		candidate.schedule_build_and_deploy()
-		self.staging_release_group = staging_group.name
+		self.staging_bench_group = staging_group.name
 		self.save()
 
 	def create_site(self, bench: str):
@@ -102,5 +102,36 @@ class StagingEnvironment(Document):
 		self.staging_site = staging_site.name
 		self.save()
 
-	def delete_site(self):
-		pass
+	@frappe.whitelist()
+	def delete(self):
+		self.archieve_sites()
+
+	def archieve_sites(self):
+		sites = frappe.get_all("Site", filters={"group": self.staging_bench_group})
+		if not sites:
+			self.archieve_bench_group()
+			return
+		for site in sites:
+			site.archive(force=True)
+
+
+	def archieve_bench_group(self):
+		# validate that all sites are archived
+		sites = frappe.get_all("Site", filters={"group": self.staging_bench_group, "status": ("!=", "Archived")})
+		if sites:
+			frappe.throw("Staging bench group has sites. Please archive sites first.")
+		frappe.get_doc("Release Group", self.staging_bench_group).archive()
+
+
+def archive_staging_bench_group(bench_group, raise_exception=False):
+	staging_environment = frappe.db.get_value("Staging Environment", {"staging_bench_group": bench_group})
+	if not staging_environment:
+		return
+	# check if all sites are archived
+	sites = frappe.get_all("Site", filters={"group": bench_group, "status": ("!=", "Archived")})
+	if sites:
+		if raise_exception:
+			frappe.throw("Staging bench group has sites. Please archive sites first.")
+		return
+	# archive release group
+	frappe.get_doc("Staging Environment", staging_environment).archieve_bench_group()

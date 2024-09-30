@@ -849,7 +849,7 @@ def process_new_bench_job_update(job):
 		staging_environment = frappe.db.get_value(
 			"Staging Environment",
 			{
-				"staging_release_group": bench.group,
+				"staging_bench_group": bench.group,
 			},
 		)
 		if staging_environment:
