@@ -109,6 +109,22 @@
 					alt="Stripe Logo"
 				/>
 			</button>
+			<!-- Paymob button -->
+			<button
+				@click="paymentGateway = 'Paymob'"
+				label="Paymob"
+				class="flex h-10 items-center justify-center rounded border"
+				:class="{
+					'border-gray-300': paymentGateway !== 'Paymob',
+					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Paymob'
+				}"
+			>
+				<img
+					class="h-7 w-24"
+					:src="`/assets/press/images/paymobLogo.png`"
+					alt="Paymob Logo"
+				/>
+			</button>
 
 			<!--M-Pesa button-->
 			<button 
@@ -156,19 +172,31 @@
 	@success="onSuccess"
 	@cancel="onCancel"
 	/>
+
+	<!-- Paymob -->
+	<BuyPrepaidCreditsPaymob
+		v-if="paymentGateway === 'Paymob'"
+		:amount="creditsToBuy"
+		:minimumAmount="minimumAmount"
+	/>
+
+	
 	
 </template>
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
 import BuyPrepaidCreditMpesa from './BuyPrepaidCreditMpesa.vue';
+import BuyPrepaidCreditsPaymob from './BuyPrepaidCreditsPaymob.vue';
+
 
 export default {
 	name: 'BuyPrepaidCreditsDialog',
 	components: {
 		BuyPrepaidCreditsStripe,
 		BuyPrepaidCreditsRazorpay,
-		BuyPrepaidCreditMpesa
+		BuyPrepaidCreditMpesa,
+		BuyPrepaidCreditsPaymob,
 	},
 	data() {
 		return {

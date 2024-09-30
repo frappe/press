@@ -1,28 +1,5 @@
 <template>
 	<div>
-		<label
-			class="block"
-			:class="{
-				'pointer-events-none h-0.5 opacity-0': step != 'Add Card Details',
-				'mt-4': step == 'Add Card Details'
-			}"
-		>
-			<span class="text-sm leading-4 text-gray-700">
-				Credit or Debit Card
-			</span>
-			<iframe
-				v-if="step == 'Add Card Details'"
-				ref="paymobIframe"
-				class="form-input mt-2 block w-full"
-				:src="iframeSrc"
-				width="100%"
-				height="400px"
-				frameborder="0"
-				allow="payment"
-			></iframe>
-			<ErrorMessage class="mt-1" :message="cardErrorMessage" />
-		</label>
-
 		<div v-if="step == 'Setting up Paymob'" class="mt-8 flex justify-center">
 			<Spinner class="h-4 w-4 text-gray-600" />
 		</div>
@@ -30,8 +7,39 @@
 			class="mt-2"
 			:message="$resources.createPaymentIntent.error || errorMessage"
 		/>
-		<div class="mt-4 flex w-full justify-between">
-			<div></div>
+		<FormControl
+			type="autocomplete"
+			:options="teams" 
+			size="sm"
+			variant="subtle"
+			placeholder="Select a partner"
+			:disabled="false"
+			label="Partner"
+			v-model="partnerInput" 
+			class="mb-5 my-4"
+		/>
+		<FormControl
+			:type="'number'"
+			size="sm"
+			variant="subtle"
+			placeholder="Tax ID"
+			:disabled="false"
+			label="Company Tax ID"
+			v-model="taxID"
+			class="mb-5 my-4"
+		/>
+		<FormControl
+			:type="'number'"
+			size="sm"
+			variant="subtle"
+			placeholder="Amount in (Gateway) Currency [Actual Deducable]"
+			:disabled="true"
+			label="Actual Amount"
+			v-model="actualAmount"
+			class="mb-2 mt-4"
+		/>
+		<span class="text-gray-600 text-xs">Amount in (Gateway) Currency [Actual Deducable]<br> Actual Amount = (Amount USD * Exchange Rate) + Tax Amount </span>
+		<div class="mt-4 flex w-full justify-end">
 			<div v-if="step == 'Get Amount'">
 				<Button
 					variant="solid"
@@ -41,16 +49,6 @@
 					Proceed to payment using Paymob
 				</Button>
 			</div>
-			<div v-if="step == 'Add Card Details'">
-				<Button
-					class="ml-2"
-					variant="solid"
-					@click="onBuyClick"
-					:loading="paymentInProgress"
-				>
-					Make payment via Paymob
-				</Button>
-			</div>
 		</div>
 	</div>
 </template>
@@ -58,6 +56,7 @@
 <script>
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../utils/error';
+import { FormControl } from "frappe-ui";
 
 export default {
 	name: 'BuyPrepaidCreditsPaymob',
@@ -76,10 +75,17 @@ export default {
 			iframeSrc: null,
 			cardErrorMessage: null,
 			errorMessage: null,
-			paymentInProgress: false
+			paymentInProgress: false,
+			teams: ["axentor.co"],
+			partnerInput: null,
+			taxID: null,
+			actualAmount: 0.0,
+			currencyExchangeRate: 48,
+			taxPercetange: 13,
 		};
 	},
 	resources: {
+		// TODO: Add the paymob intent endpoint
 		createPaymentIntent() {
 			return {
 				url: 'press.api.billing.create_payment_intent_for_buying_credits',
@@ -87,6 +93,12 @@ export default {
 					amount: this.amount
 				},
 				validate() {
+					if (!this.actualAmount || !this.taxID || !this.partnerInput) {
+						toast("All Fields Required")
+						throw new DashboardError(
+							`All Fields Required`
+						);
+					}
 					if (
 						this.amount < this.minimumAmount &&
 						!this.$team.doc.erpnext_partner
@@ -99,7 +111,7 @@ export default {
 				async onSuccess(data) {
 					this.step = 'Setting up Paymob';
 					let { api_key, payment_token, iframe_url } = data;
-					
+
 					// Set iframe source
 					this.iframeSrc = `${iframe_url}?payment_token=${payment_token}`;
 					this.step = 'Add Card Details';
@@ -145,6 +157,13 @@ export default {
 			} catch (error) {
 				return false;
 			}
+		},
+		calcActualAmount() {
+			this.actualAmount = Number(
+					(
+						(this.amount * (this.currencyExchangeRate || 0)) + (this.amount * (this.taxPercetange / 100))
+					).toFixed(2)
+				);
 		}
 	},
 	computed: {
@@ -163,6 +182,14 @@ export default {
 				return this.amount;
 			}
 		}
+	},
+	watch: {
+		amount(newAmount) {
+			this.calcActualAmount(); // Update actualAmount when amount changes
+		},
+	},
+	mounted() {
+		this.calcActualAmount()
 	}
 };
 </script>
