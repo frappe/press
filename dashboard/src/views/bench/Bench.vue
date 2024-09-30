@@ -158,7 +158,7 @@ export default {
 		},
 		isSaasLogin(app) {
 			if (localStorage.getItem('saas_login')) {
-				return `/saas/manage/${app}/benches`;
+				return `/saas/manage/${app}/groups`;
 			}
 
 			return '/sites';

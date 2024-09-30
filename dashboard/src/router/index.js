@@ -62,7 +62,7 @@ const routes = [
 		component: () => import('../views/notifications/Notifications.vue')
 	},
 	{
-		path: '/benches',
+		path: '/groups',
 		name: 'BenchesScreen',
 		component: () => import('../views/bench/Benches.vue')
 	},
