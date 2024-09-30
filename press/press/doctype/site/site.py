@@ -40,7 +40,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
-from press.press.doctype.staging_environment.staging_environment import archive_staging_bench_group
+from press.press.doctype.staging_environment.staging_environment import archive_staging_group
 from press.utils.webhook import create_webhook_event
 
 try:
@@ -2814,7 +2814,7 @@ def process_archive_site_job_update(job):
 			site_cleanup_after_archive(job.site)
 
 	if updated_status == "Archived" and frappe.db.get_value("Site", job.site, "staging"):
-		archive_staging_bench_group(frappe.db.get_value("Site", job.site, "group"))
+		archive_staging_group(frappe.db.get_value("Site", job.site, "group"))
 
 
 def process_install_app_site_job_update(job):
