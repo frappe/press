@@ -48,7 +48,7 @@
 						<a
 							class="no-underline"
 							target="_blank"
-							href="https://frappecloud.com/docs/groups/editing-bench-dependency-version#setting-a-custom-version"
+							href="https://frappecloud.com/docs/benches/editing-bench-dependency-version#setting-a-custom-version"
 							><FeatherIcon
 								name="help-circle"
 								class="h-3 w-3 text-gray-700"

@@ -217,7 +217,7 @@
 				</p>
 				<p class="text-base">
 					Please refer to the
-					<a href="/docs/groups/ssh" class="underline"
+					<a href="/docs/benches/ssh" class="underline"
 						>SSH Access documentation</a
 					>
 					for more details.

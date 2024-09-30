@@ -35,7 +35,10 @@
 					<div class="space-y-1">
 						<p class="text-base">
 							Use wisely and only for
-							<a href="/docs/groups/debugging" class="underline" target="_blank"
+							<a
+								href="/docs/benches/debugging"
+								class="underline"
+								target="_blank"
 								>debugging</a
 							>
 							purposes. Do not install/uninstall apps as you would on a local
@@ -67,7 +70,7 @@
 				</p>
 				<p>
 					Please refer to the
-					<a href="/docs/groups/ssh" class="underline" target="_blank"
+					<a href="/docs/benches/ssh" class="underline" target="_blank"
 						>SSH Access documentation</a
 					>
 					for more details.
