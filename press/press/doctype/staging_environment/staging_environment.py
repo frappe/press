@@ -39,8 +39,9 @@ class StagingEnvironment(Document):
 		if not self.expiry_time:
 			self.expiry_time = frappe.utils.now_datetime() + timedelta(hours=24)
 
-		if self.is_new() and \
-			not frappe.db.get_value("Site Plan", frappe.db.get_value("Site", self.site, "site_plan"), "staging_environment_access"):
+		if self.is_new() and not frappe.db.get_value(
+			"Site Plan", frappe.db.get_value("Site", self.site, "site_plan"), "staging_environment_access"
+		):
 			frappe.throw("Staging environment access is not available for your site plan")
 
 	@frappe.whitelist()
