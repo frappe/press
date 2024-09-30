@@ -15,7 +15,7 @@
 			<Button
 				v-if="deployInformation.deploy_in_progress"
 				variant="solid"
-				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
+				:route="`/groups/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
 			<Tooltip
@@ -114,7 +114,7 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
+					this.$router.push(`/groups/${this.bench.name}/deploys/${candidate}`);
 					this.showDeployDialog = false;
 				}
 			};

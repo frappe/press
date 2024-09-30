@@ -234,7 +234,7 @@ export default {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
-						route: `/benches/${site.doc?.group}`
+						route: `/groups/${site.doc?.group}`
 					},
 					siteCrumb
 				);

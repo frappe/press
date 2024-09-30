@@ -15,12 +15,12 @@
 								},
 								{
 									label: 'New Bench Group',
-									route: '/benches/new'
+									route: '/groups/new'
 								}
 						  ]
 						: [
 								{ label: 'Bench Groups', route: '/benches' },
-								{ label: 'New Bench Group', route: '/benches/new' }
+								{ label: 'New Bench Group', route: '/groups/new' }
 						  ]
 				"
 			/>

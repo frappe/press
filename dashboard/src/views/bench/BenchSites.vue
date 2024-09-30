@@ -217,7 +217,7 @@
 				</p>
 				<p class="text-base">
 					Please refer to the
-					<a href="/docs/benches/ssh" class="underline"
+					<a href="/docs/groups/ssh" class="underline"
 						>SSH Access documentation</a
 					>
 					for more details.
@@ -405,7 +405,7 @@ export default {
 					label: 'View Logs',
 					onClick: () => {
 						this.$router.push(
-							`/benches/${this.bench.name}/logs/${this.versions[i].name}/`
+							`/groups/${this.bench.name}/logs/${this.versions[i].name}/`
 						);
 					},
 					condition: () => this.versions[i].status === 'Active'

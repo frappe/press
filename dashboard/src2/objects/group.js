@@ -138,7 +138,7 @@ export default {
 			}
 			return breadcrumbs;
 		},
-		route: '/benches/:name',
+		route: '/groups/:name',
 		tabs: [
 			{
 				label: 'Sites',

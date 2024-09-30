@@ -171,7 +171,7 @@ export default {
 			}
 		},
 		tabs() {
-			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
+			let tabRoute = subRoute => `/groups/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{
 					label: 'Sites',
