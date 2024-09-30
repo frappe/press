@@ -82,6 +82,11 @@ class StagingEnvironment(Document):
 			return
 		bench: Bench = frappe.get_doc("Bench", bench)
 		site: Site = frappe.get_doc("Site", self.site)
+
+		staging_site_plan = frappe.db.get_value("Press Settings", None, "staging_plan")
+		if not staging_site_plan:
+			frappe.throw("Staging plan is not set in Press Settings")
+
 		staging_site = frappe.get_doc(
 			{
 				"doctype": "Site",
@@ -92,7 +97,7 @@ class StagingEnvironment(Document):
 				"group": bench.group,
 				"cluster": bench.cluster,
 				"team": site.team,
-				"plan": site.plan,  # TODO: set plan to staging plan configured in press settings
+				"plan": staging_site_plan,
 				"apps": [{"app": app.app} for app in site.apps],
 				"skip_auto_updates": 1,
 				"skip_scheduled_backups": 1,  # disable backups for staging sites
