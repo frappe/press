@@ -12,8 +12,7 @@
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"lib": ["ESNext", "DOM"],
-		"skipLibCheck": true,
-		"types": ["unplugin-icons/types/vue"]
+		"skipLibCheck": true
 	},
-	"include": ["**/*.ts", "**/*.d.ts"]
+	"include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts"]
 }
