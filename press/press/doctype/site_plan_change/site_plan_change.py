@@ -49,6 +49,9 @@ class SitePlanChange(Document):
 		if self.type == "Initial Plan":
 			self.from_plan = ""
 
+		if self.type != "Initial Plan" and frappe.db.get_value("Site", self.site, "staging"):
+			frappe.throw("Cannot change plan on a staging site")
+
 	def after_insert(self):
 		if self.team != "Administrator":
 			create_webhook_event("Site Plan Change", self, self.team)
