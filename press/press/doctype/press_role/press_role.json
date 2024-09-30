@@ -18,6 +18,7 @@
   "allow_site_creation",
   "allow_bench_creation",
   "allow_server_creation",
+  "allow_webhook_configuration",
   "section_break_zdiv",
   "users"
  ],
@@ -100,11 +101,17 @@
    "fieldname": "admin_access",
    "fieldtype": "Check",
    "label": "Admin Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_webhook_configuration",
+   "fieldtype": "Check",
+   "label": "Allow Webhook Configuration"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-04 10:13:47.505718",
+ "modified": "2024-09-26 15:51:19.122128",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

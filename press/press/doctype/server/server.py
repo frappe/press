@@ -1696,14 +1696,6 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
-	@property
-	def is_shared(self) -> bool:
-		public_groups = frappe.get_all("Release Group", {"public": True}, pluck="name")
-		return bool(
-			frappe.db.exists("Release Group Server", {"server": self.name, "parent": ("in", public_groups)})
-		)
-
-
 def scale_workers(now=False):
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
 	for server in servers:
