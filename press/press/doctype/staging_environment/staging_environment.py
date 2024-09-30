@@ -39,7 +39,6 @@ class StagingEnvironment(Document):
 		if not self.expiry_time:
 			self.expiry_time = frappe.utils.now_datetime() + timedelta(hours=24)
 
-
 	@frappe.whitelist()
 	def create_release_group(self):
 		if self.staging_release_group:
@@ -66,7 +65,7 @@ class StagingEnvironment(Document):
 						"default": server.default,
 					}
 					for server in group.servers
-				], # TODO: do staging deployment to some specific servers instead of team's release group server
+				],  # TODO: do staging deployment to some specific servers instead of team's release group server
 				"apps": group.apps,
 				"staging": 1,
 			}
@@ -77,28 +76,29 @@ class StagingEnvironment(Document):
 		self.staging_release_group = staging_group.name
 		self.save()
 
-
-	def create_site(self, bench:str):
+	def create_site(self, bench: str):
 		if self.staging_site:
 			frappe.throw("Staging site already exists")
 			return
 		bench: Bench = frappe.get_doc("Bench", bench)
 		site: Site = frappe.get_doc("Site", self.site)
-		staging_site = frappe.get_doc({
-			"doctype": "Site",
-			"subdomain": f"staging-{self.name}",
-			"domain": site.domain,
-			"server": bench.server,
-			"bench": bench.name,
-			"group": bench.group,
-			"cluster": bench.cluster,
-			"team": site.team,
-			"plan": site.plan, # TODO: set plan to staging plan configured in press settings
-			"apps": [{"app": app.app} for app in site.apps],
-			"skip_auto_updates": 1,
-			"skip_scheduled_backups": 1, # disable backups for staging sites
-			"staging": 1,
-		}).insert(ignore_permissions=True)
+		staging_site = frappe.get_doc(
+			{
+				"doctype": "Site",
+				"subdomain": f"staging-{self.name}",
+				"domain": site.domain,
+				"server": bench.server,
+				"bench": bench.name,
+				"group": bench.group,
+				"cluster": bench.cluster,
+				"team": site.team,
+				"plan": site.plan,  # TODO: set plan to staging plan configured in press settings
+				"apps": [{"app": app.app} for app in site.apps],
+				"skip_auto_updates": 1,
+				"skip_scheduled_backups": 1,  # disable backups for staging sites
+				"staging": 1,
+			}
+		).insert(ignore_permissions=True)
 		self.staging_site = staging_site.name
 		self.save()
 

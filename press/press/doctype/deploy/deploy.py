@@ -36,9 +36,7 @@ class Deploy(Document):
 
 	def create_benches(self):
 		candidate = frappe.get_cached_doc("Deploy Candidate", self.candidate)
-		environment_variables = [
-			{"key": v.key, "value": v.value} for v in candidate.environment_variables
-		]
+		environment_variables = [{"key": v.key, "value": v.value} for v in candidate.environment_variables]
 
 		group = frappe.get_cached_doc("Release Group", self.group)
 		mounts = [

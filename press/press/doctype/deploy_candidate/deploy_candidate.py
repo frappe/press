@@ -71,11 +71,20 @@ class DeployCandidate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
-		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import DeployCandidateBuildStep
-		from press.press.doctype.deploy_candidate_dependency.deploy_candidate_dependency import DeployCandidateDependency
-		from press.press.doctype.deploy_candidate_package.deploy_candidate_package import DeployCandidatePackage
-		from press.press.doctype.deploy_candidate_variable.deploy_candidate_variable import DeployCandidateVariable
+		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+			DeployCandidateBuildStep,
+		)
+		from press.press.doctype.deploy_candidate_dependency.deploy_candidate_dependency import (
+			DeployCandidateDependency,
+		)
+		from press.press.doctype.deploy_candidate_package.deploy_candidate_package import (
+			DeployCandidatePackage,
+		)
+		from press.press.doctype.deploy_candidate_variable.deploy_candidate_variable import (
+			DeployCandidateVariable,
+		)
 
 		apps: DF.Table[DeployCandidateApp]
 		build_directory: DF.Data | None
@@ -117,7 +126,7 @@ class DeployCandidate(Document):
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
-	# end: auto-generated types
+		# end: auto-generated types
 
 		build_output_parser: DockerBuildOutputParser | None
 		upload_step_updater: UploadStepUpdater | None

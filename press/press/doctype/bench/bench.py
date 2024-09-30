@@ -846,12 +846,14 @@ def process_new_bench_job_update(job):
 
 	if updated_status == "Active" and bench.staging:
 		# trigger site creation for staging environment
-		staging_environment = frappe.db.get_value("Staging Environment", {
-			"staging_release_group": bench.group,
-		})
+		staging_environment = frappe.db.get_value(
+			"Staging Environment",
+			{
+				"staging_release_group": bench.group,
+			},
+		)
 		if staging_environment:
 			frappe.get_doc("Staging Environment", staging_environment).create_site(bench.name)
-
 
 	bench = frappe.get_doc("Bench", job.bench)
 	frappe.enqueue(
