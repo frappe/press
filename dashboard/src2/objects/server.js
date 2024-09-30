@@ -322,7 +322,7 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
-				route: 'benches',
+				route: 'groups',
 				type: 'list',
 				list: {
 					doctype: 'Release Group',

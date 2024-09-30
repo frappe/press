@@ -288,7 +288,7 @@ const routes = [
 			},
 			{
 				name: 'ServerBenches',
-				path: 'benches',
+				path: 'groups',
 				component: () => import('../views/server/ServerBenches.vue'),
 				props: true
 			},
