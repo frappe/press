@@ -38,6 +38,7 @@
   "is_redisearch_enabled",
   "use_app_cache",
   "compress_app_cache",
+  "staging",
   "column_break_tkdd",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -415,6 +416,13 @@
    "fieldname": "no_cache",
    "fieldtype": "Check",
    "label": "No Cache"
+  },
+  {
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging",
+   "read_only": 1
   }
  ],
  "links": [
@@ -431,7 +439,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-21 14:12:47.335402",
+ "modified": "2024-09-30 11:22:45.431268",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -66,24 +66,13 @@ class ReleaseGroup(Document, TagHelpers):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.common_site_config.common_site_config import CommonSiteConfig
 		from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
-		from press.press.doctype.release_group_dependency.release_group_dependency import (
-			ReleaseGroupDependency,
-		)
-		from press.press.doctype.release_group_mount.release_group_mount import (
-			ReleaseGroupMount,
-		)
-		from press.press.doctype.release_group_package.release_group_package import (
-			ReleaseGroupPackage,
-		)
-		from press.press.doctype.release_group_server.release_group_server import (
-			ReleaseGroupServer,
-		)
-		from press.press.doctype.release_group_variable.release_group_variable import (
-			ReleaseGroupVariable,
-		)
+		from press.press.doctype.release_group_dependency.release_group_dependency import ReleaseGroupDependency
+		from press.press.doctype.release_group_mount.release_group_mount import ReleaseGroupMount
+		from press.press.doctype.release_group_package.release_group_package import ReleaseGroupPackage
+		from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
+		from press.press.doctype.release_group_variable.release_group_variable import ReleaseGroupVariable
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		apps: DF.Table[ReleaseGroupApp]
@@ -114,6 +103,7 @@ class ReleaseGroup(Document, TagHelpers):
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
+		staging: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link
 		title: DF.Data
@@ -542,6 +532,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"dependencies": dependencies,
 				"packages": packages,
 				"environment_variables": environment_variables,
+				"staging": self.staging
 			}
 		)
 

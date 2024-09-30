@@ -15,6 +15,7 @@
   "default",
   "public",
   "central_bench",
+  "staging",
   "section_break_7",
   "servers",
   "section_break_keov",
@@ -367,10 +368,16 @@
    "fieldtype": "Link",
    "label": "Build Server",
    "options": "Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging"
   }
  ],
  "links": [],
- "modified": "2024-09-17 14:44:01.541194",
+ "modified": "2024-09-30 12:00:57.247557",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

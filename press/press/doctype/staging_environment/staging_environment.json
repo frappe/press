@@ -40,8 +40,7 @@
    "fieldname": "expiry_time",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Expiry Time",
-   "reqd": 1
+   "label": "Expiry Time"
   },
   {
    "fieldname": "section_break_nnap",
@@ -65,8 +64,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Staging Release Group",
-   "options": "Release Group",
-   "reqd": 1
+   "options": "Release Group"
   },
   {
    "fieldname": "site_creation_method",
@@ -78,7 +76,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-30 10:47:52.228318",
+ "modified": "2024-09-30 11:11:40.505952",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Staging Environment",
