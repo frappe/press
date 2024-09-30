@@ -29,6 +29,7 @@
   "support_included",
   "dedicated_server_plan",
   "is_frappe_plan",
+  "staging_environment_access",
   "customization_for_bench_section",
   "release_groups",
   "allowed_apps",
@@ -237,11 +238,17 @@
    "fieldname": "allow_downgrading_from_other_plan",
    "fieldtype": "Check",
    "label": "Allow Downgrading From Other Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "staging_environment_access",
+   "fieldtype": "Check",
+   "label": "Staging Environment Access"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-12 13:36:14.737846",
+ "modified": "2024-09-30 17:16:26.703655",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",
