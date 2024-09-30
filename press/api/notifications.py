@@ -5,9 +5,7 @@ from press.utils import get_current_team
 
 
 @frappe.whitelist()
-def get_notifications(
-	filters=None, order_by="creation desc", limit_start=None, limit_page_length=None
-):
+def get_notifications(filters=None, order_by="creation desc", limit_start=None, limit_page_length=None):
 	if not filters:
 		filters = {}
 
@@ -32,9 +30,7 @@ def get_notifications(
 		.offset(limit_start)
 	)
 
-	if roles := set(
-		check_role_permissions("Site") + check_role_permissions("Release Group")
-	):
+	if roles := set(check_role_permissions("Site") + check_role_permissions("Release Group")):
 		PressRolePermission = frappe.qb.DocType("Press Role Permission")
 
 		query = (
@@ -56,15 +52,11 @@ def get_notifications(
 
 	for notification in notifications:
 		if notification.document_type == "Deploy Candidate":
-			rg_name = frappe.db.get_value(
-				"Deploy Candidate", notification.document_name, "group"
-			)
-			notification.route = f"benches/{rg_name}/deploys/{notification.document_name}"
+			rg_name = frappe.db.get_value("Deploy Candidate", notification.document_name, "group")
+			notification.route = f"groups/{rg_name}/deploys/{notification.document_name}"
 		elif notification.document_type == "Agent Job":
 			site_name = frappe.db.get_value("Agent Job", notification.document_name, "site")
-			notification.route = (
-				f"sites/{site_name}/jobs/{notification.document_name}" if site_name else None
-			)
+			notification.route = f"sites/{site_name}/jobs/{notification.document_name}" if site_name else None
 		else:
 			notification.route = None
 
@@ -78,13 +70,9 @@ def mark_notification_as_read(name):
 
 @frappe.whitelist()
 def mark_all_notifications_as_read():
-	frappe.db.set_value(
-		"Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False
-	)
+	frappe.db.set_value("Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False)
 
 
 @frappe.whitelist()
 def get_unread_count():
-	return frappe.db.count(
-		"Press Notification", {"read": False, "team": get_current_team()}
-	)
+	return frappe.db.count("Press Notification", {"read": False, "team": get_current_team()})
