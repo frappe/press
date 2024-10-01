@@ -33,6 +33,8 @@ class AppSource(Document):
 		enabled: DF.Check
 		frappe: DF.Check
 		github_installation_id: DF.Data | None
+		gitlab_access_token: DF.Password | None
+		gitlab_project_id: DF.Data | None
 		last_github_poll_failed: DF.Check
 		last_github_response: DF.Code | None
 		last_synced: DF.Datetime | None
@@ -99,12 +101,64 @@ class AppSource(Document):
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
 		# self.create_release()
 
+	def create_gitlab_release(self, force=False):
+		from urllib.parse import urlparse
+
+		repo_url = urlparse(self.repository_url)
+		api_path = (
+			f"/api/v4/projects/{self.gitlab_project_id}/repository/branches/{self.branch}"
+		)
+		url = f"{repo_url.scheme}://{repo_url.netloc}{api_path}"
+
+		headers = {}
+
+		gitlab_token = ""
+		if self.get("gitlab_access_token"):
+			gitlab_token = gitlab_token or self.get_password("gitlab_access_token")
+
+		if gitlab_token:
+			headers["Authorization"] = f"Bearer {gitlab_token}"
+
+		res = requests.get(url, headers=headers).json()
+
+		frappe.db.set_value(
+			"App Source",
+			self.name,
+			{
+				"last_github_response": "GitLab",
+				"last_github_poll_failed": False,
+				"last_synced": frappe.utils.now(),
+			},
+		)
+		commit_hash = res["commit"]["id"]
+		commit_message = res["commit"]["message"]
+		commit_author = res["commit"]["author_name"]
+		if not frappe.db.exists(
+			"App Release", {"app": self.app, "source": self.name, "hash": commit_hash}
+		):
+			frappe.get_doc(
+				{
+					"doctype": "App Release",
+					"app": self.app,
+					"source": self.name,
+					"hash": commit_hash,
+					"team": self.team,
+					"message": commit_message,
+					"author": commit_author,
+					"deployable": False,
+				}
+			).insert(set_name=f"{self.name}-{commit_hash}")
+
 	@frappe.whitelist()
 	def create_release(
 		self,
 		force: bool = False,
 		commit_hash: str | None = None,
 	):
+		if self.gitlab_project_id:
+			self.create_gitlab_release(force)
+			return
+
 		if self.last_github_poll_failed and not force:
 			return
 
@@ -234,6 +288,11 @@ class AppSource(Document):
 		return frappe.get_value("Press Settings", None, "github_access_token")
 
 	def get_repo_url(self) -> str:
+		if self.get("gitlab_access_token"):
+			return self.repository_url.replace(
+				"https://", f"https://oauth2:{self.get_password('gitlab_access_token')}@"
+			)
+
 		if not self.github_installation_id:
 			return self.repository_url
 
