@@ -853,7 +853,7 @@ def process_new_bench_job_update(job):
 			},
 		)
 		if staging_environment:
-			frappe.get_doc("Staging Environment", staging_environment).create_site(bench.name)
+			frappe.get_doc("Staging Environment", staging_environment).on_bench_deployment_completion(bench.name)
 
 	bench = frappe.get_doc("Bench", job.bench)
 	frappe.enqueue(

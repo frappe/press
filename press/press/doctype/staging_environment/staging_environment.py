@@ -31,6 +31,7 @@ class StagingEnvironment(Document):
 		site_creation_method: DF.Literal["New Site", "Restore From Backup"]
 		staging_group: DF.Link | None
 		staging_site: DF.Link | None
+		status: DF.Literal["Pending", "Bench Deployed", "Site Deployed", "Failed", "Archived"]
 		team: DF.Link
 	# end: auto-generated types
 
@@ -57,6 +58,10 @@ class StagingEnvironment(Document):
 	def deploy(self):
 		self.create_bench_group()
 
+	def on_bench_deployment_completion(self, bench:str):
+		self.status = "Bench Deployed"
+		self.save()
+		self.create_site(bench)
 
 	def create_bench_group(self):
 		if self.staging_group:

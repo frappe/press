@@ -6,14 +6,16 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "staging_group",
-  "staging_site",
-  "column_break_uubx",
   "team",
+  "status",
+  "column_break_uubx",
+  "site_creation_method",
+  "site_backup",
   "expiry_time",
   "section_break_nnap",
-  "site_creation_method",
-  "site_backup"
+  "staging_group",
+  "column_break_wnqp",
+  "staging_site"
  ],
  "fields": [
   {
@@ -72,11 +74,22 @@
    "in_list_view": 1,
    "label": "Staging Group",
    "options": "Release Group"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nBench Deployed\nSite Deployed\nFailed\nArchived"
+  },
+  {
+   "fieldname": "column_break_wnqp",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-30 16:57:01.621762",
+ "modified": "2024-10-01 16:27:48.615892",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Staging Environment",
