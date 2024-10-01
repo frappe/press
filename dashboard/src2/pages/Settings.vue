@@ -22,7 +22,7 @@ import { getTeam } from '../data/team';
 import { session } from '../data/session';
 
 let $team = getTeam();
-let $session = session;
+let $session = session || {};
 
 const tabs = [
 	{
