@@ -332,7 +332,7 @@ export default {
 						{
 							label: 'Commit Message',
 							fieldname: 'commit_message',
-							width: '34rem'
+							width: '30rem'
 						}
 					],
 					banner({ documentResource: site }) {
