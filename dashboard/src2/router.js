@@ -329,6 +329,7 @@ router.beforeEach(async (to, from, next) => {
 		const Enable2FARoute = 'Enable2FA';
 		if (
 			to.name !== Enable2FARoute &&
+			!$team.doc.is_desk_user &&
 			$team.doc.enforce_2fa &&
 			!$team.doc.user_info.is_2fa_enabled
 		) {
