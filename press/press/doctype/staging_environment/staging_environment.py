@@ -32,15 +32,22 @@ class StagingEnvironment(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	def validate(self):
+	def validate(self) -> None:
 		if self.site_creation_method == "Restore From Backup" and not self.site_backup:
-			frappe.throw("Please select a site backup")
+			frappe.throw("Please select a site backup for staging site creation")
+
+	def before_insert(self):
+		if frappe.db.get_value("Site", self.site, "status") != "Active":
+			frappe.throw("Cannot create staging site on an inactive site")
+
+		if frappe.db.get_value("Site", self.site, "staging"):
+			frappe.throw("Cannot create staging environment for a staging site")
 
 		if not self.expiry_time:
 			self.expiry_time = frappe.utils.now_datetime() + timedelta(hours=24)
 
-		if self.is_new() and not frappe.db.get_value(
-			"Site Plan", frappe.db.get_value("Site", self.site, "site_plan"), "staging_environment_access"
+		if not frappe.db.get_value(
+			"Site Plan", frappe.db.get_value("Site", self.site, "plan"), "staging_environment_access"
 		):
 			frappe.throw("Staging environment access is not available for your site plan")
 
@@ -81,6 +88,7 @@ class StagingEnvironment(Document):
 		self.staging_group = staging_group.name
 		self.save()
 
+	@frappe.whitelist()
 	def create_site(self, bench: str):
 		if self.staging_site:
 			frappe.throw("Staging site already exists")
