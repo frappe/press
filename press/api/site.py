@@ -567,6 +567,7 @@ def options_for_new(for_bench: str = None):
 				"public": 1,
 				"version": version.name,
 				"name": ("not in", restricted_release_group_names),
+				"saas_bench": 0
 			}
 		)
 		release_group = frappe.db.get_value(
