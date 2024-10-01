@@ -68,7 +68,7 @@ export default {
 				{
 					name: 'Bench Groups',
 					icon: () => h(Package),
-					route: '/benches',
+					route: '/groups',
 					isActive:
 						[
 							'Release Group List',

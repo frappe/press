@@ -4,7 +4,7 @@
 frappe.ui.form.on('Release Group', {
 	refresh: function (frm) {
 		frm.add_web_link(
-			`/dashboard/benches/${frm.doc.name}`,
+			`/dashboard/groups/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
 		[

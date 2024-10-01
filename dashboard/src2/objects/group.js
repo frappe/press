@@ -39,7 +39,7 @@ export default {
 		initialDeploy: 'initial_deploy'
 	},
 	list: {
-		route: '/benches',
+		route: '/groups',
 		title: 'Bench Groups',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
@@ -138,7 +138,7 @@ export default {
 			}
 			return breadcrumbs;
 		},
-		route: '/benches/:name',
+		route: '/groups/:name',
 		tabs: [
 			{
 				label: 'Sites',

@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -38,7 +39,7 @@ class PressNotification(Document):
 		]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"team",
 		"document_type",
 		"class",
@@ -51,7 +52,7 @@ class PressNotification(Document):
 		"message",
 		"traceback",
 		"assistance_url",
-	]
+	)
 
 	def after_insert(self):
 		if frappe.local.dev_server:
@@ -74,7 +75,7 @@ class PressNotification(Document):
 			template="bench_deploy_failure",
 			args={
 				"message": self.title,
-				"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
+				"link": f"dashboard/groups/{group_name}/deploys/{self.document_name}",
 			},
 		)
 
@@ -114,6 +115,4 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"reference_name": reference_doc,
 			}
 		).insert()
-		frappe.publish_realtime(
-			"press_notification", doctype="Press Notification", message={"team": team}
-		)
+		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})

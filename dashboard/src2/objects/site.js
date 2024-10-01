@@ -234,7 +234,7 @@ export default {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
-						route: `/benches/${site.doc?.group}`
+						route: `/groups/${site.doc?.group}`
 					},
 					siteCrumb
 				);
@@ -337,7 +337,7 @@ export default {
 					],
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench group. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return upsellBanner(site, bannerTitle);
 					},
@@ -973,7 +973,7 @@ export default {
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return upsellBanner(site, bannerTitle);
 					}
