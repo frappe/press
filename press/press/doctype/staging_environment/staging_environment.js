@@ -4,9 +4,18 @@
 frappe.ui.form.on('Staging Environment', {
 	refresh(frm) {
 		frm.add_custom_button(
-			__('Create Release Group'),
+			__('Deploy Environment'),
 			() => {
-				frm.call('create_release_group').then(() => {
+				frm.call('deploy').then(() => {
+					frm.reload();
+				});
+			},
+			__('Actions'),
+		);
+		frm.add_custom_button(
+			__('Destroy Environment'),
+			() => {
+				frm.call('delete').then(() => {
 					frm.reload();
 				});
 			},

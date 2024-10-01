@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.site.site import Site
@@ -51,8 +53,12 @@ class StagingEnvironment(Document):
 		):
 			frappe.throw("Staging environment access is not available for your site plan")
 
-	@frappe.whitelist()
-	def create_release_group(self):
+	@dashboard_whitelist()
+	def deploy(self):
+		self.create_bench_group()
+
+
+	def create_bench_group(self):
 		if self.staging_group:
 			frappe.throw("Staging bench group already exists")
 
@@ -88,7 +94,6 @@ class StagingEnvironment(Document):
 		self.staging_group = staging_group.name
 		self.save()
 
-	@frappe.whitelist()
 	def create_site(self, bench: str):
 		if self.staging_site:
 			frappe.throw("Staging site already exists")
@@ -120,7 +125,7 @@ class StagingEnvironment(Document):
 		self.staging_site = staging_site.name
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def delete(self):
 		self.archieve_sites()
 
@@ -128,9 +133,11 @@ class StagingEnvironment(Document):
 		sites = frappe.get_all("Site", filters={"group": self.staging_group})
 		if not sites:
 			self.archieve_bench_group()
+			frappe.msgprint("No staging sites found. Archiving staging bench group")
 			return
 		for site in sites:
-			site.archive(force=True)
+			frappe.get_doc("Site", site.name).archive(force=True)
+		frappe.msgprint("Archiving staging site")
 
 	def archieve_bench_group(self):
 		# validate that all sites are archived
