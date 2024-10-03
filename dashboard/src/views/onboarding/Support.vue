@@ -6,7 +6,7 @@
 				<span>support@frappecloud.com</span>
 			</div>
 			<Button class="mt-6" appearance="primary">
-				<a href="mailto:support@frappecloud.com"> Send Email </a>
+				<a href="mailto:support@optibizpro.com"> Send Email </a>
 			</Button>
 		</div>
 	</div>

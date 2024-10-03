@@ -63,7 +63,7 @@
 						<div v-else class="text-base text-gray-700">
 							API key and API secret pairs can be used to access the
 							<a href="/docs/api" class="underline" target="_blank"
-								>Frappe Cloud API</a
+								>Optibizpro Cloud API</a
 							>.
 						</div>
 					</template>

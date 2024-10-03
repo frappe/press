@@ -48,7 +48,7 @@ export default {
 		slowQueriesData() {
 			return {
 				experimental: true,
-				documentation: 'https://frappecloud.com/docs/performance-tuning',
+				documentation: 'https://optibizpro.com/docs/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
 				onRowClick: row => {
 					const SlowQueryDialog = defineAsyncComponent(() =>

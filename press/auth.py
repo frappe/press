@@ -84,7 +84,6 @@ def hook():
 			for allowed in ALLOWED_WILDCARD_PATHS:
 				if path.startswith(allowed):
 					return
-			frappe.log_error("path",path)
 			if path in ALLOWED_PATHS:
 				return
 

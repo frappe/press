@@ -846,7 +846,7 @@ def update_with_yarn_install_failed(
 		output to debug and fix the error before retrying build.</p>
 
 		<p>This may be due to issues with the app being installed
-		and not Frappe Cloud.</p>
+		and not Optibizpro Cloud.</p>
 		"""
 
 	else:
@@ -857,7 +857,7 @@ def update_with_yarn_install_failed(
 		before retrying build.</p>
 
 		<p>This may be due to issues with the app being installed
-		and not Frappe Cloud.</p>
+		and not Optibizpro Cloud.</p>
 		"""
 
 	details["message"] = fmt(message)
@@ -881,7 +881,7 @@ def update_with_yarn_build_failed(
 		output to debug and fix the error before retrying build.</p>
 
 		<p>This may be due to issues with the app being installed
-		and not Frappe Cloud.</p>
+		and not Optibizpro Cloud.</p>
 		"""
 
 	else:
@@ -892,7 +892,7 @@ def update_with_yarn_build_failed(
 		before retrying build.</p>
 
 		<p>This may be due to issues with the app being installed
-		and not Frappe Cloud.</p>
+		and not Optibizpro Cloud.</p>
 		"""
 
 	details["message"] = fmt(message)
@@ -933,7 +933,7 @@ def update_with_file_not_found(
 	output to find and add the missing file before retrying the build.</p>
 
 	<p>This may be due to issues with the app being installed
-	and not Frappe Cloud.</p>
+	and not Optibizpro Cloud.</p>
 	"""
 
 	details["message"] = fmt(message)

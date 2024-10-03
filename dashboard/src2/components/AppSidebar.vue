@@ -35,7 +35,7 @@
 						<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
-								Frappe Cloud
+								Optibizpro Cloud
 							</div>
 							<Tooltip :text="$team?.doc?.user || null">
 								<div
@@ -110,11 +110,11 @@ export default {
 	},
 	methods: {
 		support() {
-			window.open('https://frappecloud.com/support', '_blank');
+			window.open('https://optibizpro.com/support', '_blank');
 		},
 		feedback() {
 			window.open(
-				'https://frappecloud.com/frappe-cloud-feedback/new',
+				'https://optibizpro.com/frappe-cloud-feedback/new',
 				'_blank'
 			);
 		}

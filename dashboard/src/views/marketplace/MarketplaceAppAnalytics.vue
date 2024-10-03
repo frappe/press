@@ -29,7 +29,7 @@
 			</ListItem>
 			<ListItem
 				title="Pending Payout"
-				subtitle="Payout you are yet to receive from Frappe Cloud"
+				subtitle="Payout you are yet to receive from Optibizpro Cloud"
 			>
 				<template #actions>
 					<span class="text-base font-semibold">{{

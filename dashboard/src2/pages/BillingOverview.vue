@@ -94,7 +94,7 @@
 
 			<div class="mt-1">
 				<a
-					href="https://frappecloud.com/payment-options"
+					href="https://optibizpro.com/payment-options"
 					target="_blank"
 					class="text-sm text-gray-700 underline"
 				>

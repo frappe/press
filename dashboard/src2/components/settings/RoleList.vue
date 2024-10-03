@@ -14,7 +14,7 @@ import UserAvatarGroup from '../AvatarGroup.vue';
 const listOptions = ref({
 	doctype: 'Press Role',
 	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
-	documentation: 'https://frappecloud.com/docs/role-permissions',
+	documentation: 'https://optibizpro.com/docs/role-permissions',
 	columns: [
 		{
 			label: 'Role',

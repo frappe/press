@@ -720,7 +720,6 @@ class Agent:
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
 		url = None
-
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")

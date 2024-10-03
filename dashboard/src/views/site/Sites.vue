@@ -282,7 +282,7 @@ export default {
 	name: 'Sites',
 	pageMeta() {
 		return {
-			title: 'Sites - Frappe Cloud'
+			title: 'Sites - Optibizpro Cloud'
 		};
 	},
 	props: ['bench'],

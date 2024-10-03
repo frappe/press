@@ -10,7 +10,7 @@
 						<FCLogo class="h-8 w-8 rounded" />
 						<div class="ml-2 flex flex-col">
 							<div class="text-base font-medium leading-none text-gray-900">
-								Frappe Cloud
+								Optibizpro Cloud
 							</div>
 							<div
 								v-if="$account.user"

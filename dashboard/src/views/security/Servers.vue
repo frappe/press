@@ -95,7 +95,7 @@ export default {
 	},
 	pageMeta() {
 		return {
-			title: 'Security - Frappe Cloud'
+			title: 'Security - Optibizpro Cloud'
 		};
 	},
 	data() {

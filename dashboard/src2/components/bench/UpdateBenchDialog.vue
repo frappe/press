@@ -60,7 +60,7 @@
 					<div class="flex items-center gap-2">
 						<h2 class="text-lg font-medium">Build might fail</h2>
 						<a
-							href="https://frappecloud.com/docs/common-issues/build-might-fail"
+							href="https://optibizpro.com/docs/common-issues/build-might-fail"
 							target="_blank"
 							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
 						>

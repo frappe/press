@@ -8,7 +8,7 @@
 				>
 					<div v-if="hasForgotPassword">Reset password</div>
 					<div v-else-if="saasProduct">
-						Sign in to Frappe Cloud to start using
+						Sign in to Optibizpro Cloud to start using
 						<span class="font-semibold">{{ saasProduct.title }}</span>
 					</div>
 				</div>

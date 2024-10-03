@@ -197,7 +197,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Frappe Cloud!</p>",
+   "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Optibizpro Cloud!</p>",
    "fieldname": "email_header_content",
    "fieldtype": "Code",
    "label": "Header Content",

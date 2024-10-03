@@ -46,7 +46,7 @@ export default {
 	name: 'Security',
 	pageMeta() {
 		return {
-			title: `Security - ${this.serverName} - Frappe Cloud`
+			title: `Security - ${this.serverName} - Optibizpro Cloud`
 		};
 	},
 	props: ['serverName'],

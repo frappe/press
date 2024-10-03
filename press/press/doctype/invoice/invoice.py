@@ -468,7 +468,7 @@ class Invoice(Document):
 		start = getdate(self.period_start)
 		end = getdate(self.period_end)
 		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
-		return f"Frappe Cloud Subscription ({period_string})"
+		return f"Optibizpro Cloud Subscription ({period_string})"
 
 	@frappe.whitelist()
 	def finalize_stripe_invoice(self):

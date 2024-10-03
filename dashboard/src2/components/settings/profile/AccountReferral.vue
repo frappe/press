@@ -9,9 +9,9 @@
 			<ClickToCopyField :textContent="referralLink" />
 			<span class="text-base font-medium text-gray-700">
 				When someone signs up using the above link and spends at least
-				{{ minimumSpentAmount }} on Frappe Cloud, you
+				{{ minimumSpentAmount }} on Optibizpro Cloud, you
 				<strong>
-					get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits!
+					get {{ creditAmountInTeamCurrency }} in Optibizpro Cloud Credits!
 				</strong>
 			</span>
 		</div>

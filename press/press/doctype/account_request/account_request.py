@@ -172,7 +172,7 @@ class AccountRequest(Document):
 			template = "verify_account"
 
 			if self.invited_by and self.role != "Press Admin":
-				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
+				subject = f"You are invited by {self.invited_by} to join Optibizpro Cloud"
 				template = "invite_team_member"
 
 		args.update(
@@ -188,7 +188,7 @@ class AccountRequest(Document):
 		if not args.get("image_path"):
 			args.update(
 				{
-					"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94"
+					"image_path":  "/assets/press/images/opti-small.png" #"https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94"
 				}
 			)
 		# Telemetry: Verification Email Sent

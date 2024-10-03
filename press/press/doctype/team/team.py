@@ -1219,7 +1219,7 @@ class Team(Document):
 		payment_method = self.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
 		account_update_link = frappe.utils.get_url("/dashboard")
-		subject = "Invoice Payment Failed for Frappe Cloud Subscription"
+		subject = "Invoice Payment Failed for Optibizpro Cloud Subscription"
 
 		frappe.sendmail(
 			recipients=email,

@@ -111,7 +111,7 @@
 										v-if="progressError"
 									>
 										There was an error creating your site. Please contact
-										<a class="underline" href="/support">Frappe Cloud Support</a
+										<a class="underline" href="/support">Optibizpro Cloud Support</a
 										>.
 									</div>
 								</div>
@@ -141,7 +141,7 @@
 							<div v-if="siteRequest?.status == 'Error'">
 								<div class="text-p-base text-red-600">
 									There was an error creating your site. Please contact
-									<a class="underline" href="/support">Frappe Cloud Support</a>.
+									<a class="underline" href="/support">Optibizpro Cloud Support</a>.
 								</div>
 							</div>
 							<!-- Site Details (Site creation done already) -->
@@ -466,7 +466,7 @@ export default {
 		progressError() {
 			if (!this.$resources.siteRequest?.getProgress?.data?.error) return;
 			if (this.progressErrorCount > 9) {
-				return 'An error occurred. Please contact <a href="/support">Frappe Cloud Support</a>.';
+				return 'An error occurred. Please contact <a href="/support">Optibizpro Cloud Support</a>.';
 			}
 			if (this.progressErrorCount > 4) {
 				return 'An error occurred';

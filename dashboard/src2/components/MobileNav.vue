@@ -6,7 +6,7 @@
 					<img
 						:src="`/assets/press/images/frappecloud-logo.png`"
 						class="h-7 w-7 shrink-0"
-						alt="Frappe Cloud Logo"
+						alt="Optibizpro Cloud Logo"
 					/>
 				</router-link>
 			</span>
@@ -91,6 +91,6 @@ const SwitchTeamDialog2 = defineAsyncComponent(() =>
 const showTeamSwitcher = ref(false);
 
 function support() {
-	window.open('https://frappecloud.com/support', '_blank');
+	window.open('https://optibizpro.com/support', '_blank');
 }
 </script>

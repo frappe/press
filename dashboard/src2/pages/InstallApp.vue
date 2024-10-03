@@ -166,7 +166,7 @@
 					</div>
 					<a
 						class="text-sm underline"
-						href="https://frappecloud.com/docs/installing-an-app"
+						href="https://optibizpro.com/docs/installing-an-app"
 						target="_blank"
 					>
 						Read documentation
@@ -194,7 +194,7 @@ export default {
 	},
 	pageMeta() {
 		return {
-			title: `Install ${this.appDoc.title} - Frappe Cloud`
+			title: `Install ${this.appDoc.title} - Optibizpro Cloud`
 		};
 	},
 	components: {
@@ -377,6 +377,7 @@ export default {
 			return this.$resources.installAppOptions.data;
 		},
 		plans() {
+			console.log(this.$resources)
 			if (!this.$resources?.installAppOptions) return [];
 			return this.options.plans.map(plan => ({
 				...plan,

@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<AlertBanner
-			title="Please add your billing address to complete your Frappe Cloud profile."
+			title="Please add your billing address to complete your Optibizpro Cloud profile."
 			type="warning"
 		>
 			<Button

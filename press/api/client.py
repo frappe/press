@@ -390,7 +390,6 @@ def validate_fields(doctype, fields):
 	for field in fields:
 		if is_allowed_field(doctype, field):
 			filtered_fields.append(field)
-	frappe.log_error("filtered_fields",filtered_fields)
 	return filtered_fields
 
 

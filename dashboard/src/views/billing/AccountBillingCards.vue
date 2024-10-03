@@ -82,7 +82,7 @@
 				If you intend to close your account please check the docs for
 				<Link
 					target="_blank"
-					href="https://frappecloud.com/docs/billing/disable-account"
+					href="https://optibizpro.com/docs/billing/disable-account"
 					>cancelling subscription.</Link
 				>
 				Optibizpro Cloud is not responsible for any refund if the account is not
