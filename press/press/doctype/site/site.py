@@ -663,9 +663,9 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
+		self.uninstall_marketplace_conf(app)
 		self.status = "Pending"
 		self.save()
-		self.uninstall_marketplace_conf(app)
 
 		return job.name
 
