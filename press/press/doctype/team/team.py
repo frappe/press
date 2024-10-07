@@ -915,15 +915,19 @@ class Team(Document):
 
 		if self.payment_mode == "Prepaid Credits":
 			# if balance is greater than 0 or have atleast 2 paid invoices, then allow to create site
-			if self.get_balance() > 0 or frappe.db.count(
-				"Invoice",
-				{
-					"team": self.name,
-					"status": "Paid",
-					"amount_paid": ("!=", 0),
-				},
-				limit=1,
-			) > 2:
+			if (
+				self.get_balance() > 0
+				or frappe.db.count(
+					"Invoice",
+					{
+						"team": self.name,
+						"status": "Paid",
+						"amount_paid": ("!=", 0),
+					},
+					limit=1,
+				)
+				> 2
+			):
 				return allow
 			why = "Cannot create site due to insufficient balance"
 
