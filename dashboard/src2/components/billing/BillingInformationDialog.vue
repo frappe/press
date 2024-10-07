@@ -1,7 +1,7 @@
 <template>
 	<Dialog :options="{ title: 'Add card to create sites' }" v-model="showDialog">
 		<template v-slot:body-content>
-			<StripeCard
+			<StripeCard2
 				class="mb-1"
 				@complete="
 					showDialog = false;
@@ -12,13 +12,13 @@
 	</Dialog>
 </template>
 <script>
-import StripeCard from '../StripeCard.vue';
+import StripeCard2 from '../StripeCard.vue';
 
 export default {
 	props: ['modelValue'],
 	emits: ['update:modelValue', 'success'],
 	components: {
-		StripeCard
+		StripeCard2
 	},
 	computed: {
 		showDialog: {

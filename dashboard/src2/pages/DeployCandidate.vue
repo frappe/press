@@ -251,7 +251,7 @@ export default {
 					if (!name) {
 						onError();
 					} else {
-						router.push(`/benches/${group}/deploys/${name}`);
+						router.push(`/groups/${group}/deploys/${name}`);
 					}
 				},
 				onError

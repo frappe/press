@@ -107,8 +107,14 @@ class PressWebhook(Document):
 			)
 			response = req.text or ""
 			response_status_code = req.status_code
+		except requests.exceptions.ConnectionError:
+			response = "Failed to connect to the webhook endpoint"
+		except requests.exceptions.SSLError:
+			response = "SSL Error. Please check if SSL the certificate of the webhook is valid."
+		except (requests.exceptions.Timeout, requests.exceptions.ConnectTimeout):
+			response = "Request Timeout. Please check if the webhook is reachable."
 		except Exception as e:
-			response = e.__str__()
+			response = str(e)
 
 		return frappe._dict(
 			{
@@ -156,7 +162,7 @@ class PressWebhook(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
-		frappe.db.sql("delete from `tabPress Webhook Log` where webhook = %s", (self.name,))
+		frappe.db.sql("delete from `tabPress Webhook Attempt` where webhook = %s", (self.name,))
 		frappe.delete_doc("Press Webhook", self.name)
 
 
@@ -168,7 +174,7 @@ def auto_disable_high_delivery_failure_webhooks():
 	data = frappe.db.sql(
 		"""
 SELECT `endpoint`
-FROM `tabPress Webhook Log`
+FROM `tabPress Webhook Attempt`
 WHERE `creation` >= NOW() - INTERVAL 1 HOUR
 GROUP BY `endpoint`
 HAVING (COUNT(CASE WHEN `status` = 'Failed' THEN 1 END) / COUNT(*)) * 100 > 70;

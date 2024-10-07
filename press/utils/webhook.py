@@ -10,16 +10,8 @@ from frappe.model import default_fields
 from frappe.model.document import Document
 
 
-def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> bool:
+def create_webhook_event(event: str, payload: dict | Document, team: str) -> bool:
 	try:
-		data = {}
-		if isinstance(payload, dict):
-			data = frappe._dict(payload)
-		elif isinstance(payload, Document):
-			data = _process_document_payload(payload)
-		else:
-			frappe.throw("Invalid data type")
-
 		# Check if team has configured webhook against this event
 		PressWebhookSelectedEvent = frappe.qb.DocType("Press Webhook Selected Event")
 		PressWebhook = frappe.qb.DocType("Press Webhook")
@@ -35,14 +27,34 @@ def dispatch_webhook_event(event: str, payload: dict | Document, team: str) -> b
 		)
 
 		result = query.run(as_dict=True)
-		if result and result[0].get("count") > 0:
+		is_any_webhook_enabled = result and result[0].get("count") > 0
+		if is_any_webhook_enabled:
+			# prepare request payload
+			data = {}
+			if isinstance(payload, dict):
+				data = frappe._dict(payload)
+			elif isinstance(payload, Document):
+				data = _process_document_payload(payload)
+			else:
+				frappe.throw("Invalid data type")
+
+			request_payload = json.dumps(
+				{
+					"event": event,
+					"data": data,
+				},
+				default=str,
+				indent=4,
+			)
+
+			# create webhook log
 			frappe.get_doc(
 				{
-					"doctype": "Press Webhook Queue",
+					"doctype": "Press Webhook Log",
 					"status": "Pending",
 					"event": event,
 					"team": team,
-					"data": json.dumps(data, default=str),
+					"request_payload": request_payload,
 				}
 			).insert(ignore_permissions=True)
 		return True
@@ -60,10 +72,5 @@ def _process_document_payload(payload: Document):
 	_doc = frappe._dict()
 	for fieldname in fields:
 		_doc[fieldname] = payload.get(fieldname)
-
-	if hasattr(payload, "get_doc"):
-		result = payload.get_doc(_doc)
-		if isinstance(result, dict):
-			_doc.update(result)
 
 	return _doc

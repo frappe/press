@@ -184,9 +184,9 @@ export default {
 				},
 				{
 					label: 'Bench Groups',
-					route: '/benches',
+					route: '/groups',
 					highlight: () => {
-						return this.$route.fullPath.startsWith('/benches');
+						return this.$route.fullPath.startsWith('/groups');
 					},
 					icon: FCIcons.BenchIcon
 					//condition: () => this.$account.team?.benches_enabled

@@ -30,7 +30,7 @@
 			/>
 		</template>
 	</Dialog>
-	<BillingInformationDialog
+	<NewBillingInformationDialog
 		v-model="showBillingInformationDialog"
 		v-if="showBillingInformationDialog"
 	/>
@@ -53,15 +53,14 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import { DashboardError } from '../utils/error';
+import NewBillingInformationDialog from './billing/BillingInformationDialog.vue';
 
 export default {
 	name: 'ChangePaymentModeDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
 	components: {
-		BillingInformationDialog: defineAsyncComponent(() =>
-			import('./billing/BillingInformationDialog.vue')
-		),
+		NewBillingInformationDialog,
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('../components/BuyPrepaidCreditsDialog.vue')
 		),

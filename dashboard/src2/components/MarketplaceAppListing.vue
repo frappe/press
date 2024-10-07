@@ -331,7 +331,7 @@ export default {
 			];
 		},
 		validateLink(link) {
-			const value = this.marketplaceApp[link];
+			const value = this.marketplaceApp[link] ?? '';
 
 			// Regular expression to validate URL format
 			const urlPattern =

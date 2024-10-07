@@ -20,7 +20,9 @@
   "copied_from",
   "public",
   "credentials_section",
-  "mariadb_root_password"
+  "mariadb_root_password",
+  "section_break_acrc",
+  "volumes"
  ],
  "fields": [
   {
@@ -128,11 +130,23 @@
    "fieldname": "public",
    "fieldtype": "Check",
    "label": "Public"
+  },
+  {
+   "fieldname": "section_break_acrc",
+   "fieldtype": "Section Break",
+   "label": "Volumes"
+  },
+  {
+   "fieldname": "volumes",
+   "fieldtype": "Table",
+   "label": "Volumes",
+   "options": "Virtual Machine Image Volume",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-04 12:26:14.185070",
+ "modified": "2024-09-25 14:10:12.525448",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

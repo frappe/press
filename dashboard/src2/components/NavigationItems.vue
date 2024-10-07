@@ -25,7 +25,9 @@ export default {
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
 			const enforce2FA = Boolean(
-				this.$team.doc.enforce_2fa && !this.$team.doc.user_info?.is_2fa_enabled
+				!this.$team.doc.is_desk_user &&
+					this.$team.doc.enforce_2fa &&
+					!this.$team.doc.user_info?.is_2fa_enabled
 			);
 
 			return [
@@ -68,7 +70,7 @@ export default {
 				{
 					name: 'Bench Groups',
 					icon: () => h(Package),
-					route: '/benches',
+					route: '/groups',
 					isActive:
 						[
 							'Release Group List',

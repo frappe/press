@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestPressWebhookQueue(FrappeTestCase):
+class TestPressWebhookAttempt(FrappeTestCase):
 	pass

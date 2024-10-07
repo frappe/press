@@ -6,7 +6,7 @@
 			/>
 		</Header>
 		<TabsWithRouter
-			v-if="$team.doc?.is_desk_user || $session.hasBillingAccess"
+			v-if="$team?.doc?.is_desk_user || $session.hasBillingAccess"
 			:tabs="tabs"
 		/>
 		<div

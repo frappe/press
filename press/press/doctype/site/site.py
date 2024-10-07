@@ -7,7 +7,7 @@ import json
 import re
 from collections import defaultdict
 from contextlib import suppress
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Any
 
 import dateutil.parser
@@ -40,7 +40,7 @@ from press.exceptions import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
-from press.utils.webhook import dispatch_webhook_event
+from press.utils.webhook import create_webhook_event
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -486,7 +486,7 @@ class Site(Document, TagHelpers):
 					capture("first_site_status_changed_to_active", "fc_signup", team.user)
 
 		if self.has_value_changed("status"):
-			dispatch_site_status_update_webhook(self.name)
+			create_site_status_update_webhook_event(self.name)
 
 	def generate_saas_communication_secret(self, create_agent_job=False):
 		if not self.standby_for and not self.standby_for_product:
@@ -663,9 +663,9 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
+		self.uninstall_marketplace_conf(app)
 		self.status = "Pending"
 		self.save()
-		self.uninstall_marketplace_conf(app)
 
 		return job.name
 
@@ -723,7 +723,7 @@ class Site(Document, TagHelpers):
 			self.save()
 		add_permission_for_newly_created_doc(self)
 
-		dispatch_site_status_update_webhook(self.name)
+		create_site_status_update_webhook_event(self.name)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -1830,7 +1830,7 @@ class Site(Document, TagHelpers):
 			plan_config["app_include_js"] = []
 
 		self._update_configuration(plan_config)
-		frappe.get_doc(
+		ret = frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
@@ -1857,6 +1857,7 @@ class Site(Document, TagHelpers):
 			"revoke_database_access_on_plan_change",
 			enqueue_after_commit=True,
 		)
+		return ret
 
 	def revoke_database_access_on_plan_change(self):
 		# If the new plan doesn't have database access, disable it
@@ -2573,7 +2574,7 @@ class Site(Document, TagHelpers):
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
-	@property
+	@cached_property
 	def is_on_dedicated_plan(self):
 		return bool(frappe.db.get_value("Site Plan", self.plan, "dedicated_server_plan"))
 
@@ -2697,7 +2698,7 @@ def process_new_site_job_update(job):  # noqa: C901
 			frappe.db.commit()
 
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 	if job.status == "Success":
 		request_data = json.loads(job.request_data)
@@ -2838,7 +2839,7 @@ def process_install_app_site_job_update(job):
 				site.append("apps", {"app": app})
 				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 
 def process_uninstall_app_site_job_update(job):
@@ -2860,7 +2861,7 @@ def process_uninstall_app_site_job_update(job):
 				site.remove(app_doc)
 				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 
 def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], site: Site):
@@ -2899,7 +2900,7 @@ def process_restore_job_update(job, force=False):
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 
 def process_reinstall_site_job_update(job):
@@ -2914,7 +2915,7 @@ def process_reinstall_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
 
@@ -2936,7 +2937,7 @@ def process_migrate_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 
 def get_rename_step_status(job):
@@ -3003,7 +3004,7 @@ def process_rename_site_job_update(job):  # noqa: C901
 
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 
 
 def process_add_proxysql_user_job_update(job):
@@ -3036,7 +3037,7 @@ def process_move_site_to_bench_job_update(job):
 			frappe.db.set_value("Site", job.site, "group", dest_group)
 	if updated_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-		dispatch_site_status_update_webhook(job.site)
+		create_site_status_update_webhook_event(job.site)
 		return
 	if job.status == "Success":
 		site = frappe.get_doc("Site", job.site)
@@ -3074,7 +3075,7 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
-			dispatch_site_status_update_webhook(job.site)
+			create_site_status_update_webhook_event(job.site)
 
 
 def process_create_user_job_update(job):
@@ -3268,9 +3269,8 @@ def fetch_setup_wizard_complete_status_if_site_exists(site):
 		frappe.get_doc("Site", site).fetch_setup_wizard_complete_status()
 
 
-def dispatch_site_status_update_webhook(site: str):
+def create_site_status_update_webhook_event(site: str):
 	record = frappe.get_doc("Site", site)
-	if record.team != "Administrator":
-		dispatch_webhook_event("Site Status Update", record, record.team)
-	if record.owner != "Administrator" and record.owner != record.team:
-		dispatch_webhook_event("Site Status Update", record, record.owner)
+	if record.team == "Administrator":
+		return
+	create_webhook_event("Site Status Update", record, record.team)

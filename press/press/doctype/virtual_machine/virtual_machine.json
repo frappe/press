@@ -52,7 +52,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI",
+   "options": "\nAWS EC2\nOCI\nHetzner",
    "read_only": 1,
    "reqd": 1
   },

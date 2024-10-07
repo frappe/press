@@ -1,6 +1,6 @@
 <template>
 	<AlertBanner
-		title="Add a payment mode to start creating sites, benches, and more."
+		title="Add a payment mode to start creating sites, bench groups, and more."
 		type="warning"
 	>
 		<Button class="ml-auto" @click="addPaymentMode" variant="outline">

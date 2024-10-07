@@ -142,6 +142,8 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
+  "hetzner_section",
+  "hetzner_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -1227,11 +1229,21 @@
    "fieldname": "usage_record_creation_batch_size",
    "fieldtype": "Int",
    "label": "Usage Record Creation Batch Size"
+  },
+  {
+   "fieldname": "hetzner_section",
+   "fieldtype": "Section Break",
+   "label": "Hetzner"
+  },
+  {
+   "fieldname": "hetzner_api_token",
+   "fieldtype": "Password",
+   "label": "Hetzner API Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-08-19 17:47:53.603250",
+ "modified": "2024-09-14 12:17:01.074877",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

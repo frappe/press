@@ -581,6 +581,10 @@ class Bench(Document):
 				)
 				self.memory_max = self.memory_high + gunicorn_memory + bg_memory
 			self.memory_swap = self.memory_max * 2
+		else:
+			self.memory_high = 0
+			self.memory_max = 0
+			self.memory_swap = 0
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 
@@ -681,6 +685,7 @@ class Bench(Document):
 	def process_update_inplace(job: "AgentJob"):
 		bench: "Bench" = frappe.get_doc("Bench", job.bench)
 		bench._process_update_inplace(job)
+		bench.save()
 
 	def _process_update_inplace(self, job: "AgentJob"):
 		req_data = json.loads(job.request_data) or {}
@@ -707,8 +712,6 @@ class Bench(Document):
 		else:
 			# no-op
 			raise NotImplementedError("Unexpected case reached")
-
-		self.save()
 
 	def _handle_inplace_update_failure(self, req_data: dict):
 		sites = req_data.get("sites", [])
@@ -742,6 +745,7 @@ class Bench(Document):
 	def process_recover_update_inplace(job: "AgentJob"):
 		bench: "Bench" = frappe.get_doc("Bench", job.bench)
 		bench._process_recover_update_inplace(job)
+		bench.save()
 
 	def _process_recover_update_inplace(self, job: "AgentJob"):
 		self.resetting_bench = job.status not in ["Running", "Pending"]
