@@ -664,6 +664,7 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
 		self.uninstall_marketplace_conf(app)
+		self.reload()  # uninstall of marketplace conf updates site
 		self.status = "Pending"
 		self.save()
 
