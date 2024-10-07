@@ -80,12 +80,20 @@
 					</div>
 				</div>
 
-				<div v-if="canUpdateInPlace">
+				<div v-if="canUpdateInPlace" class="flex gap-2">
 					<FormControl
-						label="Use regular update"
+						label="Use in place update"
 						type="checkbox"
-						v-model="useRegularUpdate"
+						v-model="useInPlaceUpdate"
 					/>
+					<Tooltip text="View documentation">
+						<a
+							href="https://frappecloud.com/docs/in-place-updates"
+							target="_blank"
+						>
+							<i-lucide-help-circle :class="`h-4 w-4 text-gray-600`" />
+						</a>
+					</Tooltip>
 				</div>
 
 				<ErrorMessage :message="errorMessage" />
@@ -136,7 +144,7 @@ export default {
 			step: '',
 			errorMessage: '',
 			ignoreWillFailCheck: false,
-			useRegularUpdate: false,
+			useInPlaceUpdate: false,
 			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: []
@@ -149,18 +157,6 @@ export default {
 			this.step = 'removed-apps';
 		} else {
 			this.step = 'select-sites';
-		}
-	},
-	watch: {
-		useUpdateInPlace(v) {
-			if (!v) {
-				return;
-			}
-
-			for (const site of this.selectedSites) {
-				site.skip_failing_patches = true;
-				site.skip_backups = true;
-			}
 		}
 	},
 	computed: {
@@ -337,7 +333,7 @@ export default {
 			 * If In Place update is being used failed patches are skipped
 			 * and site backups are not taken by default.
 			 */
-			const disabled = this.useUpdateInPlace;
+			const disabled = this.useInPlaceUpdate;
 
 			return {
 				data: siteData,
@@ -422,7 +418,7 @@ export default {
 				site = `${this.selectedSites.length} sites`;
 			}
 
-			if (this.useUpdateInPlace) {
+			if (this.useInPlaceUpdate) {
 				return `Update ${site} in place`;
 			}
 
@@ -444,8 +440,15 @@ export default {
 				return false;
 			}
 
+			// Failed in place update benches have to be regular updated.
+			const inPlaceUpdateFailedBenches =
+				this.benchDocResource?.doc?.inplace_update_failed_benches ?? [];
+
 			const allSites = this.siteOptions.data
-				.filter(s => benches.has(s.bench))
+				.filter(
+					s =>
+						benches.has(s.bench) || inPlaceUpdateFailedBenches.includes(s.bench)
+				)
 				.map(s => s.name);
 
 			// All sites under a bench should be updated
@@ -454,9 +457,6 @@ export default {
 			}
 
 			return true;
-		},
-		useUpdateInPlace() {
-			return !this.useRegularUpdate && this.canUpdateInPlace;
 		}
 	},
 	resources: {
@@ -593,10 +593,17 @@ export default {
 			}
 
 			this.errorMessage = '';
-			if (this.useUpdateInPlace) {
+			if (this.canUpdateInPlace && this.useInPlaceUpdate) {
+				this.setSkipBackupsAndFailingPatches();
 				this.$resources.updateInPlace.submit();
 			} else {
 				this.$resources.deployAndUpdate.submit();
+			}
+		},
+		setSkipBackupsAndFailingPatches() {
+			for (const site of this.selectedSites) {
+				site.skip_failing_patches = true;
+				site.skip_backups = true;
 			}
 		},
 		setErrorMessage(error) {
