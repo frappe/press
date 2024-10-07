@@ -76,6 +76,7 @@ class Bench(Document):
 		is_code_server_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
+		last_inplace_update_failed: DF.Check
 		managed_database_service: DF.Link | None
 		memory_high: DF.Int
 		memory_max: DF.Int
@@ -720,7 +721,7 @@ class Bench(Document):
 			status="Broken",
 			site_status="Broken",
 		)
-
+		self.last_inplace_update_failed = True
 		self.recover_update_inplace(sites)
 
 	def recover_update_inplace(self, sites: list[str]):
@@ -779,6 +780,7 @@ class Bench(Document):
 			status="Active",
 			site_status="Active",
 		)
+		self.last_inplace_update_failed = False
 
 	def set_self_and_site_status(
 		self,

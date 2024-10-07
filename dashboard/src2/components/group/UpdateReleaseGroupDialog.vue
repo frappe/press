@@ -440,8 +440,15 @@ export default {
 				return false;
 			}
 
+			// Failed in place update benches have to be regular updated.
+			const inPlaceUpdateFailedBenches =
+				this.benchDocResource?.doc?.inplace_update_failed_benches ?? [];
+
 			const allSites = this.siteOptions.data
-				.filter(s => benches.has(s.bench))
+				.filter(
+					s =>
+						benches.has(s.bench) || inPlaceUpdateFailedBenches.includes(s.bench)
+				)
 				.map(s => s.name);
 
 			// All sites under a bench should be updated

@@ -179,6 +179,15 @@ class ReleaseGroup(Document, TagHelpers):
 			self.team,
 			"enable_inplace_updates",
 		)
+		if doc.enable_inplace_updates:
+			doc.inplace_update_failed_benches = self.get_inplace_update_failed_benches()
+
+	def get_inplace_update_failed_benches(self):
+		return frappe.db.get_all(
+			"Bench",
+			{"group": self.name, "status": "Active", "last_inplace_update_failed": True},
+			pluck="name",
+		)
 
 	def get_actions(self):
 		return [
