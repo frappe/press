@@ -945,13 +945,25 @@ class Site(Document, TagHelpers):
 			log_error(title="Offsite Backup Response Exception")
 
 	def site_migration_scheduled(self):
-		return frappe.db.exists("Site Migration", {"site": self.name, "status": "Scheduled"})
+		return frappe.db.get_value(
+			"Site Migration", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def site_update_scheduled(self):
+		return frappe.db.get_value(
+			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def check_move_scheduled(self):
+		if time := self.site_migration_scheduled():
+			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")
+		if time := self.site_update_scheduled():
+			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
 		if self.status in ["Updating", "Pending", "Installing"]:
 			frappe.throw("Site is under maintenance. Cannot Update")
-		if self.site_migration_scheduled():
-			frappe.throw("Site migration is scheduled. Cannot Update")
+		self.check_move_scheduled()
 
 		self.status_before_update = self.status
 		self.status = "Pending"

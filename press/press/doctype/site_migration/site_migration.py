@@ -78,6 +78,8 @@ class SiteMigration(Document):
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
+		site: Site = frappe.get_doc("Site", self.site)
+		site.check_move_scheduled()
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
