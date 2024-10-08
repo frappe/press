@@ -7,7 +7,7 @@
 	>
 		<template #actions>
 			<Button
-				v-if="!$team.doc.partner_email"
+				v-if="!$team.doc?.partner_email"
 				icon-left="edit"
 				@click="showAddPartnerCodeDialog = true"
 			>
@@ -17,7 +17,7 @@
 		<div class="py-4">
 			<span
 				class="text-base font-medium text-gray-700"
-				v-if="!$team.doc.partner_email"
+				v-if="!$team.doc?.partner_email"
 			>
 				Have a Frappe Partner Referral Code? Click on
 				<strong>Add Partner Code</strong> to link with your Partner team.
@@ -25,7 +25,7 @@
 			<ListItem
 				v-else
 				:title="partner_billing_name"
-				:subtitle="$team.doc.partner_email"
+				:subtitle="$team.doc?.partner_email"
 			/>
 		</div>
 		<Dialog
@@ -103,7 +103,7 @@ export default {
 				url: 'press.api.partner.get_partner_name',
 				auto: true,
 				params: {
-					partner_email: this.$team.doc.partner_email
+					partner_email: this.$team.doc?.partner_email
 				}
 			};
 		}
