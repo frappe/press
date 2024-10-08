@@ -547,7 +547,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def listing_details(self):
-		github_repository_url = frappe.get_value("App Source", {"app": self.app}, "repository_url")
+		github_repository_url = frappe.get_value("App Source", {"app": self.app,,"team": self.team}, "repository_url")
 		return {
 			"support": self.support,
 			"website": self.website,
