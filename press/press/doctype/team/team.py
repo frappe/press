@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from hashlib import blake2b
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe import _
@@ -23,6 +24,9 @@ from press.utils.billing import (
 )
 from press.utils.telemetry import capture
 
+if TYPE_CHECKING:
+	from press.press.doctype.account_request.account_request import AccountRequest
+
 
 class Team(Document):
 	# begin: auto-generated types
@@ -33,9 +37,10 @@ class Team(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
-		from press.press.doctype.communication_email.communication_email import CommunicationEmail
+		from press.press.doctype.communication_email.communication_email import (
+			CommunicationEmail,
+		)
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
@@ -79,7 +84,6 @@ class Team(Document):
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
-		skip_add_on_billing: DF.Check
 		skip_backups: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
@@ -264,8 +268,8 @@ class Team(Document):
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
-		password: str | None,
-		country: str | None,
+		password: str | None = None,
+		country: str | None = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,

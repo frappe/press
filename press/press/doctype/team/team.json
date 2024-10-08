@@ -54,7 +54,6 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
-  "skip_add_on_billing",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -117,8 +116,7 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency",
-   "read_only": 1
+   "options": "Currency"
   },
   {
    "fieldname": "default_payment_method",
@@ -209,11 +207,13 @@
    "options": "\nCard\nPrepaid Credits\nPaid By Partner"
   },
   {
+   "depends_on": "eval:doc.send_notifications;",
    "fetch_from": "user.email",
    "fetch_if_empty": 1,
    "fieldname": "notify_email",
    "fieldtype": "Data",
-   "label": "Notify Email"
+   "label": "Notify Email",
+   "mandatory_depends_on": "eval:doc.send_notifications;"
   },
   {
    "fieldname": "column_break_9",
@@ -441,13 +441,6 @@
    "fieldname": "enable_inplace_updates",
    "fieldtype": "Check",
    "label": "Enable In Place Updates"
-  },
-  {
-   "default": "0",
-   "description": "If checked, team won't be charged for add-on storage on its servers",
-   "fieldname": "skip_add_on_billing",
-   "fieldtype": "Check",
-   "label": "Skip Add On Billing"
   }
  ],
  "links": [
@@ -507,7 +500,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-10-07 23:48:37.021050",
+ "modified": "2024-09-13 11:55:07.048543",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
