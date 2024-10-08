@@ -647,7 +647,7 @@ def get_plans_for_app(
 
 def marketplace_app_hook(app=None, site: Site | None = None, op="install"):
 	if app is None:
-		site_apps = frappe.get_all("Site App", filters={"parent": site}, pluck="app")
+		site_apps = frappe.get_all("Site App", filters={"parent": site.name}, pluck="app")
 		for app in site_apps:
 			run_script(app, site, op)
 	else:
