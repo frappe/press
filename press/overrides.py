@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
@@ -18,7 +17,7 @@ from press.utils import _get_current_team, _system_user
 @frappe.whitelist(allow_guest=True)
 def upload_file():
 	if frappe.session.user == "Guest":
-		return
+		return None
 
 	files = frappe.request.files
 	is_private = frappe.form_dict.is_private
@@ -43,22 +42,21 @@ def upload_file():
 		method = frappe.get_attr(method)
 		is_whitelisted(method)
 		return method()
-	else:
-		ret = frappe.get_doc(
-			{
-				"doctype": "File",
-				"attached_to_doctype": doctype,
-				"attached_to_name": docname,
-				"attached_to_field": fieldname,
-				"folder": folder,
-				"file_name": filename,
-				"file_url": file_url,
-				"is_private": cint(is_private),
-				"content": content,
-			}
-		)
-		ret.save()
-		return ret
+	ret = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": doctype,
+			"attached_to_name": docname,
+			"attached_to_field": fieldname,
+			"folder": folder,
+			"file_name": filename,
+			"file_url": file_url,
+			"is_private": cint(is_private),
+			"content": content,
+		}
+	)
+	ret.save()
+	return ret
 
 
 def on_session_creation():
@@ -98,9 +96,9 @@ def after_job():
 
 
 def update_website_context(context):
-	if (
-		frappe.request and frappe.request.path.startswith("/docs")
-	) and not frappe.db.get_single_value("Press Settings", "publish_docs"):
+	if (frappe.request and frappe.request.path.startswith("/docs")) and not frappe.db.get_single_value(
+		"Press Settings", "publish_docs"
+	):
 		raise frappe.DoesNotExistError
 
 
@@ -121,9 +119,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team(True)
-	child_team_members = [
-		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
-	]
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
 	if doc.team == team.name or doc.team in child_team_members:
 		return True
 
@@ -150,7 +146,7 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
-	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+	dashboard_fields = ("full_name", "email", "user_image", "enabled", "user_type")
 
 	@staticmethod
 	def get_list_query(query):
@@ -182,10 +178,9 @@ class CustomUser(User):
 					has_fields.append(d.get("name"))
 			for field in has_fields:
 				frappe.db.sql(
-					"""UPDATE `%s`
-					SET `%s` = %s
-					WHERE `%s` = %s"""
-					% (tab, field, "%s", field, "%s"),
+					"""UPDATE `{}`
+					SET `{}` = {}
+					WHERE `{}` = {}""".format(tab, field, "%s", field, "%s"),
 					(new_name, old_name),
 				)
 
