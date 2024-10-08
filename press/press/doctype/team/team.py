@@ -923,8 +923,7 @@ class Team(Document):
 						"team": self.name,
 						"status": "Paid",
 						"amount_paid": ("!=", 0),
-					},
-					limit=1,
+					}
 				)
 				> 2
 			):
