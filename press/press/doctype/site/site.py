@@ -608,10 +608,10 @@ class Site(Document, TagHelpers):
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
 		if plan:
 			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan, self.team)
-		marketplace_app_hook(app=app, site=self.name, op="install")
+		marketplace_app_hook(app=app, site=self, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
-		marketplace_app_hook(app=app, site=self.name, op="uninstall")
+		marketplace_app_hook(app=app, site=self, op="uninstall")
 
 		# disable marketplace plan if it exists
 		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
@@ -944,13 +944,25 @@ class Site(Document, TagHelpers):
 			log_error(title="Offsite Backup Response Exception")
 
 	def site_migration_scheduled(self):
-		return frappe.db.exists("Site Migration", {"site": self.name, "status": "Scheduled"})
+		return frappe.db.get_value(
+			"Site Migration", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def site_update_scheduled(self):
+		return frappe.db.get_value(
+			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def check_move_scheduled(self):
+		if time := self.site_migration_scheduled():
+			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")
+		if time := self.site_update_scheduled():
+			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
 		if self.status in ["Updating", "Pending", "Installing"]:
 			frappe.throw("Site is under maintenance. Cannot Update")
-		if self.site_migration_scheduled():
-			frappe.throw("Site migration is scheduled. Cannot Update")
+		self.check_move_scheduled()
 
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -2672,7 +2684,7 @@ def process_new_site_job_update(job):  # noqa: C901
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		marketplace_app_hook(site=job.site, op="install")
+		marketplace_app_hook(site=Site("Site", job.site), op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
@@ -2872,12 +2884,12 @@ def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], sit
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription
-			marketplace_app_hook(app=app, site=site.name, op="install")
+			marketplace_app_hook(app=app, site=site, op="install")
 	for app in apps_to_uninstall:
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription
-			marketplace_app_hook(app=app, site=site.name, op="uninstall")
+			marketplace_app_hook(app=app, site=site, op="uninstall")
 
 
 def process_restore_job_update(job, force=False):

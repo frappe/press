@@ -17,6 +17,7 @@
   "deploy_section",
   "candidate",
   "resetting_bench",
+  "last_inplace_update_failed",
   "column_break_gxqm",
   "docker_image",
   "inplace_update_docker_image",
@@ -353,11 +354,21 @@
    "description": "Attempting to reset bench after failed In Place Update.",
    "fieldname": "resetting_bench",
    "fieldtype": "Check",
-   "label": "Resetting Bench"
+   "label": "Resetting Bench",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.last_inplace_update_failed",
+   "description": "Previous attempt at updating bench in place failed. Only regular deploy should be attempted.",
+   "fieldname": "last_inplace_update_failed",
+   "fieldtype": "Check",
+   "label": "Last In Place Update Failed",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-09-09 12:20:10.404694",
+ "modified": "2024-10-07 11:05:42.340197",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
