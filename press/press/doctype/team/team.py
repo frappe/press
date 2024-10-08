@@ -855,6 +855,21 @@ class Team(Document):
 
 	@dashboard_whitelist()
 	def invite_team_member(self, email, roles=None):
+		PressRole = frappe.qb.DocType("Press Role")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+
+		has_admin_access = (
+			frappe.qb.from_(PressRole)
+			.select(PressRole.name)
+			.join(PressRoleUser)
+			.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))
+			.where(PressRole.team == self.name)
+			.where(PressRole.admin_access == 1)
+		)
+
+		if frappe.session.user != self.user and not has_admin_access.run():
+			frappe.throw(_("Only team owner can invite team members"))
+
 		frappe.utils.validate_email_address(email, True)
 
 		if frappe.db.exists("Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}):
@@ -923,7 +938,7 @@ class Team(Document):
 						"team": self.name,
 						"status": "Paid",
 						"amount_paid": ("!=", 0),
-					}
+					},
 				)
 				> 2
 			):
