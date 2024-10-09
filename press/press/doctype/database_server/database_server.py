@@ -10,6 +10,7 @@ import frappe
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 
+from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
@@ -35,6 +36,7 @@ class DatabaseServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		auto_fetch_performance_schema_report: DF.Check
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -42,14 +44,44 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_global_waits_by_time_perf_report_enabled: DF.Check
+		is_innodb_buffer_stats_by_schema_perf_report_enabled: DF.Check
+		is_innodb_buffer_stats_by_table_perf_report_enabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
+		is_schema_index_statistics_perf_report_enabled: DF.Check
+		is_schema_table_statistics_perf_report_enabled: DF.Check
+		is_schema_table_statistics_with_innodb_perf_report_enabled: DF.Check
+		is_schema_tables_with_full_table_scans_perf_report_enabled: DF.Check
+		is_schema_unused_indexes_perf_report_enabled: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
 		is_stalk_setup: DF.Check
+		is_statement_analysis_perf_report_enabled: DF.Check
+		is_statements_in_highest_5_percentile_perf_report_enabled: DF.Check
+		is_statements_using_temp_tables_perf_report_enabled: DF.Check
+		is_statements_with_errors_or_warnings_perf_report_enabled: DF.Check
+		is_statements_with_full_table_scans_perf_report_enabled: DF.Check
+		is_statements_with_sorting_perf_report_enabled: DF.Check
+		is_top_io_by_event_category_perf_report_enabled: DF.Check
+		is_top_io_by_file_activity_report_perf_report_enabled: DF.Check
+		is_top_io_by_file_by_time_perf_report_enabled: DF.Check
+		is_top_io_by_user_or_thread_perf_report_enabled: DF.Check
+		is_top_io_in_time_by_event_category_perf_report_enabled: DF.Check
+		is_top_memory_by_event_perf_report_enabled: DF.Check
+		is_top_memory_by_host_perf_report_enabled: DF.Check
+		is_top_memory_by_thread_perf_report_enabled: DF.Check
+		is_top_memory_by_user_perf_report_enabled: DF.Check
+		is_total_allocated_memory_perf_report_enabled: DF.Check
+		is_user_resource_use_io_statistics_perf_report_enabled: DF.Check
+		is_user_resource_use_overview_perf_report_enabled: DF.Check
+		is_user_resource_use_statement_statistics_perf_report_enabled: DF.Check
+		is_wait_classes_by_time_perf_report_enabled: DF.Check
+		is_waits_by_user_by_time_perf_report_enabled: DF.Check
+		is_waits_classes_by_avg_time_perf_report_enabled: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
 		memory_allocator: DF.Literal["System", "jemalloc", "TCMalloc"]
@@ -105,6 +137,10 @@ class DatabaseServer(BaseServer):
 		if self.flags.in_insert or self.is_new():
 			return
 		self.update_mariadb_system_variables()
+		if (
+			not self.is_performance_schema_enabled and self.auto_fetch_performance_schema_report
+		):
+			self.auto_fetch_performance_schema_report = False
 		if (
 			self.has_value_changed("memory_high")
 			or self.has_value_changed("memory_max")
@@ -931,6 +967,549 @@ class DatabaseServer(BaseServer):
 			)
 
 	@frappe.whitelist()
+	def fetch_performance_report(self):
+		agent = Agent(self.name, self.doctype)
+		agent.get_db_performance_report()
+		frappe.msgprint("Performance Schema Report Fetching Started")
+
+	def process_performance_report(self, reports: dict):
+		try:
+			record = frappe.new_doc("DB Performance Report")
+			record.server = self.name
+			record.recorded_on = frappe.utils.now_datetime()
+			record.total_allocated_memory = self._bytes_to_mb(
+				reports.get("total_allocated_memory", 0)
+			)
+			record.top_memory_by_user = []
+			for r in reports.get("top_memory_by_user", []):
+				record.append(
+					"top_memory_by_user",
+					{
+						"user": r.get("user"),
+						"count_billion": self._convert_to_billion(r.get("current_count_used")),
+						"memory_mb": self._bytes_to_mb(r.get("current_allocated")),
+						"avg_memory_mb": self._bytes_to_mb(r.get("current_avg_alloc")),
+						"total_memory_mb": self._bytes_to_mb(r.get("total_allocated")),
+						"max_memory_mb": self._bytes_to_mb(r.get("current_max_alloc")),
+					},
+				)
+			record.top_memory_by_host = []
+			for r in reports.get("top_memory_by_host", []):
+				record.append(
+					"top_memory_by_host",
+					{
+						"host": r.get("host"),
+						"count_billion": self._convert_to_billion(r.get("current_count_used")),
+						"memory_mb": self._bytes_to_mb(r.get("current_allocated")),
+						"avg_memory_mb": self._bytes_to_mb(r.get("current_avg_alloc")),
+						"total_memory_mb": self._bytes_to_mb(r.get("total_allocated")),
+						"max_memory_mb": self._bytes_to_mb(r.get("current_max_alloc")),
+					},
+				)
+			record.top_memory_by_event = []
+			for r in reports.get("top_memory_by_event", []):
+				record.append(
+					"top_memory_by_event",
+					{
+						"event_type": r.get("event_name"),
+						"count_billion": self._convert_to_billion(r.get("current_count")),
+						"max_count_billion": self._convert_to_billion(r.get("high_count")),
+						"memory_mb": self._bytes_to_mb(r.get("current_alloc")),
+						"avg_memory_mb": self._bytes_to_mb(r.get("current_avg_alloc")),
+						"max_memory_mb": self._bytes_to_mb(r.get("high_alloc")),
+						"max_avg_memory_mb": self._bytes_to_mb(r.get("high_avg_alloc")),
+					},
+				)
+			record.top_memory_by_thread = []
+			for r in reports.get("top_memory_by_thread", []):
+				record.append(
+					"top_memory_by_thread",
+					{
+						"thread_id": r.get("thread_id"),
+						"user": r.get("user"),
+						"count_billion": r.get("current_count_used"),
+						"memory_mb": self._bytes_to_mb(r.get("current_allocated")),
+						"avg_memory_mb": self._bytes_to_mb(r.get("current_avg_alloc")),
+						"total_memory_mb": self._bytes_to_mb(r.get("total_allocated")),
+						"max_memory_mb": self._bytes_to_mb(r.get("current_max_alloc")),
+					},
+				)
+			record.top_io_by_file_activity_report = []
+			for r in reports.get("top_io_by_file_activity_report", []):
+				record.append(
+					"top_io_by_file_activity_report",
+					{
+						"file": r.get("file"),
+						"total_io_mb": self._bytes_to_mb(r.get("total")),
+						"read_count_billion": self._convert_to_billion(r.get("count_read")),
+						"total_read_io_mb": self._bytes_to_mb(r.get("total_read")),
+						"avg_read_io_mb": self._bytes_to_mb(r.get("avg_read")),
+						"write_count_billion": self._convert_to_billion(r.get("count_write")),
+						"total_write_io_mb": self._bytes_to_mb(r.get("total_written")),
+						"avg_write_io_mb": self._bytes_to_mb(r.get("avg_write")),
+						"write_percentage": r.get("write_pct"),
+					},
+				)
+			record.top_io_by_file_by_time = []
+			for r in reports.get("top_io_by_file_by_time", []):
+				record.append(
+					"top_io_by_file_by_time",
+					{
+						"file": r.get("file"),
+						"total_count_billion": self._convert_to_billion(r.get("total")),
+						"read_count_billion": self._convert_to_billion(r.get("count_read")),
+						"write_count_billion": self._convert_to_billion(r.get("count_write")),
+						"misc_count_billion": self._convert_to_billion(r.get("count_misc")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"read_time_billion_ps": self._convert_to_billion(r.get("read_latency")),
+						"write_time_billion_ps": self._convert_to_billion(r.get("write_latency")),
+						"misc_time_billion_ps": self._convert_to_billion(r.get("misc_latency")),
+					},
+				)
+			record.top_io_by_event_category = []
+			for r in reports.get("top_io_by_event_category", []):
+				record.append(
+					"top_io_by_event_category",
+					{
+						"event_type": r.get("event_name"),
+						"total_requested_mb": self._bytes_to_mb(r.get("total_requested")),
+						"total_count_billion": self._convert_to_billion(r.get("total")),
+						"read_count_billion": self._convert_to_billion(r.get("count_read")),
+						"write_count_billion": self._convert_to_billion(r.get("count_write")),
+						"total_read_mb": self._bytes_to_mb(r.get("total_read")),
+						"avg_read_mb": self._bytes_to_mb(r.get("avg_read")),
+						"total_written_mb": self._bytes_to_mb(r.get("total_written")),
+						"avg_written_mb": self._bytes_to_mb(r.get("avg_written")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"min_time_billion_ps": self._convert_to_billion(r.get("min_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+					},
+				)
+			record.top_io_in_time_by_event_category = []
+			for r in reports.get("top_io_in_time_by_event_category", []):
+				record.append(
+					"top_io_in_time_by_event_category",
+					{
+						"event_type": r.get("event_name"),
+						"total_count_billion": self._bytes_to_mb(r.get("total")),
+						"read_count_billion": self._convert_to_billion(r.get("count_read")),
+						"write_count_billion": self._convert_to_billion(r.get("count_write")),
+						"total_read_mb": self._bytes_to_mb(r.get("total_read")),
+						"avg_read_mb": self._bytes_to_mb(r.get("avg_read")),
+						"total_written_mb": self._bytes_to_mb(r.get("total_written")),
+						"avg_written_mb": self._bytes_to_mb(r.get("avg_written")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"read_time_billion_ps": self._convert_to_billion(r.get("read_latency")),
+						"write_time_billion_ps": self._convert_to_billion(r.get("write_latency")),
+						"misc_time_billion_ps": self._convert_to_billion(r.get("misc_latency")),
+					},
+				)
+			record.top_io_by_user_or_thread = []
+			for r in reports.get("top_io_by_user_or_thread", []):
+				record.append(
+					"top_io_by_user_or_thread",
+					{
+						"user": r.get("user"),
+						"thread_id": r.get("thread_id"),
+						"process_list_id": r.get("processlist_id"),
+						"total_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"min_time_billion_ps": self._convert_to_billion(r.get("min_latency")),
+					},
+				)
+			record.statement_analysis = []
+			for r in reports.get("statement_analysis", []):
+				record.append(
+					"statement_analysis",
+					{
+						"query": r.get("query"),
+						"full_table_scan": r.get("full_scan"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"errors_count_billion": self._convert_to_billion(r.get("err_count")),
+						"warnings_count_billion": self._convert_to_billion(r.get("warn_count")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"rows_sent_count_billion": self._convert_to_billion(r.get("rows_sent")),
+						"avg_rows_sent_count_billion": self._convert_to_billion(r.get("rows_sent_avg")),
+						"rows_scanned_count_billion": self._convert_to_billion(r.get("rows_examined")),
+						"avg_rows_scanned_count_billion": self._convert_to_billion(
+							r.get("rows_examined_avg")
+						),
+						"tmp_tables_count_billion": self._convert_to_billion(r.get("tmp_tables")),
+						"tmp_disk_tables_count_billion": self._convert_to_billion(
+							r.get("tmp_disk_tables")
+						),
+						"rows_sorted_count_billion": self._convert_to_billion(r.get("rows_sorted")),
+						"sort_merge_passes_count_billion": self._convert_to_billion(
+							r.get("sort_merge_passes")
+						),
+					},
+				)
+			record.statements_in_highest_5_percentile = []
+			for r in reports.get("statements_in_highest_5_percentile", []):
+				record.append(
+					"statements_in_highest_5_percentile",
+					{
+						"query": r.get("query"),
+						"full_table_scan": r.get("full_scan"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"errors_count_billion": self._convert_to_billion(r.get("err_count")),
+						"warnings_count_billion": self._convert_to_billion(r.get("warn_count")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"rows_sent_count_billion": self._convert_to_billion(r.get("rows_sent")),
+						"avg_rows_sent_count_billion": self._convert_to_billion(r.get("rows_sent_avg")),
+						"rows_scanned_count_billion": self._convert_to_billion(r.get("rows_examined")),
+						"avg_rows_scanned_count_billion": self._convert_to_billion(
+							r.get("rows_examined_avg")
+						),
+					},
+				)
+			record.statements_using_temp_tables = []
+			for r in reports.get("statements_using_temp_tables", []):
+				record.append(
+					"statements_using_temp_tables",
+					{
+						"query": r.get("query"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"tmp_tables_in_memory_count_billion": self._convert_to_billion(
+							r.get("memory_tmp_tables")
+						),
+						"tmp_tables_in_disk_count_billion": self._convert_to_billion(
+							r.get("disk_tmp_tables")
+						),
+						"avg_tmp_tables_per_query": r.get("avg_tmp_tables_per_query"),
+						"tmp_tables_to_disk_percent": r.get("tmp_tables_to_disk_pct"),
+					},
+				)
+			record.statements_with_sorting = []
+			for r in reports.get("statements_with_sorting", []):
+				record.append(
+					"statements_with_sorting",
+					{
+						"query": r.get("query"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"sort_merge_passes_count_billion": self._convert_to_billion(
+							r.get("sort_merge_passes")
+						),
+						"avg_sort_merges_count_billion": self._convert_to_billion(
+							r.get("avg_sort_merges")
+						),
+						"sorts_using_scans_count_billion": self._convert_to_billion(
+							r.get("sort_using_scans")
+						),
+						"sort_using_range_count_billion": self._convert_to_billion(
+							r.get("sort_using_range")
+						),
+						"rows_sorted_count_billion": self._convert_to_billion(r.get("rows_sorted")),
+						"avg_rows_sorted_count_billion": self._convert_to_billion(
+							r.get("avg_rows_sorted")
+						),
+					},
+				)
+			record.statements_with_full_table_scans = []
+			for r in reports.get("statements_with_full_table_scans", []):
+				record.append(
+					"statements_with_full_table_scans",
+					{
+						"query": r.get("query"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"no_index_used_count_billion": self._convert_to_billion(
+							r.get("no_index_used_count")
+						),
+						"no_good_index_used_count_billion": self._convert_to_billion(
+							r.get("no_good_index_used_count")
+						),
+						"no_index_used_percentage": r.get("no_index_used_pct"),
+					},
+				)
+			record.statements_with_errors_or_warnings = []
+			for r in reports.get("statements_with_errors_or_warnings", []):
+				record.append(
+					"statements_with_errors_or_warnings",
+					{
+						"query": r.get("query"),
+						"executed_count_billion": self._convert_to_billion(r.get("exec_count")),
+						"errors_count_billion": self._convert_to_billion(r.get("errors")),
+						"warnings_count_billion": self._convert_to_billion(r.get("warnings")),
+						"error_percentage": r.get("error_pct"),
+						"warning_percentage": r.get("warning_pct"),
+					},
+				)
+			record.schema_index_statistics = []
+			for r in reports.get("schema_index_statistics", []):
+				record.append(
+					"schema_index_statistics",
+					{
+						"schema": r.get("table_schema"),
+						"table": r.get("table_name"),
+						"index": r.get("index_name"),
+						"rows_selected_count_billion": self._convert_to_billion(r.get("rows_selected")),
+						"rows_inserted_count_billion": self._convert_to_billion(r.get("rows_inserted")),
+						"rows_updated_count_billion": self._convert_to_billion(r.get("rows_updated")),
+						"rows_deleted_count_billion": self._convert_to_billion(r.get("rows_deleted")),
+						"select_time_billion_ps": self._convert_to_billion(r.get("select_latency")),
+						"insert_time_billion_ps": self._convert_to_billion(r.get("insert_latency")),
+						"update_time_billion_ps": self._convert_to_billion(r.get("update_latency")),
+						"delete_time_billion_ps": self._convert_to_billion(r.get("delete_latency")),
+					},
+				)
+			record.schema_table_statistics = []
+			for r in reports.get("schema_table_statistics", []):
+				record.append(
+					"schema_table_statistics",
+					{
+						"schema": r.get("table_schema"),
+						"table": r.get("table_name"),
+						"rows_fetched_count_billion": self._convert_to_billion(r.get("rows_fetched")),
+						"fetch_time_billion_ps": self._convert_to_billion(r.get("fetch_latency")),
+						"rows_inserted_count_billion": self._convert_to_billion(r.get("rows_inserted")),
+						"insert_time_billion_ps": self._convert_to_billion(r.get("insert_latency")),
+						"rows_updated_count_billion": self._convert_to_billion(r.get("rows_updated")),
+						"update_time_billion_ps": self._convert_to_billion(r.get("update_latency")),
+						"rows_deleted_count_billion": self._convert_to_billion(r.get("rows_deleted")),
+						"delete_time_billion_ps": self._convert_to_billion(r.get("delete_latency")),
+						"io_read_requests_count_billion": self._convert_to_billion(
+							r.get("io_read_requests")
+						),
+						"io_read_mb": self._convert_to_billion(r.get("io_read")),
+						"io_read_time_billion_ps": self._convert_to_billion(r.get("io_read_latency")),
+						"io_write_requests_count_billion": self._convert_to_billion(
+							r.get("io_write_requests")
+						),
+						"io_write_mb": self._convert_to_billion(r.get("io_write")),
+						"io_write_time_billion_ps": self._convert_to_billion(r.get("io_write_latency")),
+						"io_misc_requests_count_billion": self._convert_to_billion(
+							r.get("io_misc_requests")
+						),
+						"io_misc_time_billion_ps": self._convert_to_billion(r.get("io_misc_latency")),
+					},
+				)
+			record.schema_table_statistics_with_innodb_buffer = []
+			for r in reports.get("schema_table_statistics_with_innodb_buffer", []):
+				record.append(
+					"schema_table_statistics_with_innodb_buffer",
+					{
+						"schema": r.get("table_schema"),
+						"table": r.get("table_name"),
+						"rows_fetched_count_billion": self._convert_to_billion(r.get("rows_fetched")),
+						"fetch_time_billion_ps": self._convert_to_billion(r.get("fetch_latency")),
+						"rows_inserted_count_billion": self._convert_to_billion(r.get("rows_inserted")),
+						"insert_time_billion_ps": self._convert_to_billion(r.get("insert_latency")),
+						"rows_updated_count_billion": self._convert_to_billion(r.get("rows_updated")),
+						"update_time_billion_ps": self._convert_to_billion(r.get("update_latency")),
+						"rows_deleted_count_billion": self._convert_to_billion(r.get("rows_deleted")),
+						"delete_time_billion_ps": self._convert_to_billion(r.get("delete_latency")),
+						"io_read_requests_count_billion": self._convert_to_billion(
+							r.get("io_read_requests")
+						),
+						"io_read_mb": self._convert_to_billion(r.get("io_read")),
+						"io_read_time_billion_ps": self._convert_to_billion(r.get("io_read_latency")),
+						"io_write_requests_count_billion": self._convert_to_billion(
+							r.get("io_write_requests")
+						),
+						"io_write_mb": self._convert_to_billion(r.get("io_write")),
+						"io_write_time_billion_ps": self._convert_to_billion(r.get("io_write_latency")),
+						"io_misc_requests_count_billion": self._convert_to_billion(
+							r.get("io_misc_requests")
+						),
+						"io_misc_time_billion_ps": self._convert_to_billion(r.get("io_misc_latency")),
+						"buffer_allocated_mb": self._bytes_to_mb(r.get("innodb_buffer_allocated")),
+						"buffer_data_mb": self._bytes_to_mb(r.get("innodb_buffer_data")),
+						"buffer_free_mb": self._bytes_to_mb(r.get("innodb_buffer_free")),
+						"buffer_pages_count_billion": self._convert_to_billion(
+							r.get("innodb_buffer_pages")
+						),
+						"buffer_pages_hashed_count_billion": self._convert_to_billion(
+							r.get("innodb_buffer_pages_hashed")
+						),
+						"buffer_pages_old_count_billion": self._convert_to_billion(
+							r.get("innodb_buffer_pages_old")
+						),
+						"buffer_pages_cached_count_billion": self._convert_to_billion(
+							r.get("innodb_buffer_rows_cached")
+						),
+					},
+				)
+			record.schema_tables_with_full_table_scans = []
+			for r in reports.get("schema_tables_with_full_table_scans", []):
+				record.append(
+					"schema_tables_with_full_table_scans",
+					{
+						"schema": r.get("object_schema"),
+						"object": r.get("object_name"),
+						"full_scanned_rows_count_billion": self._convert_to_billion(
+							r.get("rows_full_scanned")
+						),
+					},
+				)
+			record.schema_unused_indexes = []
+			for r in reports.get("schema_unused_indexes", []):
+				record.append(
+					"schema_unused_indexes",
+					{
+						"schema": r.get("object_schema"),
+						"object": r.get("object_name"),
+						"index": r.get("index_name"),
+					},
+				)
+			record.global_waits_by_time = []
+			for r in reports.get("global_waits_by_time", []):
+				record.append(
+					"global_waits_by_time",
+					{
+						"event_class": r.get("events"),
+						"total_occurances_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+					},
+				)
+			record.waits_by_user_by_time = []
+			for r in reports.get("waits_by_user_by_time", []):
+				record.append(
+					"waits_by_user_by_time",
+					{
+						"user": r.get("user"),
+						"event_class": r.get("event"),
+						"total_occurances_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+					},
+				)
+			record.wait_classes_by_time = []
+			for r in reports.get("wait_classes_by_time", []):
+				record.append(
+					"wait_classes_by_time",
+					{
+						"event_class": r.get("event_class"),
+						"total_occurances_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"min_time_billion_ps": self._convert_to_billion(r.get("min_latency")),
+					},
+				)
+			record.waits_classes_by_avg_time = []
+			for r in reports.get("waits_classes_by_avg_time", []):
+				record.append(
+					"waits_classes_by_avg_time",
+					{
+						"event_class": r.get("event_class"),
+						"total_occurances_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"avg_time_billion_ps": self._convert_to_billion(r.get("avg_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"min_time_billion_ps": self._convert_to_billion(r.get("min_latency")),
+					},
+				)
+			record.innodb_buffer_stats_by_schema = []
+			for r in reports.get("innodb_buffer_stats_by_schema", []):
+				record.append(
+					"innodb_buffer_stats_by_schema",
+					{
+						"schema": r.get("object_schema"),
+						"allocated_mb": self._bytes_to_mb(r.get("allocated")),
+						"data_mb": self._bytes_to_mb(r.get("data")),
+						"pages_count_billion": self._convert_to_billion(r.get("pages")),
+						"pages_hashed_count_billion": self._convert_to_billion(r.get("pages_hashed")),
+						"pages_old_count_billion": self._convert_to_billion(r.get("pages_old")),
+						"rows_cached_count_billion": self._convert_to_billion(r.get("rows_cached")),
+					},
+				)
+			record.innodb_buffer_stats_by_table = []
+			for r in reports.get("innodb_buffer_stats_by_table", []):
+				record.append(
+					"innodb_buffer_stats_by_table",
+					{
+						"schema": r.get("object_schema"),
+						"table": r.get("object_name"),
+						"allocated_mb": self._bytes_to_mb(r.get("allocated")),
+						"data_mb": self._bytes_to_mb(r.get("data")),
+						"pages_count_billion": self._convert_to_billion(r.get("pages")),
+						"pages_hashed_count_billion": self._convert_to_billion(r.get("pages_hashed")),
+						"pages_old_count_billion": self._convert_to_billion(r.get("pages_old")),
+						"rows_cached_count_billion": self._convert_to_billion(r.get("rows_cached")),
+					},
+				)
+			record.user_resource_use_overview = []
+			for r in reports.get("user_resource_use_overview", []):
+				record.append(
+					"user_resource_use_overview",
+					{
+						"user": r.get("user"),
+						"statements_count_billion": self._convert_to_billion(r.get("statements")),
+						"statement_total_time_billion_ps": self._convert_to_billion(
+							r.get("statement_latency")
+						),
+						"statement_avg_time_billion_ps": self._convert_to_billion(
+							r.get("statement_avg_latency")
+						),
+						"table_scans_count_billion": self._convert_to_billion(r.get("table_scans")),
+						"file_io_count_billion": self._convert_to_billion(r.get("file_io_latency")),
+						"total_file_io_time_billion_ps": self._convert_to_billion(
+							r.get("file_io_latency")
+						),
+						"current_connections_count": r.get("current_connections"),
+						"total_connections_count": r.get("total_connections"),
+						"unique_hosts_count": r.get("unique_hosts"),
+						"current_memory_mb": self._bytes_to_mb(r.get("current_memory")),
+						"total_memory_mb": self._bytes_to_mb(r.get("total_memory_allocated")),
+					},
+				)
+			record.user_resource_use_io_statistics = []
+			for r in reports.get("user_resource_use_io_statistics", []):
+				record.append(
+					"user_resource_use_io_statistics",
+					{
+						"user": r.get("user"),
+						"event_type": r.get("event_name"),
+						"total_io_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+					},
+				)
+			record.user_resource_use_statement_statistics = []
+			for r in reports.get("user_resource_use_statement_statistics", []):
+				record.append(
+					"user_resource_use_statement_statistics",
+					{
+						"user": r.get("user"),
+						"statement": r.get("statement"),
+						"total_occurances_count_billion": self._convert_to_billion(r.get("total")),
+						"total_time_billion_ps": self._convert_to_billion(r.get("total_latency")),
+						"max_time_billion_ps": self._convert_to_billion(r.get("max_latency")),
+						"lock_time_billion_ps": self._convert_to_billion(r.get("lock_latency")),
+						"cpu_time_billion_ps": self._convert_to_billion(r.get("cpu_latency")),
+						"rows_sent_count_billion": self._convert_to_billion(r.get("rows_sent")),
+						"rows_examined_count_billion": self._convert_to_billion(r.get("rows_examined")),
+						"rows_affected_count_billion": self._convert_to_billion(r.get("rows_affected")),
+						"full_scans_count_billion": self._convert_to_billion(r.get("full_scans")),
+					},
+				)
+			record.save()
+		except Exception:
+			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
+			raise
+
+	def _bytes_to_mb(self, bytes_val):
+		if bytes_val is None:
+			return None
+		return round(bytes_val / 1024 / 1024, 2)
+
+	def _convert_to_billion(self, count):
+		if count is None:
+			return None
+		return count / 1000000000
+
 	def update_memory_allocator(self, memory_allocator):
 		frappe.enqueue_doc(
 			self.doctype,
@@ -988,3 +1567,11 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-waits-history": "ON",
 	"performance-schema-consumer-events-waits-history-long": "ON",
 }
+
+
+def fetch_performance_schema_reports():
+	for server in frappe.get_all(
+		"Database Server", {"auto_fetch_performance_schema_report": 1}
+	):
+		server: DatabaseServer = frappe.get_doc("Database Server", server.name)
+		server.fetch_performance_report()

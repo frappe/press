@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 13:58:41.431317",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "statements_count_billion",
+  "statement_total_time_billion_ps",
+  "statement_avg_time_billion_ps",
+  "table_scans_count_billion",
+  "file_io_count_billion",
+  "total_file_io_time_billion_ps",
+  "current_connections_count",
+  "total_connections_count",
+  "unique_hosts_count",
+  "current_memory_mb",
+  "total_memory_mb"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "statements_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Statements Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "statement_total_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Statement Total Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "statement_avg_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Statement Avg Time(billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "table_scans_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Table Scans Count (billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "file_io_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "File IO Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_file_io_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total File IO Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_connections_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Current Connections Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unique_hosts_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Unique Hosts Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_memory_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Current Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_memory_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_connections_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Connections Count",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-02-02 15:13:28.060713",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "User Resource Use Overview",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

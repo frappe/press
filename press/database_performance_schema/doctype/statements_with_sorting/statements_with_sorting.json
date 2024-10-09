@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 15:19:52.977843",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "query",
+  "executed_count_billion",
+  "sort_merge_passes_count_billionpasses",
+  "avg_sort_merges_count_billion",
+  "sorts_using_scans_count_billion",
+  "sort_using_range_count_billion",
+  "rows_sorted_count_billion",
+  "avg_rows_sorted_count_billion"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "executed_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sort_merge_passes_count_billionpasses",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Sort Merge Passes (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_sort_merges_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Sort Merges Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sorts_using_scans_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Sorts Using Scans Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sort_using_range_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Sort Using Range Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_sorted_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Sorted Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_rows_sorted_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Rows Sorted Count (Billion)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-02-02 13:48:55.851242",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Statements With Sorting",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
