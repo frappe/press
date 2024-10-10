@@ -177,6 +177,9 @@ class Agent:
 			"managed_database_config": self._get_managed_db_config(site),
 		}
 
+		if site.remote_config_file:
+			data["site_config"] = json.dumps(self._restore_site_config(site))
+
 		return self.create_agent_job(
 			"Restore Site",
 			f"benches/{site.bench}/sites/{site.name}/restore",
@@ -246,22 +249,6 @@ class Agent:
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 
-		def sanitized_site_config(site):
-			sanitized_config = {}
-			if site.remote_config_file:
-				from press.press.doctype.site_activity.site_activity import log_site_activity
-
-				site_config = frappe.get_doc("Remote File", site.remote_config_file)
-				new_config = site_config.get_content()
-				new_config["maintenance_mode"] = 0  # Don't allow deactivated sites to be created
-				sanitized_config = sanitize_config(new_config)
-				existing_config = json.loads(site.config)
-				existing_config.update(sanitized_config)
-				site._update_configuration(existing_config)
-				log_site_activity(site.name, "Update Configuration")
-
-			return json.dumps(sanitized_config)
-
 		public_link, private_link = None, None
 
 		if site.remote_public_file:
@@ -275,7 +262,7 @@ class Agent:
 			"name": site.name,
 			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
-			"site_config": sanitized_site_config(site),
+			"site_config": json.dumps(self._restore_site_config(site) or {}),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
@@ -290,6 +277,23 @@ class Agent:
 			bench=site.bench,
 			site=site.name,
 		)
+
+	def _restore_site_config(self, site: "Site"):
+		if not site.remote_config_file:
+			return None
+
+		from press.press.doctype.site_activity.site_activity import log_site_activity
+
+		site_config = frappe.get_doc("Remote File", site.remote_config_file)
+		new_config: dict = site_config.get_content()
+		new_config["maintenance_mode"] = 0  # Don't allow deactivated sites to be created
+		new_config.pop("db_user", None)  # Forcefully remove dangerous keys
+		sanitized_config = sanitize_config(new_config)
+		existing_config = json.loads(site.config)
+		existing_config.update(sanitized_config)
+		site._update_configuration(existing_config)
+		log_site_activity(site.name, "Update Configuration")
+		return sanitized_config
 
 	def install_app_site(self, site, app):
 		data = {"name": app}
