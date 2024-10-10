@@ -92,7 +92,8 @@ getInitialData().then(() => {
 					'PermissionError',
 					'SecurityException',
 					'AAAARecordExists',
-					'AuthenticationError'
+					'AuthenticationError',
+					'InsufficientSpaceOnServer'
 				];
 				const error = hint.originalException;
 
