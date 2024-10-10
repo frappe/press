@@ -241,6 +241,23 @@ async fetchTeams() {
         }
     },
 
+  async fetchTaxId(){
+    try {
+        const taxId = await request({
+          url: '/api/method/press.api.billing.get_tax_id',
+          method: 'GET',
+        });
+        
+        if (taxId) {
+          this.taxIdInput = taxId;  
+        } else {
+          this.taxIdInput = 'me'; 
+        }
+      } catch (error) {
+        this.errorMessage = `Failed to fetch tax ID: ${error.message}`;
+      }
+    },
+
     async fetchTaxPercentage(){
       try{
           const taxPercentage= await request({
@@ -278,6 +295,7 @@ watch: {
 
 mounted() {
   this.fetchTeams();
+  this.fetchTaxId();
 },
 
 };

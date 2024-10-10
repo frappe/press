@@ -711,7 +711,7 @@ def generate_stk_push(**kwargs):
 	"""Generate stk push by making a API call to the stk push API."""
 	args = frappe._dict(kwargs)
 	partner_value = args.partner
-
+	
 	# Fetch the team document based on the extracted partner value
 	partner_ = frappe.get_all("Team", filters={"user": partner_value}, pluck="name")
 	if not partner_:
@@ -740,17 +740,15 @@ def generate_stk_push(**kwargs):
 		)
 
 		mobile_number = sanitize_mobile_number(args.sender)
-		
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount=1,
+			amount=args.request_amount,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
 			phone_number=mobile_number,
 			description="Frappe Cloud Payment",
 		)
-		print(str(response))
 		return response
 
 	except Exception:
@@ -838,6 +836,7 @@ def request_for_payment(**kwargs):
 	kwargs.setdefault("transaction_limit", 150000)
 	kwargs.setdefault('team', 'Administrator')
 	args = frappe._dict(kwargs)
+	update_tax_id(args.team, args.tax_id)
 	request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
 	for i, amount in enumerate(request_amounts):
 		args.request_amount = amount
@@ -849,6 +848,7 @@ def request_for_payment(**kwargs):
 			response = frappe._dict(get_payment_request_response_payload(amount))
 		else:
 			response = frappe._dict(generate_stk_push(**args))
+			
 		handle_api_mpesa_response("CheckoutRequestID", args, response)
 	return response
 
@@ -1017,10 +1017,38 @@ def convert(from_currency, to_currency, amount):
 	
 	return converted_amount, exchange_rate
 
+
 @frappe.whitelist(allow_guest=True)
-def webhook_trial():
-	print("Receiving webhook data...")
-	
+def create_mpesa_settings(**kwargs):
+	"""Create Mpesa Settings for the team."""
+	team = get_current_team()
+
+	try:
+		mpesa_settings = frappe.get_doc({
+			"doctype": "Mpesa Settings",
+			"team": team,  
+			"payment_gateway_name": kwargs.get("payment_gateway_name"),
+			"api_type": "Mpesa Express",
+			"consumer_key": kwargs.get("consumer_key"),  
+			"consumer_secret": kwargs.get("consumer_secret"),  
+			"business_shortcode": kwargs.get("short_code"),  
+			"till_number": kwargs.get("till_number"), 
+			"online_passkey": kwargs.get("pass_key"), 
+			"security_credential": kwargs.get("security_credential"),
+			"sandbox": 1 if kwargs.get("sandbox") else 0,
+		})
+
+		mpesa_settings.insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		return mpesa_settings.name 
+	except Exception as e:
+		frappe.log_error(message=f"Error creating Mpesa Settings: {str(e)}", title="M-Pesa Settings Creation Error")
+		return None  
+
+
+@frappe.whitelist(allow_guest=True)
+def webhook_trial():	
 	rawdata = frappe.local.request.get_data(as_text=True)
 	
 	try:
@@ -1031,7 +1059,6 @@ def webhook_trial():
 	
 	transaction_id = data.get("transaction_id")
 	trans_amount = data.get("trans_amount")
-	msisdn = data.get("msisdn")
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	
@@ -1067,31 +1094,19 @@ def webhook_trial():
 	except Exception as e:
 		print(f"Error creating Sales Invoice: {e}")
 		frappe.throw(_("Failed to create Sales Invoice"))
-
+  
+def update_tax_id(team, tax_id):
+	"""Update the tax ID for the team."""
+	doc_name=frappe.get_value("Team", {"user": team}, "name")
+	team_doc = frappe.get_doc("Team", doc_name)
+	if not team_doc.tax_id:
+		frappe.msgprint("Hello")
+		team_doc.tax_id = tax_id
+		team_doc.save()
+  
 @frappe.whitelist(allow_guest=True)
-def create_mpesa_settings(**kwargs):
-	"""Create Mpesa Settings for the team."""
-	team = get_current_team()
-
-	try:
-		mpesa_settings = frappe.get_doc({
-			"doctype": "Mpesa Settings",
-			"team": team,  
-			"payment_gateway_name": kwargs.get("payment_gateway_name"),
-			"api_type": "Mpesa Express",
-			"consumer_key": kwargs.get("consumer_key"),  
-			"consumer_secret": kwargs.get("consumer_secret"),  
-			"business_shortcode": kwargs.get("short_code"),  
-			"till_number": kwargs.get("till_number"), 
-			"online_passkey": kwargs.get("pass_key"), 
-			"security_credential": kwargs.get("security_credential"),
-			"sandbox": 1 if kwargs.get("sandbox") else 0,
-		})
-
-		mpesa_settings.insert(ignore_permissions=True)
-		frappe.db.commit()
-
-		return mpesa_settings.name 
-	except Exception as e:
-		frappe.log_error(message=f"Error creating Mpesa Settings: {str(e)}", title="M-Pesa Settings Creation Error")
-		return None  
+def get_tax_id():
+	"""Get the tax ID for the team."""
+	team=get_current_team()
+	team_doc = frappe.get_doc("Team", team)
+	return team_doc.tax_id if team_doc.tax_id else ''

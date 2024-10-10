@@ -40,6 +40,7 @@
   "billing_name",
   "billing_address",
   "free_credits_allocated",
+  "tax_id",
   "column_break_12",
   "address_html",
   "custom_apps_section",
@@ -441,6 +442,11 @@
    "fieldname": "enable_inplace_updates",
    "fieldtype": "Check",
    "label": "Enable In Place Updates"
+  },
+  {
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "label": "Tax Id"
   }
  ],
  "links": [
@@ -500,7 +506,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-13 11:55:07.048543",
+ "modified": "2024-10-10 22:04:28.127195",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
