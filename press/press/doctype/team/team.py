@@ -468,7 +468,7 @@ class Team(Document):
 				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
 				"frappe_partnership_date",
 			)
-			if frappe_partnership_date and frappe_partnership_date > self.partnership_date:
+			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(self.partnership_date):
 				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
