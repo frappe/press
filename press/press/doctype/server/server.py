@@ -1145,6 +1145,23 @@ class Server(BaseServer):
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
 
+	def validate(self):
+		super().validate()
+		self.validate_managed_database_service()
+
+	def validate_managed_database_service(self):
+		if not hasattr(self, "is_managed_database"):
+			return
+
+		if self.is_managed_database:
+			if not self.managed_database_service:
+				frappe.throw(_("Please select Managed Database Service"))
+
+			self.database_server = ""
+
+		else:
+			self.managed_database_service = ""
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
