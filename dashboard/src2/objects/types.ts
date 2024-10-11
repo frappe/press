@@ -2,7 +2,9 @@ import type { defineAsyncComponent, h, Component } from 'vue';
 import type { icon } from '../utils/components';
 
 type ListResource = unknown;
-type Resource = unknown;
+interface Resource {
+	doc: Record<string, any>;
+}
 
 type Icon = ReturnType<typeof icon>;
 type AsyncComponent = ReturnType<typeof defineAsyncComponent>;
@@ -11,25 +13,28 @@ export interface DashboardObject {
 	doctype: string;
 	whitelistedMethods: Record<string, string>;
 	list: List;
-	detail: {
-		titleField: string;
-		statusBadge: StatusBadge;
-		breadcrumbs: Breadcrumbs;
-		route: string;
-		tabs: Tab[];
-		actions: (r: { documentResource: Resource }) => Action[];
-	};
+	detail: Detail;
 	routes: RouteDetail[];
 }
 
-interface List {
+export interface Detail {
+	titleField: string;
+	statusBadge: StatusBadge;
+	breadcrumbs: Breadcrumbs;
+	route: string;
+	tabs: Tab[];
+	actions: (r: { documentResource: Resource }) => Action[];
+}
+
+export interface List {
 	route: string;
 	title: string;
 	fields: string[]; // TODO: Incomplete
 	searchField: string;
 	columns: ColumnField[];
+	orderBy: string;
 	filterControls: FilterControls;
-	primaryAction: PrimaryAction;
+	primaryAction?: PrimaryAction;
 }
 
 type FilterControls = () => FilterField[];
@@ -42,21 +47,24 @@ type PrimaryAction = (r: { listResource: ListResource }) => {
 	onClick: () => void;
 };
 type StatusBadge = (r: { documentResource: Resource }) => { label: string };
-type Breadcrumbs = (r: { documentResource: Resource; items: unknown[] }) => {
-	label: string;
-	route: string;
-};
+type Breadcrumb = { label: string; route: string };
+type Breadcrumbs = (r: {
+	documentResource: Resource;
+	items: Breadcrumb[];
+}) => Breadcrumb[];
 
-interface FilterField {
+export interface FilterField {
 	label: string;
 	fieldname: string;
 	type: string;
-	options?: {
-		doctype: string;
-		filters?: {
-			doctype_name?: string;
-		};
-	};
+	options?:
+		| {
+				doctype: string;
+				filters?: {
+					doctype_name?: string;
+				};
+		  }
+		| string[];
 }
 
 interface ColumnField {
@@ -64,10 +72,14 @@ interface ColumnField {
 	fieldname: string;
 	class?: string;
 	width?: string | number;
-	format?: (value: unknown, row: unknown) => string;
-	link?: (value: unknown, row: unknown) => string;
-	suffix?: (row: unknown) => ReturnType<typeof h>;
+	type?: string;
+	format?: (value: unknown, row: Row) => string;
+	link?: (value: unknown, row: Row) => string;
+	prefix?: (row: Row) => Component | undefined;
+	suffix?: (row: Row) => Component | undefined;
 }
+
+export type Row = Record<string, unknown>;
 
 interface Tab {
 	label: string;

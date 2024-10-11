@@ -100,6 +100,7 @@ class Bench(Document):
 		"name",
 		"group",
 		"status",
+		"cluster",
 		"is_ssh_proxy_setup",
 		"inplace_update_docker_image",
 	)
@@ -107,15 +108,27 @@ class Bench(Document):
 	@staticmethod
 	def get_list_query(query):
 		Bench = frappe.qb.DocType("Bench")
+
+		Site = frappe.qb.DocType("Site")
+		site_count = (
+			frappe.qb.from_(Site)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Site.bench == Bench.name)
+			.where(Site.status != "Archived")
+		)
+
 		benches = (
-			query.select(Bench.is_ssh_proxy_setup, Bench.inplace_update_docker_image)
+			query.select(
+				Bench.is_ssh_proxy_setup, Bench.inplace_update_docker_image, site_count.as_("site_count")
+			)
 			.where(Bench.status != "Archived")
 			.run(as_dict=1)
 		)
+		bench_names = [d.name for d in benches]
 		benches_with_patches = frappe.get_all(
 			"App Patch",
 			fields=["bench"],
-			filters={"bench": ["in", [d.name for d in benches]], "status": "Applied"},
+			filters={"bench": ["in", bench_names], "status": "Applied"},
 			pluck="bench",
 		)
 		for bench in benches:

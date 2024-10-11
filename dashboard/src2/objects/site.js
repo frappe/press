@@ -20,6 +20,7 @@ import { logsTab } from './tabs/site/logs';
 import { trialDays } from '../utils/site';
 import dayjs from '../utils/dayjs';
 import { jobTab } from './common/jobs';
+import { clusterOptions } from './common';
 
 export default {
 	doctype: 'Site',
@@ -106,19 +107,7 @@ export default {
 					type: 'select',
 					label: 'Region',
 					fieldname: 'cluster',
-					options: [
-						'',
-						'Bahrain',
-						'Cape Town',
-						'Frankfurt',
-						'KSA',
-						'London',
-						'Mumbai',
-						'Singapore',
-						'UAE',
-						'Virginia',
-						'Zurich'
-					]
+					options: clusterOptions
 				},
 				{
 					type: 'link',
@@ -165,7 +154,7 @@ export default {
 				}
 			},
 			{
-				label: 'Cluster',
+				label: 'Region',
 				fieldname: 'cluster',
 				width: 1,
 				format(value, row) {
