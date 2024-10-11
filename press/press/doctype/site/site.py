@@ -456,6 +456,35 @@ class Site(Document, TagHelpers):
 					if app not in allowed_apps:
 						frappe.throw(f"In {self.subscription_plan}, you can't deploy site with {app} app")
 
+			is_dedicated_server_plan = frappe.db.get_value(
+				"Site Plan", self.subscription_plan, "dedicated_server_plan"
+			)
+			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
+
+			# If site is on public server, don't allow unlimited plans
+			if is_site_on_public_server and is_dedicated_server_plan:
+				self.subscription_plan = frappe.db.get_value(
+					"Site Plan",
+					{
+						"private_benches": 1,
+						"dedicated_server_plan": 0,
+						"document_type": "Site",
+						"price_inr": ["!=", 0],
+					},
+					order_by="price_inr asc",
+				)
+
+			# If site is on dedicated server, set unlimited plan
+			elif not is_dedicated_server_plan and not is_site_on_public_server:
+				self.subscription_plan = frappe.db.get_value(
+					"Site Plan",
+					{
+						"dedicated_server_plan": 1,
+						"document_type": "Site",
+						"support_included": 0,
+					},
+				)
+
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
