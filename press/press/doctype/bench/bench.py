@@ -143,6 +143,16 @@ class Bench(Document):
 		doc.user_ssh_key = bool(user_ssh_key)
 		doc.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
+		group = frappe.db.get_value(
+			"Release Group",
+			self.group,
+			["title", "public", "team", "central_bench"],
+			as_dict=1,
+		)
+		doc.group_title = group.title
+		doc.group_team = group.team
+		doc.group_public = group.public or group.central_bench
+
 	@staticmethod
 	def with_sites(name: str):
 		bench = frappe.get_doc("Bench", name)

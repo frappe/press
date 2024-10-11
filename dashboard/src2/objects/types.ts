@@ -47,7 +47,7 @@ type PrimaryAction = (r: { listResource: ListResource }) => {
 	onClick: () => void;
 };
 type StatusBadge = (r: { documentResource: Resource }) => { label: string };
-type Breadcrumb = { label: string; route: string };
+export type Breadcrumb = { label: string; route: string };
 type Breadcrumbs = (r: {
 	documentResource: Resource;
 	items: Breadcrumb[];

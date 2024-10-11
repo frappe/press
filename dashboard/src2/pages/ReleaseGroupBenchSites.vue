@@ -98,24 +98,37 @@ export default {
 					const IconStar = icon('star', 'w-3 h-3');
 					return (
 						<div class="flex items-center">
-							<div class="text-base font-medium leading-6 text-gray-900">
-								{bench.group}
-							</div>
+							<Tooltip text="View bench details">
+								<a
+									class="cursor-pointer text-base font-medium leading-6 text-gray-900"
+									href={`/benches/${bench.name}`}
+								>
+									{bench.group}
+								</a>
+							</Tooltip>
 							{bench.status != 'Active' ? (
 								<Badge class="ml-4" label={bench.status} />
 							) : null}
 							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this bench may have been patched">
-									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+									<a
+										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										href="https://frappecloud.com/docs/benches/app-patches"
+										target="_blank"
+									>
 										<IconHash />
-									</div>
+									</a>
 								</Tooltip>
 							)}
 							{bench.has_updated_inplace && (
 								<Tooltip text="This bench has been updated in place">
-									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+									<a
+										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										href="https://frappecloud.com/docs/in-place-updates"
+										target="_blank"
+									>
 										<IconStar />
-									</div>
+									</a>
 								</Tooltip>
 							)}
 							<ActionButton class="ml-auto" options={options} />
