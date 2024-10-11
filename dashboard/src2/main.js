@@ -83,7 +83,7 @@ getInitialData().then(() => {
 					/Failed to fetch/,
 					/Load failed/,
 					/frappe is not defined/,
-					/Cannot read properties of undefined (reading 'exc_type')/,
+					/Cannot read properties of undefined \(reading 'exc_type'\)/,
 					/Importing a module script failed./
 				];
 				const ignoreErrorTypes = [
