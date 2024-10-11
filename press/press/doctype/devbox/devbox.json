@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-08 12:57:16.367361",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_section",
+  "server",
+  "status",
+  "machine_configuration_section",
+  "cpu_cores",
+  "ram",
+  "disk_mb"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_section",
+   "fieldtype": "Section Break",
+   "label": "Metadata"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nStarting\nPaused\nRunning\nArchived\nExited"
+  },
+  {
+   "fieldname": "machine_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Machine Configuration"
+  },
+  {
+   "fieldname": "cpu_cores",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "CPU Cores (vCPU)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "RAM (MB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "disk_mb",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Disk (GB)",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-08 13:19:33.087453",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Devbox",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
