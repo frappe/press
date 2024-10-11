@@ -1,9 +1,9 @@
 - targets:
     - '{{ press_app_server }}'
     - '{{ press_db_server }}'
-    {%- if press_db_replica_server %}
+    {%- if press_db_replica_server +%}
     - '{{ press_db_replica_server }}'
-    {%- endif %}
+    {%- endif +%}
   labels:
     job: node
     __metrics_path__: /metrics/node
@@ -22,9 +22,9 @@
 
 - targets:
     - '{{ press_db_server }}'
-    {%- if press_db_replica_server %}
+    {%- if press_db_replica_server +%}
     - '{{ press_db_replica_server }}'
-    {%- endif %}
+    {%- endif +%}
   labels:
     job: mariadb
     __metrics_path__: /metrics/mariadb
