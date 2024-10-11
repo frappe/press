@@ -140,6 +140,20 @@ export default {
 
 			return [
 				{
+					label: 'Impersonate Server Owner',
+					title: 'Impersonate Server Owner', // for label to pop-up on hover
+					slots: {
+						icon: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc?.is_desk_user && server.doc.team !== $team.name,
+					onClick() {
+						switchToTeam(server.doc.team);
+					}
+				},
+				{
 					label: 'Options',
 					button: {
 						label: 'Options',
@@ -170,16 +184,6 @@ export default {
 								server.doc.status === 'Active' && $team.doc?.is_desk_user,
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
-							}
-						},
-						{
-							label: 'Impersonate Team',
-							icon: defineAsyncComponent(() =>
-								import('~icons/lucide/venetian-mask')
-							),
-							condition: () => window.is_system_user,
-							onClick() {
-								switchToTeam(server.doc.team);
 							}
 						}
 					]

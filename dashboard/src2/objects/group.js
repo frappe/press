@@ -98,7 +98,7 @@ export default {
 				width: 0.25
 			}
 		],
-		primaryAction({ listResource: benches }) {
+		primaryAction() {
 			return {
 				label: 'New Bench Group',
 				variant: 'solid',
@@ -499,28 +499,28 @@ export default {
 							width: 1
 						}
 					],
-					primaryAction({ listResource: deploys, documentResource: bench }) {
+					primaryAction({ listResource: deploys, documentResource: group }) {
 						return {
 							label: 'Deploy',
 							slots: {
 								prefix: icon(LucideRocket)
 							},
 							onClick() {
-								if (bench.doc.deploy_information.deploy_in_progress) {
+								if (group.doc.deploy_information.deploy_in_progress) {
 									return toast.error(
 										'Deploy is in progress. Please wait for it to complete.'
 									);
-								} else if (bench.doc.deploy_information.update_available) {
+								} else if (group.doc.deploy_information.update_available) {
 									let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
 										import('../components/group/UpdateReleaseGroupDialog.vue')
 									);
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
-											bench: bench.name,
+											bench: group.name,
 											onSuccess(candidate) {
-												bench.doc.deploy_information.deploy_in_progress = true;
+												group.doc.deploy_information.deploy_in_progress = true;
 												if (candidate) {
-													bench.doc.deploy_information.last_deploy.name =
+													group.doc.deploy_information.last_deploy.name =
 														candidate;
 												}
 											}
@@ -532,7 +532,7 @@ export default {
 										message:
 											'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
 										onSuccess: ({ hide }) => {
-											toast.promise(bench.redeploy.submit(), {
+											toast.promise(group.redeploy.submit(), {
 												loading: 'Deploying...',
 												success: () => {
 													hide();
@@ -944,36 +944,50 @@ export default {
 			tagTab()
 		],
 		actions(context) {
-			let { documentResource: bench } = context;
+			let { documentResource: group } = context;
 			let team = getTeam();
 
 			return [
 				{
-					label: bench.doc?.deploy_information?.last_deploy
+					label: 'Impersonate Group Owner',
+					title: 'Impersonate Group Owner', // for label to pop-up on hover
+					slots: {
+						icon: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						team.doc?.is_desk_user && group.doc.team !== team.name,
+					onClick() {
+						switchToTeam(group.doc.team);
+					}
+				},
+				{
+					label: group.doc?.deploy_information?.last_deploy
 						? 'Update Available'
 						: 'Deploy Now',
 					slots: {
-						prefix: bench.doc?.deploy_information?.last_deploy
+						prefix: group.doc?.deploy_information?.last_deploy
 							? icon(LucideHardDriveDownload)
 							: icon(LucideRocket)
 					},
 					variant: 'solid',
 					condition: () =>
-						!bench.doc.deploy_information.deploy_in_progress &&
-						bench.doc.deploy_information.update_available &&
-						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
+						!group.doc.deploy_information.deploy_in_progress &&
+						group.doc.deploy_information.update_available &&
+						['Awaiting Deploy', 'Active'].includes(group.doc.status),
 					onClick() {
-						if (bench.doc?.deploy_information?.last_deploy) {
+						if (group.doc?.deploy_information?.last_deploy) {
 							let UpdateReleaseGroupDialog = defineAsyncComponent(() =>
 								import('../components/group/UpdateReleaseGroupDialog.vue')
 							);
 							renderDialog(
 								h(UpdateReleaseGroupDialog, {
-									bench: bench.name,
+									bench: group.name,
 									onSuccess(candidate) {
-										bench.doc.deploy_information.deploy_in_progress = true;
+										group.doc.deploy_information.deploy_in_progress = true;
 										if (candidate) {
-											bench.doc.deploy_information.last_deploy.name = candidate;
+											group.doc.deploy_information.last_deploy.name = candidate;
 										}
 									}
 								})
@@ -984,9 +998,9 @@ export default {
 								message: "Let's deploy now?",
 								onSuccess({ hide }) {
 									toast.promise(
-										bench.initialDeploy.submit(null, {
+										group.initialDeploy.submit(null, {
 											onSuccess: () => {
-												bench.reload();
+												group.reload();
 												hide();
 											}
 										}),
@@ -1007,10 +1021,10 @@ export default {
 						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' })
 					},
 					theme: 'green',
-					condition: () => bench.doc.deploy_information.deploy_in_progress,
+					condition: () => group.doc.deploy_information.deploy_in_progress,
 					route: {
 						name: 'Deploy Candidate',
-						params: { id: bench.doc?.deploy_information?.last_deploy?.name }
+						params: { id: group.doc?.deploy_information?.last_deploy?.name }
 					}
 				},
 				{
@@ -1023,19 +1037,9 @@ export default {
 							condition: () => team.doc?.is_desk_user,
 							onClick() {
 								window.open(
-									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,
+									`${window.location.protocol}//${window.location.host}/app/release-group/${group.name}`,
 									'_blank'
 								);
-							}
-						},
-						{
-							label: 'Impersonate Team',
-							icon: defineAsyncComponent(() =>
-								import('~icons/lucide/venetian-mask')
-							),
-							condition: () => window.is_system_user,
-							onClick() {
-								switchToTeam(bench.doc.team);
 							}
 						}
 					]

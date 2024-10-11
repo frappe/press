@@ -1563,8 +1563,9 @@ export default {
 				},
 				{
 					label: 'Impersonate Site Owner',
+					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						prefix: defineAsyncComponent(() =>
+						icon: defineAsyncComponent(() =>
 							import('~icons/lucide/venetian-mask')
 						)
 					},
