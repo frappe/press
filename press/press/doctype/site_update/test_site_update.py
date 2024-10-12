@@ -38,6 +38,7 @@ class TestSiteUpdate(UnitTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+		frappe.db.truncate("Agent Request Failure")
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_of_v12_site_skips_search_index(self):

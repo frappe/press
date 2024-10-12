@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
 import json
 import typing
 import unittest
-from datetime import datetime
-from typing import Optional
 from unittest.mock import Mock, PropertyMock, patch
-import responses
 
 import frappe
+import responses
 from frappe.model.naming import make_autoname
 
 from press.exceptions import InsufficientSpaceOnServer
@@ -20,29 +18,31 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.server.server import BaseServer, Server
-from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.remote_file.test_remote_file import (
 	create_test_remote_file,
 )
+from press.press.doctype.server.server import BaseServer, Server
+from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.telegram_utils import Telegram
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
+	from datetime import datetime
+
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_bench(
-	user: str = None,
-	group: ReleaseGroup = None,
-	server: str = None,
-	apps: Optional[list[dict]] = None,
-	creation: datetime = None,
+	user: str | None = None,
+	group: ReleaseGroup | None = None,
+	server: str | None = None,
+	apps: list[dict] | None = None,
+	creation: datetime | None = None,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
@@ -88,12 +88,12 @@ def create_test_bench(
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
-	creation: datetime = None,
-	bench: str = None,
-	server: str = None,
-	team: str = None,
-	standby_for: Optional[str] = None,
-	apps: Optional[list[str]] = None,
+	creation: datetime | None = None,
+	bench: str | None = None,
+	server: str | None = None,
+	team: str | None = None,
+	standby_for: str | None = None,
+	apps: list[str] | None = None,
 	remote_database_file=None,
 	remote_public_file=None,
 	remote_private_file=None,
@@ -152,6 +152,7 @@ class TestSite(unittest.TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+		frappe.db.truncate("Agent Request Failure")
 
 	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
@@ -169,9 +170,7 @@ class TestSite(unittest.TestCase):
 		"""Ensure new sites set host_name in site config in f server."""
 		with patch.object(Site, "_update_configuration") as mock_update_config:
 			site = create_test_site("testsubdomain", new=True)
-		mock_update_config.assert_called_with(
-			{"host_name": f"https://{site.name}"}, save=False
-		)
+		mock_update_config.assert_called_with({"host_name": f"https://{site.name}"}, save=False)
 
 	def test_rename_updates_name(self):
 		"""Ensure rename changes name of site."""
@@ -205,9 +204,7 @@ class TestSite(unittest.TestCase):
 		)
 
 		self.assertEqual(rename_jobs_count_after - rename_jobs_count_before, 1)
-		self.assertEqual(
-			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
-		)
+		self.assertEqual(rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1)
 
 	def test_subdomain_update_renames_site(self):
 		"""Ensure updating subdomain renames site."""
@@ -228,9 +225,7 @@ class TestSite(unittest.TestCase):
 		)
 
 		self.assertEqual(rename_jobs_count_after - rename_jobs_count_before, 1)
-		self.assertEqual(
-			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
-		)
+		self.assertEqual(rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1)
 
 	def _fake_succeed_rename_jobs(self):
 		rename_step_name_map = {
@@ -238,9 +233,7 @@ class TestSite(unittest.TestCase):
 			"Rename Site on Upstream": "Rename Site File in Upstream Directory",
 		}
 		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
+		rename_upstream_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site on Upstream"})
 		frappe.db.set_value(
 			"Agent Job Step",
 			{
@@ -436,7 +429,6 @@ class TestSite(unittest.TestCase):
 	def test_restore_site_adds_storage_if_no_sufficient_storage_available_on_public_server(
 		self, mock_increase_disk_size: Mock
 	):
-
 		"""Ensure restore site adds storage if no sufficient storage available."""
 		site = create_test_site()
 		site.remote_database_file = create_test_remote_file(file_size=1024).name
@@ -451,9 +443,7 @@ class TestSite(unittest.TestCase):
 			"public",
 			True,
 		)
-		with patch.object(
-			BaseServer, "free_space", new=PropertyMock(return_value=500 * 1024 * 1024 * 1024)
-		):
+		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=500 * 1024 * 1024 * 1024)):
 			site.restore_site()
 		mock_increase_disk_size.assert_not_called()
 
@@ -479,8 +469,7 @@ class TestSite(unittest.TestCase):
 		with self.assertRaises(frappe.exceptions.ValidationError) as context:
 			site.save(ignore_permissions=True)
 		self.assertTrue(
-			"Auto updates can't be disabled for sites on public benches"
-			in str(context.exception)
+			"Auto updates can't be disabled for sites on public benches" in str(context.exception)
 		)
 
 	def test_user_can_disable_auto_update_if_site_in_private_bench(self):
