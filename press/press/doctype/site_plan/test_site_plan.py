@@ -18,6 +18,7 @@ def create_test_plan(
 	plan_title: str = None,
 	plan_name: str = None,
 	allow_downgrading_from_other_plan: bool = True,
+	dedicated_server_plan: bool = False,
 	allowed_apps: Optional[list[str]] = None,
 	release_groups: Optional[list[str]] = None,
 ):
@@ -34,6 +35,7 @@ def create_test_plan(
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
 			"allow_downgrading_from_other_plan": allow_downgrading_from_other_plan,
+			"dedicated_server_plan": dedicated_server_plan,
 			"disk": 50,
 			"instance_type": "t2.micro",
 		}

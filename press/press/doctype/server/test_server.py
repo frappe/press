@@ -32,6 +32,7 @@ def create_test_server(
 	cluster: str = "Default",
 	plan: str = None,
 	team: str = None,
+	public: bool = True,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -55,6 +56,7 @@ def create_test_server(
 			"ram": 16000,
 			"team": team,
 			"plan": plan,
+			"public": public,
 		}
 	).insert()
 	server.reload()

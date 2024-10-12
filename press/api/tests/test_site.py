@@ -5,6 +5,7 @@ import datetime
 from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 import responses
 from frappe.tests import UnitTestCase
 
@@ -40,6 +41,8 @@ class TestAPISite(UnitTestCase):
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"
 		self.team.save()
+		# create dedicated server plan
+		create_test_plan("Site", dedicated_server_plan=True)
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -76,8 +79,9 @@ class TestAPISite(UnitTestCase):
 		from press.api.site import new
 
 		app = create_test_app()
+		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=True)
 		group = create_test_release_group([app])
-		bench = create_test_bench(group=group)
+		bench = create_test_bench(group=group, server=server.name)
 		plan = create_test_plan("Site")
 
 		frappe.set_user(self.team.user)
@@ -116,7 +120,7 @@ class TestAPISite(UnitTestCase):
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group(
 			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
