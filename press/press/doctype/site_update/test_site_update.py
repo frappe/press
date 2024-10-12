@@ -36,12 +36,8 @@ def create_test_site_update(site: str, destination_group: str, status: str):
 
 
 class TestSiteUpdate(UnitTestCase):
-	def setUp(self):
-		frappe.db.truncate("Agent Request Failure")
-
 	def tearDown(self):
 		frappe.db.rollback()
-		frappe.db.truncate("Agent Request Failure")
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_of_v12_site_skips_search_index(self):
@@ -156,6 +152,9 @@ class TestSiteUpdate(UnitTestCase):
 			steps=[{"name": "Disable Maintenance Mode", "status": "Success"}],
 		):
 			site.schedule_update()
+			frappe.db.delete(
+				"Agent Request Failure"
+			)  # truncate agent request failure, so that agent request doesn't skipped
 			poll_pending_jobs()
 
 		bench1.reload()
