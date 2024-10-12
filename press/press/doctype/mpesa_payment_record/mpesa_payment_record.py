@@ -21,6 +21,7 @@ class MpesaPaymentRecord(Document):
 		default_currency: DF.Data | None
 		exchange_rate: DF.Float
 		invoice_number: DF.Data | None
+		local_invoice: DF.SmallText | None
 		merchant_request_id: DF.Data | None
 		msisdn: DF.Data | None
 		payment_partner: DF.Link | None

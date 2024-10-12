@@ -29,10 +29,11 @@
 			name="amount_kes"
 			autocomplete="off"
 			type="number"
+			:disabled="true"
 			:min="minimumAmountKES"
 		>
 			<template #prefix>
-				<div class="grid w-3 place-items-center text-sm text-gray-700 mr-2 mr-3">
+				<div class="grid w-3 place-items-center text-sm text-gray-700">
 					{{paymentGateway === 'Mpesa' ? 'Ksh.' : '$'  }}
 				</div>
 			</template>

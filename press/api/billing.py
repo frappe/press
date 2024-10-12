@@ -34,6 +34,9 @@ from json import dumps, loads
 from frappe.integrations.utils import create_request_log
 from frappe import _  # Import this for translation functionality
 import json
+import requests
+from frappe.utils.password import get_decrypted_password
+
 
 # other imports and the rest of your code...
 
@@ -884,6 +887,12 @@ def create_mpesa_payment_register_entry(transaction_response):
 	team, partner = get_team_and_partner_from_integration_request(transaction_id)
 	amount_usd, exchange_rate=convert("KES", "USD", amount)
 	# Create a new entry in M-Pesa Payment Record
+	data={
+	"transaction_id": "ABC123XYZ",
+	"trans_amount": "1000",
+	"team": "Sales Team",
+	"default_currency": "KES"
+}
 	new_entry = frappe.get_doc({
 		"doctype": "Mpesa Payment Record",
 		"transaction_id": transaction_id,
@@ -897,13 +906,15 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"amount_usd": amount_usd,
 		"exchange_rate": exchange_rate,
 		"payment_partner":partner,
-  
+		"local_invoice":create_invoice_partner_site(data, "Mpesa Express"),
 	})
 
 	new_entry.insert(ignore_permissions=True)
 	new_entry.submit()
 	frappe.db.commit()  
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
+	
+	
 
 
 def create_balance_transaction(team, amount, invoice=None):
@@ -1048,59 +1059,62 @@ def create_mpesa_settings(**kwargs):
 
 
 @frappe.whitelist(allow_guest=True)
-def webhook_trial():	
-	rawdata = frappe.local.request.get_data(as_text=True)
-	
-	try:
-		data = json.loads(rawdata)
-	except Exception as e:
-		frappe.log_error(f"Webhook data could not be parsed: {e}")
-		frappe.throw(_("Error parsing the webhook data"))
+def create_invoice_partner_site(data, gateway_controller):
+	gateway=frappe.get_doc("Payment Gateway", gateway_controller)
+	api_url_ = gateway.url
+	api_key = gateway.api_key
+	api_secret = get_decrypted_password("Payment Gateway", gateway.name, fieldname="api_secret")
 	
 	transaction_id = data.get("transaction_id")
 	trans_amount = data.get("trans_amount")
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	
+	# Validate the necessary fields
 	if not transaction_id or not trans_amount:
 		frappe.throw(_("Invalid transaction data received"))
 
-	# Step 3: Create a new Sales Invoice
+	# Define the API endpoint
+	api_url = api_url_
+
+	# Set the headers (with authorization token)
+	headers = {
+		"Authorization": f"token {api_key}:{api_secret}",
+	}
+	# Define the payload to send with the POST request
+	payload = {
+		"transaction_id": transaction_id,
+		"trans_amount": trans_amount,
+		"team": team,
+		"default_currency": default_currency
+	}
+
+	# Make the POST request to your API
 	try:
-		sales_invoice = frappe.get_doc({
-			"doctype": "Invoice",
-			"team": team,  
-			"due_date": frappe.utils.nowdate(),
-			"currency": default_currency,
-			"items": [{
-				"item_name": "Mpesa Payment",
-				"description": f"Payment via Mpesa transaction {transaction_id}",
-				"quantity": 1,
-				"rate": float(trans_amount)
-			}],
-			"remarks": f"Mpesa Transaction ID: {transaction_id}",
-			"mpesa_transaction_id": transaction_id, 
-			"status":"Paid"
-		})
+		response = requests.post(api_url, data=payload, headers=headers)
 
-		# Step 4: Insert the Sales Invoice into the database
-		sales_invoice.insert(ignore_permissions=True)
-		sales_invoice.submit()
-		frappe.db.commit()
-		frappe.msgprint(_("Sales Invoice created successfully"))
+		# Check the response status code and log errors if any
+		if response.status_code == 200:
+			frappe.msgprint(_("Invoice created successfully"))
+			# Optionally return the response data (JSON or message)
+			response_data = response.json()
+			download_link = response_data.get("message", "")
+			frappe.msgprint(_("Invoice created successfully: {0}".format(download_link)))
+			return download_link
+		else:
+			frappe.log_error(f"API Error: {response.status_code} - {response.text}")
+			frappe.throw(_("Failed to create the invoice via API"))
 
-		return {"status": "success", "invoice_id": sales_invoice.name}
-	
-	except Exception as e:
-		print(f"Error creating Sales Invoice: {e}")
-		frappe.throw(_("Failed to create Sales Invoice"))
+	except requests.exceptions.RequestException as e:
+		frappe.log_error(f"Error calling API: {e}")
+		frappe.throw(_("There was an issue connecting to the API."))
+
   
 def update_tax_id(team, tax_id):
 	"""Update the tax ID for the team."""
 	doc_name=frappe.get_value("Team", {"user": team}, "name")
 	team_doc = frappe.get_doc("Team", doc_name)
 	if not team_doc.tax_id:
-		frappe.msgprint("Hello")
 		team_doc.tax_id = tax_id
 		team_doc.save()
   

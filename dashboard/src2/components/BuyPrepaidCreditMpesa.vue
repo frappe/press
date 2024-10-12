@@ -48,11 +48,7 @@
         placeholder="Enter phone number"
         
       >
-        <template #prefix>
-          <div class="grid w-4 place-items-center text-sm text-gray-700">
-            <!-- Prefix could be optional if needed -->
-          </div>
-        </template>
+       
       </FormControl>
   
        <!-- Input field for Customer Tax Id using FormControl -->
@@ -65,24 +61,21 @@
         type="string"
         placeholder="Enter company's Tax ID"
       >
-        <template #prefix>
-          <div class="grid w-4 place-items-center text-sm text-gray-700">
-            <!-- Prefix could be optional if needed -->
-          </div>
-        </template>
+      
       </FormControl>
+
 <!--Show amount after tax-->
       <div v-if="showTaxInfo" >
 
       <div class="mt-4">
         <p class="text-sm leading-4 text-gray-700">Tax(%):</p>
-        <p class="text-md text-red-500">{{ taxPercentage }}%</p>
+        <p class="text-md text-black-100 bg-gray-100 rounded-sm">{{ taxPercentage }}%</p>
       </div>
       
       <!--Tax percentage-->
       <div class="mt-4">
         <p class="text-sm leading-4 text-gray-700">Total Amount With Tax:</p>
-        <p class="text-md text-red-500">Ksh. {{ amountWithTax }}</p>
+        <p class="text-md text-black-100 bg-gray-100 rounded-sm">Ksh. {{ amountWithTax }}</p>
       </div>
 
     </div>
@@ -251,7 +244,7 @@ async fetchTeams() {
         if (taxId) {
           this.taxIdInput = taxId;  
         } else {
-          this.taxIdInput = 'me'; 
+          this.taxIdInput = ''; 
         }
       } catch (error) {
         this.errorMessage = `Failed to fetch tax ID: ${error.message}`;
