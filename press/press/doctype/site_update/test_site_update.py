@@ -33,6 +33,9 @@ def create_test_site_update(site: str, destination_group: str, status: str):
 
 
 class TestSiteUpdate(UnitTestCase):
+	def setUp(self):
+		frappe.db.truncate("Agent Request Failure")
+
 	def tearDown(self):
 		frappe.db.rollback()
 
