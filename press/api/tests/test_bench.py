@@ -8,7 +8,7 @@ import docker
 import frappe
 import requests
 from frappe.core.utils import find
-from frappe.tests.utils import FrappeTestCase, timeout
+from frappe.tests import UnitTestCase, timeout
 
 from press.api.bench import (
 	all,
@@ -40,7 +40,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAPIBench(FrappeTestCase):
+class TestAPIBench(UnitTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.version = "Version 15"
@@ -85,9 +85,7 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_deploys_bench_container(self):
 		# mark frappe as approved so that the deploy can happen
 		release = frappe.get_last_doc("App Release", {"source": self.app_source.name})
@@ -122,9 +120,7 @@ class TestAPIBench(FrappeTestCase):
 		new=foreground_enqueue_doc,
 	)
 	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_and_update_fn_creates_bench_update(self):
 		group = new(
 			{
@@ -153,9 +149,7 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_and_update_fn_fails_without_release_argument(self):
 		group = new(
 			{
@@ -176,9 +170,7 @@ class TestAPIBench(FrappeTestCase):
 			[],
 		)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_fails_without_apps(self):
 		frappe.set_user(self.team.user)
 		group = new(
@@ -193,9 +185,7 @@ class TestAPIBench(FrappeTestCase):
 		)
 		self.assertRaises(TypeError, deploy, group)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_fails_with_empty_apps(self):
 		frappe.set_user(self.team.user)
 		group = new(
@@ -222,9 +212,7 @@ class TestAPIBench(FrappeTestCase):
 		self.assertIn(image_name, [tag for tag in image.tags])
 
 		test_port = 10501
-		client.containers.run(
-			image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port}
-		)
+		client.containers.run(image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port})
 		while True:
 			# Ensure that gunicorn at least responds. Usually we'll get 404 as there's no site installed *yet*
 			try:
@@ -232,12 +220,12 @@ class TestAPIBench(FrappeTestCase):
 				print("Received Response", response.text)
 				if response.status_code < 500:
 					break
-			except IOError as e:
+			except OSError as e:
 				print("Waitng for container to respond", str(e))
 			time.sleep(0.5)
 
 
-class TestAPIBenchConfig(FrappeTestCase):
+class TestAPIBenchConfig(UnitTestCase):
 	def setUp(self):
 		app = create_test_app()
 		self.rg = create_test_release_group([app])
@@ -474,9 +462,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			{"key": "BENCH_VERSION", "value": "5.15.2"},
 		]
 		self.assertFalse(dependencies(self.rg.name)["update_available"])
-		create_test_bench(
-			group=self.rg
-		)  # don't show dependency update available for new deploys
+		create_test_bench(group=self.rg)  # don't show dependency update available for new deploys
 		deps[0]["value"] = "16.12"
 		update_dependencies(
 			self.rg.name,
@@ -546,9 +532,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		bench.memory_swap = 4096
 		bench.vcpu = 2
 		bench.force_update_limits()
-		job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name}
-		)
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name})
 		job_data = json.loads(job.request_data)
 		self.assertEqual(job_data["memory_high"], 1024)
 		self.assertEqual(job_data["memory_max"], 2048)
@@ -556,7 +540,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.assertEqual(job_data["vcpu"], 2)
 
 
-class TestAPIBenchList(FrappeTestCase):
+class TestAPIBenchList(UnitTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 
@@ -623,9 +607,7 @@ class TestAPIBenchList(FrappeTestCase):
 		)
 
 	def test_list_tagged_benches(self):
-		self.assertEqual(
-			all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict]
-		)
+		self.assertEqual(all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict])
 
 
 def set_press_settings_for_docker_build() -> None:

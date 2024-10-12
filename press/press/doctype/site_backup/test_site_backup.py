@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -8,7 +7,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
@@ -47,7 +46,7 @@ def create_test_site_backup(
 	return site_backup
 
 
-class TestSiteBackup(FrappeTestCase):
+class TestSiteBackup(UnitTestCase):
 	def setUp(self):
 		self.site = create_test_site(subdomain="breadshop")
 		self.site_backup = create_test_site_backup(

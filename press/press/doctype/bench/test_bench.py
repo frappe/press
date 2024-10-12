@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -58,7 +58,7 @@ class TestStagingSite(unittest.TestCase):
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-class TestBench(FrappeTestCase):
+class TestBench(UnitTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 

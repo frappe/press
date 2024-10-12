@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 import responses
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
@@ -34,7 +34,7 @@ from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-class TestAPISite(FrappeTestCase):
+class TestAPISite(UnitTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
@@ -919,7 +919,7 @@ erpnext 0.8.3	    HEAD
 		pass
 
 
-class TestAPISiteList(FrappeTestCase):
+class TestAPISiteList(UnitTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.site.test_site import create_test_site

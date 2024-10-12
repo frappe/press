@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.backups import (
@@ -17,7 +17,7 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.site.backups.frappe.db.rollback", new=MagicMock)
 @patch.object(AgentJob, "after_insert", new=Mock())
-class TestScheduledBackupJob(FrappeTestCase):
+class TestScheduledBackupJob(UnitTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -35,9 +35,7 @@ class TestScheduledBackupJob(FrappeTestCase):
 		return frappe.utils.now_datetime() - timedelta(hours=self.interval)
 
 	def _create_site_requiring_backup(self, **kwargs):
-		return create_test_site(
-			creation=self._interval_hrs_ago() - timedelta(hours=1), **kwargs
-		)
+		return create_test_site(creation=self._interval_hrs_ago() - timedelta(hours=1), **kwargs)
 
 	@patch.object(
 		ScheduledBackupJob,

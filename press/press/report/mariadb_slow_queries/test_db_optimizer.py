@@ -3,7 +3,7 @@
 
 import json
 
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	DBExplain,
@@ -12,7 +12,7 @@ from press.press.report.mariadb_slow_queries.db_optimizer import (
 )
 
 
-class TestDBOptimizer(FrappeTestCase):
+class TestDBOptimizer(UnitTestCase):
 	def test_basic_index_existence_analysis(self):
 		def possible_indexes(q):
 			user = DBTable.from_frappe_ouput(USER_TABLE)
@@ -37,9 +37,7 @@ class TestDBOptimizer(FrappeTestCase):
 
 		self.assertIn(
 			"user",
-			possible_indexes(
-				"select `name` from `tabUser` u join `tabHas Role` h on h.user = u.name"
-			),
+			possible_indexes("select `name` from `tabUser` u join `tabHas Role` h on h.user = u.name"),
 		)
 
 	def test_suggestion_using_table_stats(self):
