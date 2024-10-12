@@ -41,8 +41,6 @@ class TestAPISite(UnitTestCase):
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"
 		self.team.save()
-		# create dedicated server plan
-		create_test_plan("Site", dedicated_server_plan=True)
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -75,7 +73,7 @@ class TestAPISite(UnitTestCase):
 				self.assertEqual(version["group"]["name"], group14.name)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-	def test_new_fn_creates_site_and_subscription(self):
+	def test_new_fn_creates_site_and_subscription_on_public_server(self):
 		from press.api.site import new
 
 		app = create_test_app()
@@ -100,6 +98,72 @@ class TestAPISite(UnitTestCase):
 		self.assertEqual(new_site["site"], created_site.name)
 		self.assertEqual(subscription.document_name, created_site.name)
 		self.assertEqual(subscription.plan, plan.name)
+		self.assertTrue(subscription.enabled)
+		self.assertEqual(created_site.team, self.team.name)
+		self.assertEqual(created_site.bench, bench.name)
+		self.assertEqual(created_site.status, "Pending")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_new_fn_creates_site_and_subscription_on_dedicated_server_with_correct_plan(self):
+		from press.api.site import new
+
+		dedicated_server_site_plan = create_test_plan("Site", dedicated_server_plan=True)
+
+		app = create_test_app()
+		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=False)
+		group = create_test_release_group([app])
+		bench = create_test_bench(group=group, server=server.name)
+
+		frappe.set_user(self.team.user)
+		new_site = new(
+			{
+				"name": "testsite",
+				"group": group.name,
+				"plan": dedicated_server_site_plan.name,
+				"apps": [app.name],
+				"cluster": bench.cluster,
+			}
+		)
+
+		created_site = frappe.get_last_doc("Site")
+		subscription = frappe.get_last_doc("Subscription")
+		self.assertEqual(new_site["site"], created_site.name)
+		self.assertEqual(subscription.document_name, created_site.name)
+		self.assertEqual(subscription.plan, dedicated_server_site_plan.name)
+		self.assertTrue(subscription.enabled)
+		self.assertEqual(created_site.team, self.team.name)
+		self.assertEqual(created_site.bench, bench.name)
+		self.assertEqual(created_site.status, "Pending")
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_new_fn_creates_site_and_subscription_on_dedicated_server_with_incorrect_plan(self):
+		from press.api.site import new
+
+		normal_site_plan = create_test_plan("Site")
+		dedicated_server_site_plan = create_test_plan("Site", dedicated_server_plan=True)
+
+		app = create_test_app()
+		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=False)
+		group = create_test_release_group([app])
+		bench = create_test_bench(group=group, server=server.name)
+
+		frappe.set_user(self.team.user)
+		new_site = new(
+			{
+				"name": "testsite",
+				"group": group.name,
+				"plan": normal_site_plan.name,
+				"apps": [app.name],
+				"cluster": bench.cluster,
+			}
+		)
+
+		created_site = frappe.get_last_doc("Site")
+		subscription = frappe.get_last_doc("Subscription")
+		self.assertEqual(new_site["site"], created_site.name)
+		self.assertEqual(subscription.document_name, created_site.name)
+		self.assertNotEqual(subscription.plan, normal_site_plan.name)
+		self.assertEqual(subscription.plan, dedicated_server_site_plan.name)
 		self.assertTrue(subscription.enabled)
 		self.assertEqual(created_site.team, self.team.name)
 		self.assertEqual(created_site.bench, bench.name)
