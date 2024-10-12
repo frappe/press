@@ -152,9 +152,6 @@ class TestSiteUpdate(UnitTestCase):
 			steps=[{"name": "Disable Maintenance Mode", "status": "Success"}],
 		):
 			site.schedule_update()
-			frappe.db.delete(
-				"Agent Request Failure"
-			)  # truncate agent request failure, so that agent request doesn't skipped
 			poll_pending_jobs()
 
 		bench1.reload()
