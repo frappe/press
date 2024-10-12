@@ -32,7 +32,7 @@ def create_test_server(
 	cluster: str = "Default",
 	plan: str = None,
 	team: str = None,
-	public: bool = True,
+	public: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
