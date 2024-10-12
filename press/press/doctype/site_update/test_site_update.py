@@ -132,8 +132,8 @@ class TestSiteUpdate(UnitTestCase):
 		site.reload()
 
 		server = frappe.get_doc("Server", bench1.server)
-		server.disable_agent_job_auto_retry = True
-		server.save()
+		frappe.db.set_value("Server", server.name, "disable_agent_job_auto_retry", True)
+		server.reload()
 		server.auto_scale_workers()
 		bench1.reload()
 		bench2.reload()
