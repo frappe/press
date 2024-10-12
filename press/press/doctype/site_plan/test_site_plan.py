@@ -1,8 +1,9 @@
 # Copyright (c) 2024, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
+
 from datetime import date
-from typing import Optional
 from unittest.mock import patch
 
 import frappe
@@ -15,12 +16,12 @@ def create_test_plan(
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
 	cpu_time: int = 1,
-	plan_title: str = None,
-	plan_name: str = None,
+	plan_title: str | None = None,
+	plan_name: str | None = None,
 	allow_downgrading_from_other_plan: bool = True,
 	dedicated_server_plan: bool = False,
-	allowed_apps: Optional[list[str]] = None,
-	release_groups: Optional[list[str]] = None,
+	allowed_apps: list[str] | None = None,
+	release_groups: list[str] | None = None,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"

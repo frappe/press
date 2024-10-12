@@ -87,7 +87,7 @@ class TestScheduledBackupJob(UnitTestCase):
 	def _create_x_sites_on_1_bench(self, x):
 		site = self._create_site_requiring_backup()
 		bench = site.bench
-		for i in range(x - 1):
+		for _ in range(x - 1):
 			self._create_site_requiring_backup(bench=bench)
 
 	def test_limit_number_of_sites_backed_up(self):

@@ -5,7 +5,6 @@ import datetime
 from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
-from press.press.doctype.database_server.test_database_server import create_test_database_server
 import responses
 from frappe.tests import UnitTestCase
 
@@ -16,6 +15,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -77,7 +77,9 @@ class TestAPISite(UnitTestCase):
 		from press.api.site import new
 
 		app = create_test_app()
-		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=True)
+		server = create_test_server(
+			create_test_proxy_server().name, create_test_database_server().name, public=True
+		)
 		group = create_test_release_group([app])
 		bench = create_test_bench(group=group, server=server.name)
 		plan = create_test_plan("Site")
@@ -110,7 +112,9 @@ class TestAPISite(UnitTestCase):
 		dedicated_server_site_plan = create_test_plan("Site", dedicated_server_plan=True)
 
 		app = create_test_app()
-		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=False)
+		server = create_test_server(
+			create_test_proxy_server().name, create_test_database_server().name, public=False
+		)
 		group = create_test_release_group([app])
 		bench = create_test_bench(group=group, server=server.name)
 
@@ -143,7 +147,9 @@ class TestAPISite(UnitTestCase):
 		dedicated_server_site_plan = create_test_plan("Site", dedicated_server_plan=True)
 
 		app = create_test_app()
-		server = create_test_server(create_test_proxy_server().name, create_test_database_server().name, public=False)
+		server = create_test_server(
+			create_test_proxy_server().name, create_test_database_server().name, public=False
+		)
 		group = create_test_release_group([app])
 		bench = create_test_bench(group=group, server=server.name)
 

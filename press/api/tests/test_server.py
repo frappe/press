@@ -1,6 +1,7 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
 from unittest.mock import MagicMock, Mock, patch
 
@@ -32,8 +33,8 @@ def create_test_server_plan(
 	document_type: str,
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
-	title: str = None,
-	plan_name: str = None,
+	title: str | None = None,
+	plan_name: str | None = None,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"

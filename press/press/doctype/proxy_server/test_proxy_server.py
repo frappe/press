@@ -1,7 +1,8 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-from typing import Dict, List
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 import frappe
@@ -24,11 +25,13 @@ from press.utils.test import foreground_enqueue_doc
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
-	domains: List[Dict[str, str]] = [{"domain": "fc.dev"}],
+	domains: list[dict[str, str]] | None = None,
 	cluster: str = "Default",
 	is_primary: bool = True,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
+	if domains is None:
+		domains = [{"domain": "fc.dev"}]
 	create_test_press_settings()
 	server = frappe.get_doc(
 		{
