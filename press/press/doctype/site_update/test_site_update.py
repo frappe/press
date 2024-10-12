@@ -13,12 +13,15 @@ from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.database_server.test_database_server import create_test_database_server
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
+from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import SiteUpdate
@@ -120,9 +123,15 @@ class TestSiteUpdate(UnitTestCase):
 		app2 = create_test_app("app2", "App 2")
 		app3 = create_test_app("app3", "App 3")
 
+		proxy_server = create_test_proxy_server()
+		database_server = create_test_database_server()
+		server = create_test_server(
+			proxy_server.name, database_server.name, disable_agent_job_auto_retry=True
+		)
+
 		group = create_test_release_group([app1, app2, app3])
-		bench1 = create_test_bench(group=group)
-		bench2 = create_test_bench(group=group, server=bench1.server)
+		bench1 = create_test_bench(group=group, server=server.name)
+		bench2 = create_test_bench(group=group, server=server.name)
 
 		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
 
@@ -132,8 +141,6 @@ class TestSiteUpdate(UnitTestCase):
 		site.reload()
 
 		server = frappe.get_doc("Server", bench1.server)
-		frappe.db.set_value("Server", server.name, "disable_agent_job_auto_retry", True)
-		server.reload()
 		server.auto_scale_workers()
 		bench1.reload()
 		bench2.reload()

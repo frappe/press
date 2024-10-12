@@ -33,6 +33,7 @@ def create_test_server(
 	plan: str | None = None,
 	team: str | None = None,
 	public: bool = False,
+	disable_agent_job_auto_retry: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -57,6 +58,7 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"disable_agent_job_auto_retry": disable_agent_job_auto_retry,
 		}
 	).insert()
 	server.reload()
