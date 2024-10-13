@@ -157,6 +157,11 @@ let router = createRouter({
 					name: 'BillingMarketplacePayouts',
 					path: 'payouts',
 					component: () => import('./pages/BillingMarketplacePayouts.vue')
+				},
+				{
+					name: 'BillingMpesaInvoices',
+					path: 'mpesa-invoices',
+					component: () => import('./pages/BillingMpesaInvoices.vue')
 				}
 			]
 		},

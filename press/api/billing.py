@@ -687,7 +687,6 @@ def sanitize_mobile_number(number):
 	"""Add country code and strip leading zeroes from the phone number."""
 	return "254" + str(number).lstrip("0")
 
-
 '''split amount if it exceeds 150,000'''
 def split_request_amount_according_to_transaction_limit(amount, transaction_limit):
 		request_amount = amount
@@ -855,6 +854,17 @@ def request_for_payment(**kwargs):
 		handle_api_mpesa_response("CheckoutRequestID", args, response)
 	return response
 
+def get_payment_gateway(partner_value):
+	"""Get the payment gateway for the partner."""
+	partner = frappe.get_doc("Team", partner_value)	
+	# Get Mpesa settings for the partner's team
+	mpesa_settings = get_mpesa_settings_for_team(partner.name)
+	payment_gateway = frappe.get_all("Payment Gateway", filters={"gateway_settings":"Mpesa Settings", "gateway_controller":mpesa_settings.name}, pluck="name")
+	if not payment_gateway:
+		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))
+	gateway=frappe.get_doc("Payment Gateway", payment_gateway[0])
+	return gateway.name
+ 
 def handle_api_mpesa_response(global_id, request_dict, response):
 		"""Response received from API calls returns a global identifier for each transaction, this code is returned during the callback."""
 		# check error response
@@ -886,10 +896,12 @@ def create_mpesa_payment_register_entry(transaction_response):
 	request_id=transaction_response.get("MerchantRequestID")
 	team, partner = get_team_and_partner_from_integration_request(transaction_id)
 	amount_usd, exchange_rate=convert("KES", "USD", amount)
+	gateway_name=get_payment_gateway(partner) 	
+  
 	# Create a new entry in M-Pesa Payment Record
 	data={
-	"transaction_id": "ABC123XYZ",
-	"trans_amount": "1000",
+	"transaction_id": transaction_id,
+	"trans_amount": amount,
 	"team": "Sales Team",
 	"default_currency": "KES"
 }
@@ -906,7 +918,7 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"amount_usd": amount_usd,
 		"exchange_rate": exchange_rate,
 		"payment_partner":partner,
-		"local_invoice":create_invoice_partner_site(data, "Mpesa Express"),
+		"local_invoice":create_invoice_partner_site(data, gateway_name),
 	})
 
 	new_entry.insert(ignore_permissions=True)
@@ -915,8 +927,6 @@ def create_mpesa_payment_register_entry(transaction_response):
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 	
 	
-
-
 def create_balance_transaction(team, amount, invoice=None):
 	"""Create a new entry in the Balance Transaction table."""
  
@@ -1096,10 +1106,8 @@ def create_invoice_partner_site(data, gateway_controller):
 		# Check the response status code and log errors if any
 		if response.status_code == 200:
 			frappe.msgprint(_("Invoice created successfully"))
-			# Optionally return the response data (JSON or message)
 			response_data = response.json()
 			download_link = response_data.get("message", "")
-			frappe.msgprint(_("Invoice created successfully: {0}".format(download_link)))
 			return download_link
 		else:
 			frappe.log_error(f"API Error: {response.status_code} - {response.text}")
@@ -1109,7 +1117,7 @@ def create_invoice_partner_site(data, gateway_controller):
 		frappe.log_error(f"Error calling API: {e}")
 		frappe.throw(_("There was an issue connecting to the API."))
 
-  
+
 def update_tax_id(team, tax_id):
 	"""Update the tax ID for the team."""
 	doc_name=frappe.get_value("Team", {"user": team}, "name")
@@ -1124,3 +1132,18 @@ def get_tax_id():
 	team=get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 	return team_doc.tax_id if team_doc.tax_id else ''
+
+@frappe.whitelist(allow_guest=True)
+def display_invoices_by_partner():
+	"""Display the list of invoices by partner."""
+	team = get_current_team()
+	invoices = frappe.get_all("Mpesa Payment Record", filters={"team":team}, fields=["name","posting_date", "trans_amount", "default_currency","local_invoice"])
+	return invoices
+
+# def get_payment_gateway(partner):
+# 	mpesa_setting=frappe.get_all("Mpesa Settings", filters={"team":partner,"api_type":"Mpesa Express"}, fields=["name"])
+# 	mpesa_doc=frappe.get_doc("Mpesa Settings", mpesa_setting[0].name)
+ 
+# 	payment_gateway=frappe.get_all("Payment Gateway", filters={"gateway_setting":"Mpesa Settings","gateway_controller":mpesa_doc.name}, fields=["name"])
+#  	"""Get the payment gateway document based on the gateway controller."""
+# 	return frappe.get_doc("Payment Gateway", gateway_controller)

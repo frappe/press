@@ -42,7 +42,10 @@ export default {
 				{
 					label: 'Marketplace Payouts',
 					route: { name: 'BillingMarketplacePayouts' }
-				}
+				},
+				{
+					label: 'Mpesa Invoices', route: { name: 'BillingMpesaInvoices' }
+				},
 			]
 		};
 	}
