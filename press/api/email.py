@@ -170,7 +170,7 @@ def send_mime_mail(**data):
 	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
 	message = files["mime"].read()
-	check_spam(message)
+	check_spam(message.decode("utf-8"))
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
