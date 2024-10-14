@@ -189,7 +189,21 @@ import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
 import BuyPrepaidCreditMpesa from './BuyPrepaidCreditMpesa.vue';
 import BuyPrepaidCreditsPaymob from './BuyPrepaidCreditsPaymob.vue';
+import { frappeRequest } from 'frappe-ui';
 
+  let request = options => {
+    let _options = options || {};
+    _options.headers = options.headers || {};
+
+    // Example of setting team header
+    let currentTeam = localStorage.getItem('current_team') || window.default_team;
+    if (currentTeam) {
+        _options.headers['X-Press-Team'] = currentTeam;
+    }
+
+    // Perform the request
+    return frappeRequest(_options);
+};
 
 export default {
 	name: 'BuyPrepaidCreditsDialog',
@@ -204,7 +218,7 @@ export default {
 			paymentGateway: null,
 			creditsToBuy: this.minimumAmount,
 			creditsToBuyKES:1250,
-			exchangeRate:125,
+			exchangeRate:1,
 		};
 	},
 
@@ -228,6 +242,7 @@ export default {
 },
 
 	mounted() {
+		this.fetchExchangeRate();
 		if (this.$team.doc.currency === 'USD' && !this.$team.doc.razorpay_enabled) {
 			this.paymentGateway = 'Stripe';
 		}
@@ -249,6 +264,25 @@ export default {
 	methods: {
 		onSuccess() {
 			this.$emit('success');
+		},
+		onCancel() {
+			this.$emit('cancel');
+		},
+		async fetchExchangeRate() {
+			console.log("Uko hapa")
+			try {
+				const data = await request({
+					url: 'press.api.billing.get_exchange_rate',
+					params: {
+						from_currency: 'USD',
+						to_currency: 'KES'
+					}
+				});
+				console.log('Exchange Rate:', data);
+				this.exchangeRate = data;
+			} catch (error) {
+				console.error(error);
+			}
 		}
 	},
 	// computed: {

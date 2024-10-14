@@ -895,7 +895,7 @@ def create_mpesa_payment_register_entry(transaction_response):
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
 	team, partner = get_team_and_partner_from_integration_request(transaction_id)
-	amount_usd, exchange_rate=convert("KES", "USD", amount)
+	amount_usd, exchange_rate=convert("USD", "KES", amount)
 	gateway_name=get_payment_gateway(partner) 	
   
 	# Create a new entry in M-Pesa Payment Record
@@ -1034,7 +1034,7 @@ def get_tax_percentage(payment_partner):
 def convert(from_currency, to_currency, amount):
 	"""Convert the given amount from one currency to another."""
 	exchange_rate = frappe.get_value("Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate")
-	converted_amount = amount * exchange_rate
+	converted_amount = amount / exchange_rate
 	
 	return converted_amount, exchange_rate
 
@@ -1140,10 +1140,13 @@ def display_invoices_by_partner():
 	invoices = frappe.get_all("Mpesa Payment Record", filters={"team":team}, fields=["name","posting_date", "trans_amount", "default_currency","local_invoice"])
 	return invoices
 
-# def get_payment_gateway(partner):
-# 	mpesa_setting=frappe.get_all("Mpesa Settings", filters={"team":partner,"api_type":"Mpesa Express"}, fields=["name"])
-# 	mpesa_doc=frappe.get_doc("Mpesa Settings", mpesa_setting[0].name)
- 
-# 	payment_gateway=frappe.get_all("Payment Gateway", filters={"gateway_setting":"Mpesa Settings","gateway_controller":mpesa_doc.name}, fields=["name"])
-#  	"""Get the payment gateway document based on the gateway controller."""
-# 	return frappe.get_doc("Payment Gateway", gateway_controller)
+@frappe.whitelist(allow_guest=True)
+def get_exchange_rate(from_currency, to_currency):
+    """Get the latest exchange rate for the given currencies."""
+    exchange_rate = frappe.db.get_value(
+        "Currency Exchange",
+        {"from_currency": from_currency, "to_currency": to_currency},
+        "exchange_rate",
+        order_by="creation DESC"  # Fetch the latest record by creation date
+    )
+    return exchange_rate

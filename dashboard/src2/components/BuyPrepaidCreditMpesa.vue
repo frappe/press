@@ -147,6 +147,7 @@
       taxPercentage:1,
       amountWithTax:0,
       showTaxInfo:false,
+      exchangeRate:0,
     };
   },
 
@@ -269,11 +270,29 @@ async fetchTeams() {
     },
 
    totalAmountWithTax(){
-    console.log("nafoka")
     const amountWithTax= this.amountKES + (this.amountKES * (this.taxPercentage)/100);
     this.amountWithTax = amountWithTax;
 
-}
+},
+
+async fetchExchangeRate(){
+  try{
+      const exchangeRate= await request({
+        url: '/api/method/press.api.billing.get_exchange_rate',
+        method: 'GET',
+        params: {
+          from_currency: 'KES',
+          to_currency:'USD'
+      }
+      });
+      console.log("Exchange Rate:", exchangeRate);
+      this.exchangeRate = exchangeRate;
+      
+  }catch(error){
+    this.errorMessage = `Failed to fetch exchange rate ${error.message}`;
+  }
+},
+  
   },
 watch: {
   partnerInput: function(){
