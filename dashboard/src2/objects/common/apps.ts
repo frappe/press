@@ -203,31 +203,8 @@ const benchAppListOptions: Partial<TabList> = {
 	filters: res => {
 		return { parenttype: 'Bench', parent: res.doc?.name };
 	},
-	primaryAction({ listResource: apps, documentResource: site }) {
-		return {
-			label: 'Install App',
-			slots: {
-				prefix: icon('plus')
-			},
-			onClick() {
-				const InstallAppDialog = defineAsyncComponent(
-					() => import('../../components/site/InstallAppDialog.vue')
-				);
-
-				renderDialog(
-					h(InstallAppDialog, {
-						site: site.name,
-						onInstalled() {
-							apps.reload();
-						}
-					})
-				);
-			}
-		};
-	},
 	rowActions({ row }) {
 		let $team = getTeam();
-
 		return [
 			{
 				label: 'View in Desk',
