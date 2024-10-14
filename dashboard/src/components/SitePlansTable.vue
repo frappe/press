@@ -50,7 +50,7 @@
 			</div>
 			<a
 				v-if="plan.support_included"
-				href="https://support.frappe.io"
+				href="https://optibizpro.com/contact"
 				target="_blank"
 				class="w-1/4"
 			>
