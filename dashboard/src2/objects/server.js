@@ -1,13 +1,13 @@
 import { defineAsyncComponent, h } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
-import { planTitle, duration, userCurrency } from '../utils/format';
 import ServerActions from '../components/server/ServerActions.vue';
-import { icon } from '../utils/components';
-import { trialDays } from '../utils/site';
 import { getTeam } from '../data/team';
-import { tagTab } from './common/tags';
 import router from '../router';
-import { jobTab } from './common/jobs';
+import { icon } from '../utils/components';
+import { duration, planTitle, userCurrency } from '../utils/format';
+import { trialDays } from '../utils/site';
+import { getJobsTab } from './common/jobs';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Server',
@@ -406,7 +406,7 @@ export default {
 					}
 				}
 			},
-			jobTab('Server'),
+			getJobsTab('Server'),
 			{
 				label: 'Plays',
 				icon: icon('play'),

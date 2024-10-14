@@ -1,19 +1,19 @@
-import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
+import { LoadingIndicator, Tooltip } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import { duration, date } from '../utils/format';
-import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam, switchToTeam } from '../data/team';
-import router from '../router';
+import LucideAppWindow from '~icons/lucide/app-window';
+import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
+import LucideRocket from '~icons/lucide/rocket';
+import AddAppDialog from '../components/group/AddAppDialog.vue';
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
 import PatchAppDialog from '../components/group/PatchAppDialog.vue';
-import AddAppDialog from '../components/group/AddAppDialog.vue';
-import LucideAppWindow from '~icons/lucide/app-window';
-import LucideRocket from '~icons/lucide/rocket';
-import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
+import { getTeam, switchToTeam } from '../data/team';
+import router from '../router';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
+import { date, duration } from '../utils/format';
+import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
-import { jobTab } from './common/jobs';
 
 export default {
 	doctype: 'Release Group',
@@ -553,7 +553,7 @@ export default {
 					}
 				}
 			},
-			jobTab('Release Group'),
+			getJobsTab('Release Group'),
 			{
 				label: 'Config',
 				icon: icon('settings'),

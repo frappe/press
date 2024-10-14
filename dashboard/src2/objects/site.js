@@ -19,7 +19,7 @@ import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
-import { jobTab } from './common/jobs';
+import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
 import { logsTab } from './tabs/site/logs';
 
@@ -1201,7 +1201,7 @@ export default {
 					}
 				}
 			},
-			jobTab('Site'),
+			getJobsTab('Site'),
 			{
 				label: 'Performance',
 				icon: icon('zap'),

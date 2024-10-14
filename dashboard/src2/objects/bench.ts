@@ -12,13 +12,20 @@ import type {
 	Row,
 	Tab
 } from './common/types';
+import { getJobsTab } from './common/jobs';
 
 export default {
 	doctype: 'Bench',
 	whitelistedMethods: {},
 	detail: getDetail(),
 	list: getList(),
-	routes: []
+	routes: [
+		{
+			name: 'Bench Job',
+			path: 'jobs/:id',
+			component: () => import('../pages/JobPage.vue')
+		}
+	]
 } satisfies DashboardObject as DashboardObject;
 
 function getDetail() {
@@ -51,7 +58,7 @@ function getDetail() {
 }
 
 function getTabs() {
-	return [getAppsTab(false)] satisfies Tab[] as Tab[];
+	return [getAppsTab(false), getJobsTab('Bench')] satisfies Tab[] as Tab[];
 }
 
 function getList() {

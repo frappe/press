@@ -77,10 +77,11 @@ export interface ColumnField {
 	class?: string;
 	width?: string | number;
 	type?: string;
-	format?: (value: unknown, row: Row) => string;
+	format?: (value: unknown, row: Row) => string | undefined;
 	link?: (value: unknown, row: Row) => string;
 	prefix?: (row: Row) => Component | undefined;
 	suffix?: (row: Row) => Component | undefined;
+	align?: 'left' | 'right';
 }
 
 export type Row = Record<string, any>;
@@ -100,10 +101,10 @@ export interface TabList {
 	doctype: string;
 	orderBy?: string;
 	filters: (r: Resource) => Record<string, unknown>;
-	route?: (row: unknown) => Route;
+	route?: (row: Row) => Route;
 	pageLength?: number;
 	columns: ColumnField[];
-	fields?: Record<string, string[]>[];
+	fields?: Record<string, string[]>[] | string[];
 	rowActions?: (r: {
 		row: Row;
 		listResource: ListResource;
@@ -122,6 +123,7 @@ export interface TabList {
 	};
 	filterControls?: () => FilterField[];
 	banner?: (r: { documentResource: Resource }) => BannerConfig | undefined;
+	searchField?: string;
 	experimental?: boolean;
 	documentation?: string;
 }

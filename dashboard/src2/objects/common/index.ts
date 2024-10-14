@@ -2,6 +2,8 @@ import { defineAsyncComponent, h } from 'vue';
 import { renderDialog } from '../../utils/components';
 import type { BannerConfig, Resource } from './types';
 
+export const unreachable = Error('unreachable'); // used to indicate that a codepath is unreachable
+
 export const clusterOptions = [
 	'',
 	'Bahrain',
