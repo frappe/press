@@ -119,6 +119,7 @@ frappe.ui.form.on('Site', {
 				'disable_database_access',
 				frm.doc.is_database_access_enabled,
 			],
+			[__('Fetch Database Schema'), 'fetch_database_schema'],
 			[__('Create DNS Record'), 'create_dns_record'],
 			[
 				__('Enable Database Write Access'),

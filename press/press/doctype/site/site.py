@@ -128,6 +128,8 @@ class Site(Document, TagHelpers):
 		database_access_password: DF.Password | None
 		database_access_user: DF.Data | None
 		database_name: DF.Data | None
+		database_schema_fetched_on: DF.Datetime | None
+		database_schema_sql_file: DF.Attach | None
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -156,16 +158,7 @@ class Site(Document, TagHelpers):
 		staging: DF.Check
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
-		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
-		]
+		status: DF.Literal["Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
 		tags: DF.Table[ResourceTag]
@@ -174,9 +167,7 @@ class Site(Document, TagHelpers):
 		trial_end_date: DF.Date | None
 		update_end_of_month: DF.Check
 		update_on_day_of_month: DF.Int
-		update_on_weekday: DF.Literal[
-			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-		]
+		update_on_weekday: DF.Literal["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
 		update_trigger_time: DF.Time | None
 	# end: auto-generated types
@@ -2654,6 +2645,34 @@ class Site(Document, TagHelpers):
 			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
 		)
 		return response
+
+	@frappe.whitelist()
+	def fetch_database_schema_sql_file(self, refresh=False):
+		if self.database_schema_sql_file and not refresh:
+			return self.database_schema_sql_file
+		old_database_schema_sql_file = self.database_schema_sql_file
+		try:
+			schema = Agent(self.server).fetch_database_schema(self)
+			file_doc = frappe.get_doc({
+				"doctype": "File",
+				"file_name": frappe.generate_hash(length=16)+".sql",
+				"attached_to_doctype": "Site",
+				"attached_to_name": self.name,
+				"is_private": 1,
+				"content": schema
+			})
+			file_doc.save(ignore_permissions=True)
+			self.database_schema_sql_file = file_doc.file_url
+			self.database_schema_fetched_on = frappe.utils.now()
+			self.save(ignore_permissions=True)
+			# delete old file
+			if old_database_schema_sql_file:
+				frappe.db.delete("File", {
+					"file_url": old_database_schema_sql_file,
+				})
+			return self.database_schema_sql_file
+		except Exception:
+			frappe.log_error("Failed to fetch database schema", reference_doctype="Site", reference_name=self.name)
 
 
 def site_cleanup_after_archive(site):
