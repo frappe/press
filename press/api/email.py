@@ -150,7 +150,7 @@ def check_spam(message: str):
 		data = resp.json()
 		if data["message"] > 3.5:
 			frappe.throw(
-				"Your email appears to be spam. Please check the content and try again.",
+				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
 				EmailSendError,
 			)
 	else:
