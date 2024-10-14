@@ -168,7 +168,7 @@ def send_mime_mail(**data):
 	else:
 		log_error("Email Delivery Service: Sending error", data=resp.text)
 		frappe.throw(
-			"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+			"Something went wrong with sending emails. Please try again later or raise a support ticket with optibizpro.com/contact,
 			EmailSendError,
 		)
 
