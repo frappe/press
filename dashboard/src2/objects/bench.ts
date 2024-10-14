@@ -3,7 +3,15 @@ import { h } from 'vue';
 import { getTeam } from '../data/team';
 import { icon } from '../utils/components';
 import { clusterOptions } from './common';
-import type { DashboardObject, Detail, FilterField, List, Row } from './types';
+import { getAppsTab } from './common/apps';
+import type {
+	DashboardObject,
+	Detail,
+	FilterField,
+	List,
+	Row,
+	Tab
+} from './common/types';
 
 export default {
 	doctype: 'Bench',
@@ -18,31 +26,32 @@ function getDetail() {
 		titleField: 'name',
 		statusBadge: ({ documentResource: bench }) => ({ label: bench.doc.status }),
 		route: '/benches/:name',
-		breadcrumbs,
-		tabs: [],
-		actions: () => []
+		tabs: getTabs(),
+		actions: () => [],
+		breadcrumbs: ({ items, documentResource: bench }) => {
+			const $team = getTeam();
+			const benchCrumb = {
+				label: bench.doc?.name,
+				route: `/benches/${bench.doc?.name}`
+			};
+
+			if (bench.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+				return [
+					{
+						label: bench.doc?.group_title,
+						route: `/groups/${bench.doc?.group}`
+					},
+					benchCrumb
+				];
+			}
+
+			return [...items.slice(0, -1), benchCrumb];
+		}
 	} satisfies Detail as Detail;
 }
 
-function breadcrumbs({ items, documentResource: bench }) {
-	console.log(items);
-	const $team = getTeam();
-	const benchCrumb = {
-		label: bench.doc?.name,
-		route: `/benches/${bench.doc?.name}`
-	};
-
-	if (bench.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
-		return [
-			{
-				label: bench.doc?.group_title,
-				route: `/groups/${bench.doc?.group}`
-			},
-			benchCrumb
-		];
-	}
-
-	return [...items.slice(0, -1), benchCrumb];
+function getTabs() {
+	return [getAppsTab(false)] satisfies Tab[] as Tab[];
 }
 
 function getList() {

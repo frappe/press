@@ -1,9 +1,13 @@
 import type { defineAsyncComponent, h, Component } from 'vue';
-import type { icon } from '../utils/components';
+import type { icon } from '../../utils/components';
 
-type ListResource = unknown;
-interface Resource {
+type ListResource = {
+	reload: () => void;
+};
+export interface Resource {
+	name: string;
 	doc: Record<string, any>;
+	[key: string]: any;
 }
 
 type Icon = ReturnType<typeof icon>;
@@ -48,7 +52,7 @@ type PrimaryAction = (r: { listResource: ListResource }) => {
 };
 type StatusBadge = (r: { documentResource: Resource }) => { label: string };
 export type Breadcrumb = { label: string; route: string };
-type Breadcrumbs = (r: {
+export type Breadcrumbs = (r: {
 	documentResource: Resource;
 	items: Breadcrumb[];
 }) => Breadcrumb[];
@@ -67,9 +71,9 @@ export interface FilterField {
 		| string[];
 }
 
-interface ColumnField {
+export interface ColumnField {
 	label: string;
-	fieldname: string;
+	fieldname?: string;
 	class?: string;
 	width?: string | number;
 	type?: string;
@@ -79,9 +83,9 @@ interface ColumnField {
 	suffix?: (row: Row) => Component | undefined;
 }
 
-export type Row = Record<string, unknown>;
+export type Row = Record<string, any>;
 
-interface Tab {
+export interface Tab {
 	label: string;
 	icon: Icon;
 	route: string;
@@ -92,19 +96,20 @@ interface Tab {
 	list?: TabList;
 }
 
-interface TabList {
+export interface TabList {
 	doctype: string;
+	orderBy?: string;
 	filters: (r: Resource) => Record<string, unknown>;
 	route?: (row: unknown) => Route;
-	pageLength: number;
+	pageLength?: number;
 	columns: ColumnField[];
-	orderBy: string;
-	rowActions: (r: {
-		row: unknown;
+	fields?: Record<string, string[]>[];
+	rowActions?: (r: {
+		row: Row;
 		listResource: ListResource;
 		documentResource: Resource;
 	}) => Action[];
-	primaryAction: (r: {
+	primaryAction?: (r: {
 		listResource: ListResource;
 		documentResource: Resource;
 	}) => {
@@ -116,10 +121,7 @@ interface TabList {
 		variant?: string;
 	};
 	filterControls?: () => FilterField[];
-	fields: Record<string, string[]>[];
-	banner: (r: {
-		documentResource: Resource;
-	}) => { title: string; type: string } | null;
+	banner?: (r: { documentResource: Resource }) => BannerConfig | undefined;
 	experimental?: boolean;
 	documentation?: string;
 }
@@ -153,4 +155,22 @@ interface Option {
 	icon: Icon | AsyncComponent;
 	condition: () => boolean;
 	onClick: () => void;
+}
+
+export interface BannerConfig {
+	title: string;
+	dismissable: boolean;
+	id: string;
+	button?: {
+		label: string;
+		variant: string;
+		onClick?: () => void;
+	};
+}
+
+export interface DialogConfig {
+	title: string;
+	message: string;
+	primaryAction?: { onClick: () => void };
+	onSuccess?: (o: { hide: () => void }) => void;
 }

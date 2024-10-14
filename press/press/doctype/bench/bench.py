@@ -97,6 +97,7 @@ class Bench(Document):
 
 	DOCTYPE = "Bench"
 	dashboard_fields = (
+		"apps",
 		"name",
 		"group",
 		"status",
