@@ -1585,11 +1585,16 @@ class Site(Document, TagHelpers):
 
 		try:
 			value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		except json.JSONDecodeError:
+			# the proxy might be down or network failure
+			# that's why the response is blank and get_value try to parse the json
+			# and raise json.JSONDecodeError
+			return False
 		except Exception:
 			if self.ping().status_code == requests.codes.ok:
 				# Site is up but setup status fetch failed
 				log_error("Fetching Setup Status Failed", doc=self)
-			return None
+			return False
 
 		setup_complete = cint(value["setup_complete"])
 		if not setup_complete:
