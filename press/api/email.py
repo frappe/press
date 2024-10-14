@@ -141,6 +141,22 @@ def validate_plan(secret_key):
 		)
 
 
+def check_spam(message: str):
+	resp = requests.post(
+		"https://frappemail.com/spamd/score",
+		{"message": message},
+	)
+	if resp.status_code == 200:
+		data = resp.json()
+		if data["message"] > 3.5:
+			frappe.throw(
+				"Your email appears to be spam. Please check the content and try again.",
+				EmailSendError,
+			)
+	else:
+		log_error("Spam Detection: Error", data=resp.text)
+
+
 @frappe.whitelist(allow_guest=True)
 def send_mime_mail(**data):
 	"""
@@ -153,11 +169,14 @@ def send_mime_mail(**data):
 
 	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
+	message = files["mime"].read()
+	check_spam(message)
+
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
 		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-		files={"message": files["mime"].read()},
+		files={"message": message},
 	)
 
 	if resp.status_code == 200:
