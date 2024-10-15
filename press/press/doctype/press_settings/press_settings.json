@@ -8,6 +8,7 @@
   "domain",
   "cluster",
   "trial_sites_count",
+  "press_trial_plan",
   "column_break_2",
   "bench_configuration",
   "billing_tab",
@@ -1239,11 +1240,17 @@
    "fieldname": "hetzner_api_token",
    "fieldtype": "Password",
    "label": "Hetzner API Token"
+  },
+  {
+   "fieldname": "press_trial_plan",
+   "fieldtype": "Link",
+   "label": "Press Trial Plan",
+   "options": "Site Plan"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-09-14 12:17:01.074877",
+ "modified": "2024-10-14 21:02:12.948747",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

@@ -427,6 +427,7 @@ class Site(Document, TagHelpers):
 			is_valid = len(clusters) == 0 or self.cluster in clusters
 			if not is_valid:
 				frappe.throw(f"In {self.subscription_plan}, you can't deploy site in {self.cluster} cluster")
+
 			"""
 			If `allowed_apps` in site plan is empty, then site can be deployed with any apps.
 			Otherwise, site can only be deployed with the apps mentioned in the site plan.
@@ -1576,7 +1577,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):
+	def is_setup_wizard_complete(self):  # noqa: C901
 		if self.setup_wizard_complete:
 			return True
 
