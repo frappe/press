@@ -1,8 +1,5 @@
 <template>
 	<div>
-		<div v-if="step == 'Setting up Paymob'" class="mt-8 flex justify-center">
-			<Spinner class="h-4 w-4 text-gray-600" />
-		</div>
 		<ErrorMessage
 			class="mt-2"
 			:message="$resources.createPaymentIntent.error || errorMessage"
@@ -70,27 +67,28 @@ export default {
 	},
 	data() {
 		return {
-			step: 'Get Amount', // Get Amount / Add Card Details
-			clientSecret: null,
+			step: 'Get Amount', // Get Amount
 			iframeSrc: null,
-			cardErrorMessage: null,
 			errorMessage: null,
 			paymentInProgress: false,
-			teams: ["axentor.co"],
+			teams: [],
 			partnerInput: null,
 			taxID: null,
 			actualAmount: 0.0,
 			currencyExchangeRate: 48,
-			taxPercetange: 13,
+			taxPercetange: 0.0,
+			minimumAmount: 10,
+			gateway: null,
 		};
 	},
 	resources: {
-		// TODO: Add the paymob intent endpoint
 		createPaymentIntent() {
 			return {
-				url: 'press.api.billing.create_payment_intent_for_buying_credits',
+				url: 'press.api.local_payments.paymob.billing.intent_to_buying_credits',
 				params: {
-					amount: this.amount
+					amount: this.amount,
+					team: this.partnerInput,
+					actualAmount: this.actualAmount,
 				},
 				validate() {
 					if (!this.actualAmount || !this.taxID || !this.partnerInput) {
@@ -109,79 +107,56 @@ export default {
 					}
 				},
 				async onSuccess(data) {
-					this.step = 'Setting up Paymob';
-					let { api_key, payment_token, iframe_url } = data;
+					let { iframe_url } = data;
+					console.log(data, iframe_url)
+					this.iframeSrc = iframe_url;
+					window.open(data, '_blank');
 
-					// Set iframe source
-					this.iframeSrc = `${iframe_url}?payment_token=${payment_token}`;
-					this.step = 'Add Card Details';
+				}
+			};
+		},
+		getPaymentGateway() {
+			return {
+				url: "press.api.local_payments.paymob.billing.get_payment_getway",
+				params: {
+					payment_getway: "Paymob"
+				},
+				async onSuccess(data) {
+					this.getway = data;
+					this.taxPercetange = data.taxes_and_charges
+					this.teams.push(
+						{
+							label: data.team_name,
+							value: data.team
+						}
+					)
 				}
 			};
 		}
 	},
 	methods: {
-		setupPaymob() {
-			this.$resources.createPaymentIntent.submit();
-		},
-		async onBuyClick() {
-			this.paymentInProgress = true;
-
-			// Normally, Paymob handles payment via the iframe. 
-			// After a successful transaction, Paymob will notify the backend.
-			// You can handle post-payment confirmation here.
-
-			// Simulating the confirmation process
-			const isPaymentSuccessful = await this.confirmPayment();
-
-			if (!isPaymentSuccessful) {
-				this.errorMessage = 'Payment failed, please try again.';
-				this.paymentInProgress = false;
-			} else {
-				toast.success(
-					'Payment processed successfully, we will update your account shortly on confirmation from Paymob'
-				);
-				this.paymentInProgress = false;
-				this.$emit('success');
-				this.errorMessage = null;
-			}
-		},
-		async confirmPayment() {
-			// Example API call to confirm payment status
-			try {
-				let response = await fetch('/api/confirm-payment', {
-					method: 'POST',
-					body: JSON.stringify({ payment_id: this.paymentId })
-				});
-				let result = await response.json();
-				return result.success;
-			} catch (error) {
-				return false;
-			}
-		},
 		calcActualAmount() {
 			this.actualAmount = Number(
 					(
 						(this.amount * (this.currencyExchangeRate || 0)) + (this.amount * (this.taxPercetange / 100))
 					).toFixed(2)
-				);
+			);
+			return this.actualAmount
 		}
 	},
 	computed: {
-		totalAmount() {
-			let { currency, billing_info } = this.$account
-				? this.$account.team
-				: this.$team.doc;
-			if (currency === 'EGP') {
-				return Number(
-					(
-						this.amount +
-						this.amount * (billing_info.vat_percentage || 0)
-					).toFixed(2)
-				);
-			} else {
-				return this.amount;
-			}
+		gateWay() {
+			if (
+					!this.$resources.getPaymentGateway.loading &&
+					this.$resources.getPaymentGateway.data && !this.gateway
+			) {
+					return this.$resources.getPaymentGateway.data;
+				}
+		},
+		actualAmount() {
+			return this.calcActualAmount()
 		}
+		
 	},
 	watch: {
 		amount(newAmount) {
@@ -189,6 +164,7 @@ export default {
 		},
 	},
 	mounted() {
+		this.$resources.getPaymentGateway.submit()
 		this.calcActualAmount()
 	}
 };
