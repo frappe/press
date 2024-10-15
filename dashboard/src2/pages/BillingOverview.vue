@@ -12,7 +12,7 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-2 rounded-md border p-4">
-					<div class="flex justify-between text-sm items-center text-gray-700">
+					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Unpaid Amount</div>
 						<Button
 							:disabled="Boolean($resources.unpaidAmountDue.data == 0)"
@@ -28,14 +28,14 @@
 					</div>
 					<div class="text-lg font-medium">
 						{{
-							($team.doc.currency == 'INR' ? '₹' : '$') +
+							($team?.doc?.currency == 'INR' ? '₹' : '$') +
 							' ' +
 							Math.ceil($resources.unpaidAmountDue.data)
 						}}
 					</div>
 				</div>
 				<div class="flex flex-col gap-2 rounded-md border p-4">
-					<div class="flex justify-between text-sm items-center text-gray-700">
+					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Credits Available</div>
 						<Button
 							@click="showPrepaidCreditsDialog = true"
@@ -50,35 +50,35 @@
 				</div>
 
 				<div class="flex flex-col gap-2 rounded-md border p-4">
-					<div class="flex justify-between items-center text-sm text-gray-700">
+					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Payment Mode</div>
 						<Button @click="showChangeModeDialog = true"> Change </Button>
 					</div>
 					<div class="text-lg font-medium">
-						{{ $team.doc.payment_mode || 'Not set' }}
+						{{ $team?.doc?.payment_mode || 'Not set' }}
 					</div>
 				</div>
 				<div class="flex flex-col gap-2 rounded-md border p-4">
-					<div class="flex justify-between text-sm items-center text-gray-700">
+					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Billing Details</div>
 						<Button @click="showBillingDetailsDialog = true"> Update </Button>
 					</div>
 					<div class="overflow-hidden text-base font-medium">
-						<span v-if="$team.doc.billing_details">
+						<span v-if="$team?.doc?.billing_details">
 							{{ billingDetailsSummary }}
 						</span>
 						<span v-else class="font-normal text-gray-600">Not set</span>
 					</div>
 				</div>
 				<div class="flex flex-col gap-2 rounded-md border p-4">
-					<div class="flex justify-between items-center text-sm text-gray-700">
+					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Payment Method</div>
 						<Button @click="showAddCardDialog = true">
-							{{ $team.doc.payment_method ? 'Change' : 'Add' }}
+							{{ $team?.doc?.payment_method ? 'Change' : 'Add' }}
 						</Button>
 					</div>
 					<div class="overflow-hidden text-ellipsis text-base font-medium">
-						<div v-if="$team.doc.payment_method">
+						<div v-if="$team?.doc?.payment_method">
 							{{ $team.doc.payment_method.name_on_card }}
 							<span class="text-gray-500">••••</span>
 							{{ $team.doc.payment_method.last_4 }}
@@ -196,7 +196,7 @@ export default {
 	computed: {
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
-			const minimumDefault = this.$team.doc.currency == 'INR' ? 410 : 5;
+			const minimumDefault = this.$team?.doc?.currency == 'INR' ? 410 : 5;
 
 			return Math.ceil(
 				unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault
@@ -209,7 +209,7 @@ export default {
 			return this.$resources.upcomingInvoice.data?.available_credits;
 		},
 		billingDetailsSummary() {
-			const billingDetails = this.$team.doc.billing_details;
+			const billingDetails = this.$team?.doc?.billing_details;
 			if (!billingDetails) {
 				return '';
 			}
