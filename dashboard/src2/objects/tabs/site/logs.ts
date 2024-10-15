@@ -44,8 +44,8 @@ export function getLogsTab(forSite: boolean) {
 					}
 				},
 				{
-					label: 'Created On',
-					fieldname: 'created',
+					label: 'Modified On',
+					fieldname: 'modified',
 					format(value) {
 						return value ? date(value, 'lll') : '';
 					}
