@@ -23,6 +23,7 @@ class PaymentGateway(Document):
 		integration_logo: DF.AttachImage | None
 		taxes_and_charges: DF.Percent
 		team: DF.Link | None
+		team_name: DF.Data | None
 		url: DF.Data | None
 	# end: auto-generated types
 	pass

@@ -7,8 +7,9 @@
  "field_order": [
   "team",
   "column_break_kvnc",
-  "currency",
+  "team_name",
   "column_break_pwgv",
+  "currency",
   "gateway",
   "ui_configuration_section",
   "integration_logo",
@@ -121,11 +122,18 @@
    "in_list_view": 1,
    "label": "Gateway Controller",
    "options": "gateway_settings"
+  },
+  {
+   "fetch_from": "team.team_title",
+   "fieldname": "team_name",
+   "fieldtype": "Data",
+   "label": "Team Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-24 16:57:14.240442",
+ "modified": "2024-10-13 12:57:10.317435",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Gateway",
