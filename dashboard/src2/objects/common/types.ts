@@ -77,10 +77,11 @@ export interface ColumnField {
 	class?: string;
 	width?: string | number;
 	type?: string;
-	format?: (value: unknown, row: Row) => string | undefined;
+	format?: (value: any, row: Row) => string | undefined;
 	link?: (value: unknown, row: Row) => string;
 	prefix?: (row: Row) => Component | undefined;
 	suffix?: (row: Row) => Component | undefined;
+	theme?: (value: unknown) => string;
 	align?: 'left' | 'right';
 }
 
@@ -181,4 +182,15 @@ export interface DialogConfig {
 	message: string;
 	primaryAction?: { onClick: () => void };
 	onSuccess?: (o: { hide: () => void }) => void;
+}
+
+export interface Process {
+	program: string;
+	name: string;
+	status: string;
+	uptime?: number;
+	uptime_string?: string;
+	message?: string;
+	group?: string;
+	pid?: number;
 }

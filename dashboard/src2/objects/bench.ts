@@ -1,3 +1,4 @@
+import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
 import type { VNode } from 'vue';
 import { h } from 'vue';
 import { getTeam } from '../data/team';
@@ -6,6 +7,7 @@ import { clusterOptions } from './common';
 import { getAppsTab } from './common/apps';
 import { getJobsTab } from './common/jobs';
 import type {
+	ColumnField,
 	DashboardObject,
 	Detail,
 	FilterField,
@@ -57,7 +59,8 @@ function getTabs() {
 	return [
 		getAppsTab(false),
 		getJobsTab('Bench'),
-		getLogsTab(false)
+		getLogsTab(false),
+		getProcessesTab()
 	] satisfies Tab[] as Tab[];
 }
 
@@ -198,4 +201,81 @@ function filterControls() {
 			options: clusterOptions
 		}
 	] satisfies FilterField[] as FilterField[];
+}
+
+export function getProcessesTab() {
+	const url = 'press.api.bench.get_processes';
+	return {
+		label: 'Processes',
+		icon: icon('cpu'),
+		route: 'processes',
+		type: 'list',
+		list: {
+			resource({ documentResource: res }) {
+				return {
+					params: {
+						name: res.name
+					},
+					url,
+					auto: true,
+					cache: ['ObjectList', url, res.name]
+				};
+			},
+			columns: getProcessesColumns(),
+			rowActions: () => [] // TODO: allow issuing supectl commands
+		}
+	} satisfies Tab as Tab;
+}
+
+export function getProcessesColumns() {
+	const processStatusColorMap = {
+		Starting: 'blue',
+		Backoff: 'yellow',
+		Running: 'green',
+		Stopping: 'yellow',
+		Stopped: 'gray',
+		Exited: 'gray',
+		Unknown: 'gray',
+		Fatal: 'red'
+	};
+
+	type Status = keyof typeof processStatusColorMap;
+	return [
+		{
+			label: 'Name',
+			width: 2,
+			fieldname: 'name'
+		},
+		{
+			label: 'Group',
+			width: 1.5,
+			fieldname: 'group',
+			format: v => String(v ?? '')
+		},
+		{
+			label: 'Status',
+			type: 'Badge',
+			width: 0.7,
+			fieldname: 'status',
+			theme: value => processStatusColorMap[value as Status] ?? 'gray',
+			suffix: ({ message }) => {
+				if (!message) {
+					return;
+				}
+
+				return h(
+					Tooltip,
+					{
+						text: message,
+						placement: 'top'
+					},
+					() => h(icon('alert-circle', 'w-3 h-3'))
+				);
+			}
+		},
+		{
+			label: 'Uptime',
+			fieldname: 'uptime_string'
+		}
+	] satisfies ColumnField[] as ColumnField[];
 }
