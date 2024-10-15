@@ -54,12 +54,6 @@ export default {
 			]
 		};
 	},
-	// computed: {
-	// 	$site() {
-	// 		return getCachedDocumentResource('Site', this.site);
-	// 	},
-	// 	actions() {}
-	// },
 	methods: {
 		selectAction(details) {
 			this.selectedAction = details.action;
