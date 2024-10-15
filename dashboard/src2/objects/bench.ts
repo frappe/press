@@ -4,7 +4,12 @@ import type { VNode } from 'vue';
 import { h } from 'vue';
 import { getTeam } from '../data/team';
 import { icon } from '../utils/components';
-import { clusterOptions, getSitesTabColumns } from './common';
+import {
+	clusterOptions,
+	getSitesTabColumns,
+	sitesTabRoute,
+	siteTabFilterControls
+} from './common';
 import { getAppsTab } from './common/apps';
 import { getJobsTab } from './common/jobs';
 import type {
@@ -214,7 +219,21 @@ export function getSitesTab() {
 			],
 			orderBy: 'creation desc, bench desc',
 			pageLength: 99999,
-			columns: getSitesTabColumns()
+			columns: getSitesTabColumns(true),
+			filterControls: siteTabFilterControls,
+			route: sitesTabRoute,
+			primaryAction: r => {
+				return {
+					label: 'New Site',
+					slots: {
+						prefix: icon('plus', 'w-4 h-4')
+					},
+					route: {
+						name: 'Release Group New Site',
+						params: { bench: r.documentResource.doc.group }
+					}
+				};
+			}
 		}
 	} satisfies Tab;
 }

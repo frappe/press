@@ -1,6 +1,13 @@
 import { defineAsyncComponent, h } from 'vue';
 import { renderDialog } from '../../utils/components';
-import type { BannerConfig, ColumnField, Resource, Tab } from './types';
+import type {
+	BannerConfig,
+	ColumnField,
+	Resource,
+	Route,
+	Row,
+	Tab
+} from './types';
 import { trialDays } from '../../utils/site';
 import { planTitle } from '../../utils/format';
 
@@ -40,7 +47,7 @@ export function getUpsellBanner(site: Resource, title: string) {
 	} satisfies BannerConfig as BannerConfig;
 }
 
-export function getSitesTabColumns() {
+export function getSitesTabColumns(forBenchTab: boolean) {
 	return [
 		{
 			label: 'Site',
@@ -48,7 +55,8 @@ export function getSitesTabColumns() {
 			format(value, row) {
 				return value || row.name;
 			},
-			prefix() {
+			prefix: () => {
+				if (forBenchTab) return;
 				return h('div', { class: 'ml-2 w-3.5 h-3.5' });
 			}
 		},
@@ -82,4 +90,40 @@ export function getSitesTabColumns() {
 			}
 		}
 	] satisfies ColumnField[] as ColumnField[];
+}
+
+export function siteTabFilterControls() {
+	return [
+		{
+			type: 'select',
+			label: 'Status',
+			fieldname: 'status',
+			options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+		},
+		{
+			type: 'select',
+			label: 'Region',
+			fieldname: 'cluster',
+			options: [
+				'',
+				'Bahrain',
+				'Cape Town',
+				'Frankfurt',
+				'KSA',
+				'London',
+				'Mumbai',
+				'Singapore',
+				'UAE',
+				'Virginia',
+				'Zurich'
+			]
+		}
+	];
+}
+
+export function sitesTabRoute(r: Row) {
+	return {
+		name: 'Site Detail',
+		params: { name: r.name }
+	} satisfies Route as Route;
 }

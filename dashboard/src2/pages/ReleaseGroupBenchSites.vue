@@ -15,21 +15,23 @@
 	</div>
 </template>
 <script lang="jsx">
-import { defineAsyncComponent, h } from 'vue';
-import {
-	getCachedDocumentResource,
-	Tooltip,
-	createDocumentResource
-} from 'frappe-ui';
-import ObjectList from '../components/ObjectList.vue';
 import Badge from '@/components/global/Badge.vue';
-import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
+import {
+	createDocumentResource,
+	getCachedDocumentResource,
+	Tooltip
+} from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import { trialDays } from '../utils/site';
-import { planTitle } from '../utils/format';
 import ActionButton from '../components/ActionButton.vue';
-import { getSitesTabColumns } from '../objects/common';
+import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
+import ObjectList from '../components/ObjectList.vue';
+import {
+	getSitesTabColumns,
+	sitesTabRoute,
+	siteTabFilterControls
+} from '../objects/common';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -139,38 +141,9 @@ export default {
 				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
 					? 'No sites found'
 					: 'Create a deploy first to start creating sites',
-				columns: getSitesTabColumns(),
-				filterControls() {
-					return [
-						{
-							type: 'select',
-							label: 'Status',
-							fieldname: 'status',
-							options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
-						},
-						{
-							type: 'select',
-							label: 'Region',
-							fieldname: 'cluster',
-							options: [
-								'',
-								'Bahrain',
-								'Cape Town',
-								'Frankfurt',
-								'KSA',
-								'London',
-								'Mumbai',
-								'Singapore',
-								'UAE',
-								'Virginia',
-								'Zurich'
-							]
-						}
-					];
-				},
-				route(row) {
-					return { name: 'Site Detail', params: { name: row.name } };
-				},
+				columns: getSitesTabColumns(false),
+				filterControls: siteTabFilterControls,
+				route: sitesTabRoute,
 				primaryAction: () => {
 					return {
 						label: 'New Site',

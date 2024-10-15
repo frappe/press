@@ -42,13 +42,16 @@ export interface List {
 }
 
 type FilterControls = () => FilterField[];
-type PrimaryAction = (r: { listResource: ListResource }) => {
+type PrimaryAction = (r: {
+	listResource: ListResource;
+	documentResource: Resource;
+}) => {
 	label: string;
-	variant: string;
+	variant?: string;
 	slots: {
 		prefix: Icon;
 	};
-	onClick: () => void;
+	onClick?: () => void;
 };
 type StatusBadge = (r: { documentResource: Resource }) => { label: string };
 export type Breadcrumb = { label: string; route: string };
@@ -112,17 +115,7 @@ export interface TabList {
 		listResource: ListResource;
 		documentResource: Resource;
 	}) => Action[];
-	primaryAction?: (r: {
-		listResource: ListResource;
-		documentResource: Resource;
-	}) => {
-		label: string;
-		slots: {
-			prefix: Icon;
-		};
-		onClick: () => void;
-		variant?: string;
-	};
+	primaryAction?: PrimaryAction;
 	filterControls?: () => FilterField[];
 	banner?: (r: { documentResource: Resource }) => BannerConfig | undefined;
 	searchField?: string;
@@ -149,7 +142,7 @@ interface Action {
 	options?: Option[];
 }
 
-interface Route {
+export interface Route {
 	name: string;
 	params: Record<string, unknown>;
 }
