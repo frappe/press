@@ -38,7 +38,7 @@
 				</div>
 			</template>
 		</FormControl>
-		<!-- <FormControl
+		<FormControl
 			v-if="$team.doc.currency === 'INR'"
 			:label="`Total Amount + GST (${
 				$team.doc?.billing_info.gst_percentage * 100
@@ -54,8 +54,8 @@
 					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
 				</div>
 			</template>
-		</FormControl> -->
-		<FormControl
+		</FormControl> 
+	<!--	<FormControl
 	v-if="$team.doc.currency === 'INR' || $team.doc.currency === 'KES'"
 	:label="`Total Amount + ${$team.doc.currency === 'INR' ? 'GST' : 'VAT'} (${
 		$team.doc?.billing_info.gst_percentage * 100
@@ -72,6 +72,7 @@
 		</div>
 	</template>
 </FormControl>
+-->
 
 	</div>
 
@@ -129,6 +130,7 @@
 
 			<!--M-Pesa button-->
 			<button 
+			v-if="$team.doc.country === 'Kenya'"
 			@click="paymentGateway = 'Mpesa'"
 			label="Mpesa"
 			class="flex h-10 items-center justify-center rounded border"
@@ -191,19 +193,6 @@ import BuyPrepaidCreditMpesa from './BuyPrepaidCreditMpesa.vue';
 import BuyPrepaidCreditsPaymob from './BuyPrepaidCreditsPaymob.vue';
 import { frappeRequest } from 'frappe-ui';
 
-  let request = options => {
-    let _options = options || {};
-    _options.headers = options.headers || {};
-
-    // Example of setting team header
-    let currentTeam = localStorage.getItem('current_team') || window.default_team;
-    if (currentTeam) {
-        _options.headers['X-Press-Team'] = currentTeam;
-    }
-
-    // Perform the request
-    return frappeRequest(_options);
-};
 
 export default {
 	name: 'BuyPrepaidCreditsDialog',
@@ -269,50 +258,32 @@ export default {
 			this.$emit('cancel');
 		},
 		async fetchExchangeRate() {
-			console.log("Uko hapa")
 			try {
-				const data = await request({
+				const data = await frappeRequest({
 					url: 'press.api.billing.get_exchange_rate',
 					params: {
 						from_currency: 'USD',
 						to_currency: 'KES'
 					}
 				});
-				console.log('Exchange Rate:', data);
 				this.exchangeRate = data;
 			} catch (error) {
 				console.error(error);
 			}
 		}
 	},
-	// computed: {
-	// 	totalAmount() {
-	// 		let creditsToBuy = this.creditsToBuy || 0;
-	// 		if (this.$team.doc.currency === 'INR') {
-	// 			return (
-	// 				creditsToBuy +
-	// 				creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
-	// 			).toFixed(2);
-	// 		} else {
-	// 			return creditsToBuy;
-	// 		}
-	// 	}
-	// }
 
-	//We can add a GBP for Egypt at this point
-	computed:{
-		totalAmount(){
+	computed: {
+		totalAmount() {
 			let creditsToBuy = this.creditsToBuy || 0;
-			let gstPercentage = this.$team.doc.currency === 'INR' ?
-				this.$team.doc.billing_info.gst_percentage || 0:
-				this.$team.doc.currency === 'KES' ?
-				this.$team.doc.billing_info.vat_percentage || 0: 0;
-			return (
-				creditsToBuy +
-				creditsToBuy * gstPercentage
-			).toFixed(2
-			)
-		
+			if (this.$team.doc.currency === 'INR') {
+				return (
+					creditsToBuy +
+					creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
+				).toFixed(2);
+			} else {
+				return creditsToBuy;
+			}
 		}
 	}
 };
