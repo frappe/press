@@ -109,7 +109,7 @@ export default {
 							value: 'Product Warranty'
 						},
 						{
-							value: plan.support_included ? 'Support Included' : ''
+							value: plan.support_included ? 'Support Included (*)' : ''
 						},
 						{
 							value: plan.database_access ? 'Database Access' : ''
