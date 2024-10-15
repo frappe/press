@@ -157,7 +157,9 @@ class Site(Document, TagHelpers):
 		staging: DF.Check
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
-		status: DF.Literal["Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"]
+		status: DF.Literal[
+			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
+		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
 		tags: DF.Table[ResourceTag]
@@ -166,7 +168,9 @@ class Site(Document, TagHelpers):
 		trial_end_date: DF.Date | None
 		update_end_of_month: DF.Check
 		update_on_day_of_month: DF.Int
-		update_on_weekday: DF.Literal["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+		update_on_weekday: DF.Literal[
+			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+		]
 		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
 		update_trigger_time: DF.Time | None
 	# end: auto-generated types
@@ -1566,7 +1570,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):
+	def is_setup_wizard_complete(self):  # noqa: C901
 		if self.setup_wizard_complete:
 			return True
 
@@ -2656,7 +2660,10 @@ class Site(Document, TagHelpers):
 		try:
 			return Agent(self.server).fetch_database_table_schemas(self)
 		except Exception:
-			frappe.log_error("Failed to fetch database schema", reference_doctype="Site", reference_name=self.name)
+			frappe.log_error(
+				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
+			)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
