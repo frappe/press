@@ -1,12 +1,15 @@
 import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
+import LucideAppWindow from '~icons/lucide/app-window';
 import type { VNode } from 'vue';
 import { h } from 'vue';
 import { getTeam } from '../data/team';
 import { icon } from '../utils/components';
-import { clusterOptions } from './common';
+import { clusterOptions, getSitesTabColumns } from './common';
 import { getAppsTab } from './common/apps';
 import { getJobsTab } from './common/jobs';
 import type {
+	Breadcrumb,
+	BreadcrumbArgs,
 	ColumnField,
 	DashboardObject,
 	Detail,
@@ -33,34 +36,17 @@ function getDetail() {
 		route: '/benches/:name',
 		tabs: getTabs(),
 		actions: () => [],
-		breadcrumbs: ({ items, documentResource: bench }) => {
-			const $team = getTeam();
-			const benchCrumb = {
-				label: bench.doc?.name,
-				route: `/benches/${bench.doc?.name}`
-			};
-
-			if (bench.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
-				return [
-					{
-						label: bench.doc?.group_title,
-						route: `/groups/${bench.doc?.group}`
-					},
-					benchCrumb
-				];
-			}
-
-			return [...items.slice(0, -1), benchCrumb];
-		}
+		breadcrumbs
 	} satisfies Detail as Detail;
 }
 
 function getTabs() {
 	return [
+		getSitesTab(),
 		getAppsTab(false),
 		getJobsTab('Bench'),
-		getLogsTab(false),
-		getProcessesTab()
+		getProcessesTab(),
+		getLogsTab(false)
 	] satisfies Tab[] as Tab[];
 }
 
@@ -203,6 +189,36 @@ function filterControls() {
 	] satisfies FilterField[] as FilterField[];
 }
 
+export function getSitesTab() {
+	return {
+		label: 'Sites',
+		icon: icon(LucideAppWindow),
+		route: 'sites',
+		type: 'list',
+		list: {
+			doctype: 'Site',
+			filters: r => ({
+				group: r.doc.group,
+				bench: r.name,
+				skip_team_filter_for_system_user: true
+			}),
+			fields: [
+				'name',
+				'status',
+				'host_name',
+				'plan.plan_title as plan_title',
+				'plan.price_usd as price_usd',
+				'plan.price_inr as price_inr',
+				'cluster.image as cluster_image',
+				'cluster.title as cluster_title'
+			],
+			orderBy: 'creation desc, bench desc',
+			pageLength: 99999,
+			columns: getSitesTabColumns()
+		}
+	} satisfies Tab;
+}
+
 export function getProcessesTab() {
 	const url = 'press.api.bench.get_processes';
 	return {
@@ -278,4 +294,23 @@ export function getProcessesColumns() {
 			fieldname: 'uptime_string'
 		}
 	] satisfies ColumnField[] as ColumnField[];
+}
+function breadcrumbs({ items, documentResource: bench }: BreadcrumbArgs) {
+	const $team = getTeam();
+	const benchCrumb = {
+		label: bench.doc?.name,
+		route: `/benches/${bench.doc?.name}`
+	};
+
+	if (bench.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+		return [
+			{
+				label: bench.doc?.group_title,
+				route: `/groups/${bench.doc?.group}`
+			},
+			benchCrumb
+		] satisfies Breadcrumb[];
+	}
+
+	return [...items.slice(0, -1), benchCrumb] satisfies Breadcrumb[];
 }

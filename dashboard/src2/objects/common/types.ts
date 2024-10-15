@@ -52,10 +52,11 @@ type PrimaryAction = (r: { listResource: ListResource }) => {
 };
 type StatusBadge = (r: { documentResource: Resource }) => { label: string };
 export type Breadcrumb = { label: string; route: string };
-export type Breadcrumbs = (r: {
+export type BreadcrumbArgs = {
 	documentResource: Resource;
 	items: Breadcrumb[];
-}) => Breadcrumb[];
+};
+export type Breadcrumbs = (r: BreadcrumbArgs) => Breadcrumb[];
 
 export interface FilterField {
 	label: string;

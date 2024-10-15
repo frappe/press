@@ -29,6 +29,7 @@ import { toast } from 'vue-sonner';
 import { trialDays } from '../utils/site';
 import { planTitle } from '../utils/format';
 import ActionButton from '../components/ActionButton.vue';
+import { getSitesTabColumns } from '../objects/common';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -138,47 +139,7 @@ export default {
 				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
 					? 'No sites found'
 					: 'Create a deploy first to start creating sites',
-				columns: [
-					{
-						label: 'Site',
-						fieldname: 'host_name',
-						format(value, row) {
-							return value || row.name;
-						},
-						prefix() {
-							return h('div', { class: 'ml-2 w-3.5 h-3.5' });
-						}
-					},
-					{
-						label: 'Status',
-						fieldname: 'status',
-						type: 'Badge',
-						width: 0.5
-					},
-					{
-						label: 'Region',
-						fieldname: 'cluster_title',
-						width: 0.5,
-						prefix(row) {
-							if (row.cluster_title)
-								return h('img', {
-									src: row.cluster_image,
-									class: 'w-4 h-4',
-									alt: row.cluster_title
-								});
-						}
-					},
-					{
-						label: 'Plan',
-						width: 0.5,
-						format(value, row) {
-							if (row.trial_end_date) {
-								return trialDays(row.trial_end_date);
-							}
-							return planTitle(row);
-						}
-					}
-				],
+				columns: getSitesTabColumns(),
 				filterControls() {
 					return [
 						{

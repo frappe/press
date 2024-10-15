@@ -1,6 +1,8 @@
 import { defineAsyncComponent, h } from 'vue';
 import { renderDialog } from '../../utils/components';
-import type { BannerConfig, Resource } from './types';
+import type { BannerConfig, ColumnField, Resource, Tab } from './types';
+import { trialDays } from '../../utils/site';
+import { planTitle } from '../../utils/format';
 
 export const unreachable = Error('unreachable'); // used to indicate that a codepath is unreachable
 
@@ -36,4 +38,48 @@ export function getUpsellBanner(site: Resource, title: string) {
 			}
 		}
 	} satisfies BannerConfig as BannerConfig;
+}
+
+export function getSitesTabColumns() {
+	return [
+		{
+			label: 'Site',
+			fieldname: 'host_name',
+			format(value, row) {
+				return value || row.name;
+			},
+			prefix() {
+				return h('div', { class: 'ml-2 w-3.5 h-3.5' });
+			}
+		},
+		{
+			label: 'Status',
+			fieldname: 'status',
+			type: 'Badge',
+			width: 0.5
+		},
+		{
+			label: 'Region',
+			fieldname: 'cluster_title',
+			width: 0.5,
+			prefix(row) {
+				if (row.cluster_title)
+					return h('img', {
+						src: row.cluster_image,
+						class: 'w-4 h-4',
+						alt: row.cluster_title
+					});
+			}
+		},
+		{
+			label: 'Plan',
+			width: 0.5,
+			format(value, row) {
+				if (row.trial_end_date) {
+					return trialDays(row.trial_end_date);
+				}
+				return planTitle(row);
+			}
+		}
+	] satisfies ColumnField[] as ColumnField[];
 }
