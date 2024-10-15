@@ -137,7 +137,9 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	]:
 		return []
 
-	if frappe.local.system_user() or has_role("Press Support Agent"):
+	if (hasattr(frappe.local, "system_user") and frappe.local.system_user()) or has_role(
+		"Press Support Agent"
+	):
 		return []
 
 	PressRoleUser = frappe.qb.DocType("Press Role User")
