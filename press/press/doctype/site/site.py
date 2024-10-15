@@ -31,6 +31,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -157,14 +158,7 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
+			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -1576,7 +1570,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):
+	def is_setup_wizard_complete(self):  # noqa: C901
 		if self.setup_wizard_complete:
 			return True
 
@@ -2654,6 +2648,21 @@ class Site(Document, TagHelpers):
 			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
 		)
 		return response
+
+	@dashboard_whitelist()
+	def fetch_database_table_schemas(self, invalidate_cache=False):
+		if invalidate_cache:
+			self._fetch_database_table_schemas.clear_cache()
+		return self._fetch_database_table_schemas()
+
+	@redis_cache(ttl=3600)
+	def _fetch_database_table_schemas(self):
+		try:
+			return Agent(self.server).fetch_database_table_schemas(self)
+		except Exception:
+			frappe.log_error(
+				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
+			)
 
 
 def site_cleanup_after_archive(site):

@@ -20,6 +20,7 @@ import { logsTab } from './tabs/site/logs';
 import { trialDays } from '../utils/site';
 import dayjs from '../utils/dayjs';
 import { jobTab } from './common/jobs';
+import DatabaseTools from '../components/site/DatabaseToolkit.vue';
 
 export default {
 	doctype: 'Site',
@@ -59,7 +60,8 @@ export default {
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
-		getBackupDownloadLink: 'get_backup_download_link'
+		getBackupDownloadLink: 'get_backup_download_link',
+		fetchDatabaseTableSchemas: 'fetch_database_table_schemas'
 	},
 	list: {
 		route: '/sites',
@@ -1109,6 +1111,16 @@ export default {
 							}
 						];
 					}
+				}
+			},
+			{
+				label: 'Database',
+				icon: icon('database'),
+				route: 'database',
+				type: 'Component',
+				component: DatabaseTools,
+				props: site => {
+					return { site: site.doc?.name };
 				}
 			},
 			{
