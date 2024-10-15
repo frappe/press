@@ -21,7 +21,7 @@ import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
-import { logsTab } from './tabs/site/logs';
+import { getLogsTab } from './tabs/site/logs';
 
 export default {
 	doctype: 'Site',
@@ -1227,7 +1227,7 @@ export default {
 					return { site: site.doc?.name };
 				}
 			},
-			logsTab(),
+			getLogsTab(true),
 			{
 				label: 'Activity',
 				icon: icon('activity'),

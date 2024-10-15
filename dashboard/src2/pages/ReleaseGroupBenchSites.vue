@@ -101,7 +101,7 @@ export default {
 							<Tooltip text="View bench details">
 								<a
 									class="cursor-pointer text-base font-medium leading-6 text-gray-900"
-									href={`/benches/${bench.name}`}
+									href={`/dashboard/benches/${bench.name}`}
 								>
 									{bench.group}
 								</a>

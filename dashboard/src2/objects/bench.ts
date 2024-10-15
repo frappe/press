@@ -4,28 +4,24 @@ import { getTeam } from '../data/team';
 import { icon } from '../utils/components';
 import { clusterOptions } from './common';
 import { getAppsTab } from './common/apps';
+import { getJobsTab } from './common/jobs';
 import type {
 	DashboardObject,
 	Detail,
 	FilterField,
 	List,
+	RouteDetail,
 	Row,
 	Tab
 } from './common/types';
-import { getJobsTab } from './common/jobs';
+import { getLogsTab } from './tabs/site/logs';
 
 export default {
 	doctype: 'Bench',
 	whitelistedMethods: {},
 	detail: getDetail(),
 	list: getList(),
-	routes: [
-		{
-			name: 'Bench Job',
-			path: 'jobs/:id',
-			component: () => import('../pages/JobPage.vue')
-		}
-	]
+	routes: getRoutes()
 } satisfies DashboardObject as DashboardObject;
 
 function getDetail() {
@@ -58,7 +54,26 @@ function getDetail() {
 }
 
 function getTabs() {
-	return [getAppsTab(false), getJobsTab('Bench')] satisfies Tab[] as Tab[];
+	return [
+		getAppsTab(false),
+		getJobsTab('Bench'),
+		getLogsTab(false)
+	] satisfies Tab[] as Tab[];
+}
+
+function getRoutes() {
+	return [
+		{
+			name: 'Bench Job',
+			path: 'jobs/:id',
+			component: () => import('../pages/JobPage.vue')
+		},
+		{
+			name: 'Bench Log',
+			path: 'logs/:logName',
+			component: () => import('../pages/LogPage.vue')
+		}
+	] satisfies RouteDetail[] as RouteDetail[];
 }
 
 function getList() {

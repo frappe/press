@@ -98,9 +98,9 @@ export interface Tab {
 }
 
 export interface TabList {
-	doctype: string;
+	doctype?: string;
 	orderBy?: string;
-	filters: (r: Resource) => Record<string, unknown>;
+	filters?: (r: Resource) => Record<string, unknown>;
 	route?: (row: Row) => Route;
 	pageLength?: number;
 	columns: ColumnField[];
@@ -126,6 +126,12 @@ export interface TabList {
 	searchField?: string;
 	experimental?: boolean;
 	documentation?: string;
+	resource?: (r: { documentResource: Resource }) => {
+		url: string;
+		params: Record<string, unknown>;
+		auto: boolean;
+		cache: string[];
+	};
 }
 
 interface Action {
@@ -143,10 +149,10 @@ interface Action {
 
 interface Route {
 	name: string;
-	params: unknown;
+	params: Record<string, unknown>;
 }
 
-interface RouteDetail {
+export interface RouteDetail {
 	name: string;
 	path: string;
 	component: Component;

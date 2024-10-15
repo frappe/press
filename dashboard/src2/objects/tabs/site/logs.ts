@@ -1,27 +1,32 @@
 import { icon } from '../../../utils/components';
 import { date } from '../../../utils/format';
+import { Tab } from '../../common/types';
 
-export function logsTab() {
+export function getLogsTab(forSite: boolean) {
+	const childRoute = forSite ? 'Site Log' : 'Bench Log';
+	const url = forSite ? 'press.api.site.logs' : 'press.api.bench.logs';
+
 	return {
 		label: 'Logs',
 		icon: icon('file-text'),
 		route: 'logs',
-		childrenRoutes: ['Site Log'],
+		childrenRoutes: [childRoute],
 		type: 'list',
 		list: {
-			resource({ documentResource: site }) {
+			resource({ documentResource: res }) {
 				return {
-					url: 'press.api.site.logs',
 					params: {
-						name: site.name
+						name: res.doc.group,
+						bench: res.name
 					},
+					url,
 					auto: true,
-					cache: ['ObjectList', 'press.api.site.logs', site.name]
+					cache: ['ObjectList', url, res.name]
 				};
 			},
 			route(row) {
 				return {
-					name: 'Site Log',
+					name: childRoute,
 					params: { logName: row.name }
 				};
 			},
@@ -47,5 +52,5 @@ export function logsTab() {
 				}
 			]
 		}
-	};
+	} satisfies Tab as Tab;
 }
