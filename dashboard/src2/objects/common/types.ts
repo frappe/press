@@ -2,7 +2,14 @@ import type { defineAsyncComponent, h, Component } from 'vue';
 import type { icon } from '../../utils/components';
 
 type ListResource = {
+	data: Record<string, unknown>[];
 	reload: () => void;
+	runDocMethod: {
+		submit: (r: { method: string; [key: string]: any }) => Promise<unknown>;
+	};
+	delete: {
+		submit: (name: string, cb: { onSuccess: () => void }) => Promise<unknown>;
+	};
 };
 export interface Resource {
 	name: string;
@@ -40,12 +47,12 @@ export interface List {
 	filterControls: FilterControls;
 	primaryAction?: PrimaryAction;
 }
-
-type FilterControls = () => FilterField[];
-type PrimaryAction = (r: {
+type R = {
 	listResource: ListResource;
 	documentResource: Resource;
-}) => {
+};
+type FilterControls = (r: R) => FilterField[];
+type PrimaryAction = (r: R) => {
 	label: string;
 	variant?: string;
 	slots: {
@@ -116,7 +123,7 @@ export interface TabList {
 		documentResource: Resource;
 	}) => Action[];
 	primaryAction?: PrimaryAction;
-	filterControls?: () => FilterField[];
+	filterControls?: FilterControls;
 	banner?: (r: { documentResource: Resource }) => BannerConfig | undefined;
 	searchField?: string;
 	experimental?: boolean;

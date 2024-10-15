@@ -12,8 +12,8 @@ import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { date, duration } from '../utils/format';
 import { getJobsTab } from './common/jobs';
+import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
-import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
@@ -762,7 +762,7 @@ export default {
 					}
 				}
 			},
-			patches,
+			getPatchesTab(false),
 			{
 				label: 'Dependencies',
 				icon: icon('box'),

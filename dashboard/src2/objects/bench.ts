@@ -25,6 +25,7 @@ import type {
 	Tab
 } from './common/types';
 import { getLogsTab } from './tabs/site/logs';
+import { getPatchesTab } from './common/patches';
 
 export default {
 	doctype: 'Bench',
@@ -51,7 +52,8 @@ function getTabs() {
 		getAppsTab(false),
 		getJobsTab('Bench'),
 		getProcessesTab(),
-		getLogsTab(false)
+		getLogsTab(false),
+		getPatchesTab(true)
 	] satisfies Tab[] as Tab[];
 }
 
