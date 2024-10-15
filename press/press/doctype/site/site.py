@@ -31,6 +31,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -128,8 +129,6 @@ class Site(Document, TagHelpers):
 		database_access_password: DF.Password | None
 		database_access_user: DF.Data | None
 		database_name: DF.Data | None
-		database_schema_fetched_on: DF.Datetime | None
-		database_schema_sql_file: DF.Attach | None
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -2646,34 +2645,18 @@ class Site(Document, TagHelpers):
 		)
 		return response
 
-	@frappe.whitelist()
-	def fetch_database_schema_sql_file(self, refresh=False):
-		if self.database_schema_sql_file and not refresh:
-			return self.database_schema_sql_file
-		old_database_schema_sql_file = self.database_schema_sql_file
+	@dashboard_whitelist()
+	def fetch_database_table_schemas(self, invalidate_cache=False):
+		if invalidate_cache:
+			self._fetch_database_table_schemas.clear_cache()
+		return self._fetch_database_table_schemas()
+
+	@redis_cache(ttl=3600)
+	def _fetch_database_table_schemas(self):
 		try:
-			schema = Agent(self.server).fetch_database_schema(self)
-			file_doc = frappe.get_doc({
-				"doctype": "File",
-				"file_name": frappe.generate_hash(length=16)+".sql",
-				"attached_to_doctype": "Site",
-				"attached_to_name": self.name,
-				"is_private": 1,
-				"content": schema
-			})
-			file_doc.save(ignore_permissions=True)
-			self.database_schema_sql_file = file_doc.file_url
-			self.database_schema_fetched_on = frappe.utils.now()
-			self.save(ignore_permissions=True)
-			# delete old file
-			if old_database_schema_sql_file:
-				frappe.db.delete("File", {
-					"file_url": old_database_schema_sql_file,
-				})
-			return self.database_schema_sql_file
+			return Agent(self.server).fetch_database_table_schemas(self)
 		except Exception:
 			frappe.log_error("Failed to fetch database schema", reference_doctype="Site", reference_name=self.name)
-
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)

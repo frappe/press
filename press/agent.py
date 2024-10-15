@@ -1144,8 +1144,8 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		]
 		return apps
 
-	def fetch_database_schema(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/database/schema")["data"]
+	def fetch_database_table_schemas(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/database/schemas")
 
 
 class AgentCallbackException(Exception):

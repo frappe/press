@@ -77,10 +77,6 @@
   "column_break_lfuz",
   "database_access_user",
   "database_access_password",
-  "database_schema_section",
-  "database_schema_sql_file",
-  "column_break_mpdq",
-  "database_schema_fetched_on",
   "saas_section",
   "is_standby",
   "standby_for",
@@ -632,26 +628,6 @@
    "fieldname": "setup_wizard_status_check_next_retry_on",
    "fieldtype": "Datetime",
    "label": "Next Retry On"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "database_schema_section",
-   "fieldtype": "Section Break",
-   "label": "Database Schema"
-  },
-  {
-   "fieldname": "column_break_mpdq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "database_schema_sql_file",
-   "fieldtype": "Attach",
-   "label": "Database Schema SQL File"
-  },
-  {
-   "fieldname": "database_schema_fetched_on",
-   "fieldtype": "Datetime",
-   "label": "Database Schema Fetched On"
   }
  ],
  "links": [
@@ -721,7 +697,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-10-14 14:13:20.919863",
+ "modified": "2024-10-15 12:22:11.037182",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
