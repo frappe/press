@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-10 11:16:57.274423",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "credentials_section",
+  "api_key",
+  "public_key",
+  "hmac",
+  "column_break_abbe",
+  "token",
+  "secret_key",
+  "section_break_ddej",
+  "iframe",
+  "column_break_euul",
+  "payment_integration"
+ ],
+ "fields": [
+  {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "Credentials"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "API Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Public Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hmac",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "HMAC",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_abbe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "token",
+   "fieldtype": "Password",
+   "label": "Token"
+  },
+  {
+   "fieldname": "secret_key",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Secret Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_ddej",
+   "fieldtype": "Section Break",
+   "label": "Payment Config"
+  },
+  {
+   "fieldname": "iframe",
+   "fieldtype": "Data",
+   "label": "Iframe",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_euul",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_integration",
+   "fieldtype": "Int",
+   "label": "Payment Integration",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-10-10 12:48:56.812698",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Paymob Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
