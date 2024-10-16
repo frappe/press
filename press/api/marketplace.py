@@ -172,6 +172,7 @@ def create_site_on_public_bench(
 	site_plan: str,
 	latest_stable_version: str,
 	group: str | None = None,
+	trial: bool = False,
 ) -> dict:
 	"""Create site on public bench"""
 
@@ -217,9 +218,13 @@ def create_site_on_public_bench(
 			"team": get_current_team(),
 			"app_plans": app_plans,
 		}
-	).insert()
+	)
+	if trial:
+		site.trial_end_date = frappe.utils.add_days(None, 14)
 
-	return site  # noqa: RET504
+	site.insert()
+
+	return site
 
 
 def create_site_on_private_bench(
@@ -308,6 +313,7 @@ def create_site_for_app(
 	cluster: str,
 	site_plan: str,
 	group: str | None = None,
+	trial: bool = False,
 ):
 	"""Create a site for a marketplace app"""
 
@@ -316,7 +322,9 @@ def create_site_for_app(
 	)
 
 	if site_should_be_created_on_public_bench(apps):
-		return create_site_on_public_bench(subdomain, apps, cluster, site_plan, latest_stable_version, group)
+		return create_site_on_public_bench(
+			subdomain, apps, cluster, site_plan, latest_stable_version, group, trial
+		)
 
 	return create_site_on_private_bench(subdomain, apps, cluster)
 

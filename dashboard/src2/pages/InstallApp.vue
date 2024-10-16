@@ -213,7 +213,8 @@ export default {
 			selectedPlan: null,
 			selectedGroup: null,
 			agreedToRegionConsent: false,
-			sitePlan: null
+			sitePlan: null,
+			trial: false
 		};
 	},
 	watch: {
@@ -296,6 +297,7 @@ export default {
 
 					if (!this.$team.doc.onboarding.site_created) {
 						this.sitePlan = this.trialPlan.name;
+						this.trial = true;
 					}
 					return {
 						subdomain: this.subdomain,
@@ -310,7 +312,8 @@ export default {
 							}
 						],
 						cluster: this.cluster,
-						group: this.selectedGroup?.value
+						group: this.selectedGroup?.value,
+						trial: this.trial
 					};
 				},
 				validate() {
