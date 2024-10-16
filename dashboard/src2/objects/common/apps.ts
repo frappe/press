@@ -39,18 +39,34 @@ function getAppsTabList(forSite: boolean) {
 					label: 'App',
 					fieldname: 'title',
 					class: !isMobile() ? 'w-24' : '',
-					options: Array.from(
-						new Set(r.listResource.data?.map(i => String(i.title)) || [])
-					)
+					options: [
+						'',
+						...new Set(r.listResource.data?.map(i => String(i.title)) || [])
+					]
 				},
 				{
 					type: 'select',
 					label: 'Branch',
 					class: !isMobile() ? 'w-24' : '',
 					fieldname: 'branch',
-					options: Array.from(
-						new Set(r.listResource.data?.map(i => String(i.branch)) || [])
-					)
+					options: [
+						'',
+						...new Set(r.listResource.data?.map(i => String(i.branch)) || [])
+					]
+				},
+				{
+					type: 'select',
+					label: 'Org',
+					class: !isMobile() ? 'w-24' : '',
+					fieldname: 'repository_url',
+					options: [
+						'',
+						...new Set(
+							r.listResource.data?.map(
+								i => String(i.repository_url).split('/').at(-2) || ''
+							) || []
+						)
+					]
 				}
 			] satisfies FilterField[],
 		rowActions: ({ row }) => [
@@ -100,6 +116,12 @@ function getAppsTabColumns(forSite: boolean) {
 				if (planText) return `${planText}/mo`;
 				else return 'Free';
 			}
+		},
+		{
+			label: 'Repository',
+			fieldname: 'repository_url',
+			format: value => String(value).split('/').slice(-2).join('/'),
+			link: value => String(value)
 		},
 		{
 			label: 'Branch',

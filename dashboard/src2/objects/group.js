@@ -173,7 +173,7 @@ export default {
 							width: 1
 						},
 						{
-							label: 'Repo',
+							label: 'Repository',
 							width: 1,
 							format(value, row) {
 								return `${row.repository_owner}/${row.repository}`;
