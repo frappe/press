@@ -63,7 +63,7 @@ class BenchApp(Document):
 		if branch := filters.get("branch"):
 			q = q.where(AppSource.branch == branch)
 
-		apps = q.run()
+		apps = q.run(as_dict=True)
 
 		# Apply is_app_patched flag to installed_apps
 		app_names = [a["app"] for a in apps]
