@@ -1,0 +1,4 @@
+class AcceptCallbackTypes:
+    TRANSACTION = "TRANSACTION"
+    CARD_TOKEN = "TOKEN"
+    DELIVERY_STATUS = "DELIVERY_STATUS"
