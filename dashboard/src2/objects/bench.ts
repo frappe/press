@@ -1,8 +1,8 @@
 import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import type { VNode } from 'vue';
-import { h } from 'vue';
-import { getTeam } from '../data/team';
+import { defineAsyncComponent, h } from 'vue';
+import { getTeam, switchToTeam } from '../data/team';
 import { icon } from '../utils/components';
 import {
 	clusterOptions,
@@ -41,7 +41,38 @@ function getDetail() {
 		statusBadge: ({ documentResource: bench }) => ({ label: bench.doc.status }),
 		route: '/benches/:name',
 		tabs: getTabs(),
-		actions: () => [],
+		actions: ({ documentResource: res }) => {
+			const team = getTeam();
+			return [
+				{
+					label: 'Options',
+					condition: () => team.doc?.is_desk_user ?? false,
+					options: [
+						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => team.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/bench/${res.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
+							label: 'Impersonate Team',
+							icon: defineAsyncComponent(
+								() => import('~icons/lucide/venetian-mask')
+							),
+							condition: () => window.is_system_user ?? false,
+							onClick() {
+								switchToTeam(res.doc.team);
+							}
+						}
+					]
+				}
+			];
+		}
 		// breadcrumbs // use default breadcrumbs
 	} satisfies Detail as Detail;
 }

@@ -144,7 +144,7 @@ interface Action {
 	};
 	theme?: string;
 	variant?: string;
-	onClick: () => void;
+	onClick?: () => void;
 	condition?: () => boolean;
 	route?: Route;
 	options?: Option[];
