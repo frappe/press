@@ -1246,9 +1246,6 @@ def get_installed_apps(site, query_filters: dict | None = None):
 	if owner := query_filters.get("repository_owner"):
 		filters["repository_owner"] = owner
 
-	if title := query_filters.get("title"):
-		filters["app_title"] = title
-
 	if branch := query_filters.get("branch"):
 		filters["branch"] = branch
 

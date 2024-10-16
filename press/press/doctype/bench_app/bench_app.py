@@ -57,9 +57,6 @@ class BenchApp(Document):
 		if owner := filters.get("repository_owner"):
 			q = q.where(AppSource.repository_owner == owner)
 
-		if title := filters.get("title"):
-			q = q.where(AppSource.app_title == title)
-
 		if branch := filters.get("branch"):
 			q = q.where(AppSource.branch == branch)
 
