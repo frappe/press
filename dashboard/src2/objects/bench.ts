@@ -42,7 +42,7 @@ function getDetail() {
 		route: '/benches/:name',
 		tabs: getTabs(),
 		actions: () => [],
-		breadcrumbs
+		// breadcrumbs // use default breadcrumbs
 	} satisfies Detail as Detail;
 }
 
@@ -328,6 +328,7 @@ export function getProcessesColumns() {
 		}
 	] satisfies ColumnField[] as ColumnField[];
 }
+
 function breadcrumbs({ items, documentResource: bench }: BreadcrumbArgs) {
 	const $team = getTeam();
 	const benchCrumb = {

@@ -31,7 +31,7 @@ export interface DashboardObject {
 export interface Detail {
 	titleField: string;
 	statusBadge: StatusBadge;
-	breadcrumbs: Breadcrumbs;
+	breadcrumbs?: Breadcrumbs;
 	route: string;
 	tabs: Tab[];
 	actions: (r: { documentResource: Resource }) => Action[];
