@@ -40,9 +40,10 @@ export function getPatchesTab(forBench: boolean) {
 						label: 'App',
 						fieldname: 'app',
 						class: !isMobile() ? 'w-24' : '',
-						options: Array.from(
-							new Set(r.listResource.data?.map(i => String(i.app)) || [])
-						)
+						options: [
+							'',
+							...new Set(r.listResource.data?.map(i => String(i.app)) || [])
+						]
 					}
 				] satisfies FilterField[],
 			columns: getPatchesTabColumns(forBench),
