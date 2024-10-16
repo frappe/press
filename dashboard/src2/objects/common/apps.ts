@@ -56,9 +56,9 @@ function getAppsTabList(forSite: boolean) {
 				},
 				{
 					type: 'select',
-					label: 'Org',
+					label: 'Owner',
 					class: !isMobile() ? 'w-24' : '',
-					fieldname: 'repository_url',
+					fieldname: 'repository_owner',
 					options: [
 						'',
 						...new Set(
