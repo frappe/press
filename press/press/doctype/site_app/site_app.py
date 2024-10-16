@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -32,7 +31,7 @@ class SiteApp(Document):
 			return None
 
 		site_doc = frappe.get_doc("Site", site)
-		installed_apps = get_installed_apps(site_doc)
+		installed_apps = get_installed_apps(site_doc, filters)
 
 		# Apply is_app_patched flag to installed_apps
 		app_names = [a.app for a in site_doc.apps]

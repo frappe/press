@@ -34,7 +34,7 @@ class BenchApp(Document):
 		Bench = frappe.qb.DocType("Bench")
 		BenchApp = frappe.qb.DocType("Bench App")
 
-		apps = (
+		q = (
 			frappe.qb.from_(BenchApp)
 			.join(Bench)
 			.on(Bench.name == BenchApp.parent)
@@ -52,8 +52,15 @@ class BenchApp(Document):
 				AppSource.repository_url,
 			)
 			.where(BenchApp.parent == parent)
-			.run(as_dict=True)
 		)
+
+		if owner := filters.get("repository_owner"):
+			q = q.where(AppSource.repository_owner == owner)
+
+		if branch := filters.get("branch"):
+			q = q.where(AppSource.branch == branch)
+
+		apps = q.run(as_dict=True)
 
 		# Apply is_app_patched flag to installed_apps
 		app_names = [a["app"] for a in apps]

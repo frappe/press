@@ -36,16 +36,6 @@ function getAppsTabList(forSite: boolean) {
 			[
 				{
 					type: 'select',
-					label: 'App',
-					fieldname: 'title',
-					class: !isMobile() ? 'w-24' : '',
-					options: [
-						'',
-						...new Set(r.listResource.data?.map(i => String(i.title)) || [])
-					]
-				},
-				{
-					type: 'select',
 					label: 'Branch',
 					class: !isMobile() ? 'w-24' : '',
 					fieldname: 'branch',
@@ -56,9 +46,9 @@ function getAppsTabList(forSite: boolean) {
 				},
 				{
 					type: 'select',
-					label: 'Org',
+					label: 'Owner',
 					class: !isMobile() ? 'w-24' : '',
-					fieldname: 'repository_url',
+					fieldname: 'repository_owner',
 					options: [
 						'',
 						...new Set(
