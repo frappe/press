@@ -72,6 +72,7 @@ export interface FilterField {
 	label: string;
 	fieldname: string;
 	type: string;
+	class?: string;
 	options?:
 		| {
 				doctype: string;

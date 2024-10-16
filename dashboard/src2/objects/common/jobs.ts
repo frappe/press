@@ -1,4 +1,5 @@
 import { unreachable } from '.';
+import { getTeam } from '../../data/team';
 import { icon } from '../../utils/components';
 import { isMobile } from '../../utils/device';
 import { duration } from '../../utils/format';
@@ -54,6 +55,18 @@ export function getJobsTab(doctype: JobDocTypes) {
 					}
 				];
 			},
+			rowActions: ({ row }) => [
+				{
+					label: 'View in Desk',
+					condition: () => getTeam()?.doc?.is_desk_user,
+					onClick() {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/agent-job/${row.name}`,
+							'_blank'
+						);
+					}
+				}
+			],
 			columns: getJobTabColumns(doctype)
 		}
 	} satisfies Tab as Tab;

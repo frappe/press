@@ -235,7 +235,19 @@ export function getSitesTab() {
 						params: { bench: r.documentResource.doc.group }
 					}
 				};
-			}
+			},
+			rowActions: ({ row }) => [
+				{
+					label: 'View in Desk',
+					condition: () => getTeam()?.doc?.is_desk_user,
+					onClick() {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/site/${row.name}`,
+							'_blank'
+						);
+					}
+				}
+			]
 		}
 	} satisfies Tab;
 }

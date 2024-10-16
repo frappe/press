@@ -4,6 +4,7 @@ import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { h } from 'vue';
 import PatchAppDialog from '../../components/group/PatchAppDialog.vue';
 import { ColumnField, FilterField, Tab } from './types';
+import { isMobile } from '../../utils/device';
 
 const statusTheme = {
 	Applied: 'green',
@@ -38,6 +39,7 @@ export function getPatchesTab(forBench: boolean) {
 						type: 'select',
 						label: 'App',
 						fieldname: 'app',
+						class: !isMobile() ? 'w-24' : '',
 						options: Array.from(
 							new Set(r.listResource.data?.map(i => String(i.app)) || [])
 						)
@@ -137,7 +139,7 @@ function getPatchesTabColumns(forBench: boolean) {
 		{
 			label: 'File Name',
 			fieldname: 'filename',
-			width: '300px'
+			width: forBench ? '400px' : '300px'
 		},
 		{
 			label: 'App',
@@ -159,7 +161,7 @@ function getPatchesTabColumns(forBench: boolean) {
 		{
 			label: 'Patch URL',
 			fieldname: 'url',
-			width: '300px',
+			width: forBench ? undefined : '300px',
 			format(value) {
 				if (!value) {
 					return '-';

@@ -4,8 +4,15 @@ import { getTeam } from '../../data/team';
 import router from '../../router';
 import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { planTitle } from '../../utils/format';
-import type { ColumnField, DialogConfig, Tab, TabList } from './types';
+import type {
+	ColumnField,
+	DialogConfig,
+	FilterField,
+	Tab,
+	TabList
+} from './types';
 import { getUpsellBanner } from '.';
+import { isMobile } from '../../utils/device';
 
 export function getAppsTab(forSite: boolean) {
 	return {
@@ -23,8 +30,43 @@ function getAppsTabList(forSite: boolean) {
 		doctype: '',
 		filters: () => ({}),
 		...options,
-		columns: getAppsTabColumns(forSite)
+		columns: getAppsTabColumns(forSite),
+		searchField: 'title',
+		filterControls: r =>
+			[
+				{
+					type: 'select',
+					label: 'App',
+					fieldname: 'title',
+					class: !isMobile() ? 'w-24' : '',
+					options: Array.from(
+						new Set(r.listResource.data?.map(i => String(i.title)) || [])
+					)
+				},
+				{
+					type: 'select',
+					label: 'Branch',
+					class: !isMobile() ? 'w-24' : '',
+					fieldname: 'branch',
+					options: Array.from(
+						new Set(r.listResource.data?.map(i => String(i.branch)) || [])
+					)
+				}
+			] satisfies FilterField[],
+		rowActions: ({ row }) => [
+			{
+				label: 'View in Desk',
+				condition: () => getTeam()?.doc?.is_desk_user,
+				onClick() {
+					window.open(
+						`${window.location.protocol}//${window.location.host}/app/app-release/${row.release}`,
+						'_blank'
+					);
+				}
+			}
+		]
 	};
+
 	return list;
 }
 
