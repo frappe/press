@@ -19,10 +19,11 @@
 		</div>
 		<!-- Browse Schema Page -->
 		<DatabaseBrowseSchema v-if="selectedAction == 'browse-schema'" />
+		<!-- SQL Playground -->
+		<DatabaseSQLPlayground v-if="selectedAction == 'sql-playground'" />
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
 import DatabaseToolkitButton from './DatabaseToolkitButton.vue';
 import { defineAsyncComponent } from 'vue';
 
@@ -33,6 +34,9 @@ export default {
 		DatabaseToolkitButton,
 		DatabaseBrowseSchema: defineAsyncComponent(() =>
 			import('./database/DatabaseBrowseSchema.vue')
+		),
+		DatabaseSQLPlayground: defineAsyncComponent(() =>
+			import('./database/DatabaseSQLPlayground.vue')
 		)
 	},
 	provide() {
@@ -50,6 +54,12 @@ export default {
 					description: 'Browse your database schema',
 					buttonLabel: 'View',
 					action: 'browse-schema'
+				},
+				{
+					label: 'SQL Playground',
+					description: 'Run SQL queries against your database',
+					buttonLabel: 'Start',
+					action: 'sql-playground'
 				}
 			]
 		};

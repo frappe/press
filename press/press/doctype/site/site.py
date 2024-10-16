@@ -2664,6 +2664,12 @@ class Site(Document, TagHelpers):
 				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
 			)
 
+	@dashboard_whitelist()
+	def run_sql_query_in_database(self, query: str, commit: bool):
+		if not query:
+			return {"success": False, "output": "SQL Query cannot be empty"}
+		return Agent(self.server).run_sql_query_in_database(self, query, commit)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)

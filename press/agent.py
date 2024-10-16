@@ -1106,6 +1106,12 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 	def fetch_database_table_schemas(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/database/schemas")
 
+	def run_sql_query_in_database(self, site, query, commit):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/query/execute",
+			data={"query": query, "commit": commit, "as_dict": False},
+		)
+
 
 class AgentCallbackException(Exception):
 	pass
