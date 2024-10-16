@@ -1,25 +1,27 @@
 import {
 	createListResource,
-	LoadingIndicator,
-	createResource
+	createResource,
+	LoadingIndicator
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
+import SiteActions from '../components/SiteActions.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, date, planTitle, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
-import SiteActions from '../components/SiteActions.vue';
-import { tagTab } from './common/tags';
-import { getDocResource } from '../utils/resource';
-import { logsTab } from './tabs/site/logs';
-import { trialDays } from '../utils/site';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import dayjs from '../utils/dayjs';
-import { jobTab } from './common/jobs';
+import { bytes, date, userCurrency } from '../utils/format';
+import { getDocResource } from '../utils/resource';
+import { trialDays } from '../utils/site';
+import { clusterOptions, getUpsellBanner } from './common';
+import { getAppsTab } from './common/apps';
+import { getJobsTab } from './common/jobs';
+import { tagTab } from './common/tags';
+import { getLogsTab } from './tabs/site/logs';
 
 export default {
 	doctype: 'Site',
@@ -106,19 +108,7 @@ export default {
 					type: 'select',
 					label: 'Region',
 					fieldname: 'cluster',
-					options: [
-						'',
-						'Bahrain',
-						'Cape Town',
-						'Frankfurt',
-						'KSA',
-						'London',
-						'Mumbai',
-						'Singapore',
-						'UAE',
-						'Virginia',
-						'Zurich'
-					]
+					options: clusterOptions
 				},
 				{
 					type: 'link',
@@ -165,7 +155,7 @@ export default {
 				}
 			},
 			{
-				label: 'Cluster',
+				label: 'Region',
 				fieldname: 'cluster',
 				width: 1,
 				format(value, row) {
@@ -268,174 +258,7 @@ export default {
 					return { siteName: site.doc?.name };
 				}
 			},
-			{
-				label: 'Apps',
-				icon: icon('grid'),
-				route: 'apps',
-				type: 'list',
-				list: {
-					doctype: 'Site App',
-					filters: site => {
-						return { parenttype: 'Site', parent: site.doc?.name };
-					},
-					columns: [
-						{
-							label: 'App',
-							fieldname: 'title',
-							width: 1,
-							suffix(row) {
-								if (!row.is_app_patched) {
-									return;
-								}
-
-								return h(
-									'div',
-									{
-										title: 'App has been patched',
-										class: 'rounded-full bg-gray-100 p-1'
-									},
-									h(icon('alert-circle', 'w-3 h-3'))
-								);
-							}
-						},
-						{
-							label: 'Plan',
-							width: 0.75,
-							class: 'text-gray-600 text-sm',
-							format(_, row) {
-								const planText = planTitle(row.plan_info);
-								if (planText) return `${planText}/mo`;
-								else return 'Free';
-							}
-						},
-						{
-							label: 'Branch',
-							fieldname: 'branch',
-							type: 'Badge',
-							width: 1,
-							link: (value, row) => {
-								return `${row.repository_url}/tree/${value}`;
-							}
-						},
-						{
-							label: 'Commit',
-							fieldname: 'hash',
-							type: 'Badge',
-							width: 1,
-							link: (value, row) => {
-								return `${row.repository_url}/commit/${value}`;
-							},
-							format(value) {
-								return value.slice(0, 7);
-							}
-						},
-						{
-							label: 'Commit Message',
-							fieldname: 'commit_message',
-							width: '30rem'
-						}
-					],
-					banner({ documentResource: site }) {
-						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
-
-						return upsellBanner(site, bannerTitle);
-					},
-					primaryAction({ listResource: apps, documentResource: site }) {
-						return {
-							label: 'Install App',
-							slots: {
-								prefix: icon('plus')
-							},
-							onClick() {
-								const InstallAppDialog = defineAsyncComponent(() =>
-									import('../components/site/InstallAppDialog.vue')
-								);
-
-								renderDialog(
-									h(InstallAppDialog, {
-										site: site.name,
-										onInstalled() {
-											apps.reload();
-										}
-									})
-								);
-							}
-						};
-					},
-					rowActions({ row, listResource: apps, documentResource: site }) {
-						let $team = getTeam();
-
-						return [
-							{
-								label: 'View in Desk',
-								condition: () => $team.doc?.is_desk_user,
-								onClick() {
-									window.open(`/app/app-source/${row.name}`, '_blank');
-								}
-							},
-							{
-								label: 'Change Plan',
-								condition: () => row.plan_info && row.plans.length > 1,
-								onClick() {
-									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
-										import('../components/site/SiteAppPlanSelectDialog.vue')
-									);
-									renderDialog(
-										h(SiteAppPlanChangeDialog, {
-											app: row,
-											currentPlan: row.plans.find(
-												plan => plan.name === row.plan_info.name
-											),
-											onPlanChanged() {
-												apps.reload();
-											}
-										})
-									);
-								}
-							},
-							{
-								label: 'Uninstall',
-								condition: () => row.app !== 'frappe',
-								onClick() {
-									confirmDialog({
-										title: `Uninstall App`,
-										message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc?.name}</b>?<br>
-										All doctypes and modules related to this app will be removed.`,
-										onSuccess({ hide }) {
-											if (site.uninstallApp.loading) return;
-											toast.promise(
-												site.uninstallApp.submit({
-													app: row.app
-												}),
-												{
-													loading: 'Scheduling app uninstall...',
-													success: jobId => {
-														hide();
-														router.push({
-															name: 'Site Job',
-															params: {
-																name: site.name,
-																id: jobId
-															}
-														});
-														return 'App uninstall scheduled';
-													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
-												}
-											);
-										}
-									});
-								}
-							}
-						];
-					}
-				}
-			},
+			getAppsTab(true),
 			{
 				label: 'Domains',
 				icon: icon('external-link'),
@@ -975,7 +798,7 @@ export default {
 						const bannerTitle =
 							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
-						return upsellBanner(site, bannerTitle);
+						return getUpsellBanner(site, bannerTitle);
 					}
 				}
 			},
@@ -1374,11 +1197,11 @@ export default {
 						const bannerTitle =
 							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
-						return upsellBanner(site, bannerTitle);
+						return getUpsellBanner(site, bannerTitle);
 					}
 				}
 			},
-			jobTab('Site'),
+			getJobsTab('Site'),
 			{
 				label: 'Performance',
 				icon: icon('zap'),
@@ -1404,7 +1227,7 @@ export default {
 					return { site: site.doc?.name };
 				}
 			},
-			logsTab(),
+			getLogsTab(true),
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1702,23 +1525,3 @@ export default {
 		}
 	]
 };
-
-function upsellBanner(site, title) {
-	if (!site.doc.current_plan?.private_benches && site.doc.group_public) {
-		return {
-			title: title,
-			dismissable: true,
-			id: site.name,
-			button: {
-				label: 'Upgrade Plan',
-				variant: 'outline',
-				onClick() {
-					let SitePlansDialog = defineAsyncComponent(() =>
-						import('../components/ManageSitePlansDialog.vue')
-					);
-					renderDialog(h(SitePlansDialog, { site: site.name }));
-				}
-			}
-		};
-	}
-}

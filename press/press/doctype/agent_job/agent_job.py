@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 import os
 import random
 import traceback
-from typing import Optional
 
 import frappe
 from frappe.core.utils import find
@@ -19,6 +18,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
+
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -65,14 +65,12 @@ class AgentJob(Document):
 		server_type: DF.Link
 		site: DF.Link | None
 		start: DF.Datetime | None
-		status: DF.Literal[
-			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"
-		]
+		status: DF.Literal["Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"]
 		traceback: DF.Code | None
 		upstream: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"job_type",
 		"creation",
@@ -85,15 +83,16 @@ class AgentJob(Document):
 		"server",
 		"job_id",
 		"output",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		site = cstr(filters.get("site", ""))
 		group = cstr(filters.get("group", ""))
 		server = cstr(filters.get("server", ""))
+		bench = cstr(filters.get("bench", ""))
 
-		if not (site or group or server):
+		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
 		if site and not has_role("Press Support Agent"):
@@ -103,26 +102,14 @@ class AgentJob(Document):
 			is_owned_by_team("Release Group", group, raise_exception=True)
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
-			benches = (
-				frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
-			)
+			benches = frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
 			query = query.where(AgentJob.bench.isin(benches))
 
 		if server:
 			is_owned_by_team("Server", server, raise_exception=True)
 
 		results = query.run(as_dict=1)
-		for result in results:
-			if result.status == "Undelivered":
-				result.status = "Pending"
-			elif result.status == "Delivery Failure":
-				result.status = "Failure"
-
-			# agent job start and end are in utc
-			if result.start:
-				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
-			if result.end:
-				result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+		update_query_result_status_timestamps(results)
 		return results
 
 	def get_doc(self, doc):
@@ -181,9 +168,9 @@ class AgentJob(Document):
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
-			self.job_id = agent.request(
-				self.request_method, self.request_path, data, files, agent_job=self
-			)["job"]
+			self.job_id = agent.request(self.request_method, self.request_path, data, files, agent_job=self)[
+				"job"
+			]
 
 			self.status = "Pending"
 			self.save()
@@ -257,7 +244,7 @@ class AgentJob(Document):
 
 	@frappe.whitelist()
 	def retry(self):
-		job = frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"status": "Undelivered",
@@ -274,7 +261,6 @@ class AgentJob(Document):
 				"request_method": self.request_method,
 			}
 		).insert()
-		return job
 
 	@frappe.whitelist()
 	def retry_in_place(self):
@@ -375,7 +361,7 @@ def job_detail(job):
 
 	current["total"] = len(steps)
 
-	message = {
+	return {
 		"id": job.name,
 		"name": job.job_type,
 		"server": job.server,
@@ -385,20 +371,15 @@ def job_detail(job):
 		"steps": steps,
 		"current": current,
 	}
-	return message
 
 
 def publish_update(job):
 	message = job_detail(job)
-	frappe.publish_realtime(
-		event="agent_job_update", doctype="Agent Job", docname=job, message=message
-	)
+	frappe.publish_realtime(event="agent_job_update", doctype="Agent Job", docname=job, message=message)
 
 	# publish event for agent job list to update in dashboard
 	# we are doing this since process agent job doesn't emit list_update for job due to set_value
-	frappe.publish_realtime(
-		event="list_update", message={"doctype": "Agent Job", "name": job}
-	)
+	frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job", "name": job})
 
 	# publish event for site to show job running on dashboard and update site
 	# we are doing this since process agent job doesn't emit doc_update for site due to set_value
@@ -423,9 +404,7 @@ def suspend_sites():
 	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
 		return
 
-	free_teams = frappe.get_all(
-		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
-	)
+	free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
 	active_sites = frappe.get_all(
 		"Site",
 		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
@@ -482,49 +461,53 @@ def poll_pending_jobs_server(server):
 	for polled_job in polled_jobs:
 		if not polled_job:
 			continue
-		job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
-		try:
-			# Update Job Status
-			# If it is worthy of an update
-			if job.status != polled_job["status"]:
-				lock_doc_updated_by_job(job.name)
-				update_job(job.name, polled_job)
-
-			# Update Steps' Status
-			update_steps(job.name, polled_job)
-			populate_output_cache(polled_job, job)
-
-			# Some callbacks rely on step statuses, e.g. archive_site
-			# so update step status before callbacks are processed
-			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
-				skip_pending_steps(job.name)
-			process_job_updates(job.name, polled_job)
-
-			frappe.db.commit()
-			publish_update(job.name)
-		except AgentCallbackException:
-			# Don't log error for AgentCallbackException
-			# it's already logged
-			# Rollback all other changes and increment the failure count
-			frappe.db.rollback()
-			frappe.db.set_value(
-				"Agent Job",
-				job.name,
-				"callback_failure_count",
-				job.callback_failure_count + 1,
-			)
-			frappe.db.commit()
-		except Exception:
-			log_error(
-				"Agent Job Poll Exception",
-				job=job,
-				polled=polled_job,
-				reference_doctype="Agent Job",
-				reference_name=job.name,
-			)
-			frappe.db.rollback()
+		handle_polled_job(pending_jobs, polled_job)
 
 	retry_undelivered_jobs(server)
+
+
+def handle_polled_job(pending_jobs, polled_job):
+	job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
+	try:
+		# Update Job Status
+		# If it is worthy of an update
+		if job.status != polled_job["status"]:
+			lock_doc_updated_by_job(job.name)
+			update_job(job.name, polled_job)
+
+		# Update Steps' Status
+		update_steps(job.name, polled_job)
+		populate_output_cache(polled_job, job)
+
+		# Some callbacks rely on step statuses, e.g. archive_site
+		# so update step status before callbacks are processed
+		if polled_job["status"] in ("Success", "Failure", "Undelivered"):
+			skip_pending_steps(job.name)
+		process_job_updates(job.name, polled_job)
+
+		frappe.db.commit()
+		publish_update(job.name)
+	except AgentCallbackException:
+		# Don't log error for AgentCallbackException
+		# it's already logged
+		# Rollback all other changes and increment the failure count
+		frappe.db.rollback()
+		frappe.db.set_value(
+			"Agent Job",
+			job.name,
+			"callback_failure_count",
+			job.callback_failure_count + 1,
+		)
+		frappe.db.commit()
+	except Exception:
+		log_error(
+			"Agent Job Poll Exception",
+			job=job,
+			polled=polled_job,
+			reference_doctype="Agent Job",
+			reference_name=job.name,
+		)
+		frappe.db.rollback()
 
 
 def populate_output_cache(polled_job, job):
@@ -627,12 +610,10 @@ def lock_doc_updated_by_job(job_name):
 		job_name,
 		["site", "bench", "server", "server_type", "job_type"],
 		as_dict=True,
-	)[
-		0
-	]  # relies on order of values to be site, bench..
+	)[0]  # relies on order of values to be site, bench..
 
 	if field_values["job_type"] not in get_pair_jobs():
-		return
+		return None
 
 	for field, value in field_values.items():
 		doctype = field.capitalize()
@@ -642,10 +623,12 @@ def lock_doc_updated_by_job(job_name):
 			"server_type",
 			"job_type",
 		):  # ideally will never happen, but for sanity
-			return
+			return None
 		if value:
 			frappe.db.get_value(doctype, value, "modified", for_update=True)
 			return value
+
+	return None
 
 
 def update_job(job_name, job):
@@ -778,9 +761,7 @@ def is_auto_retry_disabled(server):
 	_auto_retry_disabled = False
 
 	# Global Config
-	_auto_retry_disabled = frappe.db.get_single_value(
-		"Press Settings", "disable_auto_retry", cache=True
-	)
+	_auto_retry_disabled = frappe.db.get_single_value("Press Settings", "disable_auto_retry", cache=True)
 	if _auto_retry_disabled:
 		return True
 
@@ -800,9 +781,7 @@ def is_auto_retry_disabled(server):
 
 def update_job_and_step_status(job: str, status: str):
 	agent_job = frappe.qb.DocType("Agent Job")
-	frappe.qb.update(agent_job).set(agent_job.status, status).where(
-		agent_job.name == job
-	).run()
+	frappe.qb.update(agent_job).set(agent_job.status, status).where(agent_job.name == job).run()
 
 	agent_job_step = frappe.qb.DocType("Agent Job Step")
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, status).where(
@@ -881,7 +860,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
+def process_job_updates(job_name: str, response_data: dict | None = None):  # noqa: C901
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 
 	try:
@@ -960,39 +939,29 @@ def process_job_updates(job_name: str, response_data: "Optional[dict]" = None):
 			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
-		elif job.job_type == "Add Code Server to Upstream":
-			process_new_code_server_job_update(job)
-		elif job.job_type == "Setup Code Server":
+		elif job.job_type == "Add Code Server to Upstream" or job.job_type == "Setup Code Server":
 			process_new_code_server_job_update(job)
 		elif job.job_type == "Start Code Server":
 			process_start_code_server_job_update(job)
 		elif job.job_type == "Stop Code Server":
 			process_stop_code_server_job_update(job)
-		elif job.job_type == "Archive Code Server":
-			process_archive_code_server_job_update(job)
-		elif job.job_type == "Remove Code Server from Upstream":
+		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
 		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
-		elif job.job_type == "Archive Site":
-			process_archive_site_job_update(job)
-		elif job.job_type == "Remove Site from Upstream":
+		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
 		elif job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
-		elif job.job_type == "Update Site Migrate":
+		elif job.job_type == "Update Site Migrate" or job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
-		elif job.job_type == "Update Site Pull":
-			process_update_site_job_update(job)
-		elif job.job_type == "Recover Failed Site Migrate":
+		elif (
+			job.job_type == "Recover Failed Site Migrate"
+			or job.job_type == "Recover Failed Site Pull"
+			or job.job_type == "Recover Failed Site Update"
+		):
 			process_update_site_recover_job_update(job)
-		elif job.job_type == "Recover Failed Site Pull":
-			process_update_site_recover_job_update(job)
-		elif job.job_type == "Recover Failed Site Update":
-			process_update_site_recover_job_update(job)
-		elif job.job_type == "Rename Site":
-			process_rename_site_job_update(job)
-		elif job.job_type == "Rename Site on Upstream":
+		elif job.job_type == "Rename Site" or job.job_type == "Rename Site on Upstream":
 			process_rename_site_job_update(job)
 		elif job.job_type == "Setup ERPNext":
 			process_setup_erpnext_site_job_update(job)
@@ -1066,8 +1035,7 @@ def update_job_step_status():
 			GROUP_CONCAT(agent_job_step.name, alias="step_names"),
 		)
 		.where(
-			(agent_job.status.isin(["Failure", "Delivery Failure"]))
-			& (agent_job_step.status == "Pending")
+			(agent_job.status.isin(["Failure", "Delivery Failure"])) & (agent_job_step.status == "Pending")
 		)
 		.groupby(agent_job.name)
 		.limit(100)
@@ -1108,9 +1076,7 @@ def to_str(data) -> str:
 
 
 def flush():
-	log_file = os.path.join(
-		frappe.utils.get_bench_path(), "logs", f"{AGENT_LOG_KEY}.json.log"
-	)
+	log_file = os.path.join(frappe.utils.get_bench_path(), "logs", f"{AGENT_LOG_KEY}.json.log")
 	try:
 		# Fetch all entries without removing from cache
 		logs = frappe.cache().lrange(AGENT_LOG_KEY, 0, -1)
@@ -1124,3 +1090,18 @@ def flush():
 			frappe.cache().ltrim(AGENT_LOG_KEY, len(logs) - 1, -1)
 	except Exception:
 		traceback.print_exc()
+
+
+def update_query_result_status_timestamps(results):
+	for result in results:
+		if result.status == "Undelivered":
+			result.status = "Pending"
+		elif result.status == "Delivery Failure":
+			result.status = "Failure"
+
+		# agent job start and end are in utc
+		if result.start:
+			result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
+
+		if result.end:
+			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
