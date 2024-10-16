@@ -123,6 +123,7 @@ permission_query_conditions = {
 	"Virtual Machine": "press.press.doctype.virtual_machine.virtual_machine.get_permission_query_conditions",
 	"Press Webhook": "press.press.doctype.press_webhook.press_webhook.get_permission_query_conditions",
 	"Press Webhook Log": "press.press.doctype.press_webhook_log.press_webhook_log.get_permission_query_conditions",
+	"SQL Playground Log": "press.press.doctype.sql_playground_log.sql_playground_log.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
@@ -145,6 +146,7 @@ has_permission = {
 	"Press Webhook": "press.overrides.has_permission",
 	"Press Webhook Log": "press.overrides.has_permission",
 	"Press Webhook Attempt": "press.press.doctype.press_webhook_attempt.press_webhook_attempt.has_permission",
+	"SQL Playground Log": "press.overrides.has_permission",
 }
 
 # Document Events

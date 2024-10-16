@@ -2668,7 +2668,19 @@ class Site(Document, TagHelpers):
 	def run_sql_query_in_database(self, query: str, commit: bool):
 		if not query:
 			return {"success": False, "output": "SQL Query cannot be empty"}
-		return Agent(self.server).run_sql_query_in_database(self, query, commit)
+		doc = frappe.get_doc(
+			{
+				"doctype": "SQL Playground Log",
+				"site": self.name,
+				"team": self.team,
+				"query": query,
+				"committed": commit,
+			}
+		)
+		response = Agent(self.server).run_sql_query_in_database(self, query, commit)
+		doc.is_successful = response.get("success", False)
+		doc.insert(ignore_permissions=True)
+		return response
 
 
 def site_cleanup_after_archive(site):
