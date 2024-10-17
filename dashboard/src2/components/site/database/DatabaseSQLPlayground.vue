@@ -1,19 +1,16 @@
 <template>
 	<div class="mt-2 flex h-full w-full flex-col gap-5">
 		<div class="w-full">
-			<Textarea
-				variant="outline"
-				size="sm"
-				placeholder="Write your SQL query here"
-				label="SQL Query"
-				class="w-full"
+			<SQLCodeEditor
 				v-model="query"
-				:rows="10"
-			></Textarea>
+				v-if="sqlSchemaForAutocompletion"
+				:schema="sqlSchemaForAutocompletion"
+			/>
 			<Button
 				class="mt-2"
 				@click="$resources.runSQLQuery.submit"
 				:loading="$resources.runSQLQuery.loading"
+				iconLeft="play"
 				>Run Query</Button
 			>
 		</div>
@@ -34,12 +31,14 @@
 import { Textarea, Button } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import SQLResultTable from './SQLResultTable.vue';
+import SQLCodeEditor from './SQLCodeEditor.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
 	inject: ['site'],
 	components: {
-		SQLResultTable
+		SQLResultTable,
+		SQLCodeEditor
 	},
 	data() {
 		return {
@@ -88,6 +87,41 @@ export default {
 					);
 				},
 				auto: false
+			};
+		},
+		tableSchemas() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_table_schemas'
+					};
+				},
+				initialData: {},
+				auto: true
+			};
+		}
+	},
+	computed: {
+		sqlSchemaForAutocompletion() {
+			const tableSchemas = this.$resources.tableSchemas?.data?.message ?? {};
+			if (!tableSchemas || !Object.keys(tableSchemas).length) return null;
+			let childrenSchemas = {};
+			for (const tableName in tableSchemas) {
+				childrenSchemas[tableName] = {
+					self: { label: tableName, type: 'table' },
+					children: tableSchemas[tableName].map(x => ({
+						label: x.column,
+						type: 'column',
+						detail: x.data_type
+					}))
+				};
+			}
+			return {
+				self: { label: 'SQL Schema', type: 'schema' },
+				children: childrenSchemas
 			};
 		}
 	}
