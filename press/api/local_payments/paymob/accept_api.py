@@ -158,18 +158,3 @@ class AcceptAPI:
 			print(f"Error creating payment intent: {e}")
 		return None
 
-
-@frappe.whitelist(allow_guest=True)
-def callback(**kwargs):
-	query_params = frappe.local.request.args
-	print("\n\n", query_params)
-	query_dict = frappe.parse_json(query_params)
-	print(query_dict)
-	paymob_log = frappe.new_doc("Paymob Log")
-	paymob_log.event_type = "transaction_callback"
-	paymob_log.special_reference = query_dict.get("special_reference")
-	paymob_log.payload = str(query_dict)
-	paymob_log.insert(ignore_permissions=True)
-	return query_dict
-	
-

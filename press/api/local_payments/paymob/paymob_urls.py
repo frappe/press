@@ -27,7 +27,6 @@ class PaymobUrls:
 	intention: str = "v1/intention"
 
 	def get_url(self, endpoint, **kwargs):
-		# Use f-strings with format specifiers for dynamic url construction
 		# based on available attributes and passed keyword arguments
 		return f"{self.base_url}{getattr(self, endpoint)}".format(**kwargs)
 
