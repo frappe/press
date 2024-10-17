@@ -89,6 +89,7 @@ export default {
 					amount: this.amount,
 					team: this.partnerInput,
 					actualAmount: this.actualAmount,
+					exchange_rate: this.currencyExchangeRate,
 				},
 				validate() {
 					if (!this.actualAmount || !this.taxID || !this.partnerInput) {
