@@ -48,6 +48,8 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.core.doctype.user.user.test_password_strength",
 	"/api/method/frappe.core.doctype.user.user.update_password",
 	"/api/method/get_central_migration_data",
+	"/api/method/press.api.local_payments.paymob.callbacks.paymob_callback_handler",
+	"/api/method/press.api.local_payments.paymob.callbacks.paymob_response_callback",
 ]
 
 ALLOWED_WILDCARD_PATHS = [
