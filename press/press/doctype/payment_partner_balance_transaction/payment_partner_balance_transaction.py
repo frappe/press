@@ -14,20 +14,17 @@ class PaymentPartnerBalanceTransaction(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		actual_amount: DF.Currency
+		actual_currency: DF.Link | None
 		amended_from: DF.Link | None
 		amount: DF.Currency
 		currency: DF.Link | None
 		exchange_rate: DF.Float
 		payment_gateway: DF.Link | None
 		payment_partner: DF.Link | None
-		payment_transaction_details: DF.JSON | None
+		payment_transaction_details: DF.Code | None
 		team: DF.Link | None
 	# end: auto-generated types
 	def on_submit(self):
 		team = frappe.get_doc("Team", self.team)
-		# In case of Egypt Billing
-		credit_amount = self.amount - (self.amount * (13/100))
-		self.currency = "EGP"
-		self.exchange_rate = 48 
-		credit_amount = credit_amount /self.exchange_rate
-		team.allocate_credit_amount(credit_amount, "Prepaid Credits")
+		team.allocate_credit_amount(self.amount, "Prepaid Credits", remark=f"Via Payment Partner {self.payment_partner} document {self.name}")
