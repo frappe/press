@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-2 flex h-full w-full flex-col gap-5">
+	<div class="mt-2 flex h-full w-full flex-col gap-5" v-if="isSQLEditorReady">
 		<div class="w-full">
 			<SQLCodeEditor
 				v-model="query"
@@ -26,9 +26,15 @@
 			:data="output.data ?? []"
 		/>
 	</div>
+	<div
+		class="flex h-full w-full justify-center items-center min-h-[80vh] text-gray-700 gap-2"
+		v-else
+	>
+		<Spinner class="w-4" /> Setting Up SQL Playground
+	</div>
 </template>
 <script>
-import { Textarea, Button } from 'frappe-ui';
+import { Textarea, Button, Spinner } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
@@ -123,6 +129,11 @@ export default {
 				self: { label: 'SQL Schema', type: 'schema' },
 				children: childrenSchemas
 			};
+		},
+		isSQLEditorReady() {
+			if (this.$resources.tableSchemas.loading) return false;
+			if (!this.sqlSchemaForAutocompletion) return false;
+			return true;
 		}
 	}
 };

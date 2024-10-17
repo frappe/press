@@ -12,7 +12,7 @@
 		</div>
 	</div>
 	<!-- Screen -->
-	<div v-else>
+	<div v-else class="h-full">
 		<div class="mb-5 flex items-center space-x-4">
 			<Button @click="goBack" icon="arrow-left" label="Go Back"></Button>
 			<h2 class="font-semibold">{{ pageTitle }}</h2>
