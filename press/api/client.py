@@ -110,7 +110,10 @@ def get_list(
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
 		frappe.throw("parenttype and parent are required to get child records")
 
-	apply_team_filter = not (filters.get("skip_team_filter_for_system_user") and frappe.local.system_user())
+	apply_team_filter = not (
+		filters.get("skip_team_filter_for_system_user_and_support_agent")
+		and (frappe.local.system_user() or has_role("Press Support Agent"))
+	)
 	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
 

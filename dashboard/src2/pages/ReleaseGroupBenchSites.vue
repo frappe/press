@@ -50,7 +50,7 @@ export default {
 				doctype: 'Bench',
 				filters: {
 					group: this.$releaseGroup.name,
-					skip_team_filter_for_system_user: true
+					skip_team_filter_for_system_user_and_support_agent: true
 				},
 				fields: ['name', 'status'],
 				orderBy: 'creation desc',
@@ -67,7 +67,7 @@ export default {
 				doctype: 'Site',
 				filters: {
 					group: this.$releaseGroup.name,
-					skip_team_filter_for_system_user: true
+					skip_team_filter_for_system_user_and_support_agent: true
 				},
 				fields: [
 					'name',

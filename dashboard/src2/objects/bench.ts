@@ -238,7 +238,7 @@ export function getSitesTab() {
 			filters: r => ({
 				group: r.doc.group,
 				bench: r.name,
-				skip_team_filter_for_system_user: true
+				skip_team_filter_for_system_user_and_support_agent: true
 			}),
 			fields: [
 				'name',
