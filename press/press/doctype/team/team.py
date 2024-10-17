@@ -468,7 +468,9 @@ class Team(Document):
 				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
 				"frappe_partnership_date",
 			)
-			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(self.partnership_date):
+			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
+				self.partnership_date
+			):
 				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
@@ -1020,6 +1022,8 @@ class Team(Document):
 		return False
 
 	def get_onboarding(self):
+		from press.utils import has_role
+
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		saas_site_request = self.get_pending_saas_site_request()
 		is_payment_mode_set = self.is_payment_mode_set()
@@ -1028,7 +1032,11 @@ class Team(Document):
 			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if is_payment_mode_set or frappe.db.get_value("User", self.user, "user_type") == "System User":
+		if (
+			is_payment_mode_set
+			or frappe.db.get_value("User", self.user, "user_type") == "System User"
+			or has_role("Press Support Agent")
+		):
 			complete = True
 		elif saas_site_request:
 			complete = False

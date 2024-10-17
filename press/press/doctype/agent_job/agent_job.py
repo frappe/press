@@ -98,7 +98,7 @@ class AgentJob(Document):
 		if site and not has_role("Press Support Agent"):
 			is_owned_by_team("Site", site, raise_exception=True)
 
-		if group:
+		if group and not has_role("Press Support Agent"):
 			is_owned_by_team("Release Group", group, raise_exception=True)
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")

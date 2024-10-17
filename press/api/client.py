@@ -77,6 +77,8 @@ ALLOWED_DOCTYPES = [
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
 	"Site",
+	"Bench",
+	"Release Group",
 ]
 
 whitelisted_methods = set()
