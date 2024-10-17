@@ -280,7 +280,7 @@ def validate_plan(server, plan):
 
 
 @frappe.whitelist()
-def new(site):
+def new(site: str):
 	site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
 	return _new(site)
