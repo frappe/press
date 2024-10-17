@@ -42,6 +42,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		ip6: DF.Data | None
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check

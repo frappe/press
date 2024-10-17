@@ -176,6 +176,7 @@ usermod -aG frappe www-data
 ```nginx
 echo "server {
     listen 80;
+    listen [::]:80;
     server_name packages.frappe.cloud;
 
     location / {
