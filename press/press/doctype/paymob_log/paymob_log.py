@@ -14,7 +14,12 @@ class PaymobLog(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		actual_amount: DF.Currency
+		actual_currency: DF.Link | None
+		amount: DF.Currency
+		amount_currency: DF.Link | None
 		event_type: DF.Data | None
+		exchange_rate: DF.Float
 		payload: DF.Code | None
 		payment_partner: DF.Link | None
 		special_reference: DF.Data | None

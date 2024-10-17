@@ -8,9 +8,14 @@
  "field_order": [
   "event_type",
   "payment_partner",
+  "amount",
+  "exchange_rate",
+  "amount_currency",
   "column_break_qvrr",
   "team",
   "special_reference",
+  "actual_amount",
+  "actual_currency",
   "section_break_zuri",
   "payload"
  ],
@@ -18,13 +23,16 @@
   {
    "fieldname": "event_type",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Event Type"
   },
   {
    "fieldname": "payment_partner",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Payment Partner",
-   "options": "Team"
+   "options": "Team",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_qvrr",
@@ -33,8 +41,10 @@
   {
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_zuri",
@@ -44,18 +54,56 @@
    "fieldname": "payload",
    "fieldtype": "Code",
    "label": "Payload",
+   "options": "JSON",
    "read_only": 1
   },
   {
    "fieldname": "special_reference",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Special Reference",
    "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "options": "amount_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_amount",
+   "fieldtype": "Currency",
+   "label": "Actual Amount",
+   "options": "actual_currency",
+   "read_only": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "amount_currency",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amount Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "EGP",
+   "fieldname": "actual_currency",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Actual Currency",
+   "options": "Currency"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-10 13:37:28.897715",
+ "modified": "2024-10-17 18:17:45.767607",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Paymob Log",
