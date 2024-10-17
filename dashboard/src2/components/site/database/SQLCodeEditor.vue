@@ -21,7 +21,7 @@ export default {
 	components: {
 		Codemirror
 	},
-	props: ['query', 'schema'],
+	props: ['schema'],
 	emits: ['update:query'],
 	computed: {
 		query: {

@@ -8,26 +8,28 @@
 			/>
 			<Button
 				class="mt-2"
-				@click="$resources.runSQLQuery.submit"
+				@click="runSQLQuery"
 				:loading="$resources.runSQLQuery.loading"
 				iconLeft="play"
 				>Run Query</Button
 			>
 		</div>
 		<div
-			v-if="typeof output === 'string' && output"
+			v-if="
+				typeof output === 'string' && output && !$resources.runSQLQuery.loading
+			"
 			class="rounded border p-4 text-base text-gray-700"
 		>
 			{{ output }}
 		</div>
 		<SQLResultTable
-			v-if="typeof output === 'object'"
+			v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
 			:columns="output.columns ?? []"
 			:data="output.data ?? []"
 		/>
 	</div>
 	<div
-		class="flex h-full w-full justify-center items-center min-h-[80vh] text-gray-700 gap-2"
+		class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
 		v-else
 	>
 		<Spinner class="w-4" /> Setting Up SQL Playground
@@ -70,17 +72,6 @@ export default {
 		runSQLQuery() {
 			return {
 				url: 'press.api.client.run_doc_method',
-				makeParams: () => {
-					return {
-						dt: 'Site',
-						dn: this.site,
-						method: 'run_sql_query_in_database',
-						args: {
-							query: this.query,
-							commit: this.commit
-						}
-					};
-				},
 				onSuccess: data => {
 					this.output = data?.message?.output ?? {};
 					this.execution_successful = data?.message?.success || false;
@@ -134,6 +125,19 @@ export default {
 			if (this.$resources.tableSchemas.loading) return false;
 			if (!this.sqlSchemaForAutocompletion) return false;
 			return true;
+		}
+	},
+	methods: {
+		runSQLQuery() {
+			this.$resources.runSQLQuery.submit({
+				dt: 'Site',
+				dn: this.site,
+				method: 'run_sql_query_in_database',
+				args: {
+					query: this.query,
+					commit: this.commit
+				}
+			});
 		}
 	}
 };
