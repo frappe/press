@@ -58,19 +58,7 @@ function getAppsTabList(forSite: boolean) {
 						)
 					]
 				}
-			] satisfies FilterField[],
-		rowActions: ({ row }) => [
-			{
-				label: 'View in Desk',
-				condition: () => getTeam()?.doc?.is_desk_user,
-				onClick() {
-					window.open(
-						`${window.location.protocol}//${window.location.host}/app/app-release/${row.release}`,
-						'_blank'
-					);
-				}
-			}
-		]
+			] satisfies FilterField[]
 	};
 
 	return list;
