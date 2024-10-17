@@ -1,48 +1,50 @@
 import frappe
 from press.utils import get_current_team
 from press.api.billing import total_unpaid_amount
-from press.press.doctype.paymob_settings.accept_api import AcceptAPI
+from press.api.local_payments.paymob.accept_api import AcceptAPI 
 from frappe.model.naming import _generate_random_string
 
 @frappe.whitelist()
-def intent_to_buying_credits(amount, team, actualAmount):
+def intent_to_buying_credits(amount, team, actualAmount, exchange_rate):
 	try:
-		iframe = create_payment_intent_for_buying_credits(amount, team, actualAmount)
+		iframe = create_payment_intent_for_buying_credits(amount, team, actualAmount, exchange_rate)
 		return iframe
 	except Exception as e:
 		frappe.log_error("Intent to Buying Credits using Paymob", frappe.get_traceback(True))
 		frappe.throw(e)
 	
 
-def create_payment_intent_for_buying_credits(amount, team, actualAmount):
-	print(amount, team, actualAmount)
+def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchange_rate):
 	# get current team details
+	payment_partner = team.get("value")
 	team = get_current_team(True)
 	total_unpaid = total_unpaid_amount()
 
 	if amount < total_unpaid and not team.erpnext_partner:
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
-	# create paymob log
-	paymob_log = frappe.new_doc("Paymob Log")
-	paymob_log.event_type = "v1/intention"
-	paymob_log.payment_partner = team
-	paymob_log.team = team.name
-
 	# build payment_data payload
 	payment_data = build_payment_data(team, amount=actualAmount)
 	validate_billing_data(payment_data)
+
+	# create paymob log
+	paymob_log = frappe.new_doc("Paymob Log")
+	paymob_log.event_type = "v1/intention"
+	paymob_log.payment_partner = payment_partner
+	paymob_log.team = team.name
+	paymob_log.amount = amount
+	paymob_log.actual_amount = actualAmount
+	paymob_log.exchange_rate = exchange_rate
 	paymob_log.special_reference = payment_data.get("special_reference")
 
 	# create payment intention
 	accept = AcceptAPI()
 	intent = accept.create_payment_intent(payment_data)
-	print(intent)
 
 	# build iframe url
 	iframe_url = None
 	if intent.get("payment_keys"):
-		paymob_log.payload = str(intent)
+		paymob_log.payload = frappe.as_json(intent)
 		iframe_url = accept.retrieve_iframe(accept.paymob_settings.iframe, intent["payment_keys"][0]["key"])
 		paymob_log.insert(ignore_permissions=True)
 		return iframe_url
