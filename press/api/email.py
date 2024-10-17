@@ -154,7 +154,7 @@ def check_spam(message: str):
 				EmailSendError,
 			)
 	else:
-		log_error("Spam Detection: Error", data=resp.text)
+		log_error("Spam Detection: Error", data=resp.text, message=message)
 
 
 @frappe.whitelist(allow_guest=True)
