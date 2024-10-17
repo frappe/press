@@ -220,7 +220,11 @@ export default {
 					route: `/servers/${site.doc?.server}`
 				});
 			}
-			if (site.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
+			if (
+				site.doc.group_team == $team.doc?.name ||
+				$team.doc?.is_desk_user ||
+				$team.doc?.is_support_agent
+			) {
 				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
