@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-16 20:35:29.472893",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_type",
+  "team",
+  "payment_partner",
+  "column_break_lbwj",
+  "special_reference",
+  "order_id",
+  "transaction_id",
+  "section_break_yzyu",
+  "payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "special_reference",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Special Reference"
+  },
+  {
+   "fieldname": "column_break_lbwj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Payment Partner",
+   "options": "Team"
+  },
+  {
+   "fieldname": "section_break_yzyu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "payload",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Transaction ID"
+  },
+  {
+   "fieldname": "order_id",
+   "fieldtype": "Data",
+   "label": "Order ID"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Data",
+   "label": "Event Type"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-17 18:15:44.175589",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Paymob Callback Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
