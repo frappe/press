@@ -1,5 +1,7 @@
 <template>
-	<ObjectList class="mt-7" :options="options" />
+	<div class="px-5 pt-7">
+		<ObjectList class="" :options="options" />
+	</div>
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
@@ -22,7 +24,7 @@ export default {
 					{
 						title: 'Binary Log Report',
 						description:
-							'Analyze changes made to the database, including data modifications and schema alterations.',
+							'Analyze changes made to the database, including data changes and schema alterations.',
 						route: 'Site Performance Binary Logs'
 					},
 					{
