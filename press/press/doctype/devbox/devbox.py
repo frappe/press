@@ -24,7 +24,7 @@ class Devbox(Document):
 	pass
 
 	@frappe.whitelist()
-	def get_available_cpu_and_ram(self):
+	def get_available_cpu_and_ram(self):	
 		print("meow")
 
 	@frappe.whitelist()
@@ -34,3 +34,4 @@ class Devbox(Document):
 
 
 
+x
