@@ -176,7 +176,7 @@ export default {
 			if (typeof this.output !== 'string') return null;
 			if (this.execution_successful) return this.output;
 			// if error message in (state, message) format, try to parse it
-			const regex = /^\((\d+), ['"]([^'"]*?)['"]\)$/;
+			const regex = /\((\d+),\s*['"](.*?)['"]\)/;
 			const match = this.output.match(regex);
 
 			if (match) {

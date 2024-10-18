@@ -24,6 +24,7 @@ class SQLPlaygroundLog(Document):
 
 	DOCTYPE = "SQL Playground Log"
 	dashboard_fields = (
+		"site",
 		"query",
 		"committed",
 	)
