@@ -49,6 +49,7 @@ class SelfHostedServer(Document):
 		hostname: DF.Data | None
 		instance_type: DF.Data | None
 		ip: DF.Data
+		ip6: DF.Data | None
 		is_managed_database: DF.Check
 		mariadb_ip: DF.Data | None
 		mariadb_private_ip: DF.Data | None

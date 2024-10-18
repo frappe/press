@@ -10,6 +10,7 @@ docker run -it -p 127.0.0.1:8021:8080 \
 ```
 server {
     listen 80;
+    listen [::]:80;
     server_name code.staging.frappe.cloud;
     location / {
         proxy_pass                          http://127.0.0.1:8021;
