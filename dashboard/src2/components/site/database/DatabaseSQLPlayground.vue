@@ -1,49 +1,75 @@
 <template>
 	<DatabaseToolWrapper title="SQL Playground">
-		<div class="mt-2 flex h-full w-full flex-col gap-5" v-if="isSQLEditorReady">
-			<div class="w-full">
-				<SQLCodeEditor
-					v-model="query"
-					v-if="sqlSchemaForAutocompletion"
-					:schema="sqlSchemaForAutocompletion"
-				/>
-				<Button
-					class="mt-2"
-					@click="runSQLQuery"
-					:loading="$resources.runSQLQuery.loading"
-					iconLeft="play"
-					>Run Query</Button
+		<template #actions v-if="isSQLEditorReady">
+			<FormControl
+				class="w-min-[200px] cursor-pointer"
+				type="select"
+				:options="[
+					{
+						label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;',
+						value: 'read-only'
+					},
+					{
+						label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;',
+						value: 'read-write'
+					}
+				]"
+				size="sm"
+				variant="outline"
+				v-model="mode"
+			/>
+		</template>
+		<template #default>
+			<div
+				class="mt-2 flex h-full w-full flex-col gap-5"
+				v-if="isSQLEditorReady"
+			>
+				<div class="w-full">
+					<SQLCodeEditor
+						v-model="query"
+						v-if="sqlSchemaForAutocompletion"
+						:schema="sqlSchemaForAutocompletion"
+					/>
+					<Button
+						class="mt-2"
+						@click="() => runSQLQuery()"
+						:loading="$resources.runSQLQuery.loading"
+						iconLeft="play"
+						>Run Query</Button
+					>
+				</div>
+				<div
+					v-if="
+						typeof output === 'string' &&
+						output &&
+						!$resources.runSQLQuery.loading
+					"
+					class="rounded border p-4 text-base text-gray-700"
 				>
+					{{ output }}
+				</div>
+				<SQLResultTable
+					v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
+					:columns="output.columns ?? []"
+					:data="output.data ?? []"
+				/>
 			</div>
 			<div
-				v-if="
-					typeof output === 'string' &&
-					output &&
-					!$resources.runSQLQuery.loading
-				"
-				class="rounded border p-4 text-base text-gray-700"
+				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+				v-else
 			>
-				{{ output }}
+				<Spinner class="w-4" /> Setting Up SQL Playground
 			</div>
-			<SQLResultTable
-				v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
-				:columns="output.columns ?? []"
-				:data="output.data ?? []"
-			/>
-		</div>
-		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-			v-else
-		>
-			<Spinner class="w-4" /> Setting Up SQL Playground
-		</div>
+		</template>
 	</DatabaseToolWrapper>
 </template>
 <script>
+import { Select } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
 import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
+import { confirmDialog } from '../../../utils/components';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -51,14 +77,16 @@ export default {
 	components: {
 		DatabaseToolWrapper,
 		SQLResultTable,
-		SQLCodeEditor
+		SQLCodeEditor,
+		Select
 	},
 	data() {
 		return {
 			query: '',
 			commit: false,
 			execution_successful: null,
-			output: ''
+			output: '',
+			mode: 'read-only'
 		};
 	},
 	mounted() {
@@ -133,14 +161,34 @@ export default {
 		}
 	},
 	methods: {
-		runSQLQuery() {
-			this.$resources.runSQLQuery.submit({
-				dt: 'Site',
-				dn: this.name,
-				method: 'run_sql_query_in_database',
-				args: {
-					query: this.query,
-					commit: this.commit
+		runSQLQuery(ignore_validation = false) {
+			if (!this.query) return;
+			if (this.mode === 'read-only' || ignore_validation) {
+				this.$resources.runSQLQuery.submit({
+					dt: 'Site',
+					dn: this.name,
+					method: 'run_sql_query_in_database',
+					args: {
+						query: this.query,
+						commit: this.mode === 'read-write'
+					}
+				});
+				return;
+			}
+
+			confirmDialog({
+				title: 'Run SQL Query',
+				message: `
+You are currently using <strong>Read-Write</strong> mode. All the changes by your SQL Query will be committed to the database.
+<br><br>
+Are you sure you want to run the query?`,
+				primaryAction: {
+					label: 'Run Query',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						this.runSQLQuery(true);
+						hide();
+					}
 				}
 			});
 		}
