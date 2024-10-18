@@ -1336,7 +1336,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not frappe.db.get_single_value("Press Settings", "use_delta_builds"):
 			return
 
-		self.use_delta_builds = 1
+		self.use_delta_builds = 0
 
 	def is_version_14_or_higher(self):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14

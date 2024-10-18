@@ -15,7 +15,7 @@ from frappe.utils import get_fullname, get_url_to_form, random_string
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.utils import get_valid_teams_for_user, log_error
+from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
@@ -133,6 +133,7 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
+		doc.is_support_agent = has_role("Press Support Agent")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
@@ -468,7 +469,9 @@ class Team(Document):
 				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
 				"frappe_partnership_date",
 			)
-			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(self.partnership_date):
+			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
+				self.partnership_date
+			):
 				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
@@ -1028,7 +1031,11 @@ class Team(Document):
 			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if is_payment_mode_set or frappe.db.get_value("User", self.user, "user_type") == "System User":
+		if (
+			is_payment_mode_set
+			or frappe.db.get_value("User", self.user, "user_type") == "System User"
+			or has_role("Press Support Agent")
+		):
 			complete = True
 		elif saas_site_request:
 			complete = False
