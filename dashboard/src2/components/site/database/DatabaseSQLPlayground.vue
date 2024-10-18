@@ -67,13 +67,13 @@
 			>
 				<Spinner class="w-4" /> Setting Up SQL Playground
 			</div>
+			<DatabaseSQLPlaygroundLog
+				:site="this.name"
+				v-model="showLogs"
+				@rerunQuery="rerunQuery"
+			/>
 		</template>
 	</DatabaseToolWrapper>
-	<DatabaseSQLPlaygroundLog
-		:site="this.name"
-		v-model="showLogs"
-		@rerunQuery="rerunQuery"
-	/>
 </template>
 <script>
 import { toast } from 'vue-sonner';

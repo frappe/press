@@ -70,6 +70,23 @@ const totalRows = computed(() => props.data.length);
 const showPagination = computed(
 	() => props.data?.length && totalRows.value > pageLength.value
 );
+
+const downloadCSV = async () => {
+	let csvContent = props.columns.join(',') + '\n';
+	for (let i = 0; i < props.data.length; i++) {
+		csvContent += props.data[i].join(',') + '\n';
+	}
+
+	// create a blob and trigger a download
+	const blob = new Blob([csvContent], { type: 'text/csv' });
+	const randomId = Math.random().toString(36).substring(2, 10);
+	const filename = `${randomId}.csv`;
+	const link = document.createElement('a');
+	link.href = URL.createObjectURL(blob);
+	link.download = filename;
+	link.click();
+	URL.revokeObjectURL(link.href);
+};
 </script>
 
 <template>
@@ -128,30 +145,35 @@ const showPagination = computed(
 			</table>
 		</div>
 
-		<div
-			v-if="showPagination"
-			class="flex flex-shrink-0 items-center justify-end gap-3 p-1"
-		>
-			<p class="tnum text-sm text-gray-600">
-				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
-			</p>
-			<div class="flex gap-2">
-				<Button
-					variant="ghost"
-					@click="table.previousPage()"
-					:disabled="!table.getCanPreviousPage()"
-					iconLeft="arrow-left"
-				>
-					Prev
-				</Button>
-				<Button
-					variant="ghost"
-					@click="table.nextPage()"
-					:disabled="!table.getCanNextPage()"
-					iconRight="arrow-right"
-				>
-					Next
-				</Button>
+		<div class="flex justify-between p-1">
+			<Button @click="downloadCSV" iconLeft="download" variant="ghost"
+				>Download as CSV</Button
+			>
+			<div
+				v-if="showPagination"
+				class="flex flex-shrink-0 items-center justify-end gap-3"
+			>
+				<p class="tnum text-sm text-gray-600">
+					{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+				</p>
+				<div class="flex gap-2">
+					<Button
+						variant="ghost"
+						@click="table.previousPage()"
+						:disabled="!table.getCanPreviousPage()"
+						iconLeft="arrow-left"
+					>
+						Prev
+					</Button>
+					<Button
+						variant="ghost"
+						@click="table.nextPage()"
+						:disabled="!table.getCanNextPage()"
+						iconRight="arrow-right"
+					>
+						Next
+					</Button>
+				</div>
 			</div>
 		</div>
 	</div>
