@@ -61,10 +61,25 @@
 						}}
 					</div>
 					<SQLResultTable
-						v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
+						v-if="
+							output &&
+							typeof output === 'object' &&
+							!$resources.runSQLQuery.loading
+						"
 						:columns="output.columns ?? []"
 						:data="output.data ?? []"
 					/>
+					<div
+						v-if="output === null && !$resources.runSQLQuery.loading"
+						class="rounded border p-4 text-base text-gray-700"
+					>
+						No output received<br /><br />
+						{{
+							execution_successful
+								? 'Query executed successfully'
+								: 'Query execution failed'
+						}}
+					</div>
 				</div>
 			</div>
 			<div
@@ -133,7 +148,7 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				onSuccess: data => {
-					this.output = data?.message?.output ?? {};
+					this.output = data?.message?.output;
 					this.execution_successful = data?.message?.success || false;
 				},
 				onError: e => {
