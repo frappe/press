@@ -20,7 +20,7 @@ import { logsTab } from './tabs/site/logs';
 import { trialDays } from '../utils/site';
 import dayjs from '../utils/dayjs';
 import { jobTab } from './common/jobs';
-import DatabaseTools from '../components/site/DatabaseToolkit.vue';
+import DatabaseToolkit from '../components/site/DatabaseToolkit.vue';
 
 export default {
 	doctype: 'Site',
@@ -1118,10 +1118,14 @@ export default {
 				icon: icon('database'),
 				route: 'database',
 				type: 'Component',
-				component: DatabaseTools,
+				component: DatabaseToolkit,
 				props: site => {
 					return { site: site.doc?.name };
-				}
+				},
+				childrenRoutes: [
+					'Database Toolkit Browse Schema',
+					'Database Toolkit SQL Playground'
+				]
 			},
 			{
 				label: 'Actions',
@@ -1711,6 +1715,18 @@ export default {
 			path: 'performance/deadlock-report',
 			component: () =>
 				import('../components/site/performance/SiteDeadlockReport.vue')
+		},
+		{
+			name: 'Database Toolkit Browse Schema',
+			path: 'database/browse-schema',
+			component: () =>
+				import('../components/site/database/DatabaseBrowseSchema.vue')
+		},
+		{
+			name: 'Database Toolkit SQL Playground',
+			path: 'database/sql-playground',
+			component: () =>
+				import('../components/site/database/DatabaseSQLPlayground.vue')
 		}
 	]
 };

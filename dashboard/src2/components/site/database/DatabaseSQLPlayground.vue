@@ -1,50 +1,55 @@
 <template>
-	<div class="mt-2 flex h-full w-full flex-col gap-5" v-if="isSQLEditorReady">
-		<div class="w-full">
-			<SQLCodeEditor
-				v-model="query"
-				v-if="sqlSchemaForAutocompletion"
-				:schema="sqlSchemaForAutocompletion"
-			/>
-			<Button
-				class="mt-2"
-				@click="runSQLQuery"
-				:loading="$resources.runSQLQuery.loading"
-				iconLeft="play"
-				>Run Query</Button
+	<DatabaseToolWrapper title="SQL Playground">
+		<div class="mt-2 flex h-full w-full flex-col gap-5" v-if="isSQLEditorReady">
+			<div class="w-full">
+				<SQLCodeEditor
+					v-model="query"
+					v-if="sqlSchemaForAutocompletion"
+					:schema="sqlSchemaForAutocompletion"
+				/>
+				<Button
+					class="mt-2"
+					@click="runSQLQuery"
+					:loading="$resources.runSQLQuery.loading"
+					iconLeft="play"
+					>Run Query</Button
+				>
+			</div>
+			<div
+				v-if="
+					typeof output === 'string' &&
+					output &&
+					!$resources.runSQLQuery.loading
+				"
+				class="rounded border p-4 text-base text-gray-700"
 			>
+				{{ output }}
+			</div>
+			<SQLResultTable
+				v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
+				:columns="output.columns ?? []"
+				:data="output.data ?? []"
+			/>
 		</div>
 		<div
-			v-if="
-				typeof output === 'string' && output && !$resources.runSQLQuery.loading
-			"
-			class="rounded border p-4 text-base text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			v-else
 		>
-			{{ output }}
+			<Spinner class="w-4" /> Setting Up SQL Playground
 		</div>
-		<SQLResultTable
-			v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
-			:columns="output.columns ?? []"
-			:data="output.data ?? []"
-		/>
-	</div>
-	<div
-		class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-		v-else
-	>
-		<Spinner class="w-4" /> Setting Up SQL Playground
-	</div>
+	</DatabaseToolWrapper>
 </template>
 <script>
-import { Textarea, Button, Spinner } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
+import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
-	inject: ['site'],
+	props: ['name'],
 	components: {
+		DatabaseToolWrapper,
 		SQLResultTable,
 		SQLCodeEditor
 	},
@@ -58,12 +63,12 @@ export default {
 	},
 	mounted() {
 		this.query =
-			window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
+			window.localStorage.getItem(`sql_playground_query_${this.name}`) || '';
 	},
 	watch: {
 		query() {
 			window.localStorage.setItem(
-				`sql_playground_query_${this.site}`,
+				`sql_playground_query_${this.name}`,
 				this.query
 			);
 		}
@@ -92,7 +97,7 @@ export default {
 				makeParams: () => {
 					return {
 						dt: 'Site',
-						dn: this.site,
+						dn: this.name,
 						method: 'fetch_database_table_schemas'
 					};
 				},
@@ -131,7 +136,7 @@ export default {
 		runSQLQuery() {
 			this.$resources.runSQLQuery.submit({
 				dt: 'Site',
-				dn: this.site,
+				dn: this.name,
 				method: 'run_sql_query_in_database',
 				args: {
 					query: this.query,

@@ -1,19 +1,23 @@
 <template>
-	<ObjectList :options="listOptions" />
-	<DatabaseTableSchemaInfoDialog
-		:tableName="selectedTableName"
-		:columns="selectedTableColumns"
-		v-model="showTableSchemaInfo"
-	/>
+	<DatabaseToolWrapper title="Browse Schema">
+		<ObjectList :options="listOptions" />
+		<DatabaseTableSchemaInfoDialog
+			:tableName="selectedTableName"
+			:columns="selectedTableColumns"
+			v-model="showTableSchemaInfo"
+		/>
+	</DatabaseToolWrapper>
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
 import DatabaseTableSchemaInfoDialog from './DatabaseTableSchemaInfoDialog.vue';
+import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
 
 export default {
 	name: 'DatabaseBrowseSchema',
-	inject: ['site'],
+	props: ['name'],
 	components: {
+		DatabaseToolWrapper,
 		ObjectList,
 		DatabaseTableSchemaInfoDialog
 	},
@@ -31,7 +35,7 @@ export default {
 				makeParams: () => {
 					return {
 						dt: 'Site',
-						dn: this.site,
+						dn: this.name,
 						method: 'fetch_database_table_schemas'
 					};
 				},

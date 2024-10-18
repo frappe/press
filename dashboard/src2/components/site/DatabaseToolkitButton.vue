@@ -7,7 +7,7 @@
 					{{ details.description }}
 				</p>
 			</div>
-			<Button class="whitespace-nowrap" @click="selectAction(details)">
+			<Button class="whitespace-nowrap" @click="onClick(details)">
 				<p class="text-gray-800">{{ details.buttonLabel }}</p>
 			</Button>
 		</div>
@@ -16,6 +16,6 @@
 <script>
 export default {
 	name: 'DatabaseToolkitButton',
-	props: ['details', 'selectAction']
+	props: ['details', 'onClick']
 };
 </script>
