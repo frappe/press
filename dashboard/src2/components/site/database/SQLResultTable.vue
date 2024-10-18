@@ -90,12 +90,6 @@ const downloadCSV = async () => {
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden rounded border">
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
-			<div
-				v-if="props.data?.length == 0"
-				class="flex min-h-[20vh] items-center justify-center"
-			>
-				<div>No results to display</div>
-			</div>
 			<table
 				v-if="props?.columns?.length || props.data?.length"
 				class="border-separate border-spacing-0"
@@ -141,9 +135,15 @@ const downloadCSV = async () => {
 					<tr height="99%" class="border-b"></tr>
 				</tbody>
 			</table>
+			<div
+				v-if="props.data?.length == 0"
+				class="flex min-h-[20vh] items-center justify-center"
+			>
+				<div>No results to display</div>
+			</div>
 		</div>
 
-		<div class="flex justify-between p-1">
+		<div class="flex justify-between p-1" v-if="props.data?.length != 0">
 			<Button @click="downloadCSV" iconLeft="download" variant="ghost"
 				>Download as CSV</Button
 			>

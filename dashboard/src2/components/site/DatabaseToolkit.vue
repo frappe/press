@@ -24,12 +24,6 @@ export default {
 		return {
 			buttonDefinitions: [
 				{
-					label: 'Browse Schema',
-					description: 'Browse your database schema',
-					buttonLabel: 'View',
-					route: 'Database Toolkit Browse Schema'
-				},
-				{
 					label: 'SQL Playground',
 					description: 'Run SQL queries against your database',
 					buttonLabel: 'Start',

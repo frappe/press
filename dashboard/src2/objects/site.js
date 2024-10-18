@@ -1122,10 +1122,7 @@ export default {
 				props: site => {
 					return { site: site.doc?.name };
 				},
-				childrenRoutes: [
-					'Database Toolkit Browse Schema',
-					'Database Toolkit SQL Playground'
-				]
+				childrenRoutes: ['Database Toolkit SQL Playground']
 			},
 			{
 				label: 'Actions',
@@ -1715,12 +1712,6 @@ export default {
 			path: 'performance/deadlock-report',
 			component: () =>
 				import('../components/site/performance/SiteDeadlockReport.vue')
-		},
-		{
-			name: 'Database Toolkit Browse Schema',
-			path: 'database/browse-schema',
-			component: () =>
-				import('../components/site/database/DatabaseBrowseSchema.vue')
 		},
 		{
 			name: 'Database Toolkit SQL Playground',
