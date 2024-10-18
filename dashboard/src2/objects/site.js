@@ -17,7 +17,6 @@ import dayjs from '../utils/dayjs';
 import { bytes, date, userCurrency } from '../utils/format';
 import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
-import dayjs from '../utils/dayjs';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
 
@@ -1366,9 +1365,7 @@ export default {
 						};
 					}
 				}
-			},
-
-			tagTab()
+			}
 		],
 		actions(context) {
 			let { documentResource: site } = context;
