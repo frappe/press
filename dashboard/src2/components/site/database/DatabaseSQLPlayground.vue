@@ -46,7 +46,12 @@
 					"
 					class="rounded border p-4 text-base text-gray-700"
 				>
-					{{ output }}
+					{{ prettifiedOutput }}<br /><br />
+					{{
+						execution_successful
+							? 'Query executed successfully'
+							: 'Query execution failed'
+					}}
 				</div>
 				<SQLResultTable
 					v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
@@ -158,6 +163,21 @@ export default {
 			if (this.$resources.tableSchemas.loading) return false;
 			if (!this.sqlSchemaForAutocompletion) return false;
 			return true;
+		},
+		prettifiedOutput() {
+			if (typeof this.output !== 'string') return null;
+			if (this.execution_successful) return this.output;
+			// if error message in (state, message) format, try to parse it
+			const regex = /^\((\d+), ['"]([^'"]*?)['"]\)$/;
+			const match = this.output.match(regex);
+
+			if (match) {
+				const statusCode = match[1];
+				const errorMessage = match[2];
+				return `#${statusCode} - ${errorMessage}`;
+			} else {
+				return this.output;
+			}
 		}
 	},
 	methods: {
