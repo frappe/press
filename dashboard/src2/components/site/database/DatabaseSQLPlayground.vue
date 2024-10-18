@@ -20,43 +20,46 @@
 			/>
 		</template>
 		<template #default>
-			<div class="mt-2 flex flex-col gap-5" v-if="isSQLEditorReady">
-				<div class="w-full">
-					<div class="overflow-hidden rounded border">
-						<SQLCodeEditor
-							v-model="query"
-							v-if="sqlSchemaForAutocompletion"
-							:schema="sqlSchemaForAutocompletion"
-						/>
-					</div>
+			<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
+				<div class="overflow-hidden rounded border">
+					<SQLCodeEditor
+						v-model="query"
+						v-if="sqlSchemaForAutocompletion"
+						:schema="sqlSchemaForAutocompletion"
+					/>
+				</div>
+				<div class="mt-2 flex flex-row items-center justify-between">
+					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
 					<Button
-						class="mt-2"
 						@click="() => runSQLQuery()"
 						:loading="$resources.runSQLQuery.loading"
 						iconLeft="play"
+						variant="solid"
 						>Run Query</Button
 					>
 				</div>
-				<div
-					v-if="
-						typeof output === 'string' &&
-						output &&
-						!$resources.runSQLQuery.loading
-					"
-					class="rounded border p-4 text-base text-gray-700"
-				>
-					{{ prettifiedOutput }}<br /><br />
-					{{
-						execution_successful
-							? 'Query executed successfully'
-							: 'Query execution failed'
-					}}
+				<div class="mt-4">
+					<div
+						v-if="
+							typeof output === 'string' &&
+							output &&
+							!$resources.runSQLQuery.loading
+						"
+						class="rounded border p-4 text-base text-gray-700"
+					>
+						{{ prettifiedOutput }}<br /><br />
+						{{
+							execution_successful
+								? 'Query executed successfully'
+								: 'Query execution failed'
+						}}
+					</div>
+					<SQLResultTable
+						v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
+						:columns="output.columns ?? []"
+						:data="output.data ?? []"
+					/>
 				</div>
-				<SQLResultTable
-					v-if="typeof output === 'object' && !$resources.runSQLQuery.loading"
-					:columns="output.columns ?? []"
-					:data="output.data ?? []"
-				/>
 			</div>
 			<div
 				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
@@ -66,14 +69,19 @@
 			</div>
 		</template>
 	</DatabaseToolWrapper>
+	<DatabaseSQLPlaygroundLog
+		:site="this.name"
+		v-model="showLogs"
+		@rerunQuery="rerunQuery"
+	/>
 </template>
 <script>
-import { Select } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
 import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
 import { confirmDialog } from '../../../utils/components';
+import DatabaseSQLPlaygroundLog from './DatabaseSQLPlaygroundLog.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -82,7 +90,7 @@ export default {
 		DatabaseToolWrapper,
 		SQLResultTable,
 		SQLCodeEditor,
-		Select
+		DatabaseSQLPlaygroundLog
 	},
 	data() {
 		return {
@@ -90,7 +98,8 @@ export default {
 			commit: false,
 			execution_successful: null,
 			output: '',
-			mode: 'read-only'
+			mode: 'read-only',
+			showLogs: false
 		};
 	},
 	mounted() {
@@ -210,6 +219,13 @@ Are you sure you want to run the query?`,
 					}
 				}
 			});
+		},
+		toggleLogsDialog() {
+			this.showLogs = !this.showLogs;
+		},
+		rerunQuery(query) {
+			this.query = query;
+			this.showLogs = false;
 		}
 	}
 };
