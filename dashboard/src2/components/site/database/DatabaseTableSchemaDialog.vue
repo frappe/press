@@ -1,0 +1,166 @@
+<template>
+	<Dialog
+		:options="{
+			title: 'Browse Schema',
+			size: 'xl'
+		}"
+	>
+		<template #body-content>
+			<p class="mb-2 text-sm text-gray-700">Select Table</p>
+			<div class="flex flex-row gap-2">
+				<FormControl
+					class="w-full"
+					type="autocomplete"
+					:options="autocompleteOptions"
+					v-model="selectedSchema"
+				/>
+				<Button
+					icon="copy"
+					@click="copyTableNameToClipboard"
+					v-if="selectedSchema"
+				/>
+			</div>
+			<div class="mt-2 flex flex-row gap-2" v-if="selectedSchema">
+				<Button iconLeft="play" @click="viewTop100Rows"
+					>View Top 100 Rows</Button
+				>
+				<Button iconLeft="play" @click="viewLast100Rows"
+					>View Last 100 Rows</Button
+				>
+				<Button iconLeft="play" @click="viewAllRows">View All Rows</Button>
+			</div>
+			<ObjectList class="mt-2" :options="listOptions" v-if="selectedSchema" />
+		</template>
+	</Dialog>
+</template>
+<script>
+import { h } from 'vue';
+import { FormControl } from 'frappe-ui';
+import ObjectList from '../../ObjectList.vue';
+import { toast } from 'vue-sonner';
+
+export default {
+	name: 'DatabaseTableSchemaDialog',
+	props: ['site'],
+	emits: ['runSQLQuery'],
+	components: {
+		FormControl,
+		ObjectList
+	},
+	data() {
+		return {
+			selectedSchema: null
+		};
+	},
+	resources: {
+		tableSchemas() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_table_schemas'
+					};
+				},
+				initialData: {},
+				auto: true
+			};
+		}
+	},
+	computed: {
+		autocompleteOptions() {
+			return Object.keys(this.$resources.tableSchemas.data?.message || {}).map(
+				x => ({
+					label: x,
+					value: x
+				})
+			);
+		},
+		listOptions() {
+			if (!this.selectedSchema || !this.selectedSchema.value) return {};
+			return {
+				data: () => {
+					return (
+						this.$resources.tableSchemas.data?.message[
+							this.selectedSchema.value
+						] ?? []
+					);
+				},
+				hideControls: true,
+				columns: [
+					{
+						label: 'Column',
+						fieldname: 'column',
+						width: 0.5,
+						type: 'Component',
+						component({ row }) {
+							console.log(row);
+							return h(
+								'div',
+								{
+									class: 'truncate text-base cursor-copy',
+									onClick() {
+										if ('clipboard' in navigator) {
+											navigator.clipboard.writeText(row.column);
+											toast.success('Copied to clipboard');
+										}
+									}
+								},
+								[row.column]
+							);
+						}
+					},
+					{
+						label: 'Data Type',
+						fieldname: 'data_type',
+						width: 0.2,
+						align: 'center'
+					},
+					{
+						label: 'Nullable',
+						fieldname: 'is_nullable',
+						width: 0.2,
+						format(value) {
+							return value ? 'Yes' : 'No';
+						},
+						align: 'center'
+					},
+					{
+						label: 'Default',
+						fieldname: 'default',
+						width: 0.3,
+						align: 'center'
+					}
+				]
+			};
+		}
+	},
+	methods: {
+		copyTableNameToClipboard() {
+			if ('clipboard' in navigator) {
+				navigator.clipboard.writeText(this.selectedSchema.value);
+				toast.success('Copied to clipboard');
+			}
+		},
+		viewTop100Rows() {
+			this.$emit(
+				'runSQLQuery',
+				`SELECT * FROM \`${this.selectedSchema.value}\` LIMIT 100;`
+			);
+		},
+		viewLast100Rows() {
+			this.$emit(
+				'runSQLQuery',
+				`SELECT * FROM \`${this.selectedSchema.value}\` ORDER BY name DESC LIMIT 100;`
+			);
+		},
+		viewAllRows() {
+			this.$emit(
+				'runSQLQuery',
+				`SELECT * FROM \`${this.selectedSchema.value}\`;`
+			);
+		}
+	}
+};
+</script>

@@ -29,7 +29,13 @@
 					/>
 				</div>
 				<div class="mt-2 flex flex-row items-center justify-between">
-					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
+					<div class="flex gap-2">
+						<Button iconLeft="table" @click="toggleTableSchemasDialog"
+							>Tables</Button
+						>
+						<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
+					</div>
+
 					<Button
 						@click="() => runSQLQuery()"
 						:loading="$resources.runSQLQuery.loading"
@@ -72,6 +78,11 @@
 				v-model="showLogs"
 				@rerunQuery="rerunQuery"
 			/>
+			<DatabaseTableSchemaDialog
+				:site="this.name"
+				v-model="showTableSchemasDialog"
+				@runSQLQuery="runSQLQueryForViewingTable"
+			/>
 		</template>
 	</DatabaseToolWrapper>
 </template>
@@ -82,6 +93,7 @@ import SQLCodeEditor from './SQLCodeEditor.vue';
 import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
 import { confirmDialog } from '../../../utils/components';
 import DatabaseSQLPlaygroundLog from './DatabaseSQLPlaygroundLog.vue';
+import DatabaseTableSchemaDialog from './DatabaseTableSchemaDialog.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -90,7 +102,8 @@ export default {
 		DatabaseToolWrapper,
 		SQLResultTable,
 		SQLCodeEditor,
-		DatabaseSQLPlaygroundLog
+		DatabaseSQLPlaygroundLog,
+		DatabaseTableSchemaDialog
 	},
 	data() {
 		return {
@@ -99,7 +112,8 @@ export default {
 			execution_successful: null,
 			output: '',
 			mode: 'read-only',
-			showLogs: false
+			showLogs: false,
+			showTableSchemasDialog: false
 		};
 	},
 	mounted() {
@@ -223,9 +237,19 @@ Are you sure you want to run the query?`,
 		toggleLogsDialog() {
 			this.showLogs = !this.showLogs;
 		},
+		toggleTableSchemasDialog() {
+			this.showTableSchemasDialog = !this.showTableSchemasDialog;
+		},
 		rerunQuery(query) {
 			this.query = query;
 			this.showLogs = false;
+		},
+		runSQLQueryForViewingTable(query) {
+			// set read-only mode
+			this.mode = 'read-only';
+			this.showTableSchemasDialog = false;
+			this.query = query;
+			this.runSQLQuery();
 		}
 	}
 };
