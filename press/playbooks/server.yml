@@ -10,6 +10,7 @@
     - role: nginx
     - role: agent
     - role: bench
+    - role: devbox
     - role: docker
     - role: node_exporter
     - role: cadvisor
