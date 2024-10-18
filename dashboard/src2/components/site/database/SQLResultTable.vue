@@ -12,7 +12,7 @@ const props = defineProps({
 	data: { type: Array, required: true }
 });
 
-const generateData = () => {
+const generateData = computed(() => {
 	let data = [];
 	for (let i = 0; i < props.data.length; i++) {
 		let row = {};
@@ -22,12 +22,10 @@ const generateData = () => {
 		data.push(row);
 	}
 	return data;
-};
+});
 
 const table = useVueTable({
-	get data() {
-		return generateData();
-	},
+	data: generateData,
 	get columns() {
 		if (!props.columns?.length) return [];
 		const indexColumn = {

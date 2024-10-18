@@ -42,7 +42,7 @@ import ObjectList from '../../ObjectList.vue';
 export default {
 	name: 'DatabaseSQLPlaygroundLog',
 	props: ['site'],
-	emits: ['runQuery'],
+	emits: ['rerunQuery'],
 	components: {
 		ObjectList
 	},
