@@ -17,6 +17,7 @@ from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
+	frappe_io_auth_disabled,
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
@@ -520,7 +521,7 @@ class Team(Document):
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
-		if frappe.flags.in_test:
+		if frappe.flags.in_test or frappe_io_auth_disabled():
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
@@ -684,7 +685,7 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
-		if frappe.flags.in_install:
+		if frappe.flags.in_install or frappe_io_auth_disabled():
 			return
 
 		try:
@@ -997,6 +998,9 @@ class Team(Document):
 
 	def get_partner_level(self):
 		# fetch partner level from frappe.io
+		if frappe_io_auth_disabled():
+			return "", ""
+
 		client = get_frappe_io_connection()
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
