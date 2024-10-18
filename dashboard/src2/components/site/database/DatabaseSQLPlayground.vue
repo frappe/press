@@ -20,16 +20,15 @@
 			/>
 		</template>
 		<template #default>
-			<div
-				class="mt-2 flex h-full w-full flex-col gap-5"
-				v-if="isSQLEditorReady"
-			>
+			<div class="mt-2 flex flex-col gap-5" v-if="isSQLEditorReady">
 				<div class="w-full">
-					<SQLCodeEditor
-						v-model="query"
-						v-if="sqlSchemaForAutocompletion"
-						:schema="sqlSchemaForAutocompletion"
-					/>
+					<div class="overflow-hidden rounded border">
+						<SQLCodeEditor
+							v-model="query"
+							v-if="sqlSchemaForAutocompletion"
+							:schema="sqlSchemaForAutocompletion"
+						/>
+					</div>
 					<Button
 						class="mt-2"
 						@click="() => runSQLQuery()"

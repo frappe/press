@@ -59,3 +59,8 @@ export default {
 	}
 };
 </script>
+<style>
+.cm-focused {
+	outline: none !important;
+}
+</style>
