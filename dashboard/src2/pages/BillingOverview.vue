@@ -105,6 +105,19 @@
 <!-- Add the dialog component -->
 <AddMpesaCredentials v-model="showAddMpesaDialog" @closeDialog="showAddMpesaDialog = false" />
 
+<!--Add Payment Gateway-->
+<div class="flex flex-col gap-2 rounded-md border p-4">
+	  <div class="flex justify-between items-center text-sm text-gray-700">
+	<div>Add Payment Gateway</div>
+	<Button @click="showAddPaymentGatewayDialog = true">Add</Button>
+  </div>
+  <div class="overflow-hidden text-ellipsis text-base font-medium">
+	<span class="font-normal text-gray-600">Not set</span>
+  </div>
+</div>
+<!-- End of Payment Gateway Adding -->
+
+<AddPaymentGateway v-model="showAddPaymentGatewayDialog" @closeDialog="showAddPaymentGatewayDialog = false" />
 			</div>
 
 			<div class="mt-1">
@@ -162,6 +175,7 @@ import { defineAsyncComponent } from 'vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import UpdateBillingDetails from '../components/UpdateBillingDetails.vue';
 import AddMpesaCredentials from '../components/AddMpesaCredentials.vue';
+import AddPaymentGateway from '../components/AddPaymentGateway.vue';
 
 export default {
 	name: 'BillingOverview',
@@ -179,6 +193,9 @@ export default {
 		),
 		AddMpesaCredentials: defineAsyncComponent(() =>
 			import('../components/AddMpesaCredentials.vue')
+		),
+		AddPaymentGateway: defineAsyncComponent(() =>
+			import('../components/AddPaymentGateway.vue')
 		)
 	},
 	resources: {
@@ -197,7 +214,8 @@ export default {
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
 			showUpcomingInvoiceDialog: false,
-			showAddMpesaDialog: false
+			showAddMpesaDialog: false,
+			showAddPaymentGatewayDialog: false
 		};
 	},
 	mounted() {

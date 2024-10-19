@@ -285,7 +285,6 @@ async fetchExchangeRate(){
           to_currency:'USD'
       }
       });
-      console.log("Exchange Rate:", exchangeRate);
       this.exchangeRate = exchangeRate;
       
   }catch(error){

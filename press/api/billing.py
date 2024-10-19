@@ -1147,6 +1147,90 @@ def get_exchange_rate(from_currency, to_currency):
         "Currency Exchange",
         {"from_currency": from_currency, "to_currency": to_currency},
         "exchange_rate",
-        order_by="creation DESC"  # Fetch the latest record by creation date
+        order_by="creation DESC"  
     )
     return exchange_rate
+
+# @frappe.whitelist(allow_guest=True)
+# def create_payment_gateway_settings(**kwargs):
+#     """Create Payment Gateway Settings for the team."""
+#     team = get_current_team() 
+#     args=frappe._dict(kwargs)
+#     print(str(args))
+#     try:
+#         payment_gateway_settings = frappe.get_doc({
+#             "doctype": "Payment Gateway",
+#             "team": team,  
+#             "gateway": args.get("gateway_name"), 
+#             "currency": args.get("currency"),
+#             "integration_logo": kwargs.get("integration_logo"), 
+#             "gateway_settings": args.get("gateway_setting"), 
+#             "gateway_controller": args.get("gateway_controller"), 
+#             "url": args.get("url"), 
+#             "api_key": args.get("api_key"),  
+#             "api_secret": args.get("api_secret"), 
+#             "taxes_and_charges": args.get("taxes_and_charges"),
+#         })
+
+#         payment_gateway_settings.insert(ignore_permissions=True)
+        
+#         frappe.db.commit()
+
+#         return payment_gateway_settings.name
+#     except Exception as e:
+#         print(str(e))
+#         frappe.log_error(message=f"Error creating Payment Gateway Settings: {str(e)}", title="Payment Gateway Settings Creation Error")
+#         return None
+@frappe.whitelist(allow_guest=True)
+def create_payment_gateway_settings(**kwargs):
+    """Create Payment Gateway Settings for the team."""
+    team = get_current_team() 
+    args = frappe._dict(kwargs)
+
+    try:
+
+        payment_gateway_settings = frappe.get_doc({
+            "doctype": "Payment Gateway",
+            "team": team,
+            "gateway": args.get("gateway_name"),
+            "currency": args.get("currency"),
+            "gateway_settings": args.get("gateway_setting"),
+            "gateway_controller": args.get("gateway_controller"),
+            "url": args.get("url"),
+            "api_key": args.get("api_key"),
+            "api_secret": args.get("api_secret"),
+            "taxes_and_charges": args.get("taxes_and_charges"),
+        })
+
+        payment_gateway_settings.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return payment_gateway_settings.name
+    except Exception as e:
+        print(str(e))
+        frappe.log_error(message=f"Error creating Payment Gateway Settings: {str(e)}", title="Payment Gateway Settings Creation Error")
+        return None
+
+@frappe.whitelist(allow_guest=True)
+def get_currency_options():
+	"""Get the list of currencies supported by the system."""
+	currencies=frappe.get_all("Currency", fields=["name"])
+	names=[currency['name'] for currency in currencies]
+	return names
+
+@frappe.whitelist(allow_guest=True)
+def get_gateway_settings():
+	"""Get the list of doctypes supported by the system."""
+	doctypes=frappe.get_all("DocType", fields=["name"])
+	names=[doc['name'] for doc in doctypes]
+	return names
+
+@frappe.whitelist(allow_guest=True)
+def get_gateway_controllers(gateway_setting):
+    """Get the list of controllers for the given doctype."""
+    controllers = frappe.get_all(gateway_setting, fields=["name"])
+    
+    # Extract just the name from the list of dictionaries
+    names = [doc['name'] for doc in controllers]
+    
+    return names  # Return only the list of names
