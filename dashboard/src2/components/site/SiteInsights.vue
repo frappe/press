@@ -9,19 +9,18 @@
 					v
 					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-50"
 					:class="{
-						' text-gray-800': currentTab === tab.value,
-						'text-gray-600': currentTab !== tab.value
+						' text-gray-800': $route.name === tab.value,
+						'text-gray-600': $route.name !== tab.value
 					}"
-					@click="currentTab = tab.value"
 				>
 					<div
-						v-if="currentTab === tab.value"
+						v-if="$route.name === tab.value"
 						class="inline w-0.5 bg-gray-800"
 					></div>
 					<div
 						class="px-4 py-2"
 						:class="{
-							'-ml-0.5': currentTab === tab.value
+							'-ml-0.5': $route.name === tab.value
 						}"
 					>
 						{{ tab.label }}
@@ -52,7 +51,7 @@ export default {
 					value: 'Site Analytics'
 				},
 				{
-					label: 'Performance Reports',
+					label: 'Reports',
 					value: 'Site Performance Reports'
 				},
 				{
@@ -63,8 +62,7 @@ export default {
 					label: 'Jobs',
 					value: 'Site Jobs'
 				}
-			],
-			currentTab: this.$route.name
+			]
 		};
 	},
 	mounted() {
