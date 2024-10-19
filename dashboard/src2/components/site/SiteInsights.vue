@@ -10,8 +10,13 @@
 					v
 					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
 					:class="{
-						' bg-gray-50 text-gray-800': $route.name === tab.value,
-						'text-gray-600': $route.name !== tab.value
+						' bg-gray-50 text-gray-800': [
+							tab.value,
+							...(tab.children || [])
+						].find(child => child === $route.name),
+						'text-gray-600': ![tab.value, ...(tab.children || [])].find(
+							child => child === $route.name
+						)
 					}"
 				>
 					<div class="px-4 py-2">
@@ -41,15 +46,24 @@ export default {
 				},
 				{
 					label: 'Reports',
-					value: 'Site Performance Reports'
+					value: 'Site Performance Reports',
+					children: [
+						'Site Performance Slow Queries',
+						'Site Performance Binary Logs',
+						'Site Performance Process List',
+						'Site Performance Request Logs',
+						'Site Performance Deadlock Report'
+					]
 				},
 				{
 					label: 'Logs',
-					value: 'Site Logs'
+					value: 'Site Logs',
+					children: ['Site Log']
 				},
 				{
 					label: 'Jobs',
-					value: 'Site Jobs'
+					value: 'Site Jobs',
+					children: ['Site Job']
 				}
 			]
 		};
