@@ -3,20 +3,15 @@
 		<div class="h-screen w-full overflow-auto pt-5">
 			<router-view />
 		</div>
-		<div class="w-60 divide-y">
+		<div class="w-60">
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
 					v
-					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
+					class="flex cursor-pointer border-b text-base text-gray-600 hover:bg-gray-100"
 					:class="{
-						' bg-gray-50 text-gray-800': [
-							tab.value,
-							...(tab.children || [])
-						].find(child => child === $route.name),
-						'text-gray-600': ![tab.value, ...(tab.children || [])].find(
-							child => child === $route.name
-						)
+						' bg-gray-50 text-gray-800': isActiveTab(tab),
+						'text-gray-600': !isActiveTab(tab)
 					}"
 				>
 					<div class="px-4 py-2">
@@ -29,14 +24,9 @@
 </template>
 
 <script>
-import LineChart from '@/components/charts/LineChart.vue';
-
 export default {
 	name: 'SiteInsights',
 	props: ['site'],
-	components: {
-		LineChart
-	},
 	data() {
 		return {
 			tabs: [
@@ -71,6 +61,13 @@ export default {
 	mounted() {
 		if (this.$route.name === 'Site Insights') {
 			this.$router.push({ name: 'Site Analytics' });
+		}
+	},
+	methods: {
+		isActiveTab(tab) {
+			return [tab.value, ...(tab.children || [])].find(
+				child => child === this.$route.name
+			);
 		}
 	}
 };
