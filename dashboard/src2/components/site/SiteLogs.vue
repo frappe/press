@@ -15,6 +15,7 @@
 </template>
 
 <script>
+import { date } from '../../utils/format';
 import ObjectList from '../ObjectList.vue';
 
 export default {

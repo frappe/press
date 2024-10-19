@@ -1,35 +1,24 @@
 <template>
-	<div class="flex space-x-6 divide-x">
-		<div
-			class="h-min w-60 divide-y overflow-hidden rounded-sm border border-gray-200"
-		>
+	<div class="-m-5 flex divide-x">
+		<div class="h-screen w-full overflow-auto pt-5">
+			<router-view />
+		</div>
+		<div class="w-60 divide-y">
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
 					v
-					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-50"
+					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
 					:class="{
-						' text-gray-800': $route.name === tab.value,
+						' bg-gray-50 text-gray-800': $route.name === tab.value,
 						'text-gray-600': $route.name !== tab.value
 					}"
 				>
-					<div
-						v-if="$route.name === tab.value"
-						class="inline w-0.5 bg-gray-800"
-					></div>
-					<div
-						class="px-4 py-2"
-						:class="{
-							'-ml-0.5': $route.name === tab.value
-						}"
-					>
+					<div class="px-4 py-2">
 						{{ tab.label }}
 					</div>
 				</router-link>
 			</template>
-		</div>
-		<div class="min-h-screen w-full">
-			<router-view />
 		</div>
 	</div>
 </template>
