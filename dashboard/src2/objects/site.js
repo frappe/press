@@ -570,6 +570,7 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: [
+						'job',
 						'status',
 						'database_url',
 						'public_url',
@@ -701,6 +702,20 @@ export default {
 						}
 
 						return [
+							{
+								group: 'Details',
+								items: [
+									{
+										label: 'View Job',
+										onClick() {
+											router.push({
+												name: 'Site Job',
+												params: { name: site.name, id: row.job }
+											});
+										}
+									}
+								]
+							},
 							{
 								group: 'Download',
 								items: [
