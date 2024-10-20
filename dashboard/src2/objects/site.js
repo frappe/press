@@ -259,7 +259,13 @@ export default {
 					'Site Logs',
 					'Site Log',
 					'Site Analytics',
-					'Site Performance Reports'
+					'Site Performance Reports',
+					'Site Performance Request Logs',
+					'Site Performance Slow Queries',
+					'Site Performance Binary Logs',
+					'Site Performance Process List',
+					'Site Performance Request Log',
+					'Site Performance Deadlock Report'
 				],
 				nestedChildrenRoutes: [
 					{
