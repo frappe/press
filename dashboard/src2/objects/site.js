@@ -1339,6 +1339,38 @@ export default {
 							align: 'right'
 						}
 					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								options: [
+									'',
+									'Activate Site',
+									'Add Domain',
+									'Archive',
+									'Backup',
+									'Create',
+									'Clear Cache',
+									'Deactivate Site',
+									'Disable Database Access',
+									'Drop Offsite Backups',
+									'Enable Database Access',
+									'Install App',
+									'Login as Administrator',
+									'Migrate',
+									'Reinstall',
+									'Restore',
+									'Suspend Site',
+									'Uninstall App',
+									'Unsuspend Site',
+									'Update',
+									'Update Configuration'
+								]
+							}
+						];
+					},
 					primaryAction({ documentResource: site }) {
 						return {
 							label: 'Change Notification Email',
