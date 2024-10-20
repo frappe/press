@@ -1,13 +1,11 @@
 <template>
-	<div class="px-5 pt-7">
-		<ObjectList class="" :options="options" />
-	</div>
+	<ObjectList class="px-5 pt-12" :options="options" />
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
 
 export default {
-	props: ['site'],
+	props: ['name'],
 	components: {
 		ObjectList
 	},
@@ -68,9 +66,7 @@ export default {
 								type: 'primary',
 								iconRight: 'arrow-right',
 								onClick: () => {
-									this.$router.push({
-										name: row.route
-									});
+									this.$router.push({ name: row.route });
 								}
 							};
 						}

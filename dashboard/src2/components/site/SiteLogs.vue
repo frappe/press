@@ -1,17 +1,5 @@
 <template>
-	<div class="px-5">
-		<!-- <Button
-			label="Go back"
-			icon="arrow-left"
-			class="mt-5"
-			@click="
-				$router.push({
-					name: 'Site Detail Insights'
-				})
-			"
-		/> -->
-		<ObjectList :options="logsOptions" />
-	</div>
+	<ObjectList class="p-5" :options="logsOptions" />
 </template>
 
 <script>

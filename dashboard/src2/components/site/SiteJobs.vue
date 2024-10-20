@@ -1,7 +1,5 @@
 <template>
-	<div class="px-5">
-		<ObjectList :options="logsOptions" />
-	</div>
+	<ObjectList class="p-5" :options="logsOptions" />
 </template>
 
 <script>

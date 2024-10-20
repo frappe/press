@@ -1,6 +1,6 @@
 <template>
 	<div class="-m-5 flex divide-x">
-		<div class="h-screen w-full overflow-auto pt-5">
+		<div class="h-screen w-full overflow-auto">
 			<router-view />
 		</div>
 		<div class="w-60">
