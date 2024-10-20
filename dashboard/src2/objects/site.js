@@ -1305,8 +1305,16 @@ export default {
 					filters: site => {
 						return { site: site.doc?.name };
 					},
-					fields: ['owner'],
+					fields: ['owner', 'job'],
 					orderBy: 'creation desc',
+					route(row) {
+						if (!row.job) return {};
+
+						return {
+							name: 'Site Job',
+							params: { id: row.job }
+						};
+					},
 					columns: [
 						{
 							label: 'Action',
@@ -1320,7 +1328,7 @@ export default {
 							}
 						},
 						{
-							label: 'Reason',
+							label: 'Description',
 							fieldname: 'reason',
 							class: 'text-gray-600'
 						},

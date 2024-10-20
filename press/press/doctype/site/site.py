@@ -677,9 +677,9 @@ class Site(Document, TagHelpers):
 		if find(self.apps, lambda x: x.app == app):
 			return None
 
-		log_site_activity(self.name, "Install App", app)
 		agent = Agent(self.server)
 		job = agent.install_app_site(self, app)
+		log_site_activity(self.name, "Install App", app, job.name)
 		self.status = "Pending"
 		self.save()
 		self.install_marketplace_conf(app, plan)
@@ -689,9 +689,11 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def uninstall_app(self, app: str) -> str:
-		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
+
+		log_site_activity(self.name, "Uninstall App", app, job.name)
+
 		self.uninstall_marketplace_conf(app)
 		self.status = "Pending"
 		self.save()
@@ -827,9 +829,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def reinstall(self):
-		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
+		log_site_activity(self.name, "Reinstall", job=job.name)
 		self.status = "Pending"
 		self.save()
 		return job.name
@@ -837,7 +839,6 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches=False):
-		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
 		activate = True
 		if self.status in ("Inactive", "Suspended"):
@@ -848,7 +849,8 @@ class Site(Document, TagHelpers):
 			"Suspended",
 		):
 			activate = False
-		agent.migrate_site(self, skip_failing_patches=skip_failing_patches, activate=activate)
+		job = agent.migrate_site(self, skip_failing_patches=skip_failing_patches, activate=activate)
+		log_site_activity(self.name, "Migrate", job=job.name)
 		self.status = "Pending"
 		self.save()
 
@@ -894,9 +896,10 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def clear_site_cache(self):
-		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
-		agent.clear_site_cache(self)
+		job = agent.clear_site_cache(self)
+
+		log_site_activity(self.name, "Clear Cache", job=job.name)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
@@ -904,9 +907,9 @@ class Site(Document, TagHelpers):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
-		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
+		log_site_activity(self.name, "Restore", job=job.name)
 		self.status = "Pending"
 		self.save()
 		return job.name
@@ -1005,7 +1008,6 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 	):
-		log_site_activity(self.name, "Update")
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1016,6 +1018,8 @@ class Site(Document, TagHelpers):
 				"scheduled_time": scheduled_time,
 			}
 		).insert()
+		log_site_activity(self.name, "Update", job=doc.job)
+
 		return doc.name
 
 	@dashboard_whitelist()
@@ -1043,8 +1047,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
-		log_site_activity(self.name, "Update")
-		return frappe.get_doc(
+		update = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
@@ -1054,6 +1057,9 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
+		log_site_activity(self.name, "Update", job=update.job)
+		return update
+
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
 		frappe.only_for("System Manager")
@@ -1062,9 +1068,11 @@ class Site(Document, TagHelpers):
 		if bench == self.bench:
 			frappe.throw("Site is already on the selected bench.")
 
-		log_site_activity(self.name, "Update")
 		agent = Agent(self.server)
-		return agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		job = agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		log_site_activity(self.name, "Update", job=job.name)
+
+		return job
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -1083,14 +1091,15 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	@site_action(["Active"])
 	def update_without_backup(self):
-		log_site_activity(self.name, "Update without Backup")
-		frappe.get_doc(
+		update = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_backups": 1,
 			}
 		).insert()
+
+		log_site_activity(self.name, "Update without Backup", job=update.job)
 
 	@dashboard_whitelist()
 	def add_domain(self, domain):
@@ -1237,11 +1246,11 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
-		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		agent.archive_site(self, site_name, force)
+		job = agent.archive_site(self, site_name, force)
+		log_site_activity(self.name, "Archive", reason, job.name)
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
@@ -1614,7 +1623,11 @@ class Site(Document, TagHelpers):
 		)
 
 		self.save()
+		self.send_setup_wizard_complete_event()
 
+		return setup_complete
+
+	def send_setup_wizard_complete_event(self):
 		# Telemetry: Send event if first site status changed to Active
 		if self.setup_wizard_complete:
 			team = frappe.get_doc("Team", self.team)
@@ -1624,8 +1637,6 @@ class Site(Document, TagHelpers):
 				account_request = frappe.get_doc("Account Request", team.account_request)
 				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 					capture("first_site_setup_wizard_completed", "fc_signup", team.user)
-
-		return setup_complete
 
 	def fetch_setup_wizard_complete_status(self):
 		with suppress(Exception):
@@ -2208,10 +2219,10 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def disable_database_access(self):
-		log_site_activity(self.name, "Disable Database Access")
-
 		server_agent = Agent(self.server)
-		server_agent.revoke_database_access_credentials(self)
+		job = server_agent.revoke_database_access_credentials(self)
+
+		log_site_activity(self.name, "Disable Database Access", job=job.name)
 
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
