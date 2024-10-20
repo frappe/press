@@ -92,9 +92,8 @@ const props = defineProps({
 		default: () => false
 	},
 	error: {
-		type: String,
-		required: false,
-		default: () => ''
+		type: Error,
+		required: false
 	}
 });
 
