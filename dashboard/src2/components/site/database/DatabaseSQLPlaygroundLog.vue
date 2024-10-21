@@ -67,7 +67,13 @@ export default {
 					{
 						label: 'Query',
 						width: 2,
-						fieldname: 'query'
+						fieldname: 'query',
+						format(value) {
+							if (value.length > 40) {
+								return value.substring(0, 40) + '...';
+							}
+							return value;
+						}
 					},
 					{
 						label: 'Timestamp',
