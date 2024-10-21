@@ -21,6 +21,7 @@
   "is_self_hosted",
   "is_server_renamed",
   "public",
+  "is_devbox_server",
   "billing_section",
   "team",
   "column_break_11",
@@ -257,7 +258,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -313,7 +314,7 @@
    "options": "Virtual Machine"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "new_worker_allocation",
    "fieldtype": "Check",
    "label": "New Worker Allocation"
@@ -444,7 +445,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "set_bench_memory_limits",
    "fieldtype": "Check",
    "label": "Set Bench Memory Limits"
@@ -523,10 +524,17 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_devbox_server",
+   "fieldtype": "Check",
+   "label": "Is Devbox Server",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2024-09-24 12:56:06.423649",
+ "modified": "2024-10-08 12:33:27.346822",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

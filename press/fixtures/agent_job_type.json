@@ -2182,5 +2182,53 @@
     "step_name": "Bench Restart"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-21 11:00:39.229673",
+  "name": "New Devbox",
+  "request_method": "POST",
+  "request_path": "/devboxes",
+  "steps": [
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Initialize Devbox"
+   },
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run Devbox"
+   },
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Devbox Setup NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-21 11:18:53.122319",
+  "name": "Start Devbox",
+  "request_method": "POST",
+  "request_path": "devboxes/{devbox.name}/{devbox.websockify_port}/start",
+  "steps": [
+   {
+    "parent": "Start Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run Devbox"
+   }
+  ]
  }
 ]
