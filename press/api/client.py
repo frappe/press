@@ -73,6 +73,7 @@ ALLOWED_DOCTYPES = [
 	"Dashboard Banner",
 	"App Release Approval Request",
 	"Press Webhook",
+	"SQL Playground Log",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

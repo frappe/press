@@ -17,6 +17,7 @@ import dayjs from '../utils/dayjs';
 import { bytes, date, userCurrency } from '../utils/format';
 import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
+import DatabaseToolkit from '../components/site/DatabaseToolkit.vue';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
 import { getJobsTab } from './common/jobs';
@@ -61,7 +62,8 @@ export default {
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
-		getBackupDownloadLink: 'get_backup_download_link'
+		getBackupDownloadLink: 'get_backup_download_link',
+		fetchDatabaseTableSchemas: 'fetch_database_table_schemas'
 	},
 	list: {
 		route: '/sites',
@@ -939,6 +941,17 @@ export default {
 				}
 			},
 			{
+				label: 'Database',
+				icon: icon('database'),
+				route: 'database',
+				type: 'Component',
+				component: DatabaseToolkit,
+				props: site => {
+					return { site: site.doc?.name };
+				},
+				childrenRoutes: ['Database Toolkit SQL Playground']
+			},
+			{
 				label: 'Actions',
 				icon: icon('sliders'),
 				route: 'actions',
@@ -1526,6 +1539,12 @@ export default {
 			path: 'performance/deadlock-report',
 			component: () =>
 				import('../components/site/performance/SiteDeadlockReport.vue')
+		},
+		{
+			name: 'Database Toolkit SQL Playground',
+			path: 'database/sql-playground',
+			component: () =>
+				import('../components/site/database/DatabaseSQLPlayground.vue')
 		}
 	]
 };
