@@ -11,12 +11,8 @@
 		>
 			<template #prefix>
 				<div class="grid w-4 place-items-center text-sm text-gray-700">
-					<!-- {{ $team.doc.currency === 'INR' ? '₹' : '$' }} -->
-
 					<!--Test Currency, but will add KES for kenya and GBP for Egypt-->
 					{{ $team.doc.currency === 'INR' ? '₹' : $team.doc.currency === 'KES' ? 'Ksh' : '$' }}
-
-
 				</div>
 			</template>
 		</FormControl>
@@ -55,24 +51,6 @@
 				</div>
 			</template>
 		</FormControl> 
-	<!--	<FormControl
-	v-if="$team.doc.currency === 'INR' || $team.doc.currency === 'KES'"
-	:label="`Total Amount + ${$team.doc.currency === 'INR' ? 'GST' : 'VAT'} (${
-		$team.doc?.billing_info.gst_percentage * 100
-	}%)`"
-	
-	:modelValue="totalAmount"
-	name="total"
-	autocomplete="off"
-	type="number"
->
-	<template #prefix>
-		<div class="grid w-4 place-items-center text-sm text-gray-700">
-			{{ $team.doc.currency === 'INR' ? '₹' : $team.doc.currency === 'KES' ? 'Ksh' : '$' }}
-		</div>
-	</template>
-</FormControl>
--->
 
 	</div>
 
@@ -138,7 +116,6 @@
 				'border-gray-300': paymentGateway !== 'Mpesa',
 				'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Mpesa'
 			}"
-
 			>
 			<img
 					class="h-7 w-24"
@@ -166,7 +143,7 @@
 		@cancel="onCancel"
 	/>
 
-	<!--M-pesa Component-->
+	<!--M-pesa-->
 	<BuyPrepaidCreditMpesa
 	v-if="paymentGateway === 'Mpesa'"
 	:amount="creditsToBuy"
@@ -212,10 +189,8 @@ export default {
 	},
 
 	watch: {
-	// Watch for USD Input (creditsToBuy)
 	creditsToBuy(newValue) {
 		const computedKES = (newValue * this.exchangeRate);
-		// Only update KES if the new value differs
 		if (this.creditsToBuyKES !== computedKES) {
 			this.creditsToBuyKES = computedKES;
 		}
@@ -223,7 +198,6 @@ export default {
 	// Watch for KES Input (creditsToBuyKES)
 	creditsToBuyKES(newValue) {
 		const computedUSD = (newValue / this.exchangeRate);
-		// Only update USD if the new value differs
 		if (this.creditsToBuy !== computedUSD) {
 			this.creditsToBuy = computedUSD;
 		}

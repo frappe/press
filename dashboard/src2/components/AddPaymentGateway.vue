@@ -1,5 +1,3 @@
-
-
 <template>
     <Dialog :class="showDialog" :options="{ title: 'Add Payment Gateway', size: 'lg' }">
       <template #body-content>
@@ -26,17 +24,6 @@
             class="mb-5"
             type="text"
             placeholder="Enter Gateway Name"
-            required
-          />
-  
-          <FormControl
-            label="Integration Logo"
-         
-            name="integration_logo"
-            autocomplete="off"
-            class="mb-5"
-            type="file"
-            @change="handleFileUpload"
             required
           />
   
@@ -150,7 +137,6 @@ export default {
         params: {
           currency: this.currencyInput,
           gateway_name: this.gatewayName,
-          integration_logo: this.integrationLogo,
           gateway_setting: this.gatewayInput,
           gateway_controller: this.controllerInput,
           url: this.URL,
@@ -188,7 +174,6 @@ if (missingFields.length > 0) {
 
     handleFileUpload(event){
         this.integrationLogo = event.target.files[0];
-        console.log("integegration logo", this.integrationLogo);
     },
   
     async savePaymentGateway() {
@@ -266,9 +251,7 @@ if (missingFields.length > 0) {
         integrationLogo: function(){
             this.handleFileUpload();
         }
-   
-
-   
+  
   }
 };
 </script>

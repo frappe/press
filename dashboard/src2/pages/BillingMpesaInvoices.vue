@@ -1,6 +1,5 @@
 <template>
     <div>
-        <div>My table</div>
       <div v-if="invoices && invoices.length" class="overflow-x-auto">
     
         <table class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900">
@@ -9,7 +8,7 @@
               <th class="rounded-l p-2 text-left font-normal">Invoice Name</th>
               <th class="p-2 text-left font-normal">Date</th>
               <th class="p-2 text-left font-normal">Amount</th>
-              <th class="rounded-r p-2 text-left font-normal">Local Invoice</th>
+              <th class="rounded-r p-2 text-left font-normal">Download Invoice</th>
             </tr>
           </thead>
           <tbody>
@@ -25,7 +24,7 @@
         </table>
       </div>
       <div class="py-20 text-center" v-if="loading">
-        <Button :loading="true">Loading</Button>
+        <Button :loading="true">Loading...</Button>
       </div>
       <ErrorMessage v-if="errorMessage" :message="errorMessage" />
     </div>
@@ -45,23 +44,12 @@
       };
     },
     methods: {
-      request(options) {
-        let _options = options || {};
-        _options.headers = options.headers || {};
-  
-        let currentTeam = localStorage.getItem('current_team') || window.default_team;
-        if (currentTeam) {
-          _options.headers['X-Press-Team'] = currentTeam;
-        }
-  
-        return frappeRequest(_options);
-      },
-  
+       
       async fetchInvoices() {
         this.loading = true;
   
         try {
-          const response = await this.request({
+          const response = await frappeRequest({
             url: '/api/method/press.api.billing.display_invoices_by_partner',
             method: 'GET',
           });

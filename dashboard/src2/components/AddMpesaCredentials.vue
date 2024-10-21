@@ -146,13 +146,14 @@ import { toast } from 'vue-sonner';
                     security_credential: this.securityCredential,
                     till_number: this.tillNumber,
                     sandbox: this.sandBox
-
                 },
+
                 validate(){
                     if(!this.paymentGatewayName || !this.consumerKey || !this.consumerSecret || !this.passKey || !this.shortCode || !this.initiatorName || !this.securityCredential){
                         return 'All fields are required';
                     }
                 },
+
                 async onSuccess(data){
                     if(data){
                         toast.success('M-Pesa credentials savedd', data);
@@ -164,7 +165,6 @@ import { toast } from 'vue-sonner';
             }
         }
     },
-
 
     methods: {
     async saveMpesaCredentials() {
