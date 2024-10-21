@@ -49,6 +49,8 @@
 					v-if="!$resources.runSQLQuery.loading && (data || errorMessage)"
 				>
 					<div v-if="errorMessage" class="output-container">
+						<pre class="text-sm" v-if="failedQuery">{{ failedQuery }}</pre>
+						<br v-if="failedQuery" />
 						{{ prettifySQLError(errorMessage) }}<br /><br />
 						Query execution failed
 					</div>
@@ -77,7 +79,7 @@
 			</div>
 			<DatabaseSQLPlaygroundLog
 				:site="this.name"
-				v-model="showLogs"
+				v-model="showLogsDialog"
 				@rerunQuery="rerunQuery"
 			/>
 			<DatabaseTableSchemaDialog
@@ -124,8 +126,9 @@ export default {
 			execution_successful: null,
 			data: null,
 			errorMessage: null,
+			failedQuery: null,
 			mode: 'read-only',
-			showLogs: false,
+			showLogsDialog: false,
 			showTableSchemasDialog: false
 		};
 	},
@@ -148,7 +151,8 @@ export default {
 				onSuccess: data => {
 					this.execution_successful = data?.message?.success || false;
 					if (!this.execution_successful) {
-						this.errorMessage = data?.message?.data || 'Unknown error';
+						this.errorMessage = data?.message?.data ?? 'Unknown error';
+						this.failedQuery = data?.message?.failed_query ?? '';
 						this.data = [];
 					} else {
 						this.data = data?.message?.data ?? [];
@@ -252,14 +256,14 @@ Are you sure you want to run the query?`,
 			});
 		},
 		toggleLogsDialog() {
-			this.showLogs = !this.showLogs;
+			this.showLogsDialog = !this.showLogsDialog;
 		},
 		toggleTableSchemasDialog() {
 			this.showTableSchemasDialog = !this.showTableSchemasDialog;
 		},
 		rerunQuery(query) {
 			this.query = query;
-			this.showLogs = false;
+			this.showLogsDialog = false;
 		},
 		runSQLQueryForViewingTable(query) {
 			// set read-only mode
