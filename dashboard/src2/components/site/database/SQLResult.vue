@@ -5,6 +5,7 @@
 		:data="result.output?.data ?? []"
 	/>
 	<div v-else class="output-container">
+		<pre class="mb-4 text-sm">{{ result.query }}</pre>
 		{{ result.row_count }} rows affected<br /><br />
 		Query executed successfully
 	</div>

@@ -49,8 +49,7 @@
 					v-if="!$resources.runSQLQuery.loading && (data || errorMessage)"
 				>
 					<div v-if="errorMessage" class="output-container">
-						<pre class="text-sm" v-if="failedQuery">{{ failedQuery }}</pre>
-						<br v-if="failedQuery" />
+						<pre class="mb-4 text-sm" v-if="failedQuery">{{ failedQuery }}</pre>
 						{{ prettifySQLError(errorMessage) }}<br /><br />
 						Query execution failed
 					</div>
