@@ -44,41 +44,28 @@
 						>Run Query</Button
 					>
 				</div>
-				<div class="mt-4">
-					<div
-						v-if="
-							typeof output === 'string' &&
-							output &&
-							!$resources.runSQLQuery.loading
-						"
-						class="rounded border p-4 text-base text-gray-700"
-					>
-						{{ prettifiedOutput }}<br /><br />
-						{{
-							execution_successful
-								? 'Query executed successfully'
-								: 'Query execution failed'
-						}}
+				<div
+					class="mt-4"
+					v-if="!$resources.runSQLQuery.loading && (data || errorMessage)"
+				>
+					<div v-if="errorMessage" class="output-container">
+						{{ prettifySQLError(errorMessage) }}<br /><br />
+						Query execution failed
 					</div>
-					<SQLResultTable
-						v-if="
-							output &&
-							typeof output === 'object' &&
-							!$resources.runSQLQuery.loading
-						"
-						:columns="output.columns ?? []"
-						:data="output.data ?? []"
-					/>
-					<div
-						v-if="output === null && !$resources.runSQLQuery.loading"
-						class="rounded border p-4 text-base text-gray-700"
-					>
-						No output received<br /><br />
-						{{
-							execution_successful
-								? 'Query executed successfully'
-								: 'Query execution failed'
-						}}
+					<div v-else-if="data.length == 0" class="output-container">
+						No output received
+					</div>
+					<div v-else-if="data.length == 1">
+						<SQLResult :result="data[0]" />
+					</div>
+					<div v-else>
+						<FTabs :tabs="sqlResultTabs" v-model="tabIndex">
+							<template #default="{ tab }">
+								<div class="pt-5">
+									<SQLResult :result="tab" />
+								</div>
+							</template>
+						</FTabs>
 					</div>
 				</div>
 			</div>
@@ -101,31 +88,42 @@
 		</template>
 	</DatabaseToolWrapper>
 </template>
+<style scoped>
+.output-container {
+	@apply rounded border p-4 text-base text-gray-700;
+}
+</style>
 <script>
 import { toast } from 'vue-sonner';
+import { Tabs } from 'frappe-ui';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
 import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
 import { confirmDialog } from '../../../utils/components';
 import DatabaseSQLPlaygroundLog from './DatabaseSQLPlaygroundLog.vue';
 import DatabaseTableSchemaDialog from './DatabaseTableSchemaDialog.vue';
+import SQLResult from './SQLResult.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
 	props: ['name'],
 	components: {
+		FTabs: Tabs,
 		DatabaseToolWrapper,
 		SQLResultTable,
+		SQLResult,
 		SQLCodeEditor,
 		DatabaseSQLPlaygroundLog,
 		DatabaseTableSchemaDialog
 	},
 	data() {
 		return {
+			tabIndex: 0,
 			query: '',
 			commit: false,
 			execution_successful: null,
-			output: '',
+			data: null,
+			errorMessage: null,
 			mode: 'read-only',
 			showLogs: false,
 			showTableSchemasDialog: false
@@ -148,8 +146,15 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				onSuccess: data => {
-					this.output = data?.message?.output;
 					this.execution_successful = data?.message?.success || false;
+					if (!this.execution_successful) {
+						this.errorMessage = data?.message?.data || 'Unknown error';
+						this.data = [];
+					} else {
+						this.data = data?.message?.data ?? [];
+						this.errorMessage = null;
+					}
+					this.tabIndex = 0; // reset tab index for results
 				},
 				onError: e => {
 					toast.error(
@@ -201,20 +206,17 @@ export default {
 			if (!this.sqlSchemaForAutocompletion) return false;
 			return true;
 		},
-		prettifiedOutput() {
-			if (typeof this.output !== 'string') return null;
-			if (this.execution_successful) return this.output;
-			// if error message in (state, message) format, try to parse it
-			const regex = /\((\d+),\s*['"](.*?)['"]\)/;
-			const match = this.output.match(regex);
-
-			if (match) {
-				const statusCode = match[1];
-				const errorMessage = match[2];
-				return `#${statusCode} - ${errorMessage}`;
-			} else {
-				return this.output;
+		sqlResultTabs() {
+			if (!this.data || !this.data.length) return [];
+			let data = [];
+			let queryNo = 1;
+			for (let i = 0; i < this.data.length; i++) {
+				data.push({
+					label: `Query ${queryNo++}`,
+					...this.data[i]
+				});
 			}
+			return data;
 		}
 	},
 	methods: {
@@ -265,6 +267,20 @@ Are you sure you want to run the query?`,
 			this.showTableSchemasDialog = false;
 			this.query = query;
 			this.runSQLQuery();
+		},
+		prettifySQLError(msg) {
+			if (typeof msg !== 'string') return null;
+			// if error message in (state, message) format, try to parse it
+			const regex = /\((\d+),\s*['"](.*?)['"]\)/;
+			const match = msg.match(regex);
+
+			if (match) {
+				const statusCode = match[1];
+				const errorMessage = match[2];
+				return `#${statusCode} - ${errorMessage}`;
+			} else {
+				return msg;
+			}
 		}
 	}
 };
