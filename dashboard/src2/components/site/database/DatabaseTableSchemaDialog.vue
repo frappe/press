@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Browse Schema',
-			size: 'xl'
+			size: '2xl'
 		}"
 	>
 		<template #body-content>
@@ -97,7 +97,6 @@ export default {
 						width: 0.5,
 						type: 'Component',
 						component({ row }) {
-							console.log(row);
 							return h(
 								'div',
 								{
@@ -120,19 +119,31 @@ export default {
 						align: 'center'
 					},
 					{
-						label: 'Nullable',
-						fieldname: 'is_nullable',
-						width: 0.2,
-						format(value) {
-							return value ? 'Yes' : 'No';
-						},
-						align: 'center'
-					},
-					{
 						label: 'Default',
 						fieldname: 'default',
 						width: 0.3,
 						align: 'center'
+					},
+					{
+						label: 'Nullable',
+						fieldname: 'is_nullable',
+						width: 0.15,
+						type: 'Icon',
+						Icon(value) {
+							return value ? 'check' : 'x';
+						},
+						align: 'center'
+					},
+
+					{
+						label: 'Is Indexed',
+						fieldname: 'indexes',
+						width: 0.15,
+						align: 'center',
+						type: 'Icon',
+						Icon(value) {
+							return value.length > 0 ? 'check' : 'x';
+						}
 					}
 				]
 			};
