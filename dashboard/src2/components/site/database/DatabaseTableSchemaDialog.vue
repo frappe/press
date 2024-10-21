@@ -20,18 +20,30 @@
 					v-if="selectedSchema"
 				/>
 			</div>
-			<div class="mt-2 flex flex-row gap-2" v-if="selectedSchema">
-				<Button iconLeft="play" class="grow" @click="viewTop100Rows"
+			<div class="mt-3 flex flex-row gap-2" v-if="selectedSchema">
+				<Button
+					iconLeft="play"
+					class="grow"
+					variant="outline"
+					@click="viewTop100Rows"
 					>View Top 100 Rows</Button
 				>
-				<Button iconLeft="play" class="grow" @click="viewLast100Rows"
+				<Button
+					iconLeft="play"
+					class="grow"
+					variant="outline"
+					@click="viewLast100Rows"
 					>View Last 100 Rows</Button
 				>
-				<Button iconLeft="play" class="grow" @click="viewAllRows"
+				<Button
+					iconLeft="play"
+					class="grow"
+					variant="outline"
+					@click="viewAllRows"
 					>View All Rows</Button
 				>
 			</div>
-			<ObjectList class="mt-2" :options="listOptions" v-if="selectedSchema" />
+			<ObjectList :options="listOptions" v-if="selectedSchema" />
 		</template>
 	</Dialog>
 </template>
