@@ -1,8 +1,8 @@
-import { h, isVNode, ref } from 'vue';
 import { FeatherIcon } from 'frappe-ui';
-import ConfirmDialog from '../dialogs/ConfirmDialog.vue';
-import DialogWrapper from '../components/DialogWrapper.vue';
+import { h, isVNode, ref } from 'vue';
 import AddressableErrorDialog from '../components/AddressableErrorDialog.vue';
+import DialogWrapper from '../components/DialogWrapper.vue';
+import ConfirmDialog from '../dialogs/ConfirmDialog.vue';
 
 export function icon(name, _class = '') {
 	let iconComponent;
@@ -15,6 +15,11 @@ export function icon(name, _class = '') {
 	return () => h(iconComponent, { name, class: _class || 'w-4 h-4' });
 }
 
+/**
+ * 
+ * @param {import('../objects/common/types').DialogConfig} param0 
+ * @returns 
+ */
 export function confirmDialog({
 	title = 'Untitled',
 	fields = [],

@@ -84,6 +84,7 @@ getInitialData().then(() => {
 					/Load failed/,
 					/frappe is not defined/,
 					/Cannot read properties of undefined \(reading 'exc_type'\)/,
+					/InvalidStateError: Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing/,
 					/Importing a module script failed./
 				];
 				const ignoreErrorTypes = [
