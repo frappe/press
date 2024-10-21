@@ -1,9 +1,27 @@
 <template>
+	
 	<div>
 		<ErrorMessage
 			class="mt-2"
 			:message="$resources.createPaymentIntent.error || errorMessage"
-		/>
+			/>
+		<FormControl
+				:type="'number'"
+				size="sm"
+				variant="subtle"
+				placeholder="Amount in local currency"
+				:disabled="true"
+				label="Actual Amount"
+				v-model="actualAmount"
+				class="mb-1 mt-4"
+				>
+				<template #prefix>
+					<div class="grid w-4 place-items-center text-sm text-gray-700">
+						E£	
+					</div>
+				</template>
+		</FormControl>
+		<span class="text-gray-600 text-xs">applied tax percentage {{ this.taxPercetange }}%</span>
 		<FormControl
 			type="autocomplete"
 			:options="teams" 
@@ -25,17 +43,6 @@
 			v-model="taxID"
 			class="mb-5 my-4"
 		/>
-		<FormControl
-			:type="'number'"
-			size="sm"
-			variant="subtle"
-			placeholder="Amount in (Gateway) Currency [Actual Deducable]"
-			:disabled="true"
-			label="Actual Amount"
-			v-model="actualAmount"
-			class="mb-2 mt-4"
-		/>
-		<span class="text-gray-600 text-xs">Amount in (Gateway) Currency [Actual Deducable]<br> Actual Amount = (Amount USD * Exchange Rate) + Tax Amount </span>
 		<div class="mt-4 flex w-full justify-end">
 			<div v-if="step == 'Get Amount'">
 				<Button
@@ -75,7 +82,7 @@ export default {
 			partnerInput: null,
 			taxID: null,
 			actualAmount: 0.0,
-			currencyExchangeRate: 48,
+			currencyExchangeRate: 0.0,
 			taxPercetange: 0.0,
 			minimumAmount: 10,
 			gateway: null,
@@ -133,15 +140,46 @@ export default {
 					)
 				}
 			};
+		},
+		fetchTaxId() {
+			return {
+				url: 'press.api.billing.get_tax_id',
+				params: {},
+				async onSuccess(taxID) {
+					if (taxID) {
+						this.taxID = taxID
+					}
+				}
+			};
+		},
+		getCurrencyExchangeRate() {
+			return {
+				url: "press.api.local_payments.paymob.paymob_utils.get_exchange_rate",
+				params: {
+					from_currency: "USD",
+					to_currency: "EGP",
+				},
+				async onSuccess(rate) {
+					if (rate) {
+						this.currencyExchangeRate = rate
+					}
+				}
+			};
 		}
 	},
 	methods: {
 		calcActualAmount() {
+
+			if (!this.amount || !this.currencyExchangeRate || !this.taxPercetange) {
+				return 
+			}
+
 			this.actualAmount = Number(
 					(
 						(this.amount * (this.currencyExchangeRate || 0)) + (this.amount * (this.taxPercetange / 100))
 					).toFixed(2)
 			);
+
 			return this.actualAmount
 		}
 	},
@@ -156,6 +194,14 @@ export default {
 		},
 		actualAmount() {
 			return this.calcActualAmount()
+		},
+		currencyExchangeRate() {
+			if (
+				!this.$resources.getCurrencyExchangeRate.loading && 
+				!this.$resources.getCurrencyExchangeRate.data && !this.exchangeRate
+			) {
+				return this.$resources.getCurrencyExchangeRate.data;
+			}
 		}
 		
 	},
@@ -166,6 +212,8 @@ export default {
 	},
 	mounted() {
 		this.$resources.getPaymentGateway.submit()
+		this.$resources.fetchTaxId.submit();
+		this.$resources.getCurrencyExchangeRate.submit();
 		this.calcActualAmount()
 	}
 };
