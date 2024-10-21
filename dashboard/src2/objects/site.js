@@ -19,6 +19,7 @@ import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
+import { isMobile } from '../utils/device';
 
 export default {
 	doctype: 'Site',
@@ -1345,6 +1346,7 @@ export default {
 								type: 'select',
 								label: 'Action',
 								fieldname: 'action',
+								class: !isMobile() ? 'w-52' : '',
 								options: [
 									'',
 									'Activate Site',
