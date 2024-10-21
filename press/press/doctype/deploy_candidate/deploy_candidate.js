@@ -4,7 +4,7 @@
 frappe.ui.form.on('Deploy Candidate', {
 	refresh: function (frm) {
 		frm.add_web_link(
-			`/dashboard/benches/${frm.doc.group}/deploys/${frm.doc.name}`,
+			`/dashboard/groups/${frm.doc.group}/deploys/${frm.doc.name}`,
 			'Visit Dashboard',
 		);
 

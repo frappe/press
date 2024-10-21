@@ -17,7 +17,7 @@
 							: 'hover:bg-gray-50'
 					"
 					:key="candidate.name"
-					:to="`/benches/${benchName}/deploys/${candidate.name}`"
+					:to="`/groups/${benchName}/deploys/${candidate.name}`"
 				>
 					<ListItem
 						:title="`Deploy on ${formatDate(
@@ -160,7 +160,7 @@ export default {
 							return h(
 								'Link',
 								{
-									props: { to: `/benches/${bench?.name}/jobs/${job.name}` },
+									props: { to: `/groups/${bench?.name}/jobs/${job.name}` },
 									class: 'text-sm'
 								},
 								'Job Log →'

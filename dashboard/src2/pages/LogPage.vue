@@ -35,6 +35,7 @@
 <script>
 import { FeatherIcon } from 'frappe-ui';
 import { getObject } from '../objects';
+import { unreachable } from '../objects/common';
 
 export default {
 	name: 'LogPage',
@@ -42,9 +43,16 @@ export default {
 	components: { FeatherIcon },
 	resources: {
 		log() {
+			const url = this.forSite ? 'press.api.site.log' : 'press.api.bench.log';
+			const params = { log: this.logName, name: this.name };
+			if (!this.forSite) {
+				params.name = `bench-${this.name?.split('-')[1]}`;
+				params.bench = this.name;
+			}
+
 			return {
-				url: 'press.api.site.log',
-				params: { log: this.logName, name: this.name },
+				url,
+				params,
 				auto: true,
 				transform(log) {
 					return log[this.logName];
@@ -56,6 +64,11 @@ export default {
 		}
 	},
 	computed: {
+		forSite() {
+			if (this.objectType === 'Site') return true;
+			if (this.objectType === 'Bench') return false;
+			throw unreachable;
+		},
 		object() {
 			return getObject(this.objectType);
 		},

@@ -15,7 +15,7 @@
 			<Button
 				v-if="deployInformation.deploy_in_progress"
 				variant="solid"
-				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
+				:route="`/groups/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
 			<Button

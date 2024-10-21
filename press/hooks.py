@@ -132,7 +132,7 @@ has_permission = {
 	"Subscription": "press.overrides.has_permission",
 	"Stripe Payment Method": "press.overrides.has_permission",
 	"Balance Transaction": "press.overrides.has_permission",
-	"Invoice": "press.overrides.has_permission",
+	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
 	"App Source": "press.overrides.has_permission",
 	"App Release": "press.press.doctype.app_release.app_release.has_permission",
 	"Release Group": "press.overrides.has_permission",

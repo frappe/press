@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 
@@ -111,6 +110,7 @@ class MonitorServer(BaseServer):
 					"press_monitoring_password": press_monitoring_password,
 					"press_app_server": frappe.local.site,
 					"press_db_server": f"db.{frappe.local.site}",
+					"press_db_replica_server": f"db2.{frappe.local.site}" if frappe.conf.replica_host else "",
 					"press_url": press_url,
 					"prometheus_data_directory": self.prometheus_data_directory,
 					"monitor_token": monitor_token,
@@ -138,9 +138,7 @@ class MonitorServer(BaseServer):
 
 	@frappe.whitelist()
 	def reconfigure_monitor_server(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_reconfigure_monitor_server", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_reconfigure_monitor_server", queue="long", timeout=1200)
 
 	def _reconfigure_monitor_server(self):
 		settings = frappe.get_single("Press Settings")
@@ -187,6 +185,7 @@ class MonitorServer(BaseServer):
 					"press_monitoring_password": press_monitoring_password,
 					"press_app_server": frappe.local.site,
 					"press_db_server": f"db.{frappe.local.site}",
+					"press_db_replica_server": f"db2.{frappe.local.site}" if frappe.conf.replica_host else "",
 					"registries_json": json.dumps(registries),
 					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),

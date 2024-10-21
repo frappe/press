@@ -15,12 +15,12 @@
 								},
 								{
 									label: 'New Bench Group',
-									route: '/benches/new'
+									route: '/groups/new'
 								}
 						  ]
 						: [
-								{ label: 'Bench Groups', route: '/benches' },
-								{ label: 'New Bench Group', route: '/benches/new' }
+								{ label: 'Bench Groups', route: '/groups' },
+								{ label: 'New Bench Group', route: '/groups/new' }
 						  ]
 				"
 			/>
@@ -32,7 +32,7 @@
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 	>
 		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<ErrorMessage message="You aren't permitted to create new benches" />
+		<ErrorMessage message="You aren't permitted to create new bench groups" />
 	</div>
 
 	<div v-else class="mx-auto max-w-2xl px-5">

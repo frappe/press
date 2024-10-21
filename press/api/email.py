@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -8,8 +7,8 @@ import secrets
 from datetime import datetime
 
 import frappe
-from frappe.exceptions import TooManyRequestsError, OutgoingEmailError, ValidationError
 import requests
+from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
 
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
@@ -61,9 +60,7 @@ def setup(site):
 
 	update_config(site, json.dumps(new_config))
 
-	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert(
-		ignore_permissions=True
-	)
+	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert(ignore_permissions=True)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -82,7 +79,7 @@ def get_analytics(**data):
 		if not value or not isinstance(value, str):
 			frappe.throw("Invalid Request")
 
-	result = frappe.get_all(
+	return frappe.get_all(
 		"Mail Log",
 		filters={
 			"site": site,
@@ -93,8 +90,6 @@ def get_analytics(**data):
 		fields=["date", "status", "message", "sender", "recipient"],
 		order_by="date asc",
 	)
-
-	return result
 
 
 def validate_plan(secret_key):
@@ -115,7 +110,11 @@ def validate_plan(secret_key):
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
-		frappe.throw(e)
+		frappe.throw(
+			str(e)
+			or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io",
+			e,
+		)
 
 	if not subscription["enabled"]:
 		frappe.throw(
@@ -142,6 +141,22 @@ def validate_plan(secret_key):
 		)
 
 
+def check_spam(message: str):
+	resp = requests.post(
+		"https://frappemail.com/spamd/score",
+		{"message": message},
+	)
+	if resp.status_code == 200:
+		data = resp.json()
+		if data["message"] > 3.5:
+			frappe.throw(
+				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
+				EmailSendError,
+			)
+	else:
+		log_error("Spam Detection: Error", data=resp.text, message=message)
+
+
 @frappe.whitelist(allow_guest=True)
 def send_mime_mail(**data):
 	"""
@@ -152,42 +167,43 @@ def send_mime_mail(**data):
 
 	validate_plan(data["sk_mail"])
 
-	api_key, domain = frappe.db.get_value(
-		"Press Settings", None, ["mailgun_api_key", "root_domain"]
-	)
+	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
+
+	message = files["mime"].read()
+	check_spam(message.decode("utf-8"))
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
 		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-		files={"message": files["mime"].read()},
+		files={"message": message},
 	)
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	else:
-		log_error("Email Delivery Service: Sending error", data=resp.text)
-		frappe.throw(
-			"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
-			EmailSendError,
-		)
+	log_error("Email Delivery Service: Sending error", data=resp.text)
+	frappe.throw(
+		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
+		EmailSendError,
+	)
+	return None
 
 
 def is_valid_mailgun_event(event_data):
 	if not event_data:
-		return
+		return None
 
 	if event_data.get("user-variables", {}).get("sk_mail") is None:
 		# We don't know where to send this event
 		# TOOD: Investigate why this is happening
 		# Hint: Likely from other emails not sent via the email delivery app
-		return
+		return None
 
 	if "delivery-status" not in event_data:
-		return
+		return None
 
 	if "message" not in event_data["delivery-status"]:
-		return
+		return None
 
 	return True
 
@@ -201,7 +217,7 @@ def event_log():
 	event_data = data.get("event-data")
 
 	if not is_valid_mailgun_event(event_data):
-		return
+		return None
 
 	try:
 		secret_key = event_data["user-variables"]["sk_mail"]
@@ -209,7 +225,7 @@ def event_log():
 		if "message-id" not in headers:
 			# We can't log this event without a message-id
 			# TOOD: Investigate why this is happening
-			return
+			return None
 		message_id = headers["message-id"]
 		site = (
 			frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
@@ -217,8 +233,7 @@ def event_log():
 		)
 		status = event_data["event"]
 		delivery_message = (
-			event_data["delivery-status"]["message"]
-			or event_data["delivery-status"]["description"]
+			event_data["delivery-status"]["message"] or event_data["delivery-status"]["description"]
 		)
 		frappe.get_doc(
 			{

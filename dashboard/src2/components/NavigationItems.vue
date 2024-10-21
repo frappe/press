@@ -8,6 +8,7 @@ import { h } from 'vue';
 import DoorOpen from '~icons/lucide/door-open';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
+import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
@@ -25,7 +26,9 @@ export default {
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
 			const enforce2FA = Boolean(
-				this.$team.doc.enforce_2fa && !this.$team.doc.user_info?.is_2fa_enabled
+				!this.$team.doc.is_desk_user &&
+					this.$team.doc.enforce_2fa &&
+					!this.$team.doc.user_info?.is_2fa_enabled
 			);
 
 			return [
@@ -66,9 +69,17 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Bench Groups',
+					name: 'Benches',
 					icon: () => h(Package),
 					route: '/benches',
+					isActive: routeName.startsWith('Bench'),
+					condition: this.$team?.is_desk_user,
+					disabled: !onboardingComplete || enforce2FA
+				},
+				{
+					name: 'Bench Groups',
+					icon: () => h(Boxes),
+					route: '/groups',
 					isActive:
 						[
 							'Release Group List',

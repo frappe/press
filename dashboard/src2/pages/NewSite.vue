@@ -153,6 +153,16 @@
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
+				<div class="mt-3 text-xs text-gray-700">
+					<p>
+						* <strong>Support</strong> includes only issues and bug fixes
+						related to Frappe apps, functional queries will not be entertained.
+					</p>
+					<p class="mt-1">
+						** If you face any issue while using Frappe Cloud, you can raise
+						support ticket regardless of site plan.
+					</p>
+				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -627,7 +637,7 @@ export default {
 			if (this.bench) {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
-					{ label: 'Bench Groups', route: '/benches' },
+					{ label: 'Bench Groups', route: '/groups' },
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {

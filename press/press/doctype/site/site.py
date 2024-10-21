@@ -7,7 +7,7 @@ import json
 import re
 from collections import defaultdict
 from contextlib import suppress
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Any
 
 import dateutil.parser
@@ -456,6 +456,35 @@ class Site(Document, TagHelpers):
 					if app not in allowed_apps:
 						frappe.throw(f"In {self.subscription_plan}, you can't deploy site with {app} app")
 
+			is_dedicated_server_plan = frappe.db.get_value(
+				"Site Plan", self.subscription_plan, "dedicated_server_plan"
+			)
+			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
+
+			# If site is on public server, don't allow unlimited plans
+			if is_site_on_public_server and is_dedicated_server_plan:
+				self.subscription_plan = frappe.db.get_value(
+					"Site Plan",
+					{
+						"private_benches": 1,
+						"dedicated_server_plan": 0,
+						"document_type": "Site",
+						"price_inr": ["!=", 0],
+					},
+					order_by="price_inr asc",
+				)
+
+			# If site is on dedicated server, set unlimited plan
+			elif not is_dedicated_server_plan and not is_site_on_public_server:
+				self.subscription_plan = frappe.db.get_value(
+					"Site Plan",
+					{
+						"dedicated_server_plan": 1,
+						"document_type": "Site",
+						"support_included": 0,
+					},
+				)
+
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
@@ -608,10 +637,10 @@ class Site(Document, TagHelpers):
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
 		if plan:
 			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan, self.team)
-		marketplace_app_hook(app=app, site=self.name, op="install")
+		marketplace_app_hook(app=app, site=self, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
-		marketplace_app_hook(app=app, site=self.name, op="uninstall")
+		marketplace_app_hook(app=app, site=self, op="uninstall")
 
 		# disable marketplace plan if it exists
 		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
@@ -663,9 +692,9 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
+		self.uninstall_marketplace_conf(app)
 		self.status = "Pending"
 		self.save()
-		self.uninstall_marketplace_conf(app)
 
 		return job.name
 
@@ -944,13 +973,25 @@ class Site(Document, TagHelpers):
 			log_error(title="Offsite Backup Response Exception")
 
 	def site_migration_scheduled(self):
-		return frappe.db.exists("Site Migration", {"site": self.name, "status": "Scheduled"})
+		return frappe.db.get_value(
+			"Site Migration", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def site_update_scheduled(self):
+		return frappe.db.get_value(
+			"Site Update", {"site": self.name, "status": "Scheduled"}, "scheduled_time"
+		)
+
+	def check_move_scheduled(self):
+		if time := self.site_migration_scheduled():
+			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")
+		if time := self.site_update_scheduled():
+			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
 		if self.status in ["Updating", "Pending", "Installing"]:
 			frappe.throw("Site is under maintenance. Cannot Update")
-		if self.site_migration_scheduled():
-			frappe.throw("Site migration is scheduled. Cannot Update")
+		self.check_move_scheduled()
 
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -1544,11 +1585,16 @@ class Site(Document, TagHelpers):
 
 		try:
 			value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		except json.JSONDecodeError:
+			# the proxy might be down or network failure
+			# that's why the response is blank and get_value try to parse the json
+			# and raise json.JSONDecodeError
+			return False
 		except Exception:
 			if self.ping().status_code == requests.codes.ok:
 				# Site is up but setup status fetch failed
 				log_error("Fetching Setup Status Failed", doc=self)
-			return None
+			return False
 
 		setup_complete = cint(value["setup_complete"])
 		if not setup_complete:
@@ -1830,7 +1876,7 @@ class Site(Document, TagHelpers):
 			plan_config["app_include_js"] = []
 
 		self._update_configuration(plan_config)
-		frappe.get_doc(
+		ret = frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
@@ -1857,6 +1903,7 @@ class Site(Document, TagHelpers):
 			"revoke_database_access_on_plan_change",
 			enqueue_after_commit=True,
 		)
+		return ret
 
 	def revoke_database_access_on_plan_change(self):
 		# If the new plan doesn't have database access, disable it
@@ -2573,7 +2620,7 @@ class Site(Document, TagHelpers):
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
-	@property
+	@cached_property
 	def is_on_dedicated_plan(self):
 		return bool(frappe.db.get_value("Site Plan", self.plan, "dedicated_server_plan"))
 
@@ -2671,7 +2718,7 @@ def process_new_site_job_update(job):  # noqa: C901
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		marketplace_app_hook(site=job.site, op="install")
+		marketplace_app_hook(site=Site("Site", job.site), op="install")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
@@ -2871,12 +2918,12 @@ def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], sit
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription
-			marketplace_app_hook(app=app, site=site.name, op="install")
+			marketplace_app_hook(app=app, site=site, op="install")
 	for app in apps_to_uninstall:
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription
-			marketplace_app_hook(app=app, site=site.name, op="uninstall")
+			marketplace_app_hook(app=app, site=site, op="uninstall")
 
 
 def process_restore_job_update(job, force=False):

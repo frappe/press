@@ -57,7 +57,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["AWS EC2", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -167,16 +167,33 @@ class VirtualMachine(Document):
 		self.save()
 
 	def _provision_aws(self):
-		options = {
-			"BlockDeviceMappings": [
+		additional_volumes = []
+		for index, volume in enumerate(self.volumes):
+			device_name_index = chr(ord("f") + index)
+			additional_volumes.append(
 				{
-					"DeviceName": "/dev/sda1",
+					"DeviceName": f"/dev/sd{device_name_index}",
 					"Ebs": {
 						"DeleteOnTermination": True,
-						"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
-						"VolumeType": "gp3",
+						"VolumeSize": volume.size,
+						"VolumeType": volume.volume_type,
 					},
-				},
+				}
+			)
+
+		options = {
+			"BlockDeviceMappings": [
+				*[
+					{
+						"DeviceName": "/dev/sda1",
+						"Ebs": {
+							"DeleteOnTermination": True,
+							"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
+							"VolumeType": "gp3",
+						},
+					}
+				],
+				*additional_volumes,
 			],
 			"ImageId": self.machine_image,
 			"InstanceType": self.machine_type,
