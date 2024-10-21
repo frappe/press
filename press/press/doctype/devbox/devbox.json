@@ -6,6 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "server_section",
+  "subdomain",
+  "domain",
+  "initialized",
+  "column_break_cdoo",
   "server",
   "status",
   "machine_configuration_section",
@@ -58,11 +62,33 @@
    "in_list_view": 1,
    "label": "Disk (GB)",
    "reqd": 1
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "label": "Subdomain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "column_break_cdoo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "initialized",
+   "fieldtype": "Check",
+   "label": "Initialized"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-08 13:19:33.087453",
+ "modified": "2024-10-21 11:41:21.197374",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
