@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
-from datetime import datetime
-from typing import Dict
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
@@ -13,12 +12,13 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 
+if TYPE_CHECKING:
+	from datetime import datetime
+
 
 class SiteBackup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -52,7 +52,8 @@ class SiteBackup(Document):
 		with_files: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
+		"job",
 		"status",
 		"database_url",
 		"public_url",
@@ -69,7 +70,7 @@ class SiteBackup(Document):
 		"remote_public_file",
 		"remote_private_file",
 		"remote_config_file",
-	]
+	)
 
 	def before_insert(self):
 		if getattr(self, "force", False):
@@ -100,7 +101,7 @@ class SiteBackup(Document):
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: Dict):
+	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -113,9 +114,7 @@ class SiteBackup(Document):
 		return cls.backup_exists(site, day, {"with_files": True})
 
 
-def track_offsite_backups(
-	site: str, backup_data: dict, offsite_backup_data: dict
-) -> tuple:
+def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dict) -> tuple:
 	remote_files = {"database": None, "site_config": None, "public": None, "private": None}
 
 	if offsite_backup_data:
@@ -153,9 +152,7 @@ def track_offsite_backups(
 
 
 def process_backup_site_job_update(job):
-	backups = frappe.get_all(
-		"Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1
-	)
+	backups = frappe.get_all("Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1)
 	if not backups:
 		return
 	backup = backups[0]
@@ -211,15 +208,12 @@ def process_backup_site_job_update(job):
 
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all(
-		"Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1
-	)
+	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
 	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 
 	if region:
 		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
-	else:
-		return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
 
 
 def on_doctype_update():
