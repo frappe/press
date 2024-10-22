@@ -4,9 +4,16 @@
 			:columns="result.output?.columns ?? []"
 			:data="result.output?.data ?? []"
 		/>
-		<div class="output-container mt-2">
-			SQL Query -
-			<pre class="mt-2 text-sm">{{ result.query }}</pre>
+		<div class="output-container mt-2 !p-2">
+			<Button
+				:iconLeft="isSQLQueryVisible ? 'chevron-down' : 'chevron-right'"
+				variant="ghost"
+				@click="toggleSQLQuerySection"
+				>View SQL Query</Button
+			>
+			<pre class="mt-4 text-sm" v-if="isSQLQueryVisible">{{
+				result.query
+			}}</pre>
 		</div>
 	</div>
 
@@ -28,6 +35,16 @@ export default {
 	props: ['result'],
 	components: {
 		SQLResultTable
+	},
+	data() {
+		return {
+			isSQLQueryVisible: false
+		};
+	},
+	methods: {
+		toggleSQLQuerySection() {
+			this.isSQLQueryVisible = !this.isSQLQueryVisible;
+		}
 	}
 };
 </script>
