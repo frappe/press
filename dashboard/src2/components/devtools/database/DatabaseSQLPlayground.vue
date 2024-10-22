@@ -1,93 +1,125 @@
 <template>
-	<DatabaseToolWrapper title="SQL Playground">
-		<template #actions v-if="isSQLEditorReady">
-			<FormControl
-				class="w-min-[200px] cursor-pointer"
-				type="select"
-				:options="[
-					{
-						label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;',
-						value: 'read-only'
-					},
-					{
-						label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;',
-						value: 'read-write'
-					}
-				]"
-				size="sm"
-				variant="outline"
-				v-model="mode"
-			/>
-		</template>
-		<template #default>
-			<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
-				<div class="overflow-hidden rounded border">
-					<SQLCodeEditor
-						v-model="query"
-						v-if="sqlSchemaForAutocompletion"
-						:schema="sqlSchemaForAutocompletion"
-					/>
-				</div>
-				<div class="mt-2 flex flex-row items-center justify-between">
-					<div class="flex gap-2">
-						<Button iconLeft="table" @click="toggleTableSchemasDialog"
-							>Tables</Button
-						>
-						<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
-					</div>
-
-					<Button
-						@click="() => runSQLQuery()"
-						:loading="$resources.runSQLQuery.loading"
-						iconLeft="play"
-						variant="solid"
-						>Run Query</Button
-					>
-				</div>
-				<div
-					class="mt-4"
-					v-if="!$resources.runSQLQuery.loading && (data || errorMessage)"
+	<div class="m-5 items-center justify-center">
+		<div class="mb-5 flex flex-row items-center justify-between">
+			<div class="flex flex-row items-center gap-2">
+				<!-- Title -->
+				<p class="font-semibold">SQL Playground</p>
+				<!-- Actions -->
+				<FormControl
+					class="w-min-[200px] cursor-pointer"
+					type="select"
+					:options="[
+						{
+							label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;',
+							value: 'read-only'
+						},
+						{
+							label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;',
+							value: 'read-write'
+						}
+					]"
+					size="sm"
+					variant="outline"
+					v-model="mode"
+				/>
+			</div>
+			<div class="flex flex-row gap-2">
+				<FormControl
+					class="cursor-pointer"
+					type="select"
+					:options="sites"
+					size="sm"
+					variant="outline"
+					v-model="site"
+				/>
+				<Button
+					iconLeft="refresh-ccw"
+					variant="subtle"
+					:loading="$resources.tableSchemas.loading"
+					loading-text="Refreshing Schema"
+					@click="() => fetchTableSchemas(true)"
 				>
-					<div v-if="errorMessage" class="output-container">
-						<pre class="mb-4 text-sm" v-if="failedQuery">{{ failedQuery }}</pre>
-						{{ prettifySQLError(errorMessage) }}<br /><br />
-						Query execution failed
-					</div>
-					<div v-else-if="data.length == 0" class="output-container">
-						No output received
-					</div>
-					<div v-else-if="data.length == 1">
-						<SQLResult :result="data[0]" />
-					</div>
-					<div v-else>
-						<FTabs :tabs="sqlResultTabs" v-model="tabIndex">
-							<template #default="{ tab }">
-								<div class="pt-5">
-									<SQLResult :result="tab" />
-								</div>
-							</template>
-						</FTabs>
-					</div>
+					Refresh Schema
+				</Button>
+			</div>
+		</div>
+		<!-- body -->
+		<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
+			<div class="overflow-hidden rounded border">
+				<SQLCodeEditor
+					v-model="query"
+					v-if="sqlSchemaForAutocompletion"
+					:schema="sqlSchemaForAutocompletion"
+				/>
+			</div>
+			<div class="mt-2 flex flex-row items-center justify-between">
+				<div class="flex gap-2">
+					<Button iconLeft="table" @click="toggleTableSchemasDialog"
+						>Tables</Button
+					>
+					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
 				</div>
+
+				<Button
+					@click="() => runSQLQuery()"
+					:loading="$resources.runSQLQuery.loading"
+					iconLeft="play"
+					variant="solid"
+					>Run Query</Button
+				>
 			</div>
 			<div
-				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-				v-else
+				class="mt-4"
+				v-if="!$resources.runSQLQuery.loading && (data || errorMessage)"
 			>
-				<Spinner class="w-4" /> Setting Up SQL Playground
+				<div v-if="errorMessage" class="output-container">
+					<pre class="mb-4 text-sm" v-if="failedQuery">{{ failedQuery }}</pre>
+					{{ prettifySQLError(errorMessage) }}<br /><br />
+					Query execution failed
+				</div>
+				<div v-else-if="data.length == 0" class="output-container">
+					No output received
+				</div>
+				<div v-else-if="data.length == 1">
+					<SQLResult :result="data[0]" />
+				</div>
+				<div v-else>
+					<FTabs :tabs="sqlResultTabs" v-model="tabIndex">
+						<template #default="{ tab }">
+							<div class="pt-5">
+								<SQLResult :result="tab" />
+							</div>
+						</template>
+					</FTabs>
+				</div>
 			</div>
-			<DatabaseSQLPlaygroundLog
-				:site="this.name"
-				v-model="showLogsDialog"
-				@rerunQuery="rerunQuery"
-			/>
-			<DatabaseTableSchemaDialog
-				:site="this.name"
-				v-model="showTableSchemasDialog"
-				@runSQLQuery="runSQLQueryForViewingTable"
-			/>
-		</template>
-	</DatabaseToolWrapper>
+		</div>
+		<div
+			v-else-if="!site"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+		>
+			Select a site to get started
+		</div>
+		<div
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			v-else
+		>
+			<Spinner class="w-4" /> Setting Up SQL Playground
+		</div>
+		<DatabaseSQLPlaygroundLog
+			v-if="this.site"
+			:site="this.site"
+			v-model="showLogsDialog"
+			@rerunQuery="rerunQuery"
+		/>
+		<DatabaseTableSchemaDialog
+			v-if="this.site"
+			:site="this.site"
+			:tableSchemas="$resources.tableSchemas?.data?.message ?? {}"
+			v-model="showTableSchemasDialog"
+			@runSQLQuery="runSQLQueryForViewingTable"
+		/>
+	</div>
 </template>
 <style scoped>
 .output-container {
@@ -107,7 +139,6 @@ import SQLResult from './SQLResult.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
-	props: ['name'],
 	components: {
 		FTabs: Tabs,
 		DatabaseToolWrapper,
@@ -119,6 +150,7 @@ export default {
 	},
 	data() {
 		return {
+			site: '',
 			tabIndex: 0,
 			query: '',
 			commit: false,
@@ -131,19 +163,40 @@ export default {
 			showTableSchemasDialog: false
 		};
 	},
-	mounted() {
-		this.query =
-			window.localStorage.getItem(`sql_playground_query_${this.name}`) || '';
-	},
+	mounted() {},
 	watch: {
 		query() {
 			window.localStorage.setItem(
-				`sql_playground_query_${this.name}`,
+				`sql_playground_query_${this.site}`,
 				this.query
 			);
+		},
+		site() {
+			this.query =
+				window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
+			this.fetchTableSchemas();
 		}
 	},
 	resources: {
+		sites() {
+			return {
+				url: 'press.api.client.get_list',
+				params: {
+					doctype: 'Site',
+					fields: ['name'],
+					filters: {
+						status: 'Active'
+					}
+				},
+				initialData: [],
+				onSuccess: data => {
+					if (data.length > 0) {
+						this.site = data[0].name;
+					}
+				},
+				auto: true
+			};
+		},
 		runSQLQuery() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -172,19 +225,20 @@ export default {
 		tableSchemas() {
 			return {
 				url: 'press.api.client.run_doc_method',
-				makeParams: () => {
-					return {
-						dt: 'Site',
-						dn: this.name,
-						method: 'fetch_database_table_schemas'
-					};
-				},
 				initialData: {},
-				auto: true
+				auto: false
 			};
 		}
 	},
 	computed: {
+		sites() {
+			return (this.$resources.sites?.data || []).map(x => {
+				return {
+					label: x.name + String.fromCharCode(160).repeat(8),
+					value: x.name
+				};
+			});
+		},
 		sqlSchemaForAutocompletion() {
 			const tableSchemas = this.$resources.tableSchemas?.data?.message ?? {};
 			if (!tableSchemas || !Object.keys(tableSchemas).length) return null;
@@ -223,12 +277,22 @@ export default {
 		}
 	},
 	methods: {
+		fetchTableSchemas(invalidate_cache = false) {
+			this.$resources.tableSchemas.submit({
+				dt: 'Site',
+				dn: this.site,
+				method: 'fetch_database_table_schemas',
+				args: {
+					invalidate_cache
+				}
+			});
+		},
 		runSQLQuery(ignore_validation = false) {
 			if (!this.query) return;
 			if (this.mode === 'read-only' || ignore_validation) {
 				this.$resources.runSQLQuery.submit({
 					dt: 'Site',
-					dn: this.name,
+					dn: this.site,
 					method: 'run_sql_query_in_database',
 					args: {
 						query: this.query,

@@ -55,7 +55,7 @@ import { toast } from 'vue-sonner';
 
 export default {
 	name: 'DatabaseTableSchemaDialog',
-	props: ['site'],
+	props: ['site', 'tableSchemas'],
 	emits: ['runSQLQuery'],
 	components: {
 		FormControl,
@@ -66,40 +66,18 @@ export default {
 			selectedSchema: null
 		};
 	},
-	resources: {
-		tableSchemas() {
-			return {
-				url: 'press.api.client.run_doc_method',
-				makeParams: () => {
-					return {
-						dt: 'Site',
-						dn: this.site,
-						method: 'fetch_database_table_schemas'
-					};
-				},
-				initialData: {},
-				auto: true
-			};
-		}
-	},
 	computed: {
 		autocompleteOptions() {
-			return Object.keys(this.$resources.tableSchemas.data?.message || {}).map(
-				x => ({
-					label: x,
-					value: x
-				})
-			);
+			return Object.keys(this.tableSchemas).map(x => ({
+				label: x,
+				value: x
+			}));
 		},
 		listOptions() {
 			if (!this.selectedSchema || !this.selectedSchema.value) return {};
 			return {
 				data: () => {
-					return (
-						this.$resources.tableSchemas.data?.message[
-							this.selectedSchema.value
-						] ?? []
-					);
+					return this.tableSchemas[this.selectedSchema.value] ?? [];
 				},
 				hideControls: true,
 				columns: [

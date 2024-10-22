@@ -13,6 +13,7 @@ import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
+import DatabaseZap from '~icons/lucide/database-zap';
 import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
@@ -118,7 +119,7 @@ export default {
 					children: [
 						{
 							name: 'SQL Playground',
-							icon: () => h(App),
+							icon: () => h(DatabaseZap),
 							route: '/sql-playground',
 							isActive: routeName === 'SQL Playground'
 						}

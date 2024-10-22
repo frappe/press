@@ -281,6 +281,12 @@ let router = createRouter({
 				import('./components/marketplace/ReplyMarketplaceApp.vue'),
 			props: true
 		},
+		{
+			path: '/sql-playground',
+			name: 'SQL Playground',
+			component: () =>
+				import('./components/devtools/database/DatabaseSQLPlayground.vue')
+		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',
