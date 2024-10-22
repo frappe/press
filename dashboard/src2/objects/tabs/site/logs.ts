@@ -15,9 +15,12 @@ export function getLogsTab(forSite: boolean) {
 		list: {
 			resource({ documentResource: res }) {
 				return {
-					params: {
-						name: res.doc.group,
-						bench: res.name
+					makeParams: () => {
+						if (res.doctype === 'Site') {
+							return { name: res.doc.name };
+						} else {
+							return { name: res.doc.group, bench: res.name };
+						}
 					},
 					url,
 					auto: true,
