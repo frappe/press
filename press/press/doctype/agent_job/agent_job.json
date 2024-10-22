@@ -13,6 +13,7 @@
   "bench",
   "site",
   "code_server",
+  "devbox",
   "upstream",
   "host",
   "request_section",
@@ -250,11 +251,17 @@
   {
    "fieldname": "column_break_ayyq",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "devbox",
+   "fieldtype": "Link",
+   "label": "Devbox",
+   "options": "Devbox"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2024-08-23 16:32:27.447230",
+ "modified": "2024-10-22 10:55:39.763578",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

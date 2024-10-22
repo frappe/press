@@ -9,6 +9,7 @@
   "subdomain",
   "domain",
   "initialized",
+  "add_site_to_upstream",
   "column_break_cdoo",
   "server",
   "status",
@@ -83,12 +84,19 @@
    "default": "0",
    "fieldname": "initialized",
    "fieldtype": "Check",
-   "label": "Initialized"
+   "label": "Initialized",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "add_site_to_upstream",
+   "fieldtype": "Check",
+   "label": "Add Site to Upstream"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-21 11:41:21.197374",
+ "modified": "2024-10-22 11:03:19.535266",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

@@ -11,12 +11,14 @@ frappe.ui.form.on('Devbox', {
 			__('Information'),
 		);
 
-		frm.add_custom_button(
-			__('Pull Latest Image'),
-			() => {
-				frm.call('pull_latest_image');
-			},
-			__('Container'),
-		);
+		if (!frm.doc.initialized) {
+			frm.add_custom_button(
+				__('Initialize'),
+				() => {
+					frm.call('initialize_devbox');
+				},
+				__('Actions'),
+			);
+		}
 	},
 });
