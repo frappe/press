@@ -1,9 +1,31 @@
 <template>
-	<div class="-m-5 flex divide-x">
-		<div class="h-screen w-full overflow-auto">
+	<div
+		class="-m-5 flex divide-x"
+		:class="{
+			'flex-col': $isMobile
+		}"
+	>
+		<div v-if="$isMobile" class="ml-5 mt-5 w-60 divide-y rounded-sm border">
+			<template v-for="tab in tabs">
+				<router-link
+					:to="{ name: tab.value }"
+					v
+					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
+					:class="{
+						' bg-gray-50 text-gray-800': isActiveTab(tab),
+						'text-gray-600': !isActiveTab(tab)
+					}"
+				>
+					<div class="px-4 py-2">
+						{{ tab.label }}
+					</div>
+				</router-link>
+			</template>
+		</div>
+		<div class="w-full overflow-auto sm:h-[88vh]">
 			<router-view />
 		</div>
-		<div class="w-60">
+		<div v-if="!$isMobile" class="w-60">
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
