@@ -9,7 +9,11 @@
 				v-model="duration"
 			/>
 		</div>
-		<ErrorMessage :message="$resources.analytics.error" />
+		<ErrorMessage
+			:message="
+				$resources.analytics.error || $resources.advancedAnalytics.error
+			"
+		/>
 
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<AnalyticsCard title="Daily Usage">
@@ -61,7 +65,22 @@
 					class="h-[15.55rem] p-2 pb-3"
 				/>
 			</AnalyticsCard>
+		</div>
 
+		<div class="!mt-6 flex space-x-2">
+			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
+			<FeatherIcon
+				class="h-5 w-5 cursor-pointer text-gray-500 hover:text-gray-700"
+				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
+				@click="toggleAdvancedAnalytics"
+			/>
+		</div>
+
+		<!-- Advanced Analytics -->
+		<div
+			v-if="showAdvancedAnalytics"
+			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+		>
 			<AnalyticsCard title="Background Jobs">
 				<LineChart
 					type="time"
@@ -70,7 +89,7 @@
 					:data="jobCountData"
 					unit="jobs"
 					:chartTheme="[$theme.colors.red[500]]"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -84,7 +103,7 @@
 					:data="jobTimeData"
 					unit="seconds"
 					:chartTheme="[$theme.colors.blue[500]]"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -97,7 +116,7 @@
 					:data="requestCountByPathData"
 					unit="requests"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -110,7 +129,7 @@
 					:data="requestDurationByPathData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -126,7 +145,7 @@
 					:data="averageRequestDurationByPathData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -142,7 +161,7 @@
 					:data="backgroundJobCountByMethodData"
 					unit="jobs"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -158,7 +177,7 @@
 					:data="backgroundJobDurationByMethodData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -174,7 +193,7 @@
 					:data="averageBackgroundJobDurationByMethodData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -187,7 +206,7 @@
 					:data="slowLogsByCountData"
 					unit="queries"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -200,7 +219,7 @@
 					:data="slowLogsByDurationData"
 					unit="seconds"
 					:chartTheme="requestChartColors"
-					:loading="$resources.analytics.loading"
+					:loading="$resources.advancedAnalytics.loading"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -230,6 +249,7 @@ export default {
 	data() {
 		return {
 			duration: '24h',
+			showAdvancedAnalytics: false,
 			durationOptions: [
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },
@@ -241,7 +261,7 @@ export default {
 	},
 	resources: {
 		analytics() {
-			let localTimezone = dayjs.tz.guess();
+			const localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.get',
 				params: {
@@ -250,6 +270,19 @@ export default {
 					duration: this.duration
 				},
 				auto: true
+			};
+		},
+		advancedAnalytics() {
+			const localTimezone = dayjs.tz.guess();
+			return {
+				url: 'press.api.analytics.get_advanced_analytics',
+				params: {
+					name: this.name,
+					timezone: localTimezone,
+					duration: this.duration,
+					advanced: true
+				},
+				auto: false
 			};
 		}
 	},
@@ -305,56 +338,59 @@ export default {
 		},
 		requestCountByPathData() {
 			let requestCountByPath =
-				this.$resources.analytics.data?.request_count_by_path;
+				this.$resources.advancedAnalytics.data?.request_count_by_path;
 			if (!requestCountByPath) return;
 
 			return requestCountByPath;
 		},
 		requestDurationByPathData() {
 			let requestDurationByPath =
-				this.$resources.analytics.data?.request_duration_by_path;
+				this.$resources.advancedAnalytics.data?.request_duration_by_path;
 			if (!requestDurationByPath) return;
 
 			return requestDurationByPath;
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
-				this.$resources.analytics.data?.average_request_duration_by_path;
+				this.$resources.advancedAnalytics.data
+					?.average_request_duration_by_path;
 			if (!averageRequestDurationByPath) return;
 
 			return averageRequestDurationByPath;
 		},
 		backgroundJobCountByMethodData() {
 			let backgroundJobCountByMethod =
-				this.$resources.analytics.data?.background_job_count_by_method;
+				this.$resources.advancedAnalytics.data?.background_job_count_by_method;
 			if (!backgroundJobCountByMethod) return;
 
 			return backgroundJobCountByMethod;
 		},
 		backgroundJobDurationByMethodData() {
 			let backgroundJobDurationByMethod =
-				this.$resources.analytics.data?.background_job_duration_by_method;
+				this.$resources.advancedAnalytics.data
+					?.background_job_duration_by_method;
 			if (!backgroundJobDurationByMethod) return;
 
 			return backgroundJobDurationByMethod;
 		},
 		averageBackgroundJobDurationByMethodData() {
 			let averageBackgroundJobDurationByMethod =
-				this.$resources.analytics.data
+				this.$resources.advancedAnalytics.data
 					?.average_background_job_duration_by_method;
 			if (!averageBackgroundJobDurationByMethod) return;
 
 			return averageBackgroundJobDurationByMethod;
 		},
 		slowLogsByCountData() {
-			let slowLogsByCount = this.$resources.analytics.data?.slow_logs_by_count;
+			let slowLogsByCount =
+				this.$resources.advancedAnalytics.data?.slow_logs_by_count;
 			if (!slowLogsByCount) return;
 
 			return slowLogsByCount;
 		},
 		slowLogsByDurationData() {
 			let slowLogsByDuration =
-				this.$resources.analytics.data?.slow_logs_by_duration;
+				this.$resources.advancedAnalytics.data?.slow_logs_by_duration;
 			if (!slowLogsByDuration) return;
 
 			return slowLogsByDuration;
@@ -370,7 +406,7 @@ export default {
 			};
 		},
 		jobCountData() {
-			let jobCount = this.$resources.analytics.data?.job_count;
+			let jobCount = this.$resources.advancedAnalytics.data?.job_count;
 			if (!jobCount) return;
 
 			return {
@@ -378,12 +414,21 @@ export default {
 			};
 		},
 		jobTimeData() {
-			let jobCpuTime = this.$resources.analytics.data?.job_cpu_time;
+			let jobCpuTime = this.$resources.advancedAnalytics.data?.job_cpu_time;
 			if (!jobCpuTime) return;
 
 			return {
 				datasets: [jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])]
 			};
+		}
+	},
+	methods: {
+		toggleAdvancedAnalytics() {
+			if (!this.showAdvancedAnalytics) {
+				this.$resources.advancedAnalytics.submit();
+			}
+
+			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
 		}
 	}
 };
