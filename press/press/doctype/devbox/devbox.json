@@ -84,8 +84,7 @@
    "default": "0",
    "fieldname": "initialized",
    "fieldtype": "Check",
-   "label": "Initialized",
-   "read_only": 1
+   "label": "Initialized"
   },
   {
    "default": "0",
@@ -96,7 +95,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-22 11:03:19.535266",
+ "modified": "2024-10-22 12:06:40.756899",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
@@ -117,5 +116,10 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Starting"
+  }
+ ]
 }

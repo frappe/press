@@ -52,7 +52,12 @@ class Devbox(Document):
 	def initialize_devbox(self):
 		devbox = self
 		server_agent = Agent(server_type="Server", server=devbox.server)
-		server_agent.create_agent_job("New Devbox", path="devboxes", data={"devbox_name: ": devbox.name})
+		server_agent.create_agent_job(
+			"New Devbox",
+			path="devboxes",
+			data={"devbox_name": devbox.name},
+			devbox=devbox.name,
+		)
 		reverse_proxy = frappe.db.get_value(doctype="Server", filters=devbox.server, fieldname="proxy_server")
 		proxy_agent = Agent(server_type="Proxy Server", server=reverse_proxy)
 		server_private_ip = frappe.db.get_value(
@@ -66,11 +71,15 @@ class Devbox(Document):
 			devbox=devbox.name,
 		)
 
-	@frappe.whitelist()
-	def pull_latest_image(self):
-		print("meow")
-
 
 def process_new_devbox_job_update(job: AgentJob):
-	if job.status == "Success":
+	if job.job_type == "New Devbox" and job.status == "Success":
+		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="initialized", val=True)
+
+	if job.job_type == "Add Site to Upstream" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="add_site_to_upstream", val=True)
+
+	status = frappe.db.get_value("Devbox", job.devbox, ["initialized", "add_site_to_upstream"], as_dict=True)
+
+	if status.initialized and status.add_site_to_upstream:
+		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Starting")
