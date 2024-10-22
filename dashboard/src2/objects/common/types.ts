@@ -11,7 +11,23 @@ type ListResource = {
 		submit: (name: string, cb: { onSuccess: () => void }) => Promise<unknown>;
 	};
 };
-export interface Resource {
+export interface ResourceBase {
+	url: string;
+	auto: boolean;
+	cache: string[];
+}
+
+export interface ResourceWithParams extends ResourceBase {
+	params: Record<string, unknown>;
+}
+
+export interface ResourceWithMakeParams extends ResourceBase {
+	makeParams: () => Record<string, unknown>;
+}
+
+export type Resource = ResourceWithParams | ResourceWithMakeParams;
+
+export interface DocumentResource {
 	name: string;
 	doc: Record<string, any>;
 	[key: string]: any;
@@ -34,7 +50,7 @@ export interface Detail {
 	breadcrumbs?: Breadcrumbs;
 	route: string;
 	tabs: Tab[];
-	actions: (r: { documentResource: Resource }) => Action[];
+	actions: (r: { documentResource: DocumentResource }) => Action[];
 }
 
 export interface List {
@@ -49,7 +65,7 @@ export interface List {
 }
 type R = {
 	listResource: ListResource;
-	documentResource: Resource;
+	documentResource: DocumentResource;
 };
 type FilterControls = (r: R) => FilterField[];
 type PrimaryAction = (r: R) => {
@@ -60,10 +76,12 @@ type PrimaryAction = (r: R) => {
 	};
 	onClick?: () => void;
 };
-type StatusBadge = (r: { documentResource: Resource }) => { label: string };
+type StatusBadge = (r: { documentResource: DocumentResource }) => {
+	label: string;
+};
 export type Breadcrumb = { label: string; route: string };
 export type BreadcrumbArgs = {
-	documentResource: Resource;
+	documentResource: DocumentResource;
 	items: Breadcrumb[];
 };
 export type Breadcrumbs = (r: BreadcrumbArgs) => Breadcrumb[];
@@ -106,14 +124,14 @@ export interface Tab {
 	type: string;
 	childrenRoutes?: string[];
 	component?: AsyncComponent;
-	props?: (r: Resource) => Record<string, unknown>;
+	props?: (r: DocumentResource) => Record<string, unknown>;
 	list?: TabList;
 }
 
 export interface TabList {
 	doctype?: string;
 	orderBy?: string;
-	filters?: (r: Resource) => Record<string, unknown>;
+	filters?: (r: DocumentResource) => Record<string, unknown>;
 	route?: (row: Row) => Route;
 	pageLength?: number;
 	columns: ColumnField[];
@@ -121,21 +139,17 @@ export interface TabList {
 	rowActions?: (r: {
 		row: Row;
 		listResource: ListResource;
-		documentResource: Resource;
+		documentResource: DocumentResource;
 	}) => Action[];
 	primaryAction?: PrimaryAction;
 	filterControls?: FilterControls;
-	banner?: (r: { documentResource: Resource }) => BannerConfig | undefined;
+	banner?: (r: {
+		documentResource: DocumentResource;
+	}) => BannerConfig | undefined;
 	searchField?: string;
 	experimental?: boolean;
 	documentation?: string;
-	resource?: (r: { documentResource: Resource }) => {
-		url: string;
-		params?: Record<string, unknown>;
-		makeParams?: () => Record<string, unknown>;
-		auto: boolean;
-		cache: string[];
-	};
+	resource?: (r: { documentResource: DocumentResource }) => Resource;
 }
 
 interface Action {
