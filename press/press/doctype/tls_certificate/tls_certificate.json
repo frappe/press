@@ -121,6 +121,7 @@
    "fieldname": "private_key",
    "fieldtype": "Code",
    "label": "Private Key",
+   "hidden": 1,
    "read_only": 1
   },
   {
@@ -151,7 +152,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-10 10:43:33.881463",
+ "modified": "2024-10-17 10:43:33.881463",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
