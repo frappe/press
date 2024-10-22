@@ -131,7 +131,8 @@ export interface TabList {
 	documentation?: string;
 	resource?: (r: { documentResource: Resource }) => {
 		url: string;
-		params: Record<string, unknown>;
+		params?: Record<string, unknown>;
+		makeParams?: () => Record<string, unknown>;
 		auto: boolean;
 		cache: string[];
 	};
