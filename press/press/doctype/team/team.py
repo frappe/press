@@ -33,14 +33,12 @@ class Team(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import CommunicationEmail
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		auto_install_localisation_app_enabled: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
