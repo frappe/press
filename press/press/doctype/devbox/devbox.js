@@ -20,5 +20,11 @@ frappe.ui.form.on('Devbox', {
 				__('Actions'),
 			);
 		}
+
+		if (['Starting', 'Running'].includes(frm.doc.status)) {
+			frm.add_custom_button(__('Go to Devbox'), () => {
+				window.open(`https://${frm.doc.name}/vnc.html`, '_blank');
+			});
+		}
 	},
 });
