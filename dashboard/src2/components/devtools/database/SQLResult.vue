@@ -11,14 +11,14 @@
 				@click="toggleSQLQuerySection"
 				>View SQL Query</Button
 			>
-			<pre class="mt-4 text-sm" v-if="isSQLQueryVisible">{{
+			<pre class="mt-4 text-sm leading-normal" v-if="isSQLQueryVisible">{{
 				result.query
 			}}</pre>
 		</div>
 	</div>
 
 	<div v-else class="output-container">
-		<pre class="mb-4 text-sm">{{ result.query }}</pre>
+		<pre class="mb-4 text-sm leading-normal">{{ result.query }}</pre>
 		{{ result.row_count }} rows affected<br /><br />
 		Query executed successfully
 	</div>
