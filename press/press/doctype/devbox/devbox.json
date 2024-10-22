@@ -10,6 +10,8 @@
   "domain",
   "initialized",
   "add_site_to_upstream",
+  "websockify_port",
+  "vnc_port",
   "column_break_cdoo",
   "server",
   "status",
@@ -91,11 +93,23 @@
    "fieldname": "add_site_to_upstream",
    "fieldtype": "Check",
    "label": "Add Site to Upstream"
+  },
+  {
+   "fieldname": "websockify_port",
+   "fieldtype": "Int",
+   "label": "Websockify Port",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vnc_port",
+   "fieldtype": "Int",
+   "label": "VNC Port",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-22 12:06:40.756899",
+ "modified": "2024-10-22 12:53:58.512208",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

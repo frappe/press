@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import frappe
@@ -32,6 +33,8 @@ class Devbox(Document):
 		server: DF.Link
 		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]
 		subdomain: DF.Data
+		vnc_port: DF.Int
+		websockify_port: DF.Int
 	# end: auto-generated types
 	pass
 
@@ -75,6 +78,8 @@ class Devbox(Document):
 def process_new_devbox_job_update(job: AgentJob):
 	if job.job_type == "New Devbox" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="initialized", val=True)
+		websockify_port = json.loads(job.data)["message"]["websockify_port"]
+		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="websockify_port", val=websockify_port)
 
 	if job.job_type == "Add Site to Upstream" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="add_site_to_upstream", val=True)
