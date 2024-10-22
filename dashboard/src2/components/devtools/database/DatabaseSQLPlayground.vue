@@ -172,6 +172,16 @@ export default {
 			);
 		},
 		site() {
+			// reset state
+			this.execution_successful = null;
+			this.data = null;
+			this.errorMessage = null;
+			this.failedQuery = null;
+			this.mode = 'read-only';
+			this.showLogsDialog = false;
+			this.showTableSchemasDialog = false;
+
+			// recover query and fetch table schemas
 			this.query =
 				window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
 			this.fetchTableSchemas();

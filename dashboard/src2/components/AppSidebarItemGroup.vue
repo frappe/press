@@ -20,7 +20,7 @@
 			</span>
 		</div>
 	</div>
-	<div class="ml-5 border-l pr-2" v-if="isOpened">
+	<div class="ml-5 border-l py-1" v-if="isOpened">
 		<AppSidebarItem
 			v-for="subItem in item.children"
 			:key="subItem.name"
@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 
 let props = defineProps({
@@ -45,4 +45,10 @@ const isOpened = ref(false);
 const toggle = () => {
 	isOpened.value = !isOpened.value;
 };
+
+onMounted(() => {
+	if (props.item.isActive) {
+		isOpened.value = true;
+	}
+});
 </script>
