@@ -1,0 +1,50 @@
+<template>
+	<div
+		@click="toggle"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1 text-gray-800 transition"
+		:class="[
+			item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
+			item.disabled ? 'pointer-events-none opacity-50' : '',
+			$attrs.class
+		]"
+	>
+		<div class="flex w-full items-center space-x-2">
+			<span class="grid h-5 w-6 place-items-center">
+				<component :is="item.icon" class="h-4 w-4 text-gray-500" />
+			</span>
+			<span class="text-sm">{{ item.name }}</span>
+			<component :is="item.badge" />
+			<span class="!ml-auto">
+				<i-lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-gray-500" />
+				<i-lucide-chevron-right v-else class="h-4 w-4 text-gray-500" />
+			</span>
+		</div>
+	</div>
+	<Transition>
+		<div class="ml-5 border-l pr-2" v-if="isOpened">
+			<AppSidebarItem
+				v-for="subItem in item.children"
+				:key="subItem.name"
+				:item="subItem"
+			/>
+		</div>
+	</Transition>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import AppSidebarItem from './AppSidebarItem.vue';
+
+let props = defineProps({
+	item: {
+		type: Object,
+		required: true
+	}
+});
+
+const isOpened = ref(false);
+
+const toggle = () => {
+	isOpened.value = !isOpened.value;
+};
+</script>

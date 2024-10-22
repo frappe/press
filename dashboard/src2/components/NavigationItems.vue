@@ -15,6 +15,7 @@ import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
+import Code from '~icons/lucide/code';
 import { unreadNotificationsCount } from '../data/notifications';
 
 export default {
@@ -108,6 +109,21 @@ export default {
 					condition:
 						this.$team.doc?.is_desk_user ||
 						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
+					disabled: enforce2FA
+				},
+				{
+					name: 'Dev Tools',
+					icon: () => h(Code),
+					route: '/devtools',
+					children: [
+						{
+							name: 'SQL Playground',
+							icon: () => h(App),
+							route: '/sql-playground',
+							isActive: routeName === 'SQL Playground'
+						}
+					],
+					isActive: ['SQL Playground'].includes(routeName),
 					disabled: enforce2FA
 				},
 				{
