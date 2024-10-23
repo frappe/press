@@ -871,11 +871,11 @@ export default {
 												loading: 'Scheduling backup...',
 												success: () => {
 													hide();
-													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Detail Jobs',
+														name: 'Site Jobs',
 														params: { name: site.name }
 													});
+													return 'Backup scheduled successfully.';
 												},
 												error: e => {
 													return e.messages?.length

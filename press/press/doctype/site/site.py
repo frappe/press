@@ -2524,6 +2524,12 @@ class Site(Document, TagHelpers):
 				"doc_method": "activate",
 			},
 			{
+				"action": "Schedule backup",
+				"description": "Schedule a backup for this site",
+				"button_label": "Schedule",
+				"doc_method": "schedule_backup",
+			},
+			{
 				"action": "Transfer site",
 				"description": "Transfer ownership of this site to another team",
 				"button_label": "Transfer",
