@@ -23,8 +23,8 @@
 
 	<div v-else class="output-container">
 		<pre class="mb-4 text-sm leading-normal">{{ result.query }}</pre>
-		{{ result.row_count }} rows affected<br /><br />
-		Query executed successfully
+		<p class="mb-2">{{ result.row_count }} rows affected</p>
+		<p>Query executed successfully</p>
 	</div>
 </template>
 <style scoped>
