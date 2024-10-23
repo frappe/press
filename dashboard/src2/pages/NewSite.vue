@@ -441,7 +441,7 @@ export default {
 					},
 					onSuccess: site => {
 						router.push({
-							name: 'Site Detail Jobs',
+							name: 'Site Jobs',
 							params: { name: site.name }
 						});
 					}

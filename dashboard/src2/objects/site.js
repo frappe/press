@@ -1154,7 +1154,7 @@ export default {
 										loading: 'Updating site...',
 										success: () => {
 											router.push({
-												name: 'Site Detail Jobs',
+												name: 'Site Jobs',
 												params: { name: site.name }
 											});
 
@@ -1450,7 +1450,7 @@ export default {
 					},
 					onClick() {
 						router.push({
-							name: 'Site Detail Jobs',
+							name: 'Site Jobs',
 							params: { name: site.name }
 						});
 					}
