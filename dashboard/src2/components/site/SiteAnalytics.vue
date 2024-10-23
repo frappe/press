@@ -424,7 +424,10 @@ export default {
 	},
 	methods: {
 		toggleAdvancedAnalytics() {
-			if (!this.showAdvancedAnalytics) {
+			if (
+				!this.showAdvancedAnalytics &&
+				!this.$resources.advancedAnalytics.fetched
+			) {
 				this.$resources.advancedAnalytics.submit();
 			}
 
