@@ -91,7 +91,7 @@ export default {
 						width: 0.5,
 						type: 'Icon',
 						Icon(value) {
-							return value ? 'check' : '';
+							return value ? 'check' : 'x';
 						}
 					}
 				],

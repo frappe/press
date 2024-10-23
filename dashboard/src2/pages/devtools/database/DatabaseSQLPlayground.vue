@@ -14,11 +14,11 @@
 					type="select"
 					:options="[
 						{
-							label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;',
+							label: 'Read Only&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
 							value: 'read-only'
 						},
 						{
-							label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;',
+							label: 'Read Write&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
 							value: 'read-write'
 						}
 					]"
