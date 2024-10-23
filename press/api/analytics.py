@@ -52,7 +52,6 @@ def get(name, timezone, duration="7d"):
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
-		"has_slow_queries": has_slow_queries,
 	}
 
 
