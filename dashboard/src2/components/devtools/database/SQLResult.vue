@@ -5,12 +5,16 @@
 			:data="result.output?.data ?? []"
 		/>
 		<div class="output-container mt-2 !p-2">
-			<Button
-				:iconLeft="isSQLQueryVisible ? 'chevron-down' : 'chevron-right'"
-				variant="ghost"
-				@click="toggleSQLQuerySection"
-				>View SQL Query</Button
-			>
+			<div class="flex flex-row items-center gap-1">
+				<Button
+					:icon="isSQLQueryVisible ? 'chevron-down' : 'chevron-right'"
+					variant="ghost"
+					@click="toggleSQLQuerySection"
+				></Button>
+				<p class="cursor-pointer" @click="toggleSQLQuerySection">
+					View SQL Query
+				</p>
+			</div>
 			<pre class="m-3 text-sm leading-normal" v-if="isSQLQueryVisible">{{
 				result.query
 			}}</pre>
