@@ -624,6 +624,9 @@ def get_installed_apps_in_version(name):
 @protected("Bench")
 def get_processes(name):
 	bench: "Bench" = frappe.get_doc("Bench", name)
+	if bench.status != "Active" and bench.status != "Broken":
+		return []
+
 	return bench.supervisorctl_status()
 
 
