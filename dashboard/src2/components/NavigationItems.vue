@@ -73,7 +73,7 @@ export default {
 					icon: () => h(Package),
 					route: '/benches',
 					isActive: routeName.startsWith('Bench'),
-					condition: this.$team?.is_desk_user,
+					condition: this.$team.doc?.is_desk_user,
 					disabled: !onboardingComplete || enforce2FA
 				},
 				{
@@ -136,7 +136,7 @@ export default {
 					isActive: routeName.startsWith('Settings'),
 					disabled: enforce2FA
 				}
-			].filter(item => item.condition !== false);
+			].filter(item => item.condition ?? true);
 		}
 	},
 	mounted() {
