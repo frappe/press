@@ -1,6 +1,8 @@
 <template>
-	<div class="m-5 items-center justify-center">
-		<div class="mb-5 flex flex-row items-center justify-between">
+	<div class="m-5">
+		<div
+			class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+		>
 			<div class="flex flex-row items-center gap-2">
 				<!-- Title -->
 				<p class="font-semibold">SQL Playground</p>
@@ -36,10 +38,10 @@
 					iconLeft="refresh-ccw"
 					variant="subtle"
 					:loading="$resources.tableSchemas.loading"
-					loading-text="Refreshing Schema"
 					@click="() => fetchTableSchemas(true)"
 				>
-					Refresh Schema
+					<span class="md:hidden">Schema</span>
+					<span class="hidden md:inline">Refresh Schema</span>
 				</Button>
 			</div>
 		</div>
