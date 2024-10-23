@@ -28,11 +28,11 @@
 			<div class="flex flex-row gap-2">
 				<FormControl
 					class="cursor-pointer"
-					type="select"
+					type="autocomplete"
 					:options="sites"
 					size="sm"
 					variant="outline"
-					v-model="site"
+					v-model="selectedSiteInfo"
 				/>
 				<Button
 					iconLeft="refresh-ccw"
@@ -152,7 +152,7 @@ export default {
 	},
 	data() {
 		return {
-			site: '',
+			selectedSiteInfo: null,
 			tabIndex: 0,
 			query: '',
 			commit: false,
@@ -203,7 +203,10 @@ export default {
 				initialData: [],
 				onSuccess: data => {
 					if (data.length > 0) {
-						this.site = data[0].name;
+						this.selectedSiteInfo = {
+							label: data[0].name,
+							value: data[0].name
+						};
 					}
 				},
 				auto: true
@@ -246,10 +249,14 @@ export default {
 		sites() {
 			return (this.$resources.sites?.data || []).map(x => {
 				return {
-					label: x.name + String.fromCharCode(160).repeat(8),
+					label: x.name,
 					value: x.name
 				};
 			});
+		},
+		site() {
+			if (!this.selectedSiteInfo) return '';
+			return this.selectedSiteInfo.value;
 		},
 		sqlSchemaForAutocompletion() {
 			const tableSchemas = this.$resources.tableSchemas?.data?.message ?? {};
