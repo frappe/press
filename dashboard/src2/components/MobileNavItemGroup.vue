@@ -19,7 +19,7 @@
 			</span>
 		</div>
 	</div>
-	<div class="ml-5 border-l pr-2" v-if="isOpened">
+	<div class="ml-5 py-1" v-if="isOpened">
 		<MobileNavItem
 			v-for="subItem in item.children"
 			:key="subItem.name"
@@ -28,7 +28,7 @@
 	</div>
 </template>
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import MobileNavItem from './MobileNavItem.vue';
 
 let props = defineProps({
@@ -43,4 +43,8 @@ const isOpened = ref(false);
 const toggle = () => {
 	isOpened.value = !isOpened.value;
 };
+
+onMounted(() => {
+	isOpened.value = props.item.isActive;
+});
 </script>
