@@ -92,6 +92,7 @@ $(document).ready(function () {
 		}
 		add_frappe_cloud_dashboard_link();
 	}
+	console.log(frappe.boot.subscription_conf.secret_key);
 });
 
 function add_frappe_cloud_dashboard_link() {
