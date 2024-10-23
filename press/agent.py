@@ -1,11 +1,13 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-import _io
+from __future__ import annotations
+
+import _io  # type: ignore
 import json
 import os
 from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -27,7 +29,7 @@ class Agent:
 
 		from requests import Response
 
-		response: "Optional[Response]"
+		response: "Response | None"
 
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
@@ -121,7 +123,7 @@ class Agent:
 			as_dict=1,
 		)
 
-	def new_site(self, site, create_user: dict = None):
+	def new_site(self, site, create_user: dict | None = None):
 		apps = [app.app for app in site.apps]
 
 		data = {
@@ -183,7 +185,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str, create_user: dict = None, config: dict = None):
+	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
@@ -229,7 +231,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
+	def rename_upstream_site(self, server: str, site, new_name: str, domains: list[str]):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"new_name": new_name, "domains": domains}
@@ -502,11 +504,11 @@ class Agent:
 	def setup_wildcard_hosts(self, wildcards):
 		return self.create_agent_job("Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards)
 
-	def setup_redirects(self, site: str, domains: List[str], target: str):
+	def setup_redirects(self, site: str, domains: list[str], target: str):
 		data = {"domains": domains, "target": target}
 		return self.create_agent_job("Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site)
 
-	def remove_redirects(self, site: str, domains: List[str]):
+	def remove_redirects(self, site: str, domains: list[str]):
 		data = {"domains": domains}
 		return self.create_agent_job(
 			"Remove Redirects on Hosts",
@@ -648,8 +650,7 @@ class Agent:
 				"Database Server", database_server, "mariadb_root_password"
 			),
 		}
-		credentials = self.post(f"benches/{site.bench}/sites/{site.name}/credentials", data=data)
-		return credentials
+		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials", data=data)
 
 	def revoke_database_access_credentials(self, site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
@@ -916,12 +917,10 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
-		status = self.post("monitor/rules", data=data)
-		return status
+		return self.post("monitor/rules", data=data)
 
 	def get_job_status(self, id):
-		status = self.get(f"jobs/{id}")
-		return status
+		return self.get(f"jobs/{id}")
 
 	def get_site_sid(self, site, user=None):
 		if user:
@@ -935,6 +934,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
@@ -943,6 +943,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
@@ -984,16 +985,13 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		return self.get("ping")["message"]
 
 	def fetch_monitor_data(self, bench):
-		data = self.post(f"benches/{bench}/monitor")["data"]
-		return data
+		return self.post(f"benches/{bench}/monitor")["data"]
 
 	def fetch_site_status(self, site):
-		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
-		return data
+		return self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
 
 	def fetch_bench_status(self, bench):
-		data = self.get(f"benches/{bench}/status")
-		return data
+		return self.get(f"benches/{bench}/status")
 
 	def run_after_migrate_steps(self, site):
 		data = {
