@@ -1,9 +1,8 @@
 <template>
 	<div
 		@click="toggle"
-		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-gray-800 transition"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-gray-800 transition hover:bg-gray-100"
 		:class="[
-			item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class
 		]"
