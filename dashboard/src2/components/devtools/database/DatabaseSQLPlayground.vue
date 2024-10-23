@@ -1,11 +1,13 @@
 <template>
-	<div class="m-5">
+	<Header class="sticky top-0 z-10 bg-white">
 		<div
-			class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+			class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 		>
 			<div class="flex flex-row items-center gap-2">
 				<!-- Title -->
-				<p class="font-semibold">SQL Playground</p>
+				<Breadcrumbs
+					:items="[{ label: 'SQL Playground', route: '/sql-playground' }]"
+				/>
 				<!-- Actions -->
 				<FormControl
 					class="w-min-[200px] cursor-pointer"
@@ -45,6 +47,8 @@
 				</Button>
 			</div>
 		</div>
+	</Header>
+	<div class="m-5">
 		<!-- body -->
 		<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
 			<div class="overflow-hidden rounded border">
@@ -130,7 +134,8 @@
 </style>
 <script>
 import { toast } from 'vue-sonner';
-import { Tabs } from 'frappe-ui';
+import Header from '../../Header.vue';
+import { Tabs, Breadcrumbs } from 'frappe-ui';
 import SQLResultTable from './SQLResultTable.vue';
 import SQLCodeEditor from './SQLCodeEditor.vue';
 import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
@@ -142,6 +147,8 @@ import SQLResult from './SQLResult.vue';
 export default {
 	name: 'DatabaseSQLPlayground',
 	components: {
+		Header,
+		Breadcrumbs,
 		FTabs: Tabs,
 		DatabaseToolWrapper,
 		SQLResultTable,
