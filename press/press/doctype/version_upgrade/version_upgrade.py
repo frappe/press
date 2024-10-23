@@ -95,7 +95,9 @@ class VersionUpgrade(Document):
 		if site.status.endswith("ing"):
 			frappe.throw("Site is under maintenance. Cannot Update")
 		try:
-			self.site_update = site.move_to_group(self.destination_group, self.skip_failing_patches).name
+			self.site_update = site.move_to_group(
+				self.destination_group, self.skip_failing_patches, self.skip_backups
+			).name
 		except Exception as e:
 			frappe.db.rollback()
 			self.status = "Failure"
