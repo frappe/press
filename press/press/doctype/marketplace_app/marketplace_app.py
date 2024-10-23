@@ -547,7 +547,9 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def listing_details(self):
-		github_repository_url = frappe.get_value("App Source", {"app": self.app,"team": self.team,"public":True}, "repository_url")
+		github_repository_url = frappe.get_value(
+			"App Source", {"app": self.app, "team": self.team, "public": True}, "repository_url"
+		)
 		return {
 			"support": self.support,
 			"website": self.website,
@@ -682,6 +684,9 @@ def get_total_installs_by_app():
 
 
 def is_public_github_repository(github_url):
+	if not isinstance(github_url, str):
+		return False
+
 	# Match the GitHub URL pattern to extract owner and repository
 	match = re.search(r"github\.com/([^/]+)/([^/]+)", github_url)
 
@@ -695,14 +700,16 @@ def is_public_github_repository(github_url):
 	try:
 		response = requests.get(api_url)
 
-		if response.status_code != 200:
-			return False
-
-		data = response.json()
-
-		# Check if the repository is public
-		if data.get("private") is False:
-			return True
-		return False
 	except Exception:
 		return False
+
+	if response.status_code != 200:
+		return False
+
+	try:
+		data = response.json()
+	except Exception:
+		return False
+
+	# Check if the repository is public
+	return data.get("private") is False
