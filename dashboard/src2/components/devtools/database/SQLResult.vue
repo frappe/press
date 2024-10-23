@@ -11,7 +11,7 @@
 				@click="toggleSQLQuerySection"
 				>View SQL Query</Button
 			>
-			<pre class="mt-4 text-sm leading-normal" v-if="isSQLQueryVisible">{{
+			<pre class="m-3 text-sm leading-normal" v-if="isSQLQueryVisible">{{
 				result.query
 			}}</pre>
 		</div>
