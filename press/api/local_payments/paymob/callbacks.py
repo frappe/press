@@ -11,7 +11,7 @@ def paymob_callback_handler():
 	try:
 		payload = frappe.request.get_data(as_text=True) or ""
 		payload = frappe.parse_json(payload)
-		is_hmac_valid = HMACValidator(query_params.get("hmac"), frappe.parse_json(payload)).is_valid
+		is_hmac_valid = HMACValidator(query_params.get("hmac"), payload).is_valid
 
 		if not is_hmac_valid:
 			raise Exception("Invalid HMAC value")
@@ -51,23 +51,64 @@ def paymob_callback_handler():
 
 @frappe.whitelist(allow_guest=True)
 def paymob_response_callback(**kwargs):
-	query_params = frappe.local.request.args
+    """
+    Handle Paymob payment response callback, validate HMAC, and redirect with appropriate message.
+    """
+    query_params = get_query_params()
+    transaction_status = query_params.get("success")
+    order_id = query_params.get("order", {}).get("id")
+    transaction_id = query_params.get("id")
 
-	transaction_status = query_params.get('success')
-	order_id = query_params.get('order')
-	transaction_id = query_params.get('id')
-	# TODO validate hmac
-	# is_hmac_valid = HMACValidator(query_params.get("hmac"), frappe.parse_json(query_params)).is_valid
-	
-	# Determine the message to display based on the payment status
-	if transaction_status == 'true':
-		title = "Thank you"
-		message = f"Payment was successful! Your Order ID is {order_id} and Transaction ID is {transaction_id}."
-		indicator_color = "green"
-	else:
-		title = "Payment failed"
-		message = f"Payment failed. Please try again or contact support with Order ID {order_id}."
-		indicator_color = "red"
-	
-	return frappe.redirect_to_message(title, message, indicator_color=indicator_color)
+    # Validate the HMAC to ensure the data integrity
+    is_hmac_valid = validate_hmac(query_params)
+    response_message = get_response_message(transaction_status, is_hmac_valid, order_id, transaction_id)
+
+    return frappe.redirect_to_message(**response_message)
+
+
+def get_query_params():
+    """
+    Retrieve and parse query parameters from the request.
+    """
+    query_params = frappe.local.request.args
+    query_params = frappe.parse_json(query_params)
+
+    # Update nested data structure for order and source_data, to validated HMAC
+    query_params.update({
+        "order": {"id": query_params.get("order")},
+        "source_data": {
+            "pan": query_params.get("source_data.pan"),
+            "type": query_params.get("source_data.type"),
+            "sub_type": query_params.get("source_data.sub_type"),
+        },
+    })
+    return query_params
+
+
+def validate_hmac(query_params):
+    """
+    Validate the HMAC for the given query parameters.
+    """
+    call_back_dict = frappe._dict({
+        "type": "TRANSACTION",
+        "obj": frappe.parse_json(query_params),
+    })
+    hmac_value = query_params.get("hmac")
+    return HMACValidator(hmac_value, call_back_dict).is_valid
+
+
+def get_response_message(transaction_status, is_hmac_valid, order_id, transaction_id):
+    """
+    Generate a response message based on the payment status and HMAC validation.
+    """
+    if transaction_status == "true" and is_hmac_valid:
+        title = "Thank you"
+        message = f"Payment was successful! Your Order ID is {order_id} and Transaction ID is {transaction_id}."
+        indicator_color = "green"
+    else:
+        title = "Payment failed"
+        message = f"Payment failed. Please try again or contact support with Order ID {order_id}."
+        indicator_color = "red"
+
+    return {"title": title, "html": message, "indicator_color": indicator_color}
 
