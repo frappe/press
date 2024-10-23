@@ -285,7 +285,7 @@ let router = createRouter({
 			path: '/sql-playground',
 			name: 'SQL Playground',
 			component: () =>
-				import('./components/devtools/database/DatabaseSQLPlayground.vue')
+				import('./pages/devtools/database/DatabaseSQLPlayground.vue')
 		},
 		...generateRoutes(),
 		{

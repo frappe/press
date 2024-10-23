@@ -134,15 +134,14 @@
 </style>
 <script>
 import { toast } from 'vue-sonner';
-import Header from '../../Header.vue';
+import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
-import SQLResultTable from './SQLResultTable.vue';
-import SQLCodeEditor from './SQLCodeEditor.vue';
-import DatabaseToolWrapper from './DatabaseToolWrapper.vue';
+import SQLResultTable from '../../../components/devtools/database/SQLResultTable.vue';
+import SQLCodeEditor from '../../../components/devtools/database/SQLCodeEditor.vue';
 import { confirmDialog } from '../../../utils/components';
-import DatabaseSQLPlaygroundLog from './DatabaseSQLPlaygroundLog.vue';
-import DatabaseTableSchemaDialog from './DatabaseTableSchemaDialog.vue';
-import SQLResult from './SQLResult.vue';
+import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue';
+import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
+import SQLResult from '../../../components/devtools/database/SQLResult.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -150,7 +149,6 @@ export default {
 		Header,
 		Breadcrumbs,
 		FTabs: Tabs,
-		DatabaseToolWrapper,
 		SQLResultTable,
 		SQLResult,
 		SQLCodeEditor,
