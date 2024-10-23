@@ -16,6 +16,7 @@
   "server",
   "status",
   "machine_configuration_section",
+  "container_id",
   "cpu_cores",
   "ram",
   "disk_mb"
@@ -105,11 +106,16 @@
    "fieldtype": "Int",
    "label": "VNC Port",
    "read_only": 1
+  },
+  {
+   "fieldname": "container_id",
+   "fieldtype": "Data",
+   "label": "Container ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-22 12:53:58.512208",
+ "modified": "2024-10-22 16:56:33.409187",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
@@ -134,6 +140,10 @@
   {
    "color": "Blue",
    "title": "Starting"
+  },
+  {
+   "color": "Green",
+   "title": "Running"
   }
  ]
 }

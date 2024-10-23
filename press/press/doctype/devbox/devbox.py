@@ -25,6 +25,7 @@ class Devbox(Document):
 		from frappe.types import DF
 
 		add_site_to_upstream: DF.Check
+		container_id: DF.Data | None
 		cpu_cores: DF.Int
 		disk_mb: DF.Int
 		domain: DF.Link | None
@@ -73,6 +74,16 @@ class Devbox(Document):
 			upstream=devbox.server,
 			devbox=devbox.name,
 		)
+
+	@frappe.whitelist()
+	def sync_devbox_status(self):
+		agent = Agent(server_type="Server", server=self.server)
+		result = agent.post(f"devboxes/{self.name}/status")
+		status = result.get("output").title()
+		# hoping this is a error. I know this is shit code.
+		if len(status) > 10:
+			status = "Exited"
+		frappe.db.set_value(dt="Devbox", dn=self.name, field="status", val=status)
 
 
 def process_new_devbox_job_update(job: AgentJob):
