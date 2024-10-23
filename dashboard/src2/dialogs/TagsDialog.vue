@@ -63,12 +63,15 @@ export default {
 			return getCachedDocumentResource(this.doctype, this.docname);
 		},
 		tagOptions() {
+			const docTags = this.$doc.doc.tags.map(t => t.tag_name);
 			return [
 				{ label: 'Create new tag', value: '__new__' },
-				...(this.$resources.availableTags.data || []).map(d => ({
-					label: d.tag,
-					value: d.tag
-				}))
+				...(this.$resources.availableTags.data || [])
+					.filter(t => !docTags.includes(t.tag))
+					.map(t => ({
+						label: t.tag,
+						value: t.tag
+					}))
 			];
 		}
 	},
