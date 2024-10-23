@@ -21,6 +21,26 @@ frappe.ui.form.on('Devbox', {
 			);
 		}
 
+		if (frm.doc.status == 'Exited') {
+			frm.add_custom_button(
+				__('Start'),
+				() => {
+					frm.call('start_devbox');
+				},
+				__('Actions'),
+			);
+		}
+
+		if (!(frm.doc.status == 'Exited')) {
+			frm.add_custom_button(
+				__('Stop'),
+				() => {
+					frm.call('stop_devbox');
+				},
+				__('Actions'),
+			);
+		}
+
 		frm.add_custom_button(
 			__('Sync Status'),
 			() => {

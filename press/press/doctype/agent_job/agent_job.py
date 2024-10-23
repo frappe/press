@@ -1011,7 +1011,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
-		elif job.job_type == "New Devbox":
+		elif job.job_type == "New Devbox" or job.job_type == "Start Devbox" or job.job_type == "Stop Devbox":
 			process_new_devbox_job_update(job=job)
 
 	except Exception as e:

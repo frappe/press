@@ -76,6 +76,26 @@ class Devbox(Document):
 		)
 
 	@frappe.whitelist()
+	def start_devbox(self):
+		devbox = self
+		server_agent = Agent(server_type="Server", server=devbox.server)
+		server_agent.create_agent_job(
+			"Start Devbox",
+			path=f"devboxes/{devbox.name}/{devbox.websockify_port}/start",
+			devbox=devbox.name,
+		)
+
+	@frappe.whitelist()
+	def stop_devbox(self):
+		devbox = self
+		server_agent = Agent(server_type="Server", server=devbox.server)
+		server_agent.create_agent_job(
+			"Stop Devbox",
+			path=f"devboxes/{devbox.name}/stop",
+			devbox=devbox.name,
+		)
+
+	@frappe.whitelist()
 	def sync_devbox_status(self):
 		agent = Agent(server_type="Server", server=self.server)
 		result = agent.post(f"devboxes/{self.name}/status")
@@ -94,6 +114,13 @@ def process_new_devbox_job_update(job: AgentJob):
 
 	if job.job_type == "Add Site to Upstream" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="add_site_to_upstream", val=True)
+
+	if job.job_type == "Start Devbox" and job.status == "Success":
+		devbox = frappe.get_doc("Devbox", job.devbox)
+		devbox.sync_devbox_status()
+
+	if job.job_type == "Stop Devbox" and job.status == "Success":
+		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Exited")
 
 	status = frappe.db.get_value("Devbox", job.devbox, ["initialized", "add_site_to_upstream"], as_dict=True)
 

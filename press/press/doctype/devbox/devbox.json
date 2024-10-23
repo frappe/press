@@ -114,8 +114,14 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-10-22 16:56:33.409187",
+ "links": [
+  {
+   "group": "Logs",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "devbox"
+  }
+ ],
+ "modified": "2024-10-23 20:42:24.345812",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
@@ -144,6 +150,11 @@
   {
    "color": "Green",
    "title": "Running"
+  },
+  {
+   "color": "Red",
+   "title": "Exited"
   }
- ]
+ ],
+ "track_changes": 1
 }
