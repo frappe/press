@@ -789,3 +789,35 @@ def is_valid_hostname(hostname):
 		return False
 	allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
 	return all(allowed.match(x) for x in hostname.split("."))
+
+
+def mask_email(email: str, percentage: float) -> str:
+	"""
+	Mask email address with 'x'
+
+	Example:
+	> mask_email("tanmoysarkar@gmail.com", 50)
+	> tanxxxxxxkar@gmxxxxcom
+
+	> mask_email("tanmoysarkar@gmail.com", 30)
+	> tanmxxxarkar@gmaxx.com
+	"""
+	if "@" not in email:
+		return "Invalid email address"
+
+	local_part, domain = email.split("@")
+
+	local_mask_length = int(len(local_part) * (percentage / 100))
+	domain_mask_length = int(len(domain) * (percentage / 100))
+
+	def mask_middle(s: str, mask_len: int) -> str:
+		if mask_len == 0:
+			return s
+		start_idx = (len(s) - mask_len) // 2
+		end_idx = start_idx + mask_len
+		return s[:start_idx] + "x" * mask_len + s[end_idx:]
+
+	masked_local_part = mask_middle(local_part, local_mask_length)
+	masked_domain = mask_middle(domain, domain_mask_length)
+
+	return masked_local_part + "@" + masked_domain
