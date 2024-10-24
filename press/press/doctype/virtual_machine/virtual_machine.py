@@ -6,6 +6,7 @@ import base64
 import ipaddress
 
 import boto3
+import botocore
 import frappe
 import rq
 from frappe.core.utils import find
@@ -577,7 +578,11 @@ class VirtualMachine(Document):
 
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
-			response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			try:
+				response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "InvalidInstanceID.NotFound":
+					response = {"Reservations": []}
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
 
