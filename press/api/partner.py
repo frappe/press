@@ -32,9 +32,7 @@ def approve_partner_request(key):
 
 @frappe.whitelist()
 def get_partner_request_status(team):
-	return frappe.db.get_value(
-		"Partner Approval Request", {"requested_by": team}, "status"
-	)
+	return frappe.db.get_value("Partner Approval Request", {"requested_by": team}, "status")
 
 
 @frappe.whitelist()
@@ -47,7 +45,20 @@ def update_partnership_date(team, partnership_date):
 
 @frappe.whitelist()
 def get_partner_details(partner_email):
-	from press.utils.billing import get_frappe_io_connection
+	from press.utils.billing import frappe_io_auth_disabled, get_frappe_io_connection
+
+	if frappe_io_auth_disabled():
+		return frappe._dict(
+			{
+				"email": "",
+				"partner_type": "",
+				"company_name": "",
+				"custom_ongoing_period_fc_invoice_contribution": "",
+				"custom_ongoing_period_enterprise_invoice_contribution": "",
+				"partner_name": "",
+				"custom_number_of_certified_members": "",
+			}
+		)
 
 	client = get_frappe_io_connection()
 	data = client.get_doc(
@@ -63,10 +74,10 @@ def get_partner_details(partner_email):
 			"custom_number_of_certified_members",
 		],
 	)
-	if data:
-		return data[0]
-	else:
+	if not data:
 		frappe.throw("Partner Details not found")
+
+	return data[0]
 
 
 @frappe.whitelist()
@@ -92,9 +103,7 @@ def transfer_credits(amount, customer, partner):
 	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
-		frappe.throw(
-			f"Insufficient Credits to transfer. Credits Available: {credits_available}"
-		)
+		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
@@ -164,6 +173,8 @@ def add_partner(referral_code: str):
 	)
 	doc.insert(ignore_permissions=True)
 
+	return doc.name
+
 
 @frappe.whitelist()
 def validate_partner_code(code):
@@ -180,9 +191,8 @@ def validate_partner_code(code):
 @frappe.whitelist()
 def get_partner_customers():
 	team = get_current_team(get_doc=True)
-	customers = frappe.get_all(
+	return frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
 		["name", "user", "payment_mode", "billing_name", "currency"],
 	)
-	return customers
