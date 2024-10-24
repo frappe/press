@@ -149,6 +149,8 @@ class Ansible:
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
 		self.host = f"{server.ip}:{port}"
+		if server.ip6:
+			self.host = f"[{server.ip6}]:{port}"
 		self.variables = variables or {}
 
 		constants.HOST_KEY_CHECKING = False
