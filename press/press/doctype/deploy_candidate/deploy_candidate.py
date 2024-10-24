@@ -419,7 +419,7 @@ class DeployCandidate(Document):
 			return False
 
 		# Retry twice before giving up
-		if self.retry_count >= 2:
+		if self.retry_count >= 3:
 			return False
 
 		bo = self.build_output
@@ -436,7 +436,8 @@ class DeployCandidate(Document):
 
 	def schedule_build_retry(self):
 		self.retry_count += 1
-		scheduled_time = now() + timedelta(minutes=5)
+		minutes = min(5**self.retry_count, 125)
+		scheduled_time = now() + timedelta(minutes=minutes)
 		self.schedule_build_and_deploy(
 			run_now=False,
 			scheduled_time=scheduled_time,

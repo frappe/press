@@ -78,19 +78,27 @@ let $floatingBar = $(`
 `);
 
 $(document).ready(function () {
-	if (
-		frappe.boot.setup_complete === 1 &&
-		!frappe.is_mobile() &&
-		frappe.boot.subscription_conf.status !== 'Subscribed' &&
-		trial_end_days > 0
-	) {
-		$('.layout-main-section').before($floatingBar);
+	if (frappe.boot.setup_complete === 1) {
+		if (
+			!frappe.is_mobile() &&
+			frappe.boot.subscription_conf.status !== 'Subscribed' &&
+			trial_end_days > 0
+		) {
+			$('.layout-main-section').before($floatingBar);
 
-		$floatingBar.find('.dismiss-upgrade').on('click', () => {
-			$floatingBar.remove();
-		});
+			$floatingBar.find('.dismiss-upgrade').on('click', () => {
+				$floatingBar.remove();
+			});
+		}
+		add_frappe_cloud_dashboard_link();
 	}
 });
+
+function add_frappe_cloud_dashboard_link() {
+	$('.dropdown-navbar-user .dropdown-menu .dropdown-divider').before(
+		`<a class="dropdown-item" href="https://frappecloud.com/dashboard/" target="_blank">Log In to Frappe Cloud</a>`,
+	);
+}
 
 function showBanner() {
 	const d = new frappe.ui.Dialog({

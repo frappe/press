@@ -5,8 +5,5 @@
   become_user: root
   gather_facts: no
 
-  tasks:
-    - name: Prune docker system for last 6h hours
-      command: 'docker system prune -f --filter "until=6h"'
-      async: 7200
-      poll: 30
+  roles:
+    - docker_system_prune
