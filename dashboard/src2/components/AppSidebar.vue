@@ -57,21 +57,11 @@
 			<NavigationItems>
 				<template v-slot="{ navigation }">
 					<template v-for="(item, i) in navigation">
-						<template v-if="item.items">
-							<div
-								class="py-1 text-sm leading-5 text-gray-600"
-								:class="{ 'mt-2': i != 0 }"
-							>
-								{{ item.name }}
-							</div>
-							<div class="space-y-0.5">
-								<AppSidebarItem
-									v-for="subItem in item.items"
-									:key="subItem.name"
-									:item="subItem"
-								/>
-							</div>
-						</template>
+						<AppSidebarItemGroup
+							v-if="item.children"
+							:key="item.name"
+							:item="item"
+						/>
 						<AppSidebarItem
 							class="mt-0.5"
 							v-else
@@ -92,11 +82,13 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
+import AppSidebarItemGroup from './AppSidebarItemGroup.vue';
 
 export default {
 	name: 'AppSidebar',
 	components: {
 		AppSidebarItem,
+		AppSidebarItemGroup,
 		SwitchTeamDialog2: defineAsyncComponent(() =>
 			import('./SwitchTeamDialog.vue')
 		),

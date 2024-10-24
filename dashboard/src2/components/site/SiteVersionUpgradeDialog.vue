@@ -30,6 +30,21 @@
 					type="checkbox"
 					v-model="skipFailingPatches"
 				/>
+				<FormControl
+					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
+					label="Skip backups"
+					type="checkbox"
+					v-model="skipBackups"
+					class="ml-4"
+				/>
+				<div
+					v-if="skipBackups"
+					class="flex items-center rounded bg-gray-50 p-4 text-sm text-gray-700"
+				>
+					<i-lucide-info class="mr-2 h-4 w-8" />
+					Backups will not be taken during the upgrade process and incase of any
+					failure rollback will not be possible.
+				</div>
 				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
 				</p>
@@ -89,6 +104,7 @@ export default {
 				value: '',
 				label: ''
 			},
+			skipBackups: false,
 			skipFailingPatches: false,
 			benchHasCommonServer: false
 		};
@@ -165,6 +181,7 @@ export default {
 					name: this.site,
 					destination_group: this.privateReleaseGroup.value,
 					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
 					scheduled_datetime: this.datetimeInIST
 				},
 				onSuccess() {
