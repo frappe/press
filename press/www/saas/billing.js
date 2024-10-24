@@ -125,12 +125,15 @@ function showBanner() {
 
 // Frappe Cloud login related
 function initiateRequestForLoginToFrappeCloud() {
-	frappe.confirm('Are you sure you want to proceed?', () => {
-		initiateLogin();
-	});
+	frappe.confirm(
+		'Are you sure you want to login to Frappe Cloud dashboard ?',
+		() => {
+			requestLoginToFC();
+		},
+	);
 }
 
-function initiateLogin(freezing_msg) {
+function requestLoginToFC(freezing_msg) {
 	frappe.call({
 		url: 'https://devfc.tanmoysrt.xyz',
 		method: 'press.api.developer.saas.request_login_to_fc',
@@ -142,17 +145,20 @@ function initiateLogin(freezing_msg) {
 		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
 		callback: function (r) {
 			if (!r.exc) {
-				showFCLoginOTPdialog(r.message.email);
+				showFCLogindialog(r.message.email);
 			}
+		},
+		error: function (r) {
+			frappe.throw('Failed to login to Frappe Cloud. Please try again');
 		},
 	});
 }
 
-function showFCLoginOTPdialog(email) {
+function showFCLogindialog(email) {
 	var d = new frappe.ui.Dialog({
 		title: __('Login to Frappe Cloud'),
 		primary_action_label: __('Verify', null, 'Submit verification code'),
-		primary_action: verifyVerificationCode,
+		primary_action: verifyCode,
 	});
 
 	$(d.body).html(
@@ -182,7 +188,7 @@ function showFCLoginOTPdialog(email) {
 		$('#fc-login-error').text(message);
 	};
 
-	function verifyVerificationCode() {
+	function verifyCode() {
 		let otp = $('#fc-login-verification-code').val();
 		if (!otp) {
 			return;
