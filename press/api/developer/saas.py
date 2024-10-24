@@ -119,18 +119,23 @@ def get_trial_expiry(secret_key):
 def request_login_to_fc(domain: str):
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
-		frappe.throw("The domain is not active currently.")
+		frappe.throw("The domain is not active currently. Please try again.")
 
-	team_name = frappe.get_value("Site", domain_info.get("site"), "team")
+	site_info = frappe.get_value(
+		"Site", domain_info.get("site"), ["name", "team", "standby_for", "standby_for_product"], as_dict=True
+	)
+	team_name = site_info.get("team")
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
-		frappe.throw("The team is disabled.")
+		frappe.throw("Your Frappe Cloud team is disabled currently.")
 	if team_info.get("enforce_2fa"):
 		frappe.throw(
 			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
 		)
 
-	# TODO restrict to SaaS Site
+	# restrict to SaaS Site
+	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
+		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
 
 	# generate otp and set in redis with 10 min expiry
 	otp = random.randint(10000, 99999)

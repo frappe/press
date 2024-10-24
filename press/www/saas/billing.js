@@ -1,3 +1,5 @@
+const frappe_cloud_base_url = 'https://frappecloud.com';
+
 function calculate_trial_end_days() {
 	// try to check for trial_end_date in frappe.boot.subscription_conf
 	if (frappe.boot.subscription_conf.trial_end_date) {
@@ -92,12 +94,13 @@ $(document).ready(function () {
 		}
 		add_frappe_cloud_dashboard_link();
 	}
-	console.log(frappe.boot.subscription_conf.secret_key);
 });
 
 function add_frappe_cloud_dashboard_link() {
 	$('.dropdown-navbar-user .dropdown-menu .dropdown-divider').before(
-		`<a class="dropdown-item" href="https://frappecloud.com/dashboard/" target="_blank">Log In to Frappe Cloud</a>`,
+		`<a class="dropdown-item"
+		onclick="initiateRequestForLoginToFrappeCloud()"
+		>Log In to Frappe Cloud</a>`,
 	);
 }
 
@@ -110,12 +113,118 @@ function showBanner() {
 	$(d.body).html(`
 		<div id="wrapper" style="position:relative">
 			<iframe
-				src="https://frappecloud.com/dashboard/checkout/${frappe.boot.subscription_conf.secret_key}"
+				src="${frappe_cloud_base_url}/dashboard/checkout/${frappe.boot.subscription_conf.secret_key}"
 				style="position: relative; top: 0px; width: 100%; height: 60vh;"
 				frameborder="0"
 			>
 		</div>
 	`);
+
+	d.show();
+}
+
+// Frappe Cloud login related
+function initiateRequestForLoginToFrappeCloud() {
+	frappe.confirm('Are you sure you want to proceed?', () => {
+		initiateLogin();
+	});
+}
+
+function initiateLogin(freezing_msg) {
+	frappe.call({
+		url: 'https://devfc.tanmoysrt.xyz',
+		method: 'press.api.developer.saas.request_login_to_fc',
+		type: 'POST',
+		args: {
+			domain: window.location.hostname,
+		},
+		freeze: true,
+		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
+		callback: function (r) {
+			if (!r.exc) {
+				showFCLoginOTPdialog(r.message.email);
+			}
+		},
+	});
+}
+
+function showFCLoginOTPdialog(email) {
+	var d = new frappe.ui.Dialog({
+		title: __('Login to Frappe Cloud'),
+		primary_action_label: __('Verify', null, 'Submit verification code'),
+		primary_action: verifyVerificationCode,
+	});
+
+	$(d.body).html(
+		repl(
+			`<div>
+			<p>We have sent the verification code to your email id <strong>${email}</strong></p>
+			<div class="form-group mt-2">
+				<div class="clearfix">
+					<label class="control-label" style="padding-right: 0px;">Verification Code</label>
+				</div>
+				<div class="control-input-wrapper">
+					<div class="control-input"><input type="text" class="input-with-feedback form-control" id="fc-login-verification-code"></div>
+				</div>
+			</div>
+			<p class="text-danger" id="fc-login-error"></p>
+		</div>`,
+			frappe.app,
+		),
+	);
+
+	d.add_custom_action("Didn't receive code? Resend", () => {
+		d.hide();
+		initiateLogin('Resending Verification Code...');
+	});
+
+	const setErrorMessage = (message) => {
+		$('#fc-login-error').text(message);
+	};
+
+	function verifyVerificationCode() {
+		let otp = $('#fc-login-verification-code').val();
+		if (!otp) {
+			return;
+		}
+		frappe.call({
+			url: frappe_cloud_base_url,
+			method: 'press.api.developer.saas.validate_login_to_fc',
+			type: 'POST',
+			args: {
+				domain: window.location.hostname,
+				otp: otp,
+			},
+			freeze: true,
+			silent: true,
+			freeze_message: 'Validating verification code',
+			callback: function (r) {
+				if (r.login_token) {
+					d.hide();
+					window.open(
+						`${frappe_cloud_base_url}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}`,
+						'_blank',
+					);
+					frappe.msgprint({
+						title: __('Frappe Cloud Login Successful'),
+						indicator: 'green',
+						message: __(
+							`<p>You will be redirected to Frappe Cloud soon.</p><p>If you haven\'t been redirected, <a href="${frappe_cloud_base_url}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}" target="_blank">Click here to login</a></p>`,
+						),
+					});
+				} else {
+					setErrorMessage('Login failed. Please try again');
+				}
+			},
+			error: function (r) {
+				if (r.exc) {
+					setErrorMessage(
+						JSON.parse(JSON.parse(r._server_messages)[0])['message'],
+					);
+				}
+			},
+		});
+	}
 
 	d.show();
 }
