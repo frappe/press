@@ -474,10 +474,6 @@ def app_details_for_new_public_site():
 		{"sources": ["source", "version"]},
 		{"localisation_apps": ["marketplace_app", "country"]},
 	]
-	if frappe.db.get_value("Team", get_current_team(), "auto_install_localisation_app_enabled"):
-		fields += [
-			{"localisation_apps": ["marketplace_app", "country"]},
-		]
 
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",

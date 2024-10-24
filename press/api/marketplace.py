@@ -219,12 +219,17 @@ def create_site_on_public_bench(
 			"app_plans": app_plans,
 		}
 	)
-	if trial:
+	if trial and eligible_for_trial():
 		site.trial_end_date = frappe.utils.add_days(None, 14)
 
 	site.insert()
 
 	return site
+
+
+def eligible_for_trial():
+	team = get_current_team()
+	return not bool(frappe.db.count("Site", {"team": team}) > 0)
 
 
 def create_site_on_private_bench(
