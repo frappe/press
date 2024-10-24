@@ -1,5 +1,6 @@
 import Tooltip from 'frappe-ui/src/components/Tooltip/Tooltip.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import LucideTerminal from '~icons/lucide/terminal';
 import type { VNode } from 'vue';
 import { defineAsyncComponent, h } from 'vue';
 import { getTeam, switchToTeam } from '../data/team';
@@ -84,7 +85,8 @@ function getTabs() {
 		getJobsTab('Bench'),
 		getProcessesTab(),
 		getLogsTab(false),
-		getPatchesTab(true)
+		getPatchesTab(true),
+		getShellTab()
 	] satisfies Tab[] as Tab[];
 }
 
@@ -304,6 +306,17 @@ export function getProcessesTab() {
 			columns: getProcessesColumns(),
 			rowActions: () => [] // TODO: allow issuing supectl commands
 		}
+	} satisfies Tab as Tab;
+}
+
+function getShellTab() {
+	return {
+		label: 'Shell',
+		icon: icon(LucideTerminal),
+		route: 'shell',
+		type: 'Component',
+		component: defineAsyncComponent(() => import('../pages/BenchShell.vue')),
+		props: bench => ({ bench: bench.name })
 	} satisfies Tab as Tab;
 }
 
