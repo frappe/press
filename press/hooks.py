@@ -174,6 +174,7 @@ scheduler_events = {
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
+        "press.database_performance_schema.doctype.db_performance_report.db_performance_report.clear_performance_reports_older_than_7_days",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -253,6 +254,7 @@ scheduler_events = {
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
+			"press.press.doctype.database_server.database_server.fetch_performance_schema_reports",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
