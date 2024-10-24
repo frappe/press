@@ -31,13 +31,11 @@
 				/>
 			</div>
 			<div class="flex flex-row gap-2">
-				<FormControl
+				<LinkControl
 					class="cursor-pointer"
-					type="autocomplete"
-					:options="sites"
-					size="sm"
-					variant="outline"
-					v-model="selectedSiteInfo"
+					:options="{ doctype: 'Site', filters: { status: 'Active' } }"
+					placeholder="Select a site"
+					v-model="site"
 				/>
 				<Button
 					iconLeft="refresh-ccw"
@@ -145,6 +143,7 @@ import { confirmDialog } from '../../../utils/components';
 import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue';
 import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
 import SQLResult from '../../../components/devtools/database/SQLResult.vue';
+import LinkControl from '../../../components/LinkControl.vue';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -156,11 +155,12 @@ export default {
 		SQLResult,
 		SQLCodeEditor,
 		DatabaseSQLPlaygroundLog,
-		DatabaseTableSchemaDialog
+		DatabaseTableSchemaDialog,
+		LinkControl
 	},
 	data() {
 		return {
-			selectedSiteInfo: null,
+			site: null,
 			tabIndex: 0,
 			query: '',
 			commit: false,
@@ -175,6 +175,9 @@ export default {
 	},
 	mounted() {},
 	watch: {
+		selectedSiteInfo() {
+			console.log(this.selectedSiteInfo);
+		},
 		query() {
 			window.localStorage.setItem(
 				`sql_playground_query_${this.site}`,
@@ -198,28 +201,6 @@ export default {
 		}
 	},
 	resources: {
-		sites() {
-			return {
-				url: 'press.api.client.get_list',
-				params: {
-					doctype: 'Site',
-					fields: ['name'],
-					filters: {
-						status: 'Active'
-					}
-				},
-				initialData: [],
-				onSuccess: data => {
-					if (data.length > 0) {
-						this.selectedSiteInfo = {
-							label: data[0].name,
-							value: data[0].name
-						};
-					}
-				},
-				auto: true
-			};
-		},
 		runSQLQuery() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -254,18 +235,6 @@ export default {
 		}
 	},
 	computed: {
-		sites() {
-			return (this.$resources.sites?.data || []).map(x => {
-				return {
-					label: x.name,
-					value: x.name
-				};
-			});
-		},
-		site() {
-			if (!this.selectedSiteInfo) return '';
-			return this.selectedSiteInfo.value;
-		},
 		sqlSchemaForAutocompletion() {
 			const tableSchemas = this.$resources.tableSchemas?.data?.message ?? {};
 			if (!tableSchemas || !Object.keys(tableSchemas).length) return null;

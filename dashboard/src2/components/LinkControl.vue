@@ -5,6 +5,7 @@
 		:label="label"
 		:options="autocompleteOptions"
 		:modelValue="modelValue"
+		:placeholder="placeholder"
 		@update:query="onQuery"
 		@update:model-value="
 			option => {
@@ -22,7 +23,7 @@ import { FormControl, debounce } from 'frappe-ui';
 
 export default {
 	name: 'LinkControl',
-	props: ['label', 'options', 'modelValue'],
+	props: ['label', 'options', 'modelValue', 'placeholder'],
 	emits: ['update:modelValue'],
 	inheritAttrs: false,
 	components: {
