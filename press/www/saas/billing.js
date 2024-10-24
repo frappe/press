@@ -92,7 +92,9 @@ $(document).ready(function () {
 				$floatingBar.remove();
 			});
 		}
-		add_frappe_cloud_dashboard_link();
+		if (frappe.user.has_role('System Manager')) {
+			add_frappe_cloud_dashboard_link();
+		}
 	}
 });
 

@@ -189,16 +189,18 @@ def validate_login_to_fc(domain: str, otp: str):
 
 	# login and generate a login_token to store sid
 	login_token = frappe.generate_hash(length=32)
-	frappe.cache.set_value(f"login_token:{login_token}", frappe.local.session.sid, expires_in_sec=60)
+	frappe.cache.set_value(
+		f"press_dashboard_login_token:{login_token}", frappe.local.session.sid, expires_in_sec=60
+	)
 
 	frappe.response["login_token"] = login_token
 
 
 @frappe.whitelist(allow_guest=True)
 def login_to_fc(token: str):
-	sid = frappe.cache().get_value(f"login_token:{token}", expires=True)
+	sid = frappe.cache().get_value(f"press_dashboard_login_token:{token}", expires=True)
 	if sid:
-		frappe.cache().delete_value(f"login_token:{token}")
+		frappe.cache().delete_value(f"press_dashboard_login_token:{token}")
 		frappe.local.form_dict.sid = sid
 		frappe.local.login_manager = LoginManager()
 	frappe.response["type"] = "redirect"
