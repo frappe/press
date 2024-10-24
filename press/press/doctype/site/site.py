@@ -486,6 +486,15 @@ class Site(Document, TagHelpers):
 					},
 				)
 
+	def capture_signup_event(self, event: str):
+		team = frappe.get_doc("Team", self.team)
+		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
+			from press.utils.telemetry import capture
+
+			account_request = frappe.get_doc("Account Request", team.account_request)
+			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
+				capture(event, "fc_signup", team.user)
+
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
@@ -507,13 +516,7 @@ class Site(Document, TagHelpers):
 
 		# Telemetry: Send event if first site status changed to Active
 		if self.status == "Active" and self.has_value_changed("status"):
-			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-				from press.utils.telemetry import capture
-
-				account_request = frappe.get_doc("Account Request", team.account_request)
-				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-					capture("first_site_status_changed_to_active", "fc_signup", team.user)
+			self.capture_signup_event("first_site_status_changed_to_active")
 
 		if self.has_value_changed("status"):
 			create_site_status_update_webhook_event(self.name)
@@ -717,13 +720,7 @@ class Site(Document, TagHelpers):
 			add_permission_for_newly_created_doc,
 		)
 
-		team = frappe.get_doc("Team", self.team)
-		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			from press.utils.telemetry import capture
-
-			account_request = frappe.get_doc("Account Request", team.account_request)
-			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-				capture("created_first_site", "fc_signup", team.user)
+		self.capture_signup_event("created_first_site")
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
@@ -1043,7 +1040,7 @@ class Site(Document, TagHelpers):
 		frappe.delete_doc("Site Update", site_update)
 
 	@frappe.whitelist()
-	def move_to_group(self, group, skip_failing_patches=False):
+	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		return frappe.get_doc(
 			{
@@ -1051,6 +1048,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"destination_group": group,
 				"skipped_failing_patches": skip_failing_patches,
+				"skipped_backups": skip_backups,
 				"ignore_past_failures": True,
 			}
 		).insert()
@@ -1577,7 +1575,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):  # noqa: C901
+	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True
 
@@ -1618,13 +1616,7 @@ class Site(Document, TagHelpers):
 
 		# Telemetry: Send event if first site status changed to Active
 		if self.setup_wizard_complete:
-			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-				from press.utils.telemetry import capture
-
-				account_request = frappe.get_doc("Account Request", team.account_request)
-				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-					capture("first_site_setup_wizard_completed", "fc_signup", team.user)
+			self.capture_signup_event("first_site_setup_wizard_completed")
 
 		return setup_complete
 

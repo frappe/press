@@ -127,7 +127,7 @@ def get_name_from_filters(filters: dict):
 	return None
 
 
-def _new(site, server: str | None = None, ignore_plan_validation: bool = False):  # noqa: C901
+def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -136,39 +136,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 
 	apps = [{"app": app} for app in site["apps"]]
 
-	if localisation_country := site.get("localisation_country"):
-		# if localisation country is selected, move site to a public bench with the same localisation app
-		localisation_app = frappe.db.get_value(
-			"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
-		)
-		restricted_release_group_names = frappe.db.get_all(
-			"Site Plan Release Group",
-			pluck="release_group",
-			filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
-		)
-		ReleaseGroup = frappe.qb.DocType("Release Group")
-		ReleaseGroupApp = frappe.qb.DocType("Release Group App")
-		if group := (
-			frappe.qb.from_(ReleaseGroup)
-			.select(ReleaseGroup.name)
-			.join(ReleaseGroupApp)
-			.on(ReleaseGroup.name == ReleaseGroupApp.parent)
-			.where(ReleaseGroupApp.app == localisation_app)
-			.where(ReleaseGroup.public == 1)
-			.where(ReleaseGroup.enabled == 1)
-			.where(ReleaseGroup.name.notin(restricted_release_group_names))
-			.where(ReleaseGroup.version == site.get("version"))
-			.run(pluck="name")
-		):
-			apps.append({"app": localisation_app})
-			group = group[0]
-		else:
-			frappe.throw(
-				f"Localisation app for {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
-			)
-	else:
-		group = site.get("group")
-
+	group = get_group_for_new_site_and_set_localisation_app(site, apps)
 	domain = site.get("domain")
 	if not (domain and frappe.db.exists("Root Domain", {"name": domain})):
 		frappe.throw("No root domain for site")
@@ -259,6 +227,42 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 			},
 		),
 	}
+
+
+def get_group_for_new_site_and_set_localisation_app(site, apps):
+	if not (localisation_country := site.get("localisation_country")):
+		return site.get("group")
+
+	# if localisation country is selected, move site to a public bench with the same localisation app
+	localisation_app = frappe.db.get_value(
+		"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
+	)
+	restricted_release_group_names = frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupApp = frappe.qb.DocType("Release Group App")
+	groups = (
+		frappe.qb.from_(ReleaseGroup)
+		.select(ReleaseGroup.name)
+		.join(ReleaseGroupApp)
+		.on(ReleaseGroup.name == ReleaseGroupApp.parent)
+		.where(ReleaseGroupApp.app == localisation_app)
+		.where(ReleaseGroup.public == 1)
+		.where(ReleaseGroup.enabled == 1)
+		.where(ReleaseGroup.name.notin(restricted_release_group_names))
+		.where(ReleaseGroup.version == site.get("version"))
+		.run(pluck="name")
+	)
+	if not groups:
+		frappe.throw(
+			f"Localisation app for {frappe.bold(localisation_country)} is not available for version {frappe.bold(site.get('version'))}"
+		)
+
+	apps.append({"app": localisation_app})
+	return groups[0]
 
 
 def validate_plan(server, plan):
@@ -468,6 +472,7 @@ def app_details_for_new_public_site():
 		"route",
 		"subscription_type",
 		{"sources": ["source", "version"]},
+		{"localisation_apps": ["marketplace_app", "country"]},
 	]
 	if frappe.db.get_value("Team", get_current_team(), "auto_install_localisation_app_enabled"):
 		fields += [
@@ -767,7 +772,7 @@ def get_new_site_options(group: str | None = None):
 
 
 @frappe.whitelist()
-def get_site_plans():  # noqa: C901
+def get_site_plans():
 	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
@@ -828,6 +833,25 @@ def get_site_plans():  # noqa: C901
 	)
 
 	plan_details = plan_details_with_bench_query.run(as_dict=True)
+	plan_details_dict = get_plan_details_dict(plan_details)
+
+	for plan in plans:
+		if plan.name in plan_details_dict:
+			plan.clusters = plan_details_dict[plan.name]["clusters"]
+			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
+			plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
+			plan.restricted_plan = True
+		else:
+			plan.clusters = []
+			plan.allowed_apps = []
+			plan.bench_versions = []
+			plan.restricted_plan = False
+		filtered_plans.append(plan)
+
+	return filtered_plans
+
+
+def get_plan_details_dict(plan_details):
 	plan_details_dict = {}
 
 	for plan in plan_details:
@@ -849,21 +873,7 @@ def get_site_plans():  # noqa: C901
 			plan_details_dict[plan["name"]]["clusters"].append(plan["cluster"])
 		if plan["version"] and plan["version"] not in plan_details_dict[plan["name"]]["bench_versions"]:
 			plan_details_dict[plan["name"]]["bench_versions"].append(plan["version"])
-
-	for plan in plans:
-		if plan.name in plan_details_dict:
-			plan.clusters = plan_details_dict[plan.name]["clusters"]
-			plan.allowed_apps = plan_details_dict[plan.name]["allowed_apps"]
-			plan.bench_versions = plan_details_dict[plan.name]["bench_versions"]
-			plan.restricted_plan = True
-		else:
-			plan.clusters = []
-			plan.allowed_apps = []
-			plan.bench_versions = []
-			plan.restricted_plan = False
-		filtered_plans.append(plan)
-
-	return filtered_plans
+	return plan_details_dict
 
 
 @frappe.whitelist()
@@ -943,18 +953,38 @@ def sites_with_recent_activity(sites, limit=3):
 
 
 @frappe.whitelist()
-def all(site_filter=None):  # noqa: C901
-	from press.press.doctype.team.team import get_child_team_members
-
+def all(site_filter=None):
 	if site_filter is None:
 		site_filter = {"status": "", "tag": ""}
 
-	team = get_current_team()
-	child_teams = [x.name for x in get_child_team_members(team)]
 	benches_with_updates = tuple(benches_with_available_update())
 
+	sites = get_sites_query(site_filter, benches_with_updates).run(as_dict=True)
+
+	for site in sites:
+		site.server_region_info = get_server_region_info(site)
+		site_plan_name = frappe.get_value("Site", site.name, "plan")
+		site.plan = frappe.get_doc("Site Plan", site_plan_name) if site_plan_name else None
+		site.tags = frappe.get_all(
+			"Resource Tag",
+			{"parent": site.name},
+			pluck="tag_name",
+		)
+		if site.bench in benches_with_updates:
+			site.update_available = True
+
+	return sites
+
+
+def get_sites_query(site_filter, benches_with_updates):
 	Site = frappe.qb.DocType("Site")
 	ReleaseGroup = frappe.qb.DocType("Release Group")
+
+	from press.press.doctype.team.team import get_child_team_members
+
+	team = get_current_team()
+	child_teams = [x.name for x in get_child_team_members(team)]
+
 	sites_query = (
 		frappe.qb.from_(Site)
 		.select(
@@ -1000,22 +1030,7 @@ def all(site_filter=None):  # noqa: C901
 		Tag = frappe.qb.DocType("Resource Tag")
 		sites_with_tag = frappe.qb.from_(Tag).select(Tag.parent).where(Tag.tag_name == site_filter["tag"])
 		sites_query = sites_query.where(Site.name.isin(sites_with_tag))
-
-	sites = sites_query.run(as_dict=True)
-
-	for site in sites:
-		site.server_region_info = get_server_region_info(site)
-		site_plan_name = frappe.get_value("Site", site.name, "plan")
-		site.plan = frappe.get_doc("Site Plan", site_plan_name) if site_plan_name else None
-		site.tags = frappe.get_all(
-			"Resource Tag",
-			{"parent": site.name},
-			pluck="tag_name",
-		)
-		if site.bench in benches_with_updates:
-			site.update_available = True
-
-	return sites
+	return sites_query
 
 
 @frappe.whitelist()
@@ -1222,10 +1237,18 @@ def installed_apps(name):
 	return get_installed_apps(site)
 
 
-def get_installed_apps(site):
+def get_installed_apps(site, query_filters: dict | None = None):
 	installed_apps = [app.app for app in site.apps]
 	bench = frappe.get_doc("Bench", site.bench)
 	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
+
+	filters = {"name": ("in", [d.source for d in installed_bench_apps])}
+
+	if owner := query_filters.get("repository_owner"):
+		filters["repository_owner"] = owner
+
+	if branch := query_filters.get("branch"):
+		filters["branch"] = branch
 
 	sources = frappe.get_all(
 		"App Source",
@@ -1240,7 +1263,7 @@ def get_installed_apps(site):
 			"public",
 			"app_title as title",
 		],
-		filters={"name": ("in", [d.source for d in installed_bench_apps])},
+		filters=filters,
 	)
 
 	installed_apps = []
@@ -1560,8 +1583,7 @@ def check_dns_cname(name, domain):
 	except Exception as e:
 		result["answer"] = str(e)
 		log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
-	finally:
-		return result  # noqa: B012
+	return result
 
 
 def check_dns_a(name, domain):
@@ -1591,8 +1613,7 @@ def check_dns_a(name, domain):
 	except Exception as e:
 		result["answer"] = str(e)
 		log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
-	finally:
-		return result  # noqa: B012
+	return result
 
 
 def ensure_dns_aaaa_record_doesnt_exist(domain: str):
@@ -2026,9 +2047,7 @@ def change_group_options(name):
 			.distinct()
 		)
 
-	benches = query.run(as_dict=True)
-
-	return benches  # noqa: RET504
+	return query.run(as_dict=True)
 
 
 @frappe.whitelist()
@@ -2165,9 +2184,7 @@ def get_private_groups_for_upgrade(name, version):
 			.distinct()
 		)
 
-	private_groups = query.run(as_dict=True)
-
-	return private_groups  # noqa: RET504
+	return query.run(as_dict=True)
 
 
 @frappe.whitelist()

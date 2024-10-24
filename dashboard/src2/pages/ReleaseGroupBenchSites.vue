@@ -15,20 +15,23 @@
 	</div>
 </template>
 <script lang="jsx">
-import { defineAsyncComponent, h } from 'vue';
-import {
-	getCachedDocumentResource,
-	Tooltip,
-	createDocumentResource
-} from 'frappe-ui';
-import ObjectList from '../components/ObjectList.vue';
 import Badge from '@/components/global/Badge.vue';
-import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
+import {
+	createDocumentResource,
+	getCachedDocumentResource,
+	Tooltip
+} from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import { trialDays } from '../utils/site';
-import { planTitle } from '../utils/format';
 import ActionButton from '../components/ActionButton.vue';
+import SSHCertificateDialog from '../components/group/SSHCertificateDialog.vue';
+import ObjectList from '../components/ObjectList.vue';
+import {
+	getSitesTabColumns,
+	sitesTabRoute,
+	siteTabFilterControls
+} from '../objects/common';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -47,7 +50,7 @@ export default {
 				doctype: 'Bench',
 				filters: {
 					group: this.$releaseGroup.name,
-					skip_team_filter_for_system_user: true
+					skip_team_filter_for_system_user_and_support_agent: true
 				},
 				fields: ['name', 'status'],
 				orderBy: 'creation desc',
@@ -64,7 +67,7 @@ export default {
 				doctype: 'Site',
 				filters: {
 					group: this.$releaseGroup.name,
-					skip_team_filter_for_system_user: true
+					skip_team_filter_for_system_user_and_support_agent: true
 				},
 				fields: [
 					'name',
@@ -98,24 +101,37 @@ export default {
 					const IconStar = icon('star', 'w-3 h-3');
 					return (
 						<div class="flex items-center">
-							<div class="text-base font-medium leading-6 text-gray-900">
-								{bench.group}
-							</div>
+							<Tooltip text="View bench details">
+								<a
+									class="cursor-pointer text-base font-medium leading-6 text-gray-900"
+									href={`/dashboard/benches/${bench.name}`}
+								>
+									{bench.group}
+								</a>
+							</Tooltip>
 							{bench.status != 'Active' ? (
 								<Badge class="ml-4" label={bench.status} />
 							) : null}
 							{bench.has_app_patch_applied && (
-								<Tooltip text="Apps in this deploy may have been patched">
-									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+								<Tooltip text="Apps in this bench may have been patched">
+									<a
+										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										href="https://frappecloud.com/docs/benches/app-patches"
+										target="_blank"
+									>
 										<IconHash />
-									</div>
+									</a>
 								</Tooltip>
 							)}
 							{bench.has_updated_inplace && (
-								<Tooltip text="This deploy has been updated in place">
-									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+								<Tooltip text="This bench has been updated in place">
+									<a
+										class="ml-2 rounded bg-gray-100 p-1 text-gray-700"
+										href="https://frappecloud.com/docs/in-place-updates"
+										target="_blank"
+									>
 										<IconStar />
-									</div>
+									</a>
 								</Tooltip>
 							)}
 							<ActionButton class="ml-auto" options={options} />
@@ -125,78 +141,9 @@ export default {
 				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
 					? 'No sites found'
 					: 'Create a deploy first to start creating sites',
-				columns: [
-					{
-						label: 'Site',
-						fieldname: 'host_name',
-						format(value, row) {
-							return value || row.name;
-						},
-						prefix() {
-							return h('div', { class: 'ml-2 w-3.5 h-3.5' });
-						}
-					},
-					{
-						label: 'Status',
-						fieldname: 'status',
-						type: 'Badge',
-						width: 0.5
-					},
-					{
-						label: 'Region',
-						fieldname: 'cluster_title',
-						width: 0.5,
-						prefix(row) {
-							if (row.cluster_title)
-								return h('img', {
-									src: row.cluster_image,
-									class: 'w-4 h-4',
-									alt: row.cluster_title
-								});
-						}
-					},
-					{
-						label: 'Plan',
-						width: 0.5,
-						format(value, row) {
-							if (row.trial_end_date) {
-								return trialDays(row.trial_end_date);
-							}
-							return planTitle(row);
-						}
-					}
-				],
-				filterControls() {
-					return [
-						{
-							type: 'select',
-							label: 'Status',
-							fieldname: 'status',
-							options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
-						},
-						{
-							type: 'select',
-							label: 'Region',
-							fieldname: 'cluster',
-							options: [
-								'',
-								'Bahrain',
-								'Cape Town',
-								'Frankfurt',
-								'KSA',
-								'London',
-								'Mumbai',
-								'Singapore',
-								'UAE',
-								'Virginia',
-								'Zurich'
-							]
-						}
-					];
-				},
-				route(row) {
-					return { name: 'Site Detail', params: { name: row.name } };
-				},
+				columns: getSitesTabColumns(false),
+				filterControls: siteTabFilterControls,
+				route: sitesTabRoute,
 				primaryAction: () => {
 					return {
 						label: 'New Site',

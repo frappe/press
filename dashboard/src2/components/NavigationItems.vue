@@ -8,6 +8,7 @@ import { h } from 'vue';
 import DoorOpen from '~icons/lucide/door-open';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
+import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
@@ -68,8 +69,16 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Bench Groups',
+					name: 'Benches',
 					icon: () => h(Package),
+					route: '/benches',
+					isActive: routeName.startsWith('Bench'),
+					condition: this.$team.doc?.is_desk_user,
+					disabled: !onboardingComplete || enforce2FA
+				},
+				{
+					name: 'Bench Groups',
+					icon: () => h(Boxes),
 					route: '/groups',
 					isActive:
 						[
@@ -127,7 +136,7 @@ export default {
 					isActive: routeName.startsWith('Settings'),
 					disabled: enforce2FA
 				}
-			].filter(item => item.condition !== false);
+			].filter(item => item.condition ?? true);
 		}
 	},
 	mounted() {

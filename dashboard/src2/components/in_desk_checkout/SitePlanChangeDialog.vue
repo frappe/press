@@ -20,6 +20,16 @@
 				v-model="selectedPlan"
 				class="mt-4"
 			/>
+			<div class="mt-3 text-xs text-gray-700">
+				<p>
+					* <strong>Support</strong> includes only issues and bug fixes related
+					to Frappe apps, functional queries will not be entertained.
+				</p>
+				<p class="mt-1">
+					** If you face any issue while using Frappe Cloud, you can raise
+					support ticket regardless of site plan.
+				</p>
+			</div>
 			<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
 		</template>
 	</Dialog>
@@ -76,7 +86,7 @@ export default {
 	},
 	methods: {
 		changePlan() {
-			if(this.selectedPlan?.name == this.site?.data?.plan?.name) {
+			if (this.selectedPlan?.name == this.site?.data?.plan?.name) {
 				toast.error('Please choose a different plan');
 				return;
 			}
