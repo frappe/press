@@ -10,7 +10,13 @@
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="error || !data.datasets.length"
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
+		>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="error || !data.datasets.length"
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
