@@ -116,7 +116,6 @@ export default {
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
-					condition: this.$team.doc?.is_desk_user,
 					children: [
 						{
 							name: 'SQL Playground',
