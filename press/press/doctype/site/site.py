@@ -1396,6 +1396,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
+	@frappe.whitelist()
+	def show_admin_password(self):
+		frappe.msgprint(self.get_password("admin_password"), title="Password", indicator="green")
+
 	def get_connection_as_admin(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		return FrappeClient(f"https://{self.name}", "Administrator", password)
