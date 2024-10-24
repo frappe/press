@@ -291,8 +291,8 @@ export default {
 			return {
 				url: 'press.api.marketplace.create_site_for_app',
 				makeParams() {
-					this.sitePlan = this.selectedPlan
-						? this.selectedPlan.name
+					this.sitePlan = this.selectedGroup
+						? this.options.private_site_plan
 						: this.options.public_site_plan;
 
 					if (!this.$team.doc.onboarding.site_created) {
