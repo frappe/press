@@ -155,15 +155,16 @@ function requestLoginToFC(freezing_msg) {
 }
 
 function showFCLogindialog(email) {
-	var d = new frappe.ui.Dialog({
-		title: __('Login to Frappe Cloud'),
-		primary_action_label: __('Verify', null, 'Submit verification code'),
-		primary_action: verifyCode,
-	});
+	if (!window.fc_login_dialog) {
+		var d = new frappe.ui.Dialog({
+			title: __('Login to Frappe Cloud'),
+			primary_action_label: __('Verify', null, 'Submit verification code'),
+			primary_action: verifyCode,
+		});
 
-	$(d.body).html(
-		repl(
-			`<div>
+		$(d.body).html(
+			repl(
+				`<div>
 			<p>We have sent the verification code to your email id <strong>${email}</strong></p>
 			<div class="form-group mt-2">
 				<div class="clearfix">
@@ -175,14 +176,17 @@ function showFCLogindialog(email) {
 			</div>
 			<p class="text-danger" id="fc-login-error"></p>
 		</div>`,
-			frappe.app,
-		),
-	);
+				frappe.app,
+			),
+		);
 
-	d.add_custom_action("Didn't receive code? Resend", () => {
-		d.hide();
-		initiateLogin('Resending Verification Code...');
-	});
+		d.add_custom_action("Didn't receive code? Resend", () => {
+			d.hide();
+			requestLoginToFC('Resending Verification Code...');
+		});
+
+		window.fc_login_dialog = d;
+	}
 
 	const setErrorMessage = (message) => {
 		$('#fc-login-error').text(message);
@@ -206,7 +210,7 @@ function showFCLogindialog(email) {
 			freeze_message: 'Validating verification code',
 			callback: function (r) {
 				if (r.login_token) {
-					d.hide();
+					fc_login_dialog.hide();
 					window.open(
 						`${frappe_cloud_base_url}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}`,
 						'_blank',
@@ -232,5 +236,5 @@ function showFCLogindialog(email) {
 		});
 	}
 
-	d.show();
+	fc_login_dialog.show();
 }
