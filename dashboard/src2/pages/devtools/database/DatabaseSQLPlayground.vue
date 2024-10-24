@@ -175,9 +175,6 @@ export default {
 	},
 	mounted() {},
 	watch: {
-		selectedSiteInfo() {
-			console.log(this.selectedSiteInfo);
-		},
 		query() {
 			window.localStorage.setItem(
 				`sql_playground_query_${this.site}`,
