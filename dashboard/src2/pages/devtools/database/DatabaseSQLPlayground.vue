@@ -6,7 +6,10 @@
 			<div class="flex flex-row items-center gap-2">
 				<!-- Title -->
 				<Breadcrumbs
-					:items="[{ label: 'SQL Playground', route: '/sql-playground' }]"
+					:items="[
+						{ label: 'Dev Tools', route: '/sql-playground' }, // Dev tools has no seperate page as its own, so it doesn't need a different route
+						{ label: 'SQL Playground', route: '/sql-playground' }
+					]"
 				/>
 				<!-- Actions -->
 				<FormControl
