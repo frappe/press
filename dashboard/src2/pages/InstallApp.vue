@@ -296,7 +296,7 @@ export default {
 						: this.options.public_site_plan;
 
 					if (!this.$team.doc.onboarding.site_created) {
-						this.sitePlan = this.trialPlan.name;
+						this.sitePlan = this.trialPlan;
 						this.trial = true;
 					}
 					return {
