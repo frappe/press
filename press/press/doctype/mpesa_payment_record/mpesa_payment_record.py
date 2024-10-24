@@ -20,6 +20,7 @@ class MpesaPaymentRecord(Document):
 		bill_ref_number: DF.Data | None
 		default_currency: DF.Data | None
 		exchange_rate: DF.Float
+		grand_total: DF.Currency
 		invoice_number: DF.Data | None
 		local_invoice: DF.SmallText | None
 		merchant_request_id: DF.Data | None

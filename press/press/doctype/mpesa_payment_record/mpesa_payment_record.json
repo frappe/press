@@ -14,6 +14,7 @@
   "trans_id",
   "transaction_type",
   "trans_time",
+  "grand_total",
   "trans_amount",
   "amount_usd",
   "bill_ref_number",
@@ -167,13 +168,18 @@
    "fieldname": "local_invoice",
    "fieldtype": "Small Text",
    "label": "Local Invoice"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total(Ksh)"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-12 16:01:45.094434",
+ "modified": "2024-10-24 22:06:13.877683",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",

@@ -742,7 +742,7 @@ def generate_stk_push(**kwargs):
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount= 1, #args.request_amount,
+			amount= args.amount_with_tax,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
@@ -769,64 +769,66 @@ def get_mpesa_settings_for_team(team_name):
 
 @frappe.whitelist(allow_guest=True)
 def verify_mpesa_transaction(**kwargs):
-    """Verify the transaction result received via callback from STK."""    
-    transaction_response, integration_request = parse_transaction_response(kwargs)    
-    handle_transaction_result(transaction_response, integration_request)
-    save_integration_request(integration_request)
+	"""Verify the transaction result received via callback from STK."""    
+	transaction_response, integration_request = parse_transaction_response(kwargs)    
+	handle_transaction_result(transaction_response, integration_request)
+	save_integration_request(integration_request)
 
-    return {
-        "status": integration_request.status,
-        "ResultDesc": transaction_response.get("ResultDesc")
-    }
+	return {
+		"status": integration_request.status,
+		"ResultDesc": transaction_response.get("ResultDesc")
+	}
 
 
 def parse_transaction_response(kwargs):
-    """Parse and validate the transaction response."""
-    
-    if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
-        frappe.throw(_("Invalid transaction response format"))
-    transaction_response = frappe._dict(kwargs["Body"]["stkCallback"])
-    checkout_id = getattr(transaction_response, "CheckoutRequestID", "")
-    if not isinstance(checkout_id, str):
-        frappe.throw(_("Invalid Checkout Request ID"))
+	"""Parse and validate the transaction response."""
+	
+	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
+		frappe.throw(_("Invalid transaction response format"))
+	transaction_response = frappe._dict(kwargs["Body"]["stkCallback"])
+	checkout_id = getattr(transaction_response, "CheckoutRequestID", "")
+	if not isinstance(checkout_id, str):
+		frappe.throw(_("Invalid Checkout Request ID"))
 
-    # Retrieve the corresponding Mpesa Request Log document
-    integration_request = frappe.get_doc("Mpesa Request Log", checkout_id)
-    
-    return transaction_response, integration_request
+	# Retrieve the corresponding Mpesa Request Log document
+	integration_request = frappe.get_doc("Mpesa Request Log", checkout_id)
+	
+	return transaction_response, integration_request
 
 
 def handle_transaction_result(transaction_response, integration_request):
-    """Handle the logic based on ResultCode in the transaction response."""
+	"""Handle the logic based on ResultCode in the transaction response."""
 
-    result_code = transaction_response.get("ResultCode")
+	result_code = transaction_response.get("ResultCode")
 
-    if result_code == 0:
-        try:
-            integration_request.handle_success(transaction_response)
-            create_mpesa_payment_register_entry(transaction_response)
-            integration_request.status = "Completed"
-        except Exception:
-            integration_request.handle_failure(transaction_response)
-            frappe.log_error("Mpesa: Failed to verify transaction")
-    elif result_code == 1037:  # User unreachable (Phone off or timeout)
-        integration_request.handle_failure(transaction_response)
-        integration_request.status = "Failed"
-        frappe.log_error("Mpesa: User cannot be reached (Phone off or timeout)")
-    elif result_code == 1032:  # User cancelled the request
-        integration_request.handle_failure(transaction_response)
-        integration_request.status = "Cancelled"
-        frappe.log_error("Mpesa: Request cancelled by user")
-    else:  # Other failure codes
-        integration_request.handle_failure(transaction_response)
-        integration_request.status = "Failed"
-        frappe.log_error(f"Mpesa: Transaction failed with ResultCode {result_code}")
+	if result_code == 0:
+		try:
+			integration_request.handle_success(transaction_response)
+			create_mpesa_payment_register_entry(transaction_response)
+			print("Niko hapa")
+
+			integration_request.status = "Completed"
+		except Exception:
+			integration_request.handle_failure(transaction_response)
+			frappe.log_error("Mpesa: Failed to verify transaction")
+	elif result_code == 1037:  # User unreachable (Phone off or timeout)
+		integration_request.handle_failure(transaction_response)
+		integration_request.status = "Failed"
+		frappe.log_error("Mpesa: User cannot be reached (Phone off or timeout)")
+	elif result_code == 1032:  # User cancelled the request
+		integration_request.handle_failure(transaction_response)
+		integration_request.status = "Cancelled"
+		frappe.log_error("Mpesa: Request cancelled by user")
+	else:  # Other failure codes
+		integration_request.handle_failure(transaction_response)
+		integration_request.status = "Failed"
+		frappe.log_error(f"Mpesa: Transaction failed with ResultCode {result_code}")
 
 
 def save_integration_request(integration_request):
-    """Save and commit the changes to the Mpesa Request Log."""
-    integration_request.save(ignore_permissions=True)
-    frappe.db.commit()
+	"""Save and commit the changes to the Mpesa Request Log."""
+	integration_request.save(ignore_permissions=True)
+	frappe.db.commit()
 
 
 '''fetch parameters from the args'''
@@ -926,8 +928,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 	transaction_id=transaction_response.get("CheckoutRequestID")
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id=transaction_response.get("MerchantRequestID")
-	team, partner = get_team_and_partner_from_integration_request(transaction_id)
-	amount_usd, exchange_rate=convert("USD", "KES", amount)
+	team, partner, requested_amount = get_team_and_partner_from_integration_request(transaction_id)
+	amount_usd, exchange_rate=convert("USD", "KES", requested_amount)
 	gateway_name=get_payment_gateway(partner) 	
 	
 	# Create a new entry in M-Pesa Payment Record
@@ -935,7 +937,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 	"transaction_id": transaction_id,
 	"trans_amount": amount,
 	"team": "Sales Team",
-	"default_currency": "KES"
+	"default_currency": "KES",
+	"rate":requested_amount
 }
 	new_entry = frappe.get_doc({
 		"doctype": "Mpesa Payment Record",
@@ -944,7 +947,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"transaction_type":"Mpesa Express",
 		"team": team,
 		"msisdn": msisdn,
-		"trans_amount": amount,
+		"trans_amount": requested_amount,
+		"grand_total":amount,
 		"merchant_request_id": request_id,
 		"payment_partner": partner,
 		"amount_usd": amount_usd,
@@ -953,7 +957,6 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"local_invoice":create_invoice_partner_site(data, gateway_name),
 	})
  	
-	print("Hello mokimo")
 	new_entry.insert(ignore_permissions=True)
 	new_entry.submit()
 	frappe.db.commit()  
@@ -1019,11 +1022,13 @@ def get_team_and_partner_from_integration_request(transaction_id):
 	# Parse the request_data as a dictionary
 	if request_data:
 		try:
+			
 			request_data_dict = json.loads(request_data)  
 			team_ = request_data_dict.get("team")
 			team = frappe.get_value("Team", {"user": team_}, "name")
 			partner_ = request_data_dict.get("partner")
 			partner = frappe.get_value("Team", {"user": partner_}, "name")
+			requested_amount=request_data_dict.get("request_amount")
 		except json.JSONDecodeError:
 			frappe.throw(_("Invalid JSON format in request_data"))
 			team = None
@@ -1032,7 +1037,7 @@ def get_team_and_partner_from_integration_request(transaction_id):
 		team = None
 		partner = None
 	
-	return team, partner
+	return team, partner, requested_amount
 
 @frappe.whitelist(allow_guest=True)
 def display_mpesa_payment_partners():
@@ -1111,6 +1116,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	trans_amount = data.get("trans_amount")
 	team = data.get("team")
 	default_currency = data.get("default_currency")
+	rate = data.get("rate")
 	
 	# Validate the necessary fields
 	if not transaction_id or not trans_amount:
@@ -1126,10 +1132,12 @@ def create_invoice_partner_site(data, gateway_controller):
 		"transaction_id": transaction_id,
 		"trans_amount": trans_amount,
 		"team": team,
-		"default_currency": default_currency
+		"default_currency": default_currency,
+		"rate":rate
 	}
 	# Make the POST request to your API
 	try:
+		# print(str(payload))
 		response = requests.post(api_url, data=payload, headers=headers)
 		if response.status_code == 200:
 			frappe.msgprint(_("Invoice created successfully"))
