@@ -472,11 +472,8 @@ def app_details_for_new_public_site():
 		"route",
 		"subscription_type",
 		{"sources": ["source", "version"]},
+		{"localisation_apps": ["marketplace_app", "country"]},
 	]
-	if frappe.db.get_value("Team", get_current_team(), "auto_install_localisation_app_enabled"):
-		fields += [
-			{"localisation_apps": ["marketplace_app", "country"]},
-		]
 
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",
@@ -2183,7 +2180,9 @@ def get_private_groups_for_upgrade(name, version):
 
 @frappe.whitelist()
 @protected("Site")
-def version_upgrade(name, destination_group, scheduled_datetime=None, skip_failing_patches=False):
+def version_upgrade(
+	name, destination_group, scheduled_datetime=None, skip_failing_patches=False, skip_backups=False
+):
 	site = frappe.get_doc("Site", name)
 	current_version, shared_site = frappe.db.get_value("Release Group", site.group, ["version", "public"])
 	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
@@ -2216,6 +2215,7 @@ def version_upgrade(name, destination_group, scheduled_datetime=None, skip_faili
 			"destination_group": destination_group,
 			"scheduled_time": scheduled_datetime,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_backups": skip_backups,
 		}
 	).insert()
 
