@@ -116,7 +116,8 @@ export default {
           request_amount: this.amountKES,
           sender: this.phoneNumberInput,
           partner: this.partnerInput.value,
-          tax_id: this.taxIdInput
+          tax_id: this.taxIdInput,
+          amount_with_tax: this.amountWithTax
         },
         validate() {
           if (this.amount < this.minimumAmount) {

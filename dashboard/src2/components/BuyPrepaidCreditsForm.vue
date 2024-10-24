@@ -183,7 +183,7 @@ export default {
 		return {
 			paymentGateway: null,
 			creditsToBuy: this.minimumAmount,
-			creditsToBuyKES:1250,
+			creditsToBuyKES:1300,
 			exchangeRate:1,
 		};
 	},

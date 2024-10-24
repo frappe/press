@@ -31,7 +31,8 @@ from press.utils.billing import (
 from frappe.utils import get_request_site_address
 from press.press.doctype.mpesa_settings.mpesa_connector import MpesaConnector
 from json import dumps, loads
-from frappe.integrations.utils import create_request_log
+# from frappe.integrations.utils import create_request_log
+from press.utils.mpesa_utils import create_request_log
 from frappe import _  # Import this for translation functionality
 import json
 import requests
@@ -789,8 +790,8 @@ def parse_transaction_response(kwargs):
     if not isinstance(checkout_id, str):
         frappe.throw(_("Invalid Checkout Request ID"))
 
-    # Retrieve the corresponding Integration Request document
-    integration_request = frappe.get_doc("Integration Request", checkout_id)
+    # Retrieve the corresponding Mpesa Request Log document
+    integration_request = frappe.get_doc("Mpesa Request Log", checkout_id)
     
     return transaction_response, integration_request
 
@@ -823,7 +824,7 @@ def handle_transaction_result(transaction_response, integration_request):
 
 
 def save_integration_request(integration_request):
-    """Save and commit the changes to the Integration Request."""
+    """Save and commit the changes to the Mpesa Request Log."""
     integration_request.save(ignore_permissions=True)
     frappe.db.commit()
 
@@ -835,10 +836,10 @@ def fetch_param_value(response, key, key_field):
 		if param[key_field] == key:
 			return param["Value"]
 
-'''get completed integration requests'''
+'''get completed Mpesa Request Log'''
 def get_completed_integration_requests_info(reference_doctype, reference_docname, checkout_id):
 	output_of_other_completed_requests = frappe.get_all(
-		"Integration Request",
+		"Mpesa Request Log",
 		filters={
 			"name": ["!=", checkout_id],
 			"reference_doctype": reference_doctype,
@@ -907,7 +908,7 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 			req_name = getattr(response, global_id)
 			error = None
 
-		if not frappe.db.exists("Integration Request", req_name):
+		if not frappe.db.exists("Mpesa Request Log", req_name):
 			create_request_log(request_dict, "Host", "Mpesa Express", req_name, error)
 
 		if error:
@@ -1012,8 +1013,8 @@ def after_save_mpesa_payment_record(doc, method=None):
 
 
 def get_team_and_partner_from_integration_request(transaction_id):
-	"""Get the team and partner associated with the integration request."""
-	integration_request = frappe.get_doc("Integration Request", transaction_id)
+	"""Get the team and partner associated with the Mpesa Request Log."""
+	integration_request = frappe.get_doc("Mpesa Request Log", transaction_id)
 	request_data = integration_request.data
 	# Parse the request_data as a dictionary
 	if request_data:
