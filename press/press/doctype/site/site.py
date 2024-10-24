@@ -1568,7 +1568,7 @@ class Site(Document, TagHelpers):
 			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
-	def is_setup_wizard_complete(self):  # noqa: C901
+	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True
 
