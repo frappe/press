@@ -1,6 +1,13 @@
 <template>
 	<div class="p-5" v-if="job">
-		<Button :route="{ name: `${object.doctype} Detail Jobs` }">
+		<Button
+			:route="{
+				name:
+					object.doctype === 'Site'
+						? 'Site Jobs'
+						: `${object.doctype} Detail Jobs`
+			}"
+		>
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>

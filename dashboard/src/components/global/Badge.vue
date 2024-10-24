@@ -1,5 +1,13 @@
 <template>
-	<FrappeUIBadge :label="label" :theme="_color" />
+	<FrappeUIBadge :size="size" :theme="_color">
+		{{ label }}
+		<template #prefix>
+			<slot name="prefix"></slot>
+		</template>
+		<template #suffix>
+			<slot name="suffix"></slot>
+		</template>
+	</FrappeUIBadge>
 </template>
 
 <script>
@@ -7,7 +15,7 @@ import { Badge as FrappeUIBadge } from 'frappe-ui';
 
 export default {
 	name: 'Badge',
-	props: ['label', 'theme'],
+	props: ['label', 'theme', 'size'],
 	components: {
 		FrappeUIBadge
 	},

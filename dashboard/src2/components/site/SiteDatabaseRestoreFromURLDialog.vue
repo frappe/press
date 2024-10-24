@@ -132,8 +132,8 @@ export default {
 					this.showRestoreDialog = false;
 
 					this.$router.push({
-						name: 'Site Detail Jobs',
-						params: { objectType: 'Site', name: this.site }
+						name: 'Site Jobs',
+						params: { name: this.site }
 					});
 				}
 			};

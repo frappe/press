@@ -126,7 +126,7 @@ export default {
 				success: s => {
 					this.show = false;
 					this.$router.push({
-						name: 'Site Detail Jobs',
+						name: 'Site Jobs',
 						params: { name: this.siteName }
 					});
 					return 'The job to add a database index has been sucessfully created.';
