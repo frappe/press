@@ -1621,14 +1621,12 @@ class Site(Document, TagHelpers):
 		)
 
 		self.save()
-		self.send_setup_wizard_complete_event()
 
-		return setup_complete
-
-	def send_setup_wizard_complete_event(self):
 		# Telemetry: Send event if first site status changed to Active
 		if self.setup_wizard_complete:
 			self.capture_signup_event("first_site_setup_wizard_completed")
+
+		return setup_complete
 
 	def fetch_setup_wizard_complete_status(self):
 		with suppress(Exception):
