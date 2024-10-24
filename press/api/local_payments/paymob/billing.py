@@ -44,6 +44,7 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 	# build iframe url
 	iframe_url = None
 	if intent.get("payment_keys"):
+		intent.pop("client_secret", None)
 		paymob_log.payload = frappe.as_json(intent)
 		iframe_url = accept.retrieve_iframe(accept.paymob_settings.iframe, intent["payment_keys"][0]["key"])
 		paymob_log.insert(ignore_permissions=True)
@@ -68,7 +69,7 @@ def build_payment_data(team, amount):
 		],
 		"items": [
 			{
-			"name": "Frappe PrePaid Crdit",
+			"name": "Frappe Cloud Prepaid Credit",
 			"amount": int(amount * 100),
 			"description": "Frappe Cloud Prepaid Credit",
 			"quantity": 1

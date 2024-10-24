@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from press.api.local_payments.paymob.accept_api import AcceptAPI
 
 
 class PaymobSettings(Document):
@@ -22,4 +23,9 @@ class PaymobSettings(Document):
 		secret_key: DF.Password
 		token: DF.Password | None
 	# end: auto-generated types
-	pass
+	
+	@frappe.whitelist()
+	def get_access_token(self):
+		accept = AcceptAPI()
+		token = accept.retrieve_auth_token()
+		return token

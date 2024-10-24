@@ -90,7 +90,7 @@
 				/>
 			</button>
 			<!-- Paymob button -->
-			<button
+			<button v-if="this.$team.doc.country === 'Egypt'"
 				@click="paymentGateway = 'Paymob'"
 				label="Paymob"
 				class="flex h-10 items-center justify-center rounded border"
