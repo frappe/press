@@ -41,6 +41,7 @@
 					iconLeft="refresh-ccw"
 					variant="subtle"
 					:loading="$resources.tableSchemas.loading"
+					:disabled="!site"
 					@click="() => fetchTableSchemas(true)"
 				>
 					<span class="md:hidden">Schema</span>
