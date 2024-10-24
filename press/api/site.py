@@ -87,7 +87,7 @@ def protected(doctypes):
 			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
-		return frappe.throw("Not Permitted", frappe.PermissionError)
+		frappe.throw("Not Permitted", frappe.PermissionError)  # noqa: RET503
 
 	return wrapper
 
@@ -520,7 +520,7 @@ def app_details_for_new_public_site():
 
 
 @frappe.whitelist()
-def options_for_new(for_bench: str | None = None):  # noqa: C901 🥲
+def options_for_new(for_bench: str | None = None):  # noqa: C901
 	for_bench = str(for_bench) if for_bench else None
 	if for_bench:
 		version = frappe.db.get_value("Release Group", for_bench, "version")
@@ -1762,6 +1762,11 @@ def update_config(name, config):
 	site = frappe.get_doc("Site", name)
 	site.update_site_config(sanitized_config)
 	return list(filter(lambda x: not x.internal, site.configuration))
+
+
+@frappe.whitelist()
+def get_trial_plan():
+	return frappe.db.get_value("Press Settings", None, "press_trial_plan")
 
 
 @frappe.whitelist()

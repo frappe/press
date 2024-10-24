@@ -104,6 +104,7 @@ class PressSettings(Document):
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
 		press_monitoring_password: DF.Password | None
+		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
 		publish_docs: DF.Check
 		razorpay_key_id: DF.Data | None
