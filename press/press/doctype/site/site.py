@@ -31,6 +31,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -157,14 +158,7 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
+			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -2645,6 +2639,39 @@ class Site(Document, TagHelpers):
 		self.add_comment(
 			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
 		)
+		return response
+
+	@dashboard_whitelist()
+	def fetch_database_table_schemas(self, invalidate_cache=False):
+		if invalidate_cache:
+			self._fetch_database_table_schemas.clear_cache()
+		return self._fetch_database_table_schemas()
+
+	@redis_cache(ttl=3600)
+	def _fetch_database_table_schemas(self):
+		try:
+			return Agent(self.server).fetch_database_table_schemas(self)
+		except Exception:
+			frappe.log_error(
+				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
+			)
+
+	@dashboard_whitelist()
+	def run_sql_query_in_database(self, query: str, commit: bool):
+		if not query:
+			return {"success": False, "output": "SQL Query cannot be empty"}
+		doc = frappe.get_doc(
+			{
+				"doctype": "SQL Playground Log",
+				"site": self.name,
+				"team": self.team,
+				"query": query,
+				"committed": commit,
+			}
+		)
+		response = Agent(self.server).run_sql_query_in_database(self, query, commit)
+		doc.is_successful = response.get("success", False)
+		doc.insert(ignore_permissions=True)
 		return response
 
 
