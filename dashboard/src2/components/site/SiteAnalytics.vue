@@ -50,6 +50,14 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{ name: 'Site Performance Request Logs' }"
+					>
+						Requests Logs →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard title="Requests CPU Usage">
@@ -109,7 +117,7 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard class="sm:col-span-2" title="Request Count by Path">
+			<AnalyticsCard class="sm:col-span-2" title="Frequent Requests">
 				<BarChart
 					title="Request Count by Path"
 					:key="requestCountByPathData"
@@ -122,9 +130,8 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard class="sm:col-span-2" title="Request Duration by Path">
+			<AnalyticsCard class="sm:col-span-2" title="Slowest Requests">
 				<BarChart
-					title="Request Duration by Path"
 					:key="requestDurationByPathData"
 					:data="requestDurationByPathData"
 					unit="seconds"
@@ -137,10 +144,9 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
-				title="Average Request Duration by Path"
+				title="Individual Request Time (Average)"
 			>
 				<BarChart
-					title="Average Request Duration by Path"
 					:key="averageRequestDurationByPathData"
 					:data="averageRequestDurationByPathData"
 					unit="seconds"
@@ -151,12 +157,8 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard
-				class="sm:col-span-2"
-				title="Background Job Count by Method"
-			>
+			<AnalyticsCard class="sm:col-span-2" title="Frequent Background Jobs">
 				<BarChart
-					title="Background Job Count by Method"
 					:key="backgroundJobCountByMethodData"
 					:data="backgroundJobCountByMethodData"
 					unit="jobs"
@@ -167,12 +169,8 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard
-				class="sm:col-span-2"
-				title="Background Job Duration by Method"
-			>
+			<AnalyticsCard class="sm:col-span-2" title="Slowest Background Jobs">
 				<BarChart
-					title="Background Job Duration by Method"
 					:key="backgroundJobDurationByMethodData"
 					:data="backgroundJobDurationByMethodData"
 					unit="seconds"
@@ -185,10 +183,9 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
-				title="Average Background Job Duration by Method"
+				title="Individual Background Job Time (Average)"
 			>
 				<BarChart
-					title="Average Background Job Duration by Method"
 					:key="averageBackgroundJobDurationByMethodData"
 					:data="averageBackgroundJobDurationByMethodData"
 					unit="seconds"
@@ -199,9 +196,8 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard class="sm:col-span-2" title="Slow Logs by Count">
+			<AnalyticsCard class="sm:col-span-2" title="Frequent Slow Queries">
 				<BarChart
-					title="Slow Logs by Count"
 					:key="slowLogsByCountData"
 					:data="slowLogsByCountData"
 					unit="queries"
@@ -210,11 +206,18 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{ name: 'Site Performance Slow Queries' }"
+					>
+						Slow Queries Reports →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
-			<AnalyticsCard class="sm:col-span-2" title="Slow Logs by Duration">
+			<AnalyticsCard class="sm:col-span-2" title="Top Slow Queries">
 				<BarChart
-					title="Slow Logs by Duration"
 					:key="slowLogsByDurationData"
 					:data="slowLogsByDurationData"
 					unit="seconds"
@@ -279,10 +282,9 @@ export default {
 				params: {
 					name: this.name,
 					timezone: localTimezone,
-					duration: this.duration,
-					advanced: true
+					duration: this.duration
 				},
-				auto: false
+				auto: this.showAdvancedAnalytics
 			};
 		}
 	},
@@ -424,13 +426,6 @@ export default {
 	},
 	methods: {
 		toggleAdvancedAnalytics() {
-			if (
-				!this.showAdvancedAnalytics &&
-				!this.$resources.advancedAnalytics.fetched
-			) {
-				this.$resources.advancedAnalytics.submit();
-			}
-
 			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
 		}
 	}

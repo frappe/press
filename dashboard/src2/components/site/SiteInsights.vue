@@ -22,9 +22,6 @@
 				</router-link>
 			</template>
 		</div>
-		<div class="w-full overflow-auto sm:h-[88vh]">
-			<router-view />
-		</div>
 		<div v-if="!$isMobile" class="w-60">
 			<template v-for="tab in tabs">
 				<router-link
@@ -41,6 +38,9 @@
 					</div>
 				</router-link>
 			</template>
+		</div>
+		<div class="w-full overflow-auto sm:h-[88vh]">
+			<router-view />
 		</div>
 	</div>
 </template>

@@ -287,12 +287,12 @@ export default {
 					},
 					{
 						name: 'Site Logs',
-						path: 'logs',
+						path: 'logs/:type?',
 						component: () => import('../components/site/SiteLogs.vue')
 					},
 					{
 						name: 'Site Log',
-						path: 'logs/:logName',
+						path: 'logs/view/:logName',
 						component: () => import('../pages/LogPage.vue')
 					},
 					{
