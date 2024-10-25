@@ -126,12 +126,6 @@
 								<div class="mt-2 w-full">
 									<!-- Automated Billing Section -->
 									<div v-if="isAutomatedBilling">
-										<!-- Offer -->
-										<p class="my-3 text-p-sm text-gray-800">
-											🎉 You are eligible for
-											<span class="font-medium">{{ free_credits }}</span> worth
-											of free credits for enabling automated billing.
-										</p>
 										<!-- Stripe Card -->
 										<StripeCard2
 											@complete="onAddCardSuccess"
@@ -356,14 +350,6 @@ export default {
 	computed: {
 		isBillingDetailsSet() {
 			return Boolean(this.$team.doc.billing_details?.name);
-		},
-		free_credits() {
-			return this.$format.userCurrency(
-				this.$team.doc.currency == 'INR'
-					? window.free_credits_inr
-					: window.free_credits_usd,
-				0
-			);
 		},
 		minimumAmount() {
 			return this.$team.doc.currency == 'INR' ? 100 : 5;
