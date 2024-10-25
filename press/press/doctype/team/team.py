@@ -579,23 +579,6 @@ class Team(Document):
 		)
 		invoice.insert()
 
-	def allocate_free_credits(self):
-		if self.via_erpnext or self.is_saas_user:
-			# dont allocate free credits for signups via erpnext
-			# since they get a 14 day free trial site
-			return
-
-		if not self.free_credits_allocated:
-			# allocate free credits on signup
-			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
-			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-			if not credit_amount:
-				return
-			self.allocate_credit_amount(credit_amount, source="Free Credits")
-			self.free_credits_allocated = 1
-			self.save()
-			self.reload()
-
 	def create_referral_bonus(self, referrer_id):
 		# Get team name with this this referrer id
 		referrer_team = frappe.db.get_value("Team", {"referrer_id": referrer_id})
@@ -758,8 +741,6 @@ class Team(Document):
 			doc.set_default()
 			self.reload()
 
-		# allocate credits if not already allocated
-		self.allocate_free_credits()
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc
