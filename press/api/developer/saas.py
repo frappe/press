@@ -172,7 +172,7 @@ def request_login_to_fc(domain: str):
 def validate_login_to_fc(domain: str, otp: str):
 	otp_hash = frappe.cache().get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(otp)):
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw("Invalid Code. Please try again.")
 
 	site = frappe.get_value("Site Domain", domain, "site")
 	team = frappe.get_value("Site", site, "team")
