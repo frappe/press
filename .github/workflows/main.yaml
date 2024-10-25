@@ -167,6 +167,7 @@ jobs:
           bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 2 --build-number ${{ matrix.container }}
         env:
           TYPE: server
+          COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
 
       - name: Upload coverage reports to Codecov
         uses: actions/upload-artifact@v4
