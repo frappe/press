@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -19,7 +19,6 @@ from press.exceptions import (
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
-from press.press.doctype.server.server import Server
 from press.press.doctype.site_backup.site_backup import (
 	SiteBackup,
 	process_backup_site_job_update,
@@ -29,6 +28,7 @@ from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
 
@@ -41,9 +41,7 @@ def get_ongoing_migration(site: str, scheduled=False):
 	ongoing_statuses = ["Pending", "Running"]
 	if scheduled:
 		ongoing_statuses.append("Scheduled")
-	return frappe.db.exists(
-		"Site Migration", {"site": site, "status": ("in", ongoing_statuses)}
-	)
+	return frappe.db.exists("Site Migration", {"site": site, "status": ("in", ongoing_statuses)})
 
 
 class SiteMigration(Document):
@@ -79,15 +77,12 @@ class SiteMigration(Document):
 		self.validate_bench()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
-			frappe.throw(
-				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists."
-			)
+			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
+		site: Site = frappe.get_doc("Site", self.site)
+		site.check_move_scheduled()
 
 	def validate_bench(self):
-		if (
-			frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True)
-			!= "Active"
-		):
+		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
 			frappe.throw("Destination bench does not exist")
 
 	def check_enough_space_on_destination_server(self):
@@ -136,7 +131,6 @@ class SiteMigration(Document):
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
 		site.ready_for_move()
-		frappe.db.commit()
 		self.run_next_step()
 
 	@frappe.whitelist()
@@ -180,9 +174,7 @@ class SiteMigration(Document):
 			self.add_steps_for_domains()
 		elif self.migration_type == "Server":
 			source_db = frappe.db.get_value("Server", self.source_server, "database_server")
-			destination_db = frappe.db.get_value(
-				"Server", self.destination_server, "database_server"
-			)
+			destination_db = frappe.db.get_value("Server", self.destination_server, "database_server")
 			if source_db == destination_db:
 				raise NotImplementedError
 				# TODO: switch order of steps here (archive before restore)
@@ -248,7 +240,7 @@ class SiteMigration(Document):
 			# could be no jobs
 			return ret
 		self.update_next_step_status("Skipped")
-		self.run_next_step()
+		return self.run_next_step()
 
 	def add_steps_for_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
@@ -291,9 +283,10 @@ class SiteMigration(Document):
 
 	@property
 	def possibly_archived_site_on_source(self) -> bool:
-		return find(
-			self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
-		).status in ["Success", "Failure"]
+		return find(self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__).status in [
+			"Success",
+			"Failure",
+		]
 
 	def set_pending_steps_to_skipped(self):
 		for step in self.steps:
@@ -310,11 +303,7 @@ class SiteMigration(Document):
 
 	def fail(self, cleanup=True, reason=None, activate=False):
 		self.set_pending_steps_to_skipped()
-		if (
-			cleanup
-			and not self.possibly_archived_site_on_source
-			and self.restore_on_destination_happened
-		):
+		if cleanup and not self.possibly_archived_site_on_source and self.restore_on_destination_happened:
 			self.append(
 				"steps",
 				{
@@ -351,12 +340,10 @@ class SiteMigration(Document):
 			if self.migration_type == "Cluster":
 				site.create_dns_record()
 
-	def send_fail_notification(self, reason: str = None):
+	def send_fail_notification(self, reason: str | None = None):
 		site = frappe.get_doc("Site", self.site)
 
-		message = (
-			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
-		)
+		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		if reason:
 			message += f" due to {reason}"
 			agent_job_id = None
@@ -379,10 +366,10 @@ class SiteMigration(Document):
 	def send_success_notification(self):
 		site = frappe.get_doc("Site", self.site)
 
-		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
-		agent_job_id = find(
-			self.steps, lambda x: x.step_title == "Restore site on destination"
-		).step_job
+		message = (
+			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
+		)
+		agent_job_id = find(self.steps, lambda x: x.step_title == "Restore site on destination").step_job
 
 		create_new_notification(
 			site.team,
@@ -541,9 +528,7 @@ class SiteMigration(Document):
 			if self.destination_cluster == domain.default_cluster:
 				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
 				site.remove_dns_record(domain, source_proxy, site.name)
-		return agent.new_site_from_backup(
-			site, skip_failing_patches=self.skip_failing_patches
-		)
+		return agent.new_site_from_backup(site, skip_failing_patches=self.skip_failing_patches)
 
 	def restore_site_on_destination_proxy(self):
 		"""Restore site on destination proxy"""
@@ -580,16 +565,14 @@ class SiteMigration(Document):
 			self.update_next_step_status("Skipped")
 			job = None
 		else:
-			job = site.update_site_config(
-				{"maintenance_mode": 0}
-			)  # will do run_next_step in callback
+			job = site.update_site_config({"maintenance_mode": 0})  # will do run_next_step in callback
 		site.reload()
 		site.status = site.status_before_update or "Active"
 		site.status_before_update = None
 		site.save()
 		if job:
 			return job
-		self.run_next_step()
+		return self.run_next_step()
 
 	def activate_site_on_destination_proxy(self):
 		"""Activate site on destination proxy"""
@@ -600,33 +583,41 @@ class SiteMigration(Document):
 	def scheduled_by_consultant(self):
 		return self.owner.endswith("@erpnext.com") or self.owner.endswith("@frappe.io")
 
+	def upgrade_plan(self, site: "Site", dest_server: Server):
+		if not dest_server.public and site.team == dest_server.team and not site.is_on_dedicated_plan:
+			return site.change_plan(
+				"Unlimited",
+				ignore_card_setup=self.scheduled_by_consultant,
+			)
+		return None
+
+	def downgrade_plan(self, site: "Site", dest_server: Server):
+		if dest_server.public and site.team != dest_server.team and site.is_on_dedicated_plan:
+			return site.change_plan(
+				"USD 100",
+				ignore_card_setup=self.scheduled_by_consultant,
+			)
+		return None
+
 	def adjust_plan_if_required(self):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site: "Site" = frappe.get_doc("Site", self.site)
 		dest_server: Server = frappe.get_doc("Server", self.destination_server)
-		if (
-			not dest_server.is_shared
-			and site.team == dest_server.team
-			and not site.is_on_dedicated_plan
-		):
-			try:
-				site.change_plan(
-					"Unlimited",
-					ignore_card_setup=self.scheduled_by_consultant,
-				)
-			except CannotChangePlan:
-				self.update_next_step_status("Failure")
-			else:
-				self.update_next_step_status("Success")
+		plan_change = None
+		try:
+			plan_change = self.upgrade_plan(site, dest_server) or self.downgrade_plan(site, dest_server)
+		except CannotChangePlan:
+			self.update_next_step_status("Failure")
+
+		if plan_change:
+			self.update_next_step_status("Success")
 		else:
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
 
 	def is_cleanup_done(self, job: "AgentJob") -> bool:
 		return (
-			job.job_type == "Archive Site"
-			and job.status == "Success"
-			and job.bench == self.destination_bench
+			job.job_type == "Archive Site" and job.status == "Success" and job.bench == self.destination_bench
 		)
 
 
@@ -678,6 +669,8 @@ def run_scheduled_migrations():
 			site_migration.fail(reason=str(e), activate=True)
 		except InsufficientSpaceOnServer as e:
 			site_migration.fail(reason=str(e), activate=True)
+		except Exception as e:
+			log_error("Site Migration Start Error", e)
 
 
 def on_doctype_update():

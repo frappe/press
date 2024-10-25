@@ -25,6 +25,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -419,7 +420,7 @@ class DeployCandidate(Document):
 			return False
 
 		# Retry twice before giving up
-		if self.retry_count >= 2:
+		if self.retry_count >= 3:
 			return False
 
 		bo = self.build_output
@@ -436,7 +437,8 @@ class DeployCandidate(Document):
 
 	def schedule_build_retry(self):
 		self.retry_count += 1
-		scheduled_time = now() + timedelta(minutes=5)
+		minutes = min(5**self.retry_count, 125)
+		scheduled_time = now() + timedelta(minutes=minutes)
 		self.schedule_build_and_deploy(
 			run_now=False,
 			scheduled_time=scheduled_time,
@@ -546,21 +548,39 @@ class DeployCandidate(Document):
 		step.status = "Running"
 		start_time = now()
 
-		agent = Agent(build_server)
-		with open(context_filepath, "rb") as file:
-			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
-
-		if not upload_filename:
+		try:
+			upload_filename = self.upload_build_context_for_docker_build(
+				context_filepath,
+				build_server,
+			)
+		except Exception:
 			step.status = "Failure"
+			raise
 
-			message = "Failed to upload build context to remote docker builder"
-			if agent.response:
-				message += f"\nagent response: {agent.response.text}"
-			raise Exception(message)
 		step.status = "Success"
-
 		step.duration = get_duration(start_time)
 		return upload_filename
+
+	@retry(
+		reraise=True,
+		wait=wait_fixed(300),
+		stop=stop_after_attempt(3),
+	)
+	def upload_build_context_for_docker_build(
+		self,
+		context_filepath: str,
+		build_server: str,
+	):
+		agent = Agent(build_server)
+		with open(context_filepath, "rb") as file:
+			if upload_filename := agent.upload_build_context_for_docker_build(file, self.name):
+				return upload_filename
+
+		message = "Failed to upload build context to remote docker builder"
+		if agent.response:
+			message += f"\nagent response: {agent.response.text}"
+
+		raise Exception(message)
 
 	@staticmethod
 	def process_run_build(job: "AgentJob", response_data: "dict | None"):

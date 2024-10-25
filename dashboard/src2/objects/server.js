@@ -1,13 +1,13 @@
 import { defineAsyncComponent, h } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
-import { planTitle, duration, userCurrency } from '../utils/format';
 import ServerActions from '../components/server/ServerActions.vue';
-import { icon } from '../utils/components';
-import { trialDays } from '../utils/site';
 import { getTeam } from '../data/team';
-import { tagTab } from './common/tags';
 import router from '../router';
-import { jobTab } from './common/jobs';
+import { icon } from '../utils/components';
+import { duration, planTitle, userCurrency } from '../utils/format';
+import { trialDays } from '../utils/site';
+import { getJobsTab } from './common/jobs';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Server',
@@ -140,6 +140,20 @@ export default {
 
 			return [
 				{
+					label: 'Impersonate Server Owner',
+					title: 'Impersonate Server Owner', // for label to pop-up on hover
+					slots: {
+						icon: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc?.is_desk_user && server.doc.team !== $team.name,
+					onClick() {
+						switchToTeam(server.doc.team);
+					}
+				},
+				{
 					label: 'Options',
 					button: {
 						label: 'Options',
@@ -170,16 +184,6 @@ export default {
 								server.doc.status === 'Active' && $team.doc?.is_desk_user,
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
-							}
-						},
-						{
-							label: 'Impersonate Team',
-							icon: defineAsyncComponent(() =>
-								import('~icons/lucide/venetian-mask')
-							),
-							condition: () => window.is_system_user,
-							onClick() {
-								switchToTeam(server.doc.team);
 							}
 						}
 					]
@@ -322,7 +326,7 @@ export default {
 			{
 				label: 'Bench Groups',
 				icon: icon('package'),
-				route: 'benches',
+				route: 'groups',
 				type: 'list',
 				list: {
 					doctype: 'Release Group',
@@ -406,7 +410,7 @@ export default {
 					}
 				}
 			},
-			jobTab('Server'),
+			getJobsTab('Server'),
 			{
 				label: 'Plays',
 				icon: icon('play'),

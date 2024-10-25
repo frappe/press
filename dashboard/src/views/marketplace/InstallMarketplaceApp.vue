@@ -64,7 +64,7 @@
 						</p>
 					</div>
 					<template v-slot:actions>
-						<Button variant="solid" route="/benches/new">New Bench</Button>
+						<Button variant="solid" route="/groups/new">New Bench</Button>
 					</template>
 				</Card>
 			</div>
@@ -136,7 +136,7 @@ export default {
 						color: 'green'
 					});
 
-					this.$router.push(`/benches/${this.selectedBench}/apps`);
+					this.$router.push(`/groups/${this.selectedBench}/apps`);
 				}
 			};
 		},

@@ -28,7 +28,7 @@
 			<div v-else class="ml-2 mt-4 text-sm">
 				No bench versions found with a code server. Click
 				<router-link
-					:to="`/benches/${selectedGroup}`"
+					:to="`/groups/${selectedGroup}`"
 					class="text-blue-600 hover:underline"
 					>here</router-link
 				>

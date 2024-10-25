@@ -66,6 +66,7 @@ def signup(email, product=None, referrer=None):
 	frappe.set_user(current_user)
 	if account_request:
 		return account_request.name
+	return None
 
 	return None
 
@@ -346,6 +347,7 @@ def validate_request_key(key, timezone=None):
 			if product_trial_doc
 			else None,
 		}
+	return None
 
 	return None
 
@@ -384,6 +386,7 @@ def get_account_request_from_key(key):
 		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
 		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
 			return ar
+	return None
 
 	return None
 
@@ -464,7 +467,7 @@ def current_team():
 def get_permissions():
 	user = frappe.session.user
 	groups = tuple(
-		frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent") + ["1", "2"]  # noqa: RUF005
+		[*frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent"), "1", "2"]
 	)  # [1, 2] is for avoiding singleton tuples
 	docperms = frappe.db.sql(
 		f"""
@@ -890,6 +893,7 @@ def get_frappe_io_auth_url() -> str | None:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+	return None
 
 	return None
 
@@ -1139,6 +1143,7 @@ def get_permission_roles():
 			PressRole.allow_site_creation,
 			PressRole.allow_bench_creation,
 			PressRole.allow_server_creation,
+			PressRole.allow_webhook_configuration,
 		)
 		.join(PressRoleUser)
 		.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))

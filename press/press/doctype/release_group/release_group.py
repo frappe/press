@@ -179,6 +179,15 @@ class ReleaseGroup(Document, TagHelpers):
 			self.team,
 			"enable_inplace_updates",
 		)
+		if doc.enable_inplace_updates:
+			doc.inplace_update_failed_benches = self.get_inplace_update_failed_benches()
+
+	def get_inplace_update_failed_benches(self):
+		return frappe.db.get_all(
+			"Bench",
+			{"group": self.name, "status": "Active", "last_inplace_update_failed": True},
+			pluck="name",
+		)
 
 	def get_actions(self):
 		return [
@@ -1327,7 +1336,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not frappe.db.get_single_value("Press Settings", "use_delta_builds"):
 			return
 
-		self.use_delta_builds = 1
+		self.use_delta_builds = 0
 
 	def is_version_14_or_higher(self):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14

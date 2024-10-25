@@ -115,7 +115,7 @@ class VirtualMachineImage(Document):
 						existing.device = device
 						existing.volume_type = volume_type
 						existing.size = size
-					elif "Ebs":
+					else:
 						self.append(
 							"volumes",
 							{

@@ -11,7 +11,6 @@ from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
-from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.billing import convert_stripe_money, get_frappe_io_connection
 
@@ -85,7 +84,7 @@ class Invoice(Document):
 		write_off_amount: DF.Float
 	# end: auto-generated types
 
-	dashboard_fields = ClassVar[
+	dashboard_fields = (
 		"period_start",
 		"period_end",
 		"team",
@@ -107,7 +106,7 @@ class Invoice(Document):
 		"total_discount_amount",
 		"invoice_pdf",
 		"stripe_invoice_url",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -253,7 +252,7 @@ class Invoice(Document):
 		if self.amount_due == 0:
 			self.status = "Paid"
 
-		if self.status == "Paid" and (self.stripe_invoice_id and self.amount_paid == 0):
+		if self.status == "Paid" and self.stripe_invoice_id and self.amount_paid == 0:
 			self.change_stripe_invoice_status("Void")
 			self.add_comment(
 				text=(
@@ -450,7 +449,7 @@ class Invoice(Document):
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		duplicate_stripe_invoice = frappe.db.exists(
+		invoice_exists = frappe.db.exists(
 			"Invoice",
 			{
 				"stripe_payment_intent_id": self.stripe_payment_intent_id,
@@ -458,7 +457,7 @@ class Invoice(Document):
 				"name": ("!=", self.name),
 			},
 		)
-		if self.type == "Prepaid Credits" and self.stripe_payment_intent_id and duplicate_stripe_invoice:
+		if self.type == "Prepaid Credits" and self.stripe_payment_intent_id and invoice_exists:
 			frappe.throw("Invoice with same Stripe payment intent exists", frappe.DuplicateEntryError)
 
 		if self.type == "Subscription" and self.period_start and self.period_end and self.is_new():
@@ -916,7 +915,6 @@ class Invoice(Document):
 	def get_stripe_invoice(self):
 		if not self.stripe_invoice_id:
 			return None
-
 		stripe = get_stripe()
 		return stripe.Invoice.retrieve(self.stripe_invoice_id)
 
@@ -1005,8 +1003,45 @@ def finalize_draft_invoice(invoice):
 		log_error("Invoice creation for next month failed", invoice=invoice.name)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")
-
-
 def calculate_gst(amount):
 	return amount * 0.18
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabInvoice`.`team` = {frappe.db.escape(team)})"
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team, has_role
+
+	if not user:
+		user = frappe.session.user
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
+		return True
+
+	if ptype == "create":
+		return True
+
+	if has_role("Press Support Agent", user) and ptype == "read":
+		return True
+
+	team = get_current_team(True)
+	team_members = [
+		d.user for d in frappe.db.get_all("Team Member", {"parenttype": "Team", "parent": doc.team}, ["user"])
+	]
+	if doc.team == team.name or team.user in team_members:
+		return True
+	return False

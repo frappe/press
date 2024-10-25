@@ -52,7 +52,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI",
+   "options": "\nAWS EC2\nOCI\nHetzner",
    "read_only": 1,
    "reqd": 1
   },
@@ -192,7 +192,7 @@
    "fieldtype": "Table",
    "label": "Volumes",
    "options": "Virtual Machine Volume",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.volumes.length > 0"
   },
   {
    "fieldname": "virtual_machine_image",
@@ -323,7 +323,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-09-19 16:39:18.168648",
+ "modified": "2024-10-09 10:54:27.750679",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

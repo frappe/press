@@ -1,7 +1,9 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
@@ -10,6 +12,9 @@ from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class VersionUpgrade(Document):
@@ -27,6 +32,7 @@ class VersionUpgrade(Document):
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
 		site_update: DF.Link | None
+		skip_backups: DF.Check
 		skip_failing_patches: DF.Check
 		source_group: DF.Link | None
 		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
@@ -44,8 +50,7 @@ class VersionUpgrade(Document):
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
 		destination_servers = [
-			server.server
-			for server in frappe.get_doc("Release Group", self.destination_group).servers
+			server.server for server in frappe.get_doc("Release Group", self.destination_group).servers
 		]
 
 		if site_server not in destination_servers:
@@ -56,9 +61,7 @@ class VersionUpgrade(Document):
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		bench_apps = [
-			app.app for app in frappe.get_doc("Release Group", self.destination_group).apps
-		]
+		bench_apps = [app.app for app in frappe.get_doc("Release Group", self.destination_group).apps]
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
 				f"Destination Group {self.destination_group} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
@@ -73,7 +76,7 @@ class VersionUpgrade(Document):
 				"You are upgrading the site to Nightly Branch. Please note that Nightly might not be stable"
 			)
 			return
-		elif source_version == "Nightly":
+		if source_version == "Nightly":
 			frappe.throw(
 				f"Downgrading from Nightly to {dest_version.title()} is not allowed",
 				frappe.ValidationError,
@@ -88,12 +91,12 @@ class VersionUpgrade(Document):
 
 	@frappe.whitelist()
 	def start(self):
-		site = frappe.get_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		if site.status.endswith("ing"):
 			frappe.throw("Site is under maintenance. Cannot Update")
 		try:
 			self.site_update = site.move_to_group(
-				self.destination_group, self.skip_failing_patches
+				self.destination_group, self.skip_failing_patches, self.skip_backups
 			).name
 		except Exception as e:
 			frappe.db.rollback()
@@ -103,9 +106,7 @@ class VersionUpgrade(Document):
 			site = frappe.get_doc("Site", self.site)
 			next_version = frappe.get_value("Release Group", self.destination_group, "version")
 
-			message = (
-				f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> failed"
-			)
+			message = f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> failed"
 			agent_job_id = frappe.get_value("Site Update", self.site_update, "update_job")
 
 			create_new_notification(
@@ -134,7 +135,7 @@ class VersionUpgrade(Document):
 		self.save()
 
 	@classmethod
-	def get_all_scheduled_before_now(cls) -> List["VersionUpgrade"]:
+	def get_all_scheduled_before_now(cls) -> list["VersionUpgrade"]:
 		upgrades = frappe.get_all(
 			cls.doctype,
 			{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
@@ -144,12 +145,12 @@ class VersionUpgrade(Document):
 		return cls.get_docs(upgrades)
 
 	@classmethod
-	def get_all_ongoing_version_upgrades(cls) -> List[Document]:
+	def get_all_ongoing_version_upgrades(cls) -> list[Document]:
 		upgrades = frappe.get_all(cls.doctype, {"status": ("in", ["Pending", "Running"])})
 		return cls.get_docs(upgrades)
 
 	@classmethod
-	def get_docs(cls, names: List[str]) -> List[Document]:
+	def get_docs(cls, names: list[str]) -> list[Document]:
 		return [frappe.get_doc(cls.doctype, name) for name in names]
 
 

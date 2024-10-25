@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -23,6 +22,7 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
 		agent_github_access_token: DF.Data | None
@@ -85,6 +85,7 @@ class PressSettings(Document):
 		github_app_public_link: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
+		hetzner_api_token: DF.Password | None
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		log_server: DF.Link | None
@@ -103,6 +104,7 @@ class PressSettings(Document):
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
 		press_monitoring_password: DF.Password | None
+		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
 		publish_docs: DF.Check
 		razorpay_key_id: DF.Data | None
@@ -145,9 +147,7 @@ class PressSettings(Document):
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
-		verify_cards_with_micro_charge: DF.Literal[
-			"No", "Only INR", "Only USD", "Both INR and USD"
-		]
+		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
@@ -183,7 +183,7 @@ class PressSettings(Document):
 			app_name = f"Frappe Cloud {frappe.generate_hash(length=6).upper()}"
 		else:
 			app_name = "Frappe Cloud"
-		manifest = {
+		return {
 			"name": app_name,
 			"url": "https://frappe.cloud",
 			"hook_attributes": {"url": get_url("api/method/press.api.github.hook")},
@@ -201,7 +201,6 @@ class PressSettings(Document):
 			"request_oauth_on_install": True,
 			"setup_on_update": True,
 		}
-		return manifest
 
 	@property
 	def boto3_offsite_backup_session(self) -> Session:

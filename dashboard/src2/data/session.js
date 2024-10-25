@@ -46,6 +46,11 @@ export let session = reactive({
 			? session.roles.data.some(role => role.allow_billing)
 			: true
 	),
+	hasWebhookConfigurationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_webhook_configuration)
+			: true
+	),
 	hasAppsAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some(role => role.allow_apps)

@@ -324,8 +324,8 @@ export default {
 											this.$appServer.configureAutoAddStorage.submit(
 												{
 													server: doc.name,
-													min: values.min,
-													max: values.max
+													min: Number(values.min),
+													max: Number(values.max)
 												},
 												{
 													onSuccess: () => {

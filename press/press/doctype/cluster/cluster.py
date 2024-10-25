@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import base64
 import hashlib
@@ -10,11 +9,13 @@ import re
 import time
 import typing
 from textwrap import wrap
-from typing import Dict, Generator, List, Optional
+from typing import ClassVar, Generator
 
 import boto3
 import frappe
 from frappe.model.document import Document
+from hcloud import APIException, Client
+from hcloud.networks.domain import NetworkSubnet
 from oci.config import validate_config
 from oci.core import VirtualNetworkClient
 from oci.core.models import (
@@ -56,7 +57,7 @@ class Cluster(Document):
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
 		description: DF.Data | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -80,18 +81,20 @@ class Cluster(Document):
 		vpc_id: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "image"]
+	dashboard_fields: ClassVar[list[str]] = ["title", "image"]
 
-	base_servers = {
+	base_servers: ClassVar[dict[str, str]] = {
 		"Proxy Server": "n",
 		"Database Server": "m",
 		"Server": "f",  # App server is last as it needs both proxy and db server
 	}
-	private_servers = {
+
+	private_servers: ClassVar[dict] = {
 		# TODO: Uncomment these when they are implemented
 		# "Monitor Server": "p",
-		# "Log Server": "e",
+		# "Log Server": "e,
 	}
+
 	wait_for_aws_creds_seconds = 20
 
 	@staticmethod
@@ -99,12 +102,12 @@ class Cluster(Document):
 		if filters and filters.get("group"):
 			rg = frappe.get_doc("Release Group", filters.get("group"))
 			cluster_names = rg.get_clusters()
-			clusters = frappe.get_all(
+			return frappe.get_all(
 				"Cluster",
 				fields=["name", "title", "image", "beta"],
 				filters={"name": ("in", cluster_names)},
 			)
-			return clusters
+		return None
 
 	def validate(self):
 		self.validate_monitoring_password()
@@ -113,6 +116,26 @@ class Cluster(Document):
 			self.validate_aws_credentials()
 		elif self.cloud_provider == "OCI":
 			self.set_oci_availability_zone()
+		elif self.cloud_provider == "Hetzner":
+			self.validate_hetzner_api_token()
+
+	def validate_hetzner_api_token(self):
+		settings: "PressSettings" = frappe.get_single("Press Settings")
+		api_token = settings.get_password("hetzner_api_token")
+		client = Client(token=api_token)
+		try:
+			# Check if we can list servers (read access)
+			servers = client.servers.get_all()
+
+			if servers is None:
+				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+
+		except APIException as e:
+			# Handle specific API exceptions like unauthorized access
+			if e.code == "unauthorized":
+				frappe.throw("API token is invalid or does not have the correct permissions.")
+			else:
+				frappe.throw(f"An error occurred while validating the API token: {e}")
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
@@ -143,10 +166,47 @@ class Cluster(Document):
 			self.provision_on_aws_ec2()
 		elif self.cloud_provider == "OCI":
 			self.provision_on_oci()
+		elif self.cloud_provider == "Hetzner":
+			self.provision_on_hetzner()
+
+	def provision_on_hetzner(self):
+		try:
+			# Define the subnet
+			subnets = [
+				NetworkSubnet(
+					type="cloud",  # VPCs in Hetzner are defined as 'cloud' subnets
+					ip_range=self.subnet_cidr_block,
+					network_zone=self.availability_zone,
+				)
+			]
+
+			# Get Hetzner API token from Press Settings
+			settings: "PressSettings" = frappe.get_single("Press Settings")
+			api_token = settings.get_password("hetzner_api_token")
+
+			client = Client(token=api_token)
+
+			# Create the network (VPC) on Hetzner
+			network = client.networks.create(
+				name=f"Frappe Cloud - {self.name}",
+				ip_range=self.cidr_block,  # The IP range for the entire network (CIDR)
+				subnets=subnets,
+				routes=[],
+			)
+			self.vpc_id = network.id
+			self.save()
+
+		except APIException as e:
+			frappe.throw(f"Failed to provision network on Hetzner: {e!s}")
+
+		except Exception as e:
+			frappe.throw(f"An unexpected error occurred during provisioning: {e!s}")
 
 	def on_trash(self):
 		machines = frappe.get_all(
-			"Virtual Machine", {"cluster": self.name, "status": "Terminated"}, pluck="name"
+			"Virtual Machine",
+			{"cluster": self.name, "status": "Terminated"},
+			pluck="name",
 		)
 		for machine in machines:
 			frappe.delete_doc("Virtual Machine", machine)
@@ -180,9 +240,7 @@ class Cluster(Document):
 	def validate_cidr_block(self):
 		if not self.cidr_block:
 			blocks = ipaddress.ip_network("10.0.0.0/8").subnets(new_prefix=16)
-			existing_blocks = ["10.0.0.0/16"] + frappe.get_all(
-				"Cluster", ["cidr_block"], pluck="cidr_block"
-			)
+			existing_blocks = ["10.0.0.0/16"] + frappe.get_all("Cluster", ["cidr_block"], pluck="cidr_block")  # noqa: RUF005
 			for block in blocks:
 				cidr_block = str(block)
 				if cidr_block not in existing_blocks:
@@ -223,7 +281,12 @@ class Cluster(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "subnet",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Public Subnet"}],
+					"Tags": [
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Public Subnet",
+						}
+					],
 				},
 			],
 			AvailabilityZone=self.availability_zone,
@@ -237,7 +300,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "internet-gateway",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Internet Gateway"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Internet Gateway",
+						},
 					],
 				},
 			],
@@ -245,9 +311,7 @@ class Cluster(Document):
 
 		self.internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
 
-		client.attach_internet_gateway(
-			InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id
-		)
+		client.attach_internet_gateway(InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id)
 
 		response = client.describe_route_tables(
 			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
@@ -282,7 +346,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "security-group",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Security Group"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Security Group",
+						},
 					],
 				},
 			],
@@ -314,7 +381,10 @@ class Cluster(Document):
 					"FromPort": 3306,
 					"IpProtocol": "tcp",
 					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "MariaDB from private network"}
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "MariaDB from private network",
+						}
 					],
 					"ToPort": 3306,
 				},
@@ -322,7 +392,10 @@ class Cluster(Document):
 					"FromPort": 22000,
 					"IpProtocol": "tcp",
 					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SSH from private network"}
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "SSH from private network",
+						}
 					],
 					"ToPort": 22999,
 				},
@@ -336,13 +409,16 @@ class Cluster(Document):
 		)
 		self.create_proxy_security_group()
 
-		try:
+		try:  # noqa: SIM105
 			# We don't care if the key already exists in this region
 			response = client.import_key_pair(
 				KeyName=self.ssh_key,
 				PublicKeyMaterial=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 				TagSpecifications=[
-					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key}]},
+					{
+						"ResourceType": "key-pair",
+						"Tags": [{"Key": "Name", "Value": self.ssh_key}],
+					},
 				],
 			)
 		except Exception:
@@ -364,7 +440,10 @@ class Cluster(Document):
 				{
 					"ResourceType": "security-group",
 					"Tags": [
-						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Proxy - Security Group"},
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - Proxy - Security Group",
+						},
 					],
 				},
 			],
@@ -377,7 +456,12 @@ class Cluster(Document):
 				{
 					"FromPort": 2222,
 					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
+					"IpRanges": [
+						{
+							"CidrIp": "0.0.0.0/0",
+							"Description": "SSH proxy from anywhere",
+						}
+					],
 					"ToPort": 2222,
 				},
 				{
@@ -402,9 +486,7 @@ class Cluster(Document):
 	def get_oci_config(self):
 		# Stupid Password field, replaces newines with spaces
 		private_key = (
-			self.get_password("oci_private_key")
-			.replace(" ", "\n")
-			.replace("\nPRIVATE\n", " PRIVATE ")
+			self.get_password("oci_private_key").replace(" ", "\n").replace("\nPRIVATE\n", " PRIVATE ")
 		)
 
 		config = {
@@ -419,9 +501,7 @@ class Cluster(Document):
 
 	def set_oci_availability_zone(self):
 		identiy_client = IdentityClient(self.get_oci_config())
-		availibility_domain = (
-			identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
-		)
+		availibility_domain = identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
 		self.availability_zone = availibility_domain
 
 	def provision_on_oci(self):
@@ -519,7 +599,7 @@ class Cluster(Document):
 		self.proxy_security_group_id = proxy_security_group.id
 
 		time.sleep(1)
-		vcn_client.add_network_security_group_security_rules(
+		vcn_client.add_network_security_group_security_rules(  # noqa: B018
 			self.proxy_security_group_id,
 			AddNetworkSecurityGroupSecurityRulesDetails(
 				security_rules=[
@@ -587,7 +667,7 @@ class Cluster(Document):
 
 		self.save()
 
-	def get_available_vmi(self, series) -> Optional[str]:
+	def get_available_vmi(self, series) -> str | None:
 		"""Virtual Machine Image available in region for given series"""
 		return VirtualMachineImage.get_available_for_series(series, self.region)
 
@@ -640,8 +720,7 @@ class Cluster(Document):
 				).copy_image(self.name)
 			)
 			frappe.db.commit()
-		for copy in copies:
-			yield copy
+		yield from copies
 
 	@frappe.whitelist()
 	def create_servers(self):
@@ -660,9 +739,7 @@ class Cluster(Document):
 				doctype,
 				"Test",
 			)
-			match (
-				doctype
-			):  # for populating Server doc's fields; assume the trio is created together
+			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
 					self.database_server = server.name
 				case "Proxy Server":
@@ -696,28 +773,27 @@ class Cluster(Document):
 		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
 		if plan:
 			return frappe.get_doc("Server Plan", f"Basic Cluster - {server_type}")
-		else:
-			return frappe.get_doc(
-				{
-					"doctype": "Server Plan",
-					"name": f"Basic Cluster - {server_type}",
-					"title": f"Basic Cluster - {server_type}",
-					"instance_type": "t2.medium",
-					"price_inr": 0,
-					"price_usd": 0,
-					"vcpu": 2,
-					"memory": 4096,
-					"disk": 50,
-				}
-			).insert(ignore_permissions=True, ignore_if_duplicate=True)
+		return frappe.get_doc(
+			{
+				"doctype": "Server Plan",
+				"name": f"Basic Cluster - {server_type}",
+				"title": f"Basic Cluster - {server_type}",
+				"instance_type": "t2.medium",
+				"price_inr": 0,
+				"price_usd": 0,
+				"vcpu": 2,
+				"memory": 4096,
+				"disk": 50,
+			}
+		).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
 	def create_server(
 		self,
 		doctype: str,
 		title: str,
 		plan: "ServerPlan" = None,
-		domain: str = None,
-		team: str = None,
+		domain: str | None = None,
+		team: str | None = None,
 		create_subscription=True,
 	):
 		"""Creates a server for the cluster"""
@@ -725,9 +801,7 @@ class Cluster(Document):
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
-		vm = self.create_vm(
-			plan.instance_type, plan.disk, domain, server_series[doctype], team
-		)
+		vm = self.create_vm(plan.instance_type, plan.disk, domain, server_series[doctype], team)
 		server = None
 		match doctype:
 			case "Database Server":
@@ -760,10 +834,10 @@ class Cluster(Document):
 		return server, job
 
 	@classmethod
-	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
-		cluster_names = unique(
-			frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
-		)
+	def get_all_for_new_bench(cls, extra_filters=None) -> list[dict[str, str]]:
+		if extra_filters is None:
+			extra_filters = {}
+		cluster_names = unique(frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster"))
 		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(
 			"Cluster",

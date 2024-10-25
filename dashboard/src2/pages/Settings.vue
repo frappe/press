@@ -22,7 +22,7 @@ import { getTeam } from '../data/team';
 import { session } from '../data/session';
 
 let $team = getTeam();
-let $session = session;
+let $session = session || {};
 
 const tabs = [
 	{
@@ -35,7 +35,7 @@ const tabs = [
 		icon: icon('users'),
 		routeName: 'SettingsTeam',
 		condition: () =>
-			$team.doc.user === $session.user ||
+			$team.doc?.user === $session.user ||
 			$session.isTeamAdmin ||
 			$session.isSystemUser
 	},
@@ -48,7 +48,7 @@ const tabs = [
 			'SettingsPermissionRolePermissions'
 		],
 		condition: () =>
-			$team.doc.user === $session.user ||
+			$team.doc?.user === $session.user ||
 			$session.isTeamAdmin ||
 			$session.isSystemUser
 	},

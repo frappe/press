@@ -1,6 +1,5 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
 from __future__ import annotations
 
 import os
@@ -16,7 +15,7 @@ from frappe.utils import get_fullname, get_url_to_form, random_string
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.utils import get_valid_teams_for_user, log_error
+from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
@@ -34,14 +33,12 @@ class Team(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import CommunicationEmail
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		auto_install_localisation_app_enabled: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_email: DF.Data | None
@@ -81,6 +78,7 @@ class Team(Document):
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
+		skip_add_on_billing: DF.Check
 		skip_backups: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
@@ -90,7 +88,7 @@ class Team(Document):
 		via_erpnext: DF.Check
 	# end: auto-generated types
 
-	dashboard_fields = ClassVar[
+	dashboard_fields = (
 		"enabled",
 		"team_title",
 		"user",
@@ -114,7 +112,7 @@ class Team(Document):
 		"is_developer",
 		"enable_performance_tuning",
 		"enable_inplace_updates",
-	]
+	)
 
 	def get_doc(self, doc):
 		if (
@@ -134,6 +132,7 @@ class Team(Document):
 		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
+		doc.is_support_agent = has_role("Press Support Agent")
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
@@ -250,8 +249,15 @@ class Team(Document):
 		if force:
 			return super().delete()
 
-		# if workflow is True, create a Team Deletion Request
-		return frappe.get_doc({"doctype": "Team Deletion Request", "team": self.name}).insert()
+		if workflow:
+			return frappe.get_doc({"doctype": "Team Deletion Request", "team": self.name}).insert()
+
+		frappe.throw(
+			f"You are only deleting the Team Document for {self.name}. To continue to"
+			" do so, pass force=True with this call. Else, pass workflow=True to raise"
+			" a Team Deletion Request to trigger complete team deletion process."
+		)
+		return None
 
 	def disable_account(self):
 		self.suspend_sites("Account disabled")
@@ -271,8 +277,8 @@ class Team(Document):
 		account_request: AccountRequest,
 		first_name: str,
 		last_name: str,
-		password: str | None,
-		country: str | None,
+		password: str | None = None,
+		country: str | None = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
@@ -438,15 +444,10 @@ class Team(Document):
 				doc.save()
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
-		if (
-			self.has_value_changed("payment_mode")
-			and self.payment_mode
-			and self.account_request
-			and self.payment_mode != "Free Credits"
-		):
+		if self.has_value_changed("payment_mode") and self.payment_mode and self.account_request:
 			old_doc = self.get_doc_before_save()
-			# Validate that the team has no payment method set previously or it was set to Free Credits
-			if (not old_doc) or (not old_doc.payment_mode) or old_doc.payment_mode == "Free Credits":
+			# Validate that the team has no payment method set previously
+			if (not old_doc) or (not old_doc.payment_mode):
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
 				# Only capture if it's not a saas signup or invited by parent team
 				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
@@ -476,7 +477,9 @@ class Team(Document):
 				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
 				"frappe_partnership_date",
 			)
-			if frappe_partnership_date and frappe_partnership_date > self.partnership_date:
+			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
+				self.partnership_date
+			):
 				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
@@ -532,7 +535,6 @@ class Team(Document):
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
-
 		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_new_invoice(self):
@@ -586,23 +588,6 @@ class Team(Document):
 			}
 		)
 		invoice.insert()
-
-	def allocate_free_credits(self):
-		if self.via_erpnext or self.is_saas_user:
-			# dont allocate free credits for signups via erpnext
-			# since they get a 14 day free trial site
-			return
-
-		if not self.free_credits_allocated:
-			# allocate free credits on signup
-			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
-			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-			if not credit_amount:
-				return
-			self.allocate_credit_amount(credit_amount, source="Free Credits")
-			self.free_credits_allocated = 1
-			self.save()
-			self.reload()
 
 	def create_referral_bonus(self, referrer_id):
 		# Get team name with this this referrer id
@@ -698,7 +683,6 @@ class Team(Document):
 		except FrappeioServerNotSet as e:
 			if frappe.conf.developer_mode or os.environ.get("CI"):
 				return
-
 			raise e
 
 		previous_version = self.get_doc_before_save()
@@ -767,8 +751,6 @@ class Team(Document):
 			doc.set_default()
 			self.reload()
 
-		# allocate credits if not already allocated
-		self.allocate_free_credits()
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc
@@ -853,8 +835,7 @@ class Team(Document):
 	def get_stripe_balance(self):
 		stripe = get_stripe()
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
-		balance = (customer_object["balance"] * -1) / 100
-		return balance  # noqa: RET504
+		return (customer_object["balance"] * -1) / 100
 
 	@dashboard_whitelist()
 	def get_team_members(self):
@@ -862,6 +843,21 @@ class Team(Document):
 
 	@dashboard_whitelist()
 	def invite_team_member(self, email, roles=None):
+		PressRole = frappe.qb.DocType("Press Role")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+
+		has_admin_access = (
+			frappe.qb.from_(PressRole)
+			.select(PressRole.name)
+			.join(PressRoleUser)
+			.on((PressRole.name == PressRoleUser.parent) & (PressRoleUser.user == frappe.session.user))
+			.where(PressRole.team == self.name)
+			.where(PressRole.admin_access == 1)
+		)
+
+		if frappe.session.user != self.user and not has_admin_access.run():
+			frappe.throw(_("Only team owner can invite team members"))
+
 		frappe.utils.validate_email_address(email, True)
 
 		if frappe.db.exists("Team Member", {"user": email, "parent": self.name, "parenttype": "Team"}):
@@ -921,7 +917,19 @@ class Team(Document):
 			return (False, why)
 
 		if self.payment_mode == "Prepaid Credits":
-			if self.get_balance() > 0:
+			# if balance is greater than 0 or have atleast 2 paid invoices, then allow to create site
+			if (
+				self.get_balance() > 0
+				or frappe.db.count(
+					"Invoice",
+					{
+						"team": self.name,
+						"status": "Paid",
+						"amount_paid": ("!=", 0),
+					},
+				)
+				> 2
+			):
 				return allow
 			why = "Cannot create site due to insufficient balance"
 
@@ -991,16 +999,16 @@ class Team(Document):
 			legacy_contract = res.get("legacy_contract")
 			if partner_level:
 				return partner_level, legacy_contract
+			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
-		return None, None
+		return None
 
 	def is_payment_mode_set(self):
-		if (self.payment_mode in ("Prepaid Credits", "Paid By Partner")) or (
+		if self.payment_mode in ("Prepaid Credits", "Paid By Partner") or (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
 		):
 			return True
-
 		return False
 
 	def get_onboarding(self):
@@ -1012,7 +1020,11 @@ class Team(Document):
 			is_payment_mode_set = parent_team.is_payment_mode_set()
 
 		complete = False
-		if is_payment_mode_set or frappe.db.get_value("User", self.user, "user_type") == "System User":
+		if (
+			is_payment_mode_set
+			or frappe.db.get_value("User", self.user, "user_type") == "System User"
+			or has_role("Press Support Agent")
+		):
 			complete = True
 		elif saas_site_request:
 			complete = False
@@ -1155,9 +1167,9 @@ class Team(Document):
 			limit=1,
 			pluck="name",
 		)
-		if not result:
-			return None
-		return frappe.get_doc("Invoice", result[0], for_update=for_update)
+		if result:
+			return frappe.get_doc("Invoice", result[0], for_update=for_update)
+		return None
 
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
@@ -1272,10 +1284,9 @@ def get_child_team_members(team):
 
 
 def get_default_team(user):
-	if not frappe.db.exists("Team", user):
-		return None
-
-	return user
+	if frappe.db.exists("Team", user):
+		return user
+	return None
 
 
 def process_stripe_webhook(doc, method):

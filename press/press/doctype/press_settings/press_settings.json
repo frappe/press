@@ -8,6 +8,7 @@
   "domain",
   "cluster",
   "trial_sites_count",
+  "press_trial_plan",
   "column_break_2",
   "bench_configuration",
   "billing_tab",
@@ -142,6 +143,8 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
+  "hetzner_section",
+  "hetzner_api_token",
   "twilio_section",
   "twilio_account_sid",
   "twilio_api_key_sid",
@@ -1227,11 +1230,27 @@
    "fieldname": "usage_record_creation_batch_size",
    "fieldtype": "Int",
    "label": "Usage Record Creation Batch Size"
+  },
+  {
+   "fieldname": "hetzner_section",
+   "fieldtype": "Section Break",
+   "label": "Hetzner"
+  },
+  {
+   "fieldname": "hetzner_api_token",
+   "fieldtype": "Password",
+   "label": "Hetzner API Token"
+  },
+  {
+   "fieldname": "press_trial_plan",
+   "fieldtype": "Link",
+   "label": "Press Trial Plan",
+   "options": "Site Plan"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-08-19 17:47:53.603250",
+ "modified": "2024-10-14 21:02:12.948747",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

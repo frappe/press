@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import pytz
@@ -46,14 +47,12 @@ class SiteUpdate(Document):
 		skipped_failing_patches: DF.Check
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
-		status: DF.Literal[
-			"Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"
-		]
+		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
 		team: DF.Link | None
 		update_job: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields: ClassVar = [
 		"status",
 		"site",
 		"destination_bench",
@@ -72,9 +71,7 @@ class SiteUpdate(Document):
 		results = query.run(as_dict=True)
 		for result in results:
 			if result.updated_on:
-				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(
-					tzinfo=None
-				)
+				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(tzinfo=None)
 
 		return results
 
@@ -178,13 +175,19 @@ class SiteUpdate(Document):
 				frappe.ValidationError,
 			)
 
+	def before_insert(self):
+		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site.check_move_scheduled()
+
 	def after_insert(self):
 		if not self.scheduled_time:
 			self.start()
 
 	@dashboard_whitelist()
 	def start(self):
-		site: "Site" = frappe.get_doc("Site", self.site)
+		self.status = "Pending"
+		self.save()
+		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.ready_for_move()
 		self.create_agent_request()
 
@@ -260,8 +263,7 @@ class SiteUpdate(Document):
 		workload_diff = dest_bench.workload - source_bench.workload
 		if (
 			server.new_worker_allocation
-			and workload_diff
-			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+			and workload_diff >= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
 			frappe.enqueue_doc(
 				"Server",
@@ -332,9 +334,7 @@ def benches_with_available_update(site=None, server=None):
 		as_dict=True,
 	)
 
-	destination_candidates = list(
-		set(d["destination_candidate"] for d in source_benches_info)
-	)
+	destination_candidates = list(set(d["destination_candidate"] for d in source_benches_info))
 
 	destination_benches_info = frappe.get_all(
 		"Bench",
@@ -358,7 +358,7 @@ def benches_with_available_update(site=None, server=None):
 @frappe.whitelist()
 def sites_with_available_update(server=None):
 	benches = benches_with_available_update(server=server)
-	sites = frappe.get_all(
+	return frappe.get_all(
 		"Site",
 		filters={
 			"status": ("in", ("Active", "Inactive", "Suspended")),
@@ -368,7 +368,6 @@ def sites_with_available_update(server=None):
 		},
 		fields=["name", "timezone", "bench", "server", "status"],
 	)
-	return sites
 
 
 def schedule_updates():
@@ -411,10 +410,7 @@ def schedule_updates_server(server):
 			continue
 		if update_triggered_count > queue_size:
 			break
-		if not should_try_update(site):
-			continue
-
-		if frappe.db.exists(
+		if not should_try_update(site) or frappe.db.exists(
 			"Site Update",
 			{
 				"site": site.name,
@@ -491,7 +487,7 @@ def is_site_in_deploy_hours(site):
 	return False
 
 
-def process_update_site_job_update(job):
+def process_update_site_job_update(job):  # noqa: C901
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
@@ -629,7 +625,5 @@ def send_job_failure_notification(job_name):
 
 
 def on_doctype_update():
-	frappe.db.add_index(
-		"Site Update", ["site", "source_candidate", "destination_candidate"]
-	)
+	frappe.db.add_index("Site Update", ["site", "source_candidate", "destination_candidate"])
 	frappe.db.add_index("Site Update", ["server", "status"])

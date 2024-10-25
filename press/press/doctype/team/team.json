@@ -55,6 +55,7 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "skip_add_on_billing",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -64,7 +65,6 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
-  "auto_install_localisation_app_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -430,13 +430,6 @@
   },
   {
    "default": "0",
-   "description": "Allows team members to install localisation app along with ERPNext on New Site creation",
-   "fieldname": "auto_install_localisation_app_enabled",
-   "fieldtype": "Check",
-   "label": "Auto Install Localisation App Enabled"
-  },
-  {
-   "default": "0",
    "description": "Allows bypassing build to update a Bench (if conditions are met)",
    "fieldname": "enable_inplace_updates",
    "fieldtype": "Check",
@@ -447,6 +440,13 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "default": "0",
+   "description": "If checked, team won't be charged for add-on storage on its servers",
+   "fieldname": "skip_add_on_billing",
+   "fieldtype": "Check",
+   "label": "Skip Add On Billing"
   }
  ],
  "links": [
@@ -506,7 +506,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-09-27 11:55:44.193800",
+ "modified": "2024-10-22 16:38:02.592208",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

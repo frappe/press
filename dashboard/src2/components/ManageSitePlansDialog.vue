@@ -20,6 +20,16 @@
 				:isPrivateBenchSite="!$site.doc.group_public"
 				:isDedicatedServerSite="$site.doc.is_dedicated_server"
 			/>
+			<div class="mt-3 text-xs text-gray-700">
+				<p>
+					* <strong>Support</strong> includes only issues and bug fixes related
+					to Frappe apps, functional queries will not be entertained.
+				</p>
+				<p class="mt-1">
+					** If you face any issue while using Frappe Cloud, you can raise
+					support ticket regardless of site plan.
+				</p>
+			</div>
 			<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 		</template>
 	</Dialog>
