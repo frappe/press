@@ -1,4 +1,4 @@
-const frappe_cloud_base_endpoint = 'https://frappecloud.com';
+const frappe_cloud_base_endpoint = 'https://devfc.tanmoysrt.xyz';
 
 function calculate_trial_end_days() {
 	// try to check for trial_end_date in frappe.boot.subscription_conf
@@ -136,19 +136,16 @@ function initiateRequestForLoginToFrappeCloud() {
 }
 
 function requestLoginToFC(freezing_msg) {
-	frappe.call({
-		url: frappe_cloud_base_endpoint,
-		method: 'press.api.developer.saas.request_login_to_fc',
+	frappe.request.call({
+		url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.request_login_to_fc`,
 		type: 'POST',
 		args: {
 			domain: window.location.hostname,
 		},
 		freeze: true,
 		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
-		callback: function (r) {
-			if (!r.exc) {
-				showFCLogindialog(r.message.email);
-			}
+		success: function (r) {
+			showFCLogindialog(r.message.email);
 		},
 		error: function (r) {
 			frappe.throw('Failed to login to Frappe Cloud. Please try again');
