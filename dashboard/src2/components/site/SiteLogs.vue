@@ -132,7 +132,7 @@ export default {
 							}
 						},
 						{
-							title: 'iPython Logs',
+							title: 'IPython Logs',
 							route: {
 								name: 'Site Logs',
 								params: {
