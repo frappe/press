@@ -3,20 +3,12 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<div class="flex items-center space-x-2">
-					<FormControl
-						v-if="selectedTag?.value !== '__new__'"
-						class="w-full"
-						label="Select or create a tag"
-						type="autocomplete"
+					<PressAutocomplete
 						v-model="selectedTag"
 						:options="tagOptions"
-					/>
-					<FormControl
-						v-if="selectedTag?.value === '__new__'"
+						label="Select or create a tag"
+						:allowInputAsOption="true"
 						class="w-full"
-						v-model="newTag"
-						label="Enter new tag"
-						placeholder="production, staging, testing"
 					/>
 					<Button
 						label="Add"
@@ -34,11 +26,12 @@
 <script>
 import { ErrorMessage, getCachedDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import Autocomplete from '../components/Autocomplete.vue';
 
 export default {
 	name: 'TagsDialog',
 	props: ['docname', 'doctype'],
-	components: { ErrorMessage },
+	components: { ErrorMessage, PressAutocomplete: Autocomplete },
 	data() {
 		return {
 			showDialog: true,
@@ -65,11 +58,10 @@ export default {
 		tagOptions() {
 			const docTags = this.$doc.doc.tags.map(t => t.tag_name);
 			return [
-				{ label: 'Create new tag', value: '__new__' },
 				...(this.$resources.availableTags.data || [])
 					.filter(t => !docTags.includes(t.tag))
 					.map(t => ({
-						label: t.tag,
+						label: t.tag || 'No label',
 						value: t.tag
 					}))
 			];
@@ -77,10 +69,7 @@ export default {
 	},
 	methods: {
 		addTag() {
-			const tag =
-				this.selectedTag?.value === '__new__'
-					? this.newTag
-					: this.selectedTag.value;
+			const tag = this.selectedTag;
 			toast.promise(this.$doc.addTag.submit({ tag }), {
 				success: () => {
 					this.selectedTag = null;

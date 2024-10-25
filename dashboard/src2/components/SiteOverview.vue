@@ -180,12 +180,15 @@
 				v-for="tag in $site.doc.tags"
 				:key="tag.tag"
 				:label="tag.tag_name"
-				variant="outline"
 				size="lg"
+				class="group"
 			>
 				<template #suffix>
-					<button @click="removeTag(tag)" class="ml-1">
-						<i-lucide-x class="mt-1 h-3 w-3" />
+					<button
+						@click="removeTag(tag)"
+						class="ml-1 hidden transition group-hover:block"
+					>
+						<i-lucide-x class="mt-0.5 h-3 w-3" />
 					</button>
 				</template>
 			</Badge>
