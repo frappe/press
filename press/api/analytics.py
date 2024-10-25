@@ -1,7 +1,9 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
+from contextlib import suppress
 from datetime import datetime, timedelta
 
 import frappe
@@ -81,6 +83,9 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 	)
 	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
+	check = slow_logs_by_duration["datasets"]
+	SLOW_QUERY_DURATION_THRESHOLD = 50
+	has_slow_queries = any(max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check)
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
@@ -520,7 +525,7 @@ def get_current_cpu_usage(site):
 
 def get_current_cpu_usage_for_sites_on_server(server):
 	result = {}
-	try:
+	with suppress(Exception):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not log_server:
 			return result
@@ -584,10 +589,7 @@ def get_current_cpu_usage_for_sites_on_server(server):
 			metric = row["usage"]["counter"]["top"]
 			if metric:
 				result[site] = metric[0]["metrics"]["json.request.counter"]
-	except Exception:
-		pass
-	finally:
-		return result  # noqa: B012
+		return result
 
 
 @frappe.whitelist()

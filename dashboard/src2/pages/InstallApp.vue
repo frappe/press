@@ -31,33 +31,35 @@
 				</div>
 
 				<div class="space-y-12">
-					<div v-if="plans.length">
-						<div class="flex items-center justify-between">
-							<h2 class="text-base font-medium leading-6 text-gray-900">
-								Select Plan
-							</h2>
+					<div v-if="$team.doc.onboarding.site_created">
+						<div v-if="plans.length">
+							<div class="flex items-center justify-between">
+								<h2 class="text-base font-medium leading-6 text-gray-900">
+									Select Plan
+								</h2>
+							</div>
+							<div class="mt-2">
+								<PlansCards v-model="selectedPlan" :plans="plans" />
+							</div>
 						</div>
-						<div class="mt-2">
-							<PlansCards v-model="selectedPlan" :plans="plans" />
-						</div>
-					</div>
 
-					<div v-if="options.private_groups.length">
-						<h2 class="text-base font-medium leading-6 text-gray-900">
-							Select Bench Group
-							<span class="text-sm text-gray-500"> (Optional) </span>
-						</h2>
-						<div class="mt-2 w-full space-y-2">
-							<FormControl
-								type="autocomplete"
-								:options="
-									options.private_groups.map(b => ({
-										label: b.title,
-										value: b.name
-									}))
-								"
-								v-model="selectedGroup"
-							/>
+						<div v-if="options.private_groups.length">
+							<h2 class="text-base font-medium leading-6 text-gray-900">
+								Select Bench Group
+								<span class="text-sm text-gray-500"> (Optional) </span>
+							</h2>
+							<div class="mt-2 w-full space-y-2">
+								<FormControl
+									type="autocomplete"
+									:options="
+										options.private_groups.map(b => ({
+											label: b.title,
+											value: b.name
+										}))
+									"
+									v-model="selectedGroup"
+								/>
+							</div>
 						</div>
 					</div>
 
@@ -210,7 +212,9 @@ export default {
 			cluster: null,
 			selectedPlan: null,
 			selectedGroup: null,
-			agreedToRegionConsent: false
+			agreedToRegionConsent: false,
+			sitePlan: null,
+			trial: false
 		};
 	},
 	watch: {
@@ -275,17 +279,29 @@ export default {
 				}
 			};
 		},
+		getTrialPlan() {
+			return {
+				url: 'press.api.site.get_trial_plan',
+				auto: true
+			};
+		},
 		newSite() {
 			if (!this.options) return;
 
 			return {
 				url: 'press.api.marketplace.create_site_for_app',
 				makeParams() {
+					this.sitePlan = this.selectedGroup
+						? this.options.private_site_plan
+						: this.options.public_site_plan;
+
+					if (!this.$team.doc.onboarding.site_created) {
+						this.sitePlan = this.trialPlan;
+						this.trial = true;
+					}
 					return {
 						subdomain: this.subdomain,
-						site_plan: this.selectedGroup
-							? this.options.private_site_plan
-							: this.options.public_site_plan,
+						site_plan: this.sitePlan,
 						apps: [
 							{
 								app: 'frappe'
@@ -296,7 +312,8 @@ export default {
 							}
 						],
 						cluster: this.cluster,
-						group: this.selectedGroup?.value
+						group: this.selectedGroup?.value,
+						trial: this.trial
 					};
 				},
 				validate() {
@@ -403,6 +420,9 @@ export default {
 					g => g.name === this.selectedGroup.value
 				).clusters;
 			}
+		},
+		trialPlan() {
+			return this.$resources.getTrialPlan.data;
 		}
 	}
 };

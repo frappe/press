@@ -53,25 +53,12 @@
 			<NavigationItems>
 				<template v-slot="{ navigation }">
 					<template v-for="(item, i) in navigation">
-						<router-link custom v-slot="{ href, navigate }" :to="item.route">
-							<a
-								:href="href"
-								@click="navigate"
-								class="flex items-center rounded px-2 py-1.5 text-gray-800 transition"
-								:class="[
-									item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
-									item.disabled ? 'pointer-events-none opacity-50' : '',
-									$attrs.class
-								]"
-							>
-								<div class="flex w-full items-center space-x-2">
-									<span class="grid h-5 w-5 place-items-center">
-										<component :is="item.icon" class="h-4 w-4 text-gray-500" />
-									</span>
-									<span class="text-base">{{ item.name }}</span>
-								</div>
-							</a>
-						</router-link>
+						<MobileNavItemGroup
+							:key="item.name"
+							:item="item"
+							v-if="item.children"
+						/>
+						<MobileNavItem :key="item.name" :item="item" v-else />
 					</template>
 				</template>
 			</NavigationItems>
@@ -84,6 +71,8 @@
 import { defineAsyncComponent, ref } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import NavigationItems from './NavigationItems.vue';
+import MobileNavItem from './MobileNavItem.vue';
+import MobileNavItemGroup from './MobileNavItemGroup.vue';
 
 const SwitchTeamDialog2 = defineAsyncComponent(() =>
 	import('./SwitchTeamDialog.vue')

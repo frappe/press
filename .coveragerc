@@ -1,0 +1,4 @@
+[report]
+exclude_also =
+    raise NotImplementedError
+    if TYPE_CHECKING:
