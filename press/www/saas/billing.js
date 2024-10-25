@@ -1,4 +1,4 @@
-const frappe_cloud_base_endpoint = 'https://devfc.tanmoysrt.xyz';
+const frappe_cloud_base_endpoint = 'https://frappecloud.com';
 
 function calculate_trial_end_days() {
 	// try to check for trial_end_date in frappe.boot.subscription_conf
@@ -101,7 +101,7 @@ $(document).ready(function () {
 function add_frappe_cloud_dashboard_link() {
 	$('.dropdown-navbar-user .dropdown-menu .dropdown-divider').before(
 		`<a class="dropdown-item"
-		onclick="initiateRequestForLoginToFrappeCloud()"
+		href="${frappe_cloud_base_endpoint}/dashboard"
 		>Log In to Frappe Cloud</a>`,
 	);
 }
