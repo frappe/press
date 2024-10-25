@@ -5,7 +5,6 @@ import frappe
 import frappe.utils
 from frappe.auth import LoginManager
 from frappe.rate_limiter import rate_limit
-from frappe.utils.data import get_url
 
 from press.api.developer import raise_invalid_key_error
 from press.utils import mask_email
@@ -160,9 +159,6 @@ def request_login_to_fc(domain: str):
 				"full_name": frappe.get_value("User", email, "full_name"),
 				"otp": otp,
 				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
-				"read_pixel_path": get_url(
-					f"/api/method/press.utils.telemetry.capture_read_event?email={email}"
-				),
 			},
 			now=True,
 		)

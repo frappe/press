@@ -2,7 +2,6 @@
 {% extends "templates/emails/saas.html" %}
 {% set title = title %}
 {% set image_path = image_path %}
-{% set read_pixel_path = read_pixel_path %}
 {% set full_name = full_name %}
 {% set otp = otp %}
 
@@ -17,9 +16,6 @@
         {{ utils.separator() }}
         <p class="my-0">Team Frappe</p>
     </div>
-    {% if read_pixel_path %}
-    <img src="{{ read_pixel_path }}">
-    {% endif %}
 </td>
 
 {% endblock %}
