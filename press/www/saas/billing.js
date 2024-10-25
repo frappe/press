@@ -1,4 +1,4 @@
-const frappe_cloud_base_url = 'https://frappecloud.com';
+const frappe_cloud_base_endpoint = 'https://frappecloud.com';
 
 function calculate_trial_end_days() {
 	// try to check for trial_end_date in frappe.boot.subscription_conf
@@ -115,7 +115,7 @@ function showBanner() {
 	$(d.body).html(`
 		<div id="wrapper" style="position:relative">
 			<iframe
-				src="${frappe_cloud_base_url}/dashboard/checkout/${frappe.boot.subscription_conf.secret_key}"
+				src="${frappe_cloud_base_endpoint}/dashboard/checkout/${frappe.boot.subscription_conf.secret_key}"
 				style="position: relative; top: 0px; width: 100%; height: 60vh;"
 				frameborder="0"
 			>
@@ -137,7 +137,7 @@ function initiateRequestForLoginToFrappeCloud() {
 
 function requestLoginToFC(freezing_msg) {
 	frappe.call({
-		url: 'https://devfc.tanmoysrt.xyz',
+		url: frappe_cloud_base_endpoint,
 		method: 'press.api.developer.saas.request_login_to_fc',
 		type: 'POST',
 		args: {
@@ -200,7 +200,7 @@ function showFCLogindialog(email) {
 			return;
 		}
 		frappe.call({
-			url: frappe_cloud_base_url,
+			url: frappe_cloud_base_endpoint,
 			method: 'press.api.developer.saas.validate_login_to_fc',
 			type: 'POST',
 			args: {
@@ -214,14 +214,14 @@ function showFCLogindialog(email) {
 				if (r.login_token) {
 					fc_login_dialog.hide();
 					window.open(
-						`${frappe_cloud_base_url}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}`,
+						`${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}`,
 						'_blank',
 					);
 					frappe.msgprint({
 						title: __('Frappe Cloud Login Successful'),
 						indicator: 'green',
 						message: __(
-							`<p>You will be redirected to Frappe Cloud soon.</p><p>If you haven\'t been redirected, <a href="${frappe_cloud_base_url}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}" target="_blank">Click here to login</a></p>`,
+							`<p>You will be redirected to Frappe Cloud soon.</p><p>If you haven\'t been redirected, <a href="${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.login_to_fc?token=${r.login_token}" target="_blank">Click here to login</a></p>`,
 						),
 					});
 				} else {
