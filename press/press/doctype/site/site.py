@@ -31,6 +31,7 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
+from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -157,14 +158,7 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending",
-			"Installing",
-			"Updating",
-			"Active",
-			"Inactive",
-			"Broken",
-			"Archived",
-			"Suspended",
+			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -427,6 +421,7 @@ class Site(Document, TagHelpers):
 			is_valid = len(clusters) == 0 or self.cluster in clusters
 			if not is_valid:
 				frappe.throw(f"In {self.subscription_plan}, you can't deploy site in {self.cluster} cluster")
+
 			"""
 			If `allowed_apps` in site plan is empty, then site can be deployed with any apps.
 			Otherwise, site can only be deployed with the apps mentioned in the site plan.
@@ -485,6 +480,15 @@ class Site(Document, TagHelpers):
 					},
 				)
 
+	def capture_signup_event(self, event: str):
+		team = frappe.get_doc("Team", self.team)
+		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
+			from press.utils.telemetry import capture
+
+			account_request = frappe.get_doc("Account Request", team.account_request)
+			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
+				capture(event, "fc_signup", team.user)
+
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
@@ -506,13 +510,7 @@ class Site(Document, TagHelpers):
 
 		# Telemetry: Send event if first site status changed to Active
 		if self.status == "Active" and self.has_value_changed("status"):
-			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-				from press.utils.telemetry import capture
-
-				account_request = frappe.get_doc("Account Request", team.account_request)
-				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-					capture("first_site_status_changed_to_active", "fc_signup", team.user)
+			self.capture_signup_event("first_site_status_changed_to_active")
 
 		if self.has_value_changed("status"):
 			create_site_status_update_webhook_event(self.name)
@@ -716,13 +714,7 @@ class Site(Document, TagHelpers):
 			add_permission_for_newly_created_doc,
 		)
 
-		team = frappe.get_doc("Team", self.team)
-		if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-			from press.utils.telemetry import capture
-
-			account_request = frappe.get_doc("Account Request", team.account_request)
-			if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-				capture("created_first_site", "fc_signup", team.user)
+		self.capture_signup_event("created_first_site")
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
@@ -1042,7 +1034,7 @@ class Site(Document, TagHelpers):
 		frappe.delete_doc("Site Update", site_update)
 
 	@frappe.whitelist()
-	def move_to_group(self, group, skip_failing_patches=False):
+	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		return frappe.get_doc(
 			{
@@ -1050,6 +1042,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"destination_group": group,
 				"skipped_failing_patches": skip_failing_patches,
+				"skipped_backups": skip_backups,
 				"ignore_past_failures": True,
 			}
 		).insert()
@@ -1404,6 +1397,10 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		return agent.create_user(self, email, first_name, last_name, password)
 
+	@frappe.whitelist()
+	def show_admin_password(self):
+		frappe.msgprint(self.get_password("admin_password"), title="Password", indicator="green")
+
 	def get_connection_as_admin(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		return FrappeClient(f"https://{self.name}", "Administrator", password)
@@ -1617,13 +1614,7 @@ class Site(Document, TagHelpers):
 
 		# Telemetry: Send event if first site status changed to Active
 		if self.setup_wizard_complete:
-			team = frappe.get_doc("Team", self.team)
-			if frappe.db.count("Site", {"team": team.name}) <= 1 and team.account_request:
-				from press.utils.telemetry import capture
-
-				account_request = frappe.get_doc("Account Request", team.account_request)
-				if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
-					capture("first_site_setup_wizard_completed", "fc_signup", team.user)
+			self.capture_signup_event("first_site_setup_wizard_completed")
 
 		return setup_complete
 
@@ -2653,6 +2644,39 @@ class Site(Document, TagHelpers):
 		self.add_comment(
 			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
 		)
+		return response
+
+	@dashboard_whitelist()
+	def fetch_database_table_schemas(self, invalidate_cache=False):
+		if invalidate_cache:
+			self._fetch_database_table_schemas.clear_cache()
+		return self._fetch_database_table_schemas()
+
+	@redis_cache(ttl=3600)
+	def _fetch_database_table_schemas(self):
+		try:
+			return Agent(self.server).fetch_database_table_schemas(self)
+		except Exception:
+			frappe.log_error(
+				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
+			)
+
+	@dashboard_whitelist()
+	def run_sql_query_in_database(self, query: str, commit: bool):
+		if not query:
+			return {"success": False, "output": "SQL Query cannot be empty"}
+		doc = frappe.get_doc(
+			{
+				"doctype": "SQL Playground Log",
+				"site": self.name,
+				"team": self.team,
+				"query": query,
+				"committed": commit,
+			}
+		)
+		response = Agent(self.server).run_sql_query_in_database(self, query, commit)
+		doc.is_successful = response.get("success", False)
+		doc.insert(ignore_permissions=True)
 		return response
 
 

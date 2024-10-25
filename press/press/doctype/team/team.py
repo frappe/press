@@ -33,14 +33,12 @@ class Team(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.account_request.account_request import AccountRequest
 		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
 		from press.press.doctype.communication_email.communication_email import CommunicationEmail
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		auto_install_localisation_app_enabled: DF.Check
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
 		billing_name: DF.Data | None
@@ -432,15 +430,10 @@ class Team(Document):
 				doc.save()
 
 		# Telemetry: Payment Mode Changed Event (Only for teams which have came through FC Signup and not via invite)
-		if (
-			self.has_value_changed("payment_mode")
-			and self.payment_mode
-			and self.account_request
-			and self.payment_mode != "Free Credits"
-		):
+		if self.has_value_changed("payment_mode") and self.payment_mode and self.account_request:
 			old_doc = self.get_doc_before_save()
-			# Validate that the team has no payment method set previously or it was set to Free Credits
-			if (not old_doc) or (not old_doc.payment_mode) or old_doc.payment_mode == "Free Credits":
+			# Validate that the team has no payment method set previously
+			if (not old_doc) or (not old_doc.payment_mode):
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
 				# Only capture if it's not a saas signup or invited by parent team
 				if not (ar.is_saas_signup() or ar.invited_by_parent_team):
@@ -580,23 +573,6 @@ class Team(Document):
 			}
 		)
 		invoice.insert()
-
-	def allocate_free_credits(self):
-		if self.via_erpnext or self.is_saas_user:
-			# dont allocate free credits for signups via erpnext
-			# since they get a 14 day free trial site
-			return
-
-		if not self.free_credits_allocated:
-			# allocate free credits on signup
-			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
-			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-			if not credit_amount:
-				return
-			self.allocate_credit_amount(credit_amount, source="Free Credits")
-			self.free_credits_allocated = 1
-			self.save()
-			self.reload()
 
 	def create_referral_bonus(self, referrer_id):
 		# Get team name with this this referrer id
@@ -760,8 +736,6 @@ class Team(Document):
 			doc.set_default()
 			self.reload()
 
-		# allocate credits if not already allocated
-		self.allocate_free_credits()
 		self.remove_subscription_config_in_trial_sites()
 
 		return doc

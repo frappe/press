@@ -61,7 +61,8 @@ export default {
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
-		getBackupDownloadLink: 'get_backup_download_link'
+		getBackupDownloadLink: 'get_backup_download_link',
+		fetchDatabaseTableSchemas: 'fetch_database_table_schemas'
 	},
 	list: {
 		route: '/sites',
