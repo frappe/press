@@ -153,10 +153,10 @@ jobs:
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           install: true
 
@@ -178,7 +178,7 @@ jobs:
       - name: Upload bench start logs
         uses: actions/upload-artifact@v4
         with:
-          name: bench-start-logs
+          name: bench-start-logs-${{ matrix.container }}
           path: /home/runner/frappe-bench/bench_start_logs.txt
         if: always()
 
