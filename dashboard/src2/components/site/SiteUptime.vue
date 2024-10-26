@@ -5,7 +5,7 @@
 	>
 		<div class="text-base text-gray-700">No data</div>
 	</div>
-	<div v-else class="mt-8" v-for="type in uptimeTypes" :key="type.key">
+	<div v-else class="mx-4 mt-8" v-for="type in uptimeTypes" :key="type.key">
 		<div class="flex h-10 justify-between">
 			<div
 				v-for="d in data"

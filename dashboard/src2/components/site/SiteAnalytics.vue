@@ -2,7 +2,7 @@
 	<div class="space-y-4 p-5">
 		<div class="flex space-x-4">
 			<FormControl
-				class="w-32"
+				class="ml-auto w-32"
 				label="Duration"
 				type="select"
 				:options="durationOptions"
