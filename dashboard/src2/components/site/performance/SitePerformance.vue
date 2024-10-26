@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="px-5 pt-12" :options="options" />
+	<ObjectList class="px-5 pt-5" :options="options" />
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
@@ -14,7 +14,7 @@ export default {
 			return {
 				data: () => [
 					{
-						title: 'Request Logs',
+						title: 'Request Log Report',
 						description:
 							'View detailed logs of all HTTP requests made to the website.',
 						route: 'Site Performance Request Logs'

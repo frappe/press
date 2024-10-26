@@ -3,7 +3,6 @@
 		<div class="flex space-x-4">
 			<FormControl
 				class="ml-auto w-32"
-				label="Duration"
 				type="select"
 				:options="durationOptions"
 				v-model="duration"
@@ -55,7 +54,7 @@
 						class="text-base text-gray-600 hover:text-gray-700"
 						:to="{ name: 'Site Performance Request Logs' }"
 					>
-						Requests Logs →
+						Request Log Report →
 					</router-link>
 				</template>
 			</AnalyticsCard>
@@ -254,6 +253,7 @@ export default {
 			duration: '24h',
 			showAdvancedAnalytics: false,
 			durationOptions: [
+				{ label: 'Duration', value: null, disabled: true },
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },
 				{ label: '24 hours', value: '24h' },
