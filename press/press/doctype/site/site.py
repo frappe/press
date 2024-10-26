@@ -1000,6 +1000,8 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 	):
+		log_site_activity(self.name, "Update")
+
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1010,8 +1012,6 @@ class Site(Document, TagHelpers):
 				"scheduled_time": scheduled_time,
 			}
 		).insert()
-		log_site_activity(self.name, "Update")
-
 		return doc.name
 
 	@dashboard_whitelist()
@@ -1039,7 +1039,9 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
-		update = frappe.get_doc(
+		log_site_activity(self.name, "Update")
+
+		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
@@ -1049,9 +1051,6 @@ class Site(Document, TagHelpers):
 				"ignore_past_failures": True,
 			}
 		).insert()
-
-		log_site_activity(self.name, "Update")
-		return update
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
@@ -1084,6 +1083,8 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	@site_action(["Active"])
 	def update_without_backup(self):
+		log_site_activity(self.name, "Update")
+
 		frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1091,8 +1092,6 @@ class Site(Document, TagHelpers):
 				"skipped_backups": 1,
 			}
 		).insert()
-
-		log_site_activity(self.name, "Update")
 
 	@dashboard_whitelist()
 	def add_domain(self, domain):
