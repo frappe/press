@@ -223,7 +223,21 @@ class SiteUpdate(Document):
 			before_migrate_scripts=self.get_before_migrate_scripts(),
 			skip_search_index=self.is_destination_above_v12,
 		)
+		self.set_job_value(job)
+
+	def set_job_value(self, job):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
+		site_activity = frappe.db.get_value(
+			"Site Activity",
+			{
+				"site": self.site,
+				"action": "Update" if self.skipped_backups else "Update without Backup",
+				"job": ("is", "not set"),
+			},
+			order_by="creation desc",
+		)
+		if site_activity:
+			frappe.db.set_value("Site Activity", site_activity, "job", job.name)
 
 	def have_past_updates_failed(self):
 		return frappe.db.exists(
