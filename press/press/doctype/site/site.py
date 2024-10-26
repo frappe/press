@@ -1092,7 +1092,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
-		log_site_activity(self.name, "Update without Backup")
+		log_site_activity(self.name, "Update")
 
 	@dashboard_whitelist()
 	def add_domain(self, domain):

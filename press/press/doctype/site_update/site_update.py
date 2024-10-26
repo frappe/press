@@ -231,7 +231,7 @@ class SiteUpdate(Document):
 			"Site Activity",
 			{
 				"site": self.site,
-				"action": "Update" if self.skipped_backups else "Update without Backup",
+				"action": "Update",
 				"job": ("is", "not set"),
 			},
 			order_by="creation desc",
