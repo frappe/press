@@ -9,7 +9,7 @@ frappe.ui.form.on('Agent Job', {
 		);
 		frm.add_web_link(
 			frm.doc.site
-				? `/dashboard/sites/${frm.doc.site}/jobs/${frm.doc.name}`
+				? `/dashboard/sites/${frm.doc.site}/insights/jobs/${frm.doc.name}`
 				: `/dashboard/servers/${frm.doc.server}/jobs/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
