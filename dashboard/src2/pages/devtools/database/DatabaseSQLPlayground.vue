@@ -42,7 +42,12 @@
 					variant="subtle"
 					:loading="$resources.tableSchemas.loading"
 					:disabled="!site"
-					@click="() => fetchTableSchemas(true)"
+					@click="
+						() =>
+							fetchTableSchemas({
+								invalidate_cache: true
+							})
+					"
 				>
 					<span class="md:hidden">Schema</span>
 					<span class="hidden md:inline">Refresh Schema</span>
@@ -182,7 +187,7 @@ export default {
 				this.query
 			);
 		},
-		site() {
+		site(site_name) {
 			// reset state
 			this.execution_successful = null;
 			this.data = null;
@@ -195,7 +200,9 @@ export default {
 			// recover query and fetch table schemas
 			this.query =
 				window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
-			this.fetchTableSchemas();
+			this.fetchTableSchemas({
+				site_name: site_name
+			});
 		}
 	},
 	resources: {
@@ -271,10 +278,12 @@ export default {
 		}
 	},
 	methods: {
-		fetchTableSchemas(invalidate_cache = false) {
+		fetchTableSchemas({ site_name = null, invalidate_cache = false } = {}) {
+			if (!site_name) site_name = this.site;
+			if (!site_name) return;
 			this.$resources.tableSchemas.submit({
 				dt: 'Site',
-				dn: this.site,
+				dn: site_name,
 				method: 'fetch_database_table_schemas',
 				args: {
 					invalidate_cache
