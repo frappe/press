@@ -1,11 +1,11 @@
 <template>
-	<ObjectList class="mt-7" :options="options" />
+	<ObjectList class="px-5 pt-12" :options="options" />
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
 
 export default {
-	props: ['site'],
+	props: ['name'],
 	components: {
 		ObjectList
 	},
@@ -22,7 +22,7 @@ export default {
 					{
 						title: 'Binary Log Report',
 						description:
-							'Analyze changes made to the database, including data modifications and schema alterations.',
+							'Analyze changes made to the database, including data changes and schema alterations.',
 						route: 'Site Performance Binary Logs'
 					},
 					{
@@ -66,9 +66,7 @@ export default {
 								type: 'primary',
 								iconRight: 'arrow-right',
 								onClick: () => {
-									this.$router.push({
-										name: row.route
-									});
+									this.$router.push({ name: row.route });
 								}
 							};
 						}

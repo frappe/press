@@ -4,7 +4,7 @@
 			<h2 class="text-lg font-medium text-gray-900">Daily Usage</h2>
 			<router-link
 				class="text-base text-gray-600 hover:text-gray-700"
-				:to="{ name: 'Site Detail Analytics', params: { name: site } }"
+				:to="{ name: 'Site Analytics' }"
 			>
 				All analytics →
 			</router-link>

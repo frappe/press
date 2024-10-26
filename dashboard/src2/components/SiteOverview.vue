@@ -171,12 +171,45 @@
 				</div>
 			</div>
 		</div>
+
 		<SiteDailyUsage :site="site" />
+
+		<!-- Tags -->
+		<div class="col-span-1 flex items-center space-x-2 lg:col-span-2">
+			<Badge
+				v-for="tag in $site.doc.tags"
+				:key="tag.tag"
+				:label="tag.tag_name"
+				size="lg"
+				class="group"
+			>
+				<template #suffix>
+					<button
+						@click="removeTag(tag)"
+						class="ml-1 hidden transition group-hover:block"
+					>
+						<i-lucide-x class="mt-0.5 h-3 w-3" />
+					</button>
+				</template>
+			</Badge>
+			<Badge
+				variant="outline"
+				size="lg"
+				label="Add Tag"
+				class="cursor-pointer"
+				@click="showAddTagDialog"
+			>
+				<template #suffix>
+					<i-lucide-plus class="h-3 w-3" />
+				</template>
+			</Badge>
+		</div>
 	</div>
 </template>
 <script>
-import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
+import { h, defineAsyncComponent } from 'vue';
+import { toast } from 'vue-sonner';
 import InfoIcon from '~icons/lucide/info';
 import DismissableBanner from './DismissableBanner.vue';
 import { renderDialog } from '../utils/components';
@@ -223,6 +256,26 @@ export default {
 			} else {
 				this.loginAsAdmin();
 			}
+		},
+		removeTag(tag) {
+			toast.promise(
+				this.$site.removeTag.submit({
+					tag: tag.tag_name
+				}),
+				{
+					loading: 'Removing tag...',
+					success: `Tag ${tag.tag_name} removed`,
+					error: e => {
+						return e.messages.length ? e.messages.join('\n') : e.message;
+					}
+				}
+			);
+		},
+		showAddTagDialog() {
+			const TagsDialog = defineAsyncComponent(() =>
+				import('../dialogs/TagsDialog.vue')
+			);
+			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }));
 		},
 		trialDays
 	},
