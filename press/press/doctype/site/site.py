@@ -2208,9 +2208,9 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def disable_database_access(self):
 		server_agent = Agent(self.server)
-		job = server_agent.revoke_database_access_credentials(self)
+		server_agent.revoke_database_access_credentials(self)
 
-		log_site_activity(self.name, "Disable Database Access", job=job.name)
+		log_site_activity(self.name, "Disable Database Access")
 
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
