@@ -2178,7 +2178,6 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		self.check_db_access_enabling()
 		self.check_db_access_enabled_already()
-		log_site_activity(self.name, "Enable Database Access")
 
 		server_agent = Agent(self.server)
 		credentials = server_agent.create_database_access_credentials(self, mode)
@@ -2200,6 +2199,8 @@ class Site(Document, TagHelpers):
 			credentials["password"],
 			database_server,
 		)
+		log_site_activity(self.name, "Enable Database Access", job=job.name)
+
 		# BREAKING CHANGE: This may cause problems for
 		# serverscripts that rely on the return value of this function
 		return job.name
@@ -2210,8 +2211,6 @@ class Site(Document, TagHelpers):
 		server_agent = Agent(self.server)
 		server_agent.revoke_database_access_credentials(self)
 
-		log_site_activity(self.name, "Disable Database Access")
-
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 
@@ -2221,7 +2220,10 @@ class Site(Document, TagHelpers):
 		self.database_access_user = None
 		self.database_access_password = None
 		self.save()
-		return agent.remove_proxysql_user(self, user)
+		job = agent.remove_proxysql_user(self, user)
+
+		log_site_activity(self.name, "Disable Database Access", job=job.name)
+		return job
 
 	@dashboard_whitelist()
 	def get_database_credentials(self):
