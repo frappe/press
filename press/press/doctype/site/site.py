@@ -1010,7 +1010,7 @@ class Site(Document, TagHelpers):
 				"scheduled_time": scheduled_time,
 			}
 		).insert()
-		log_site_activity(self.name, "Update", job=doc.job)
+		log_site_activity(self.name, "Update", job=doc.update_job)
 
 		return doc.name
 
@@ -1050,7 +1050,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
-		log_site_activity(self.name, "Update", job=update.job)
+		log_site_activity(self.name, "Update", job=update.update_job)
 		return update
 
 	@frappe.whitelist()
@@ -1092,7 +1092,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
-		log_site_activity(self.name, "Update without Backup", job=update.job)
+		log_site_activity(self.name, "Update without Backup", job=update.update_job)
 
 	@dashboard_whitelist()
 	def add_domain(self, domain):
