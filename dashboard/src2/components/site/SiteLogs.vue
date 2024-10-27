@@ -36,6 +36,21 @@ export default {
 	},
 	computed: {
 		logs() {
+			const knownTypes = [
+				'frappe',
+				'scheduler',
+				'database',
+				'pdf',
+				'wkhtmltopdf',
+				'ipython'
+			];
+
+			if (this.type && !knownTypes.includes(this.type)) {
+				return this.$resources.logs.data.filter(
+					d => !knownTypes.includes(d.name.split('.')[0])
+				);
+			}
+
 			// logs of a particular type
 			return this.$resources.logs.data.filter(
 				d => d.name.split('.')[0] === this.type
@@ -148,6 +163,16 @@ export default {
 								params: {
 									name: this.name,
 									type: 'wkhtmltopdf'
+								}
+							}
+						},
+						{
+							title: 'Other Logs',
+							route: {
+								name: 'Site Logs',
+								params: {
+									name: this.name,
+									type: 'other'
 								}
 							}
 						}
