@@ -2191,7 +2191,7 @@
   "modified": "2024-10-28 14:49:19.894247",
   "name": "Fetch Database Table Schema",
   "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/database/schemas",
+  "request_path": "/benches/{bench}/sites/{site}/database/schema",
   "steps": [
    {
     "parent": "Fetch Database Table Schema",
