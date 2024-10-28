@@ -675,9 +675,9 @@ class Site(Document, TagHelpers):
 		if find(self.apps, lambda x: x.app == app):
 			return None
 
-		log_site_activity(self.name, "Install App", app)
 		agent = Agent(self.server)
 		job = agent.install_app_site(self, app)
+		log_site_activity(self.name, "Install App", app, job.name)
 		self.status = "Pending"
 		self.save()
 		self.install_marketplace_conf(app, plan)
@@ -687,9 +687,11 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def uninstall_app(self, app: str) -> str:
-		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
+
+		log_site_activity(self.name, "Uninstall App", app, job.name)
+
 		self.uninstall_marketplace_conf(app)
 		self.status = "Pending"
 		self.save()
@@ -819,9 +821,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def reinstall(self):
-		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
 		job = agent.reinstall_site(self)
+		log_site_activity(self.name, "Reinstall", job=job.name)
 		self.status = "Pending"
 		self.save()
 		return job.name
@@ -829,7 +831,6 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches=False):
-		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
 		activate = True
 		if self.status in ("Inactive", "Suspended"):
@@ -840,7 +841,8 @@ class Site(Document, TagHelpers):
 			"Suspended",
 		):
 			activate = False
-		agent.migrate_site(self, skip_failing_patches=skip_failing_patches, activate=activate)
+		job = agent.migrate_site(self, skip_failing_patches=skip_failing_patches, activate=activate)
+		log_site_activity(self.name, "Migrate", job=job.name)
 		self.status = "Pending"
 		self.save()
 
@@ -886,9 +888,10 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def clear_site_cache(self):
-		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
-		agent.clear_site_cache(self)
+		job = agent.clear_site_cache(self)
+
+		log_site_activity(self.name, "Clear Cache", job=job.name)
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
@@ -896,9 +899,9 @@ class Site(Document, TagHelpers):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
-		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
+		log_site_activity(self.name, "Restore", job=job.name)
 		self.status = "Pending"
 		self.save()
 		return job.name
@@ -998,6 +1001,7 @@ class Site(Document, TagHelpers):
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
+
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1036,6 +1040,7 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1055,9 +1060,11 @@ class Site(Document, TagHelpers):
 		if bench == self.bench:
 			frappe.throw("Site is already on the selected bench.")
 
-		log_site_activity(self.name, "Update")
 		agent = Agent(self.server)
-		return agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		job = agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+		log_site_activity(self.name, "Update", job=job.name)
+
+		return job
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -1076,7 +1083,8 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	@site_action(["Active"])
 	def update_without_backup(self):
-		log_site_activity(self.name, "Update without Backup")
+		log_site_activity(self.name, "Update")
+
 		frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1230,11 +1238,11 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
-		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		agent.archive_site(self, site_name, force)
+		job = agent.archive_site(self, site_name, force)
+		log_site_activity(self.name, "Archive", reason, job.name)
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
 
@@ -2170,7 +2178,6 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		self.check_db_access_enabling()
 		self.check_db_access_enabled_already()
-		log_site_activity(self.name, "Enable Database Access")
 
 		server_agent = Agent(self.server)
 		credentials = server_agent.create_database_access_credentials(self, mode)
@@ -2192,6 +2199,8 @@ class Site(Document, TagHelpers):
 			credentials["password"],
 			database_server,
 		)
+		log_site_activity(self.name, "Enable Database Access", job=job.name)
+
 		# BREAKING CHANGE: This may cause problems for
 		# serverscripts that rely on the return value of this function
 		return job.name
@@ -2199,8 +2208,6 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active"])
 	def disable_database_access(self):
-		log_site_activity(self.name, "Disable Database Access")
-
 		server_agent = Agent(self.server)
 		server_agent.revoke_database_access_credentials(self)
 
@@ -2213,7 +2220,10 @@ class Site(Document, TagHelpers):
 		self.database_access_user = None
 		self.database_access_password = None
 		self.save()
-		return agent.remove_proxysql_user(self, user)
+		job = agent.remove_proxysql_user(self, user)
+
+		log_site_activity(self.name, "Disable Database Access", job=job.name)
+		return job
 
 	@dashboard_whitelist()
 	def get_database_credentials(self):
@@ -2502,6 +2512,12 @@ class Site(Document, TagHelpers):
 				"button_label": "Activate",
 				"condition": self.status in ["Inactive", "Broken"],
 				"doc_method": "activate",
+			},
+			{
+				"action": "Schedule backup",
+				"description": "Schedule a backup for this site",
+				"button_label": "Schedule",
+				"doc_method": "schedule_backup",
 			},
 			{
 				"action": "Transfer site",

@@ -106,12 +106,6 @@
 						<div class="mt-2 w-full">
 							<!-- Automated Billing Section -->
 							<div v-if="isAutomatedBilling">
-								<!-- Offer -->
-								<p class="my-3 text-p-sm text-gray-800">
-									🎉 You are eligible for
-									<span class="font-medium">{{ free_credits }}</span> worth of
-									free credits for enabling automated billing.
-								</p>
 								<!-- Stripe Card -->
 								<StripeCard2 @complete="onPaymentMethodConfirmation" />
 							</div>
@@ -273,15 +267,6 @@ export default {
 	computed: {
 		teamCurrency() {
 			return this.team?.data?.currency || 'INR';
-		},
-		free_credits() {
-			return this.$format.currency(
-				this.teamCurrency == 'INR'
-					? window.free_credits_inr
-					: window.free_credits_usd,
-				this.teamCurrency,
-				0
-			);
 		},
 		minimumAmount() {
 			return this.teamCurrency == 'INR' ? 100 : 5;

@@ -10,7 +10,13 @@
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
+		>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="
 				error ||
 				!data.datasets.length ||
 				(data.datasets[0].length !== undefined && !data.datasets[0].length)
@@ -55,7 +61,7 @@ const props = defineProps({
 	},
 	title: {
 		type: String,
-		required: true
+		required: false
 	},
 	unit: {
 		type: String,
@@ -92,9 +98,8 @@ const props = defineProps({
 		default: () => false
 	},
 	error: {
-		type: String,
-		required: false,
-		default: () => ''
+		type: Error,
+		required: false
 	}
 });
 

@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-4">
+	<div class="space-y-4 p-5">
 		<ErrorMessage :message="$resources.analytics.error" />
 		<FormControl
 			class="w-32"

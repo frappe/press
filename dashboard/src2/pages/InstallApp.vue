@@ -332,7 +332,7 @@ export default {
 				onSuccess: doc => {
 					if (doc.doctype === 'Site') {
 						this.$router.push({
-							name: 'Site Detail Jobs',
+							name: 'Site Jobs',
 							params: { name: doc.name }
 						});
 					} else if (doc.doctype === 'Site Group Deploy') {
