@@ -3,7 +3,6 @@ import random
 
 import frappe
 import frappe.utils
-from frappe.auth import LoginManager
 from frappe.rate_limiter import rate_limit
 
 from press.api.developer import raise_invalid_key_error
@@ -178,26 +177,22 @@ def validate_login_to_fc(domain: str, otp: str):
 	team = frappe.get_value("Site", site, "team")
 	user = frappe.get_value("Team", team, "user")
 
-	frappe.local.login_manager.login_as(user)
-
 	# as otp is valid, delete the otp from redis
 	frappe.cache().delete_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}")
 
 	# login and generate a login_token to store sid
-	login_token = frappe.generate_hash(length=32)
-	frappe.cache.set_value(
-		f"login_token_for_fc_login_via_saas_flow:{login_token}", frappe.local.session.sid, expires_in_sec=60
-	)
+	login_token = frappe.generate_hash(length=64)
+	frappe.cache.set_value(f"saas_fc_login_token:{login_token}", user, expires_in_sec=60)
 
 	frappe.response["login_token"] = login_token
 
 
 @frappe.whitelist(allow_guest=True)
 def login_to_fc(token: str):
-	sid = frappe.cache().get_value(f"login_token_for_fc_login_via_saas_flow:{token}", expires=True)
-	if sid:
-		frappe.cache().delete_value(f"login_token_for_fc_login_via_saas_flow:{token}")
-		frappe.local.form_dict.sid = sid
-		frappe.local.login_manager = LoginManager()
-	frappe.response["type"] = "redirect"
-	frappe.response["location"] = "/dashboard"
+	cache_key = f"saas_fc_login_token:{token}"
+	email = frappe.cache().get_value(cache_key, expires=True)
+	if email:
+		frappe.cache().delete_value(cache_key)
+		frappe.local.login_manager.login_as(email)
+	frappe.response.type = "redirect"
+	frappe.response.location = "/dashboard"
