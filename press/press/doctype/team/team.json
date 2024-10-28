@@ -28,6 +28,7 @@
   "child_team_members",
   "section_break_9",
   "send_notifications",
+  "billing_email",
   "column_break_9",
   "notify_email",
   "last_used_team",
@@ -435,6 +436,11 @@
    "label": "Enable In Place Updates"
   },
   {
+   "fieldname": "billing_email",
+   "fieldtype": "Data",
+   "label": "Billing Email"
+  },
+  {
    "default": "0",
    "description": "If checked, team won't be charged for add-on storage on its servers",
    "fieldname": "skip_add_on_billing",
@@ -499,7 +505,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-10-22 16:38:02.592208",
+ "modified": "2024-10-28 15:02:47.617652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

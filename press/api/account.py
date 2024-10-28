@@ -68,6 +68,8 @@ def signup(email, product=None, referrer=None):
 		return account_request.name
 	return None
 
+	return None
+
 
 @frappe.whitelist(allow_guest=True)
 def verify_otp(account_request: str, otp: str):
@@ -347,6 +349,8 @@ def validate_request_key(key, timezone=None):
 		}
 	return None
 
+	return None
+
 
 @frappe.whitelist(allow_guest=True)
 def country_list():
@@ -382,6 +386,8 @@ def get_account_request_from_key(key):
 		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
 		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
 			return ar
+	return None
+
 	return None
 
 
@@ -892,8 +898,17 @@ def get_frappe_io_auth_url() -> str | None:
 
 @frappe.whitelist()
 def get_emails():
-	team = get_current_team()
-	return frappe.get_all("Communication Email", filters={"parent": team}, fields=["type", "value"])
+	team = get_current_team(get_doc=True)
+	return [
+		{
+			"type": "billing_email",
+			"value": team.billing_email,
+		},
+		{
+			"type": "notify_email",
+			"value": team.notify_email,
+		},
+	]
 
 
 @frappe.whitelist()
@@ -906,9 +921,10 @@ def update_emails(data):
 
 	team_doc = get_current_team(get_doc=True)
 
-	for row in team_doc.communication_emails:
-		row.value = data[row.type]
-		row.save()
+	team_doc.billing_email = data["billing_email"]
+	team_doc.notify_email = data["notify_email"]
+
+	team_doc.save()
 
 
 @frappe.whitelist()
@@ -1157,10 +1173,10 @@ def verify_2fa(user, totp_code):
 	user_totp_secret = get_decrypted_password("User 2FA", user, "totp_secret")
 	verified = pyotp.TOTP(user_totp_secret).verify(totp_code)
 
-	if verified:
-		return verified
-	frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
-	return None
+	if not verified:
+		frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
+
+	return verified
 
 
 @frappe.whitelist()

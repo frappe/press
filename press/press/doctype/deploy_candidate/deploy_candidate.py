@@ -397,7 +397,7 @@ class DeployCandidate(Document):
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
 		if not should_retry:
-			self._fail_site_group_deploy_if_exists(exc, job)
+			self._fail_site_group_deploy_if_exists()
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
@@ -1530,8 +1530,8 @@ class DeployCandidate(Document):
 			},
 		)
 		if site_group_deploy:
-			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(
-				deploy=self,
+			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
+				self,
 			)
 
 
