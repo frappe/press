@@ -39,7 +39,7 @@
 							class="underline"
 							:to="{
 								name: 'Release Group Detail Deploys',
-								params: { name: $resources.siteGroupDeploy.release_group }
+								params: { name: $resources.siteGroupDeploy.doc.release_group }
 							}"
 						>
 							View Deploy
