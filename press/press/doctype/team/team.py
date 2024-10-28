@@ -41,6 +41,7 @@ class Team(Document):
 		account_request: DF.Link | None
 		benches_enabled: DF.Check
 		billing_address: DF.Link | None
+		billing_email: DF.Data | None
 		billing_name: DF.Data | None
 		billing_team: DF.Link | None
 		child_team_members: DF.Table[ChildTeamMember]
@@ -183,11 +184,17 @@ class Team(Document):
 		self.validate_billing_team()
 
 	def before_insert(self):
-		if not self.notify_email:
-			self.notify_email = self.user
+		self.set_notification_emails()
 
 		if not self.referrer_id:
 			self.set_referrer_id()
+
+	def set_notification_emails(self):
+		if not self.notify_email:
+			self.notify_email = self.user
+
+		if not self.billing_email:
+			self.billing_email = self.user
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
@@ -232,6 +239,13 @@ class Team(Document):
 			)
 
 	def delete(self, force=False, workflow=False):
+		if not (force or workflow):
+			frappe.throw(
+				f"You are only deleting the Team Document for {self.name}. To continue to"
+				" do so, pass force=True with this call. Else, pass workflow=True to raise"
+				" a Team Deletion Request to trigger complete team deletion process."
+			)
+
 		if force:
 			return super().delete()
 
@@ -443,6 +457,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.validate_partnership_date()
+		self.set_notification_emails()
 
 		if (
 			not self.is_new()
