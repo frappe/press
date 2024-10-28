@@ -10,7 +10,7 @@ class SiteActivity(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING, ClassVar
+	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -42,7 +42,7 @@ class SiteActivity(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ClassVar["action", "reason", "site"]
+	dashboard_fields = ("action", "reason", "site")
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:

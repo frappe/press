@@ -895,8 +895,6 @@ def get_frappe_io_auth_url() -> str | None:
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
 	return None
 
-	return None
-
 
 @frappe.whitelist()
 def get_emails():
@@ -925,6 +923,7 @@ def update_emails(data):
 
 	team_doc.billing_email = data["billing_email"]
 	team_doc.notify_email = data["notify_email"]
+
 	team_doc.save()
 
 

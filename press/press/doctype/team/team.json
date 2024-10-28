@@ -436,7 +436,6 @@
    "label": "Enable In Place Updates"
   },
   {
-   "fetch_from": "user.email",
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
@@ -506,7 +505,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-10-22 16:38:02.592208",
+ "modified": "2024-10-28 15:02:47.617652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
