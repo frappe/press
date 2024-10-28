@@ -1104,7 +1104,15 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		return apps
 
 	def fetch_database_table_schemas(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/database/schemas")
+		return self.create_agent_job(
+			"Fetch Database Table Schemas",
+			f"benches/{site.bench}/sites/{site.name}/database/schemas",
+			bench=site.bench,
+			site=site.name,
+			data={},
+			reference_doctype="Site",
+			reference_name=site.name,
+		)
 
 	def run_sql_query_in_database(self, site, query, commit):
 		return self.post(
