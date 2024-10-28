@@ -39,6 +39,7 @@
 					$team.doc.payment_mode == 'Card'
 				"
 			/>
+			<AlertUnpaidInvoices class="mb-5" v-if="hasUnpaidInvoices" />
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -52,6 +53,7 @@ import { getObject } from '../objects';
 import { defineAsyncComponent } from 'vue';
 import dayjs from '../utils/dayjs';
 import AlertBanner from '../components/AlertBanner.vue';
+import AlertUnpaidInvoices from '../components/AlertUnpaidInvoices.vue';
 
 export default {
 	components: {
@@ -73,6 +75,9 @@ export default {
 		),
 		AlertMandateInfo: defineAsyncComponent(() =>
 			import('../components/AlertMandateInfo.vue')
+		),
+		AlertUnpaidInvoices: defineAsyncComponent(() =>
+			import('../components/AlertUnpaidInvoices.vue')
 		)
 	},
 	props: {
@@ -119,6 +124,9 @@ export default {
 		},
 		isMandateNotSet() {
 			return !this.$team.doc?.payment_method?.stripe_mandate_id;
+		},
+		hasUnpaidInvoices() {
+			return this.$resources.getAmountDue.data > 0;
 		}
 	},
 	resources: {
@@ -127,6 +135,12 @@ export default {
 				type: 'document',
 				doctype: 'Dashboard Banner',
 				name: 'Dashboard Banner'
+			};
+		},
+		getAmountDue() {
+			return {
+				url: 'press.api.billing.get_amount_due',
+				auto: true
 			};
 		}
 	}
