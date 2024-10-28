@@ -597,7 +597,7 @@ class VirtualMachine(Document):
 			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
-			for volume in self.get_volumes():
+			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
 				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
 					row = existing_volume
@@ -613,6 +613,7 @@ class VirtualMachine(Document):
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
 
+				row.idx = volume_index
 				if not existing_volume:
 					self.append("volumes", row)
 
