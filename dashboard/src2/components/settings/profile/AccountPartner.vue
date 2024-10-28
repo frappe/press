@@ -13,6 +13,12 @@
 			>
 				Add Partner Code
 			</Button>
+			<Button
+				v-else
+				icon-left="trash-2"
+				@click="showRemovePartnerDialog = true"
+			>
+			</Button>
 		</template>
 		<div class="py-4">
 			<span
@@ -57,6 +63,30 @@
 				</div>
 			</template>
 		</Dialog>
+
+		<Dialog
+			v-model="showRemovePartnerDialog"
+			:options="{
+				title: 'Remove Partner',
+				actions: [
+					{
+						label: 'Remove',
+						variant: 'solid',
+						theme: 'red',
+						onClick: () => {
+							$resources.removePartner.submit();
+						}
+					}
+				]
+			}"
+		>
+			<template v-slot:body-content>
+				<p class="text-p-base pb-3">
+					This will remove the Partner associated with your account. Are you
+					sure you want to remove the Partner?
+				</p>
+			</template>
+		</Dialog>
 	</Card>
 </template>
 <script>
@@ -72,6 +102,7 @@ export default {
 	data() {
 		return {
 			showAddPartnerCodeDialog: false,
+			showRemovePartnerDialog: false,
 			code: '',
 			partnerExists: false,
 			partner: '',
@@ -104,6 +135,17 @@ export default {
 				auto: true,
 				params: {
 					partner_email: this.$team.doc?.partner_email
+				}
+			};
+		},
+		removePartner() {
+			return {
+				url: 'press.api.partner.remove_partner',
+				onSuccess() {
+					toast.success('Partner removed successfully');
+				},
+				onError() {
+					throw new DashboardError('Failed to remove Partner');
 				}
 			};
 		}
