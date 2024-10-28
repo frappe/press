@@ -154,6 +154,10 @@ function requestLoginToFC(freezing_msg) {
 	});
 }
 
+function setErrorMessage(message) {
+	$('#fc-login-error').text(message);
+}
+
 function showFCLogindialog(email) {
 	if (!window.fc_login_dialog) {
 		var d = new frappe.ui.Dialog({
@@ -187,10 +191,6 @@ function showFCLogindialog(email) {
 
 		window.fc_login_dialog = d;
 	}
-
-	const setErrorMessage = (message) => {
-		$('#fc-login-error').text(message);
-	};
 
 	function verifyCode() {
 		let otp = $('#fc-login-verification-code').val();
