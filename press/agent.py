@@ -1105,7 +1105,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def fetch_database_table_schemas(self, site):
 		return self.create_agent_job(
-			"Fetch Database Table Schemas",
+			"Fetch Database Table Schema",
 			f"benches/{site.bench}/sites/{site.name}/database/schemas",
 			bench=site.bench,
 			site=site.name,
