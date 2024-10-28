@@ -6,6 +6,7 @@ import base64
 import ipaddress
 
 import boto3
+import botocore
 import frappe
 import rq
 from frappe.core.utils import find
@@ -577,7 +578,11 @@ class VirtualMachine(Document):
 
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
-			response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			try:
+				response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "InvalidInstanceID.NotFound":
+					response = {"Reservations": []}
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
 
@@ -763,6 +768,16 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		self.sync()
+
+	@frappe.whitelist()
+	def force_terminate(self):
+		if not frappe.conf.developer_mode:
+			return
+		if self.cloud_provider == "AWS EC2":
+			self.client().terminate_instances(InstanceIds=[self.instance_id])
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
+			)
 
 	@frappe.whitelist()
 	def terminate(self):

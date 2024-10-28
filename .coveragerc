@@ -1,4 +1,6 @@
 [report]
-exclude_also =
+exclude_lines =
+    pragma: no cover
     raise NotImplementedError
     if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
