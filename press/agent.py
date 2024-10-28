@@ -1103,8 +1103,16 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 		return apps
 
-	def fetch_database_table_schemas(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/database/schemas")
+	def fetch_database_table_schema(self, site):
+		return self.create_agent_job(
+			"Fetch Database Table Schema",
+			f"benches/{site.bench}/sites/{site.name}/database/schema",
+			bench=site.bench,
+			site=site.name,
+			data={},
+			reference_doctype="Site",
+			reference_name=site.name,
+		)
 
 	def run_sql_query_in_database(self, site, query, commit):
 		return self.post(

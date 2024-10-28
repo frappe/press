@@ -31,7 +31,6 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
-from frappe.utils.caching import redis_cache
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -2663,19 +2662,19 @@ class Site(Document, TagHelpers):
 		return response
 
 	@dashboard_whitelist()
-	def fetch_database_table_schemas(self, invalidate_cache=False):
-		if invalidate_cache:
-			self._fetch_database_table_schemas.clear_cache()
-		return self._fetch_database_table_schemas()
-
-	@redis_cache(ttl=3600)
-	def _fetch_database_table_schemas(self):
-		try:
-			return Agent(self.server).fetch_database_table_schemas(self)
-		except Exception:
-			frappe.log_error(
-				"Failed to fetch database schema", reference_doctype="Site", reference_name=self.name
+	def fetch_database_table_schema(self, reload=False):
+		if not frappe.db.exists("Site Database Table Schema", {"site": self.name}):
+			frappe.get_doc({"doctype": "Site Database Table Schema", "site": self.name}).insert(
+				ignore_permissions=True
 			)
+
+		doc = frappe.get_doc("Site Database Table Schema", {"site": self.name})
+		loading, data = doc.fetch(reload)
+		return {
+			"loading": loading,
+			"data": data,
+			"last_updated": doc.last_updated,
+		}
 
 	@dashboard_whitelist()
 	def run_sql_query_in_database(self, query: str, commit: bool):

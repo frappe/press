@@ -40,12 +40,12 @@
 				<Button
 					iconLeft="refresh-ccw"
 					variant="subtle"
-					:loading="$resources.tableSchemas.loading"
+					:loading="site && !isSQLEditorReady"
 					:disabled="!site"
 					@click="
 						() =>
 							fetchTableSchemas({
-								invalidate_cache: true
+								reload: true
 							})
 					"
 				>
@@ -128,7 +128,7 @@
 		<DatabaseTableSchemaDialog
 			v-if="this.site"
 			:site="this.site"
-			:tableSchemas="$resources.tableSchemas?.data?.message ?? {}"
+			:tableSchemas="$resources.tableSchemas?.data?.message?.data ?? {}"
 			v-model="showTableSchemasDialog"
 			@runSQLQuery="runSQLQueryForViewingTable"
 		/>
@@ -235,13 +235,19 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
-				auto: false
+				auto: false,
+				onSuccess: data => {
+					if (data?.message?.loading) {
+						setTimeout(this.fetchTableSchemas, 5000);
+					}
+				}
 			};
 		}
 	},
 	computed: {
 		sqlSchemaForAutocompletion() {
-			const tableSchemas = this.$resources.tableSchemas?.data?.message ?? {};
+			const tableSchemas =
+				this.$resources.tableSchemas?.data?.message?.data ?? {};
 			if (!tableSchemas || !Object.keys(tableSchemas).length) return null;
 			let childrenSchemas = {};
 			for (const tableName in tableSchemas) {
@@ -261,6 +267,9 @@ export default {
 		},
 		isSQLEditorReady() {
 			if (this.$resources.tableSchemas.loading) return false;
+			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
+			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
+			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false;
 			if (!this.sqlSchemaForAutocompletion) return false;
 			return true;
 		},
@@ -278,15 +287,15 @@ export default {
 		}
 	},
 	methods: {
-		fetchTableSchemas({ site_name = null, invalidate_cache = false } = {}) {
+		fetchTableSchemas({ site_name = null, reload = false } = {}) {
 			if (!site_name) site_name = this.site;
 			if (!site_name) return;
 			this.$resources.tableSchemas.submit({
 				dt: 'Site',
 				dn: site_name,
-				method: 'fetch_database_table_schemas',
+				method: 'fetch_database_table_schema',
 				args: {
-					invalidate_cache
+					reload
 				}
 			});
 		},

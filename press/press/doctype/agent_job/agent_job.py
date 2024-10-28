@@ -907,6 +907,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.site_database_table_schema.site_database_table_schema import (
+			SiteDatabaseTableSchema,
+		)
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
@@ -1006,6 +1009,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
+		elif job.job_type == "Fetch Database Table Schema":
+			SiteDatabaseTableSchema.process_job_update(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1
