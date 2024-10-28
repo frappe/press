@@ -774,10 +774,10 @@ class VirtualMachine(Document):
 		if not frappe.conf.developer_mode:
 			return
 		if self.cloud_provider == "AWS EC2":
-			self.client().terminate_instances(InstanceIds=[self.instance_id])
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
+			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
 	def terminate(self):
