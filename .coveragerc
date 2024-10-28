@@ -1,4 +1,5 @@
 [report]
-exclude_also =
+exclude_lines =
     raise NotImplementedError
     if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
