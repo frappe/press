@@ -68,7 +68,7 @@ class SiteDatabaseTableSchema(Document):
 
 		self.schema_json = "{}"
 		site = frappe.get_doc("Site", self.site)
-		self.agent_job = Agent(site.server).fetch_database_table_schemas(site).name
+		self.agent_job = Agent(site.server).fetch_database_table_schema(site).name
 		self.save()
 
 		return True, {}
@@ -89,7 +89,7 @@ class SiteDatabaseTableSchema(Document):
 		if job.status != "Success":
 			return
 		response_data = json.loads(job.data) or {}
-		if response_data:
-			doc = frappe.get_doc("Site Database Table Schema", job.site)
+		if response_data and frappe.db.exists("Site Database Table Schema", {"site": job.site}):
+			doc = frappe.get_doc("Site Database Table Schema", {"site": job.site})
 			doc.schema_json = json.dumps(response_data)
 			doc.save(ignore_permissions=True)

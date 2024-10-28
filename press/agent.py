@@ -1103,7 +1103,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 		return apps
 
-	def fetch_database_table_schemas(self, site):
+	def fetch_database_table_schema(self, site):
 		return self.create_agent_job(
 			"Fetch Database Table Schema",
 			f"benches/{site.bench}/sites/{site.name}/database/schema",

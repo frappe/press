@@ -1,14 +1,12 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "field:site",
  "creation": "2024-10-28 11:45:28.634612",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "agent_job",
-  "column_break_mufi",
   "site",
+  "column_break_mufi",
+  "agent_job",
   "section_break_heok",
   "schema_json"
  ],
@@ -43,18 +41,16 @@
    "default": "{}",
    "fieldname": "schema_json",
    "fieldtype": "Long Text",
-   "in_list_view": 1,
    "label": "Schema JSON",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-28 14:46:48.203532",
+ "modified": "2024-10-28 15:43:58.768773",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database Table Schema",
- "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -90,5 +86,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "site"
 }

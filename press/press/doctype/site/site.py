@@ -2663,12 +2663,12 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def fetch_database_table_schema(self, reload=False):
-		if not frappe.db.exists("Site Database Table Schema", self.name):
+		if not frappe.db.exists("Site Database Table Schema", {"site": self.name}):
 			frappe.get_doc({"doctype": "Site Database Table Schema", "site": self.name}).insert(
 				ignore_permissions=True
 			)
 
-		doc = frappe.get_doc("Site Database Table Schema", self.name)
+		doc = frappe.get_doc("Site Database Table Schema", {"site": self.name})
 		loading, data = doc.fetch(reload)
 		return {
 			"loading": loading,
