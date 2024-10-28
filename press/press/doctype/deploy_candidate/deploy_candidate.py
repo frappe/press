@@ -1529,7 +1529,7 @@ class DeployCandidate(Document):
 				"bench": ("is", "not set"),
 			},
 		)
-		if not should_retry and site_group_deploy:
+		if site_group_deploy:
 			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(
 				deploy=self,
 			)
