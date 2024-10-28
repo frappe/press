@@ -19,9 +19,7 @@ import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
 import { clusterOptions, getUpsellBanner } from './common';
 import { getAppsTab } from './common/apps';
-import { getJobsTab } from './common/jobs';
-import { tagTab } from './common/tags';
-import { getLogsTab } from './tabs/site/logs';
+import { isMobile } from '../utils/device';
 
 export default {
 	doctype: 'Site',
@@ -252,15 +250,93 @@ export default {
 				}
 			},
 			{
-				label: 'Analytics',
+				label: 'Insights',
 				icon: icon('bar-chart-2'),
-				route: 'analytics',
+				route: 'insights',
 				type: 'Component',
+				redirectTo: 'Site Analytics',
+				childrenRoutes: [
+					'Site Jobs',
+					'Site Job',
+					'Site Logs',
+					'Site Log',
+					'Site Analytics',
+					'Site Performance Reports',
+					'Site Performance Request Logs',
+					'Site Performance Slow Queries',
+					'Site Performance Binary Logs',
+					'Site Performance Process List',
+					'Site Performance Request Log',
+					'Site Performance Deadlock Report'
+				],
+				nestedChildrenRoutes: [
+					{
+						name: 'Site Analytics',
+						path: 'analytics',
+						component: () => import('../components/site/SiteAnalytics.vue')
+					},
+					{
+						name: 'Site Jobs',
+						path: 'jobs',
+						component: () => import('../components/site/SiteJobs.vue')
+					},
+					{
+						name: 'Site Job',
+						path: 'jobs/:id',
+						component: () => import('../pages/JobPage.vue')
+					},
+					{
+						name: 'Site Logs',
+						path: 'logs/:type?',
+						component: () => import('../components/site/SiteLogs.vue')
+					},
+					{
+						name: 'Site Log',
+						path: 'logs/view/:logName',
+						component: () => import('../pages/LogPage.vue')
+					},
+					{
+						name: 'Site Performance Reports',
+						path: 'performance',
+						component: () =>
+							import('../components/site/performance/SitePerformance.vue')
+					},
+					{
+						name: 'Site Performance Slow Queries',
+						path: 'performance/slow-queries',
+						component: () =>
+							import('../components/site/performance/SiteSlowQueries.vue')
+					},
+					{
+						name: 'Site Performance Binary Logs',
+						path: 'performance/binary-logs',
+						component: () =>
+							import('../components/site/performance/SiteBinaryLogs.vue')
+					},
+					{
+						name: 'Site Performance Process List',
+						path: 'performance/process-list',
+						component: () =>
+							import('../components/site/performance/SiteProcessList.vue')
+					},
+					{
+						name: 'Site Performance Request Logs',
+						path: 'performance/request-log',
+						component: () =>
+							import('../components/site/performance/SiteRequestLogs.vue')
+					},
+					{
+						name: 'Site Performance Deadlock Report',
+						path: 'performance/deadlock-report',
+						component: () =>
+							import('../components/site/performance/SiteDeadlockReport.vue')
+					}
+				],
 				component: defineAsyncComponent(() =>
-					import('../../src/views/site/SiteCharts.vue')
+					import('../components/site/SiteInsights.vue')
 				),
 				props: site => {
-					return { siteName: site.doc?.name };
+					return { site: site.doc?.name };
 				}
 			},
 			getAppsTab(true),
@@ -502,6 +578,7 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: [
+						'job',
 						'status',
 						'database_url',
 						'public_url',
@@ -633,6 +710,20 @@ export default {
 						}
 
 						return [
+							{
+								group: 'Details',
+								items: [
+									{
+										label: 'View Job',
+										onClick() {
+											router.push({
+												name: 'Site Job',
+												params: { name: site.name, id: row.job }
+											});
+										}
+									}
+								]
+							},
 							{
 								group: 'Download',
 								items: [
@@ -781,11 +872,11 @@ export default {
 												loading: 'Scheduling backup...',
 												success: () => {
 													hide();
-													toast.success('Backup scheduled');
 													router.push({
-														name: 'Site Detail Jobs',
+														name: 'Site Jobs',
 														params: { name: site.name }
 													});
+													return 'Backup scheduled successfully.';
 												},
 												error: e => {
 													return e.messages?.length
@@ -1064,7 +1155,7 @@ export default {
 										loading: 'Updating site...',
 										success: () => {
 											router.push({
-												name: 'Site Detail Jobs',
+												name: 'Site Jobs',
 												params: { name: site.name }
 											});
 
@@ -1206,33 +1297,6 @@ export default {
 					}
 				}
 			},
-			getJobsTab('Site'),
-			{
-				label: 'Performance',
-				icon: icon('zap'),
-				route: 'performance',
-				childrenRoutes: [
-					'Site Performance Slow Queries',
-					'Site Performance Binary Logs',
-					'Site Performance Process List',
-					'Site Performance Slow Query Logs',
-					'Site Performance Request Logs'
-				],
-				type: 'Component',
-				condition() {
-					const team = getTeam();
-					return (
-						!!team.doc?.enable_performance_tuning || team.doc?.is_desk_user
-					);
-				},
-				component: defineAsyncComponent(() =>
-					import('../components/site/performance/SitePerformance.vue')
-				),
-				props: site => {
-					return { site: site.doc?.name };
-				}
-			},
-			getLogsTab(true),
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1243,8 +1307,16 @@ export default {
 					filters: site => {
 						return { site: site.doc?.name };
 					},
-					fields: ['owner'],
+					fields: ['owner', 'job'],
 					orderBy: 'creation desc',
+					route(row) {
+						if (!row.job) return {};
+
+						return {
+							name: 'Site Job',
+							params: { id: row.job }
+						};
+					},
 					columns: [
 						{
 							label: 'Action',
@@ -1258,7 +1330,7 @@ export default {
 							}
 						},
 						{
-							label: 'Reason',
+							label: 'Description',
 							fieldname: 'reason',
 							class: 'text-gray-600'
 						},
@@ -1269,6 +1341,39 @@ export default {
 							align: 'right'
 						}
 					],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Action',
+								fieldname: 'action',
+								class: !isMobile() ? 'w-52' : '',
+								options: [
+									'',
+									'Activate Site',
+									'Add Domain',
+									'Archive',
+									'Backup',
+									'Create',
+									'Clear Cache',
+									'Deactivate Site',
+									'Disable Database Access',
+									'Drop Offsite Backups',
+									'Enable Database Access',
+									'Install App',
+									'Login as Administrator',
+									'Migrate',
+									'Reinstall',
+									'Restore',
+									'Suspend Site',
+									'Uninstall App',
+									'Unsuspend Site',
+									'Update',
+									'Update Configuration'
+								]
+							}
+						];
+					},
 					primaryAction({ documentResource: site }) {
 						return {
 							label: 'Change Notification Email',
@@ -1324,9 +1429,7 @@ export default {
 						};
 					}
 				}
-			},
-
-			tagTab()
+			}
 		],
 		actions(context) {
 			let { documentResource: site } = context;
@@ -1348,7 +1451,7 @@ export default {
 					},
 					onClick() {
 						router.push({
-							name: 'Site Detail Jobs',
+							name: 'Site Jobs',
 							params: { name: site.name }
 						});
 					}
@@ -1486,47 +1589,5 @@ export default {
 				}
 			];
 		}
-	},
-	routes: [
-		{
-			name: 'Site Job',
-			path: 'jobs/:id',
-			component: () => import('../pages/JobPage.vue')
-		},
-		{
-			name: 'Site Log',
-			path: 'logs/:logName',
-			component: () => import('../pages/LogPage.vue')
-		},
-		{
-			name: 'Site Performance Slow Queries',
-			path: 'performance/slow-queries',
-			component: () =>
-				import('../components/site/performance/SiteSlowQueries.vue')
-		},
-		{
-			name: 'Site Performance Binary Logs',
-			path: 'performance/binary-logs',
-			component: () =>
-				import('../components/site/performance/SiteBinaryLogs.vue')
-		},
-		{
-			name: 'Site Performance Process List',
-			path: 'performance/process-list',
-			component: () =>
-				import('../components/site/performance/SiteProcessList.vue')
-		},
-		{
-			name: 'Site Performance Request Logs',
-			path: 'performance/request-log',
-			component: () =>
-				import('../components/site/performance/SiteRequestLogs.vue')
-		},
-		{
-			name: 'Site Performance Deadlock Report',
-			path: 'performance/deadlock-report',
-			component: () =>
-				import('../components/site/performance/SiteDeadlockReport.vue')
-		}
-	]
+	}
 };

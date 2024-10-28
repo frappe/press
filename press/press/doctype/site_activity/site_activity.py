@@ -37,17 +37,18 @@ class SiteActivity(Document):
 			"Enable Database Access",
 			"Disable Database Access",
 		]
+		job: DF.Link | None
 		reason: DF.SmallText | None
 		site: DF.Link
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ("action", "reason", "site")
+	dashboard_fields = ("action", "reason", "site", "job")
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:
 			d = frappe.get_all("Site", {"name": self.site}, ["notify_email", "team"])[0]
-			recipient = d.notify_email or frappe.get_doc("Team", d.team).notify_email
+			recipient = d.notify_email or frappe.get_doc("Team", d.team).user
 			if recipient:
 				team = frappe.get_doc("Team", d.team)
 				team.notify_with_email(
@@ -60,7 +61,7 @@ class SiteActivity(Document):
 				)
 
 
-def log_site_activity(site, action, reason=None):
+def log_site_activity(site, action, reason=None, job=None):
 	return frappe.get_doc(
-		{"doctype": "Site Activity", "site": site, "action": action, "reason": reason}
+		{"doctype": "Site Activity", "site": site, "action": action, "reason": reason, "job": job}
 	).insert()

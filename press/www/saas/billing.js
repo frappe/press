@@ -101,7 +101,7 @@ $(document).ready(function () {
 function add_frappe_cloud_dashboard_link() {
 	$('.dropdown-navbar-user .dropdown-menu .dropdown-divider').before(
 		`<a class="dropdown-item"
-		href="${frappe_cloud_base_endpoint}/dashboard"
+		onclick="initiateRequestForLoginToFrappeCloud()"
 		>Log In to Frappe Cloud</a>`,
 	);
 }
@@ -196,9 +196,8 @@ function showFCLogindialog(email) {
 		if (!otp) {
 			return;
 		}
-		frappe.call({
-			url: frappe_cloud_base_endpoint,
-			method: 'press.api.developer.saas.validate_login_to_fc',
+		frappe.request.call({
+			url: `${frappe_cloud_base_endpoint}/api/method/press.api.developer.saas.validate_login_to_fc`,
 			type: 'POST',
 			args: {
 				domain: window.location.hostname,
@@ -207,7 +206,7 @@ function showFCLogindialog(email) {
 			freeze: true,
 			silent: true,
 			freeze_message: 'Validating verification code',
-			callback: function (r) {
+			success: function (r) {
 				if (r.login_token) {
 					fc_login_dialog.hide();
 					window.open(

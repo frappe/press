@@ -1248,8 +1248,8 @@ class DeployCandidate(Document):
 			raise subprocess.CalledProcessError(return_code, command)
 
 	def generate_ssh_keys(self):
-		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
-		if ca is None:
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
 			return
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
