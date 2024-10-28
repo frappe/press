@@ -69,7 +69,7 @@ class SiteDatabaseTableSchema(Document):
 		self.schema_json = "{}"
 		site = frappe.get_doc("Site", self.site)
 		self.agent_job = Agent(site.server).fetch_database_table_schema(site).name
-		self.save()
+		self.save(ignore_permissions=True)
 
 		return True, {}
 
