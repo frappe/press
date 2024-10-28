@@ -36,6 +36,7 @@ def razorpay_authorized_payment_handler():
 	client = get_razorpay_client()
 	form_dict = frappe.local.form_dict
 
+	payment_id = None
 	try:
 		payload = frappe.request.get_data()
 		signature = frappe.get_request_header("X-Razorpay-Signature")
@@ -70,6 +71,10 @@ def razorpay_authorized_payment_handler():
 				)
 			return
 
+		# Only capture payment, if the status of order id is pending
+		if frappe.db.get_value("Razorpay Payment Record", razorpay_payment_record, "status") != "Pending":
+			return
+
 		# Capture the authorized payment
 		client.payment.capture(payment_id, amount)
 	except Exception as e:
@@ -77,11 +82,12 @@ def razorpay_authorized_payment_handler():
 		if (
 			"payment has already been captured" in error_message
 			or "the order is already paid" in error_message
+			or "id provided does not exist" in error_message
 		):
 			return
 		log_error(
 			title="Razorpay Authorized Payment Webhook Handler",
-			payment_id=entity_data["id"],
+			payment_id=payment_id,
 		)
 		raise Exception from e
 
@@ -102,7 +108,12 @@ def razorpay_webhook_handler():
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
 
-		razorpay_order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
+		entity_data = form_dict["payload"]["payment"]["entity"]
+		razorpay_order_id = entity_data.get("order_id")
+
+		if not razorpay_order_id:
+			return
+
 		razorpay_payment_record = frappe.db.exists("Razorpay Payment Record", {"order_id": razorpay_order_id})
 
 		notes = form_dict["payload"]["payment"]["entity"]["notes"]
