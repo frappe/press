@@ -146,6 +146,7 @@ function requestLoginToFC(freezing_msg) {
 		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
 		success: function (r) {
 			showFCLogindialog(r.message.email);
+			setErrorMessage('');
 		},
 		error: function (r) {
 			frappe.throw('Failed to login to Frappe Cloud. Please try again');
