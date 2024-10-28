@@ -128,12 +128,13 @@ class SiteGroupDeploy(Document):
 
 		self.save()
 
-	def update_site_group_deploy_on_process_job(self, job=None, deploy=None):
+	def update_site_group_deploy_on_deploy_failure(self, deploy):
 		if deploy and deploy.status == "Failure":
 			self.status = "Bench Deploy Failed"
 			self.save()
 
-		elif job.job_type == "New Bench":
+	def update_site_group_deploy_on_process_job(self, job):
+		if job.job_type == "New Bench":
 			if job.status == "Success":
 				self.bench = job.bench
 				self.status = "Bench Deployed"
