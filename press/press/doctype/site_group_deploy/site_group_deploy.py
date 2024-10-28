@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -13,6 +14,7 @@ class SiteGroupDeploy(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_group_deploy_app.site_group_deploy_app import (
 			SiteGroupDeployApp,
 		)
@@ -36,7 +38,7 @@ class SiteGroupDeploy(Document):
 		version: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["status", "site"]
+	dashboard_fields = ("status", "site")
 
 	def before_insert(self):
 		self.set_latest_version()
@@ -57,9 +59,7 @@ class SiteGroupDeploy(Document):
 		if self.version:
 			return
 
-		self.version = frappe.db.get_value(
-			"Frappe Version", {"status": "stable"}, order_by="number desc"
-		)
+		self.version = frappe.db.get_value("Frappe Version", {"status": "stable"}, order_by="number desc")
 
 	def check_if_rg_or_site_exists(self):
 		from press.press.doctype.site.site import Site
@@ -128,8 +128,12 @@ class SiteGroupDeploy(Document):
 
 		self.save()
 
-	def update_site_group_deploy_on_process_job(self, job):
-		if job.job_type == "New Bench":
+	def update_site_group_deploy_on_process_job(self, job=None, deploy=None):
+		if deploy and deploy.status == "Failure":
+			self.status = "Bench Deploy Failed"
+			self.save()
+
+		elif job.job_type == "New Bench":
 			if job.status == "Success":
 				self.bench = job.bench
 				self.status = "Bench Deployed"

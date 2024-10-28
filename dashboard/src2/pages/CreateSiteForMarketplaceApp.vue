@@ -37,9 +37,14 @@
 						Failed to install the app.
 						<router-link
 							class="underline"
-							:to="{ name: 'InstallApp', params: { app: app } }"
-							>Please try again </router-link
-						>.
+							:to="{
+								name: 'Release Group Detail Deploys',
+								params: { name: $resources.siteGroupDeploy.release_group }
+							}"
+						>
+							View Deploy
+						</router-link>
+						.
 					</p>
 				</div>
 				<div class="divide-y rounded-lg bg-gray-50 px-4">

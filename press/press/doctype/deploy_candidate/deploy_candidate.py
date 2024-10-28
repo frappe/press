@@ -396,6 +396,9 @@ class DeployCandidate(Document):
 		self._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
+		if not should_retry:
+			self._fail_site_group_deploy_if_exists(exc, job)
+
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
 			self.user_addressable_failure = True
@@ -1516,6 +1519,20 @@ class DeployCandidate(Document):
 			if not is_build_job(job):
 				continue
 			stop_background_job(job)
+
+	def _fail_site_group_deploy_if_exists(self):
+		site_group_deploy = frappe.db.get_value(
+			"Site Group Deploy",
+			{
+				"release_group": self.group,
+				"site": ("is", "not set"),
+				"bench": ("is", "not set"),
+			},
+		)
+		if not should_retry and site_group_deploy:
+			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_process_job(
+				deploy=self,
+			)
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
