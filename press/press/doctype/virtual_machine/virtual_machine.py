@@ -763,12 +763,16 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
-	def stop(self):
+	def stop(self, force=False):
 		if self.cloud_provider == "AWS EC2":
-			self.client().stop_instances(InstanceIds=[self.instance_id])
+			self.client().stop_instances(InstanceIds=[self.instance_id], Force=force)
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		self.sync()
+
+	@frappe.whitelist()
+	def force_stop(self):
+		self.stop(force=True)
 
 	@frappe.whitelist()
 	def force_terminate(self):
