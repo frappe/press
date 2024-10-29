@@ -39,7 +39,12 @@
 					$team.doc.payment_mode == 'Card'
 				"
 			/>
-			<AlertUnpaidInvoices class="mb-5" v-if="hasUnpaidInvoices" />
+			<AlertUnpaidInvoices
+				class="mb-5"
+				v-if="hasUnpaidInvoices > 0"
+				:amount="hasUnpaidInvoices"
+				:currency="$team?.doc?.currency === 'INR' ? '₹' : '$'"
+			/>
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -126,7 +131,7 @@ export default {
 			return !this.$team.doc?.payment_method?.stripe_mandate_id;
 		},
 		hasUnpaidInvoices() {
-			return this.$resources.getAmountDue.data > 0;
+			return this.$resources.getAmountDue.data;
 		}
 	},
 	resources: {
@@ -139,7 +144,7 @@ export default {
 		},
 		getAmountDue() {
 			return {
-				url: 'press.api.billing.get_amount_due',
+				url: 'press.api.billing.total_unpaid_amount',
 				auto: true
 			};
 		}

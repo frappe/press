@@ -326,12 +326,6 @@ def get_payment_methods():
 
 
 @frappe.whitelist()
-def get_amount_due():
-	team = get_current_team()
-	return sum(frappe.get_all("Invoice", {"team": team, "status": "Unpaid"}, pluck="amount_due"))
-
-
-@frappe.whitelist()
 def set_as_default(name):
 	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": get_current_team()})
 	payment_method.set_default()

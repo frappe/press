@@ -1,6 +1,6 @@
 <template>
 	<AlertBanner
-		title="You have unpaid invoices. Please settle your outstanding invoices to avoid site suspension."
+		:title="`Your account currently has an outstanding balance of ${currency} ${amount}. Please settle the balance to avoid any site suspension.`"
 		type="warning"
 	>
 		<Button class="ml-auto" route="/billing" variant="outline">
@@ -13,6 +13,15 @@ import AlertBanner from './AlertBanner.vue';
 
 export default {
 	name: 'AlertUnpaidInvoices',
-	components: { AlertBanner }
+	components: { AlertBanner },
+	props: {
+		amount: {
+			type: Number,
+			required: true
+		},
+		currency: {
+			type: String
+		}
+	}
 };
 </script>
