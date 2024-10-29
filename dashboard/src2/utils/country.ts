@@ -2861,7 +2861,7 @@ export function getCountry(): string | null {
 		return null;
 	}
 
-	const _country = timezones[timezone].c[0];
-	const country = countries[_country];
+	const _country = timezones[timezone]?.c?.[0] ?? null;
+	const country = countries[_country] ?? null;
 	return country;
 }

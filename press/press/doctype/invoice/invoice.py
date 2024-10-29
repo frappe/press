@@ -19,7 +19,7 @@ class Invoice(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING, ClassVar
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -29,15 +29,14 @@ class Invoice(Document):
 		)
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.invoice_item.invoice_item import InvoiceItem
-		from press.press.doctype.invoice_transaction_fee.invoice_transaction_fee import (
-			InvoiceTransactionFee,
-		)
+		from press.press.doctype.invoice_transaction_fee.invoice_transaction_fee import InvoiceTransactionFee
 
 		amended_from: DF.Link | None
 		amount_due: DF.Currency
 		amount_due_with_tax: DF.Currency
 		amount_paid: DF.Currency
 		applied_credits: DF.Currency
+		billing_email: DF.Data | None
 		credit_allocations: DF.Table[InvoiceCreditAllocation]
 		currency: DF.Link | None
 		customer_email: DF.Data | None
@@ -67,14 +66,7 @@ class Invoice(Document):
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
 		status: DF.Literal[
-			"Draft",
-			"Invoice Created",
-			"Unpaid",
-			"Paid",
-			"Refunded",
-			"Uncollectible",
-			"Collected",
-			"Empty",
+			"Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"
 		]
 		stripe_invoice_id: DF.Data | None
 		stripe_invoice_url: DF.Text | None

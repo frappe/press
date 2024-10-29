@@ -8,7 +8,8 @@
   "site",
   "team",
   "action",
-  "reason"
+  "reason",
+  "job"
  ],
  "fields": [
   {
@@ -44,11 +45,18 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "depends_on": "eval: doc.job",
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-15 12:25:18.275599",
+ "modified": "2024-10-20 18:48:39.472990",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

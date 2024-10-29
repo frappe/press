@@ -1,10 +1,22 @@
 <template>
-	<Card :title="title" class="h-80" :loading="loading" :stopOverflow="true">
+	<component
+		:is="showCard ? Card : 'div'"
+		:title="title"
+		:class="showCard ? 'h-80' : ''"
+		:loading="loading"
+		:stopOverflow="true"
+	>
 		<template #actions>
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="error || !data.datasets.length"
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
+		>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="error || !data.datasets.length"
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
@@ -17,7 +29,7 @@
 			:option="options"
 			:init-options="initOptions"
 		/>
-	</Card>
+	</component>
 </template>
 
 <script setup>
@@ -37,9 +49,14 @@ import theme from '../../../tailwind.theme.json';
 import { formatBytes, getUnit } from './utils';
 
 const props = defineProps({
+	showCard: {
+		type: Boolean,
+		required: false,
+		default: () => true
+	},
 	title: {
 		type: String,
-		required: true
+		required: false
 	},
 	unit: {
 		type: String,

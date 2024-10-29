@@ -1,6 +1,6 @@
 <template>
 	<PerformanceReport
-		title="Request Logs"
+		title="Request Log Report"
 		:site="name"
 		:reportOptions="requestLogsOptions"
 	/>

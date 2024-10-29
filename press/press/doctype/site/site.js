@@ -150,6 +150,7 @@ frappe.ui.form.on('Site', {
 					frm.doc.status,
 				),
 			],
+			[__('Show Admin Password'), 'show_admin_password'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

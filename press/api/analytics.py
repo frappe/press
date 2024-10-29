@@ -1,7 +1,9 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
+from contextlib import suppress
 from datetime import datetime, timedelta
 
 import frappe
@@ -21,8 +23,10 @@ from press.agent import Agent
 from press.api.site import protected
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
-	get_data as get_binary_log_data,
 	convert_user_timezone_to_utc,
+)
+from press.press.report.binary_log_browser.binary_log_browser import (
+	get_data as get_binary_log_data,
 )
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
 
@@ -39,12 +43,32 @@ def get(name, timezone, duration="7d"):
 	}[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
-	request_count_by_path_data = get_request_by_path(
-		name, "count", timezone, timespan, timegrain
-	)
-	request_duration_by_path_data = get_request_by_path(
-		name, "duration", timezone, timespan, timegrain
-	)
+	uptime_data = get_uptime(name, timezone, timespan, timegrain)
+
+	plan = frappe.get_cached_doc("Site", name).plan
+	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
+
+	return {
+		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
+		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
+		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
+		"uptime": (uptime_data + [{}] * 60)[:60],
+		"plan_limit": plan_limit,
+	}
+
+
+@frappe.whitelist()
+def get_advanced_analytics(name, timezone, duration="7d"):
+	timespan, timegrain = {
+		"1h": (60 * 60, 60),
+		"6h": (6 * 60 * 60, 5 * 60),
+		"24h": (24 * 60 * 60, 30 * 60),
+		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
+		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+	}[duration]
+
+	request_count_by_path_data = get_request_by_path(name, "count", timezone, timespan, timegrain)
+	request_duration_by_path_data = get_request_by_path(name, "duration", timezone, timespan, timegrain)
 	average_request_duration_by_path_data = get_request_by_path(
 		name, "average_duration", timezone, timespan, timegrain
 	)
@@ -59,23 +83,10 @@ def get(name, timezone, duration="7d"):
 	)
 	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
-	check = slow_logs_by_duration["datasets"]
-	SLOW_QUERY_DURATION_THRESHOLD = 50
-	has_slow_queries = any(
-		max(a["values"]) >= SLOW_QUERY_DURATION_THRESHOLD for a in check
-	)
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
-	uptime_data = get_uptime(name, timezone, timespan, timegrain)
-
-	plan = frappe.get_cached_doc("Site", name).plan
-	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
-
 	return {
-		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
-		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
-		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"request_count_by_path": request_count_by_path_data,
 		"request_duration_by_path": request_duration_by_path_data,
 		"average_request_duration_by_path": average_request_duration_by_path_data,
@@ -86,9 +97,6 @@ def get(name, timezone, duration="7d"):
 		"slow_logs_by_duration": slow_logs_by_duration,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
-		"uptime": (uptime_data + [{}] * 60)[:60],
-		"plan_limit": plan_limit,
-		"has_slow_queries": has_slow_queries,
 	}
 
 
@@ -258,9 +266,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			order={"path_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket(
-			"path_count", "value_count", field="json.request.path"
-		)
+		search.aggs["method_path"].bucket("path_count", "value_count", field="json.request.path")
 
 	elif query_type == "duration":
 		search.aggs.bucket(
@@ -269,9 +275,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			field="json.request.path",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
 
 	elif query_type == "average_duration":
@@ -281,9 +285,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 			field="json.request.path",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"avg_of_duration", avg_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
@@ -338,9 +340,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			order={"method_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket(
-			"method_count", "value_count", field="json.job.method"
-		)
+		search.aggs["method_path"].bucket("method_count", "value_count", field="json.job.method")
 
 	elif query_type == "duration":
 		search.aggs.bucket(
@@ -349,9 +349,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			field="json.job.method",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
 
 	elif query_type == "average_duration":
@@ -361,9 +359,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 			field="json.job.method",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"avg_of_duration", avg_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
@@ -433,14 +429,10 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 			field="mysql.slowlog.query",
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket(
-			"sum_of_duration", sum_of_duration
-		)
+		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	return get_stacked_histogram_chart_result(
-		search, query_type, start, end, timegrain, to_s_divisor=1e9
-	)
+	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain, to_s_divisor=1e9)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
@@ -530,7 +522,7 @@ def get_current_cpu_usage(site):
 
 def get_current_cpu_usage_for_sites_on_server(server):
 	result = {}
-	try:
+	with suppress(Exception):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if not log_server:
 			return result
@@ -567,7 +559,9 @@ def get_current_cpu_usage_for_sites_on_server(server):
 								"filter": [
 									{
 										"bool": {
-											"should": [{"term": {"json.transaction_type": {"value": "request"}}}],
+											"should": [
+												{"term": {"json.transaction_type": {"value": "request"}}}
+											],
 											"minimum_should_match": 1,
 										}
 									},
@@ -592,9 +586,6 @@ def get_current_cpu_usage_for_sites_on_server(server):
 			metric = row["usage"]["counter"]["top"]
 			if metric:
 				result[site] = metric[0]["metrics"]["json.request.counter"]
-	except Exception:
-		pass
-	finally:
 		return result
 
 
@@ -654,8 +645,7 @@ def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int 
 		max_lines=max_lines,
 	)
 
-	data = get_binary_log_data(filters)
-	return data
+	return get_binary_log_data(filters)
 
 
 @frappe.whitelist()
@@ -674,9 +664,7 @@ def mariadb_processlist(site):
 
 	out = []
 	for row in rows:
-		row["Info"] = sqlparse.format(
-			(row["Info"] or "").strip(), keyword_case="upper", reindent=True
-		)
+		row["Info"] = sqlparse.format((row["Info"] or "").strip(), keyword_case="upper", reindent=True)
 		if row["db"] == site.database_name:
 			out.append(row)
 
@@ -706,8 +694,7 @@ def mariadb_slow_queries(
 		}
 	)
 	columns, data = execute(filters=meta)
-	ret = {"columns": columns, "data": data}
-	return ret
+	return {"columns": columns, "data": data}
 
 
 @frappe.whitelist()
@@ -733,9 +720,7 @@ def deadlock_report(site, start, end, max_lines=20):
 
 	results = agent.post("database/deadlocks", data=data)
 
-	out = post_process(results)
-
-	return out
+	return post_process(results)
 
 
 # MARKETPLACE - Plausible
@@ -761,9 +746,7 @@ def plausible_analytics(name):
 		if res.status_code == 200 and res.json().get("results"):
 			res = res.json().get("results")
 			if api_type == "aggregate":
-				response.update(
-					{"agg_pageviews": res["pageviews"], "agg_visitors": res["visitors"]}
-				)
+				response.update({"agg_pageviews": res["pageviews"], "agg_visitors": res["visitors"]})
 			elif api_type == "timeseries":
 				pageviews = [{"value": d["pageviews"], "date": d["date"]} for d in res]
 				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
@@ -805,9 +788,7 @@ def mariadb_add_suggested_index(name, table, column):
 		},
 	)
 	if record_exists:
-		frappe.throw(
-			"There is already a pending job for Add Database Index. Please wait until finished."
-		)
+		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)

@@ -25,6 +25,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -395,6 +396,9 @@ class DeployCandidate(Document):
 		self._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
+		if not should_retry:
+			self._fail_site_group_deploy_if_exists()
+
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
 			self.user_addressable_failure = True
@@ -547,21 +551,39 @@ class DeployCandidate(Document):
 		step.status = "Running"
 		start_time = now()
 
-		agent = Agent(build_server)
-		with open(context_filepath, "rb") as file:
-			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
-
-		if not upload_filename:
+		try:
+			upload_filename = self.upload_build_context_for_docker_build(
+				context_filepath,
+				build_server,
+			)
+		except Exception:
 			step.status = "Failure"
+			raise
 
-			message = "Failed to upload build context to remote docker builder"
-			if agent.response:
-				message += f"\nagent response: {agent.response.text}"
-			raise Exception(message)
 		step.status = "Success"
-
 		step.duration = get_duration(start_time)
 		return upload_filename
+
+	@retry(
+		reraise=True,
+		wait=wait_fixed(300),
+		stop=stop_after_attempt(3),
+	)
+	def upload_build_context_for_docker_build(
+		self,
+		context_filepath: str,
+		build_server: str,
+	):
+		agent = Agent(build_server)
+		with open(context_filepath, "rb") as file:
+			if upload_filename := agent.upload_build_context_for_docker_build(file, self.name):
+				return upload_filename
+
+		message = "Failed to upload build context to remote docker builder"
+		if agent.response:
+			message += f"\nagent response: {agent.response.text}"
+
+		raise Exception(message)
 
 	@staticmethod
 	def process_run_build(job: "AgentJob", response_data: "dict | None"):
@@ -1229,8 +1251,8 @@ class DeployCandidate(Document):
 			raise subprocess.CalledProcessError(return_code, command)
 
 	def generate_ssh_keys(self):
-		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
-		if ca is None:
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
 			return
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
@@ -1497,6 +1519,20 @@ class DeployCandidate(Document):
 			if not is_build_job(job):
 				continue
 			stop_background_job(job)
+
+	def _fail_site_group_deploy_if_exists(self):
+		site_group_deploy = frappe.db.get_value(
+			"Site Group Deploy",
+			{
+				"release_group": self.group,
+				"site": ("is", "not set"),
+				"bench": ("is", "not set"),
+			},
+		)
+		if site_group_deploy:
+			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
+				self,
+			)
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
