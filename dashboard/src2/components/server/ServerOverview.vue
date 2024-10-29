@@ -111,15 +111,15 @@ export default {
 				h(ServerPlansDialog, {
 					server:
 						serverType === 'Server'
-							? this.$appServer.doc.name
-							: this.$dbServer.doc.name,
+							? this.$appServer.name
+							: this.$dbServer.name,
 					serverType
 				})
 			);
 		},
 		currentUsage(serverType) {
-			if (!this.$appServer.doc) return [];
-			if (!this.$dbServer.doc) return [];
+			if (!this.$appServer?.doc) return [];
+			if (!this.$dbServer?.doc) return [];
 
 			let formatBytes = v => this.$format.bytes(v, 0, 2);
 
