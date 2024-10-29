@@ -82,7 +82,7 @@ export default {
 						return;
 					}
 
-					const repo_owner = this.selectedGithubUser?.label;
+					const repo_owner = this.selectedGithubUser?.login;
 					const repo = this.selectedGithubRepository || data.name;
 					const repository_url = `https://github.com/${repo_owner}/${repo}`;
 
@@ -90,7 +90,7 @@ export default {
 						name: data.name,
 						title: data.title,
 						repository_url,
-						github_installation_id: this.selectedGithubUser?.value.id,
+						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value
 					};
 				}
@@ -138,7 +138,7 @@ export default {
 
 			this.$resources.validateApp.submit({
 				...data,
-				installation: data.selectedGithubUser.value.id
+				installation: data.selectedGithubUser.id
 			});
 		}
 	}

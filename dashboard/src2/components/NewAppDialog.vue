@@ -166,7 +166,7 @@ export default {
 					owner: this.appOwner,
 					repository: this.appName,
 					branch: newSelectedBranch.value,
-					installation: this.selectedGithubUser?.value?.id
+					installation: this.selectedGithubUser?.id
 				});
 		}
 	},
@@ -182,7 +182,7 @@ export default {
 
 					let repository_url = this.githubAppLink;
 					if (!repository_url) {
-						const repo_owner = this.selectedGithubUser?.label;
+						const repo_owner = this.selectedGithubUser?.login;
 						const repo = this.selectedGithubRepository || data.name;
 						repository_url = `https://github.com/${repo_owner}/${repo}`;
 					}
@@ -191,7 +191,7 @@ export default {
 						name: data.name,
 						title: data.title,
 						repository_url,
-						github_installation_id: this.selectedGithubUser?.value.id,
+						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value
 					};
 				}
@@ -262,10 +262,9 @@ export default {
 			};
 			this.selectedGithubRepository = data.repository;
 			this.selectedGithubUser = data.selectedGithubUser;
-
 			this.$resources.validateApp.submit({
 				...data,
-				installation: data.selectedGithubUser.value.id
+				installation: data.selectedGithubUser.id
 			});
 		},
 		addAppHandler() {

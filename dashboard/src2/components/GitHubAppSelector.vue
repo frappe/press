@@ -26,23 +26,24 @@
 			:options="
 				options.installations.map(i => ({
 					label: i.login,
-					value: i
+					value: i.id,
+					image: i.image
 				}))
 			"
 			v-model="selectedGithubUser"
 		>
 			<template #prefix>
 				<img
-					v-if="selectedGithubUser"
-					:src="selectedGithubUser?.value?.image"
+					v-if="selectedGithubUserData"
+					:src="selectedGithubUserData?.image"
 					class="mr-2 h-4 w-4 rounded-full"
 				/>
 				<FeatherIcon v-else name="users" class="mr-2 h-4 w-4" />
 			</template>
 			<template #item-prefix="{ active, selected, option }">
 				<img
-					v-if="option.value?.image"
-					:src="option.value.image"
+					v-if="option?.image"
+					:src="option.image"
 					class="mr-2 h-4 w-4 rounded-full"
 				/>
 				<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
@@ -59,10 +60,10 @@
 		</span>
 		<FormControl
 			type="autocomplete"
-			v-if="selectedGithubUser"
+			v-if="selectedGithubUserData"
 			label="Choose GitHub Repository"
 			:options="
-				(selectedGithubUser.value.repos || []).map(r => ({
+				(selectedGithubUserData.repos || []).map(r => ({
 					label: r.name,
 					value: r.name
 				}))
@@ -80,9 +81,9 @@
 			</template>
 		</FormControl>
 
-		<p v-if="selectedGithubUser" class="!mt-2 text-sm text-gray-600">
+		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-gray-600">
 			Don't see your repository here?
-			<Link :href="selectedGithubUser.value.url" class="font-medium">
+			<Link :href="selectedGithubUserData.url" class="font-medium">
 				Add from GitHub
 			</Link>
 		</p>
@@ -121,11 +122,11 @@ export default {
 			this.$resources.branches.submit({
 				owner: this.selectedGithubUser?.label,
 				name: val?.label,
-				installation: this.selectedGithubUser?.value.id
+				installation: this.selectedGithubUser?.value
 			});
 
-			if (this.selectedGithubUser) {
-				let defaultBranch = this.selectedGithubUser.value.repos.find(
+			if (this.selectedGithubUserData) {
+				let defaultBranch = this.selectedGithubUserData.repos.find(
 					r => r.name === val.label
 				).default_branch;
 				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
@@ -137,7 +138,7 @@ export default {
 					owner: this.appOwner,
 					repository: this.appName,
 					branch: newSelectedBranch.value,
-					selectedGithubUser: this.selectedGithubUser
+					selectedGithubUser: this.selectedGithubUserData
 				});
 		}
 	},
@@ -177,6 +178,12 @@ export default {
 				label: branch.name,
 				value: branch.name
 			}));
+		},
+		selectedGithubUserData() {
+			if (!this.selectedGithubUser) return null;
+			return this.options.installations.find(
+				i => i.id === this.selectedGithubUser.value
+			);
 		},
 		needsAuthorization() {
 			if (this.$resources.options.loading) return false;
