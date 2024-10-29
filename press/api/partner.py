@@ -200,5 +200,5 @@ def remove_partner():
 	member_to_remove = find(team.team_members, lambda x: x.user == partner_user)
 	if member_to_remove:
 		team.remove(member_to_remove)
-	team.parnter_email = ""
+	team.partner_email = ""
 	team.save(ignore_permissions=True)

@@ -18,6 +18,7 @@
 				icon-left="trash-2"
 				@click="showRemovePartnerDialog = true"
 			>
+				Unlink Partner
 			</Button>
 		</template>
 		<div class="py-4">
@@ -142,6 +143,7 @@ export default {
 			return {
 				url: 'press.api.partner.remove_partner',
 				onSuccess() {
+					this.showRemovePartnerDialog = false;
 					toast.success('Partner removed successfully');
 				},
 				onError() {
