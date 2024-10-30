@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Final, TypedDict
 
 import frappe
 import requests
@@ -28,7 +29,32 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 from press.press.report.binary_log_browser.binary_log_browser import (
 	get_data as get_binary_log_data,
 )
-from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
+
+if TYPE_CHECKING:
+	from elasticsearch_dsl.response import AggResponse
+	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
+
+	class Dataset(TypedDict):
+		"""Single element of list of Datasets returned for stacked histogram chart"""
+
+		path: str
+		values: list[float, int]  # List of values for each timestamp [43.0, 0, 0...]
+		stack: Final[str]
+
+	class HistBucket(FieldBucket):
+		key_as_string: str
+		avg_of_duration: AggResponse
+		sum_of_duration: AggResponse
+		doc_count: int
+		key: int
+
+	class HistogramOfMethod(FieldBucketData):
+		buckets: list[HistBucket]
+
+	class PathBucket(FieldBucket):
+		key: str
+		histogram_of_method: HistogramOfMethod
 
 
 @frappe.whitelist()
@@ -174,6 +200,21 @@ def get_uptime(site, timezone, timespan, timegrain):
 	return buckets
 
 
+def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
+	"""Merge similar queries and sum their durations/counts"""
+	n_datasets = {}
+	for data_dict in datasets:
+		n_query = normalize_query(data_dict["path"])
+		if n_datasets.get(n_query):
+			n_datasets[n_query]["values"] = [
+				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"])
+			]
+		else:
+			data_dict["path"] = n_query
+			n_datasets[n_query] = data_dict
+	return list(n_datasets.values())
+
+
 def get_stacked_histogram_chart_result(
 	search: Search,
 	query_type: str,
@@ -181,14 +222,16 @@ def get_stacked_histogram_chart_result(
 	end: datetime,
 	timegrain: int,
 	to_s_divisor: int = 1e6,
-):
-	aggs = search.execute().aggregations
+	normalize_slow_logs: bool = False,
+) -> dict[list[Dataset], list[datetime]]:
+	aggs: AggResponse = search.execute().aggregations
 
 	timegrain = timedelta(seconds=timegrain)
 	labels = [start + i * timegrain for i in range((end - start) // timegrain + 1)]
 	# method_path has buckets of timestamps with method(eg: avg) of that duration
 	datasets = []
 
+	path_bucket: PathBucket
 	for path_bucket in aggs.method_path.buckets:
 		path_data = frappe._dict(
 			{
@@ -197,21 +240,26 @@ def get_stacked_histogram_chart_result(
 				"stack": "path",
 			}
 		)
+		hist_bucket: HistBucket
 		for hist_bucket in path_bucket.histogram_of_method.buckets:
 			label = get_datetime(hist_bucket.key_as_string)
-			if label in labels:
-				path_data["values"][labels.index(label)] = (
-					(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
-					if query_type == "average_duration"
-					else (
-						flt(hist_bucket.sum_of_duration.value) / to_s_divisor
-						if query_type == "duration"
-						else hist_bucket.doc_count
-						if query_type == "count"
-						else 0
-					)
+			if label not in labels:
+				continue
+			path_data["values"][labels.index(label)] = (
+				(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
+				if query_type == "average_duration"
+				else (
+					flt(hist_bucket.sum_of_duration.value) / to_s_divisor
+					if query_type == "duration"
+					else hist_bucket.doc_count
+					if query_type == "count"
+					else 0
 				)
+			)
 		datasets.append(path_data)
+
+	if normalize_slow_logs:
+		datasets = normalize_datasets(datasets)
 
 	labels = [label.replace(tzinfo=None) for label in labels]
 	return {"datasets": datasets, "labels": labels}
@@ -432,7 +480,9 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain, to_s_divisor=1e9)
+	return get_stacked_histogram_chart_result(
+		search, query_type, start, end, timegrain, to_s_divisor=1e9, normalize_slow_logs=True
+	)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
