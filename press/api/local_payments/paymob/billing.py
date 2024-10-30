@@ -3,20 +3,21 @@ from press.utils import get_current_team
 from press.api.billing import total_unpaid_amount
 from press.api.local_payments.paymob.accept_api import AcceptAPI 
 from frappe.model.naming import _generate_random_string
+from press.utils import log_error
 
 @frappe.whitelist()
-def intent_to_buying_credits(amount, team, actualAmount, exchange_rate):
+def intent_to_buying_credits(amount, team, actual_amount, exchange_rate):
 	try:
-		iframe = create_payment_intent_for_buying_credits(amount, team, actualAmount, exchange_rate)
+		iframe = create_payment_intent_for_buying_credits(amount, team, actual_amount, exchange_rate)
 		return iframe
 	except Exception as e:
-		frappe.log_error("Intent to Buying Credits using Paymob", frappe.get_traceback(True))
+		log_error("Intent to Buying Credits using Paymob")
 		frappe.throw(e)
 	
 
 def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchange_rate):
-	# get current team details
 	payment_partner = team.get("value")
+	# get current team details
 	team = get_current_team(True)
 	total_unpaid = total_unpaid_amount()
 
@@ -24,7 +25,7 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
 	# build payment_data payload
-	payment_data = build_payment_data(team, amount=actualAmount)
+	payment_data = build_payment_data(team, payment_partner, amount=actualAmount)
 	validate_billing_data(payment_data)
 
 	# create paymob log
@@ -39,7 +40,7 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 
 	# create payment intention
 	accept = AcceptAPI()
-	intent = accept.create_payment_intent(payment_data)
+	code, intent, feedback = accept.create_payment_intent(payment_data)
 
 	# build iframe url
 	iframe_url = None
@@ -55,7 +56,7 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 	# return iframe url to UI and rediret to it
 	return iframe_url
 
-def build_payment_data(team, amount):
+def build_payment_data(team, payment_partner, amount):
 	payment_integration_id = frappe.db.get_single_value("Paymob Settings", "payment_integration")
 	address_details = team.billing_details()
 	first_name, last_name = frappe.db.get_value("User", team.user, ["first_name", "last_name"])
@@ -97,7 +98,8 @@ def build_payment_data(team, amount):
 			}
 		},
 		"extras": {
-			"ee": 22
+			"payment_partner": payment_partner,
+			"team_name": team.name,
 		}
 	}
 

@@ -95,7 +95,7 @@ export default {
 				params: {
 					amount: this.amount,
 					team: this.partnerInput,
-					actualAmount: this.actualAmount,
+					actual_amount: this.actualAmount,
 					exchange_rate: this.currencyExchangeRate,
 				},
 				validate() {
@@ -116,7 +116,6 @@ export default {
 				},
 				async onSuccess(data) {
 					let { iframe_url } = data;
-					console.log(data, iframe_url)
 					this.iframeSrc = iframe_url;
 					window.open(data, '_blank');
 
