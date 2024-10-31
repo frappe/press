@@ -12,6 +12,7 @@
   "special_reference",
   "order_id",
   "transaction_id",
+  "invoice_id",
   "section_break_yzyu",
   "payload"
  ],
@@ -67,11 +68,16 @@
    "fieldname": "event_type",
    "fieldtype": "Data",
    "label": "Event Type"
+  },
+  {
+   "fieldname": "invoice_id",
+   "fieldtype": "Data",
+   "label": "Invoice ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-17 18:15:44.175589",
+ "modified": "2024-10-25 14:51:32.275559",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Paymob Callback Log",

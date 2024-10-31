@@ -3,7 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
-
+from frappe.utils import parse_json
+from frappe import as_json
 
 class PaymobCallbackLog(Document):
 	# begin: auto-generated types
@@ -15,6 +16,7 @@ class PaymobCallbackLog(Document):
 		from frappe.types import DF
 
 		event_type: DF.Data | None
+		invoice_id: DF.Data | None
 		order_id: DF.Data | None
 		payload: DF.Code | None
 		payment_partner: DF.Link | None
@@ -26,31 +28,67 @@ class PaymobCallbackLog(Document):
 		self.set_missing_data()
 
 	def set_missing_data(self):
-		if not self.team or not self.payment_partner:
-			paymob_log_name = self.get_paymob_log()
-			if paymob_log_name:
-				paymob_log_doc = frappe.get_doc("Paymob Log", paymob_log_name)
-				self.team = paymob_log_doc.team
-				self.payment_partner = paymob_log_doc.payment_partner
 
-	def get_paymob_log(self):
-		return frappe.db.get_value("Paymob Log", filters={"special_reference": self.get("special_reference")})
+		if not self.team or not self.payment_partner:
+			paymob_log_data = self._get_paymob_log_data()
+			if paymob_log_data:
+				self.team, self.payment_partner = paymob_log_data
 
 	def after_insert(self):
-		# create payment partner log if successed
-		if self.payload:
-			payload = frappe.parse_json(self.payload)
-			if payload.get("obj", {}).get("success"):
-				paymob_log = self.get_paymob_log()
-				frappe.get_doc({
-					"doctype": "Payment Partner Balance Transaction",
-					"team": self.team,
-					"payment_partner": self.payment_partner,
-					"exchange_rate": frappe.db.get_value("Paymob Log", paymob_log, "exchange_rate"),
-					"payment_gateway": "Paymob",
-					"amount": frappe.db.get_value("Paymob Log", paymob_log, "amount"),
-					"actual_amount": frappe.db.get_value("Paymob Log", paymob_log, "actual_amount"),
-					"payment_transaction_details": frappe.as_json(frappe.parse_json(self.payload))
-				}).insert()
+		if self._is_payment_successful():
+			self._create_payment_partner_transaction()
 
+	def _get_paymob_log_data(self):
+		return frappe.db.get_value("Paymob Log", 
+			filters={"special_reference": self.special_reference},
+			fieldname=["team", "payment_partner"]
+		)
+
+	def _is_payment_successful(self) -> bool:
+
+		if not self.payload:
+			return False
+
+		try:
+			payload = parse_json(self.payload)
+			obj = payload.get("obj", {})
+			data = obj.get("data", {})
+
+			success = obj.get("success", False)
+			is_live = obj.get("is_live", False)
+
+			txn_response_code = data.get("txn_response_code", "")
+
+			return success and is_live and txn_response_code == "APPROVED"
+		except ValueError:
+			frappe.log_error("PaymobCallbackLog Payload Error", "Invalid JSON format in payload",)
+			return False
+
+	def _create_payment_partner_transaction(self):
+		try:
+			paymob_log_data = frappe.db.get_value(
+				"Paymob Log", 
+				filters={"special_reference": self.special_reference},
+				fieldname=["exchange_rate", "amount", "actual_amount"]
+			)
+			if not paymob_log_data:
+				frappe.log_error(f"Paymob Log not found for reference {self.special_reference}", "PaymobCallbackLog Error")
+				return
+
+			exchange_rate, amount, paid_amount = paymob_log_data
+
+			transaction_doc = frappe.get_doc({
+				"doctype": "Payment Partner Balance Transaction",
+				"team": self.team,
+				"payment_partner": self.payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": "Paymob",
+				"amount": amount,
+				"paid_amount": paid_amount,
+				"payment_transaction_details": as_json(parse_json(self.payload))
+			})
+			transaction_doc.insert()
+			transaction_doc.submit()
+		except Exception as e:
+			frappe.log_error("Error creating Payment Partner Balance Transaction", f"PaymobCallbackLog Error :\n{str(e)}")
 
