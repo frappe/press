@@ -13,10 +13,10 @@
   "team",
   "transaction_details_section",
   "amount",
-  "actual_amount",
+  "paid_amount",
   "column_break_xqsh",
   "currency",
-  "actual_currency",
+  "payment_currency",
   "column_break_jyxx",
   "exchange_rate",
   "section_break_yhqq",
@@ -113,23 +113,23 @@
    "read_only": 1
   },
   {
-   "fieldname": "actual_amount",
+   "fieldname": "paid_amount",
    "fieldtype": "Currency",
-   "label": "Actual Amount",
-   "options": "actual_currency"
+   "label": "Paid Amount",
+   "options": "payment_currency"
   },
   {
    "fetch_from": "payment_gateway.currency",
-   "fieldname": "actual_currency",
+   "fieldname": "payment_currency",
    "fieldtype": "Link",
-   "label": "Actual Currency",
+   "label": "Payment Currency",
    "options": "Currency"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-17 17:38:00.278703",
+ "modified": "2024-10-30 14:17:25.743280",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Partner Balance Transaction",
