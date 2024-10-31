@@ -48,7 +48,7 @@ class AcceptAPI:
 			url=self.paymob_urls.get_url("intention"), headers=headers, data=payload
 		)
 
-		payment_intent = frappe_dict()
+		payment_intent = frappe._dict()
 
 		if code == SUCCESS:
 			payment_intent = feedback.data
