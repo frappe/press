@@ -113,7 +113,7 @@ class Subscription(Document):
 			return
 		try:
 			self.enabled = True
-			self.save()
+			self.save(ignore_permissions=True)
 		except Exception:
 			frappe.log_error(title="Enable Subscription Error")
 
@@ -122,7 +122,7 @@ class Subscription(Document):
 			return
 		try:
 			self.enabled = False
-			self.save()
+			self.save(ignore_permissions=True)
 		except Exception:
 			frappe.log_error(title="Disable Subscription Error")
 
