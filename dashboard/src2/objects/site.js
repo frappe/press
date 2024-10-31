@@ -141,10 +141,10 @@ export default {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
 					}
-					let $team = getTeam();
+					const $team = getTeam();
 					if (row.price_usd > 0) {
-						let india = $team.doc.country == 'India';
-						let formattedValue = userCurrency(
+						const india = $team.doc.currency === 'INR';
+						const formattedValue = userCurrency(
 							india ? row.price_inr : row.price_usd,
 							0
 						);
