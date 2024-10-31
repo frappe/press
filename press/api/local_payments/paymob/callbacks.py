@@ -54,16 +54,44 @@ def paymob_response_callback(**kwargs):
     """
     Handle Paymob payment response callback, validate HMAC, and redirect with appropriate message.
     """
-    query_params = get_query_params()
-    transaction_status = query_params.get("success")
-    order_id = query_params.get("order", {}).get("id")
-    transaction_id = query_params.get("id")
+    try:
+        query_params = get_query_params()
+        transaction_status = query_params.get("success")
+        order_id = query_params.get("order", {}).get("id")
+        transaction_id = query_params.get("id")
 
-    # Validate the HMAC to ensure the data integrity
-    is_hmac_valid = validate_hmac(query_params)
-    response_message = get_response_message(transaction_status, is_hmac_valid, order_id, transaction_id)
+        if transaction_status is None or order_id is None or transaction_id is None:
+            frappe.log_error("Paymob Missing transaction parameters", f"Paymob Response Callback Error\n {query_params}")
+            return frappe.redirect_to_message(
+                title="Payment Error",
+                html="Required transaction parameters are missing.",
+                indicator_color="red"
+            )
+
+        # Validate HMAC to ensure data integrity
+        is_hmac_valid = validate_hmac(query_params)
+        if not is_hmac_valid:
+            frappe.log_error("Paymob HMAC validation failed", f"Paymob Response Callback Error\n {query_params}")
+            return frappe.redirect_to_message(
+                title="Payment Error",
+                html="Invalid transaction signature. Possible tampering detected.",
+                indicator_color="red"
+            )
+
+        # Get the response message based on the transaction status and HMAC validation
+        response_message = get_response_message(transaction_status, is_hmac_valid, order_id, transaction_id)
+
+    except Exception as e:
+        # Log the error and redirect to a generic error message
+        frappe.log_error(f"Paymob Unexpected error: {str(e)}", "Paymob Response Callback Error")
+        response_message = {
+            "title": "Payment Processing Error",
+            "html": "An unexpected error occurred while processing your payment. Please try again.",
+            "indicator_color": "red"
+        }
 
     return frappe.redirect_to_message(**response_message)
+
 
 
 def get_query_params():
