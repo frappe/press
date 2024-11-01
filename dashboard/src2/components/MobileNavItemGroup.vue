@@ -13,8 +13,8 @@
 			</span>
 			<span class="text-base">{{ item.name }}</span>
 			<span class="!ml-auto">
-				<i-lucide-chevron-up v-if="isOpened" class="h-4 w-4 text-gray-500" />
-				<i-lucide-chevron-down v-else class="h-4 w-4 text-gray-500" />
+				<i-lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-gray-500" />
+				<i-lucide-chevron-right v-else class="h-4 w-4 text-gray-500" />
 			</span>
 		</div>
 	</div>
