@@ -182,29 +182,21 @@
 			</template>
 		</Dialog>
 	</Card>
-	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
-	<ActiveServersDialog v-model="showActiveServersDialog" />
 	<TFADialog v-model="show2FADialog" />
 </template>
 
 <script>
 import { toast } from 'vue-sonner';
-import { h } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import FileUploader from '@/components/FileUploader.vue';
-import FinalizeInvoicesDialog from '../../billing/FinalizeInvoicesDialog.vue';
 import { confirmDialog, renderDialog } from '../../../utils/components';
-import ChurnFeedbackDialog from '../../ChurnFeedbackDialog.vue';
-import ActiveServersDialog from '../../ActiveServersDialog.vue';
 import TFADialog from './TFADialog.vue';
 
 export default {
 	name: 'AccountProfile',
 	components: {
 		TFADialog,
-		FileUploader,
-		FinalizeInvoicesDialog,
-		ChurnFeedbackDialog,
-		ActiveServersDialog
+		FileUploader
 	},
 	data() {
 		return {
@@ -212,9 +204,7 @@ export default {
 			disableAccount2FACode: '',
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
-			showDisableAccountDialog: false,
-			showFinalizeInvoicesDialog: false,
-			showActiveServersDialog: false
+			showDisableAccountDialog: false
 		};
 	},
 	computed: {
@@ -247,10 +237,20 @@ export default {
 				this.showDisableAccountDialog = false;
 
 				if (data === 'Unpaid Invoices') {
-					this.showFinalizeInvoicesDialog = true;
+					const finalizeInvoicesDialog = defineAsyncComponent(() =>
+						import('../../billing/FinalizeInvoicesDialog.vue')
+					);
+					renderDialog(h(finalizeInvoicesDialog));
 				} else if (data === 'Active Servers') {
-					this.showActiveServersDialog = true;
+					const activeServersDialog = defineAsyncComponent(() =>
+						import('../../ActiveServersDialog.vue')
+					);
+					renderDialog(h(activeServersDialog));
 				} else {
+					const ChurnFeedbackDialog = defineAsyncComponent(() =>
+						import('../../ChurnFeedbackDialog.vue')
+					);
+
 					renderDialog(
 						h(ChurnFeedbackDialog, {
 							team: this.$team.doc.name,
