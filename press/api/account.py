@@ -771,7 +771,7 @@ def update_billing_information(billing_details):
 	team.update_billing_details(billing_details)
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def feedback(team, message, note, rating, route=None):
 	feedback = frappe.new_doc("Press Feedback")
 	feedback.team = team

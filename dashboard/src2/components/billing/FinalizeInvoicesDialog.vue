@@ -1,5 +1,8 @@
 <template>
-	<Dialog :options="{ title: `Finalize Unsettled Invoices` }" modelValue="show">
+	<Dialog
+		:options="{ title: `Finalize Unsettled Invoices` }"
+		v-model="showDialog"
+	>
 		<template #body-content>
 			<div class="prose text-base">
 				You have unpaid invoices on your account for the following periods:
@@ -41,16 +44,25 @@
 
 <script>
 import { date } from '../../utils/format';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'FinalizeInvoicesDialog',
 	props: {
-		show: Boolean,
 		msg: String
+	},
+	data() {
+		return {
+			showDialog: true
+		};
 	},
 	resources: {
 		finalizeInvoices: {
-			url: 'press.api.billing.finalize_invoices'
+			url: 'press.api.billing.finalize_invoices',
+			onSuccess() {
+				this.showDialog = false;
+				toast.success('Invoices finalized successfully');
+			}
 		},
 		unpaidInvoices: {
 			url: 'press.api.billing.unpaid_invoices',
