@@ -103,6 +103,10 @@ export default {
 				onSuccess() {
 					this.show = false;
 					this.$emit('updated');
+
+					setTimeout(() => {
+						window.location.href = '/dashboard';
+					}, 1000);
 				}
 			};
 		}

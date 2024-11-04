@@ -454,6 +454,9 @@ class Team(Document):
 					capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 
 	def on_update(self):
+		if not self.enabled:
+			return
+
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.validate_partnership_date()

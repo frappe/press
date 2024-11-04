@@ -141,10 +141,8 @@ export default {
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),
-					condition:
-						// this.$session.hasPartnerAccess &&
-						Boolean(this.$team.doc.erpnext_partner),
-					disabled: !onboardingComplete || enforce2FA
+					condition: Boolean(this.$team.doc.erpnext_partner),
+					disabled: enforce2FA
 				},
 				{
 					name: 'Settings',

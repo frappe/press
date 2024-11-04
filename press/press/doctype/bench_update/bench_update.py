@@ -1,11 +1,13 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import frappe
-from typing import TYPE_CHECKING
-from press.utils import get_current_team
 from frappe.model.document import Document
-from press.press.doctype.release_group.release_group import ReleaseGroup
+
+from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
@@ -19,8 +21,10 @@ class BenchUpdate(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
+		from press.press.doctype.release_group.release_group import ReleaseGroup
 
 		apps: DF.Table[BenchUpdateApp]
 		bench: DF.Link | None
@@ -49,9 +53,7 @@ class BenchUpdate(Document):
 
 	def validate_pending_updates(self):
 		if frappe.get_doc("Release Group", self.group).deploy_in_progress:
-			frappe.throw(
-				"A deploy for this bench is already in progress", frappe.ValidationError
-			)
+			frappe.throw("A deploy for this bench is already in progress", frappe.ValidationError)
 
 	def validate_pending_site_updates(self):
 		for site in self.sites:
@@ -119,9 +121,7 @@ class BenchUpdate(Document):
 			# It already could be on newest bench and Site Update couldn't be scheduled
 			# In any case our job was to move site to a newer than this, which is already done
 			current_site_bench = frappe.get_value("Site", row.site, "bench")
-			if row.source_candidate != frappe.get_value(
-				"Bench", current_site_bench, "candidate"
-			):
+			if row.source_candidate != frappe.get_value("Bench", current_site_bench, "candidate"):
 				frappe.db.set_value("Bench Site Update", row.name, "status", "Success")
 				frappe.db.commit()
 				continue
@@ -135,9 +135,12 @@ class BenchUpdate(Document):
 						limit=1,
 					):
 						continue
+					current_user = frappe.session.user
+					frappe.set_user(self.owner)
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)
+					frappe.set_user(current_user)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
 				except Exception:
@@ -165,9 +168,7 @@ def get_bench_update(
 	rg_team = frappe.db.get_value("Release Group", name, "team")
 
 	if rg_team != team.name:
-		frappe.throw(
-			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
-		)
+		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
 		{

@@ -122,7 +122,7 @@ class VersionUpgrade(Document):
 				site = frappe.get_doc("Site", self.site)
 				next_version = frappe.get_value("Release Group", self.destination_group, "version")
 
-				message = f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> was done successfully"
+				message = f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> has completed successfully"
 				agent_job_id = frappe.get_value("Site Update", self.site_update, "update_job")
 
 				create_new_notification(

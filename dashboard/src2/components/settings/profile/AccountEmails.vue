@@ -1,6 +1,6 @@
 <template>
 	<Card
-		v-if="$team.doc.user === $session.user"
+		v-if="$team?.doc?.user === $session?.user"
 		title="Email Notifications"
 		class="mx-auto max-w-3xl"
 	>

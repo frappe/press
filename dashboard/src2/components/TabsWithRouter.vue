@@ -36,7 +36,7 @@ export default {
 			set(val) {
 				let tab = this.visibleTabs[val];
 				let tabRouteName = tab.routeName || tab.route.name;
-				this.$router.replace({ name: tabRouteName });
+				this.$router.push({ name: tabRouteName });
 			}
 		}
 	}

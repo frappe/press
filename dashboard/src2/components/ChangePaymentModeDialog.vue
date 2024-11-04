@@ -45,15 +45,12 @@
 			}
 		"
 	/>
-	<FinalizeInvoicesDialog
-		v-if="showFinalizeInvoicesDialog"
-		v-model="showFinalizeInvoicesDialog"
-	/>
 </template>
 <script>
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { DashboardError } from '../utils/error';
 import NewBillingInformationDialog from './billing/BillingInformationDialog.vue';
+import { renderDialog } from '../utils/components';
 
 export default {
 	name: 'ChangePaymentModeDialog',
@@ -66,17 +63,13 @@ export default {
 		),
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
-		),
-		FinalizeInvoicesDialog: defineAsyncComponent(() =>
-			import('./billing/FinalizeInvoicesDialog.vue')
 		)
 	},
 	data() {
 		return {
 			showBillingInformationDialog: false,
 			showPrepaidCreditsDialog: false,
-			paymentMode: this.$team.doc.payment_mode,
-			showFinalizeInvoicesDialog: false
+			paymentMode: this.$team.doc.payment_mode
 		};
 	},
 	watch: {
@@ -95,7 +88,10 @@ export default {
 				},
 				onSuccess(data) {
 					if (data && data == 'Unpaid Invoices') {
-						this.showFinalizeInvoicesDialog = true;
+						const finalizeInvoicesDialog = defineAsyncComponent(() =>
+							import('./billing/FinalizeInvoicesDialog.vue')
+						);
+						renderDialog(h(finalizeInvoicesDialog));
 					} else {
 						this.$emit('update:modelValue', false);
 						this.$resources.changePaymentMode.reset();
