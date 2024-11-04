@@ -162,7 +162,7 @@ def update_with_oom_error(
 	details[
 		"message"
 	] = f"""<p>The server ran out of memory while {job_type} job was running and was killed by the system.</p>
-    <p>It is recommended to increase the memory available to the server <a class="underline" href="/dashboard/servers/{job.server}">{job.server}</a>.</p>
+    <p>It is recommended to increase the memory available for the server <a class="underline" href="/dashboard/servers/{job.server}">{job.server}</a>.</p>
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
