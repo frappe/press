@@ -141,7 +141,8 @@ export default {
 					is_actionable: true,
 					class: 'Error'
 				},
-				limit: 1
+				limit: 1,
+				orderBy: 'creation desc'
 			};
 		}
 	},
