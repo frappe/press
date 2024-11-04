@@ -1,7 +1,9 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+import re
 
 import frappe
 from frappe.model.document import Document
@@ -23,6 +25,8 @@ class SiteDatabaseUser(Document):
 		)
 
 		database: DF.Data
+		failed_agent_job: DF.Link | None
+		failure_reason: DF.SmallText
 		mode: DF.Literal["read_only", "read_write", "granular"]
 		password: DF.Password
 		permissions: DF.Table[SiteDatabaseTablePermission]
@@ -181,11 +185,16 @@ class SiteDatabaseUser(Document):
 		if not job.reference_name or not frappe.db.exists("Site Database User", job.reference_name):
 			return
 
+		doc: SiteDatabaseUser = frappe.get_doc("Site Database User", job.reference_name)
+
 		if job.status == "Failure":
-			frappe.db.set_value("Site Database User", job.reference_name, "status", "Failed")
+			doc.status = "Failed"
+			doc.failed_agent_job = job.name
+			if job.job_type == "Modify Database User Permissions":
+				doc.failure_reason = SiteDatabaseUser.user_addressable_error_from_stacktrace(job.traceback)
+			doc.save(ignore_permissions=True)
 			return
 
-		doc: SiteDatabaseUser = frappe.get_doc("Site Database User", job.reference_name)
 		if job.job_type == "Create Database User":
 			doc.user_created_in_database = True
 			doc.database = json.loads(job.data).get("database")
@@ -212,3 +221,31 @@ class SiteDatabaseUser(Document):
 			and not doc.user_created_in_database
 		):
 			doc.delete()
+
+	@staticmethod
+	def user_addressable_error_from_stacktrace(stacktrace: str):
+		pattern = r"peewee\.\w+Error: (.*)?"
+		default_error_msg = "Unknown error. Please try again.\nIf the error persists, please contact support."
+
+		matches = re.findall(pattern, stacktrace)
+		if len(matches) == 0:
+			return default_error_msg
+		data = matches[0].strip().replace("(", "").replace(")", "").split(",", 1)
+		if len(data) != 2:
+			return default_error_msg
+
+		if data[0] == "1054":
+			pattern = r"Unknown column '(.*)' in '(.*)'\"*?"
+			matches = re.findall(pattern, data[1])
+			if len(matches) == 1 and len(matches[0]) == 2:
+				return f"Column '{matches[0][0]}' doesn't exist in '{matches[0][1]}' table.\nPlease remove the column from permissions configuration and apply changes."
+
+		elif data[0] == "1146":
+			pattern = r"Table '(.*)' doesn't exist"
+			matches = re.findall(pattern, data[1])
+			if len(matches) == 1 and isinstance(matches[0], str):
+				table_name = matches[0]
+				table_name = table_name.split(".")[-1]
+				return f"Table '{table_name}' doesn't exist.\nPlease remove it from permissions table and apply changes."
+
+		return default_error_msg

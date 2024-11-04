@@ -10,12 +10,16 @@
   "mode",
   "database",
   "column_break_udtx",
-  "user_created_in_database",
-  "user_added_in_proxysql",
   "username",
   "password",
+  "user_created_in_database",
+  "user_added_in_proxysql",
   "section_break_cpbg",
-  "permissions"
+  "permissions",
+  "section_break_ubkn",
+  "column_break_rczb",
+  "failed_agent_job",
+  "failure_reason"
  ],
  "fields": [
   {
@@ -98,6 +102,27 @@
    "label": "Database",
    "not_nullable": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ubkn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.status === \"Failed\"",
+   "fieldname": "column_break_rczb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "failed_agent_job",
+   "fieldtype": "Link",
+   "label": "Failed Agent Job",
+   "options": "Agent Job"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason",
+   "not_nullable": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -108,7 +133,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-04 15:20:50.827404",
+ "modified": "2024-11-04 16:39:39.288352",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
