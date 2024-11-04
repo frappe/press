@@ -217,7 +217,7 @@ def send_job_failure_notification(job: "Agent Job"):
 		if job.server_type not in ["Server", "Database Server"]:
 			return
 
-		server = frappe.get_value(job.server_type, job.server, ["team", "public"])
+		server = frappe.db.get_value(job.server_type, job.server, ["team", "public"], as_dict=True)
 		if server["public"]:
 			return
 		team = server["team"]
