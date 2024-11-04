@@ -9,6 +9,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class SiteDatabaseUser(Document):
@@ -32,25 +33,22 @@ class SiteDatabaseUser(Document):
 		permissions: DF.Table[SiteDatabaseTablePermission]
 		site: DF.Link
 		status: DF.Literal["Draft", "Pending", "Active", "Failed", "Archived"]
+		team: DF.Link
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
 		username: DF.Data
 	# end: auto-generated types
 
-	from typing import TYPE_CHECKING
-
-	if TYPE_CHECKING:
-		from frappe.types import DF
-
-		from press.press.doctype.site_database_table_permission.site_database_table_permission import (
-			SiteDatabaseTablePermission,
-		)
-
-		mode: DF.Literal["read_only", "read_write", "granular"]
-		password: DF.Password
-		permissions: DF.Table[SiteDatabaseTablePermission]
-		site: DF.Link
-		username: DF.Data
+	dashboard_fields = (
+		"status",
+		"user_added_in_proxysql",
+		"user_created_in_database",
+		"username",
+		"mode",
+		"failed_agent_job",
+		"failure_reason",
+		"permissions",
+	)
 
 	def validate(self):
 		if self.is_new():
@@ -259,3 +257,6 @@ class SiteDatabaseUser(Document):
 				return f"Table '{table_name}' doesn't exist.\nPlease remove it from permissions table and apply changes."
 
 		return default_error_msg
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Database User")

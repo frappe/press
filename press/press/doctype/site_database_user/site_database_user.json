@@ -6,10 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "site",
   "mode",
-  "database",
+  "site",
+  "team",
   "column_break_udtx",
+  "database",
   "username",
   "password",
   "user_created_in_database",
@@ -124,6 +125,13 @@
    "fieldtype": "Small Text",
    "label": "Failure Reason",
    "not_nullable": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -134,7 +142,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-04 16:43:53.850871",
+ "modified": "2024-11-04 17:38:55.911186",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
