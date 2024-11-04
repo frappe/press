@@ -75,6 +75,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 	"""
 	return [
 		("returned non-zero exit status 137", update_with_oom_error),
+		("returned non-zero exit status 143", update_with_oom_error),
 	]
 
 
@@ -111,7 +112,8 @@ def create_job_failed_notification(
 
 
 def get_details(job: "AgentJob", message: str) -> "Details":
-	tb = job.traceback
+	tb = job.traceback or ""
+	output = job.output or ""
 	default_title = get_default_title(job)
 	default_message = get_default_message(job)
 
@@ -128,7 +130,7 @@ def get_details(job: "AgentJob", message: str) -> "Details":
 			strs = [strs]
 
 		if not (is_match := all(s in tb for s in strs)):
-			is_match = all(s in job.output for s in strs)
+			is_match = all(s in output for s in strs)
 
 		if not is_match:
 			continue
