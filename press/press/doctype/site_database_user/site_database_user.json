@@ -5,9 +5,13 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "site",
   "mode",
+  "database",
   "column_break_udtx",
+  "user_created_in_database",
+  "user_added_in_proxysql",
   "username",
   "password",
   "section_break_cpbg",
@@ -39,14 +43,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Username",
-   "reqd": 1
+   "not_nullable": 1,
+   "read_only": 1,
+   "set_only_once": 1,
+   "unique": 1
   },
   {
    "fieldname": "password",
    "fieldtype": "Password",
-   "in_list_view": 1,
    "label": "Password",
-   "reqd": 1
+   "not_nullable": 1,
+   "read_only": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_cpbg",
@@ -58,11 +66,49 @@
    "fieldtype": "Table",
    "label": "Permissions",
    "options": "Site Database Table Permission"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPending\nActive\nFailed\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "user_added_in_proxysql",
+   "fieldtype": "Check",
+   "label": "User Added in ProxySQL",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "user_created_in_database",
+   "fieldtype": "Check",
+   "label": "User Created in Database",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Database",
+   "not_nullable": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-10-31 17:18:52.361342",
+ "links": [
+  {
+   "group": "Related Documents",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2024-11-04 15:20:50.827404",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
