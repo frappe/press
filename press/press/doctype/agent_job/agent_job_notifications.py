@@ -49,7 +49,7 @@ if typing.TYPE_CHECKING:
 
 
 DOC_URLS = {
-	"oom-issues": "https://frappecloud.com/docs/faq/oom-issues",
+	"oom-issues": "https://frappecloud.com/docs/common-issues/oom-issues",
 }
 
 
