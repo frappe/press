@@ -6,6 +6,7 @@ import {
 	useVueTable
 } from '@tanstack/vue-table';
 import { computed, ref } from 'vue';
+import { unparse } from 'papaparse';
 
 const props = defineProps({
 	columns: { type: Array, required: true },
@@ -70,13 +71,13 @@ const showPagination = computed(
 );
 
 const downloadCSV = async () => {
-	let csvContent = props.columns.join(',') + '\n';
-	for (let i = 0; i < props.data.length; i++) {
-		csvContent += props.data[i].join(',') + '\n';
-	}
-
+	let csv = unparse({
+		fields: props.columns,
+		data: props.data
+	});
+	csv = '\uFEFF' + csv; // for utf-8
 	// create a blob and trigger a download
-	const blob = new Blob([csvContent], { type: 'text/csv' });
+	const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
 	const randomId = Math.random().toString(36).substring(2, 10);
 	const filename = `${randomId}.csv`;
 	const link = document.createElement('a');

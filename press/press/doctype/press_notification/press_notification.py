@@ -35,6 +35,7 @@ class PressNotification(Document):
 			"Version Upgrade",
 			"Bench Deploy",
 			"Site Recovery",
+			"Agent Job Failure",
 			"Downtime/Performance",
 		]
 	# end: auto-generated types
