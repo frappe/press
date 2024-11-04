@@ -213,9 +213,12 @@ def send_job_failure_notification(job: "Agent Job"):
 	if site_team := frappe.get_value("Site", job.site, "team"):
 		team = site_team
 	else:
+		if job.server_type not in ["Server", "Database Server"]:
+			return
+
 		server = frappe.get_value(job.server_type, job.server, ["team", "public"])
 		if server["public"]:
 			return
-		team = server_team
+		team = server["team"]
 
 	create_job_failed_notification(job, team, notification_type, message)
