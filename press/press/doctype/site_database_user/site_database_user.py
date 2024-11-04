@@ -63,7 +63,11 @@ class SiteDatabaseUser(Document):
 		if not self.password:
 			frappe.throw("Password can't be blank")
 
-		if not self.has_value_changed("status") and self.status == "Archived":
+		if not self.has_value_changed("status"):
+			self._raise_error_if_archived()
+
+	def _raise_error_if_archived(self):
+		if self.status == "Archived":
 			frappe.throw("user has been deleted and no further changes can be made")
 
 	@frappe.whitelist()
@@ -80,6 +84,7 @@ class SiteDatabaseUser(Document):
 
 	@frappe.whitelist()
 	def create_user(self):
+		self._raise_error_if_archived()
 		agent = Agent(frappe.db.get_value("Site", self.site, "server"))
 		agent.create_database_user(
 			frappe.get_doc("Site", self.site), self.username, self.get_password("password"), self.name
@@ -87,6 +92,7 @@ class SiteDatabaseUser(Document):
 
 	@frappe.whitelist()
 	def remove_user(self):
+		self._raise_error_if_archived()
 		agent = Agent(frappe.db.get_value("Site", self.site, "server"))
 		agent.remove_database_user(
 			frappe.get_doc("Site", self.site),
@@ -96,6 +102,7 @@ class SiteDatabaseUser(Document):
 
 	@frappe.whitelist()
 	def add_user_to_proxysql(self):
+		self._raise_error_if_archived()
 		if not self.database:
 			# It's needed because press doesn't store the database name the site is using
 			# so, at the time of creating database user, the database name will be stored
@@ -120,6 +127,7 @@ class SiteDatabaseUser(Document):
 
 	@frappe.whitelist()
 	def remove_user_from_proxysql(self):
+		self._raise_error_if_archived()
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
@@ -132,6 +140,7 @@ class SiteDatabaseUser(Document):
 
 	@frappe.whitelist()
 	def modify_permissions(self):
+		self._raise_error_if_archived()
 		server = frappe.db.get_value("Site", self.site, "server")
 		agent = Agent(server)
 		table_permissions = {}
@@ -167,7 +176,8 @@ class SiteDatabaseUser(Document):
 		}
 
 	@frappe.whitelist()
-	def delete(self):
+	def archive(self):
+		self._raise_error_if_archived()
 		if self.user_created_in_database:
 			self.remove_user()
 		if self.user_added_in_proxysql:
@@ -220,7 +230,7 @@ class SiteDatabaseUser(Document):
 			and not doc.user_added_in_proxysql
 			and not doc.user_created_in_database
 		):
-			doc.delete()
+			doc.archive()
 
 	@staticmethod
 	def user_addressable_error_from_stacktrace(stacktrace: str):

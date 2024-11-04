@@ -30,7 +30,7 @@ frappe.ui.form.on('Site Database User', {
 				'modify_permissions',
 				frm.doc.user_created_in_database,
 			],
-			[__('Delete'), 'delete'],
+			[__('Archive'), 'archive'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
