@@ -936,7 +936,7 @@ def create_mpesa_payment_register_entry(transaction_response):
 	data={
 	"transaction_id": transaction_id,
 	"trans_amount": amount,
-	"team": "Sales Team",
+	"team": frappe.get_value("Team", team, "user"),
 	"default_currency": "KES",
 	"rate":requested_amount
 }
