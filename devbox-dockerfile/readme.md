@@ -14,8 +14,8 @@ docker build -t your_image_name .
 
 ### Run
 
-8080 is for NOVNC
-8443 is for VSCode Server
+8080 is for NOVNC \
+8443 is for VSCode Server \
 5901 is for Bare VNC Port
 
 ```
