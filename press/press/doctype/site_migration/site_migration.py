@@ -360,7 +360,7 @@ class SiteMigration(Document):
 			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
 
 			job = frappe.get_doc("Agent Job", agent_job_id)
-			create_job_failed_notification(job, site.team, "Site Migrate", message)
+			create_job_failed_notification(job, site.team, "Site Migrate", "Site Migrate", message)
 
 	def succeed(self):
 		self.status = "Success"

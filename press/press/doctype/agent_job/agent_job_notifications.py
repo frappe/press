@@ -83,6 +83,7 @@ def create_job_failed_notification(
 	job: "AgentJob",
 	team: str,
 	notification_type: str = "Agent Job Failure",
+	title: str = "",
 	message: str = "",
 ) -> bool:
 	"""
@@ -92,7 +93,7 @@ def create_job_failed_notification(
 	Returns True if job failure is_actionable
 	"""
 
-	details = get_details(job, message)
+	details = get_details(job, title, message)
 	doc_dict = {
 		"doctype": "Press Notification",
 		"team": team,
@@ -111,15 +112,15 @@ def create_job_failed_notification(
 	return details["is_actionable"]
 
 
-def get_details(job: "AgentJob", message: str) -> "Details":
+def get_details(job: "AgentJob", title: str, message: str) -> "Details":
 	tb = job.traceback or ""
 	output = job.output or ""
-	default_title = get_default_title(job)
-	default_message = get_default_message(job)
+	title = title or get_default_title(job)
+	message = message or get_default_message(job)
 
 	details: "Details" = dict(
-		title=default_title,
-		message=message or default_message,
+		title=title,
+		message=message,
 		traceback=tb,
 		is_actionable=False,
 		assistance_url=None,
@@ -138,8 +139,8 @@ def get_details(job: "AgentJob", message: str) -> "Details":
 		if handler(details, job):
 			details["is_actionable"] = True
 			break
-		details["title"] = default_title
-		details["message"] = message or default_message
+		details["title"] = title
+		details["message"] = message
 		details["traceback"] = tb
 		details["is_actionable"] = False
 		details["assistance_url"] = None
@@ -175,13 +176,24 @@ def update_with_oom_error(
 
 
 def get_default_title(job: "AgentJob") -> str:
-	return "Job Failed"
+	if job.job_type == "Update Site Migrate":
+		return "Site Migrate"
+	if job.job_type == "Update Site Pull":
+		return "Site Update"
+	if job.job_type.startswith("Recover Failed"):
+		return "Site Recovery"
+	return "Job Failure"
 
 
 def get_default_message(job: "AgentJob") -> str:
+	if job.job_type == "Update Site Migrate":
+		return f"Site <b>{job.site}</b> failed to migrate"
+	if job.job_type == "Update Site Pull":
+		return f"Site <b>{job.site}</b> failed to update"
+	if job.job_type.startswith("Recover Failed"):
+		return f"Site <b>{job.site}</b> failed to recover after a failed update/migration"
 	if job.site:
 		return f"<b>{job.job_type}</b> job failed on site <b>{job.site}</b>."
-
 	return f"<b>{job.job_type}</b> job failed on server <b>{job.server}</b>."
 
 
@@ -196,19 +208,8 @@ def send_job_failure_notification(job: "Agent Job"):
 	if site_migration and job_matches_site_migration(job, site_migration):
 		return
 
-	notification_type = "Agent Job Failure"
-	message = ""
+	notification_type = get_notification_type(job)
 	team = None
-
-	if job.job_type == "Update Site Migrate":
-		notification_type = "Site Migrate"
-		message = f"Site <b>{job.site}</b> failed to migrate"
-	elif job.job_type == "Update Site Pull":
-		notification_type = "Site Update"
-		message = f"Site <b>{job.site}</b> failed to update"
-	elif job.job_type.startswith("Recover Failed"):
-		notification_type = "Site Recovery"
-		message = f"Site <b>{job.site}</b> failed to recover after a failed update/migration"
 
 	if site_team := frappe.get_value("Site", job.site, "team"):
 		team = site_team
@@ -221,4 +222,14 @@ def send_job_failure_notification(job: "Agent Job"):
 			return
 		team = server["team"]
 
-	create_job_failed_notification(job, team, notification_type, message)
+	create_job_failed_notification(job, team, notification_type)
+
+
+def get_notification_type(job: "AgentJob") -> str:
+	if job.job_type == "Update Site Migrate":
+		return "Site Migrate"
+	if job.job_type == "Update Site Pull":
+		return "Site Update"
+	if job.job_type.startswith("Recover Failed"):
+		return "Site Recovery"
+	return "Agent Job Failure"
