@@ -132,7 +132,7 @@ export default {
 					return value || row.name;
 				}
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.6 },
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.7 },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
