@@ -2,8 +2,10 @@ FROM debian:12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=en_US.UTF-8 \
-    LC_ALL=C.UTF-8
-    
+    LC_ALL=C.UTF-8 \
+    PASSWORD=password \
+    VNC_PASSWORD=password
+
 # Install required packages
 RUN apt-get update && apt-get install -y \
     xfce4 \
@@ -81,11 +83,9 @@ unset SESSION_MANAGER\n\
 unset DBUS_SESSION_BUS_ADDRESS\n\
 exec dbus-launch --exit-with-session startxfce4" > /home/frappe/.vnc/xstartup && \
     chmod +x /home/frappe/.vnc/xstartup && \
-    echo "password" | vncpasswd -f > /home/frappe/.vnc/passwd && \
-    chmod 600 /home/frappe/.vnc/passwd && \
     chown -R frappe:frappe /home/frappe/.vnc
 
-# Install bench CLI and set up directory
+# Install bench CLI
 RUN pip3 install frappe-bench --break-system-packages
 
 # Switch to frappe user for remaining operations
@@ -107,8 +107,14 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | b
     nvm alias default 18 && \
     npm install -g yarn
 
-# Install code-serv
+# Install code-server
 RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# Create code-server config directory and default config
+RUN mkdir -p /home/frappe/.config/code-server && \
+    echo "bind-addr: 0.0.0.0:8443\n\
+auth: password\n\
+cert: false" > /home/frappe/.config/code-server/config.yaml
 
 # Copy supervisor configuration and startup script
 COPY --chown=frappe:frappe supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -116,10 +122,10 @@ COPY --chown=frappe:frappe start.sh /home/frappe/start.sh
 RUN chmod +x /home/frappe/start.sh
 
 # Set environment variables
-ENV NVM_DIR=/home/frappe/.nvm
-ENV PATH="/home/frappe/.nvm/versions/node/v18/bin:/home/frappe/.local/bin:${PATH}"
-ENV XDG_RUNTIME_DIR=/run/user/1000
-ENV DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
+ENV NVM_DIR=/home/frappe/.nvm \
+    PATH="/home/frappe/.nvm/versions/node/v18/bin:/home/frappe/.local/bin:${PATH}" \
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
 
 # Expose ports
 EXPOSE 8080 8443 5901
