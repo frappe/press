@@ -1,7 +1,9 @@
 FROM debian:12-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
-
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.UTF-8 \
+    LC_ALL=C.UTF-8
+    
 # Install required packages
 RUN apt-get update && apt-get install -y \
     xfce4 \
@@ -27,47 +29,100 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     libfontconfig \
     wkhtmltopdf \
+    sudo \
+    x11-xserver-utils \
+    xfonts-base \
+    pm-utils \
+    pulseaudio \
+    dbus-x11 \
+    policykit-1-gnome \
+    python3-venv \
+    cron \
+    locales \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8
 
-# Install code-server
-RUN curl -fsSL https://code-server.dev/install.sh | sh
+# Configure MariaDB root password
+RUN service mariadb start && \
+    mysqladmin -u root password 'frappe' && \
+    mysql -u root -pfrappe -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY 'frappe' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
-# Install NVM, Node.js, and Yarn
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && \
-    export NVM_DIR="/root/.nvm" && \
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" && \
-    nvm install 18 && \
-    npm install -g yarn
+# Add frappe user and add to sudoers
+RUN useradd -m -s /bin/bash frappe && \
+    echo "frappe:password" | chpasswd && \
+    usermod -aG sudo frappe && \
+    echo "frappe ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Install Bench CLI
+# Create necessary directories and set permissions
+RUN mkdir -p /home/frappe/.config /home/frappe/.vnc /home/frappe/.local && \
+    mkdir -p /var/log/supervisor && \
+    mkdir -p /run/user/1000 && \
+    mkdir -p /var/run/dbus && \
+    mkdir -p /var/lib/dbus && \
+    touch /home/frappe/.Xauthority && \
+    dbus-uuidgen > /var/lib/dbus/machine-id && \
+    chown -R frappe:frappe /home/frappe && \
+    chown -R frappe:frappe /var/log/supervisor && \
+    chown -R frappe:frappe /run/user/1000 && \
+    chmod -R 755 /home/frappe/.config && \
+    chmod -R 755 /home/frappe/.local && \
+    chmod 700 /run/user/1000 && \
+    chmod 755 /var/run/dbus && \
+    chmod -R 755 /var/lib/dbus
+
+# Set up VNC configuration
+RUN mkdir -p /home/frappe/.vnc && \
+    echo "#!/bin/bash\n\
+export XDG_SESSION_TYPE=x11\n\
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket\n\
+export XDG_RUNTIME_DIR=/run/user/1000\n\
+unset SESSION_MANAGER\n\
+unset DBUS_SESSION_BUS_ADDRESS\n\
+exec dbus-launch --exit-with-session startxfce4" > /home/frappe/.vnc/xstartup && \
+    chmod +x /home/frappe/.vnc/xstartup && \
+    echo "password" | vncpasswd -f > /home/frappe/.vnc/passwd && \
+    chmod 600 /home/frappe/.vnc/passwd && \
+    chown -R frappe:frappe /home/frappe/.vnc
+
+# Install bench CLI and set up directory
 RUN pip3 install frappe-bench --break-system-packages
 
-# Create necessary directories and files
-RUN mkdir -p /root/.vnc /var/log/supervisor && \
-    touch /root/.Xauthority
+# Switch to frappe user for remaining operations
+USER frappe
+WORKDIR /home/frappe
+ENV PATH="/home/frappe/.local/bin:$PATH"
 
-# Set up VNC password and xstartup
-RUN echo "password" | vncpasswd -f > /root/.vnc/passwd && \
-    chmod 600 /root/.vnc/passwd
+# Install NVM, Node.js, and Yarn
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && \
+    export NVM_DIR="/home/frappe/.nvm" && \
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" && \
+    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.bashrc && \
+    . ~/.bashrc && \
+    nvm install 18 && \
+    nvm use 18 && \
+    nvm alias default 18 && \
+    npm install -g yarn
 
-# Create xstartup file
-RUN echo '#!/bin/bash\nunset SESSION_MANAGER\nunset DBUS_SESSION_BUS_ADDRESS\nexec startxfce4' > /root/.vnc/xstartup && \
-    chmod +x /root/.vnc/xstartup
+# Install code-serv
+RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# Copy supervisor configuration
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Copy supervisor configuration and startup script
+COPY --chown=frappe:frappe supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --chown=frappe:frappe start.sh /home/frappe/start.sh
+RUN chmod +x /home/frappe/start.sh
+
+# Set environment variables
+ENV NVM_DIR=/home/frappe/.nvm
+ENV PATH="/home/frappe/.nvm/versions/node/v18/bin:/home/frappe/.local/bin:${PATH}"
+ENV XDG_RUNTIME_DIR=/run/user/1000
+ENV DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
 
 # Expose ports
 EXPOSE 8080 8443 5901
 
-# Create startup script
-RUN echo '#!/bin/bash\nrm -rf /tmp/.X* /tmp/.x* /tmp/ssh*\nexec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf' > /start.sh && \
-    chmod +x /start.sh
-
-# Add NVM to PATH
-ENV NVM_DIR=/root/.nvm
-ENV PATH="/root/.nvm/versions/node/v18/bin:${PATH}"
-
-CMD ["/start.sh"]
+# Set the default command
+CMD ["/home/frappe/start.sh"]
