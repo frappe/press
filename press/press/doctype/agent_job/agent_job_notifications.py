@@ -180,7 +180,7 @@ def get_default_title(job: "AgentJob") -> str:
 
 def get_default_message(job: "AgentJob") -> str:
 	if job.site:
-		return f"<b>{job.job_type}</b> job failed on site <b>{job.site}/b>."
+		return f"<b>{job.job_type}</b> job failed on site <b>{job.site}</b>."
 
 	return f"<b>{job.job_type}</b> job failed on server <b>{job.server}</b>."
 
