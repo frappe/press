@@ -708,10 +708,11 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def modify_database_user_permissions(self, site, username, mode, permissions: list, reference_name):
+	def modify_database_user_permissions(self, site, username, mode, permissions: dict, reference_name):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mode": mode,
+			"permissions": permissions,
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),

@@ -130,11 +130,22 @@ class SiteDatabaseUser(Document):
 	def modify_permissions(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		agent = Agent(server)
+		table_permissions = {}
+
+		if self.mode == "granular":
+			for x in self.permissions:
+				table_permissions[x.table] = {
+					"mode": x.mode,
+					"columns": "*"
+					if x.allow_all_columns
+					else [c.strip() for c in x.selected_columns.splitlines() if c.strip()],
+				}
+
 		agent.modify_database_user_permissions(
 			frappe.get_doc("Site", self.site),
 			self.username,
 			self.mode,
-			[],
+			table_permissions,
 			self.name,
 		)
 
