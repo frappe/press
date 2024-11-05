@@ -10,6 +10,7 @@ import ObjectList from '../ObjectList.vue';
 import RoleConfigureDialog from './RoleConfigureDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 const listOptions = ref({
 	doctype: 'Press Role',
@@ -74,8 +75,7 @@ const listOptions = ref({
 									hide();
 									return `Role ${row.title} deleted`;
 								},
-								error: e =>
-									e.messages.length ? e.messages.join('\n') : e.message
+								error: e => getToastErrorMessage(e)
 							});
 						}
 					});

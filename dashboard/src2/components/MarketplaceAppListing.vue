@@ -211,6 +211,7 @@
 import { TextEditor } from 'frappe-ui';
 import FileUploader from '@/components/FileUploader.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../utils/toast';
 
 export default {
 	name: 'MarketplaceAppOverview',
@@ -266,11 +267,7 @@ export default {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
 				},
 				onError(e) {
-					toast.error(
-						e.messages?.length
-							? e.messages.join('\n')
-							: e.message || 'Failed to fetch listing data'
-					);
+					toast.error(getToastErrorMessage(e, 'Failed to fetch listing data'));
 				}
 			};
 		},

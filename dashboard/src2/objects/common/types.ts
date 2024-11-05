@@ -122,6 +122,7 @@ export interface Tab {
 	icon: Icon;
 	route: string;
 	type: string;
+	condition?: (r: DocumentResource) => boolean;
 	childrenRoutes?: string[];
 	component?: AsyncComponent;
 	props?: (r: DocumentResource) => Record<string, unknown>;

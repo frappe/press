@@ -1,15 +1,16 @@
 import { defineAsyncComponent, h } from 'vue';
+import { Button, Badge } from 'frappe-ui';
+import { toast } from 'vue-sonner';
+import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
+import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import CodeReview from '../components/marketplace/CodeReview.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
-import { toast } from 'vue-sonner';
-import router from '../router';
 import { userCurrency, currency } from '../utils/format';
-import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { getToastErrorMessage } from '../utils/toast';
 import { isMobile } from '../utils/device';
-import { Button, Badge } from 'frappe-ui';
-import CodeReview from '../components/marketplace/CodeReview.vue';
+import router from '../router';
 
 export default {
 	doctype: 'Marketplace App',
@@ -228,11 +229,7 @@ export default {
 																						versionsOptions.reload();
 																						return 'New version added';
 																					},
-																					error: e => {
-																						return e.messages.length
-																							? e.messages.join('\n')
-																							: e.message;
-																					}
+																					error: e => getToastErrorMessage(e)
 																				}
 																			);
 																		}
@@ -295,11 +292,7 @@ export default {
 												versions.reload();
 												return 'Version removed successfully';
 											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+											error: e => getToastErrorMessage(e)
 										}
 									);
 								}
@@ -513,11 +506,7 @@ export default {
 												router.push({ name: 'Marketplace App List' });
 												return 'App deleted successfully';
 											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+											error: e => getToastErrorMessage(e)
 										});
 									}
 								});
@@ -644,11 +633,7 @@ function showReleases(row, app) {
 															releases.reload();
 															return successMessage;
 														},
-														error: e => {
-															return e.messages.length
-																? e.messages.join('\n')
-																: e.message;
-														}
+														error: e => getToastErrorMessage(e)
 													}
 												);
 											}
