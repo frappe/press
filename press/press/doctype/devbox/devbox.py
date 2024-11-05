@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import secrets
+import string
 from typing import TYPE_CHECKING
 
 import frappe
@@ -25,6 +27,9 @@ class Devbox(Document):
 		from frappe.types import DF
 
 		add_site_to_upstream: DF.Check
+		browser_port: DF.Int
+		codeserver_password: DF.Data | None
+		codeserver_port: DF.Int
 		container_id: DF.Data | None
 		cpu_cores: DF.Int
 		disk_mb: DF.Int
@@ -34,6 +39,7 @@ class Devbox(Document):
 		server: DF.Link
 		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]
 		subdomain: DF.Data
+		vnc_password: DF.Data | None
 		vnc_port: DF.Int
 		websockify_port: DF.Int
 	# end: auto-generated types
@@ -55,11 +61,20 @@ class Devbox(Document):
 	@frappe.whitelist()
 	def initialize_devbox(self):
 		devbox = self
+		devbox.vnc_password = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+		devbox.codeserver_password = "".join(
+			secrets.choice(string.ascii_letters + string.digits) for _ in range(8)
+		)
+		devbox.save()
 		server_agent = Agent(server_type="Server", server=devbox.server)
 		server_agent.create_agent_job(
 			"New Devbox",
 			path="devboxes",
-			data={"devbox_name": devbox.name},
+			data={
+				"devbox_name": devbox.name,
+				"vnc_password": devbox.vnc_password,
+				"codeserver_password": devbox.codeserver_password,
+			},
 			devbox=devbox.name,
 		)
 		reverse_proxy = frappe.db.get_value(doctype="Server", filters=devbox.server, fieldname="proxy_server")
@@ -108,9 +123,15 @@ class Devbox(Document):
 
 def process_new_devbox_job_update(job: AgentJob):
 	if job.job_type == "New Devbox" and job.status == "Success":
-		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="initialized", val=True)
-		websockify_port = json.loads(job.data)["message"]["websockify_port"]
-		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="websockify_port", val=websockify_port)
+		data = json.loads(job.data)["message"]
+		update_fields = {
+			"initialized": True,
+			"websockify_port": data["websockify_port"],
+			"vnc_port": data["vnc_port"],
+			"codeserver_port": data["codeserver_port"],
+			"browser_port": data["browser_port"],
+		}
+		frappe.db.set_value("Devbox", job.devbox, update_fields)
 
 	if job.job_type == "Add Site to Upstream" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="add_site_to_upstream", val=True)

@@ -9,12 +9,16 @@
   "subdomain",
   "domain",
   "initialized",
-  "add_site_to_upstream",
   "websockify_port",
+  "codeserver_port",
   "vnc_port",
+  "browser_port",
   "column_break_cdoo",
   "server",
   "status",
+  "add_site_to_upstream",
+  "vnc_password",
+  "codeserver_password",
   "machine_configuration_section",
   "container_id",
   "cpu_cores",
@@ -111,6 +115,30 @@
    "fieldname": "container_id",
    "fieldtype": "Data",
    "label": "Container ID"
+  },
+  {
+   "fieldname": "codeserver_port",
+   "fieldtype": "Int",
+   "label": "Codeserver Port",
+   "read_only": 1
+  },
+  {
+   "fieldname": "browser_port",
+   "fieldtype": "Int",
+   "label": "Browser Port",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vnc_password",
+   "fieldtype": "Data",
+   "label": "VNC Password",
+   "read_only": 1
+  },
+  {
+   "fieldname": "codeserver_password",
+   "fieldtype": "Data",
+   "label": "Codeserver Password",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -121,7 +149,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-10-23 20:42:24.345812",
+ "modified": "2024-11-05 22:19:26.735978",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

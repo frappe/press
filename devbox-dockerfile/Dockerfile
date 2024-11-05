@@ -128,7 +128,7 @@ ENV NVM_DIR=/home/frappe/.nvm \
     DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
 
 # Expose ports
-EXPOSE 8080 8443 5901
+EXPOSE 6969 8443 5901
 
 # Set the default command
 CMD ["/home/frappe/start.sh"]

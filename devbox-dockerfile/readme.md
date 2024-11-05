@@ -14,13 +14,13 @@ docker build -t your_image_name .
 
 ### Run
 
-8080 is for NOVNC \
+6969 is for NOVNC \
 8443 is for VSCode Server \
 5901 is for Bare VNC Port
 
 ```
 docker run -d \
-  -p 8080:8080 \
+  -p 6969:6969 \
   -p 8443:8443 \
   -p 5901:5901 \
   -v db-data:/var/lib/mysql \
