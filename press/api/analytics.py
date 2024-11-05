@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 		histogram_of_method: HistogramOfMethod
 
 
-class REQUEST_GROUP_BY(Enum):
+class GROUP_BY_RESOURCE(Enum):
 	SITE = "site"
 	SERVER = "server"
 
@@ -271,8 +271,7 @@ def get_stacked_histogram_chart_result(
 	return {"datasets": datasets, "labels": labels}
 
 
-def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=REQUEST_GROUP_BY.SITE):
-	MAX_NO_OF_PATHS = 10
+def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=GROUP_BY_RESOURCE.SITE):
 	"""
 	:param name: site/server name depending on group_by
 	:param query_type: count, duration, average_duration
@@ -307,10 +306,10 @@ def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=RE
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
-	if group_by == REQUEST_GROUP_BY.SITE:
+	if group_by == GROUP_BY_RESOURCE.SITE:
 		search.filter("match_phrase", json__site=name)
 		group_by_field = "json.request.path"
-	elif group_by == REQUEST_GROUP_BY.SERVER:
+	elif group_by == GROUP_BY_RESOURCE.SERVER:
 		search.filter("match_phrase", agent__name=name)
 		group_by_field = "json.site"
 
