@@ -273,6 +273,14 @@ def get_stacked_histogram_chart_result(
 
 def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=REQUEST_GROUP_BY.SITE):
 	MAX_NO_OF_PATHS = 10
+	"""
+	:param name: site/server name depending on group_by
+	:param query_type: count, duration, average_duration
+	:param timezone: timezone of timespan
+	:param timespan: duration in seconds
+	:param timegrain: interval in seconds
+	:param group_by: group by site or server
+	"""
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
