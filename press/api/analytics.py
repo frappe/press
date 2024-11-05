@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 		histogram_of_method: HistogramOfMethod
 
 
-class GROUP_BY_RESOURCE(Enum):
+class FILTER_BY_RESOURCE(Enum):
 	SITE = "site"
 	SERVER = "server"
 
@@ -271,15 +271,16 @@ def get_stacked_histogram_chart_result(
 	return {"datasets": datasets, "labels": labels}
 
 
-def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=GROUP_BY_RESOURCE.SITE):
+def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
 	"""
-	:param name: site/server name depending on group_by
+	:param name: site/server name depending on filter_by
 	:param query_type: count, duration, average_duration
 	:param timezone: timezone of timespan
 	:param timespan: duration in seconds
 	:param timegrain: interval in seconds
-	:param group_by: group by site or server
+	:param filter_by: filter by site or server
 	"""
+	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
@@ -306,10 +307,10 @@ def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=GR
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
-	if group_by == GROUP_BY_RESOURCE.SITE:
+	if filter_by == FILTER_BY_RESOURCE.SITE:
 		search.filter("match_phrase", json__site=name)
 		group_by_field = "json.request.path"
-	elif group_by == GROUP_BY_RESOURCE.SERVER:
+	elif filter_by == FILTER_BY_RESOURCE.SERVER:
 		search.filter("match_phrase", agent__name=name)
 		group_by_field = "json.site"
 
@@ -432,12 +433,11 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain)
 
 
-def get_slow_logs(site, query_type, timezone, timespan, timegrain):
-	database_name = frappe.db.get_value("Site", site, "database_name")
+def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server or not database_name:
+	if not log_server:
 		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/"
@@ -448,7 +448,6 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
-		.filter("match", mysql__slowlog__current_user=database_name)
 		.filter(
 			"range",
 			**{
@@ -464,6 +463,15 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		)
 		.extra(size=0)
 	)
+
+	if filter_by == FILTER_BY_RESOURCE.SITE and (
+		database_name := frappe.db.get_value("Site", name, "database_name")
+	):
+		search.filter("match", mysql__slowlog__current_user=database_name)
+	elif filter_by == FILTER_BY_RESOURCE.SERVER:
+		search.filter("match", agent__name=name)
+	else:
+		return {"datasets": [], "labels": []}
 
 	histogram_of_method = A(
 		"date_histogram",
