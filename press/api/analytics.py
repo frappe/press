@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import TYPE_CHECKING, Final, TypedDict
 
 import frappe
@@ -57,6 +58,11 @@ if TYPE_CHECKING:
 		histogram_of_method: HistogramOfMethod
 
 
+class REQUEST_GROUP_BY(Enum):
+	SITE = "site"
+	SERVER = "server"
+
+
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
@@ -93,9 +99,9 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
 	}[duration]
 
-	request_count_by_path_data = get_request_by_path(name, "count", timezone, timespan, timegrain)
-	request_duration_by_path_data = get_request_by_path(name, "duration", timezone, timespan, timegrain)
-	average_request_duration_by_path_data = get_request_by_path(
+	request_count_by_path_data = get_request_by_(name, "count", timezone, timespan, timegrain)
+	request_duration_by_path_data = get_request_by_(name, "duration", timezone, timespan, timegrain)
+	average_request_duration_by_path_data = get_request_by_(
 		name, "average_duration", timezone, timespan, timegrain
 	)
 	background_job_count_by_method_data = get_background_job_by_method(
@@ -265,7 +271,7 @@ def get_stacked_histogram_chart_result(
 	return {"datasets": datasets, "labels": labels}
 
 
-def get_request_by_path(site, query_type, timezone, timespan, timegrain):
+def get_request_by_(name, query_type, timezone, timespan, timegrain, group_by=REQUEST_GROUP_BY.SITE):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -280,7 +286,6 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
 		.filter("match_phrase", json__transaction_type="request")
 		.filter(
 			"range",
@@ -294,6 +299,12 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
+	if group_by == REQUEST_GROUP_BY.SITE:
+		search.filter("match_phrase", json__site=name)
+		group_by_field = "json.request.path"
+	elif group_by == REQUEST_GROUP_BY.SERVER:
+		search.filter("match_phrase", agent__name=name)
+		group_by_field = "json.site"
 
 	histogram_of_method = A(
 		"date_histogram",
@@ -309,18 +320,18 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"path_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket("path_count", "value_count", field="json.request.path")
+		search.aggs["method_path"].bucket("path_count", "value_count", field=group_by_field)
 
 	elif query_type == "duration":
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
@@ -330,7 +341,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
