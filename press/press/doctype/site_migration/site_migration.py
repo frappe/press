@@ -341,22 +341,26 @@ class SiteMigration(Document):
 				site.create_dns_record()
 
 	def send_fail_notification(self, reason: str | None = None):
-		site = frappe.get_doc("Site", self.site)
+		from press.press.doctype.agent_job.agent_job_notifications import create_job_failed_notification
 
+		site = frappe.get_doc("Site", self.site)
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		if reason:
 			message += f" due to {reason}"
 			agent_job_id = None
+
+			create_new_notification(
+				site.team,
+				"Site Migrate",
+				"Agent Job",
+				agent_job_id,
+				message,
+			)
 		else:
 			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
 
-		create_new_notification(
-			site.team,
-			"Site Migrate",
-			"Agent Job",
-			agent_job_id,
-			message,
-		)
+			job = frappe.get_doc("Agent Job", agent_job_id)
+			create_job_failed_notification(job, site.team, "Site Migrate", "Site Migrate", message)
 
 	def succeed(self):
 		self.status = "Success"

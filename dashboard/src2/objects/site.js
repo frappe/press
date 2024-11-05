@@ -85,7 +85,7 @@ export default {
 					type: 'select',
 					label: 'Status',
 					fieldname: 'status',
-					options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+					options: ['', 'Active', 'Inactive', 'Suspended', 'Broken', 'Archived']
 				},
 				{
 					type: 'link',
@@ -242,6 +242,7 @@ export default {
 				icon: icon('home'),
 				route: 'overview',
 				type: 'Component',
+				condition: site => site.doc?.status !== 'Archived',
 				component: defineAsyncComponent(() =>
 					import('../components/SiteOverview.vue')
 				),
@@ -254,6 +255,7 @@ export default {
 				icon: icon('bar-chart-2'),
 				route: 'insights',
 				type: 'Component',
+				condition: site => site.doc?.status !== 'Archived',
 				redirectTo: 'Site Analytics',
 				childrenRoutes: [
 					'Site Jobs',
@@ -345,6 +347,7 @@ export default {
 				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
+				condition: site => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Domain',
 					fields: ['redirect_to_primary'],
@@ -903,6 +906,7 @@ export default {
 				icon: icon('settings'),
 				route: 'site-config',
 				type: 'list',
+				condition: site => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Config',
 					filters: site => {
@@ -1035,6 +1039,7 @@ export default {
 				icon: icon('sliders'),
 				route: 'actions',
 				type: 'Component',
+				condition: site => site.doc?.status !== 'Archived',
 				component: SiteActions,
 				props: site => {
 					return { site: site.doc?.name };
@@ -1045,6 +1050,7 @@ export default {
 				icon: icon('arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
+				condition: site => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Update',
 					filters: site => {
@@ -1302,6 +1308,7 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
+				condition: site => site.doc?.status !== 'Archived',
 				list: {
 					doctype: 'Site Activity',
 					filters: site => {

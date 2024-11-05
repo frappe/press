@@ -1,5 +1,12 @@
 <template>
 	<div class="p-5" v-if="job">
+		<AlertAddressableError
+			v-if="error"
+			class="mb-5"
+			:name="error.name"
+			:title="error.title"
+			@done="$resources.errors.reload()"
+		/>
 		<Button
 			:route="{
 				name:
@@ -85,6 +92,7 @@
 </template>
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
+import AlertAddressableError from '../components/AlertAddressableError.vue';
 import { duration } from '../utils/format';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
@@ -92,7 +100,7 @@ import JobStep from '../components/JobStep.vue';
 export default {
 	name: 'JobPage',
 	props: ['id', 'objectType'],
-	components: { Tooltip, FeatherIcon, JobStep },
+	components: { Tooltip, FeatherIcon, JobStep, AlertAddressableError },
 	resources: {
 		job() {
 			return {
@@ -119,6 +127,23 @@ export default {
 					this.lastLoaded = Date.now();
 				}
 			};
+		},
+		errors() {
+			return {
+				type: 'list',
+				cache: ['Press Notification', 'Error', 'Agent Job', this.id],
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: 'Agent Job',
+					document_name: this.id,
+					is_actionable: true,
+					class: 'Error'
+				},
+				limit: 1,
+				orderBy: 'creation desc'
+			};
 		}
 	},
 	computed: {
@@ -127,6 +152,9 @@ export default {
 		},
 		job() {
 			return this.$resources.job.doc;
+		},
+		error() {
+			return this.$resources.errors?.data?.[0] ?? null;
 		},
 		dropdownOptions() {
 			return [

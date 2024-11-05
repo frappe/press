@@ -868,6 +868,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			delete_all_occurences_of_mariadb_analyze_query,
 			fetch_column_stats_update,
 		)
+		from press.press.doctype.agent_job.agent_job_notifications import (
+			send_job_failure_notification,
+		)
 		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
 			Bench,
@@ -1011,6 +1014,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
 			SiteDatabaseTableSchema.process_job_update(job)
+
+		# send failure notification if job failed
+		if job.status == "Failure":
+			send_job_failure_notification(job)
 
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1

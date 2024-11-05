@@ -188,7 +188,7 @@
 								required
 							/>
 							<FormControl
-								label="Verification code (Sent to your email)"
+								label="Verification Code"
 								type="text"
 								class="mt-4"
 								placeholder="5 digit verification code"
@@ -214,7 +214,7 @@
 								:loading="$resources.resendOTP.loading"
 								@click="$resources.resendOTP.submit()"
 							>
-								Didn't receive otp? Resend
+								Didn't receive OTP? Resend
 							</Button>
 						</form>
 						<div class="mt-6 text-center">
@@ -287,7 +287,7 @@ export default {
 	mounted() {
 		this.email = localStorage.getItem('login_email');
 		if (window.posthog?.__loaded) {
-			window.posthog.identify((this.email || window.posthog.get_distinct_id()), {
+			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
 				action: 'login_signup'
 			});
@@ -316,6 +316,7 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.accountRequestCreated = true;
+					toast.success('OTP sent to your email');
 				},
 				onError: this.onSignupError.bind(this)
 			};
