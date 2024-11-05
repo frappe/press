@@ -1,5 +1,8 @@
 <template>
-	<Dialog :options="{ title: 'Manage Database Access' }" v-model="show">
+	<Dialog
+		:options="{ title: 'Manage Database Access', size: '2xl' }"
+		v-model="show"
+	>
 		<template #body-content>
 			<!-- Not available on current plan, upsell higher plans -->
 			<div v-if="!planSupportsDatabaseAccess">
@@ -16,111 +19,35 @@
 					>
 						Upgrade Site Plan
 					</Button>
-					<ManageSitePlansDialog :site="site" v-if="showChangePlanDialog" />
+					<ManageSitePlansDialog
+						:site="site"
+						v-model="showChangePlanDialog"
+						v-if="showChangePlanDialog"
+					/>
 				</div>
 			</div>
 
 			<!-- Available on the current plan -->
 			<div v-else>
-				<div v-if="$site.doc.is_database_access_enabled">
-					<div v-if="databaseCredentials">
-						<p class="mb-2 text-base font-semibold text-gray-700">
-							Using an Analytics or Business Intelligence Tool
-						</p>
-						<p class="mb-2 text-base">
-							Use following credentials with your analytics or business
-							intelligence tool
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Host: {{ databaseCredentials.host }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Port: {{ databaseCredentials.port }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Database Name: {{ databaseCredentials.database }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Username: {{ databaseCredentials.username }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Password: {{ databaseCredentials.password }}
-						</p>
-					</div>
-					<div class="pb-2 pt-5">
-						<p class="mb-2 text-base font-semibold text-gray-700">
-							Using MariaDB Client
-						</p>
-						<p class="mb-2 text-base">
-							Run this command in your terminal to access MariaDB console
-						</p>
-						<ClickToCopyField class="ml-1" :textContent="dbAccessCommand" />
-						<p class="mt-3 text-sm">
-							Note: You should have a
-							<span class="font-mono">mariadb</span> client installed on your
-							computer.
-						</p>
-					</div>
-				</div>
-				<div v-else>
-					<p class="mb-2 text-sm">Database access is disabled for this site.</p>
-				</div>
-
-				<div class="mt-4">
-					<div
-						v-if="planSupportsDatabaseAccess && !databaseAccessEnabled"
-						class="mb-2"
-					>
-						<FormControl
-							label="Access type"
-							type="select"
-							:options="[
-								{ label: 'Read only', value: 'read_only' },
-								{ label: 'Read & Write', value: 'read_write' }
-							]"
-							v-model="mode"
-						/>
-						<p v-if="mode === 'read_write'" class="mt-2 text-base text-red-600">
-							Your credentials can be used to modify or wipe your database
-						</p>
-					</div>
-					<ErrorMessage
-						class="mt-2"
-						:message="
-							$site.enableDatabaseAccess.error ||
-							$site.disableDatabaseAccess.error ||
-							error
-						"
-					/>
-					<Button
-						v-if="planSupportsDatabaseAccess && !databaseAccessEnabled"
-						@click="enableDatabaseAccess"
-						:loading="
-							$site.enableDatabaseAccess.loading || pollingAgentJob?.loading
-						"
-						variant="solid"
-						class="mt-2 w-full"
-					>
-						Enable Access
-					</Button>
-					<Button
-						v-if="planSupportsDatabaseAccess && databaseAccessEnabled"
-						@click="$site.disableDatabaseAccess.submit()"
-						:loading="$site.disableDatabaseAccess.loading"
-						class="w-full"
-					>
-						Disable Access
-					</Button>
-				</div>
+				<ObjectList :options="listOptions" />
 			</div>
 		</template>
 	</Dialog>
+
+	<SiteDatabaseUserCredentialDialog
+		:name="selectedUser"
+		v-model="showDatabaseUserCredentialDialog"
+		v-if="showDatabaseUserCredentialDialog"
+	/>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
 import ClickToCopyField from './ClickToCopyField.vue';
-import { pollJobStatus } from '../utils/agentJob';
+import ObjectList from './ObjectList.vue';
+import { date } from '../utils/format';
+import { icon } from '../utils/components';
+import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -129,65 +56,118 @@ export default {
 		ManageSitePlansDialog: defineAsyncComponent(() =>
 			import('./ManageSitePlansDialog.vue')
 		),
-		ClickToCopyField
+		ClickToCopyField,
+		ObjectList,
+		SiteDatabaseUserCredentialDialog
 	},
 	data() {
 		return {
 			mode: 'read_only',
 			show: true,
 			showChangePlanDialog: false,
-			error: null,
-			pollingAgentJob: null
+			selectedUser: '',
+			showDatabaseUserCredentialDialog: false
 		};
 	},
-	mounted() {
-		this.fetchDatabaseCredentials();
-	},
-	methods: {
-		enableDatabaseAccess() {
-			return this.$site.enableDatabaseAccess.submit(
-				{ mode: this.mode },
-				{
-					onSuccess: result => {
-						let jobId = result.message;
-						this.pollingAgentJob = pollJobStatus(jobId, status => {
-							if (status === 'Success') {
-								this.fetchDatabaseCredentials();
-								return true;
-							} else if (status === 'Failure') {
-								this.error = 'Failed to enable database access';
-								return true;
-							}
-						});
-					}
-				}
-			);
-		},
-		fetchDatabaseCredentials() {
-			if (this.planSupportsDatabaseAccess && this.databaseAccessEnabled) {
-				this.$site.getDatabaseCredentials.fetch();
+	watch: {
+		showDatabaseUserCredentialDialog(val) {
+			if (!val) {
+				this.show = true;
 			}
 		}
 	},
 	computed: {
-		dbAccessCommand() {
-			if (this.databaseCredentials) {
-				const credentials = this.databaseCredentials;
-				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
-			}
-			return null;
-		},
-		databaseCredentials() {
-			return this.$site.getDatabaseCredentials.data;
-		},
-		databaseAccessEnabled() {
-			return this.$site.doc.is_database_access_enabled;
-		},
-		planSupportsDatabaseAccess() {
-			return this.sitePlan?.database_access;
+		listOptions() {
+			return {
+				doctype: 'Site Database User',
+				filters: {
+					site: this.site,
+					status: ['!=', 'Archived']
+				},
+				searchField: 'username',
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Status',
+							fieldname: 'status',
+							options: ['', 'Draft', 'Pending', 'Active', 'Failed']
+						}
+					];
+				},
+				columns: [
+					{
+						label: 'Username',
+						fieldname: 'username',
+						width: 1
+					},
+					{
+						label: 'Status',
+						fieldname: 'status',
+						width: 0.5,
+						align: 'center',
+						type: 'Badge'
+					},
+					{
+						label: 'Mode',
+						fieldname: 'mode',
+						width: 0.5,
+						align: 'center',
+						format: (value, row) => {
+							return {
+								read_only: 'Read Only',
+								read_write: 'Read/Write',
+								granular: 'Granular'
+							}[value];
+						}
+					},
+					{
+						label: 'Created On',
+						fieldname: 'creation',
+						width: 0.5,
+						align: 'center',
+						format: value => date(value, 'll')
+					}
+				],
+				rowActions: ({ row, listResource, documentResource }) => {
+					return [
+						{
+							label: 'View Credential',
+							onClick: () => {
+								this.show = false;
+								this.selectedUser = row.name;
+								this.showDatabaseUserCredentialDialog = true;
+							}
+						},
+						{
+							label: 'Configure User',
+							onClick() {}
+						},
+						{
+							label: 'Delete User',
+							onClick() {}
+						}
+					];
+				},
+				primaryAction() {
+					return {
+						label: 'Add User',
+						variant: 'solid',
+						slots: {
+							prefix: icon('plus')
+						},
+						onClick() {
+							alert('Not Implemented');
+						}
+					};
+				}
+			};
 		},
 		sitePlan() {
 			return this.$site.doc.current_plan;
+		},
+		planSupportsDatabaseAccess() {
+			return this.sitePlan?.database_access;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);

@@ -2559,10 +2559,10 @@ class Site(Document, TagHelpers):
 				"doc_method": "clear_site_cache",
 			},
 			{
-				"action": "Access site database",
-				"description": "Enable read/write access to your site database",
-				"button_label": "Enable",
-				"doc_method": "enable_database_access",
+				"action": "Manage database access",
+				"description": "Manage users and permissions for your site database",
+				"button_label": "Manage",
+				"doc_method": "dummy",
 			},
 			{
 				"action": "Deactivate site",

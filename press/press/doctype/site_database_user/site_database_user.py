@@ -9,6 +9,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -160,8 +161,8 @@ class SiteDatabaseUser(Document):
 			self.name,
 		)
 
-	@frappe.whitelist()
-	def get_credentials(self):
+	@dashboard_whitelist()
+	def get_credential(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		return {
