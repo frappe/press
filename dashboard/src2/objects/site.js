@@ -15,6 +15,7 @@ import { getRunningJobs } from '../utils/agentJob';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import dayjs from '../utils/dayjs';
 import { bytes, date, userCurrency } from '../utils/format';
+import { getToastErrorMessage } from '../utils/toast';
 import { getDocResource } from '../utils/resource';
 import { trialDays } from '../utils/site';
 import { clusterOptions, getUpsellBanner } from './common';
@@ -454,11 +455,7 @@ export default {
 														hide();
 														return 'Domain removed';
 													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -484,11 +481,7 @@ export default {
 														hide();
 														return 'Primary domain set';
 													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -517,11 +510,7 @@ export default {
 														hide();
 														return 'Domain redirected';
 													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -550,11 +539,7 @@ export default {
 														hide();
 														return 'Redirect removed';
 													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -794,11 +779,7 @@ export default {
 																});
 																return 'Backup restore scheduled successfully.';
 															},
-															error: e => {
-																return e.messages?.length
-																	? e.messages.join('\n')
-																	: e.message;
-															}
+															error: e => getToastErrorMessage(e)
 														}
 													);
 												}
@@ -838,11 +819,7 @@ export default {
 																	});
 																	return 'Backup restore scheduled successfully.';
 																},
-																error: e => {
-																	return e.messages?.length
-																		? e.messages.join('\n')
-																		: e.message;
-																}
+																error: e => getToastErrorMessage(e)
 															}
 														);
 													}
@@ -881,11 +858,7 @@ export default {
 													});
 													return 'Backup scheduled successfully.';
 												},
-												error: e => {
-													return e.messages?.length
-														? e.messages.join('\n')
-														: e.message;
-												}
+												error: e => getToastErrorMessage(e)
 											}
 										);
 									}
@@ -1019,11 +992,7 @@ export default {
 												{
 													loading: 'Deleting config...',
 													success: () => `Config ${row.key} removed`,
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -1124,11 +1093,7 @@ export default {
 														site.reload();
 														return 'Update cancelled';
 													},
-													error: e => {
-														return e.messages?.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -1422,10 +1387,8 @@ export default {
 													toast.success('Email updated successfully');
 												},
 												onError(e) {
-													throw new Error(
-														e.messages
-															? e.messages.join('\n')
-															: e.message || 'Error updating email'
+													toast.error(
+														getToastErrorMessage(e, 'Error updating email')
 													);
 												}
 											}

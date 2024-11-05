@@ -10,6 +10,7 @@ import PatchAppDialog from '../components/group/PatchAppDialog.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
 import { date, duration } from '../utils/format';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
@@ -270,11 +271,7 @@ export default {
 												apps.reload();
 												return `Latest Updates Fetched for ${row.title}`;
 											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+											error: e => getToastErrorMessage(e)
 										}
 									);
 								}
@@ -313,11 +310,7 @@ export default {
 														apps.reload();
 														return 'App Removed';
 													},
-													error: e => {
-														return e.messages.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -385,11 +378,7 @@ export default {
 
 														return `App ${app.title} added`;
 													},
-													error: e => {
-														return e?.messages.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -539,11 +528,7 @@ export default {
 													deploys.reload();
 													return 'Changes Deployed';
 												},
-												error: e => {
-													return e.messages.length
-														? e.messages.join('\n')
-														: e.message;
-												}
+												error: e => getToastErrorMessage(e)
 											});
 										}
 									});
@@ -679,11 +664,7 @@ export default {
 												{
 													loading: 'Deleting config...',
 													success: () => `Config ${row.key} removed`,
-													error: e => {
-														return e.messages.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}
@@ -926,11 +907,7 @@ export default {
 													loading: 'Deleting  environment variable...',
 													success: () =>
 														`Environment variable ${row.key} removed`,
-													error: e => {
-														return e.messages.length
-															? e.messages.join('\n')
-															: e.message;
-													}
+													error: e => getToastErrorMessage(e)
 												}
 											);
 										}

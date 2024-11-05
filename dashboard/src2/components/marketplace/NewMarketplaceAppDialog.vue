@@ -55,6 +55,7 @@
 import { toast } from 'vue-sonner';
 import GitHubAppSelector from '../GitHubAppSelector.vue';
 import LinkControl from '../LinkControl.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	components: {
@@ -123,9 +124,7 @@ export default {
 					});
 					return 'New app added';
 				},
-				error: e => {
-					return e.messages.length ? e.messages.join('\n') : e.message;
-				}
+				error: e => getToastErrorMessage(e)
 			});
 		},
 		validateApp(data) {

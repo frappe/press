@@ -92,6 +92,7 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import AlertBanner from '../../AlertBanner.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../../utils/toast';
 
 export default {
 	props: [
@@ -131,9 +132,7 @@ export default {
 					});
 					return 'The job to add a database index has been sucessfully created.';
 				},
-				error: e => {
-					return e.messages.length ? e.messages.join('\n') : e.message;
-				}
+				error: e => getToastErrorMessage(e)
 			});
 		},
 		shouldShowAnalyzeQueryButton() {

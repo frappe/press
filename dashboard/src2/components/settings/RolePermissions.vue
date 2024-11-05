@@ -215,10 +215,7 @@ const rolePermissions = ref({
 											permissions.reload();
 											return 'Permission added successfully';
 										},
-										error: e =>
-											e.messages.length
-												? e.messages.join('\n')
-												: 'An error occurred'
+										error: e => getToastErrorMessage(e)
 									}
 								);
 							}
