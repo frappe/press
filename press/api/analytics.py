@@ -99,34 +99,25 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
 	}[duration]
 
-	request_count_by_path_data = get_request_by_(name, "count", timezone, timespan, timegrain)
-	request_duration_by_path_data = get_request_by_(name, "duration", timezone, timespan, timegrain)
-	average_request_duration_by_path_data = get_request_by_(
-		name, "average_duration", timezone, timespan, timegrain
-	)
-	background_job_count_by_method_data = get_background_job_by_method(
-		name, "count", timezone, timespan, timegrain
-	)
-	background_job_duration_by_method_data = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain
-	)
-	average_background_job_duration_by_method_data = get_background_job_by_method(
-		name, "average_duration", timezone, timespan, timegrain
-	)
-	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
-	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
-
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	return {
-		"request_count_by_path": request_count_by_path_data,
-		"request_duration_by_path": request_duration_by_path_data,
-		"average_request_duration_by_path": average_request_duration_by_path_data,
-		"background_job_count_by_method": background_job_count_by_method_data,
-		"background_job_duration_by_method": background_job_duration_by_method_data,
-		"average_background_job_duration_by_method": average_background_job_duration_by_method_data,
-		"slow_logs_by_count": slow_logs_by_count,
-		"slow_logs_by_duration": slow_logs_by_duration,
+		"request_count_by_path": get_request_by_(name, "count", timezone, timespan, timegrain),
+		"request_duration_by_path": get_request_by_(name, "duration", timezone, timespan, timegrain),
+		"average_request_duration_by_path": get_request_by_(
+			name, "average_duration", timezone, timespan, timegrain
+		),
+		"background_job_count_by_method": get_background_job_by_method(
+			name, "count", timezone, timespan, timegrain
+		),
+		"background_job_duration_by_method": get_background_job_by_method(
+			name, "duration", timezone, timespan, timegrain
+		),
+		"average_background_job_duration_by_method": get_background_job_by_method(
+			name, "average_duration", timezone, timespan, timegrain
+		),
+		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
+		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 	}
