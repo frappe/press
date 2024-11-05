@@ -5,35 +5,29 @@
 			'flex-col': $isMobile
 		}"
 	>
-		<div v-if="$isMobile" class="ml-5 mt-5 w-60 divide-y rounded-sm border">
+		<div
+			:class="{
+				'ml-5 mt-5 w-60 divide-y rounded-sm border': $isMobile,
+				'w-60': !$isMobile
+			}"
+		>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
-					v
 					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
 					:class="{
 						' bg-gray-50 text-gray-800': isActiveTab(tab),
-						'text-gray-600': !isActiveTab(tab)
+						'text-gray-600': !isActiveTab(tab),
+						'border-b': !$isMobile
 					}"
 				>
-					<div class="px-4 py-2">
-						{{ tab.label }}
-					</div>
-				</router-link>
-			</template>
-		</div>
-		<div v-if="!$isMobile" class="w-60">
-			<template v-for="tab in tabs">
-				<router-link
-					:to="{ name: tab.value }"
-					v
-					class="flex cursor-pointer border-b text-base text-gray-600 hover:bg-gray-100"
-					:class="{
-						' bg-gray-50 text-gray-800': isActiveTab(tab),
-						'text-gray-600': !isActiveTab(tab)
-					}"
-				>
-					<div class="px-4 py-2">
+					<div
+						class="px-4"
+						:class="{
+							'py-2': $isMobile,
+							'py-2.5': !$isMobile
+						}"
+					>
 						{{ tab.label }}
 					</div>
 				</router-link>
