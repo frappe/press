@@ -308,10 +308,10 @@ def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=F
 		.extra(size=0)
 	)
 	if filter_by == FILTER_BY_RESOURCE.SITE:
-		search.filter("match_phrase", json__site=name)
+		search = search.filter("match_phrase", json__site=name)
 		group_by_field = "json.request.path"
 	elif filter_by == FILTER_BY_RESOURCE.SERVER:
-		search.filter("match_phrase", agent__name=name)
+		search = search.filter("match_phrase", agent__name=name)
 		group_by_field = "json.site"
 
 	histogram_of_method = A(
@@ -463,13 +463,12 @@ def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FIL
 		)
 		.extra(size=0)
 	)
-
 	if filter_by == FILTER_BY_RESOURCE.SITE and (
 		database_name := frappe.db.get_value("Site", name, "database_name")
 	):
-		search.filter("match", mysql__slowlog__current_user=database_name)
+		search = search.filter("match", mysql__slowlog__current_user=database_name)
 	elif filter_by == FILTER_BY_RESOURCE.SERVER:
-		search.filter("match", agent__name=name)
+		search = search.filter("match", agent__name=name)
 	else:
 		return {"datasets": [], "labels": []}
 
