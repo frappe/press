@@ -311,6 +311,38 @@ def analytics(name, query, timezone, duration):
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)
 
 
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def get_request_by_site(name, query, timezone, duration):
+	from press.api.analytics import FILTER_BY_RESOURCE, get_request_by_
+
+	timespan, timegrain = {
+		"1 Hour": (60 * 60, 2 * 60),
+		"6 Hour": (6 * 60 * 60, 5 * 60),
+		"24 Hour": (24 * 60 * 60, 30 * 60),
+		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
+		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
+	}[duration]
+
+	return get_request_by_(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def get_slow_logs_by_site(name, query, timezone, duration):
+	from press.api.analytics import FILTER_BY_RESOURCE, get_slow_logs
+
+	timespan, timegrain = {
+		"1 Hour": (60 * 60, 2 * 60),
+		"6 Hour": (6 * 60 * 60, 5 * 60),
+		"24 Hour": (24 * 60 * 60, 30 * 60),
+		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
+		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
+	}[duration]
+
+	return get_slow_logs(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER)
+
+
 def prometheus_query(query, function, timezone, timespan, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:

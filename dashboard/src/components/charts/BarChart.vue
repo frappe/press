@@ -45,6 +45,7 @@ import {
 	MarkLineComponent
 } from 'echarts/components';
 import VChart from 'vue-echarts';
+import Card from '../global/Card.vue';
 import theme from '../../../tailwind.theme.json';
 import { formatBytes, getUnit } from './utils';
 
