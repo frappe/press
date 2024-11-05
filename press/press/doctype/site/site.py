@@ -2703,11 +2703,6 @@ def site_cleanup_after_archive(site):
 	delete_site_domains(site)
 	delete_site_subdomain(site)
 	release_name(site)
-	delete_permissions(site)
-
-
-def delete_permissions(site):
-	frappe.db.delete("Press Role Permission", {"site": site})
 
 
 def delete_site_subdomain(site):
