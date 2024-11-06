@@ -679,6 +679,7 @@ def get_total_installs_by_app():
 		"Site App",
 		fields=["app", "count(*) as count"],
 		group_by="app",
+		order_by=None,
 	)
 	return {installs["app"]: installs["count"] for installs in total_installs}
 
