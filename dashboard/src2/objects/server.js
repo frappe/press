@@ -209,7 +209,7 @@ export default {
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../../src/views/server/ServerAnalytics.vue')
+					import('../components/server/ServerCharts.vue')
 				),
 				props: server => {
 					return {
