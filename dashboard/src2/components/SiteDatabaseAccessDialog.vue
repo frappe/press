@@ -39,6 +39,12 @@
 		v-model="showDatabaseUserCredentialDialog"
 		v-if="showDatabaseUserCredentialDialog"
 	/>
+
+	<SiteDatabaseAddUserDialog
+		:site="site"
+		v-model="showDatabaseAddUserDialog"
+		v-if="showDatabaseAddUserDialog"
+	/>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
@@ -48,6 +54,7 @@ import ObjectList from './ObjectList.vue';
 import { date } from '../utils/format';
 import { icon } from '../utils/components';
 import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
+import SiteDatabaseAddUserDialog from './site_database_user/SiteDatabaseAddUserDialog.vue';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -58,7 +65,8 @@ export default {
 		),
 		ClickToCopyField,
 		ObjectList,
-		SiteDatabaseUserCredentialDialog
+		SiteDatabaseUserCredentialDialog,
+		SiteDatabaseAddUserDialog
 	},
 	data() {
 		return {
@@ -66,11 +74,17 @@ export default {
 			show: true,
 			showChangePlanDialog: false,
 			selectedUser: '',
-			showDatabaseUserCredentialDialog: false
+			showDatabaseUserCredentialDialog: false,
+			showDatabaseAddUserDialog: false
 		};
 	},
 	watch: {
 		showDatabaseUserCredentialDialog(val) {
+			if (!val) {
+				this.show = true;
+			}
+		},
+		showDatabaseAddUserDialog(val) {
 			if (!val) {
 				this.show = true;
 			}
@@ -149,15 +163,16 @@ export default {
 						}
 					];
 				},
-				primaryAction() {
+				primaryAction: () => {
 					return {
 						label: 'Add User',
 						variant: 'solid',
 						slots: {
 							prefix: icon('plus')
 						},
-						onClick() {
-							alert('Not Implemented');
+						onClick: () => {
+							this.show = false;
+							this.showDatabaseAddUserDialog = true;
 						}
 					};
 				}

@@ -33,7 +33,7 @@ class SiteDatabaseUser(Document):
 		password: DF.Password
 		permissions: DF.Table[SiteDatabaseTablePermission]
 		site: DF.Link
-		status: DF.Literal["Draft", "Pending", "Active", "Failed", "Archived"]
+		status: DF.Literal["Pending", "Active", "Failed", "Archived"]
 		team: DF.Link
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
@@ -42,6 +42,8 @@ class SiteDatabaseUser(Document):
 
 	dashboard_fields = (
 		"status",
+		"site",
+		"team",
 		"user_added_in_proxysql",
 		"user_created_in_database",
 		"username",
@@ -52,18 +54,20 @@ class SiteDatabaseUser(Document):
 	)
 
 	def validate(self):
-		if self.is_new():
-			self.username = "user_" + frappe.generate_hash(length=10)
-			self.password = frappe.generate_hash(length=15)
-
-		if not self.username:
-			frappe.throw("Username can't be blank")
-
-		if not self.password:
-			frappe.throw("Password can't be blank")
-
 		if not self.has_value_changed("status"):
 			self._raise_error_if_archived()
+
+	def before_insert(self):
+		site = frappe.get_doc("Site", self.site)
+		if not site.has_permission():
+			frappe.throw("You don't have permission to create database user")
+		self.status = "Pending"
+		self.database = ""
+		self.username = "user_" + frappe.generate_hash(length=10)
+		self.password = frappe.generate_hash(length=15)
+
+	def after_insert(self):
+		self.apply_changes()
 
 	def _raise_error_if_archived(self):
 		if self.status == "Archived":

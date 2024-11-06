@@ -73,12 +73,12 @@
    "options": "Site Database Table Permission"
   },
   {
-   "default": "Draft",
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending\nActive\nFailed\nArchived",
+   "options": "Pending\nActive\nFailed\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -142,7 +142,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-04 17:38:55.911186",
+ "modified": "2024-11-06 15:53:10.997328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
