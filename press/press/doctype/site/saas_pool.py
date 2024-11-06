@@ -81,7 +81,7 @@ class SaasSitePool:
 				"Site",
 				{
 					"is_standby": 1,
-					"standby_for": "erpnext",
+					"standby_for": self.app,
 					"hybrid_saas_pool": pool_name,
 					"status": "Active",
 				},
