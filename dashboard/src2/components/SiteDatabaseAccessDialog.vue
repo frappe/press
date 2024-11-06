@@ -40,8 +40,9 @@
 		v-if="showDatabaseUserCredentialDialog"
 	/>
 
-	<SiteDatabaseAddUserDialog
+	<SiteDatabaseAddEditUserDialog
 		:site="site"
+		:db_user_name="selectedUser"
 		v-model="showDatabaseAddUserDialog"
 		v-if="showDatabaseAddUserDialog"
 		@success="showDatabaseAddUserDialog = false"
@@ -55,7 +56,7 @@ import ObjectList from './ObjectList.vue';
 import { date } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
 import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
-import SiteDatabaseAddUserDialog from './site_database_user/SiteDatabaseAddUserDialog.vue';
+import SiteDatabaseAddEditUserDialog from './site_database_user/SiteDatabaseAddEditUserDialog.vue';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -67,7 +68,7 @@ export default {
 		ClickToCopyField,
 		ObjectList,
 		SiteDatabaseUserCredentialDialog,
-		SiteDatabaseAddUserDialog
+		SiteDatabaseAddEditUserDialog
 	},
 	data() {
 		return {
@@ -173,7 +174,11 @@ export default {
 						},
 						{
 							label: 'Configure User',
-							onClick() {}
+							onClick: () => {
+								this.selectedUser = row.name;
+								this.show = false;
+								this.showDatabaseAddUserDialog = true;
+							}
 						},
 						{
 							label: 'Delete User',
@@ -219,6 +224,7 @@ export default {
 						},
 						onClick: () => {
 							this.show = false;
+							this.selectedUser = null;
 							this.showDatabaseAddUserDialog = true;
 						}
 					};

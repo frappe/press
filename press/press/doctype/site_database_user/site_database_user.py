@@ -43,10 +43,8 @@ class SiteDatabaseUser(Document):
 	dashboard_fields = (
 		"status",
 		"site",
-		"team",
-		"user_added_in_proxysql",
-		"user_created_in_database",
 		"username",
+		"team",
 		"mode",
 		"failed_agent_job",
 		"failure_reason",
@@ -56,6 +54,9 @@ class SiteDatabaseUser(Document):
 	def validate(self):
 		if not self.has_value_changed("status"):
 			self._raise_error_if_archived()
+		# remove permissions if not granular mode
+		if self.mode != "granular":
+			self.permissions.clear()
 
 	def before_insert(self):
 		site = frappe.get_doc("Site", self.site)
@@ -74,6 +75,29 @@ class SiteDatabaseUser(Document):
 			frappe.throw("user has been deleted and no further changes can be made")
 
 	@dashboard_whitelist()
+	def save_and_apply_changes(self, mode: str, permissions: list):
+		if self.status == "Pending" or self.status == "Archived":
+			frappe.throw(f"You can't modify information in {self.status} state. Please try again later")
+		self.mode = mode
+		new_permissions = permissions
+		new_permission_tables = [p["table"] for p in new_permissions]
+		current_permission_tables = [p.table for p in self.permissions]
+		# add new permissions
+		for permission in new_permissions:
+			if permission["table"] not in current_permission_tables:
+				self.append("permissions", permission)
+		# modify permissions
+		for permission in self.permissions:
+			for new_permission in new_permissions:
+				if permission.table == new_permission["table"]:
+					permission.update(new_permission)
+					break
+		# delete permissions which are not in the modified list
+		self.permissions = [p for p in self.permissions if p.table in new_permission_tables]
+		self.save()
+		self.apply_changes()
+
+	@frappe.whitelist()
 	def apply_changes(self):
 		if not self.user_created_in_database:
 			self.create_user()
