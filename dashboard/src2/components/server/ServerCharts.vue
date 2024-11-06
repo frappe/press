@@ -186,16 +186,16 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slow logs frequency by site"
+				title="Slow logs frequency"
 			>
 				<BarChart
-					title="Slow logs frequency by site"
-					:key="slowLogsCountBySiteData"
-					:data="slowLogsCountBySiteData"
+					title="Slow logs frequency"
+					:key="slowLogsCountData"
+					:data="slowLogsCountData"
 					unit="queries"
 					:chartTheme="chartColors"
-					:loading="$resources.slowLogsCountBySite.loading"
-					:error="$resources.slowLogsCountBySite.error"
+					:loading="$resources.slowLogsCount.loading"
+					:error="$resources.slowLogsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -204,16 +204,16 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slowest logs by site"
+				title="Slowest logs"
 			>
 				<BarChart
-					title="Slowest logs by site"
-					:key="slowLogsDurationBySiteData"
-					:data="slowLogsDurationBySiteData"
+					title="Slowest logs"
+					:key="slowLogsDurationData"
+					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="chartColors"
-					:loading="$resources.slowLogsDurationBySite.loading"
-					:error="$resources.slowLogsDurationBySite.error"
+					:loading="$resources.slowLogsDuration.loading"
+					:error="$resources.slowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -365,7 +365,7 @@ export default {
 					this.showAdvancedAnalytics && this.isServerType('Application Server')
 			};
 		},
-		slowLogsCountBySite() {
+		slowLogsCount() {
 			return {
 				url: 'press.api.server.get_slow_logs_by_site',
 				params: {
@@ -378,7 +378,7 @@ export default {
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
 			};
 		},
-		slowLogsDurationBySite() {
+		slowLogsDuration() {
 			return {
 				url: 'press.api.server.get_slow_logs_by_site',
 				params: {
@@ -464,14 +464,14 @@ export default {
 
 			return requests;
 		},
-		slowLogsDurationBySiteData() {
-			const slowLogs = this.$resources.slowLogsDurationBySite.data;
+		slowLogsDurationData() {
+			const slowLogs = this.$resources.slowLogsDuration.data;
 			if (!slowLogs) return;
 
 			return slowLogs;
 		},
-		slowLogsCountBySiteData() {
-			const slowLogs = this.$resources.slowLogsCountBySite.data;
+		slowLogsCountData() {
+			const slowLogs = this.$resources.slowLogsCount.data;
 			if (!slowLogs) return;
 
 			return slowLogs;
