@@ -88,7 +88,7 @@ class SaasSitePool:
 			)
 
 			if hybrid_standby_count > self.saas_settings.standby_pool_size:
-				break
+				continue
 
 			sites_created = 0
 			while sites_created < self.saas_settings.standby_queue_size:
