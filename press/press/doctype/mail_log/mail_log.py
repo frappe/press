@@ -1,7 +1,8 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -27,3 +28,8 @@ class MailLog(Document):
 	# end: auto-generated types
 
 	pass
+
+
+def on_doctype_update():
+	frappe.db.add_index("Mail Log", ["site", "status"])
+	frappe.db.add_index("Mail Log", ["site", "creation"])
