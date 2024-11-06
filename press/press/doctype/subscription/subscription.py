@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 import frappe
 import rq
 from frappe.model.document import Document
@@ -252,6 +254,7 @@ def create_usage_records():
 	"""
 	Creates daily usage records for paid Subscriptions
 	"""
+	start_time = datetime.now()
 	free_sites = sites_with_free_hosting()
 	settings = frappe.get_single("Press Settings")
 	subscriptions = frappe.db.get_all(
@@ -271,6 +274,10 @@ def create_usage_records():
 	for name in subscriptions:
 		if has_job_timeout_exceeded():
 			return
+		if timedelta(datetime.now() - start_time).total_seconds() > 900:
+			# if job takes more than 15 minutes, stop process pending ones
+			# those ones will be picked up in the next job
+			break
 		subscription = frappe.get_cached_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
