@@ -78,7 +78,7 @@ export default {
 	},
 	data() {
 		return {
-			mode: 'granular',
+			mode: 'read_only',
 			permissions: [],
 			lastGenratedRowId: 0
 		};
@@ -104,13 +104,24 @@ export default {
 			return {
 				url: 'press.api.client.insert',
 				makeParams() {
+					let permissions = [];
+					this.permissions.forEach(permission => {
+						if (permission.table) {
+							permissions.push({
+								table: permission.table,
+								mode: permission.mode,
+								allow_all_columns: permission.columns.length == 0,
+								selected_columns: permission.columns.join('\n')
+							});
+						}
+					});
 					return {
 						doc: {
 							doctype: 'Site Database User',
 							team: this.$team.doc.name,
 							site: this.site,
 							mode: this.mode,
-							permissions: []
+							permissions: permissions
 						}
 					};
 				},
@@ -127,17 +138,17 @@ export default {
 				data: () => this.permissions,
 				columns: [
 					{
-						label: 'Table Name',
-						fieldname: 'table_name',
+						label: 'Table',
+						fieldname: 'table',
 						width: 1,
 						type: 'Component',
 						component: ({ row }) => {
 							return h(FormControl, {
 								class: 'w-full -mx-1.5',
 								type: 'autocomplete',
-								modelValue: row.table_name,
+								modelValue: row.table,
 								'onUpdate:modelValue': newValue => {
-									row.table_name = newValue?.value || '';
+									row.table = newValue?.value || '';
 								},
 								options: this.autocompleteTableOptions
 							});
@@ -255,7 +266,7 @@ export default {
 				...this.permissions,
 				{
 					name: String(this.lastGenratedRowId),
-					table_name: '',
+					table: '',
 					mode: 'read_only',
 					columns: []
 				}

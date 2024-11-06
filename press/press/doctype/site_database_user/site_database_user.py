@@ -73,7 +73,7 @@ class SiteDatabaseUser(Document):
 		if self.status == "Archived":
 			frappe.throw("user has been deleted and no further changes can be made")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def apply_changes(self):
 		if not self.user_created_in_database:
 			self.create_user()
