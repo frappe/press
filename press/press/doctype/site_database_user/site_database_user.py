@@ -178,9 +178,12 @@ class SiteDatabaseUser(Document):
 			"mode": self.mode,
 		}
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def archive(self):
 		self._raise_error_if_archived()
+		self.status = "Pending"
+		self.save()
+
 		if self.user_created_in_database:
 			self.remove_user()
 		if self.user_added_in_proxysql:
@@ -188,7 +191,7 @@ class SiteDatabaseUser(Document):
 
 		if not self.user_created_in_database and not self.user_added_in_proxysql:
 			self.status = "Archived"
-			self.save(ignore_permissions=True)
+			self.save()
 
 	@staticmethod
 	def process_job_update(job):  # noqa: C901

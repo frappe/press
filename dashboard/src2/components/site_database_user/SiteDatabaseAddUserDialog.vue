@@ -116,6 +116,7 @@ export default {
 				},
 				onSuccess() {
 					toast.success('User created successfully');
+					this.$emit('success');
 				}
 			};
 		}

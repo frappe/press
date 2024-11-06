@@ -44,6 +44,7 @@
 		:site="site"
 		v-model="showDatabaseAddUserDialog"
 		v-if="showDatabaseAddUserDialog"
+		@success="showDatabaseAddUserDialog = false"
 	/>
 </template>
 <script>
@@ -52,7 +53,7 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import ClickToCopyField from './ClickToCopyField.vue';
 import ObjectList from './ObjectList.vue';
 import { date } from '../utils/format';
-import { icon } from '../utils/components';
+import { confirmDialog, icon } from '../utils/components';
 import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
 import SiteDatabaseAddUserDialog from './site_database_user/SiteDatabaseAddUserDialog.vue';
 
@@ -88,6 +89,23 @@ export default {
 			if (!val) {
 				this.show = true;
 			}
+		}
+	},
+	resources: {
+		deleteSiteDatabaseUser() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				onSuccess() {
+					toast.success('Database User will be deleted shortly');
+				},
+				onError(err) {
+					toast.error(
+						err.messages.length
+							? err.messages.join('\n')
+							: 'Failed to initiate database user deletion'
+					);
+				}
+			};
 		}
 	},
 	computed: {
@@ -159,7 +177,36 @@ export default {
 						},
 						{
 							label: 'Delete User',
-							onClick() {}
+							onClick: event => {
+								this.show = false;
+								event.stopPropagation();
+								confirmDialog({
+									title: 'Delete Database User',
+									message: `Are you sure you want to delete the database user ?<br>`,
+									primaryAction: {
+										label: 'Delete',
+										variant: 'solid',
+										theme: 'red',
+										onClick: ({ hide }) => {
+											this.$resources.deleteSiteDatabaseUser.submit({
+												dt: 'Site Database User',
+												dn: row.name,
+												method: 'archive'
+											});
+											this.$resources.deleteSiteDatabaseUser.promise.then(
+												() => {
+													hide();
+													this.show = true;
+												}
+											);
+											return this.$resources.deleteSiteDatabaseUser.promise;
+										}
+									},
+									onSuccess: () => {
+										listResource.refresh();
+									}
+								});
+							}
 						}
 					];
 				},
@@ -186,6 +233,11 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		}
+	},
+	methods: {
+		deleteSiteDatabaseUser(docname) {
+			return;
 		}
 	}
 };
