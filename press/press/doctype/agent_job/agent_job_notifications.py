@@ -53,6 +53,7 @@ if typing.TYPE_CHECKING:
 
 DOC_URLS = {
 	"oom-issues": "https://frappecloud.com/docs/common-issues/oom-issues",
+	"row-size-too-large-error": "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
 }
 
 
@@ -79,6 +80,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 	return [
 		("returned non-zero exit status 137", update_with_oom_error),
 		("returned non-zero exit status 143", update_with_oom_error),
+		("Row size too large", update_with_row_size_too_large_error),
 	]
 
 
@@ -176,6 +178,21 @@ def update_with_oom_error(
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
 		return True
 	return False
+
+
+def update_with_row_size_too_large_error(details: Details, job: AgentJob):
+	details["title"] = "Row size too large error"
+
+	details[
+		"message"
+	] = f"""<p>The server encountered a row size too large error while migrating the site <b>{job.site}</b>.</p>
+	<p>This tends to happen on doctypes with many custom fields</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS["row-size-too-large-error"]
+
+	return True
 
 
 def get_default_title(job: AgentJob) -> str:
