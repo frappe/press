@@ -649,7 +649,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address:
+				if self.public_ip_address and self.has_value_changed("public_ip_address"):
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
