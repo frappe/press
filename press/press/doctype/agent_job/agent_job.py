@@ -862,6 +862,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 
 def process_job_updates(job_name: str, response_data: dict | None = None):  # noqa: C901
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
+	start = now_datetime()
 
 	try:
 		from press.api.dboptimize import (
@@ -1019,6 +1020,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		if job.status == "Failure":
 			send_job_failure_notification(job)
 
+		log_update(job, start)
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1
 		if failure_count in set([10, 100]) or failure_count % 1000 == 0:
@@ -1028,7 +1030,28 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 				reference_doctype="Agent Job",
 				reference_name=job_name,
 			)
+		log_update(job, start, e)
 		raise AgentCallbackException from e
+
+
+def log_update(job, start, exception=None):
+	try:
+		data = {
+			"timestamp": start,
+			"duration": (now_datetime() - start).total_seconds(),
+			"name": job.name,
+			"job_type": job.job_type,
+			"status": job.status,
+			"server": job.server,
+			"site": job.site,
+			"bench": job.bench,
+		}
+		if exception:
+			data["exception"] = exception
+		serialized = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
+		frappe.cache().rpush(AGENT_LOG_KEY, serialized)
+	except Exception:
+		traceback.print_exc()
 
 
 def update_job_step_status():
