@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import json
 import re
 
 import frappe
@@ -26,7 +25,6 @@ class SiteDatabaseUser(Document):
 			SiteDatabaseTablePermission,
 		)
 
-		database: DF.Data
 		failed_agent_job: DF.Link | None
 		failure_reason: DF.SmallText
 		mode: DF.Literal["read_only", "read_write", "granular"]
@@ -63,7 +61,6 @@ class SiteDatabaseUser(Document):
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
 		self.status = "Pending"
-		self.database = ""
 		self.username = frappe.generate_hash(length=15)
 		self.password = frappe.generate_hash(length=20)
 
@@ -73,6 +70,13 @@ class SiteDatabaseUser(Document):
 	def _raise_error_if_archived(self):
 		if self.status == "Archived":
 			frappe.throw("user has been deleted and no further changes can be made")
+
+	def _get_database_name(self):
+		site = frappe.get_doc("Site", self.site)
+		db_name = site.fetch_info().get("config", {}).get("db_name")
+		if not db_name:
+			frappe.throw("Failed to fetch database name of site")
+		return db_name
 
 	@dashboard_whitelist()
 	def save_and_apply_changes(self, mode: str, permissions: list):
@@ -130,11 +134,7 @@ class SiteDatabaseUser(Document):
 	@frappe.whitelist()
 	def add_user_to_proxysql(self):
 		self._raise_error_if_archived()
-		if not self.database:
-			# It's needed because press doesn't store the database name the site is using
-			# so, at the time of creating database user, the database name will be stored
-			# which can be utilized for adding user in proxysql
-			frappe.throw("create the user in database first before adding to proxysql")
+		database = self._get_database_name()
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		database_server_name = frappe.db.get_value(
@@ -144,7 +144,7 @@ class SiteDatabaseUser(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.add_proxysql_user(
 			frappe.get_doc("Site", self.site),
-			self.database,
+			database,
 			self.username,
 			self.get_password("password"),
 			database_server,
@@ -193,10 +193,11 @@ class SiteDatabaseUser(Document):
 	def get_credential(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+		database = self._get_database_name()
 		return {
 			"host": proxy_server,
 			"port": 3306,
-			"database": self.database,
+			"database": database,
 			"username": self.username,
 			"password": self.get_password("password"),
 			"mode": self.mode,
@@ -237,9 +238,6 @@ class SiteDatabaseUser(Document):
 
 		if job.job_type == "Create Database User":
 			doc.user_created_in_database = True
-			doc.database = json.loads(job.data).get("database")
-			if not doc.database:
-				frappe.throw("database name not found in the job response data")
 			if not doc.user_added_in_proxysql:
 				doc.add_user_to_proxysql()
 		if job.job_type == "Remove Database User":
