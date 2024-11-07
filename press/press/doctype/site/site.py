@@ -2513,6 +2513,12 @@ class Site(Document, TagHelpers):
 				"doc_method": "activate",
 			},
 			{
+				"action": "Manage database users",
+				"description": "Manage users and permissions for your site database",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+			},
+			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",
 				"button_label": "Schedule",
@@ -2557,12 +2563,6 @@ class Site(Document, TagHelpers):
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
 				"doc_method": "clear_site_cache",
-			},
-			{
-				"action": "Manage database access",
-				"description": "Manage users and permissions for your site database",
-				"button_label": "Manage",
-				"doc_method": "dummy",
 			},
 			{
 				"action": "Deactivate site",

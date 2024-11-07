@@ -1,6 +1,6 @@
 <template>
 	<Dialog
-		:options="{ title: 'Manage Database Access', size: '2xl' }"
+		:options="{ title: 'Manage Database Users', size: '2xl' }"
 		v-model="show"
 	>
 		<template #body-content>
@@ -42,6 +42,7 @@
 
 	<SiteDatabaseAddEditUserDialog
 		:site="site"
+		:key="selectedUser ? selectedUser : 'new'"
 		:db_user_name="selectedUser"
 		v-model="showDatabaseAddUserDialog"
 		v-if="showDatabaseAddUserDialog"
@@ -124,7 +125,7 @@ export default {
 							type: 'select',
 							label: 'Status',
 							fieldname: 'status',
-							options: ['', 'Draft', 'Pending', 'Active', 'Failed']
+							options: ['', 'Pending', 'Active', 'Failed']
 						}
 					];
 				},
@@ -163,6 +164,9 @@ export default {
 					}
 				],
 				rowActions: ({ row, listResource, documentResource }) => {
+					if (row.status === 'Archived') {
+						return [];
+					}
 					return [
 						{
 							label: 'View Credential',

@@ -100,7 +100,7 @@ import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 
 export default {
-	name: 'SiteDatabaseAddUserDialog',
+	name: 'SiteDatabaseAddEditUserDialog',
 	props: ['site', 'db_user_name'], // db_user_name is optional, only provide to edit
 	emits: ['update:modelValue', 'success'],
 	components: {
@@ -111,14 +111,18 @@ export default {
 	},
 	data() {
 		return {
-			mode: 'read_only',
+			mode: 'granular',
 			permissions: [],
 			lastGenratedRowId: 0
 		};
 	},
 	mounted() {
 		this.fetchTableSchemas();
-		this.addNewTablePermissionEntry();
+		if (!this.isEditMode) {
+			this.addNewTablePermissionEntry();
+		} else {
+			this.$resources.databaseUser.reload();
+		}
 	},
 	resources: {
 		tableSchemas() {
@@ -134,14 +138,11 @@ export default {
 			};
 		},
 		databaseUser() {
-			if (!this.db_user_name) {
-				return;
-			}
 			return {
 				type: 'document',
 				doctype: 'Site Database User',
 				name: this.db_user_name,
-				auto: true,
+				auto: false,
 				onSuccess: data => {
 					this.mode = data?.mode;
 					let fetched_permissions = (data?.permissions ?? []).map(x => {
@@ -225,7 +226,7 @@ export default {
 					{
 						label: 'Table',
 						fieldname: 'table',
-						width: 1,
+						width: '250px',
 						type: 'Component',
 						component: ({ row }) => {
 							return h(FormControl, {
@@ -262,7 +263,6 @@ export default {
 								modelValue: row.mode,
 								'onUpdate:modelValue': newValue => {
 									row.mode = newValue;
-									this.addNewTablePermissionEntry();
 								}
 							});
 						}
@@ -307,7 +307,7 @@ export default {
 			}
 		},
 		isEditMode() {
-			return this.db_user_name;
+			return !!this.db_user_name;
 		},
 		isLoadingTableSchemas() {
 			if (this.$resources?.tableSchemas?.loading) return true;
