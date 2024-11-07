@@ -750,6 +750,7 @@ export default {
 								items: [
 									{
 										label: 'Restore Backup',
+										condition: () => site.doc.status !== 'Archived',
 										onClick() {
 											confirmDialog({
 												title: 'Restore Backup',
