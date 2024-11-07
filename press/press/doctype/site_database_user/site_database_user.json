@@ -29,7 +29,8 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "mode",
@@ -131,7 +132,8 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -142,7 +144,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-06 15:53:10.997328",
+ "modified": "2024-11-07 12:37:37.854319",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
