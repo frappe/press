@@ -64,8 +64,8 @@ class SiteDatabaseUser(Document):
 			frappe.throw("You don't have permission to create database user")
 		self.status = "Pending"
 		self.database = ""
-		self.username = "user_" + frappe.generate_hash(length=10)
-		self.password = frappe.generate_hash(length=15)
+		self.username = frappe.generate_hash(length=15)
+		self.password = frappe.generate_hash(length=20)
 
 	def after_insert(self):
 		self.apply_changes()
