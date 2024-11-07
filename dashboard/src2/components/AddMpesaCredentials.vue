@@ -135,7 +135,7 @@ import { toast } from 'vue-sonner';
     resources: {
         createMpesaSettings(){
             return{
-                url: 'press.api.billing.create_mpesa_settings',
+                url: 'press.api.local_payments.mpesa.mpesa_settings.create_mpesa_settings',
                 params:{
                     payment_gateway_name: this.paymentGatewayName,
                     consumer_key: this.consumerKey,

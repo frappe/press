@@ -45,9 +45,11 @@ export default {
 				{
 					label: 'Approval Requests',
 					route: { name: 'PartnerApprovalRequests' }
-				}
+				},
+				{ label: 'Local Payment setUp', route: {name: 'LocalPaymentSetUp'}}
 			]
 		};
 	}
 };
 </script>
+

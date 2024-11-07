@@ -164,7 +164,7 @@ export default {
     async fetchTeams() {
       try {
         const response = await frappeRequest({
-          url: '/api/method/press.api.billing.display_mpesa_payment_partners',
+          url: '/api/method/press.api.local_payments.mpesa.utils.display_mpesa_payment_partners',
           method: 'GET',
         });
         if (Array.isArray(response)) {
@@ -180,7 +180,7 @@ export default {
     async fetchTaxId() {
       try {
         const taxId = await frappeRequest({
-          url: '/api/method/press.api.billing.get_tax_id',
+          url: '/api/method/press.api.local_payments.mpesa.utils.get_tax_id',
           method: 'GET',
         });
         if (taxId) {
@@ -196,7 +196,7 @@ export default {
     async fetchTaxPercentage() {
       try {
         const taxPercentage = await frappeRequest({
-          url: '/api/method/press.api.billing.get_tax_percentage',
+          url: '/api/method/press.api.local_payments.mpesa.utils.get_tax_percentage',
           method: 'GET',
           params: {
             payment_partner: this.partnerInput.value
@@ -216,7 +216,7 @@ export default {
     async fetchExchangeRate() {
       try {
         const exchangeRate = await frappeRequest({
-          url: '/api/method/press.api.billing.get_exchange_rate',
+          url: '/api/method/press.api.local_payments.mpesa.utils.get_exchange_rate',
           method: 'GET',
           params: {
             from_currency: 'KES',

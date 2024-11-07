@@ -50,7 +50,7 @@
   
         try {
           const response = await frappeRequest({
-            url: '/api/method/press.api.billing.display_invoices_by_partner',
+            url: '/api/method/press.api.local_payments.mpesa.utils.display_invoices_by_partner',
             method: 'GET',
           });
           this.invoices = response;

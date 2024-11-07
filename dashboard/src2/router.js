@@ -231,6 +231,12 @@ let router = createRouter({
 					path: 'approval-requests',
 					component: () =>
 						import('./components/partners/PartnerApprovalRequests.vue')
+				},
+				{
+					name: 'LocalPaymentSetUp',
+					path: 'local-payment-setup',
+					component: ()=>
+						import('./components/partners/PartnerLocalPaymentSetUp.vue')
 				}
 			]
 		},

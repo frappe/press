@@ -117,3 +117,4 @@ def validate_billing_data(payment_data: dict):
 @frappe.whitelist()
 def get_payment_getway(payment_getway):
 	return frappe.get_doc("Payment Gateway", payment_getway).as_dict()
+

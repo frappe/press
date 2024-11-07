@@ -133,7 +133,7 @@ export default {
   resources: {
     createPaymentGatewaySettings() {
       return {
-        url: 'press.api.billing.create_payment_gateway_settings',
+        url: 'press.api.local_payments.mpesa.utils.create_payment_gateway_settings',
         params: {
           currency: this.currencyInput,
           gateway_name: this.gatewayName,
@@ -189,7 +189,7 @@ if (missingFields.length > 0) {
     async fetchCurrencyOptions() {
       try {
         const response = await frappeRequest({
-          url: '/api/method/press.api.billing.get_currency_options',
+          url: '/api/method/press.api.local_payments.mpesa.utils.get_currency_options',
           method: 'GET',
         });
         if (Array.isArray(response)) {
@@ -205,7 +205,7 @@ if (missingFields.length > 0) {
     async fetchGatewaySettings(){
         try{
                 const response = await frappeRequest({
-                    url: '/api/method/press.api.billing.get_gateway_settings',
+                    url: '/api/method/press.api.local_payments.mpesa.utils.get_gateway_settings',
                     method: 'GET',
                 });
                 if(Array.isArray(response)){
@@ -222,7 +222,7 @@ if (missingFields.length > 0) {
     async fetchGatewayControllers(gatewaySetting){
         try{
                 const response = await frappeRequest({
-                    url: '/api/method/press.api.billing.get_gateway_controllers',
+                    url: '/api/method/press.api.local_payments.mpesa.utils.get_gateway_controllers',
                     method: 'GET',
                     params:{
                         gateway_setting: gatewaySetting

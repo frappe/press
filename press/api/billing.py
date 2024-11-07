@@ -31,18 +31,23 @@ from press.utils.billing import (
 from frappe.utils import get_request_site_address
 from press.press.doctype.mpesa_settings.mpesa_connector import MpesaConnector
 from json import dumps, loads
-# from frappe.integrations.utils import create_request_log
 from press.utils.mpesa_utils import create_request_log
 from frappe import _  # Import this for translation functionality
 import json
 import requests
-from frappe.utils.password import get_decrypted_password
+from press.api.local_payments.mpesa.utils import (
+update_tax_id , 
+convert , 
+get_team_and_partner_from_integration_request, 
+get_payment_gateway, get_mpesa_settings_for_team,
+sanitize_mobile_number,
+split_request_amount_according_to_transaction_limit,
+fetch_param_value
 
+)
+from press.api.local_payments.mpesa.webhook import create_invoice_partner_site
 
 # other imports and the rest of your code...
-
-
-supported_mpesa_currencies = ["KES"]
 
 @frappe.whitelist()
 def get_publishable_key_and_setup_intent():
@@ -671,42 +676,8 @@ def total_unpaid_amount():
 		or 0
 	) + negative_balance
 
-#Mpesa integrations, mpesa express
-def validate_mpesa_transaction_currency(currency):
-	if currency not in supported_mpesa_currencies:
-		frappe.throw(
-			_(
-				"Please select another payment method. Mpesa does not support transactions in currency '{0}'"
-			).format(currency)
-		)
-  
-  
-'''ensures number take the right format'''
-def sanitize_mobile_number(number):
-	"""Add country code and strip leading zeroes from the phone number."""
-	return "254" + str(number).lstrip("0")
 
-'''split amount if it exceeds 150,000'''
-def split_request_amount_according_to_transaction_limit(amount, transaction_limit):
-		request_amount = amount
-		if request_amount > transaction_limit:
-			# make multiple requests
-			request_amounts = []
-			requests_to_be_made = frappe.utils.ceil(
-				request_amount / transaction_limit
-			)  # 480/150 = ceil(3.2) = 4
-			for i in range(requests_to_be_made):
-				amount = transaction_limit
-				if i == requests_to_be_made - 1:
-					amount = request_amount - (
-						transaction_limit * i
-					)  # for 4th request, 480 - (150 * 3) = 30
-				request_amounts.append(amount)
-		else:
-			request_amounts = [request_amount]
-
-		return request_amounts
-
+#Mpesa integrations, mpesa express  
 '''Send stk push to the user'''
 def generate_stk_push(**kwargs):
 	"""Generate stk push by making a API call to the stk push API."""
@@ -758,15 +729,6 @@ def generate_stk_push(**kwargs):
 			title=_("Mpesa Express Error"),
 		)
 
-def get_mpesa_settings_for_team(team_name):
-	"""Fetch Mpesa settings for a given team."""
-	
-	mpesa_settings = frappe.get_all("Mpesa Settings", filters={"team": team_name}, pluck="name")
-	if not mpesa_settings:
-		frappe.throw(_("Mpesa Settings not configured for this team"), title=_("Mpesa Express Error"))
-	return frappe.get_doc("Mpesa Settings", mpesa_settings[0])
-  
-
 @frappe.whitelist(allow_guest=True)
 def verify_mpesa_transaction(**kwargs):
 	"""Verify the transaction result received via callback from STK."""    
@@ -803,6 +765,7 @@ def handle_transaction_result(transaction_response, integration_request):
 
 	if result_code == 0:
 		try:
+			
 			integration_request.handle_success(transaction_response)
 			create_mpesa_payment_register_entry(transaction_response)
 			print("Niko hapa")
@@ -829,14 +792,6 @@ def save_integration_request(integration_request):
 	"""Save and commit the changes to the Mpesa Request Log."""
 	integration_request.save(ignore_permissions=True)
 	frappe.db.commit()
-
-
-'''fetch parameters from the args'''
-def fetch_param_value(response, key, key_field):
-	"""Fetch the specified key from list of dictionary. Key is identified via the key field."""
-	for param in response:
-		if param[key_field] == key:
-			return param["Value"]
 
 '''get completed Mpesa Request Log'''
 def get_completed_integration_requests_info(reference_doctype, reference_docname, checkout_id):
@@ -865,10 +820,9 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 
 '''request for payments'''
 @frappe.whitelist(allow_guest=True)
-#def request_for_payment(**kwargs)
 def request_for_payment(**kwargs):
-	kwargs.setdefault("reference_doctype", "Invoice")
-	kwargs.setdefault("reference_docname", "INV-2024-00006")
+	# kwargs.setdefault("reference_doctype", "Invoice")
+	# kwargs.setdefault("reference_docname", "INV-2024-00006")
 	kwargs.setdefault("transaction_limit", 150000)
 	kwargs.setdefault('team', 'Administrator')
 	args = frappe._dict(kwargs)
@@ -888,17 +842,6 @@ def request_for_payment(**kwargs):
 		handle_api_mpesa_response("CheckoutRequestID", args, response)
 	return response
 
-def get_payment_gateway(partner_value):
-	"""Get the payment gateway for the partner."""
-	partner = frappe.get_doc("Team", partner_value)	
-	# Get Mpesa settings for the partner's team
-	mpesa_settings = get_mpesa_settings_for_team(partner.name)
-	payment_gateway = frappe.get_all("Payment Gateway", filters={"gateway_settings":"Mpesa Settings", "gateway_controller":mpesa_settings.name}, pluck="name")
-	if not payment_gateway:
-		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))
-	gateway=frappe.get_doc("Payment Gateway", payment_gateway[0])
-	return gateway.name
- 
 def handle_api_mpesa_response(global_id, request_dict, response):
 		"""Response received from API calls returns a global identifier for each transaction, this code is returned during the callback."""
 		# check error response
@@ -920,7 +863,6 @@ def create_mpesa_payment_register_entry(transaction_response):
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
 	# Extract necessary details from the transaction response
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
-	
 	# Fetch relevant details from the response
 	transaction_id = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
 	trans_time = fetch_param_value(item_response, "TransactionDate", "Name")
@@ -931,7 +873,6 @@ def create_mpesa_payment_register_entry(transaction_response):
 	team, partner, requested_amount = get_team_and_partner_from_integration_request(transaction_id)
 	amount_usd, exchange_rate=convert("USD", "KES", requested_amount)
 	gateway_name=get_payment_gateway(partner) 	
-	
 	# Create a new entry in M-Pesa Payment Record
 	data={
 	"transaction_id": transaction_id,
@@ -956,10 +897,10 @@ def create_mpesa_payment_register_entry(transaction_response):
 		"payment_partner":partner,
 		"local_invoice":create_invoice_partner_site(data, gateway_name),
 	})
- 	
 	new_entry.insert(ignore_permissions=True)
 	new_entry.submit()
-	frappe.db.commit()  
+
+	# frappe.db.commit()  
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 	
 	
@@ -995,247 +936,3 @@ def create_balance_transaction(team, amount, invoice=None):
 
 	return new_entry.name 
 
- 
-def after_save_mpesa_payment_record(doc, method=None):
-	try:
-		team = doc.team
-		amount = doc.amount_usd
-		
-		balance_transaction_name = create_balance_transaction(team, amount)
-		
-		frappe.db.set_value('Mpesa Payment Record', doc.name, 'balance_transaction', balance_transaction_name)
-		
-		frappe.db.set_value('Mpesa Payment Record', doc.name, 'docstatus', 1)
-		doc.reload()
-		frappe.db.commit()
-		
-		frappe.msgprint(_("Mpesa Payment Record has been linked with Balance Transaction and submitted."))
-	except Exception as e:
-		frappe.throw(_("An error occurred: ") + str(e))
-		frappe.log_error(message=str(e), title="Mpesa Payment Submission Failed")
-
-
-def get_team_and_partner_from_integration_request(transaction_id):
-	"""Get the team and partner associated with the Mpesa Request Log."""
-	integration_request = frappe.get_doc("Mpesa Request Log", transaction_id)
-	request_data = integration_request.data
-	# Parse the request_data as a dictionary
-	if request_data:
-		try:
-			
-			request_data_dict = json.loads(request_data)  
-			team_ = request_data_dict.get("team")
-			team = frappe.get_value("Team", {"user": team_}, "name")
-			partner_ = request_data_dict.get("partner")
-			partner = frappe.get_value("Team", {"user": partner_}, "name")
-			requested_amount=request_data_dict.get("request_amount")
-		except json.JSONDecodeError:
-			frappe.throw(_("Invalid JSON format in request_data"))
-			team = None
-			partner = None
-	else:
-		team = None
-		partner = None
-	
-	return team, partner, requested_amount
-
-@frappe.whitelist(allow_guest=True)
-def display_mpesa_payment_partners():
-	"""Display the list of partners in the system with Mpesa integration enabled."""
-	
-	Team = DocType("Team")
-	MpesaSettings = DocType("Mpesa Settings")
-
-	query = (
-		frappe.qb.from_(Team)
-		.join(MpesaSettings)
-		.on(Team.name == MpesaSettings.team)
-		.select(Team.user)
-		.where((Team.country == "Kenya") & (MpesaSettings.sandbox == 1))
-	)
-
-	mpesa_partners = query.run(as_dict=True)
-
-	return [partner['user'] for partner in mpesa_partners]
-
-@frappe.whitelist(allow_guest=True)
-def get_tax_percentage(payment_partner):
-	team_doc = frappe.get_doc("Team", {"user": payment_partner})
-	mpesa_settings=frappe.get_all("Mpesa Settings", filters={"api_type":"Mpesa Express", "team":team_doc.name}, fields=["name"])
-	for mpesa_setting in mpesa_settings:
-		payment_gateways = frappe.get_all("Payment Gateway", filters={"gateway_settings":"Mpesa settings","gateway_controller":mpesa_setting }, fields=["taxes_and_charges"])
-		if payment_gateways:
-			taxes_and_charges = payment_gateways[0].taxes_and_charges
-	return taxes_and_charges
-	
-def convert(from_currency, to_currency, amount):
-	"""Convert the given amount from one currency to another."""
-	exchange_rate = frappe.get_value("Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate")
-	converted_amount = amount / exchange_rate
-	
-	return converted_amount, exchange_rate
-
-
-@frappe.whitelist(allow_guest=True)
-def create_mpesa_settings(**kwargs):
-	"""Create Mpesa Settings for the team."""
-	team = get_current_team()
-
-	try:
-		mpesa_settings = frappe.get_doc({
-			"doctype": "Mpesa Settings",
-			"team": team,  
-			"payment_gateway_name": kwargs.get("payment_gateway_name"),
-			"api_type": "Mpesa Express",
-			"consumer_key": kwargs.get("consumer_key"),  
-			"consumer_secret": kwargs.get("consumer_secret"),  
-			"business_shortcode": kwargs.get("short_code"),  
-			"till_number": kwargs.get("till_number"), 
-			"online_passkey": kwargs.get("pass_key"), 
-			"security_credential": kwargs.get("security_credential"),
-			"sandbox": 1 if kwargs.get("sandbox") else 0,
-		})
-
-		mpesa_settings.insert(ignore_permissions=True)
-		frappe.db.commit()
-
-		return mpesa_settings.name 
-	except Exception as e:
-		frappe.log_error(message=f"Error creating Mpesa Settings: {str(e)}", title="M-Pesa Settings Creation Error")
-		return None  
-
-
-@frappe.whitelist(allow_guest=True)
-def create_invoice_partner_site(data, gateway_controller):
-	gateway=frappe.get_doc("Payment Gateway", gateway_controller)
-	api_url_ = gateway.url
-	api_key = gateway.api_key
-	api_secret = get_decrypted_password("Payment Gateway", gateway.name, fieldname="api_secret")
-	
-	transaction_id = data.get("transaction_id")
-	trans_amount = data.get("trans_amount")
-	team = data.get("team")
-	default_currency = data.get("default_currency")
-	rate = data.get("rate")
-	
-	# Validate the necessary fields
-	if not transaction_id or not trans_amount:
-		frappe.throw(_("Invalid transaction data received"))
-
-	api_url = api_url_
-
-	headers = {
-		"Authorization": f"token {api_key}:{api_secret}",
-	}
-	# Define the payload to send with the POST request
-	payload = {
-		"transaction_id": transaction_id,
-		"trans_amount": trans_amount,
-		"team": team,
-		"default_currency": default_currency,
-		"rate":rate
-	}
-	# Make the POST request to your API
-	try:
-		# print(str(payload))
-		response = requests.post(api_url, data=payload, headers=headers)
-		if response.status_code == 200:
-			frappe.msgprint(_("Invoice created successfully"))
-			response_data = response.json()
-			download_link = response_data.get("message", "")
-			return download_link
-		else:
-			frappe.log_error(f"API Error: {response.status_code} - {response.text}")
-			frappe.throw(_("Failed to create the invoice via API"))
-
-	except requests.exceptions.RequestException as e:
-		frappe.log_error(f"Error calling API: {e}")
-		frappe.throw(_("There was an issue connecting to the API."))
-
-
-def update_tax_id(team, tax_id):
-	"""Update the tax ID for the team."""
-	doc_name=frappe.get_value("Team", {"user": team}, "name")
-	team_doc = frappe.get_doc("Team", doc_name)
-	if not team_doc.tax_id:
-		team_doc.tax_id = tax_id
-		team_doc.save()
-  
-@frappe.whitelist(allow_guest=True)
-def get_tax_id():
-	"""Get the tax ID for the team."""
-	team=get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.tax_id if team_doc.tax_id else ''
-
-@frappe.whitelist(allow_guest=True)
-def display_invoices_by_partner():
-	"""Display the list of invoices by partner."""
-	team = get_current_team()
-	invoices = frappe.get_all("Mpesa Payment Record", filters={"team":team}, fields=["name","posting_date", "trans_amount", "default_currency","local_invoice"])
-	return invoices
-
-@frappe.whitelist(allow_guest=True)
-def get_exchange_rate(from_currency, to_currency):
-	"""Get the latest exchange rate for the given currencies."""
-	exchange_rate = frappe.db.get_value(
-		"Currency Exchange",
-		{"from_currency": from_currency, "to_currency": to_currency},
-		"exchange_rate",
-		order_by="creation DESC"  
-	)
-	return exchange_rate
-
-
-@frappe.whitelist(allow_guest=True)
-def create_payment_gateway_settings(**kwargs):
-	"""Create Payment Gateway Settings for the team."""
-	team = get_current_team() 
-	args = frappe._dict(kwargs)
-
-	try:
-
-		payment_gateway_settings = frappe.get_doc({
-			"doctype": "Payment Gateway",
-			"team": team,
-			"gateway": args.get("gateway_name"),
-			"currency": args.get("currency"),
-			"gateway_settings": args.get("gateway_setting"),
-			"gateway_controller": args.get("gateway_controller"),
-			"url": args.get("url"),
-			"api_key": args.get("api_key"),
-			"api_secret": args.get("api_secret"),
-			"taxes_and_charges": args.get("taxes_and_charges"),
-		})
-
-		payment_gateway_settings.insert(ignore_permissions=True)
-		frappe.db.commit()
-
-		return payment_gateway_settings.name
-	except Exception as e:
-		print(str(e))
-		frappe.log_error(message=f"Error creating Payment Gateway Settings: {str(e)}", title="Payment Gateway Settings Creation Error")
-		return None
-
-@frappe.whitelist(allow_guest=True)
-def get_currency_options():
-	"""Get the list of currencies supported by the system."""
-	currencies=frappe.get_all("Currency", fields=["name"])
-	names=[currency['name'] for currency in currencies]
-	return names
-
-@frappe.whitelist(allow_guest=True)
-def get_gateway_settings():
-	"""Get the list of doctypes supported by the system."""
-	doctypes=frappe.get_all("DocType", fields=["name"])
-	names=[doc['name'] for doc in doctypes]
-	return names
-
-@frappe.whitelist(allow_guest=True)
-def get_gateway_controllers(gateway_setting):
-	"""Get the list of controllers for the given doctype."""
-	controllers = frappe.get_all(gateway_setting, fields=["name"])
-	
-	names = [doc['name'] for doc in controllers]
-	
-	return names 
