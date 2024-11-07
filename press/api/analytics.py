@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import TYPE_CHECKING, Final, TypedDict
 
 import frappe
@@ -57,6 +58,11 @@ if TYPE_CHECKING:
 		histogram_of_method: HistogramOfMethod
 
 
+class FILTER_BY_RESOURCE(Enum):
+	SITE = "site"
+	SERVER = "server"
+
+
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
@@ -93,34 +99,25 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
 	}[duration]
 
-	request_count_by_path_data = get_request_by_path(name, "count", timezone, timespan, timegrain)
-	request_duration_by_path_data = get_request_by_path(name, "duration", timezone, timespan, timegrain)
-	average_request_duration_by_path_data = get_request_by_path(
-		name, "average_duration", timezone, timespan, timegrain
-	)
-	background_job_count_by_method_data = get_background_job_by_method(
-		name, "count", timezone, timespan, timegrain
-	)
-	background_job_duration_by_method_data = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain
-	)
-	average_background_job_duration_by_method_data = get_background_job_by_method(
-		name, "average_duration", timezone, timespan, timegrain
-	)
-	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
-	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
-
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	return {
-		"request_count_by_path": request_count_by_path_data,
-		"request_duration_by_path": request_duration_by_path_data,
-		"average_request_duration_by_path": average_request_duration_by_path_data,
-		"background_job_count_by_method": background_job_count_by_method_data,
-		"background_job_duration_by_method": background_job_duration_by_method_data,
-		"average_background_job_duration_by_method": average_background_job_duration_by_method_data,
-		"slow_logs_by_count": slow_logs_by_count,
-		"slow_logs_by_duration": slow_logs_by_duration,
+		"request_count_by_path": get_request_by_(name, "count", timezone, timespan, timegrain),
+		"request_duration_by_path": get_request_by_(name, "duration", timezone, timespan, timegrain),
+		"average_request_duration_by_path": get_request_by_(
+			name, "average_duration", timezone, timespan, timegrain
+		),
+		"background_job_count_by_method": get_background_job_by_method(
+			name, "count", timezone, timespan, timegrain
+		),
+		"background_job_duration_by_method": get_background_job_by_method(
+			name, "duration", timezone, timespan, timegrain
+		),
+		"average_background_job_duration_by_method": get_background_job_by_method(
+			name, "average_duration", timezone, timespan, timegrain
+		),
+		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
+		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 	}
@@ -265,7 +262,15 @@ def get_stacked_histogram_chart_result(
 	return {"datasets": datasets, "labels": labels}
 
 
-def get_request_by_path(site, query_type, timezone, timespan, timegrain):
+def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
+	"""
+	:param name: site/server name depending on filter_by
+	:param query_type: count, duration, average_duration
+	:param timezone: timezone of timespan
+	:param timespan: duration in seconds
+	:param timegrain: interval in seconds
+	:param filter_by: filter by site or server
+	"""
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -280,7 +285,6 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
 		.filter("match_phrase", json__transaction_type="request")
 		.filter(
 			"range",
@@ -294,6 +298,12 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
+	if filter_by == FILTER_BY_RESOURCE.SITE:
+		search = search.filter("match_phrase", json__site=name)
+		group_by_field = "json.request.path"
+	elif filter_by == FILTER_BY_RESOURCE.SERVER:
+		search = search.filter("match_phrase", agent__name=name)
+		group_by_field = "json.site"
 
 	histogram_of_method = A(
 		"date_histogram",
@@ -309,18 +319,18 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"path_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_path"].bucket("path_count", "value_count", field="json.request.path")
+		search.aggs["method_path"].bucket("path_count", "value_count", field=group_by_field)
 
 	elif query_type == "duration":
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
@@ -330,7 +340,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		search.aggs.bucket(
 			"method_path",
 			"terms",
-			field="json.request.path",
+			field=group_by_field,
 			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
@@ -414,12 +424,11 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain)
 
 
-def get_slow_logs(site, query_type, timezone, timespan, timegrain):
-	database_name = frappe.db.get_value("Site", site, "database_name")
+def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server or not database_name:
+	if not log_server:
 		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/"
@@ -430,7 +439,6 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
-		.filter("match", mysql__slowlog__current_user=database_name)
 		.filter(
 			"range",
 			**{
@@ -446,6 +454,14 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		)
 		.extra(size=0)
 	)
+	if filter_by == FILTER_BY_RESOURCE.SITE and (
+		database_name := frappe.db.get_value("Site", name, "database_name")
+	):
+		search = search.filter("match", mysql__slowlog__current_user=database_name)
+	elif filter_by == FILTER_BY_RESOURCE.SERVER:
+		search = search.filter("match", agent__name=name)
+	else:
+		return {"datasets": [], "labels": []}
 
 	histogram_of_method = A(
 		"date_histogram",

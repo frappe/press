@@ -203,14 +203,18 @@ class Site(Document, TagHelpers):
 			benches_with_available_update,
 		)
 
-		benches_with_available_update = benches_with_available_update()
-
 		Site = frappe.qb.DocType("Site")
-		sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
 
-		for site in sites:
-			if site.bench in benches_with_available_update:
-				site.status = "Update Available"
+		status = filters.get("status")
+		if status == "Archived":
+			sites = query.where(Site.status == status).run(as_dict=1)
+		else:
+			benches_with_available_update = benches_with_available_update()
+			sites = query.where(Site.status != "Archived").select(Site.bench).run(as_dict=1)
+
+			for site in sites:
+				if site.bench in benches_with_available_update:
+					site.status = "Update Available"
 
 		return sites
 
@@ -2699,11 +2703,6 @@ def site_cleanup_after_archive(site):
 	delete_site_domains(site)
 	delete_site_subdomain(site)
 	release_name(site)
-	delete_permissions(site)
-
-
-def delete_permissions(site):
-	frappe.db.delete("Press Role Permission", {"site": site})
 
 
 def delete_site_subdomain(site):

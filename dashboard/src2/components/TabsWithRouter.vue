@@ -12,13 +12,15 @@ import { Tabs } from 'frappe-ui';
 
 export default {
 	name: 'TabsWithRouter',
-	props: ['tabs'],
+	props: ['tabs', 'document'],
 	components: {
 		FTabs: Tabs
 	},
 	computed: {
 		visibleTabs() {
-			return this.tabs.filter(tab => (tab.condition ? tab.condition() : true));
+			return this.tabs.filter(tab =>
+				tab.condition ? tab.condition({ doc: this.document }) : true
+			);
 		},
 		currentTab: {
 			get() {

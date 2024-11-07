@@ -212,6 +212,7 @@ import { h, defineAsyncComponent } from 'vue';
 import { toast } from 'vue-sonner';
 import InfoIcon from '~icons/lucide/info';
 import DismissableBanner from './DismissableBanner.vue';
+import { getToastErrorMessage } from '../utils/toast';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
@@ -265,9 +266,7 @@ export default {
 				{
 					loading: 'Removing tag...',
 					success: `Tag ${tag.tag_name} removed`,
-					error: e => {
-						return e.messages.length ? e.messages.join('\n') : e.message;
-					}
+					error: e => getToastErrorMessage(e)
 				}
 			);
 		},

@@ -228,6 +228,7 @@ class Subscription(Document):
 			filters,
 			pluck="name",
 			limit=1,
+			ignore_ifnull=True,
 		)
 		if results:
 			link = frappe.utils.get_link_to_form("Subscription", results[0])

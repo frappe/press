@@ -32,6 +32,7 @@ import {
 	siteTabFilterControls
 } from '../objects/common';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -297,9 +298,10 @@ export default {
 											},
 											error: e => {
 												hide();
-												return e.messages.length
-													? e.messages.join('\n')
-													: 'Failed to update sites';
+												return getToastErrorMessage(
+													e,
+													'Failed to update sites'
+												);
 											},
 											duration: 1000
 										}
@@ -329,9 +331,7 @@ export default {
 										},
 										error: e => {
 											hide();
-											return e.messages.length
-												? e.messages.join('\n')
-												: 'Failed to restart bench';
+											return getToastErrorMessage(e, 'Failed to restart bench');
 										},
 										duration: 1000
 									});
@@ -363,9 +363,10 @@ export default {
 										},
 										error: e => {
 											hide();
-											return e.messages.length
-												? e.messages.join('\n')
-												: 'Failed to rebuild assets';
+											return getToastErrorMessage(
+												e,
+												'Failed to rebuild assets'
+											);
 										},
 										duration: 1000
 									});
@@ -391,11 +392,8 @@ export default {
 											hide();
 											return 'Bench is scheduled for archival';
 										},
-										error: e => {
-											return e.messages.length
-												? e.messages.join('\n')
-												: e.message || 'Failed to archive bench';
-										}
+										error: e =>
+											getToastErrorMessage(e, 'Failed to archive bench')
 									});
 								}
 							}

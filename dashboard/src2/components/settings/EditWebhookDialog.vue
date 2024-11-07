@@ -41,7 +41,10 @@
 					</FormControl>
 					<p class="mt-1.5 text-sm text-gray-700">
 						<secret>Note:</secret> Secret is optional. Check
-						<a href="https://frappecloud.com/docs/webhook-introduction" class="underline" target="_blank"
+						<a
+							href="https://frappecloud.com/docs/webhook-introduction"
+							class="underline"
+							target="_blank"
 							>the documentation</a
 						>
 						to learn more
@@ -77,6 +80,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	emits: ['success'],
@@ -140,9 +144,10 @@ export default {
 				},
 				onError: e => {
 					toast.error(
-						e.messages.length
-							? e.messages.join('\n')
-							: e.message || 'Failed to update webhook'
+						getToastErrorMessage(
+							e,
+							'Failed to update webhook. Please try again'
+						)
 					);
 				}
 			};

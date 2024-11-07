@@ -11,6 +11,7 @@ import { getTeam } from '../../data/team';
 import { confirmDialog, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 const team = getTeam();
 team.getTeamMembers.submit();
@@ -56,8 +57,7 @@ const teamMembersListOptions = ref({
 										hide();
 										return 'Member Removed';
 									},
-									error: e =>
-										e.messages.length ? e.messages.join('\n') : e.message
+									error: e => getToastErrorMessage(e)
 								}
 							);
 						}

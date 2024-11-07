@@ -146,6 +146,7 @@ import {
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { h } from 'vue';
+import { getToastErrorMessage } from '../../utils/toast';
 import NewAppDialog from '../NewAppDialog.vue';
 
 export default {
@@ -183,7 +184,7 @@ export default {
 				this.$emit('appAdd');
 			},
 			onError(e) {
-				toast.error(e.messages.length ? e.messages.join('\n') : e.message);
+				toast.error(getToastErrorMessage(e));
 			}
 		},
 		installableApps() {

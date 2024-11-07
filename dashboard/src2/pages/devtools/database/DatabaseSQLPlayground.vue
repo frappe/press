@@ -150,6 +150,7 @@ import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/Data
 import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
 import SQLResult from '../../../components/devtools/database/SQLResult.vue';
 import LinkControl from '../../../components/LinkControl.vue';
+import { getToastErrorMessage } from '../../../utils/toast';
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -222,11 +223,7 @@ export default {
 					this.tabIndex = 0; // reset tab index for results
 				},
 				onError: e => {
-					toast.error(
-						e.messages?.length
-							? e.messages.join('\n')
-							: e.message || 'Failed to run SQL query'
-					);
+					toast.error(getToastErrorMessage(e, 'Failed to run SQL query'));
 				},
 				auto: false
 			};

@@ -92,6 +92,7 @@ import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
 import { confirmDialog, renderDialog } from '../../utils/components';
+import { getToastErrorMessage } from '../../utils/toast';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';
@@ -274,9 +275,10 @@ export default {
 												loading: 'Increasing disk size...',
 												success: 'Disk size is scheduled to increase',
 												error: e =>
-													e.messages.length
-														? e.messages.join('\n')
-														: e.message || 'Failed to increase disk size'
+													getToastErrorMessage(
+														e,
+														'Failed to increase disk size'
+													)
 											}
 										);
 									}
