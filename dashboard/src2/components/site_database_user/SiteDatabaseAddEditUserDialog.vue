@@ -111,7 +111,7 @@ export default {
 	},
 	data() {
 		return {
-			mode: 'granular',
+			mode: 'read_only',
 			permissions: [],
 			lastGenratedRowId: 0
 		};
