@@ -285,7 +285,7 @@ export default {
 							return {
 								label: true ? 'check' : 'plus',
 								slots: {
-									icon: icon('minus')
+									icon: icon('x')
 								},
 								variant: 'subtle',
 								onClick: event => {
