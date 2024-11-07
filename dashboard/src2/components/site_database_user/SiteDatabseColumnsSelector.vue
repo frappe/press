@@ -17,7 +17,7 @@
 				<FCheckbox
 					class="cursor-pointer"
 					size="sm"
-					v-for="column in availableColumns"
+					v-for="column in allAvailableColumns"
 					:modelValue="isChecked(column)"
 					@change="e => toggleSelection(column, e)"
 					:label="column"
@@ -40,6 +40,14 @@ export default {
 	computed: {
 		columns() {
 			return this.modelValue;
+		},
+		allAvailableColumns() {
+			return this.availableColumns.reduce(
+				(acc, item) => {
+					return acc.includes(item) ? acc : [...acc, item];
+				},
+				[...this.modelValue]
+			);
 		}
 	},
 	methods: {
