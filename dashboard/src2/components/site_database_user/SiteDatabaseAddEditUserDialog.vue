@@ -52,7 +52,7 @@
 						<p class="text-sm">This can take upto 5 minutes</p>
 					</div>
 					<div v-else class="mt-2">
-						<p class="text-sm font-semibold text-gray-600">
+						<p class="text-sm font-medium text-gray-600">
 							Configure Permissions
 						</p>
 						<ObjectList :options="listOptions" />

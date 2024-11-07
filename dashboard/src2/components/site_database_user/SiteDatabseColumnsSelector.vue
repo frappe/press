@@ -18,7 +18,7 @@
 					class="cursor-pointer"
 					size="sm"
 					v-for="column in availableColumns"
-					:value="isChecked(column)"
+					:modelValue="isChecked(column)"
 					@change="e => toggleSelection(column, e)"
 					:label="column"
 				/>
