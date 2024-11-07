@@ -80,13 +80,6 @@ export default {
 							}
 						},
 						{
-							label: 'Created On',
-							fieldname: 'created',
-							format(value) {
-								return value ? date(value, 'lll') : '';
-							}
-						},
-						{
 							label: 'Modified On',
 							fieldname: 'modified',
 							format(value) {
