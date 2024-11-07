@@ -649,7 +649,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address:
+				if self.public_ip_address and self.has_value_changed("public_ip_address"):
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
@@ -765,7 +765,7 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def stop(self, force=False):
 		if self.cloud_provider == "AWS EC2":
-			self.client().stop_instances(InstanceIds=[self.instance_id], Force=force)
+			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		self.sync()

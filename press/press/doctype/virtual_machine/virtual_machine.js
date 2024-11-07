@@ -15,7 +15,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Force Terminate'),
 				'force_terminate',
 				true,
-				frappe.boot.developer_mode,
+				Boolean(frappe.boot.developer_mode),
 			],
 			[
 				__('Disable Termination Protection'),

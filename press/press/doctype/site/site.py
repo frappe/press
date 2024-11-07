@@ -3050,7 +3050,6 @@ def process_rename_site_job_update(job):  # noqa: C901
 		request_data = json.loads(job.request_data)
 		if "create_user" in request_data:
 			frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-			frappe.db.commit()
 
 	try:
 		other_job = frappe.get_last_doc(
