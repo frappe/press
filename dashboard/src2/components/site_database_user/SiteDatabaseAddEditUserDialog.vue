@@ -98,6 +98,7 @@ import { FormControl } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
+import SiteDatabseColumnsSelector from './SiteDatabseColumnsSelector.vue';
 
 export default {
 	name: 'SiteDatabaseAddEditUserDialog',
@@ -107,7 +108,8 @@ export default {
 		FormControl,
 		ObjectList,
 		icon,
-		AlertBanner
+		AlertBanner,
+		SiteDatabseColumnsSelector
 	},
 	data() {
 		return {
@@ -226,7 +228,7 @@ export default {
 					{
 						label: 'Table',
 						fieldname: 'table',
-						width: '250px',
+						width: '200px',
 						type: 'Component',
 						component: ({ row }) => {
 							return h(FormControl, {
@@ -243,7 +245,7 @@ export default {
 					{
 						label: 'Mode',
 						fieldname: 'mode',
-						width: 0.6,
+						width: 1,
 						align: 'center',
 						type: 'Component',
 						component: ({ row }) => {
@@ -269,16 +271,23 @@ export default {
 					},
 					{
 						label: 'Columns',
-						width: 0.8,
+						width: '180px',
 						fieldname: 'columns',
 						align: 'center',
-						format: (value, row) => {
-							return 'ALL';
+						type: 'Component',
+						component: ({ row }) => {
+							return h(SiteDatabseColumnsSelector, {
+								modelValue: row.columns,
+								availableColumns: this.getColumns(row.table),
+								'onUpdate:modelValue': newValues => {
+									row.columns = [...newValues];
+								}
+							});
 						}
 					},
 					{
 						label: '',
-						width: 0.2,
+						width: 0.6,
 						align: 'right',
 						type: 'Button',
 						Button: ({ row }) => {
@@ -343,13 +352,16 @@ export default {
 			});
 		},
 		getColumns(table) {
+			if (!table) return [];
 			if (this.isLoadingTableSchemas) return [];
 			if (!this.$resources?.tableSchemas?.data?.message?.data) return [];
-			return Object.keys(
-				this.$resources?.tableSchemas?.data?.message?.data[table].map(
-					x => x.column
-				)
-			);
+			let columnSchemas =
+				this.$resources?.tableSchemas?.data?.message?.data[table];
+			let columns = [];
+			columnSchemas.forEach(x => {
+				columns.push(x.column);
+			});
+			return columns;
 		},
 		addNewTablePermissionEntry() {
 			this.lastGenratedRowId = this.lastGenratedRowId + 1;
