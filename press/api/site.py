@@ -1234,6 +1234,9 @@ def installed_apps(name):
 
 
 def get_installed_apps(site, query_filters: dict | None = None):
+	if query_filters is None:
+		query_filters = {}
+
 	installed_apps = [app.app for app in site.apps]
 	bench = frappe.get_doc("Bench", site.bench)
 	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
