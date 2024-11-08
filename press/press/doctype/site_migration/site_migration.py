@@ -674,7 +674,7 @@ def run_scheduled_migrations():
 		except InsufficientSpaceOnServer as e:
 			site_migration.fail(reason=str(e), activate=True)
 		except Exception as e:
-			log_error("Site Migration Start Error", e)
+			log_error("Site Migration Start Error", exception=e)
 
 
 def on_doctype_update():
