@@ -13,6 +13,8 @@ from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.bench import (
+	MAX_BACKGROUND_WORKERS,
+	MAX_GUNICORN_WORKERS,
 	Bench,
 	StagingSite,
 	archive_obsolete_benches,
@@ -24,7 +26,7 @@ from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_diffe
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.server.server import scale_workers
+from press.press.doctype.server.server import Server, scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.subscription.test_subscription import create_test_subscription
@@ -107,8 +109,8 @@ class TestBench(FrappeTestCase):
 		group = frappe.get_doc("Release Group", bench.group)
 		scale_workers()
 		bench.reload()
-		self.assertEqual(bench.gunicorn_workers, 24)
-		self.assertEqual(bench.background_workers, 8)
+		self.assertEqual(bench.gunicorn_workers, MAX_GUNICORN_WORKERS)
+		self.assertEqual(bench.background_workers, MAX_BACKGROUND_WORKERS)
 		group.db_set("max_gunicorn_workers", 8)
 		group.db_set("max_background_workers", 4)
 		scale_workers()
@@ -228,7 +230,7 @@ class TestBench(FrappeTestCase):
 		self.assertEqual(bench2.memory_high, 0)
 		self.assertEqual(bench2.memory_max, 0)
 		frappe.db.set_value("Server", bench1.server, "set_bench_memory_limits", True)
-		server = frappe.get_doc("Server", bench1.server)
+		server: Server = Server(bench1.server)
 
 		scale_workers()
 

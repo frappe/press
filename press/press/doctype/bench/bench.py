@@ -29,6 +29,11 @@ from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
+MAX_GUNICORN_WORKERS = 36
+MIN_GUNICORN_WORKERS = 2
+MAX_BACKGROUND_WORKERS = 8
+MIN_BACKGROUND_WORKERS = 1
+
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_source.app_source import AppSource
@@ -584,18 +589,21 @@ class Bench(Document):
 				),
 			)[0]
 			self.gunicorn_workers = min(
-				max_gn or 24,
+				max_gn or MAX_GUNICORN_WORKERS,
 				max(
-					min_gn or 2, round(self.workload / server_workload * max_gunicorn_workers)
-				),  # min 2 max 24
+					min_gn or MIN_GUNICORN_WORKERS,
+					round(self.workload / server_workload * max_gunicorn_workers),
+				),  # min 2 max 36
 			)
 			self.background_workers = min(
-				max_bg or 8,
-				max(min_bg or 1, round(self.workload / server_workload * max_bg_workers)),  # min 1 max 8
+				max_bg or MAX_BACKGROUND_WORKERS,
+				max(
+					min_bg or MIN_BACKGROUND_WORKERS, round(self.workload / server_workload * max_bg_workers)
+				),  # min 1 max 8
 			)
 		except ZeroDivisionError:  # when total_workload is 0
-			self.gunicorn_workers = 2
-			self.background_workers = 1
+			self.gunicorn_workers = MIN_GUNICORN_WORKERS
+			self.background_workers = MIN_BACKGROUND_WORKERS
 		if set_memory_limits:
 			if self.skip_memory_limits:
 				self.memory_max = frappe.db.get_value("Server", self.server, "ram")
