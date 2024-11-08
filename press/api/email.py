@@ -143,7 +143,7 @@ def validate_plan(secret_key):
 
 def check_spam(message: str):
 	resp = requests.post(
-		"https://frappemail.com/spamd/score",
+		"https://server.frappemail.com/spamd/score",
 		{"message": message},
 	)
 	if resp.status_code == 200:
