@@ -42,12 +42,14 @@ export default {
 			return this.modelValue;
 		},
 		allAvailableColumns() {
-			return this.availableColumns.reduce(
-				(acc, item) => {
-					return acc.includes(item) ? acc : [...acc, item];
-				},
-				[...this.modelValue]
-			);
+			return this.availableColumns
+				.reduce(
+					(acc, item) => {
+						return acc.includes(item) ? acc : [...acc, item];
+					},
+					[...this.modelValue]
+				)
+				.sort();
 		}
 	},
 	methods: {
