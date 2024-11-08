@@ -9,87 +9,84 @@
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
-				:title="`Get started with ${saasProduct?.title}`"
+				title="Get started in minutes"
+				subtitle="14 days free trial, no credit card required."
 				:class="{ 'pointer-events-none': $resources.signup?.loading }"
+				:logo="saasProduct?.logo"
 			>
-				<template v-slot:logo>
-					<div class="mx-auto flex items-center space-x-2">
-						<img
-							class="inline-block h-7 w-7 rounded-sm"
-							:src="saasProduct?.logo"
-						/>
-						<span
-							class="select-none text-xl font-semibold tracking-tight text-gray-900"
-						>
-							{{ saasProduct?.title }}
-						</span>
-					</div>
-				</template>
 				<template v-slot:default>
 					<form class="flex flex-col" @submit.prevent="submitForm">
 						<!-- Fields -->
 						<FormControl
+							label="Country"
+							type="select"
+							placeholder="Select your country"
+							autocomplete="country"
+							variant="outline"
+							:options="countries"
+							v-model="country"
+							required
+						/>
+						<FormControl
+							class="mt-5"
 							label="Full Name"
 							type="full_name"
 							placeholder="John Doe"
+							variant="outline"
 							autocomplete="name"
 							v-model="full_name"
 							required
 						/>
 						<FormControl
-							class="mt-4"
+							class="mt-5"
 							label="Email"
 							type="email"
 							placeholder="johndoe@mail.com"
+							variant="outline"
 							autocomplete="email"
 							v-model="email"
-							required
-						/>
-						<FormControl
-							class="mt-4"
-							label="Country"
-							type="select"
-							placeholder="Select your country"
-							autocomplete="country"
-							:options="countries"
-							v-model="country"
 							required
 						/>
 						<FormControl
 							v-if="account_request_created"
 							label="Verification Code (Sent to your email)"
 							type="text"
-							class="mt-4"
+							class="mt-5"
 							placeholder="5 digit verification code"
 							maxlength="5"
 							v-model="otp"
 							required
 						/>
-						<div class="mt-4 flex items-start" v-if="!account_request_created">
-							<label class="text-base text-gray-900">
-								<FormControl type="checkbox" v-model="terms_accepted" />
-								By clicking on Create account, you accept our
-								<Link href="https://frappecloud.com/terms" target="_blank"
-									>Terms of Service </Link
-								>,
-								<Link href="https://frappecloud.com/privacy" target="_blank">
-									Privacy Policy
-								</Link>
-								&#38;
-								<Link
-									href="https://frappecloud.com/cookie-policy"
-									target="_blank"
-								>
-									Cookie Policy
-								</Link>
-							</label>
+						<div
+							class="mt-5 flex items-center text-base leading-4"
+							v-if="!account_request_created"
+						>
+							<FormControl
+								type="checkbox"
+								v-model="terms_accepted"
+								class="mr-1"
+							/>
+							I agree to Frappe&nbsp;
+							<Link href="https://frappecloud.com/terms" target="_blank">
+								TC </Link
+							>,&nbsp;
+							<Link href="https://frappecloud.com/privacy" target="_blank">
+								Privacy Policy
+							</Link>
+							&nbsp;&&nbsp;
+							<Link
+								href="https://frappecloud.com/cookie-policy"
+								target="_blank"
+							>
+								Cookie Policy
+							</Link>
 						</div>
 						<!-- Error Message -->
 						<ErrorMessage class="mt-2" :message="error" />
 						<!-- Buttons -->
 						<Button
 							v-if="!account_request_created"
-							class="mt-4"
+							class="mt-8"
 							:loading="$resources.signup?.loading"
 							variant="solid"
 						>
@@ -121,7 +118,7 @@
 </template>
 <script>
 import { Spinner } from 'frappe-ui';
-import LoginBox from '../../components/auth/LoginBox.vue';
+import LoginBox from '../../components/auth/SaaSLoginBox.vue';
 import { toast } from 'vue-sonner';
 
 export default {
