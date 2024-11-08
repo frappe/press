@@ -76,8 +76,10 @@ class TestAPISite(unittest.TestCase):
 		from press.api.site import new
 
 		app = create_test_app()
-		group = create_test_release_group([app])
-		bench = create_test_bench(group=group)
+		cluster = create_test_cluster("Default", public=True)
+		server = create_test_server(cluster=cluster.name, public=True)
+		group = create_test_release_group([app], servers=[server.name])
+		bench = create_test_bench(group=group, server=server.name)
 		plan = create_test_plan("Site")
 
 		frappe.set_user(self.team.user)
