@@ -27,6 +27,10 @@ class EmailConfigError(ValidationError):
 	http_status_code = 400
 
 
+class SpamDetectionError(ValidationError):
+	http_status_code = 422
+
+
 @frappe.whitelist(allow_guest=True)
 def email_ping():
 	return "pong"
@@ -151,7 +155,7 @@ def check_spam(message: str):
 		if data["message"] > 3.5:
 			frappe.throw(
 				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
-				EmailSendError,
+				SpamDetectionError,
 			)
 	else:
 		log_error("Spam Detection: Error", data=resp.text, message=message)
