@@ -17,7 +17,6 @@ class MpesaSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		account_balance: DF.LongText | None
 		api_type: DF.Literal["", "Mpesa Express", "Mpesa C2B"]
 		business_shortcode: DF.Data | None
 		consumer_key: DF.Data

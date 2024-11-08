@@ -105,12 +105,10 @@ def update_tax_id(team, tax_id):
 		team_doc.tax_id = tax_id
 		team_doc.save()
   
-	
 def convert(from_currency, to_currency, amount):
 	"""Convert the given amount from one currency to another."""
 	exchange_rate = frappe.get_value("Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate")
 	converted_amount = amount / exchange_rate
-	
 	return converted_amount, exchange_rate
 
 @frappe.whitelist(allow_guest=True)

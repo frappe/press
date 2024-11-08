@@ -18,9 +18,7 @@
   "business_shortcode",
   "online_passkey",
   "transaction_limit",
-  "security_credential",
-  "get_account_balance",
-  "account_balance"
+  "security_credential"
  ],
  "fields": [
   {
@@ -92,18 +90,6 @@
    "label": "Security Credential"
   },
   {
-   "fieldname": "get_account_balance",
-   "fieldtype": "Button",
-   "label": "Get Account Balance"
-  },
-  {
-   "fieldname": "account_balance",
-   "fieldtype": "Long Text",
-   "hidden": 1,
-   "label": "Account Balance",
-   "read_only": 1
-  },
-  {
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
@@ -119,7 +105,7 @@
   }
  ],
  "links": [],
- "modified": "2024-09-06 08:49:55.451792",
+ "modified": "2024-11-08 17:28:31.432927",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Settings",

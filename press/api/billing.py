@@ -768,7 +768,6 @@ def handle_transaction_result(transaction_response, integration_request):
 			
 			integration_request.handle_success(transaction_response)
 			create_mpesa_payment_register_entry(transaction_response)
-			print("Niko hapa")
 
 			integration_request.status = "Completed"
 		except Exception:
@@ -821,8 +820,8 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 '''request for payments'''
 @frappe.whitelist(allow_guest=True)
 def request_for_payment(**kwargs):
-	# kwargs.setdefault("reference_doctype", "Invoice")
-	# kwargs.setdefault("reference_docname", "INV-2024-00006")
+    
+    #TODO get the team and transaction from mpesa setting doctype
 	kwargs.setdefault("transaction_limit", 150000)
 	kwargs.setdefault('team', 'Administrator')
 	args = frappe._dict(kwargs)
@@ -935,4 +934,3 @@ def create_balance_transaction(team, amount, invoice=None):
 	frappe.msgprint(_("Balance Transaction entry created successfully"))
 
 	return new_entry.name 
-

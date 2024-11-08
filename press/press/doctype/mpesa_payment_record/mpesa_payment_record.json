@@ -19,6 +19,7 @@
   "amount_usd",
   "bill_ref_number",
   "exchange_rate",
+  "submitted_to_frappe",
   "column_break_14",
   "msisdn",
   "payment_partner",
@@ -173,13 +174,19 @@
    "fieldname": "grand_total",
    "fieldtype": "Currency",
    "label": "Grand Total(Ksh)"
+  },
+  {
+   "default": "0",
+   "fieldname": "submitted_to_frappe",
+   "fieldtype": "Check",
+   "label": "Submitted To Frappe"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-24 22:06:13.877683",
+ "modified": "2024-11-08 12:58:40.260141",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",
