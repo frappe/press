@@ -23,6 +23,7 @@ from press.press.doctype.bench.bench import (
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
+from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -76,7 +77,7 @@ class TestBench(FrappeTestCase):
 		for _i in range(n):
 			site = create_test_site(bench=bench)
 			create_test_subscription(site.name, plan.name, site.team)
-		return frappe.get_doc("Bench", bench)
+		return Bench("Bench", bench)
 
 	def test_workload_is_calculated_correctly(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
@@ -175,7 +176,7 @@ class TestBench(FrappeTestCase):
 		bench.reload()
 		self.assertEqual(bench.gunicorn_workers, 12)
 		self.assertEqual(bench.background_workers, 6)
-		bench2 = create_test_bench(group=frappe.get_doc("Release Group", bench.group), server=bench.server)
+		bench2 = create_test_bench(group=ReleaseGroup("Release Group", bench.group), server=bench.server)
 		self._create_bench_with_n_sites_with_cpu_time(3, 5, bench2.name)
 		scale_workers()
 		bench.reload()
@@ -230,7 +231,7 @@ class TestBench(FrappeTestCase):
 		self.assertEqual(bench2.memory_high, 0)
 		self.assertEqual(bench2.memory_max, 0)
 		frappe.db.set_value("Server", bench1.server, "set_bench_memory_limits", True)
-		server: Server = Server(bench1.server)
+		server = Server("Server", bench1.server)
 
 		scale_workers()
 
@@ -275,7 +276,7 @@ class TestBench(FrappeTestCase):
 		# Server.set_bench_memory_limits now defaults to True
 		# Unset bench2.server set_bench_memory_limits to test the unset case
 		frappe.db.set_value("Server", bench2.server, "set_bench_memory_limits", False)
-		server = frappe.get_doc("Server", bench1.server)
+		server = Server("Server", bench1.server)
 
 		scale_workers()
 
