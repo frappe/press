@@ -135,3 +135,16 @@ def get_stripe_payment_url_for_invoice(name: str) -> str:
 			return invoice.get_stripe_payment_url()
 	except frappe.DoesNotExistError:
 		frappe.throw("Invoice not found")
+
+# Payment Method Related APIs
+@whitelist_saas_api
+def get_payment_methods():
+	return billing_api.get_payment_methods()
+
+@whitelist_saas_api
+def set_as_default(name):
+	return billing_api.set_as_default(name)
+
+@whitelist_saas_api
+def remove_payment_method(name):
+	return billing_api.remove_payment_method(name)
