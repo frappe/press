@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 import frappe
 import os
-from press.saas.api import whitelist_saas_api
-from press.api import billing as billing_api
 from press.api import account as account_api
+from press.api import billing as billing_api
+from press.saas.api import whitelist_saas_api
 
 
 @whitelist_saas_api
@@ -131,8 +130,7 @@ def get_stripe_payment_url_for_invoice(name: str) -> str:
 		invoice = frappe.get_doc("Invoice", name)
 		if invoice.stripe_invoice_url:
 			return invoice.stripe_invoice_url
-		else:
-			return invoice.get_stripe_payment_url()
+		return invoice.get_stripe_payment_url()
 	except frappe.DoesNotExistError:
 		frappe.throw("Invoice not found")
 
