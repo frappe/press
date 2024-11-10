@@ -839,7 +839,6 @@ class Invoice(Document):
 					},
 				)
 			self.save()
-			self.reload()
 
 	def update_razorpay_transaction_details(self, payment):
 		if not (payment["fee"] or payment["tax"]):
@@ -873,7 +872,6 @@ class Invoice(Document):
 			)
 
 		self.save()
-		self.reload()
 
 	@frappe.whitelist()
 	def refund(self, reason):
