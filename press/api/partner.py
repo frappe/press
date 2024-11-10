@@ -1,4 +1,5 @@
 import frappe
+from frappe.core.utils import find
 from frappe.utils import flt
 from frappe.utils.data import today
 
@@ -32,9 +33,7 @@ def approve_partner_request(key):
 
 @frappe.whitelist()
 def get_partner_request_status(team):
-	return frappe.db.get_value(
-		"Partner Approval Request", {"requested_by": team}, "status"
-	)
+	return frappe.db.get_value("Partner Approval Request", {"requested_by": team}, "status")
 
 
 @frappe.whitelist()
@@ -65,8 +64,8 @@ def get_partner_details(partner_email):
 	)
 	if data:
 		return data[0]
-	else:
-		frappe.throw("Partner Details not found")
+	frappe.throw("Partner Details not found")
+	return None
 
 
 @frappe.whitelist()
@@ -92,9 +91,7 @@ def transfer_credits(amount, customer, partner):
 	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
-		frappe.throw(
-			f"Insufficient Credits to transfer. Credits Available: {credits_available}"
-		)
+		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
@@ -163,6 +160,7 @@ def add_partner(referral_code: str):
 		}
 	)
 	doc.insert(ignore_permissions=True)
+	return None
 
 
 @frappe.whitelist()
@@ -185,4 +183,22 @@ def get_partner_customers():
 		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
 		["name", "user", "payment_mode", "billing_name", "currency"],
 	)
-	return customers
+	return customers  # noqa: RET504
+
+
+@frappe.whitelist()
+def remove_partner():
+	team = get_current_team(get_doc=True)
+	if team.payment_mode == "Paid By Partner":
+		frappe.throw(
+			"Cannot remove partner from the team. Please change the payment mode to Prepaid Credits or Card"
+		)
+
+	partner_user = frappe.get_value(
+		"Team", {"partner_email": team.partner_email, "erpnext_partner": 1}, "user"
+	)
+	member_to_remove = find(team.team_members, lambda x: x.user == partner_user)
+	if member_to_remove:
+		team.remove(member_to_remove)
+	team.partner_email = ""
+	team.save(ignore_permissions=True)

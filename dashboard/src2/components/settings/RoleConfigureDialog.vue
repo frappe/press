@@ -122,6 +122,7 @@
 import { Switch, Tabs } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	props: {
@@ -280,14 +281,14 @@ export default {
 					this.member = {};
 					return `${user} added to ${this.role.title}`;
 				},
-				error: e => (e.messages.length ? e.messages.join('\n') : e.message)
+				error: e => getToastErrorMessage(e)
 			});
 		},
 		removeUser(user) {
 			return toast.promise(this.$resources.role.removeUser.submit({ user }), {
 				loading: `Removing ${user} from ${this.role.title}`,
 				success: () => `${user} removed from ${this.role.title}`,
-				error: e => (e.messages.length ? e.messages.join('\n') : e.message)
+				error: e => getToastErrorMessage(e)
 			});
 		}
 	}

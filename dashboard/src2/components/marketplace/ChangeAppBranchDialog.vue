@@ -37,6 +37,7 @@
 
 <script>
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../utils/toast';
 import { DashboardError } from '../../utils/error';
 
 export default {
@@ -85,10 +86,7 @@ export default {
 					this.$emit('branch-changed');
 					return 'Branch changed successfully';
 				},
-				error: e => {
-					console.log(e);
-					return e.messages.length ? e.messages.join('\n') : e.message;
-				}
+				error: e => getToastErrorMessage(e)
 			});
 		},
 		branchList() {

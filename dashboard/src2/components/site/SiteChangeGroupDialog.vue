@@ -137,7 +137,7 @@ export default {
 					);
 
 					this.$router.push({
-						name: 'Site Detail Jobs',
+						name: 'Site Jobs',
 						params: {
 							name: this.site
 						}

@@ -13,6 +13,7 @@
   "partner_email",
   "frappe_partnership_date",
   "customer_partnership_date",
+  "billing_email",
   "column_break_4",
   "status",
   "marketplace",
@@ -448,6 +449,12 @@
   {
    "fieldname": "column_break_mqqa",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "team.billing_email",
+   "fieldname": "billing_email",
+   "fieldtype": "Data",
+   "label": "Billing Email"
   }
  ],
  "is_submittable": 1,
@@ -473,7 +480,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-06-13 12:28:05.568819",
+ "modified": "2024-09-28 10:41:11.588695",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

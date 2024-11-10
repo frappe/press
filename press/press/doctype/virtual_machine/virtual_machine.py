@@ -6,6 +6,7 @@ import base64
 import ipaddress
 
 import boto3
+import botocore
 import frappe
 import rq
 from frappe.core.utils import find
@@ -577,7 +578,11 @@ class VirtualMachine(Document):
 
 	def _sync_aws(self, response=None):  # noqa: C901
 		if not response:
-			response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			try:
+				response = self.client().describe_instances(InstanceIds=[self.instance_id])
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "InvalidInstanceID.NotFound":
+					response = {"Reservations": []}
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
 
@@ -592,7 +597,7 @@ class VirtualMachine(Document):
 			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
-			for volume in self.get_volumes():
+			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
 				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
 					row = existing_volume
@@ -608,6 +613,7 @@ class VirtualMachine(Document):
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
 
+				row.idx = volume_index
 				if not existing_volume:
 					self.append("volumes", row)
 
@@ -643,7 +649,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address:
+				if self.public_ip_address and self.has_value_changed("public_ip_address"):
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
@@ -757,12 +763,26 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
-	def stop(self):
+	def stop(self, force=False):
 		if self.cloud_provider == "AWS EC2":
-			self.client().stop_instances(InstanceIds=[self.instance_id])
+			self.client().stop_instances(InstanceIds=[self.instance_id], Force=bool(force))
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		self.sync()
+
+	@frappe.whitelist()
+	def force_stop(self):
+		self.stop(force=True)
+
+	@frappe.whitelist()
+	def force_terminate(self):
+		if not frappe.conf.developer_mode:
+			return
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
+			)
+			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
 	def terminate(self):

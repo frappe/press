@@ -1,20 +1,21 @@
 <template>
-	<Dialog :options="{ title: 'Change Team' }" v-model="show">
+	<Dialog :options="{ title: 'Switch Team' }" v-model="show">
 		<template #body-content v-if="$team?.doc">
 			<div class="rounded bg-gray-100 px-3 py-2.5">
 				<div class="text-base text-gray-900">
-					You are logged in as
+					You are logged in as the user
 					<span class="font-medium">{{ $session.user }}</span>
 				</div>
 				<div class="mt-2 text-base text-gray-900">
-					You are viewing dashboard for
-					<span class="font-medium">{{ $team.doc.user }}</span>
-					<span
-						class="font-mono text-sm text-gray-500"
-						v-if="$team.name != $team.doc.user"
+					You are viewing dashboard for the team
+					<component
+						:is="$team.doc.is_desk_user ? 'a' : 'span'"
+						class="font-medium"
+						:class="{ underline: $team.doc.is_desk_user }"
+						:href="$team.doc.is_desk_user ? `/app/team/${$team.name}` : null"
 					>
-						({{ $team.name }})
-					</span>
+						{{ $team.doc.user }}
+					</component>
 				</div>
 			</div>
 			<div class="-mb-3 mt-3 divide-y">
@@ -23,16 +24,16 @@
 					v-for="team in $team.doc.valid_teams"
 					:key="team.name"
 				>
-					<div>
+					<div class="flex items-center space-x-2">
 						<span class="text-base text-gray-800">
 							{{ team.user }}
 						</span>
-						<span
-							class="font-mono text-sm text-gray-500"
-							v-if="team.name != team.user"
-						>
-							({{ team.name }})
-						</span>
+						<Button
+							v-if="$team.doc.is_desk_user"
+							icon="external-link"
+							:link="`/app/team/${team.name}`"
+							variant="ghost"
+						/>
 					</div>
 					<Badge
 						class="whitespace-nowrap"
@@ -40,7 +41,7 @@
 						label="Currently Active"
 						theme="green"
 					/>
-					<Button v-else @click="switchToTeam(team.name)">Change</Button>
+					<Button v-else @click="switchToTeam(team.name)">Switch</Button>
 				</div>
 			</div>
 			<div class="mt-6 flex items-end gap-2" v-if="$session.isSystemUser">
@@ -53,7 +54,7 @@
 				/>
 				<div class="pb-5">
 					<Button :disabled="!selectedTeam" @click="switchToTeam(selectedTeam)">
-						Change
+						Switch
 					</Button>
 				</div>
 			</div>

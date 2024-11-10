@@ -1,7 +1,14 @@
 <template>
 	<div class="p-5">
 		<div class="flex items-center space-x-2">
-			<Button :route="{ name: `${object.doctype} Detail Logs` }">
+			<Button
+				:route="{
+					name:
+						object.doctype === 'Site'
+							? 'Site Logs'
+							: `${object.doctype} Detail Logs`
+				}"
+			>
 				<template #icon>
 					<i-lucide-arrow-left class="inline-block h-4 w-4" />
 				</template>

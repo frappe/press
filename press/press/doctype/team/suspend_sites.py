@@ -101,4 +101,9 @@ def get_teams_with_unpaid_invoices():
 		.distinct()
 	)
 
+	first_day = get_first_day(today)
+	two_weeks = add_days(first_day, 14) # 15th day of the month
+	if today < two_weeks:
+		query = query.where(team.erpnext_partner == 0)
+
 	return query.run(as_dict=True)

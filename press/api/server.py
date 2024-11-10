@@ -1,8 +1,11 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 from datetime import datetime
 from datetime import timezone as tz
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
@@ -11,10 +14,12 @@ from frappe.utils.password import get_decrypted_password
 
 from press.api.bench import all as all_benches
 from press.api.site import protected
-from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import get_current_team
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 def poly_get_doc(doctypes, name):
@@ -25,13 +30,13 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(server_filter=None):
+def all(server_filter=None):  # noqa: C901
 	if server_filter is None:
 		server_filter = {"server_type": "", "tag": ""}
 
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
-	teams = [team] + child_teams
+	teams = [team, *child_teams]
 
 	db_server = frappe.qb.DocType("Database Server")
 	app_server = frappe.qb.DocType("Server")
@@ -85,13 +90,9 @@ def all(server_filter=None):
 	servers = frappe.db.sql(query.get_sql(), as_dict=True)
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
-		server["plan"] = (
-			frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
-		)
+		server["plan"] = frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
 		server["app_server"] = f"f{server.name[1:]}"
-		server["tags"] = frappe.get_all(
-			"Resource Tag", {"parent": server.name}, pluck="tag_name"
-		)
+		server["tags"] = frappe.get_all("Resource Tag", {"parent": server.name}, pluck="tag_name")
 		server["region_info"] = frappe.db.get_value(
 			"Cluster", server.cluster, ["title", "image"], as_dict=True
 		)
@@ -101,9 +102,7 @@ def all(server_filter=None):
 @frappe.whitelist()
 def server_tags():
 	team = get_current_team()
-	return frappe.get_all(
-		"Press Tag", {"team": team, "doctype_name": "Server"}, pluck="tag"
-	)
+	return frappe.get_all("Press Tag", {"team": team, "doctype_name": "Server"}, pluck="tag")
 
 
 @frappe.whitelist()
@@ -122,9 +121,7 @@ def get(name):
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),
 		"server_tags": [{"name": x.tag, "tag": x.tag_name} for x in server.tags],
-		"tags": frappe.get_all(
-			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
-		),
+		"tags": frappe.get_all("Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]),
 		"type": "database-server" if server.meta.name == "Database Server" else "server",
 	}
 
@@ -169,9 +166,7 @@ def new(server):
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
 	db_plan = frappe.get_doc("Server Plan", server["db_plan"])
-	db_server, job = cluster.create_server(
-		"Database Server", server["title"], db_plan, team=team.name
-	)
+	db_server, job = cluster.create_server("Database Server", server["title"], db_plan, team=team.name)
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
@@ -184,9 +179,7 @@ def new(server):
 	cluster.proxy_server = proxy_server.name
 
 	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
-	app_server, job = cluster.create_server(
-		"Server", server["title"], app_plan, team=team.name
-	)
+	app_server, job = cluster.create_server("Server", server["title"], app_plan, team=team.name)
 
 	return {"server": app_server.name, "job": job.name}
 
@@ -280,13 +273,7 @@ def calculate_swap(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def analytics(name, query, timezone, duration):
-	timespan, timegrain = {
-		"1 Hour": (60 * 60, 2 * 60),
-		"6 Hour": (6 * 60 * 60, 5 * 60),
-		"24 Hour": (24 * 60 * 60, 30 * 60),
-		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
-		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
-	}[duration]
+	timespan, timegrain = get_timespan_timegrain(duration)
 
 	query_map = {
 		"cpu": (
@@ -315,9 +302,27 @@ def analytics(name, query, timezone, duration):
 		),
 	}
 
-	return prometheus_query(
-		query_map[query][0], query_map[query][1], timezone, timespan, timegrain
-	)
+	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def get_request_by_site(name, query, timezone, duration):
+	from press.api.analytics import FILTER_BY_RESOURCE, get_request_by_
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_request_by_(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def get_slow_logs_by_site(name, query, timezone, duration):
+	from press.api.analytics import FILTER_BY_RESOURCE, get_slow_logs
+
+	timespan, timegrain = get_timespan_timegrain(duration)
+
+	return get_slow_logs(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER)
 
 
 def prometheus_query(query, function, timezone, timespan, timegrain):
@@ -382,7 +387,7 @@ def options():
 
 @frappe.whitelist()
 def plans(name, cluster=None):
-	plans = Plan.get_plans(
+	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
 			"name",
@@ -396,12 +401,8 @@ def plans(name, cluster=None):
 			"instance_type",
 			"premium",
 		],
-		filters={"server_type": name, "cluster": cluster}
-		if cluster
-		else {"server_type": name},
+		filters={"server_type": name, "cluster": cluster} if cluster else {"server_type": name},
 	)
-
-	return plans
 
 
 @frappe.whitelist()
@@ -466,7 +467,7 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	plays = frappe.get_all(
+	return frappe.get_all(
 		"Ansible Play",
 		fields=["name", "play", "creation", "status", "start", "end", "duration"],
 		filters=filters,
@@ -474,7 +475,6 @@ def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None)
 		limit=limit_page_length,
 		order_by=order_by or "creation desc",
 	)
-	return plays
 
 
 @frappe.whitelist()
@@ -506,3 +506,15 @@ def rename(name, title):
 	doc = poly_get_doc(["Server", "Database Server"], name)
 	doc.title = title
 	doc.save()
+
+
+def get_timespan_timegrain(duration: str) -> Tuple[int, int]:
+	timespan, timegrain = {
+		"1 Hour": (60 * 60, 2 * 60),
+		"6 Hour": (6 * 60 * 60, 5 * 60),
+		"24 Hour": (24 * 60 * 60, 30 * 60),
+		"7 Days": (7 * 24 * 60 * 60, 2 * 30 * 60),
+		"15 Days": (15 * 24 * 60 * 60, 3 * 30 * 60),
+	}[duration]
+
+	return timespan, timegrain

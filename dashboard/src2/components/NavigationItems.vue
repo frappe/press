@@ -13,8 +13,10 @@ import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
+import DatabaseZap from '~icons/lucide/database-zap';
 import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
+import Code from '~icons/lucide/code';
 import { unreadNotificationsCount } from '../data/notifications';
 
 export default {
@@ -111,6 +113,21 @@ export default {
 					disabled: enforce2FA
 				},
 				{
+					name: 'Dev Tools',
+					icon: () => h(Code),
+					route: '/devtools',
+					children: [
+						{
+							name: 'SQL Playground',
+							icon: () => h(DatabaseZap),
+							route: '/sql-playground',
+							isActive: routeName === 'SQL Playground'
+						}
+					],
+					isActive: ['SQL Playground'].includes(routeName),
+					disabled: enforce2FA
+				},
+				{
 					name: 'Billing',
 					icon: () => h(WalletCards),
 					route: '/billing',
@@ -124,10 +141,8 @@ export default {
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),
-					condition:
-						// this.$session.hasPartnerAccess &&
-						Boolean(this.$team.doc.erpnext_partner),
-					disabled: !onboardingComplete || enforce2FA
+					condition: Boolean(this.$team.doc.erpnext_partner),
+					disabled: enforce2FA
 				},
 				{
 					name: 'Settings',

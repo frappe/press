@@ -13,6 +13,7 @@ import type {
 } from './types';
 import { getUpsellBanner } from '.';
 import { isMobile } from '../../utils/device';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export function getAppsTab(forSite: boolean) {
 	return {
@@ -20,6 +21,7 @@ export function getAppsTab(forSite: boolean) {
 		icon: icon('grid'),
 		route: 'apps',
 		type: 'list',
+		condition: docResource => forSite && docResource.doc?.status !== 'Archived',
 		list: getAppsTabList(forSite)
 	} satisfies Tab as Tab;
 }
@@ -213,7 +215,7 @@ const siteAppListOptions: Partial<TabList> = {
 								}),
 								{
 									loading: 'Scheduling app uninstall...',
-									success: jobId => {
+									success: (jobId: string) => {
 										hide();
 										router.push({
 											name: 'Site Job',
@@ -224,11 +226,7 @@ const siteAppListOptions: Partial<TabList> = {
 										});
 										return 'App uninstall scheduled';
 									},
-									error: e => {
-										return e.messages?.length
-											? e.messages.join('\n')
-											: e.message;
-									}
+									error: (e: Error) => getToastErrorMessage(e)
 								}
 							);
 						}

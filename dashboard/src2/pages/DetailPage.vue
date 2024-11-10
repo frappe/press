@@ -29,6 +29,7 @@
 	<div>
 		<TabsWithRouter
 			v-if="!$resources.document.get.error && $resources.document.get.fetched"
+			:document="$resources.document?.doc"
 			:tabs="tabs"
 		>
 			<template #tab-content="{ tab }">
@@ -57,7 +58,6 @@ import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
-import AlertBanner from '../components/AlertBanner.vue';
 
 let subscribed = {};
 

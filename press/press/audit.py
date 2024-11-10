@@ -1,7 +1,9 @@
 """Functions for automated audit of frappe cloud systems."""
 
+from __future__ import annotations
+
 import json
-from typing import Dict, List
+from typing import ClassVar
 
 import frappe
 from frappe.utils import rounded
@@ -23,7 +25,7 @@ class Audit:
 	"""
 
 	def log(
-		self, log: dict, status: str, telegram_group: str = None, telegram_topic: str = None
+		self, log: dict, status: str, telegram_group: str | None = None, telegram_topic: str | None = None
 	):
 		frappe.get_doc(
 			{
@@ -37,7 +39,7 @@ class Audit:
 		).insert()
 
 
-def get_benches_in_server(server: str) -> List[Dict]:
+def get_benches_in_server(server: str) -> list[dict]:
 	agent = Agent(server)
 	return agent.get("/benches")
 
@@ -46,8 +48,8 @@ class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
 	audit_type = "Bench Field Check"
-	server_map = {}
-	press_map = {}
+	server_map = ClassVar[dict[str, str]]
+	press_map = ClassVar[dict[str, str]]
 
 	def __init__(self):
 		log = {}
@@ -94,7 +96,7 @@ class BenchFieldCheck(Audit):
 
 	def get_sites_only_on_press(self):
 		sites = []
-		for site, bench in self.press_map.items():
+		for site, _bench in self.press_map.items():
 			if site not in self.server_map:
 				sites.append(site)
 		return sites
@@ -158,9 +160,7 @@ class AppServerReplicaDirsCheck(Audit):
 					log[bench] = {"Sites on primary only": bench_desc["sites"]}
 					continue
 
-				sites_on_primary_only = list(
-					set(bench_desc["sites"]) - set(replica_bench_desc["sites"])
-				)
+				sites_on_primary_only = list(set(bench_desc["sites"]) - set(replica_bench_desc["sites"]))
 				if sites_on_primary_only:
 					status = "Failure"
 					log[bench] = {"Sites on primary only": sites_on_primary_only}
@@ -239,7 +239,7 @@ class OffsiteBackupCheck(Audit):
 	audit_type = "Offsite Backup Check"
 	list_key = "Offsite Backup Remote Files unavailable in remote"
 
-	def _get_all_files_in_s3(self) -> List[str]:
+	def _get_all_files_in_s3(self) -> list[str]:
 		all_files = []
 		settings = frappe.get_single("Press Settings")
 		s3 = settings.boto3_offsite_backup_session.resource("s3")
@@ -312,13 +312,12 @@ class BillingAudit(Audit):
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
 			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
-			"Unpaid Invoices with no payment method set from last quarter": self.unpaid_invoices_with_no_payment_method,
 			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
 		}
 
-		log = {a: [] for a in audits.keys()}
+		log = {a: [] for a in audits}
 		status = "Success"
-		for audit_name in audits.keys():
+		for audit_name in audits:
 			result = audits[audit_name]()
 			log[audit_name] += result
 			status = "Failure" if len(result) > 0 else status
@@ -327,9 +326,7 @@ class BillingAudit(Audit):
 
 	def subscriptions_without_usage_record(self):
 		free_sites = sites_with_free_hosting()
-		free_teams = frappe.get_all(
-			"Team", filters={"free_account": True, "enabled": True}, pluck="name"
-		)
+		free_teams = frappe.get_all("Team", filters={"free_account": True, "enabled": True}, pluck="name")
 
 		return frappe.db.get_all(
 			"Subscription",
@@ -362,14 +359,10 @@ class BillingAudit(Audit):
 			"team": ("not in", free_teams),
 		}
 
-		sites = frappe.db.get_all(
-			"Site", filters=filters, fields=["name", "team"], pluck="name"
-		)
+		sites = frappe.db.get_all("Site", filters=filters, fields=["name", "team"], pluck="name")
 
 		# Flake doesn't allow use of duplicate keys in same dictionary
-		return frappe.get_all(
-			"Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name"
-		)
+		return frappe.get_all("Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name")
 
 	def teams_with_active_sites_and_unpaid_invoices(self):
 		today = frappe.utils.getdate()
@@ -378,9 +371,7 @@ class BillingAudit(Audit):
 
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan)
-			.select(plan.name)
-			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 
@@ -411,19 +402,6 @@ class BillingAudit(Audit):
 
 		return [d.team for d in query]
 
-	def unpaid_invoices_with_no_payment_method(self):
-		return frappe.get_all(
-			"Invoice",
-			{
-				"status": "Unpaid",
-				"payment_mode": ("is", "not set"),
-				"type": "Subscription",
-				"period_end": [">", frappe.utils.add_months(frappe.utils.today(), -3)],
-			},
-			pluck="name",
-			order_by="period_end desc",
-		)
-
 	def prepaid_unpaid_invoices_with_stripe_invoice_id_set(self):
 		active_teams = frappe.get_all("Team", {"enabled": 1, "free_account": 0}, pluck="name")
 		return frappe.get_all(
@@ -450,9 +428,9 @@ class PartnerBillingAudit(Audit):
 			"Paid By Partner Teams with Unpaid Invoices": self.paid_by_partner_teams_with_unpaid_invoices,
 		}
 
-		log = {a: [] for a in audits.keys()}
+		log = {a: [] for a in audits}
 		status = "Success"
-		for audit_name in audits.keys():
+		for audit_name in audits:
 			result = audits[audit_name]()
 			log[audit_name] += result
 			status = "Failure" if len(result) > 0 else status

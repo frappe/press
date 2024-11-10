@@ -55,6 +55,7 @@
 import { toast } from 'vue-sonner';
 import GitHubAppSelector from '../GitHubAppSelector.vue';
 import LinkControl from '../LinkControl.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	components: {
@@ -82,7 +83,7 @@ export default {
 						return;
 					}
 
-					const repo_owner = this.selectedGithubUser?.label;
+					const repo_owner = this.selectedGithubUser?.login;
 					const repo = this.selectedGithubRepository || data.name;
 					const repository_url = `https://github.com/${repo_owner}/${repo}`;
 
@@ -90,7 +91,7 @@ export default {
 						name: data.name,
 						title: data.title,
 						repository_url,
-						github_installation_id: this.selectedGithubUser?.value.id,
+						github_installation_id: this.selectedGithubUser?.id,
 						branch: this.selectedBranch.value
 					};
 				}
@@ -123,9 +124,7 @@ export default {
 					});
 					return 'New app added';
 				},
-				error: e => {
-					return e.messages.length ? e.messages.join('\n') : e.message;
-				}
+				error: e => getToastErrorMessage(e)
 			});
 		},
 		validateApp(data) {
@@ -138,7 +137,7 @@ export default {
 
 			this.$resources.validateApp.submit({
 				...data,
-				installation: data.selectedGithubUser.value.id
+				installation: data.selectedGithubUser.id
 			});
 		}
 	}

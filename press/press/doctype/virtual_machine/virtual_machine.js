@@ -8,8 +8,15 @@ frappe.ui.form.on('Virtual Machine', {
 			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
+			[__('Force Stop'), 'force_stop', true, frm.doc.status == 'Running'],
 			[__('Start'), 'start', true, frm.doc.status == 'Stopped'],
 			[__('Terminate'), 'terminate', true, !frm.doc.termination_protection],
+			[
+				__('Force Terminate'),
+				'force_terminate',
+				true,
+				Boolean(frappe.boot.developer_mode),
+			],
 			[
 				__('Disable Termination Protection'),
 				'disable_termination_protection',

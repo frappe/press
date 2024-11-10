@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "creation": "2024-10-28 11:45:28.634612",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "column_break_mufi",
+  "agent_job",
+  "section_break_heok",
+  "schema_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Agent Job",
+   "options": "Agent Job"
+  },
+  {
+   "fieldname": "column_break_mufi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_heok",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "{}",
+   "fieldname": "schema_json",
+   "fieldtype": "Long Text",
+   "label": "Schema JSON",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-28 15:43:58.768773",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Database Table Schema",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "site"
+}

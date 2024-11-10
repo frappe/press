@@ -442,7 +442,7 @@ export default {
 			// Note: this needs makeParams method in list resource to work
 			// In makeParams, return params if it exists so that old params won't overwrite the one we are setting
 
-			if (this.options.resource) {
+			if (this.options.resource && !this.$list.filters) {
 				const params = {
 					...this.$list.params,
 					[control.fieldname]: control.value

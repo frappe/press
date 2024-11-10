@@ -1,8 +1,10 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import os
+
+import frappe
+
 from press.api import account as account_api
 from press.api import billing as billing_api
 from press.saas.api import whitelist_saas_api
@@ -134,14 +136,17 @@ def get_stripe_payment_url_for_invoice(name: str) -> str:
 	except frappe.DoesNotExistError:
 		frappe.throw("Invoice not found")
 
+
 # Payment Method Related APIs
 @whitelist_saas_api
 def get_payment_methods():
 	return billing_api.get_payment_methods()
 
+
 @whitelist_saas_api
 def set_as_default(name):
 	return billing_api.set_as_default(name)
+
 
 @whitelist_saas_api
 def remove_payment_method(name):

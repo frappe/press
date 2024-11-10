@@ -25,6 +25,7 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
 import router from '../router';
 import { isLastSite } from '../data/team';
 
@@ -74,6 +75,7 @@ function getSiteActionHandler(action) {
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
 		'Migrate site': onMigrateSite,
+		'Schedule backup': onScheduleBackup,
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache
@@ -119,10 +121,6 @@ function onActivateSite() {
 	});
 }
 
-const FeedbackDialog = defineAsyncComponent(() =>
-	import('./ChurnFeedbackDialog.vue')
-);
-
 function onDropSite() {
 	return confirmDialog({
 		title: 'Drop Site',
@@ -153,7 +151,11 @@ function onDropSite() {
 					throw new Error('Site name does not match.');
 				}
 
-				let val = await isLastSite(site.doc.team);
+				const val = await isLastSite(site.doc.team);
+				const FeedbackDialog = defineAsyncComponent(() =>
+					import('./ChurnFeedbackDialog.vue')
+				);
+
 				return site.archive.submit({ force: values.force }).then(() => {
 					hide();
 					if (val) {
@@ -232,6 +234,33 @@ function onSiteReset() {
 				}
 				return site.reinstall.submit().then(hide);
 			}
+		}
+	});
+}
+
+function onScheduleBackup() {
+	return confirmDialog({
+		title: 'Schedule Backup',
+		message:
+			'Are you sure you want to schedule a backup? This will create an onsite backup.',
+		onSuccess({ hide }) {
+			toast.promise(
+				site.backup.submit({
+					with_files: true
+				}),
+				{
+					loading: 'Scheduling backup...',
+					success: () => {
+						hide();
+						router.push({
+							name: 'Site Jobs',
+							params: { name: site.name }
+						});
+						return 'Backup scheduled successfully';
+					},
+					error: e => getToastErrorMessage(e)
+				}
+			);
 		}
 	});
 }

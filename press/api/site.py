@@ -87,7 +87,7 @@ def protected(doctypes):
 			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
-		return frappe.throw("Not Permitted", frappe.PermissionError)
+		frappe.throw("Not Permitted", frappe.PermissionError)  # noqa: RET503
 
 	return wrapper
 
@@ -472,11 +472,8 @@ def app_details_for_new_public_site():
 		"route",
 		"subscription_type",
 		{"sources": ["source", "version"]},
+		{"localisation_apps": ["marketplace_app", "country"]},
 	]
-	if frappe.db.get_value("Team", get_current_team(), "auto_install_localisation_app_enabled"):
-		fields += [
-			{"localisation_apps": ["marketplace_app", "country"]},
-		]
 
 	marketplace_apps = frappe.qb.get_query(
 		"Marketplace App",
@@ -523,7 +520,7 @@ def app_details_for_new_public_site():
 
 
 @frappe.whitelist()
-def options_for_new(for_bench: str | None = None):  # noqa: C901 🥲
+def options_for_new(for_bench: str | None = None):  # noqa: C901
 	for_bench = str(for_bench) if for_bench else None
 	if for_bench:
 		version = frappe.db.get_value("Release Group", for_bench, "version")
@@ -1238,6 +1235,9 @@ def installed_apps(name):
 
 
 def get_installed_apps(site, query_filters: dict | None = None):
+	if query_filters is None:
+		query_filters = {}
+
 	installed_apps = [app.app for app in site.apps]
 	bench = frappe.get_doc("Bench", site.bench)
 	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
@@ -1521,13 +1521,17 @@ def clear_cache(name):
 @frappe.whitelist()
 @protected("Site")
 def restore(name, files, skip_failing_patches=False):
+	frappe.db.set_value(
+		"Site",
+		name,
+		{
+			"remote_database_file": files.get("database", ""),
+			"remote_public_file": files.get("public", ""),
+			"remote_private_file": files.get("private", ""),
+			"remote_config_file": files.get("config", ""),
+		},
+	)
 	site = frappe.get_doc("Site", name)
-	site.remote_database_file = files["database"]
-	site.remote_public_file = files["public"]
-	site.remote_private_file = files["private"]
-	site.remote_config_file = files.get("config", "")
-	site.save()
-	site.reload()
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
@@ -1766,6 +1770,11 @@ def update_config(name, config):
 	site = frappe.get_doc("Site", name)
 	site.update_site_config(sanitized_config)
 	return list(filter(lambda x: not x.internal, site.configuration))
+
+
+@frappe.whitelist()
+def get_trial_plan():
+	return frappe.db.get_value("Press Settings", None, "press_trial_plan")
 
 
 @frappe.whitelist()
@@ -2184,7 +2193,9 @@ def get_private_groups_for_upgrade(name, version):
 
 @frappe.whitelist()
 @protected("Site")
-def version_upgrade(name, destination_group, scheduled_datetime=None, skip_failing_patches=False):
+def version_upgrade(
+	name, destination_group, scheduled_datetime=None, skip_failing_patches=False, skip_backups=False
+):
 	site = frappe.get_doc("Site", name)
 	current_version, shared_site = frappe.db.get_value("Release Group", site.group, ["version", "public"])
 	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
@@ -2217,6 +2228,7 @@ def version_upgrade(name, destination_group, scheduled_datetime=None, skip_faili
 			"destination_group": destination_group,
 			"scheduled_time": scheduled_datetime,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_backups": skip_backups,
 		}
 	).insert()
 

@@ -1,3 +1,4 @@
+import contextlib
 import os
 import platform
 import re
@@ -11,7 +12,8 @@ import requests
 from bs4 import BeautifulSoup, SoupStrainer
 from frappe.core.utils import find
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from selenium.common import WebDriverException
+from selenium.webdriver.chrome.service import Service as ChromeService
 
 CHROMEDRIVER_PATH = os.path.expanduser("~/chromedriver")
 
@@ -36,10 +38,8 @@ def checks():
 		click.secho(f"An error occurred: {e}", fg="yellow")
 		return
 	finally:
-		try:
+		with contextlib.suppress(Exception):
 			chrome.quit()
-		except Exception:
-			pass
 
 
 def initialize_webdriver():
@@ -52,17 +52,18 @@ def initialize_webdriver():
 
 	global chrome
 
-	options = Options()
+	options = webdriver.ChromeOptions()
 	options.add_argument("--headless")
 	options.add_argument("--no-sandbox")
 	options.add_argument("--disable-dev-shm-usage")
 	options.add_argument("--disable-setuid-sandbox")
+	service = ChromeService(executable_path=CHROMEDRIVER_PATH)
 	try:
-		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
-	except Exception as e:
+		chrome = webdriver.Chrome(service=service, options=options)
+	except WebDriverException as e:
 		version = re.search(r"is (\d+.\d+.\d+.\d+) with", e.msg).group(1)
 		download_chromedriver(version=version)
-		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
+		chrome = webdriver.Chrome(service=service, options=options)
 	return True
 
 
@@ -92,11 +93,11 @@ def download_chromedriver(version=None):
 def get_platform():
 	if platform.system().lower() == "linux":
 		return "linux64"
-	elif platform.system().lower() == "darwin":
+	if platform.system().lower() == "darwin":
 		if platform.machine().lower() == "arm64":
 			return "mac-arm64"
-		else:
-			return "mac-x64"
+		return "mac-x64"
+	return None
 
 
 def test_browser_assets():
@@ -153,8 +154,7 @@ def pattern_adjust(a, address):
 			if re.match("^//", d):
 				m = re.search(r"(?<=//)\S+", d)
 				d = m.group(0)
-				m = "https://" + d
-				return m
+				return "https://" + d
 		elif r.scheme == "" and r.netloc == "":
 			return address + a
 		else:
@@ -175,9 +175,8 @@ def extract_hyperlinks(address):
 			for link in BeautifulSoup(response, "html.parser", parse_only=SoupStrainer(key)):
 				if link.has_attr(value):
 					p = pattern_adjust(link[value], address)
-					if p:
-						if p not in hyperlinks:
-							hyperlinks.add(p)
+					if p and (p not in hyperlinks):
+						hyperlinks.add(p)
 
 		except Exception as err:
 			click.secho(f"{address} ⚠️  ({err})", fg="yellow")

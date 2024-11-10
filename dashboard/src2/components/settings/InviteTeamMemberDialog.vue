@@ -55,6 +55,7 @@
 <script>
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	data() {
@@ -123,7 +124,7 @@ export default {
 						this.show = false;
 						return 'Invite Sent!';
 					},
-					error: e => (e.messages?.length ? e.messages.join('\n') : e.message)
+					error: e => getToastErrorMessage(e)
 				}
 			);
 		}

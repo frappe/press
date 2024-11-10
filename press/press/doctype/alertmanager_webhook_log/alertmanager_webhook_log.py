@@ -1,5 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from functools import cached_property
@@ -85,9 +86,7 @@ class AlertmanagerWebhookLog(Document):
 		self.truncated_alerts = self.parsed["truncatedAlerts"]
 		self.combined_alerts = len(self.parsed["alerts"])
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
-		self.common_annotations = json.dumps(
-			self.parsed["commonAnnotations"], indent=2, sort_keys=True
-		)
+		self.common_annotations = json.dumps(self.parsed["commonAnnotations"], indent=2, sort_keys=True)
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
@@ -108,9 +107,7 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
-			enqueue_doc(
-				self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-			)
+			enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"
 		):
@@ -125,6 +122,9 @@ class AlertmanagerWebhookLog(Document):
 
 	def react_for_instance(self, instance) -> "PressJob":
 		instance_type = self.guess_doctype(instance)
+		if not instance_type:
+			# Prometheus is monitoring instances we don't know about
+			return
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		rule.react(instance_type, instance)
 
@@ -136,9 +136,7 @@ class AlertmanagerWebhookLog(Document):
 	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
 		instances = []
 		payload = json.loads(payload)
-		instances.extend(
-			[alert["labels"]["instance"] for alert in payload["alerts"]]
-		)  # sites
+		instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])  # sites
 		return set(instances)
 
 	def get_past_alert_instances(self):
@@ -173,11 +171,7 @@ class AlertmanagerWebhookLog(Document):
 	def validate_and_create_incident(self):
 		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
 			return
-		if not (
-			self.alert == INCIDENT_ALERT
-			and self.severity == "Critical"
-			and self.status == "Firing"
-		):
+		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
 			return
 
 		instances = self.get_past_alert_instances()
@@ -185,9 +179,7 @@ class AlertmanagerWebhookLog(Document):
 			self.create_incident()
 
 	def get_repeat_interval(self):
-		repeat_interval = frappe.db.get_value(
-			"Prometheus Alert Rule", self.alert, "repeat_interval"
-		)
+		repeat_interval = frappe.db.get_value("Prometheus Alert Rule", self.alert, "repeat_interval")
 		hours = repeat_interval.split("h")[0]  # assume hours
 		return int(hours)
 
@@ -199,9 +191,7 @@ class AlertmanagerWebhookLog(Document):
 		self.instances = [
 			{
 				"name": alert["labels"]["instance"],
-				"doctype": alert["labels"].get(
-					"doctype", self.guess_doctype(alert["labels"]["instance"])
-				),
+				"doctype": alert["labels"].get("doctype", self.guess_doctype(alert["labels"]["instance"])),
 			}
 			for alert in self.parsed["alerts"][:20]
 		]
@@ -214,9 +204,7 @@ class AlertmanagerWebhookLog(Document):
 				instance["link"] = get_url_to_form(instance["doctype"], instance["name"])
 
 		context.update({"instances": self.instances, "labels": labels, "rule": rule})
-		message = frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
-
-		return message
+		return frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
 
 	def guess_doctype(self, name):
 		doctypes = [
@@ -235,6 +223,7 @@ class AlertmanagerWebhookLog(Document):
 		for doctype in doctypes:
 			if frappe.db.exists(doctype, name):
 				return doctype
+		return None
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
@@ -254,8 +243,7 @@ class AlertmanagerWebhookLog(Document):
 
 	@cached_property
 	def parsed_group_labels(self) -> dict:
-		parsed = json.loads(self.group_labels)
-		return parsed
+		return json.loads(self.group_labels)
 
 	def ongoing_incident_exists(self) -> bool:
 		ongoing_incident_status = frappe.db.get_value(

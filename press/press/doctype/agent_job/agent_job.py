@@ -862,11 +862,15 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 
 def process_job_updates(job_name: str, response_data: dict | None = None):  # noqa: C901
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
+	start = now_datetime()
 
 	try:
 		from press.api.dboptimize import (
 			delete_all_occurences_of_mariadb_analyze_query,
 			fetch_column_stats_update,
+		)
+		from press.press.doctype.agent_job.agent_job_notifications import (
+			send_job_failure_notification,
 		)
 		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
@@ -907,6 +911,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.site_database_table_schema.site_database_table_schema import (
+			SiteDatabaseTableSchema,
+		)
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
@@ -1006,7 +1013,14 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
+		elif job.job_type == "Fetch Database Table Schema":
+			SiteDatabaseTableSchema.process_job_update(job)
 
+		# send failure notification if job failed
+		if job.status == "Failure":
+			send_job_failure_notification(job)
+
+		log_update(job, start)
 	except Exception as e:
 		failure_count = job.callback_failure_count + 1
 		if failure_count in set([10, 100]) or failure_count % 1000 == 0:
@@ -1016,7 +1030,28 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 				reference_doctype="Agent Job",
 				reference_name=job_name,
 			)
+		log_update(job, start, e)
 		raise AgentCallbackException from e
+
+
+def log_update(job, start, exception=None):
+	try:
+		data = {
+			"timestamp": start,
+			"duration": (now_datetime() - start).total_seconds(),
+			"name": job.name,
+			"job_type": job.job_type,
+			"status": job.status,
+			"server": job.server,
+			"site": job.site,
+			"bench": job.bench,
+		}
+		if exception:
+			data["exception"] = exception
+		serialized = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
+		frappe.cache().rpush(AGENT_LOG_KEY, serialized)
+	except Exception:
+		traceback.print_exc()
 
 
 def update_job_step_status():
@@ -1055,6 +1090,7 @@ def update_job_step_status():
 
 def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
+	frappe.db.add_index("Agent Job", ["reference_doctype", "reference_name"])
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
 	frappe.db.add_index("Agent Job", ["creation"])
