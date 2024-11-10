@@ -71,6 +71,7 @@ def handle_razorpay_payment_failed():
 # Invoice Related APIs
 @whitelist_saas_api
 def get_invoices():
+	team = frappe.local.get_team()
 	return frappe.get_list(
 		"Invoice",
 		fields=[
@@ -89,6 +90,7 @@ def get_invoices():
 			"amount_due",
 			"stripe_payment_failed",
 		],
+		filters={"team": team.name},
 	)
 
 
