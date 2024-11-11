@@ -2,11 +2,11 @@
 # See license.txt
 
 import datetime
+import unittest
 from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
 import responses
-from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
@@ -34,7 +34,7 @@ from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-class TestAPISite(FrappeTestCase):
+class TestAPISite(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
@@ -76,8 +76,10 @@ class TestAPISite(FrappeTestCase):
 		from press.api.site import new
 
 		app = create_test_app()
-		group = create_test_release_group([app])
-		bench = create_test_bench(group=group)
+		cluster = create_test_cluster("Default", public=True)
+		server = create_test_server(cluster=cluster.name, public=True)
+		group = create_test_release_group([app], servers=[server.name])
+		bench = create_test_bench(group=group, server=server.name)
 		plan = create_test_plan("Site")
 
 		frappe.set_user(self.team.user)
@@ -919,7 +921,7 @@ erpnext 0.8.3	    HEAD
 		pass
 
 
-class TestAPISiteList(FrappeTestCase):
+class TestAPISiteList(unittest.TestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.site.test_site import create_test_site

@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -114,6 +113,7 @@ def link_unlinked_usage_records():
 			"team": ("not in", free_teams),
 		},
 		pluck="name",
+		ignore_ifnull=True,
 	)
 
 	for usage_record in usage_records:

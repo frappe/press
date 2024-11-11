@@ -439,16 +439,7 @@ class Site(Document, TagHelpers):
 				},
 			)
 			if allowed_apps:
-				selected_apps = frappe.db.get_all(
-					"Site App",
-					pluck="app",
-					filters={
-						"parenttype": "Site",
-						"parentfield": "apps",
-						"parent": self.name,
-					},
-					distinct=True,
-				)
+				selected_apps = [app.app for app in self.apps]
 
 				for app in selected_apps:
 					if app not in allowed_apps:
