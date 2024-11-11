@@ -55,7 +55,6 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
-  "skip_add_on_billing",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -439,13 +438,6 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
-  },
-  {
-   "default": "0",
-   "description": "If checked, team won't be charged for add-on storage on its servers",
-   "fieldname": "skip_add_on_billing",
-   "fieldtype": "Check",
-   "label": "Skip Add On Billing"
   }
  ],
  "links": [
@@ -505,7 +497,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-10-28 15:02:47.617652",
+ "modified": "2024-11-11 10:27:47.247515",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
