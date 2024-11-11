@@ -27,12 +27,14 @@ from press.utils import log_error
 from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
+	from frappe.types.DF import Link
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 
 
-def get_ongoing_migration(site: str, scheduled=False):
+def get_ongoing_migration(site: Link, scheduled=False):
 	"""
 	Return ongoing Site Migration for site.
 
@@ -254,7 +256,7 @@ class SiteMigration(Document):
 			self._add_setup_redirects_step()
 
 	@property
-	def next_step(self):
+	def next_step(self) -> SiteMigrationStep | None:
 		"""Get next step to execute or update."""
 		return find(self.steps, lambda step: step.status in ["Pending", "Running"])
 
@@ -631,8 +633,9 @@ def process_required_job_callbacks(job):
 
 
 def job_matches_site_migration(job, site_migration_name: str):
-	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
-	return job.name == site_migration.next_step.step_job
+	site_migration = SiteMigration("Site Migration", site_migration_name)
+	next = site_migration.next_step
+	return job.name == next.step_job if next else False
 
 
 def process_site_migration_job_update(job, site_migration_name: str):
