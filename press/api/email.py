@@ -117,7 +117,7 @@ def validate_plan(secret_key):
 		frappe.throw(
 			str(e)
 			or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io",
-			e,
+			type(e),
 		)
 
 	if not subscription["enabled"]:
