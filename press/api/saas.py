@@ -392,16 +392,13 @@ def get_site_url_and_sid(key, app=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(full_name, email, country, product, terms_accepted, referrer=None):
+def signup(first_name, last_name, email, country, product, terms_accepted, referrer=None):
 	if not terms_accepted:
 		frappe.throw("Please accept the terms and conditions")
 	frappe.utils.validate_email_address(email, True)
 	current_user = frappe.session.user
 	frappe.set_user("Administrator")
 	email = email.strip().lower()
-	full_name_parts = full_name.split(" ")
-	first_name = full_name_parts[0] if len(full_name_parts) >= 1 else ""
-	last_name = " ".join(full_name_parts[1:]) if len(full_name_parts) > 1 else ""
 	# validate country
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())

@@ -30,16 +30,24 @@
 							v-model="country"
 							required
 						/>
-						<FormControl
-							class="mt-5"
-							label="Full Name"
-							type="full_name"
-							placeholder="John Doe"
-							variant="outline"
-							autocomplete="name"
-							v-model="full_name"
-							required
-						/>
+						<div class="mt-5 flex flex-row gap-5">
+							<FormControl
+								label="First Name"
+								type="text"
+								placeholder="John"
+								variant="outline"
+								v-model="first_name"
+								required
+							/>
+							<FormControl
+								label="Last Name"
+								type="text"
+								placeholder="Doe"
+								variant="outline"
+								v-model="last_name"
+								required
+							/>
+						</div>
 						<FormControl
 							class="mt-5"
 							label="Email"
@@ -121,7 +129,8 @@ export default {
 	data() {
 		return {
 			email: '',
-			full_name: '',
+			first_name: '',
+			last_name: '',
 			country: null,
 			terms_accepted: false
 		};
@@ -154,7 +163,8 @@ export default {
 				url: 'press.api.saas.signup',
 				params: {
 					email: this.email,
-					full_name: this.full_name,
+					first_name: this.first_name,
+					last_name: this.last_name,
 					country: this.country,
 					product: this.productId,
 					referrer: this.getReferrerIfAny(),
