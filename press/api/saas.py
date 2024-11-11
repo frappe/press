@@ -474,7 +474,7 @@ def setup_account_product_trial(key):
 	# login
 	frappe.local.login_manager.login_as(ar.email)
 	frappe.local.response["type"] = "redirect"
-	frappe.local.response["location"] = f"/dashboard/app-trial/setup/{ar.product_trial}"
+	frappe.local.response["location"] = f"/dashboard/saas/{ar.product_trial}/setup"
 
 
 @frappe.whitelist()

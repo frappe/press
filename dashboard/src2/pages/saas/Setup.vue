@@ -247,7 +247,7 @@ import AppTrialSubscriptionDialog from '../../components/AppTrialSubscriptionDia
 import Form from '@/components/Form.vue';
 
 export default {
-	name: 'AppTrialSetup',
+	name: 'SaaSSignupSetup',
 	props: ['productId'],
 	directives: {
 		'element-size': vElementSize

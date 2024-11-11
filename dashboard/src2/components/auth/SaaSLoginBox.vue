@@ -18,10 +18,16 @@
 						{{ title }}
 					</p>
 					<p
-						class="text-base font-normal leading-[14px] text-gray-700"
+						class="break-words text-base font-normal leading-[21px] text-gray-700"
 						v-if="subtitle"
 					>
-						{{ subtitle }}
+						<template
+							v-if="typeof subtitle === 'object'"
+							v-for="line in subtitle"
+						>
+							{{ line }}<br />
+						</template>
+						<template v-else>{{ subtitle }}</template>
 					</p>
 				</div>
 				<slot></slot>

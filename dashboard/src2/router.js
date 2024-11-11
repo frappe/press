@@ -230,20 +230,27 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'AppTrial',
-			path: '/app-trial',
+			name: 'SaaS',
+			path: '/saas',
 			redirect: { name: 'Home' },
 			children: [
 				{
-					name: 'AppTrialSignup',
-					path: 'signup/:productId',
+					name: 'SaaSSignup',
+					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
 					props: true,
 					meta: { isLoginPage: true }
 				},
 				{
-					name: 'AppTrialSetup',
-					path: 'setup/:productId',
+					name: 'SaaSVerifyEmail',
+					path: ':productId/verify-email',
+					component: () => import('./pages/saas/VerifyEmail.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'SaaSSignupSetup',
+					path: ':productId/setup',
 					component: () => import('./pages/saas/Setup.vue'),
 					props: true
 				}
@@ -326,8 +333,8 @@ router.beforeEach(async (to, from, next) => {
 		}
 
 		// If user is logged in and was moving to app trial signup, redirect to app trial setup
-		if (to.name == 'AppTrialSignup') {
-			next({ name: 'AppTrialSetup', params: to.params });
+		if (to.name == 'SaaSSignup') {
+			next({ name: 'SaaSSignupSetup', params: to.params });
 			return;
 		}
 
@@ -366,9 +373,9 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			if (to.name == 'AppTrialSetup') {
+			if (to.name == 'SaaSSignupSetup') {
 				next({
-					name: 'AppTrialSignup',
+					name: 'SaaSSignup',
 					params: to.params
 				});
 			} else {

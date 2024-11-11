@@ -9,8 +9,8 @@
 					<AppSidebar
 						v-if="
 							$session.user &&
-							$route.name != 'AppTrialSignup' &&
-							$route.name != 'AppTrialSetup' &&
+							$route.name != 'SaaSSignup' &&
+							$route.name != 'SaaSSignupSetup' &&
 							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
@@ -21,8 +21,8 @@
 							$isMobile &&
 							!isHideSidebar &&
 							$session.user &&
-							$route.name != 'AppTrialSignup' &&
-							$route.name != 'AppTrialSetup' &&
+							$route.name != 'SaaSSignup' &&
+							$route.name != 'SaaSSignupSetup' &&
 							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
@@ -31,8 +31,8 @@
 							!$session.user &&
 							!$route.meta.isLoginPage &&
 							!$route.name?.startsWith('IntegratedBilling') &&
-							$route.name != 'AppTrialSignup' &&
-							$route.name != 'AppTrialSetup'
+							$route.name != 'SaaSSignup' &&
+							$route.name != 'SaaSSignupSetup'
 						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
