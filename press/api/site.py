@@ -2211,7 +2211,7 @@ def version_upgrade(
 			.join(ReleaseGroupServer)
 			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
 			.where(ReleaseGroup.version == next_version)
-			.where(ReleaseGroup.public == shared_site | ReleaseGroup.central_bench == central_site)
+			.where((ReleaseGroup.public == shared_site) | (ReleaseGroup.central_bench == central_site))
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroupServer.server == site.server)
 			.run(as_dict=True, pluck="name")
