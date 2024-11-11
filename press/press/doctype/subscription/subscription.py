@@ -137,7 +137,7 @@ class Subscription(Document):
 
 		team = frappe.get_cached_doc("Team", self.team)
 
-		if self.additional_storage and team.skip_add_on_billing:
+		if self.additional_storage:
 			return None
 
 		if team.parent_team:

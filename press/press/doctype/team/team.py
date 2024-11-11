@@ -78,7 +78,6 @@ class Team(Document):
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
 		servers_enabled: DF.Check
-		skip_add_on_billing: DF.Check
 		skip_backups: DF.Check
 		ssh_access_enabled: DF.Check
 		stripe_customer_id: DF.Data | None
