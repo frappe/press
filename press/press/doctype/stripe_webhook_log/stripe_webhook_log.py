@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import re
+from datetime import datetime
 
 import frappe
 from frappe.model.document import Document
@@ -45,17 +46,13 @@ class StripeWebhookLog(Document):
 
 		if invoice_id:
 			self.invoice_id = invoice_id
-			self.invoice = frappe.db.get_value(
-				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
-			)
+			self.invoice = frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "name")
 
 		if self.event_type == "payment_intent.payment_failed":
-			if payment_method := (
-				payload.get("data", {})
-				.get("object", {})
-				.get("last_payment_error", {})
-				.get("payment_method")
-			):
+			payment_method = (
+				payload.get("data", {}).get("object", {}).get("last_payment_error", {}).get("payment_method")
+			)
+			if payment_method:
 				payment_method_id = payment_method.get("id")
 
 				self.stripe_payment_method = frappe.db.get_value(
@@ -63,6 +60,17 @@ class StripeWebhookLog(Document):
 					{"stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id},
 					"name",
 				)
+
+		if self.event_type == "invoice.payment_failed" and self.invoice:
+			next_payment_attempt_date = datetime.fromtimestamp(
+				payload.get("data", {}).get("object", {}).get("next_payment_attempt")
+			).strftime("%Y-%m-%d")
+			frappe.db.set_value(
+				"Invoice",
+				self.invoice,
+				"next_payment_attempt_date",
+				frappe.utils.getdate(next_payment_attempt_date),
+			)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -93,8 +101,7 @@ def get_customer_id(form_dict):
 		customer_id = re.search(r"cus_\w+", form_dict_str)
 		if customer_id:
 			return customer_id.group(0)
-		else:
-			return None
+		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture customer id from stripe webhook log")
 
@@ -105,8 +112,7 @@ def get_invoice_id(form_dict):
 		invoice_id = re.search(r"in_\w+", form_dict_str)
 		if invoice_id:
 			return invoice_id.group(0)
-		else:
-			return None
+		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture invoice id from stripe webhook log")
 

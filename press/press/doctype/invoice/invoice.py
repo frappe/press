@@ -19,7 +19,7 @@ class Invoice(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING, ClassVar
+	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -54,6 +54,7 @@ class Invoice(Document):
 		invoice_pdf: DF.Attach | None
 		items: DF.Table[InvoiceItem]
 		marketplace: DF.Check
+		next_payment_attempt_date: DF.Date | None
 		partner_email: DF.Data | None
 		payment_attempt_count: DF.Int
 		payment_attempt_date: DF.Date | None
