@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
+from contextlib import suppress
 from datetime import timedelta
 from unittest.mock import Mock, patch
 
@@ -147,12 +148,8 @@ class TestIncident(FrappeTestCase):
 		)
 
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch.object(
-		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
-	)
-	def test_incident_calls_only_one_person_if_first_person_picks_up(
-		self, mock_calls_create: Mock
-	):
+	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	def test_incident_calls_only_one_person_if_first_person_picks_up(self, mock_calls_create: Mock):
 		frappe.get_doc(
 			{
 				"doctype": "Incident",
@@ -162,9 +159,7 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(mock_calls_create.call_count, 1)
 
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch.object(
-		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
-	)
+	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
 			{
@@ -216,9 +211,7 @@ class TestIncident(FrappeTestCase):
 
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	def test_call_event_creates_acknowledgement_update(self):
-		with patch.object(
-			MockTwilioCallList, "create", new=MockTwilioCallList("completed").create
-		):
+		with patch.object(MockTwilioCallList, "create", new=MockTwilioCallList("completed").create):
 			incident = frappe.get_doc(
 				{
 					"doctype": "Incident",
@@ -229,9 +222,7 @@ class TestIncident(FrappeTestCase):
 			incident.reload()
 			self.assertEqual(incident.status, "Acknowledged")
 			self.assertEqual(len(incident.updates), 1)
-		with patch.object(
-			MockTwilioCallList, "create", new=MockTwilioCallList("no-answer").create
-		):
+		with patch.object(MockTwilioCallList, "create", new=MockTwilioCallList("no-answer").create):
 			incident = frappe.get_doc(
 				{
 					"doctype": "Incident",
@@ -243,12 +234,8 @@ class TestIncident(FrappeTestCase):
 			self.assertEqual(len(incident.updates), 2)
 
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch.object(
-		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
-	)
-	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(
-		self, mock_calls_create
-	):
+	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
+	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(self, mock_calls_create):
 		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 0)
 		frappe.get_doc(
 			{
@@ -315,14 +302,10 @@ class TestIncident(FrappeTestCase):
 		site = create_test_site()
 		site2 = create_test_site(server=site.server)
 		alert = create_test_prometheus_alert_rule()
-		create_test_alertmanager_webhook_log(
-			site=site, alert=alert, status="firing"
-		)  # 50% sites down
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")  # 50% sites down
 		incident = frappe.get_last_doc("Incident")
 		self.assertEqual(incident.status, "Validating")
-		create_test_alertmanager_webhook_log(
-			site=site2, status="firing"
-		)  # other site down, nothing resolved
+		create_test_alertmanager_webhook_log(site=site2, status="firing")  # other site down, nothing resolved
 		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
@@ -350,19 +333,13 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.status, "Confirmed")
 		incident.db_set("status", "Validating")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-19))
-		frappe.db.set_value(
-			"Incident Settings", None, "confirmation_threshold_day", str(21 * 60)
-		)
-		frappe.db.set_value(
-			"Incident Settings", None, "confirmation_threshold_night", str(21 * 60)
-		)
+		frappe.db.set_value("Incident Settings", None, "confirmation_threshold_day", str(21 * 60))
+		frappe.db.set_value("Incident Settings", None, "confirmation_threshold_night", str(21 * 60))
 		validate_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 
-	@patch.object(
-		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
-	)
+	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_calls_repeated_for_acknowledged_incidents(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
@@ -389,9 +366,7 @@ class TestIncident(FrappeTestCase):
 		incident.db_set(
 			"creation",
 			incident.creation
-			- timedelta(
-				seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10
-			),
+			- timedelta(seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10),
 		)
 		with patch.object(
 			MockTwilioCallList,
@@ -417,13 +392,11 @@ class TestIncident(FrappeTestCase):
 			)
 
 	@patch.object(Telegram, "send")
-	def test_telegram_message_is_sent_when_unable_to_reach_twilio(
-		self, mock_telegram_send
-	):
+	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		with patch.object(
 			MockTwilioCallList, "create", side_effect=TwilioRestException("test", 500)
-		):
+		), suppress(TwilioRestException):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
