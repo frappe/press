@@ -186,6 +186,12 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.virtual_machine,
 			],
+			[
+				__('Set Swappiness and SysRq'),
+				'set_swappiness',
+				false,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
