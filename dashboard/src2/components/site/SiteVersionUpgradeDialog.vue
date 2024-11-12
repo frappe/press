@@ -145,7 +145,7 @@ export default {
 				this.privateReleaseGroups.length === 0
 			)
 				return `Your team doesn't own any private bench groups available to upgrade this site to ${this.nextVersion}.`;
-			else if (!this.privateReleaseGroup.value) {
+			else if (!this.privateReleaseGroup?.value) {
 				return '';
 			} else if (!this.$site.doc?.group_public && !this.benchHasCommonServer)
 				return `The selected bench group and your site doesn't have a common server. Please add site's server to the bench.`;
