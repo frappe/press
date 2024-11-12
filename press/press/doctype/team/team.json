@@ -40,9 +40,10 @@
   "billing_name",
   "billing_address",
   "free_credits_allocated",
-  "tax_id",
   "column_break_12",
   "address_html",
+  "tax_id",
+  "phone_number",
   "custom_apps_section",
   "github_access_token",
   "partner_section",
@@ -447,6 +448,11 @@
    "fieldname": "tax_id",
    "fieldtype": "Data",
    "label": "Tax Id"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number"
   }
  ],
  "links": [
@@ -506,7 +512,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-10-10 22:04:28.127195",
+ "modified": "2024-11-12 11:53:14.234993",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

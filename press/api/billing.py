@@ -36,7 +36,7 @@ from frappe import _  # Import this for translation functionality
 import json
 import requests
 from press.api.local_payments.mpesa.utils import (
-update_tax_id , 
+update_tax_id_or_phone_no, 
 convert , 
 get_team_and_partner_from_integration_request, 
 get_payment_gateway, get_mpesa_settings_for_team,
@@ -825,7 +825,7 @@ def request_for_payment(**kwargs):
 	kwargs.setdefault("transaction_limit", 150000)
 	kwargs.setdefault('team', 'Administrator')
 	args = frappe._dict(kwargs)
-	update_tax_id(args.team, args.tax_id)
+	update_tax_id_or_phone_no(args.team, args.tax_id, args.phone_number)
 	request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
 	for i, amount in enumerate(request_amounts):
 		args.request_amount = amount

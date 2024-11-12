@@ -117,7 +117,8 @@ export default {
           sender: this.phoneNumberInput,
           partner: this.partnerInput.value,
           tax_id: this.taxIdInput,
-          amount_with_tax: this.amountWithTax
+          amount_with_tax: this.amountWithTax,
+          phone_number:this.phoneNumberInput,
         },
         validate() {
           if (this.amount < this.minimumAmount) {
@@ -193,6 +194,22 @@ export default {
       }
     },
 
+    async fetchPhoneNo() {
+      try {
+        const phoneNo = await frappeRequest({
+          url: '/api/method/press.api.local_payments.mpesa.utils.get_phone_no',
+          method: 'GET',
+        });
+        if (phoneNo) {
+          this.phoneNumberInput = phoneNo;
+        } else {
+          this.phoneNumberInput = '';
+        }
+      } catch (error) {
+        this.errorMessage = `Failed to fetch tax ID: ${error.message}`;
+      }
+    },
+
     async fetchTaxPercentage() {
       try {
         const taxPercentage = await frappeRequest({
@@ -238,12 +255,16 @@ export default {
     },
     amountKES() {
       this.totalAmountWithTax();
-    }
+    },
+    taxPercentage() {
+      this.totalAmountWithTax();
+    },
   },
 
   mounted() {
     this.fetchTeams();
     this.fetchTaxId();
+    this.fetchPhoneNo();
   },
 };
 </script>

@@ -16,6 +16,13 @@ def get_tax_id():
 	return team_doc.tax_id if team_doc.tax_id else ''
 
 @frappe.whitelist(allow_guest=True)
+def get_phone_no():
+	"""Get the phone number for the team."""
+	team=get_current_team()
+	team_doc = frappe.get_doc("Team", team)
+	return team_doc.phone_number if team_doc.phone_number else ''
+
+@frappe.whitelist(allow_guest=True)
 def display_invoices_by_partner():
 	"""Display the list of invoices by partner."""
 	team = get_current_team()
@@ -97,13 +104,32 @@ def get_tax_percentage(payment_partner):
 			taxes_and_charges = payment_gateways[0].taxes_and_charges
 	return taxes_and_charges
 
-def update_tax_id(team, tax_id):
-	"""Update the tax ID for the team."""
-	doc_name=frappe.get_value("Team", {"user": team}, "name")
-	team_doc = frappe.get_doc("Team", doc_name)
-	if not team_doc.tax_id:
-		team_doc.tax_id = tax_id
-		team_doc.save()
+# def update_tax_id_or_phone_no(team, tax_id, phone_number):
+# 	"""Update the tax ID for the team."""
+# 	doc_name=frappe.get_value("Team", {"user": team}, "name")
+# 	team_doc = frappe.get_doc("Team", doc_name)
+# 	if not team_doc.tax_id:
+# 		team_doc.tax_id = tax_id
+# 		team_doc.save()
+
+def update_tax_id_or_phone_no(team, tax_id, phone_number):
+    """Update the tax ID or phone number for the team, only if they are different from existing values."""
+    
+    doc_name = frappe.get_value("Team", {"user": team}, "name")
+    team_doc = frappe.get_doc("Team", doc_name)
+    
+    # Check if updates are needed
+    tax_id_needs_update = tax_id and team_doc.tax_id != tax_id
+    phone_number_needs_update = phone_number and team_doc.phone_number != phone_number
+
+    # Update only if at least one value needs updating
+    if tax_id_needs_update or phone_number_needs_update:
+        if tax_id_needs_update:
+            team_doc.tax_id = tax_id
+        if phone_number_needs_update:
+            team_doc.phone_number = phone_number
+        team_doc.save()
+
   
 def convert(from_currency, to_currency, amount):
 	"""Convert the given amount from one currency to another."""

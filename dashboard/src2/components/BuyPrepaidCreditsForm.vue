@@ -234,7 +234,7 @@ export default {
 		async fetchExchangeRate() {
 			try {
 				const data = await frappeRequest({
-					url: 'press.api.billing.get_exchange_rate',
+					url: 'press.api.local_payments.mpesa.utils.get_exchange_rate',
 					params: {
 						from_currency: 'USD',
 						to_currency: 'KES'
