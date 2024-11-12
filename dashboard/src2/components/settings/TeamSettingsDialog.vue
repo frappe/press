@@ -12,11 +12,6 @@
 					label="Enforce 2FA"
 					description="Require all team members to enable 2FA"
 				/>
-				<Switch
-					v-model="enableInPlaceUpdates"
-					label="Enable In Place Updates"
-					description="Allows updating a bench directly without using a build step"
-				/>
 			</div>
 		</template>
 	</Dialog>
@@ -39,14 +34,6 @@ export default {
 			},
 			set(value) {
 				this.$team.setValue.submit({ enforce_2fa: value });
-			}
-		},
-		enableInPlaceUpdates: {
-			get() {
-				return Boolean(this.$team?.doc.enable_inplace_updates);
-			},
-			set(value) {
-				this.$team.setValue.submit({ enable_inplace_updates: value });
 			}
 		}
 	}
