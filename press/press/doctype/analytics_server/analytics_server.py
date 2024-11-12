@@ -28,6 +28,7 @@ class AnalyticsServer(BaseServer):
 		google_client_secret: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+		ip6: DF.Data | None
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		plausible_mail_login: DF.Data | None

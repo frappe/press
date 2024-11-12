@@ -20,6 +20,7 @@
   "public",
   "section_break_8",
   "ip",
+  "ip6",
   "enabled_default_routing",
   "column_break_10",
   "private_ip",
@@ -68,6 +69,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "virtual_machine.public_ip6_address",
+   "fieldname": "ip6",
+   "fieldtype": "Data",
+   "label": "IPv6",
    "set_only_once": 1
   },
   {
@@ -400,7 +408,7 @@
   }
  ],
  "links": [],
- "modified": "2024-09-10 15:44:10.989216",
+ "modified": "2024-10-15 15:28:10.193273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

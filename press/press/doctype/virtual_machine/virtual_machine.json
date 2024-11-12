@@ -34,6 +34,7 @@
   "subnet_id",
   "private_ip_address",
   "public_ip_address",
+  "public_ip6_address",
   "column_break_15",
   "subnet_cidr_block",
   "public_dns_name",
@@ -147,6 +148,12 @@
    "fieldname": "public_ip_address",
    "fieldtype": "Data",
    "label": "Public IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_ip6_address",
+   "fieldtype": "Data",
+   "label": "Public IPv6 Address",
    "read_only": 1
   },
   {
@@ -323,7 +330,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-10-09 10:54:27.750679",
+ "modified": "2024-10-15 15:28:10.193273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

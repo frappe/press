@@ -71,6 +71,7 @@ class VirtualMachine(Document):
 		private_ip_address: DF.Data | None
 		public_dns_name: DF.Data | None
 		public_ip_address: DF.Data | None
+		public_ip6_address: DF.Data | None
 		ram: DF.Int
 		region: DF.Link
 		security_group_id: DF.Data | None
@@ -160,6 +161,7 @@ class VirtualMachine(Document):
 		self.private_ip_address = server.private_net[0].ip
 
 		self.public_ip_address = server.public_net.ipv4.ip
+		self.public_ip6_address = server.public_net.ipv6.ip
 
 		self.instance_id = server.id
 
@@ -498,6 +500,7 @@ class VirtualMachine(Document):
 			self.machine_type = server_instance.server_type.name
 			self.private_ip_address = server_instance.private_net[0].ip
 			self.public_ip_address = server_instance.public_net.ipv4.ip
+			self.public_ip6_address = server_instance.public_net.ipv6.ip
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -521,7 +524,7 @@ class VirtualMachine(Document):
 			):
 				try:
 					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
-					self.public_ip_address = vnic.public_ip
+					self.public_ip_address = vnic.public_ip  # TODO: IPv6 support
 				except Exception:
 					log_error(
 						title="OCI VNIC Fetch Error",
@@ -590,6 +593,7 @@ class VirtualMachine(Document):
 			self.machine_type = instance.get("InstanceType")
 
 			self.public_ip_address = instance.get("PublicIpAddress")
+			self.public_ip6_address = instance.get("Ipv6Address")
 			self.private_ip_address = instance.get("PrivateIpAddress")
 
 			self.public_dns_name = instance.get("PublicDnsName")

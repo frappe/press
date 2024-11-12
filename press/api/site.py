@@ -1620,6 +1620,37 @@ def check_dns_a(name, domain):
 	return result
 
 
+def check_dns_aaaa(name, domain):
+	result = {"type": "AAAA", "matched": False, "answer": ""}
+	try:
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		answer = resolver.query(domain, "AAAA")
+		domain_ip = answer[0].to_text()
+		site_ip = resolver.query(name, "AAAA")[0].to_text()
+		result["answer"] = answer.rrset.to_text()
+		if domain_ip == site_ip:
+			result["matched"] = True
+		elif site_ip:
+			# We can issue certificates even if the domain points to the secondary proxies
+			server = frappe.db.get_value("Site", name, "server")
+			proxy = frappe.db.get_value("Server", server, "proxy_server")
+			secondary_ips = frappe.get_all(
+				"Proxy Server",
+				{"status": "Active", "primary": proxy, "is_replication_setup": True},
+				pluck="ip6",
+			)
+			if domain_ip in secondary_ips:
+				result["matched"] = True
+	except dns.exception.DNSException as e:
+		result["answer"] = str(e)
+	except Exception as e:
+		result["answer"] = str(e)
+		log_error("DNS Query Exception - AAAA", site=name, domain=domain, exception=e)
+	finally:
+		return result
+
+
 def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 	"""
 	Ensure that the domain doesn't have an AAAA record
@@ -1644,7 +1675,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 
 def check_dns_cname_a(name, domain):
 	check_domain_allows_letsencrypt_certs(domain)
-	ensure_dns_aaaa_record_doesnt_exist(domain)
+	# ensure_dns_aaaa_record_doesnt_exist(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname}
 	result.update(cname)
@@ -1655,6 +1686,15 @@ def check_dns_cname_a(name, domain):
 	a = check_dns_a(name, domain)
 	result.update({"A": a})
 	result.update(a)
+
+	# Check that both A and AAAA records match a proxy
+	aaaa = check_dns_aaaa(name, domain)
+	result.update({"AAAA": aaaa})
+	a_found = a["answer"] and "does not contain an answer" not in a["answer"]
+	aaaa_found = aaaa["answer"] and "does not contain an answer" not in aaaa["answer"]
+	if a_found and aaaa_found and a["matched"] != aaaa["matched"]:
+		# There is both records but one does not match.
+		result["matched"] = False
 
 	return result
 
