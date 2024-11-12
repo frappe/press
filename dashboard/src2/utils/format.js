@@ -44,17 +44,17 @@ export function plural(number, singular, plural) {
 
 export function planTitle(plan) {
 	if (plan === undefined) return;
-	let $team = getTeam();
-	let india = $team.doc.currency == 'INR';
-	let price_field = india ? 'price_inr' : 'price_usd';
-	let price =
-		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
+	const $team = getTeam();
+	const india = $team.doc?.currency === 'INR';
+	const priceField = india ? 'price_inr' : 'price_usd';
+	const price =
+		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
 	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
 }
 
 export function userCurrency(value, fractions = 2) {
-	let $team = getTeam();
-	return currency(value, $team.doc.currency, fractions);
+	const $team = getTeam();
+	return currency(value, $team.doc?.currency, fractions);
 }
 
 export function currency(value, currency, fractions = 2) {
