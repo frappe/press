@@ -342,6 +342,7 @@ class ReleaseGroup(Document, TagHelpers):
 		# using a tuple to avoid updating bench_config
 		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
 		self.update_config_in_release_group(sanitized_common_site_config, ())
+		self.update_benches_config()
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group
