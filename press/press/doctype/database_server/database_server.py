@@ -372,6 +372,7 @@ class DatabaseServer(BaseServer):
 			)
 			play = ansible.run()
 			self.reload()
+			self._set_mount_status(play)
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
