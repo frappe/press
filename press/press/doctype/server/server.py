@@ -1005,6 +1005,35 @@ class BaseServer(Document, TagHelpers):
 					# If we don't know where to mount, mount it in /mnt/<volume_id>
 					mount.mount_point = f"/mnt/{stripped_id}"
 
+	@frappe.whitelist()
+	def mount_volumes(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+
+	def _mount_volumes(self):
+		try:
+			ansible = Ansible(
+				playbook="mount.yml",
+				server=self,
+				variables={
+					"all_mounts_json": json.dumps(
+						[mount.as_dict() for mount in self.mounts], indent=4, default=str
+					),
+					"volume_mounts_json": json.dumps(
+						[mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"],
+						indent=4,
+						default=str,
+					),
+					"bind_mounts_json": json.dumps(
+						[mount.as_dict() for mount in self.mounts if mount.mount_type == "Bind"],
+						indent=4,
+						default=str,
+					),
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Server Mount Exception", server=self.as_dict())
+
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(
 			self.doctype,

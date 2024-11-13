@@ -192,6 +192,12 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Mount Volumes'),
+				'mount_volumes',
+				true,
+				frm.doc.virtual_machine && frm.doc.mounts,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

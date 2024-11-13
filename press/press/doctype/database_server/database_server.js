@@ -154,6 +154,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_self_hosted,
 			],
+			[
+				__('Mount Volumes'),
+				'mount_volumes',
+				true,
+				frm.doc.virtual_machine && frm.doc.mounts,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
