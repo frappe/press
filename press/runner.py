@@ -13,6 +13,7 @@ from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
+from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 from pymysql.err import InterfaceError
 
@@ -163,7 +164,7 @@ class Ansible:
 			check=False,
 			connection="ssh",
 			# This is the only way to pass variables that preserves newlines
-			extra_vars=[f"{key}='{value}'" for key, value in self.variables.items()],
+			extra_vars=[f"{cstr(key)}='{cstr(value)}'" for key, value in self.variables.items()],
 			remote_user=user,
 			start_at_task=None,
 			syntax=False,
