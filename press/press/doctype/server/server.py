@@ -989,6 +989,8 @@ class BaseServer(Document, TagHelpers):
 
 	def set_mount_properties(self):
 		for mount in self.mounts:
+			if not mount.status:
+				mount.status = "Pending"
 			if mount.mount_type == "Volume":
 				mount.filesystem = "ext4"
 				mount.mount_options = f"defaults,nofail,{mount.mount_options or ''}"
