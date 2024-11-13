@@ -271,13 +271,12 @@ class SiteUpdate(Document):
 			return
 
 		server = frappe.get_doc("Server", self.server)
-		source_bench = frappe.get_doc("Bench", self.source_bench)
-		dest_bench = frappe.get_doc("Bench", self.destination_bench)
+		site_plan = frappe.get_value("Site", self.site, "plan")
+		cpu = frappe.get_value("Site Plan", site_plan, "cpu_time_per_day")
 
-		workload_diff = dest_bench.workload - source_bench.workload
 		if (
 			server.new_worker_allocation
-			and workload_diff >= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+			and cpu >= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
 			frappe.enqueue_doc(
 				"Server",
