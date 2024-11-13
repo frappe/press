@@ -1010,6 +1010,27 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
 
 	def _mount_volumes(self):
+		def set_mount_status(self, play):
+			tasks = frappe.get_all(
+				"Ansible Task",
+				["result", "status"],
+				{
+					"play": play.name,
+					"status": ("in", ("Success", "Failure")),
+					"task": ("in", ("Mount Volumes", "Mount Bind Mounts")),
+				},
+			)
+			mount_status_changed = False
+			for task in tasks:
+				result = json.loads(task.result)
+				for row in result.get("results", []):
+					mount_status = {True: "Failure", False: "Success"}[row.get("failed", False)]
+					mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
+					if mount and mount.status != mount_status:
+						mount.status = mount_status
+						mount_status_changed = True
+			return mount_status_changed
+
 		try:
 			ansible = Ansible(
 				playbook="mount.yml",
@@ -1030,7 +1051,10 @@ class BaseServer(Document, TagHelpers):
 					),
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			self.reload()
+			if set_mount_status(self, play):
+				self.save()
 		except Exception:
 			log_error("Server Mount Exception", server=self.as_dict())
 
