@@ -255,7 +255,7 @@ let router = createRouter({
 					props: true
 				},
 				{
-					name: 'SaaSLoginToSite',
+					name: 'SaaSSignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
 					props: true
