@@ -945,6 +945,7 @@ class BaseServer(Document, TagHelpers):
 	def validate_mounts(self):
 		if self.virtual_machine and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
+			self.set_mount_properties()
 
 	def fetch_volumes_from_virtual_machine(self):
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -953,6 +954,24 @@ class BaseServer(Document, TagHelpers):
 				# Skip root volume. This is for AWS other providers may have different root volume
 				continue
 			self.append("mounts", {"mount_type": "Volume", "volume_id": volume.volume_id})
+
+	def set_mount_properties(self):
+		for mount in self.mounts:
+			if mount.mount_type == "Volume":
+				mount.filesystem = "ext4"
+				mount.mount_options = f"defaults,nofail,{mount.mount_options or ''}"
+			else:
+				mount.filesystem = "none"
+				mount.mount_options = f"defaults,bind,nofail,{mount.mount_options or ''}"
+			if mount.volume_id:
+				# EBS volumes are named by their volume id
+				# There's likely a better way to do this
+				# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-using-volumes.html
+				stripped_id = mount.volume_id.replace("-", "")
+				mount.source = f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{ stripped_id }"
+				if not mount.mount_point:
+					# If we don't know where to mount, mount it in /mnt/<volume_id>
+					mount.mount_point = f"/mnt/{stripped_id}"
 
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(
