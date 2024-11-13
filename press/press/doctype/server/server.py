@@ -205,6 +205,8 @@ class BaseServer(Document, TagHelpers):
 		if not self.hostname_abbreviation:
 			self._set_hostname_abbreviation()
 
+		self.validate_mounts()
+
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
@@ -939,6 +941,18 @@ class BaseServer(Document, TagHelpers):
 	def rename(self, title):
 		self.title = title
 		self.save()
+
+	def validate_mounts(self):
+		if self.virtual_machine and not self.mounts:
+			self.fetch_volumes_from_virtual_machine()
+
+	def fetch_volumes_from_virtual_machine(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		for volume in machine.volumes:
+			if volume.device == "/dev/sda1":
+				# Skip root volume. This is for AWS other providers may have different root volume
+				continue
+			self.append("mounts", {"mount_type": "Volume", "volume_id": volume.volume_id})
 
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(
