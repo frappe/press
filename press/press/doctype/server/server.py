@@ -1005,6 +1005,21 @@ class BaseServer(Document, TagHelpers):
 					# If we don't know where to mount, mount it in /mnt/<volume_id>
 					mount.mount_point = f"/mnt/{stripped_id}"
 
+	def get_mount_variables(self):
+		return {
+			"all_mounts_json": json.dumps([mount.as_dict() for mount in self.mounts], indent=4, default=str),
+			"volume_mounts_json": json.dumps(
+				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"],
+				indent=4,
+				default=str,
+			),
+			"bind_mounts_json": json.dumps(
+				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Bind"],
+				indent=4,
+				default=str,
+			),
+		}
+
 	@frappe.whitelist()
 	def mount_volumes(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
@@ -1035,21 +1050,7 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
-				variables={
-					"all_mounts_json": json.dumps(
-						[mount.as_dict() for mount in self.mounts], indent=4, default=str
-					),
-					"volume_mounts_json": json.dumps(
-						[mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"],
-						indent=4,
-						default=str,
-					),
-					"bind_mounts_json": json.dumps(
-						[mount.as_dict() for mount in self.mounts if mount.mount_type == "Bind"],
-						indent=4,
-						default=str,
-					),
-				},
+				variables={**self.get_mount_variables()},
 			)
 			play = ansible.run()
 			self.reload()

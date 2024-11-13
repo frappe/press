@@ -366,6 +366,8 @@ class DatabaseServer(BaseServer):
 					"certificate_private_key": config.certificate.private_key,
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
+					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
+					**self.get_mount_variables(),
 				},
 			)
 			play = ansible.run()
@@ -933,6 +935,12 @@ class DatabaseServer(BaseServer):
 				self.memory_allocator = memory_allocator
 				self.memory_allocator_version = query_result[0][0]["Value"]
 				self.save()
+
+	@property
+	def mariadb_depends_on_mounts(self):
+		mount_points = set(mount.mount_point for mount in self.mounts)
+		mariadb_mount_points = set(["/var/lib/mysql", "/etc/mysql"])
+		return mariadb_mount_points.issubset(mount_points)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
