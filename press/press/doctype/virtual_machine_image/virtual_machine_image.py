@@ -223,6 +223,7 @@ class VirtualMachineImage(Document):
 			.where(
 				images.series == series,
 			)
+			.orderby(images.creation, order=frappe.qb.desc)
 		)
 		if region:
 			get_available_images = get_available_images.where(images.region == region)
