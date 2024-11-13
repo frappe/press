@@ -819,7 +819,8 @@ erpnext 0.8.3	    HEAD
 
 		v14_bench = create_test_bench(group=v14_group, server=server)
 		create_test_bench(group=v15_group, server=server)
-		site = create_test_site(bench=v14_bench.name)
+
+		site = create_test_site(bench=v14_bench.name, subscription_plan=create_test_plan("Site"))
 
 		self.assertEqual(
 			get_private_groups_for_upgrade(site.name, v14_group.version),
