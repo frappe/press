@@ -945,6 +945,7 @@ class BaseServer(Document, TagHelpers):
 	def validate_mounts(self):
 		if self.virtual_machine and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
+			self.set_default_mount_points()
 			self.set_mount_properties()
 
 	def fetch_volumes_from_virtual_machine(self):
@@ -954,6 +955,37 @@ class BaseServer(Document, TagHelpers):
 				# Skip root volume. This is for AWS other providers may have different root volume
 				continue
 			self.append("mounts", {"mount_type": "Volume", "volume_id": volume.volume_id})
+
+	def set_default_mount_points(self):
+		first = self.mounts[0]
+		if self.doctype == "Server":
+			first.mount_point = "/opt/volumes/benches"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/home/frappe/benches",
+					"source": "/opt/volumes/benches/home/frappe/benches",
+				},
+			)
+		elif self.doctype == "Database Server":
+			first.mount_point = "/opt/volumes/mariadb"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/mysql",
+					"source": "/opt/volumes/mariadb/var/lib/mysql",
+				},
+			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/etc/mysql",
+					"source": "/opt/volumes/mariadb/etc/mysql",
+				},
+			)
 
 	def set_mount_properties(self):
 		for mount in self.mounts:
