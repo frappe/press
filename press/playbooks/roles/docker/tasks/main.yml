@@ -54,7 +54,16 @@
     src: daemon.json
     dest: /etc/docker/daemon.json
 
-- name: Set MariaDB to depend on Mounts
+- name: Create Docker SystemD drop-in directory
+  file:
+    dest: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: true
+
+- name: Set Docker to depend on Mounts
   template:
     src: mounts.conf
     dest: /etc/systemd/system/docker.service.d/mounts.conf
