@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Web Notes and contributors
 # For license information, please see license.txt
 
 
 from datetime import timedelta
 from typing import Dict, List
-import rq
 
 import frappe
-from frappe.model.document import Document
-from frappe.utils.make_random import get_random
+import rq
 import rq.exceptions
 import rq.timeouts
+from frappe.model.document import Document
+from frappe.utils.make_random import get_random
+
 from press.utils import log_error
 
 
@@ -50,6 +50,7 @@ class DripEmail(Document):
 		sender: DF.Data
 		sender_name: DF.Data
 		services: DF.Check
+		skip_sites_with_paid_plan: DF.Check
 		subject: DF.SmallText
 	# end: auto-generated types
 
@@ -60,6 +61,13 @@ class DripEmail(Document):
 	def send_drip_email(self, site_name):
 		site = frappe.get_doc("Site", site_name)
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
+			return
+
+		if (
+			self.skip_sites_with_paid_plan
+			and site.plan
+			and not frappe.get_value("Site Plan", site.plan, "is_trial_plan")
+		):
 			return
 
 		if not self.send_after_payment and site.has_paid:
@@ -127,9 +135,7 @@ class DripEmail(Document):
 		for guide in self.module_setup_guide:
 			if account_request.industry == guide.industry:
 				attachments.append(
-					frappe.db.get_value(
-						"File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1
-					)
+					frappe.db.get_value("File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1)
 				)
 
 		return attachments
@@ -201,9 +207,7 @@ def send_drip_emails():
 
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
-	welcome_drips = frappe.db.get_all(
-		"Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name"
-	)
+	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
 		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
