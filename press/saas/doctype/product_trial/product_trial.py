@@ -94,6 +94,12 @@ class ProductTrial(Document):
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
+		current_user = frappe.session.user
+		"""
+		We have set the current user to "Administrator" temporarily
+		to bypass the site creation validation
+		"""
+		frappe.set_user("Administrator")
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
@@ -124,6 +130,7 @@ class ProductTrial(Document):
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
+		frappe.set_user(current_user)
 		site.reload()
 		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True

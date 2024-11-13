@@ -76,7 +76,7 @@ export default {
 				onSuccess: data => {
 					if (data?.status !== 'Pending') {
 						this.$router.push({
-							name: 'SaaSLoginToSite',
+							name: 'SaaSSignupLoginToSite',
 							query: {
 								product_trial_request: data.name
 							}
@@ -110,7 +110,15 @@ export default {
 						}
 					};
 				},
-				auto: false
+				auto: false,
+				onSuccess: data => {
+					this.$router.push({
+						name: 'SaaSSignupLoginToSite',
+						query: {
+							product_trial_request: this.$resources.siteRequest.data.name
+						}
+					});
+				}
 			};
 		}
 	},
