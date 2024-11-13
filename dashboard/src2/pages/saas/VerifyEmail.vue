@@ -14,7 +14,6 @@
 					`We sent you an email to ${email}`,
 					'Check your inbox for next steps'
 				]"
-				:class="{ 'pointer-events-none': $resources.verifyOTP?.loading }"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:default>
@@ -35,7 +34,10 @@
 						<Button
 							class="mt-8"
 							variant="solid"
-							:loading="$resources.verifyCode?.loading"
+							:loading="
+								$resources.verifyCode?.loading ||
+								$resources.setupAccount?.loading
+							"
 							loading-text="Verifying..."
 							type="submit"
 						>
@@ -62,7 +64,7 @@ import { toast } from 'vue-sonner';
 import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
 
 export default {
-	name: 'SaaSVerifyEmail',
+	name: 'SaaSSignupVerifyEmail',
 	props: ['productId'],
 	components: {
 		SaaSLoginBox
@@ -71,7 +73,8 @@ export default {
 		return {
 			account_request: this.$route.query.account_request,
 			email: this.$route.query.email,
-			code: ''
+			code: '',
+			requestKey: ''
 		};
 	},
 	resources: {
@@ -92,11 +95,9 @@ export default {
 					account_request: this.account_request,
 					otp: this.code
 				},
-				onSuccess(key) {
-					window.open(
-						`/api/method/press.api.saas.setup_account_product_trial?key=${key}`,
-						'_self'
-					);
+				onSuccess: key => {
+					this.requestKey = key;
+					this.$resources.setupAccount.submit();
 				}
 			};
 		},
@@ -112,6 +113,19 @@ export default {
 				},
 				onerror() {
 					toast.error('Failed to resend OTP');
+				}
+			};
+		},
+		setupAccount() {
+			return {
+				url: 'press.api.product_trial.setup_account',
+				makeParams() {
+					return {
+						key: this.requestKey
+					};
+				},
+				onSuccess: data => {
+					window.location.href = data?.location;
 				}
 			};
 		}

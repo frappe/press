@@ -160,7 +160,7 @@ export default {
 	resources: {
 		signup() {
 			return {
-				url: 'press.api.saas.signup',
+				url: 'press.api.product_trial.signup',
 				params: {
 					email: this.email,
 					first_name: this.first_name,
@@ -177,7 +177,7 @@ export default {
 				},
 				onSuccess(account_request) {
 					this.$router.push({
-						name: 'SaaSVerifyEmail',
+						name: 'SaaSSignupVerifyEmail',
 						query: {
 							email: this.email,
 							account_request: account_request

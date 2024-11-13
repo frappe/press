@@ -1,10 +1,33 @@
+from __future__ import annotations
+
 import frappe
 from frappe.core.utils import find
 
 from press.api.account import get_account_request_from_key
 from press.press.doctype.team.team import Team
-from press.utils import get_current_team
 from press.utils.telemetry import capture
+
+
+def _get_active_site(product: str, team: str) -> str | None:
+	product_trial_linked_sites = frappe.get_all(
+		"Product Trial Request",
+		{"product_trial": product, "team": team, "status": ["not in", ["Pending", "Error", "Expired"]]},
+		pluck="site",
+	)
+	if not product_trial_linked_sites:
+		return None
+	existing_sites = frappe.get_all(
+		"Site",
+		{
+			"name": ["in", product_trial_linked_sites],
+			"status": ["!=", "Archived"],
+		},
+		pluck="name",
+		limit=1,
+	)
+	if len(existing_sites) > 0:
+		return existing_sites[0]
+	return None
 
 
 @frappe.whitelist(allow_guest=True)
@@ -27,7 +50,11 @@ def signup(
 	if not country:
 		frappe.throw("Please provide a valid country name")
 
-	# TODO add validation
+	# add validation
+	if frappe.db.exists("Team", {"user": email}) and _get_active_site(
+		product, frappe.db.get_value("Team", {"user": email}, "name")
+	):
+		frappe.throw(f"You have already signed up for {product}. Instead try to log in.")
 
 	# create account request
 	account_request = frappe.get_doc(
@@ -79,32 +106,38 @@ def setup_account(key: str):
 	# login
 	frappe.set_user(ar.email)
 	frappe.local.login_manager.login_as(ar.email)
-	frappe.local.response["type"] = "redirect"
-	frappe.local.response["location"] = f"/dashboard/saas/{ar.product_trial}/setup"
-
-
-@frappe.whitelist()
-def get_product_info(product: str):
-	team = get_current_team()
-	product = frappe.utils.cstr(product)
-	site_request = frappe.db.get_value(
-		"Product Trial Request",
-		filters={
-			"product_trial": product,
-			"team": team,
-			"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard"]),
-		},
-		fieldname=["name", "status", "site"],
-		as_dict=1,
-	)
-	if site_request:
-		product_trial = frappe.db.get_value(
-			"Product Trial", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
-		)
+	if _get_active_site(ar.product_trial, team.name):
 		return {
-			"title": product_trial.title,
-			"logo": product_trial.logo,
-			"domain": product_trial.domain,
-			"site_request": site_request,
+			"location": f"/dashboard/saas/{ar.product_trial}/process",
 		}
-	return None
+
+	return {
+		"location": f"/dashboard/saas/{ar.product_trial}/setup",
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def get_request(product):
+	team = frappe.local.team()
+	# validate if there is already a site
+	site = _get_active_site(product, team.name)
+	if site:
+		site_request = frappe.get_doc(
+			"Product Trial Request",
+			{"product_trial": product, "team": team, "site": site},
+			pluck="site",
+		)
+	else:
+		# create a new one
+		site_request = frappe.new_doc(
+			"Product Trial Request",
+			product_trial=product,
+			team=team.name,
+		).insert(ignore_permissions=True)
+
+	return {
+		"name": site_request.name,
+		"site": site_request.site,
+		"product_trial": site_request.product_trial,
+		"status": site_request.status,
+	}

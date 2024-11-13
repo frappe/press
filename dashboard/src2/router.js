@@ -242,7 +242,7 @@ let router = createRouter({
 					meta: { isLoginPage: true }
 				},
 				{
-					name: 'SaaSVerifyEmail',
+					name: 'SaaSSignupVerifyEmail',
 					path: ':productId/verify-email',
 					component: () => import('./pages/saas/VerifyEmail.vue'),
 					props: true,
@@ -251,7 +251,13 @@ let router = createRouter({
 				{
 					name: 'SaaSSignupSetup',
 					path: ':productId/setup',
-					component: () => import('./pages/saas/Setup.vue'),
+					component: () => import('./pages/saas/SetupSite.vue'),
+					props: true
+				},
+				{
+					name: 'SaaSLoginToSite',
+					path: ':productId/login-to-site',
+					component: () => import('./pages/saas/LoginToSite.vue'),
 					props: true
 				}
 			]

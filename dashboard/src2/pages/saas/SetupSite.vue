@@ -29,16 +29,13 @@
 						></SaaSSignupFields>
 						<ErrorMessage
 							class="mt-2"
-							:message="$resources.siteRequest?.createSite?.error"
+							:message="$resources.createSite?.error"
 						/>
 						<Button
 							class="mt-8 w-full"
 							variant="solid"
 							type="submit"
-							:loading="
-								findingClosestServer ||
-								$resources.siteRequest?.createSite?.loading
-							"
+							:loading="findingClosestServer || $resources.createSite?.loading"
 							loadingText="Submitting ..."
 						>
 							Next
@@ -50,6 +47,7 @@
 	</div>
 </template>
 <script>
+import { toast } from 'vue-sonner';
 import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 
@@ -69,11 +67,25 @@ export default {
 		};
 	},
 	resources: {
-		getSiteRequest() {
+		siteRequest() {
 			return {
-				url: 'press.api.account.get_site_request',
+				url: 'press.api.product_trial.get_request',
 				params: { product: this.productId },
-				auto: true
+				initialData: {},
+				auto: true,
+				onSuccess: data => {
+					if (data?.status !== 'Pending') {
+						this.$router.push({
+							name: 'SaaSLoginToSite',
+							query: {
+								product_trial_request: data.name
+							}
+						});
+					}
+				},
+				onError(error) {
+					toast.error(error.messages.join('\n'));
+				}
 			};
 		},
 		saasProduct() {
@@ -84,48 +96,36 @@ export default {
 				auto: true
 			};
 		},
-		siteRequest() {
-			if (!this.siteRequest && !this.siteRequest.is_pending) return;
+		createSite() {
 			return {
-				type: 'document',
-				doctype: 'Product Trial Request',
-				name: this.siteRequest.name,
-				realtime: true,
-				auto: true,
-				onSuccess(doc) {
-					if (
-						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard'
-					) {
-						// just redirect # todo
-					}
-				},
-				whitelistedMethods: {
-					createSite: {
+				url: 'press.api.client.run_doc_method',
+				makeParams: () => {
+					return {
+						dt: 'Product Trial Request',
+						dn: this.$resources.siteRequest.data.name,
 						method: 'create_site',
-						makeParams(params) {
-							let cluster = params?.cluster;
-							let signup_values = params?.signup_values;
-							return {
-								cluster,
-								signup_values
-							};
-						},
-						onSuccess(doc) {
-							// just redirect to next page #todo
+						args: {
+							cluster: this.closestCluster,
+							signup_values: this.signupValues
 						}
-					}
-				}
+					};
+				},
+				auto: false
 			};
+		}
+	},
+	computed: {
+		saasProduct() {
+			return this.$resources.saasProduct.doc;
+		},
+		saasProductSignupFields() {
+			return this.saasProduct?.signup_fields ?? [];
 		}
 	},
 	methods: {
 		async createSite() {
-			let cluster = await this.getClosestCluster();
-			return this.$resources.siteRequest.createSite.submit({
-				cluster,
-				signup_values: this.signupValues
-			});
+			await this.getClosestCluster();
+			return this.$resources.createSite.submit();
 		},
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
@@ -150,24 +150,13 @@ export default {
 			let pingTime = 999999;
 			try {
 				let t1 = new Date().getTime();
-				let r = await fetch(`https://${server}`);
+				await fetch(`https://${server}`);
 				let t2 = new Date().getTime();
 				pingTime = t2 - t1;
 			} catch (error) {
 				console.warn(error);
 			}
 			return { server, pingTime };
-		}
-	},
-	computed: {
-		siteRequest() {
-			return this.$resources.getSiteRequest?.data ?? {};
-		},
-		saasProduct() {
-			return this.$resources.saasProduct.doc;
-		},
-		saasProductSignupFields() {
-			return this.saasProduct?.signup_fields ?? [];
 		}
 	}
 };
