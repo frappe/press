@@ -1,9 +1,9 @@
 # Copyright (c) 2015, Web Notes and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 from datetime import timedelta
-from typing import Dict, List
 
 import frappe
 import rq
@@ -127,7 +127,7 @@ class DripEmail(Document):
 		self.sender_name = consultant.full_name
 		return consultant
 
-	def get_setup_guides(self, account_request) -> List[Dict[str, str]]:
+	def get_setup_guides(self, account_request) -> list[dict[str, str]]:
 		if not account_request:
 			return []
 
@@ -165,8 +165,7 @@ class DripEmail(Document):
 					{conditions}
 			"""
 		)
-		sites = [t[0] for t in sites]
-		return sites
+		return [t[0] for t in sites]  # site names
 
 	def send_to_sites(self):
 		sites = self.sites_to_send_drip
