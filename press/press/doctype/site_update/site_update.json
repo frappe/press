@@ -219,7 +219,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-15 12:50:17.323203",
+ "modified": "2024-11-13 12:07:32.752226",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -239,11 +239,13 @@
   },
   {
    "create": 1,
-   "role": "Press Admin"
+   "role": "Press Admin",
+   "write": 1
   },
   {
    "create": 1,
-   "role": "Press Member"
+   "role": "Press Member",
+   "write": 1
   }
  ],
  "sort_field": "modified",

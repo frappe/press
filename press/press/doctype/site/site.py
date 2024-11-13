@@ -1830,6 +1830,10 @@ class Site(Document, TagHelpers):
 			# ignore card setup for prepaid app payments
 			return
 
+		if bool(frappe.db.get_value("Cluster", self.cluster, "hybrid")):
+			# skip validation if site is on hybrid server
+			return
+
 		team = frappe.get_doc("Team", self.team)
 
 		if team.parent_team:

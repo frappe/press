@@ -144,7 +144,7 @@ export default {
 					}
 					const $team = getTeam();
 					if (row.price_usd > 0) {
-						const india = $team.doc.currency === 'INR';
+						const india = $team.doc?.currency === 'INR';
 						const formattedValue = userCurrency(
 							india ? row.price_inr : row.price_usd,
 							0

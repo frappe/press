@@ -1,10 +1,13 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
@@ -16,6 +19,9 @@ from press.telegram_utils import Telegram
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from twilio.rest.api.v2010.account.call import CallInstance
+
+	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
 	)
@@ -25,12 +31,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+INCIDENT_SCOPE = (
+	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+)
 
 DAY_HOURS = range(9, 18)
-CONFIRMATION_THRESHOLD_SECONDS_DAY = (
-	5 * 60
-)  # 5 minutes;time after which humans are called
+CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
 CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
 	10 * 60  # 10 minutes; time after which humans are called
 )
@@ -40,9 +46,7 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 )
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
-PAST_ALERT_COVER_MINUTES = (
-	15  # to cover alerts that fired before/triggered the incident
-)
+PAST_ALERT_COVER_MINUTES = 15  # to cover alerts that fired before/triggered the incident
 
 
 class Incident(WebsiteGenerator):
@@ -89,11 +93,11 @@ class Incident(WebsiteGenerator):
 
 	@property
 	def global_phone_call_enabled(self) -> bool:
-		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
+		return bool(frappe.db.get_single_value("Incident Settings", "phone_call_alerts", cache=True))
 
 	@property
 	def global_email_alerts_enabled(self) -> bool:
-		return bool(frappe.get_cached_value("Incident Settings", None, "email_alerts"))
+		return bool(frappe.db.get_single_value("Incident Settings", "email_alerts", cache=True))
 
 	def after_insert(self):
 		self.send_sms_via_twilio()
@@ -108,9 +112,7 @@ class Incident(WebsiteGenerator):
 		"""
 		Ignore incidents on server (Don't call)
 		"""
-		frappe.db.set_value(
-			"Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime()
-		)
+		frappe.db.set_value("Server", self.server, "ignore_incidents_since", frappe.utils.now_datetime())
 
 	def call_humans(self):
 		enqueue_doc(
@@ -127,17 +129,17 @@ class Incident(WebsiteGenerator):
 
 	def get_humans(
 		self,
-	) -> list["IncidentSettingsUser"] | list["IncidentSettingsSelfHostedUser"]:
+	):
 		"""
 		Returns a list of users who are in the incident team
 		"""
-		incident_settings = frappe.get_cached_doc("Incident Settings")
-		if frappe.db.exists(
-			"Self Hosted Server", {"server": self.server}
-		) or frappe.db.get_value("Server", self.server, "is_self_hosted"):
-			users = incident_settings.self_hosted_users
+		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
 		users = incident_settings.users
-		ret = users
+		if frappe.db.exists("Self Hosted Server", {"server": self.server}) or frappe.db.get_value(
+			"Server", self.server, "is_self_hosted"
+		):
+			users = incident_settings.self_hosted_users
+		ret: list[IncidentSettingsUser | IncidentSettingsSelfHostedUser] = users
 		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
 			for user in users:
 				if user.user == self.acknowledged_by:
@@ -147,12 +149,12 @@ class Incident(WebsiteGenerator):
 
 	@property
 	def twilio_phone_number(self):
-		press_settings = frappe.get_cached_doc("Press Settings")
-		return press_settings.twilio_phone_number
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
+		return Phone(press_settings.twilio_phone_number)
 
 	@property
 	def twilio_client(self):
-		press_settings: "PressSettings" = frappe.get_cached_doc("Press Settings")
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		try:
 			return press_settings.twilio_client
 		except Exception:
@@ -162,13 +164,12 @@ class Incident(WebsiteGenerator):
 
 	@retry(
 		retry=retry_if_not_result(
-			lambda result: result
-			in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
+			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(30),
 	)
-	def wait_for_pickup(self, call):
+	def wait_for_pickup(self, call: CallInstance):
 		return call.fetch().status  # will eventually be no-answer
 
 	def notify_unable_to_reach_twilio(self):
@@ -180,7 +181,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			reraise=True,
 		)
 
-	def call_human(self, human: "IncidentSettingsUser | IncidentSettingsSelfHostedUser"):
+	def call_human(self, human: IncidentSettingsUser | IncidentSettingsSelfHostedUser):
 		try:
 			return self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
@@ -189,6 +190,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			)
 		except TwilioRestException:
 			self.notify_unable_to_reach_twilio()
+			raise
 
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
@@ -201,9 +203,9 @@ Likely due to insufficient balance or incorrect credentials""",
 			if not (call := self.call_human(human)):
 				return  # can't twilio
 			acknowledged = False
-			status = call.status
+			status = str(call.status)
 			try:
-				status = self.wait_for_pickup(call)
+				status = str(self.wait_for_pickup(call))
 			except RetryError:
 				status = "timeout"  # not twilio's status; mostly translates to no-answer
 			else:
@@ -268,7 +270,7 @@ Incident URL: {incident_link}"""
 			log_error("Incident Notification Email Failed")
 
 	def get_email_subject(self):
-		title = frappe.db.get_value("Server", self.server, "title")
+		title = str(frappe.db.get_value("Server", self.server, "title"))
 		name = title.removesuffix(" - Application") or self.server
 		return f"Incident on {name} - {self.alert}"
 
@@ -276,7 +278,7 @@ Incident URL: {incident_link}"""
 		acknowledged_by = "An engineer"
 		if self.acknowledged_by:
 			acknowledged_by = frappe.db.get_value("User", self.acknowledged_by, "first_name")
-		message = {
+		return {
 			"Validating": "We are noticing some issues with sites on your server. We are giving it a few minutes to confirm before escalating this incident to our engineers.",
 			"Auto-Resolved": "Your sites are now up! This incident has been auto-resolved. We will keep monitoring your sites for any further issues.",
 			"Confirmed": "We are still noticing issues with your sites. We are escalating this incident to our engineers.",
@@ -284,10 +286,11 @@ Incident URL: {incident_link}"""
 			"Resolved": f"Your sites are now up! {acknowledged_by} has resolved this incident. We will keep monitoring your sites for any further issues",
 		}[self.status]
 
-		return message
-
 	def add_acknowledgment_update(
-		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
+		self,
+		human: IncidentSettingsUser | IncidentSettingsSelfHostedUser,
+		call_status: str | None = None,
+		acknowledged=False,
 	):
 		"""
 		Adds a new update to the Incident Document
@@ -360,20 +363,14 @@ where
 
 	@property
 	def time_to_call_for_help(self) -> bool:
-		return (
-			self.status == "Confirmed"
-			and frappe.utils.now_datetime() - self.creation
-			> timedelta(
-				seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
-			)
+		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
+			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
-		return (
-			self.status == "Acknowledged"
-			and frappe.utils.now_datetime() - self.modified
-			> timedelta(seconds=get_call_repeat_interval())
+		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
+			seconds=get_call_repeat_interval()
 		)
 
 
@@ -458,9 +455,7 @@ def notify_ignored_servers():
 
 	message = "The following servers are being ignored for incidents:\n\n"
 	for server in ignored_servers:
-		message += (
-			f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
-		)
+		message += f"{server.name} since {frappe.utils.pretty_date(server.ignore_incidents_since)}\n"
 	message += "\n@adityahase @balamurali27 @saurabh6790\n"
 	telegram = Telegram()
 	telegram.send(message)

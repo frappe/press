@@ -148,7 +148,6 @@
 								</div>
 							</div>
 							<Button
-								variant="solid"
 								:loading="$resources.googleLogin.loading"
 								@click="$resources.googleLogin.submit()"
 							>

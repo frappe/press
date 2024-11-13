@@ -107,6 +107,9 @@ class VirtualMachineImage(Document):
 						# We don't care about non-EBS (instance store) volumes
 						continue
 					snapshot_id = volume["Ebs"].get("SnapshotId")
+					if not snapshot_id:
+						# We don't care about volumes without snapshots
+						continue
 					existing = find(self.volumes, lambda x: x.snapshot_id == snapshot_id)
 					device = volume["DeviceName"]
 					volume_type = volume["Ebs"]["VolumeType"]

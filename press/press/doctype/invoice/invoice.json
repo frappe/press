@@ -33,6 +33,7 @@
   "payment_date",
   "payment_attempt_count",
   "payment_attempt_date",
+  "next_payment_attempt_date",
   "payment_mode",
   "write_off_amount",
   "column_break_15",
@@ -455,6 +456,12 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "depends_on": "eval:doc.payment_mode == \"Card\" && doc.status == \"Unpaid\"",
+   "fieldname": "next_payment_attempt_date",
+   "fieldtype": "Date",
+   "label": "Next Payment Attempt Date"
   }
  ],
  "is_submittable": 1,
@@ -480,7 +487,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-09-28 10:41:11.588695",
+ "modified": "2024-11-08 17:52:33.922115",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

@@ -785,6 +785,7 @@ def get_site_plans():
 			"private_benches",
 			"monitor_access",
 			"dedicated_server_plan",
+			"allow_downgrading_from_other_plan",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
@@ -2196,10 +2197,12 @@ def version_upgrade(
 	name, destination_group, scheduled_datetime=None, skip_failing_patches=False, skip_backups=False
 ):
 	site = frappe.get_doc("Site", name)
-	current_version, shared_site = frappe.db.get_value("Release Group", site.group, ["version", "public"])
+	current_version, shared_site, central_site = frappe.db.get_value(
+		"Release Group", site.group, ["version", "public", "central_bench"]
+	)
 	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
 
-	if shared_site:
+	if shared_site or central_site:
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 
@@ -2209,7 +2212,8 @@ def version_upgrade(
 			.join(ReleaseGroupServer)
 			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
 			.where(ReleaseGroup.version == next_version)
-			.where(ReleaseGroup.public == 1)
+			.where(ReleaseGroup.public == shared_site)
+			.where(ReleaseGroup.central_bench == central_site)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroupServer.server == site.server)
 			.run(as_dict=True, pluck="name")
