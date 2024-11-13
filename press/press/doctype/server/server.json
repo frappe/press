@@ -76,7 +76,9 @@
   "column_break_edyf",
   "is_standalone_setup",
   "tags_section",
-  "tags"
+  "tags",
+  "mounts_section",
+  "mounts"
  ],
  "fields": [
   {
@@ -523,6 +525,17 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "fieldname": "mounts_section",
+   "fieldtype": "Section Break",
+   "label": "Mounts"
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Server Mount"
   }
  ],
  "links": [],

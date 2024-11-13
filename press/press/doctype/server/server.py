@@ -1088,6 +1088,7 @@ class Server(BaseServer):
 		from frappe.types import DF
 
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
@@ -1113,6 +1114,7 @@ class Server(BaseServer):
 		is_standalone_setup: DF.Check
 		is_upstream_setup: DF.Check
 		managed_database_service: DF.Link | None
+		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		primary: DF.Link | None
