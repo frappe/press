@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import ipaddress
+import time
 
 import boto3
 import botocore
@@ -1146,6 +1147,40 @@ class VirtualMachine(Document):
 			virtual_machine_image=virtual_machine_image,
 			machine_type=machine_type,
 		).insert()
+
+	@frappe.whitelist()
+	def attach_new_volume(self, size):
+		if self.cloud_provider != "AWS EC2":
+			return
+		volume_id = self.client().create_volume(
+			AvailabilityZone=self.availability_zone,
+			Size=size,
+			VolumeType="gp3",
+			TagSpecifications=[
+				{
+					"ResourceType": "volume",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
+				},
+			],
+		)["VolumeId"]
+		# Wait for the volume to be available
+		while (
+			self.client().describe_volumes(
+				VolumeIds=[
+					volume_id,
+				],
+			)["Volumes"][0]["State"]
+			!= "available"
+		):
+			time.sleep(1)
+		# First volume starts from /dev/sdf
+		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+		self.client().attach_volume(
+			Device=f"/dev/sd{device_name_index}",
+			InstanceId=self.instance_id,
+			VolumeId=volume_id,
+		)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
