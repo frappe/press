@@ -284,6 +284,8 @@ class VirtualMachine(Document):
 
 	def get_cloud_init(self):
 		server = self.get_server()
+		if not server:
+			return ""
 		log_server, kibana_password = server.get_log_server()
 		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
 		context = {
