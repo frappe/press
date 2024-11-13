@@ -1,11 +1,13 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
+from __future__ import annotations
 
+import frappe
 import frappe.utils
+from frappe.model.document import Document
 from frappe.utils.momentjs import get_all_timezones
+
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -18,6 +20,7 @@ class ProductTrial(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,
@@ -43,14 +46,14 @@ class ProductTrial(Document):
 		trial_plan: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"logo",
 		"description",
 		"domain",
 		"trial_days",
 		"trial_plan",
-	]
+	)
 
 	def get_doc(self, doc):
 		if not self.published:
@@ -91,6 +94,12 @@ class ProductTrial(Document):
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
+		current_user = frappe.session.user
+		"""
+		We have set the current user to "Administrator" temporarily
+		to bypass the site creation validation
+		"""
+		frappe.set_user("Administrator")
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
@@ -121,6 +130,7 @@ class ProductTrial(Document):
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
+		frappe.set_user(current_user)
 		site.reload()
 		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True
@@ -160,10 +170,9 @@ class ProductTrial(Document):
 			pluck="Cluster",
 		)
 		clusters = list(set(clusters))
-		public_clusters = frappe.db.get_all(
+		return frappe.db.get_all(
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
-		return public_clusters
 
 	def get_standby_site(self, cluster=None):
 		filters = {
@@ -185,6 +194,7 @@ class ProductTrial(Document):
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
+		return None
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:
@@ -204,7 +214,7 @@ class ProductTrial(Document):
 		if sites_to_create > self.standby_queue_size:
 			sites_to_create = self.standby_queue_size
 
-		for i in range(sites_to_create):
+		for _i in range(sites_to_create):
 			self.create_standby_site(cluster)
 			frappe.db.commit()
 

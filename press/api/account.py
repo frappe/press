@@ -814,59 +814,6 @@ def user_prompts():
 	return None
 
 
-@frappe.whitelist()
-def get_site_request(product):
-	team = frappe.local.team()
-	requests = frappe.qb.get_query(
-		"Product Trial Request",
-		filters={
-			"team": team.name,
-			"product_trial": product,
-		},
-		fields=[
-			"name",
-			"status",
-			"site",
-			"site.trial_end_date as trial_end_date",
-			"site.status as site_status",
-			"site.plan as site_plan",
-		],
-		order_by="creation desc",
-	).run(as_dict=1)
-	if requests:
-		site_request = requests[0]
-		site_request.is_pending = (not site_request.site) or site_request.status in [
-			"Pending",
-			"Wait for Site",
-			"Completing Setup Wizard",
-			"Error",
-		]
-	else:
-		site_request = frappe.new_doc(
-			"Product Trial Request",
-			product_trial=product,
-			team=team.name,
-		).insert(ignore_permissions=True)
-		site_request.is_pending = True
-
-	if hasattr(site_request, "site_plan") and site_request.site_plan:
-		record = frappe.get_value(
-			"Site Plan",
-			site_request.site_plan,
-			["is_trial_plan", "price_inr", "price_usd"],
-			as_dict=1,
-		)
-		site_request.is_trial_plan = bool(
-			frappe.get_value("Site Plan", site_request.site_plan, "is_trial_plan")
-		)
-		if team.currency == "INR":
-			site_request.site_plan_description = f"₹{record.price_inr} / month"
-		else:
-			site_request.site_plan_description = f"${record.price_usd} / month"
-
-	return site_request
-
-
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,
