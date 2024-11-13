@@ -11,6 +11,13 @@
     state: directory
   loop: "{{ all_mounts }}"
 
+- name: Format Volumes
+  filesystem:
+    fstype: "{{ item.filesystem }}"
+    dev: "{{ item.source }}"
+    force: false
+  loop: "{{ volume_mounts }}"
+
 - name: Mount Volumes
   mount:
     src: "{{ item.source }}"
