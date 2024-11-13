@@ -25,22 +25,25 @@
 					<p class="text-base text-gray-800">Please wait for a moment</p>
 				</div>
 				<ErrorMessage
+					v-if="!isRedirectingToSite"
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
 			</SaaSLoginBox>
 			<SaaSLoginBox
-				v-else-if="true"
+				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
 				:subtitle="this.$resources?.siteRequest?.doc?.site"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<Button variant="outline">Signup for new site</Button>
+						<Button variant="outline" @click="signupForCurrentProduct"
+							>Signup for new site</Button
+						>
 						<p class="my-4 text-gray-600">or,</p>
 						<p class="text-center text-base leading-5 text-gray-800">
-							Please contact at
+							Contact at
 							<a href="mailto:support@frappe.io" class="underline"
 								>support@frappe.io</a
 							><br />
@@ -165,6 +168,12 @@ export default {
 	methods: {
 		loginToSite() {
 			this.$resources.siteRequest.getLoginSid.submit();
+		},
+		signupForCurrentProduct() {
+			this.$router.push({
+				name: 'SaaSSignupSetup',
+				params: { productId: this.productId }
+			});
 		}
 	}
 };
