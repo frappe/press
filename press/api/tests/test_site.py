@@ -711,7 +711,9 @@ erpnext 0.8.3	    HEAD
 		group2 = create_test_release_group([app])
 		bench1 = create_test_bench(group=group1, server=server)
 		bench2 = create_test_bench(group=group2, server=server)
-		site = create_test_site(bench=bench1.name)
+		site = create_test_site(
+			bench=bench1.name, team=self.team, plan=create_test_plan("Site", private_benches=True).name
+		)
 
 		self.assertEqual(change_group_options(site.name), [{"name": group2.name, "title": group2.title}])
 
