@@ -31,15 +31,13 @@ def reconnect_on_failure():
 
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
-		super(AnsibleCallback, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 
 	@reconnect_on_failure()
 	def process_task_success(self, result):
 		result, action = frappe._dict(result._result), result._task.action
 		if action == "user":
-			server_type, server = frappe.db.get_value(
-				"Ansible Play", self.play, ["server_type", "server"]
-			)
+			server_type, server = frappe.db.get_value("Ansible Play", self.play, ["server_type", "server"])
 			server = frappe.get_doc(server_type, server)
 			if result.name == "root":
 				server.root_public_key = result.ssh_public_key
@@ -74,7 +72,7 @@ class AnsibleCallback(CallbackBase):
 		play = frappe.get_doc("Ansible Play", self.play)
 		if stats:
 			# Assume we're running on one host
-			host = list(stats.processed.keys())[0]
+			host = next(iter(stats.processed.keys()))
 			play.update(stats.summarize(host))
 			if play.failures or play.unreachable:
 				play.status = "Failure"
@@ -114,7 +112,17 @@ class AnsibleCallback(CallbackBase):
 		else:
 			task.start = now()
 		task.save()
+		self.publish_play_progress(task.name)
 		frappe.db.commit()
+
+	def publish_play_progress(self, task):
+		frappe.publish_realtime(
+			"ansible_play_progress",
+			{"progress": self.task_list.index(task), "total": len(self.task_list)},
+			doctype="Ansible Play",
+			docname=self.play,
+			user=frappe.session.user,
+		)
 
 	def parse_result(self, result):
 		task = result._task.name
@@ -132,9 +140,7 @@ class AnsibleCallback(CallbackBase):
 	@reconnect_on_failure()
 	def on_async_poll(self, result):
 		job_id = result["ansible_job_id"]
-		task_name = frappe.get_value(
-			"Ansible Task", {"play": self.play, "job_id": job_id}, "name"
-		)
+		task_name = frappe.get_value("Ansible Task", {"play": self.play, "job_id": job_id}, "name")
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.result = json.dumps(result, indent=4)
 		task.duration = now() - task.start
@@ -212,6 +218,7 @@ class Ansible:
 		self.executor._tqm._stdout_callback = self.callback
 		self.callback.play = self.play
 		self.callback.tasks = self.tasks
+		self.callback.task_list = self.task_list
 		self.executor.run()
 		self.unpatch()
 		return frappe.get_doc("Ansible Play", self.play)
@@ -235,6 +242,7 @@ class Ansible:
 		).insert()
 		self.play = play_doc.name
 		self.tasks = {}
+		self.task_list = []
 		for role in play.get_roles():
 			for block in role.get_task_blocks():
 				for task in block.block:
@@ -247,3 +255,4 @@ class Ansible:
 						}
 					).insert()
 					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
+					self.task_list.append(task_doc.name)
