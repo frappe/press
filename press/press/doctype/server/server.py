@@ -1421,6 +1421,8 @@ class Server(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					**self.get_mount_variables(),
 				},
 			)
 			play = ansible.run()
@@ -1827,6 +1829,12 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
+
+	@property
+	def docker_depends_on_mounts(self):
+		mount_points = set(mount.mount_point for mount in self.mounts)
+		bench_mount_points = set(["/home/frappe/benches"])
+		return bench_mount_points.issubset(mount_points)
 
 
 def scale_workers(now=False):
