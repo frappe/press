@@ -117,8 +117,8 @@ class TestDripEmail(unittest.TestCase):
 			account_request=create_test_account_request(
 				"site3", saas=True, saas_app=test_marketplace_app.name
 			).name,
-			plan=self.paid_site_plan.name,
+			plan=self.trial_site_plan.name,
 		)
 		site3.save()
 
-		self.assertEqual(drip_email.sites_to_send_drip, [site2.name, site3.name])
+		self.assertEqual(drip_email.sites_to_send_drip, [site1.name, site3.name])

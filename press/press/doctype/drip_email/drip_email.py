@@ -143,13 +143,13 @@ class DripEmail(Document):
 			conditions += f'AND site.standby_for = "{self.saas_app}"'
 
 		if self.skip_sites_with_paid_plan:
-			trial_plans = frappe.get_all(
-				"Site Plan", {"enabled": True, "is_trial_plan": True, "document_type": "Site"}, pluck="name"
+			paid_site_plans = frappe.get_all(
+				"Site Plan", {"enabled": True, "is_trial_plan": False, "document_type": "Site"}, pluck="name"
 			)
 
-			if trial_plans:
-				trial_plans_str = ", ".join(f"'{plan}'" for plan in trial_plans)
-				conditions += f" AND site.plan NOT IN ({trial_plans_str})"
+			if paid_site_plans:
+				paid_site_plans_str = ", ".join(f"'{plan}'" for plan in paid_site_plans)
+				conditions += f" AND site.plan NOT IN ({paid_site_plans_str})"
 
 		sites = frappe.db.sql(
 			f"""
