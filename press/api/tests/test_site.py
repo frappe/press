@@ -32,7 +32,6 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.utils import _get_current_team
 
 
 class TestAPISite(unittest.TestCase):
@@ -41,7 +40,6 @@ class TestAPISite(unittest.TestCase):
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
 		self.team.payment_mode = "Prepaid Credits"
 		self.team.save()
-		frappe.local.team = _get_current_team
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -823,8 +821,7 @@ erpnext 0.8.3	    HEAD
 
 		v14_bench = create_test_bench(group=v14_group, server=server)
 		create_test_bench(group=v15_group, server=server)
-
-		site = create_test_site(bench=v14_bench.name, plan=create_test_plan("Site").name, team=self.team)
+		site = create_test_site(bench=v14_bench.name)
 
 		self.assertEqual(
 			get_private_groups_for_upgrade(site.name, v14_group.version),
