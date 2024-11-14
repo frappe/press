@@ -49,7 +49,6 @@ class ProductTrial(Document):
 	dashboard_fields = (
 		"title",
 		"logo",
-		"description",
 		"domain",
 		"trial_days",
 		"trial_plan",
