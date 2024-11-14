@@ -60,12 +60,7 @@
 								Login with email
 							</Button>
 							<p>or</p>
-							<Button
-								:loading="$resources.signup?.loading"
-								variant="subtle"
-								class="w-full font-medium"
-								type="button"
-							>
+							<Button variant="subtle" class="w-full font-medium" type="button">
 								<div class="flex flex-row items-center gap-1">
 									<GoogleIconSolid class="w-4" />
 									Login with google
