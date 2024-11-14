@@ -189,7 +189,6 @@ def sync_all_snapshots_from_aws():
 						{"snapshot_id": snapshot["SnapshotId"]},
 						"status",
 						random_snapshot.get_aws_status_map(snapshot["State"]),
-						debug=True,
 					)
 					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
 					virtual_machine = tag_name.split(" - ")[1]
