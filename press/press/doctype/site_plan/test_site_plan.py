@@ -22,6 +22,7 @@ def create_test_plan(
 	allowed_apps: list[str] | None = None,
 	release_groups: list[str] | None = None,
 	private_benches: bool = False,
+	is_trial_plan: bool = False,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -39,6 +40,7 @@ def create_test_plan(
 			"disk": 50,
 			"instance_type": "t2.micro",
 			"private_benches": private_benches,
+			"is_trial_plan": is_trial_plan,
 		}
 	)
 	if allowed_apps:

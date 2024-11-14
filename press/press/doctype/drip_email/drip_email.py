@@ -63,13 +63,6 @@ class DripEmail(Document):
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
 			return
 
-		if (
-			self.skip_sites_with_paid_plan
-			and site.plan
-			and not frappe.get_value("Site Plan", site.plan, "is_trial_plan")
-		):
-			return
-
 		if not self.send_after_payment and site.has_paid:
 			return
 
@@ -148,6 +141,15 @@ class DripEmail(Document):
 
 		if self.saas_app:
 			conditions += f'AND site.standby_for = "{self.saas_app}"'
+
+		if self.skip_sites_with_paid_plan:
+			trial_plans = frappe.get_all(
+				"Site Plan", {"enabled": True, "is_trial_plan": True, "document_type": "Site"}, pluck="name"
+			)
+
+			if trial_plans:
+				trial_plans_str = ", ".join(f"'{plan}'" for plan in trial_plans)
+				conditions += f" AND site.plan NOT IN ({trial_plans_str})"
 
 		sites = frappe.db.sql(
 			f"""
