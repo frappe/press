@@ -43,6 +43,7 @@ def poll_file_statuses():
 			"region": default_region,
 			"access_key_id": aws_access_key,
 			"secret_access_key": aws_secret_key,
+			"endpoint_url": press_settings.offsite_backups_endpoint,
 		},
 		{
 			"name": press_settings.remote_uploads_bucket,
@@ -276,19 +277,29 @@ def delete_s3_files(buckets):
 		if bucket_name == press_settings.aws_s3_bucket:
 			endpoint_url = press_settings.offsite_backups_endpoint
 			region_name = press_settings.backup_region
+			aws_access_key_id = press_settings.offsite_backups_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"offsite_backups_secret_access_key", raise_exception=False
+			)
 		elif bucket_name == press_settings.remote_uploads_bucket:
 			endpoint_url = press_settings.remote_uploads_endpoint
 			region_name = press_settings.remote_uploads_region
+			aws_access_key_id = press_settings.remote_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"remote_secret_access_key", raise_exception=False
+			)
 		else:
 			endpoint_url = frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
 			region_name = frappe.db.get_value("Backup Bucket", bucket_name, "region")
+			aws_access_key_id = press_settings.offsite_backups_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"offsite_backups_secret_access_key", raise_exception=False
+			)
 
 		s3 = resource(
 			"s3",
-			aws_access_key_id=press_settings.offsite_backups_access_key_id,
-			aws_secret_access_key=press_settings.get_password(
-				"offsite_backups_secret_access_key", raise_exception=False
-			),
+			aws_access_key_id=aws_access_key_id,
+			aws_secret_access_key=aws_secret_access_key,
 			region_name=region_name or "ap-south-1",
 			endpoint_url=endpoint_url or "https://s3.amazonaws.com",
 		)
