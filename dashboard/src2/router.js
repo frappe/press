@@ -235,6 +235,13 @@ let router = createRouter({
 			redirect: { name: 'Home' },
 			children: [
 				{
+					name: 'SaaSLogin',
+					path: ':productId/login',
+					component: () => import('./pages/saas/Login.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
 					name: 'SaaSSignup',
 					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
