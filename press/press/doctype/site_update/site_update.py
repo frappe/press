@@ -272,7 +272,9 @@ class SiteUpdate(Document):
 
 		server = frappe.get_doc("Server", self.server)
 		site_plan = frappe.get_value("Site", self.site, "plan")
-		cpu = frappe.get_value("Site Plan", site_plan, "cpu_time_per_day")
+		cpu = (
+			frappe.get_value("Site Plan", site_plan, "cpu_time_per_day") or 0
+		)  # if plan is not set, assume 0
 
 		if (
 			server.new_worker_allocation
