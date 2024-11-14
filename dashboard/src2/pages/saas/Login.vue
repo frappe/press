@@ -59,13 +59,13 @@
 							>
 								Login with email
 							</Button>
-							<p>or</p>
+							<!-- <p>or</p>
 							<Button variant="subtle" class="w-full font-medium" type="button">
 								<div class="flex flex-row items-center gap-1">
 									<GoogleIconSolid class="w-4" />
 									Login with google
 								</div>
-							</Button>
+							</Button> -->
 						</div>
 						<!-- buttons to handle email verification -->
 						<div class="mt-5 flex flex-col items-center gap-2" v-else>
