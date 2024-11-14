@@ -96,7 +96,15 @@ class Devbox(Document):
 		server_agent = Agent(server_type="Server", server=devbox.server)
 		server_agent.create_agent_job(
 			"Start Devbox",
-			path=f"devboxes/{devbox.name}/{devbox.websockify_port}/start",
+			path=f"devboxes/{devbox.name}/start",
+			data={
+				"vnc_password": devbox.vnc_password,
+				"codeserver_password": devbox.codeserver_password,
+				"websockify_port": devbox.websockify_port,
+				"vnc_port": devbox.vnc_port,
+				"codeserver_port": devbox.codeserver_port,
+				"browser_port": devbox.browser_port,
+			},
 			devbox=devbox.name,
 		)
 
