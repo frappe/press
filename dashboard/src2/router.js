@@ -235,6 +235,13 @@ let router = createRouter({
 			redirect: { name: 'Home' },
 			children: [
 				{
+					name: 'SaaSLogin',
+					path: ':productId/login',
+					component: () => import('./pages/saas/Login.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
 					name: 'SaaSSignup',
 					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
@@ -316,6 +323,12 @@ router.beforeEach(async (to, from, next) => {
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
 	if (to.name.startsWith('IntegratedBilling')) {
+		next();
+		return;
+	}
+
+	// if user is trying to access saas login page, allow irrespective of login status
+	if (to.name == 'SaaSLogin') {
 		next();
 		return;
 	}

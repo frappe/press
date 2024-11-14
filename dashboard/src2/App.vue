@@ -10,6 +10,7 @@
 						v-if="
 							$session.user &&
 							!$route.name?.startsWith('SaaSSignup') &&
+							$route.name != 'SaaSLogin' &&
 							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
@@ -21,6 +22,7 @@
 							!isHideSidebar &&
 							$session.user &&
 							!$route.name?.startsWith('SaaSSignup') &&
+							$route.name != 'SaaSLogin' &&
 							!$route.name?.startsWith('IntegratedBilling')
 						"
 					/>
@@ -29,6 +31,7 @@
 							!$session.user &&
 							!$route.meta.isLoginPage &&
 							!$route.name?.startsWith('IntegratedBilling') &&
+							$route.name != 'SaaSLogin' &&
 							!$route.name?.startsWith('SaaSSignup')
 						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"

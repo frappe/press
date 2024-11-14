@@ -1,14 +1,24 @@
+# Copyright (c) 2023, Frappe and contributors
+# For license information, please see license.txt
+
 from __future__ import annotations
 
+import random
+
 import frappe
+import frappe.utils
 from frappe.core.utils import find
+from frappe.rate_limiter import rate_limit
 
 from press.api.account import get_account_request_from_key
 from press.press.doctype.team.team import Team
+from press.saas.doctype.product_trial.product_trial import send_verification_mail_for_login
 from press.utils.telemetry import capture
 
 
-def _get_active_site(product: str, team: str) -> str | None:
+def _get_active_site(product: str, team: str | None) -> str | None:
+	if team is None:
+		return None
 	product_trial_linked_sites = frappe.get_all(
 		"Product Trial Request",
 		{"product_trial": product, "team": team, "status": ["not in", ["Pending", "Error", "Expired"]]},
@@ -31,6 +41,61 @@ def _get_active_site(product: str, team: str) -> str | None:
 
 
 @frappe.whitelist(allow_guest=True)
+def send_verification_code_for_login(email: str, product: str):
+	is_user_exists = frappe.db.exists("Team", {"user": email}) and _get_active_site(
+		product, frappe.db.get_value("Team", {"user": email}, "name")
+	)
+	if not is_user_exists:
+		frappe.throw("You have no active sites for this product. Please try signing up.")
+	# generate otp and store in redis
+	otp = random.randint(100000, 999999)
+	frappe.cache.set_value(
+		f"product_trial_login_verification_code:{email}",
+		frappe.utils.sha256_hash(str(otp)),
+		expires_in_sec=300,
+	)
+
+	send_verification_mail_for_login(email, product, otp)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=300)
+def login_using_code(email: str, product: str, code: str):
+	team_exists = frappe.db.exists("Team", {"user": email})
+	site = _get_active_site(product, frappe.db.get_value("Team", {"user": email}, "name"))
+	if not team_exists:
+		frappe.throw("You have no active sites for this product. Please try signing up.")
+
+	# check if team has 2fa enabled and active
+	team = frappe.get_value("Team", {"user": email}, ["name", "enforce_2fa", "enabled"], as_dict=True)
+	if not team.enabled:
+		frappe.throw("Your account is disabled. Please contact support.")
+	if team.enforce_2fa:
+		frappe.throw("Your account has 2FA enabled. Please go to frappecloud.com to login.")
+
+	# validate code
+	code_hash_from_cache = frappe.cache.get_value(f"product_trial_login_verification_code:{email}")
+	if not code_hash_from_cache:
+		frappe.throw("OTP has expired. Please try again.")
+	if frappe.utils.sha256_hash(str(code)) != code_hash_from_cache:
+		frappe.throw("Invalid OTP. Please try again.")
+
+	# remove code from cache
+	frappe.cache.delete_value(f"product_trial_login_verification_code:{email}")
+
+	# login as user
+	frappe.set_user(email)
+	frappe.local.login_manager.login_as(email)
+
+	# send the product trial request name
+	return frappe.get_value(
+		"Product Trial Request",
+		{"product_trial": product, "team": team.name, "site": site},
+		pluck="name",
+	)
+
+
+@frappe.whitelist(allow_guest=True)
 def signup(
 	first_name: str,
 	last_name: str,
@@ -44,16 +109,24 @@ def signup(
 		frappe.throw("Please accept the terms and conditions")
 	frappe.utils.validate_email_address(email, True)
 	email = email.strip().lower()
+
 	# validate country
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
 		frappe.throw("Please provide a valid country name")
 
-	# add validation
-	if frappe.db.exists("Team", {"user": email}) and _get_active_site(
-		product, frappe.db.get_value("Team", {"user": email}, "name")
-	):
+	# validation
+	team_exists = frappe.db.exists("Team", {"user": email})
+	if team_exists:
+		# check if team has 2fa enabled and active
+		team = frappe.get_value("Team", {"user": email}, ["enforce_2fa", "enabled"], as_dict=True)
+		if not team.enabled:
+			frappe.throw("Your account is disabled. Please contact support.")
+		if team.enforce_2fa:
+			frappe.throw("Your account has 2FA enabled. Please go to frappecloud.com to login.")
+
+	if team_exists and _get_active_site(product, frappe.db.get_value("Team", {"user": email}, "name")):
 		frappe.throw(f"You have already signed up for {product}. Instead try to log in.")
 
 	# create account request

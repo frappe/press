@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None):
+def signup(email, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -57,8 +57,6 @@ def signup(email, product=None, referrer=None):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
-				"saas": bool(product),
-				"product_trial": product,
 				"send_email": True,
 			}
 		).insert()
@@ -75,7 +73,7 @@ def signup(email, product=None, referrer=None):
 def verify_otp(account_request: str, otp: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if not account_request.product_trial and frappe.db.exists("Team", {"user": account_request.email}):
+	if frappe.db.exists("Team", {"user": account_request.email}):
 		frappe.throw("Invalid OTP. Please try again.")
 	if account_request.otp != otp:
 		frappe.throw("Invalid OTP. Please try again.")
@@ -87,7 +85,7 @@ def verify_otp(account_request: str, otp: str):
 def resend_otp(account_request: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if not account_request.product_trial and frappe.db.exists("Team", {"user": account_request.email}):
+	if frappe.db.exists("Team", {"user": account_request.email}):
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
 	account_request.send_verification_email()
@@ -145,7 +143,7 @@ def setup_account(  # noqa: C901
 		doc.create_user_for_member(first_name, last_name, email, password, role, press_roles)
 	else:
 		# Team doesn't exist, create it
-		team_doc = Team.create_new(
+		Team.create_new(
 			account_request=account_request,
 			first_name=first_name,
 			last_name=last_name,
@@ -157,14 +155,6 @@ def setup_account(  # noqa: C901
 			doc = frappe.get_doc("Team", account_request.invited_by)
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
-
-		if account_request.product_trial:
-			frappe.new_doc(
-				"Product Trial Request",
-				product_trial=account_request.product_trial,
-				account_request=account_request.name,
-				team=team_doc.name,
-			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
 	capture("completed_signup", "fc_signup", account_request.email)
@@ -314,12 +304,6 @@ def validate_request_key(key, timezone=None):
 	if account_request:
 		data = get_country_info()
 		possible_country = data.get("country") or get_country_from_timezone(timezone)
-		product_trial = frappe.db.get_value(
-			"Product Trial",
-			{"name": account_request.product_trial},
-			pluck="name",
-		)
-		product_trial_doc = frappe.get_doc("Product Trial", product_trial) if product_trial else None
 		if not (account_request.is_saas_signup() or account_request.invited_by_parent_team):
 			capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
@@ -337,15 +321,6 @@ def validate_request_key(key, timezone=None):
 			"oauth_domain": frappe.db.exists(
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
-			"product_trial": {
-				"name": product_trial_doc.name,
-				"title": product_trial_doc.title,
-				"logo": product_trial_doc.logo,
-				"signup_fields": product_trial_doc.signup_fields,
-				"description": product_trial_doc.description,
-			}
-			if product_trial_doc
-			else None,
 		}
 	return None
 
