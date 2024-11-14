@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -27,9 +28,7 @@ class VirtualDiskSnapshot(Document):
 		size: DF.Int
 		snapshot_id: DF.Data
 		start_time: DF.Datetime | None
-		status: DF.Literal[
-			"Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"
-		]
+		status: DF.Literal["Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"]
 		virtual_machine: DF.Link
 		volume_id: DF.Data | None
 	# end: auto-generated types
@@ -43,18 +42,16 @@ class VirtualDiskSnapshot(Document):
 	def set_credentials(self):
 		series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
 		if series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
-			self.mariadb_root_password = frappe.get_doc(
-				"Database Server", self.virtual_machine
-			).get_password("mariadb_root_password")
+			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
+				"mariadb_root_password"
+			)
 
 	@frappe.whitelist()
 	def sync(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			try:
-				snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])[
-					"Snapshots"
-				]
+				snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])["Snapshots"]
 				if snapshots:
 					snapshot = snapshots[0]
 					self.volume_id = snapshot["VolumeId"]
@@ -136,8 +133,9 @@ class VirtualDiskSnapshot(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif cluster.cloud_provider == "OCI":
+		if cluster.cloud_provider == "OCI":
 			return BlockstorageClient(cluster.get_oci_config())
+		return None
 
 
 def sync_snapshots():
@@ -166,3 +164,74 @@ def delete_old_snapshots():
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()
+
+
+def sync_all_snapshots_from_aws():
+	regions = frappe.get_all("Cloud Region", {"provider": "AWS EC2"}, pluck="name")
+	for region in regions:
+		if not frappe.db.exists("Virtual Disk Snapshot", {"region": region}):
+			continue
+		random_snapshot = frappe.get_doc(
+			"Virtual Disk Snapshot",
+			{
+				"region": region,
+			},
+		)
+		client = random_snapshot.client
+		paginator = client.get_paginator("describe_snapshots")
+		for page in paginator.paginate(OwnerIds=["self"], Filters=[{"Name": "tag-key", "Values": ["Name"]}]):
+			for snapshot in page["Snapshots"]:
+				if _should_skip_snapshot(snapshot):
+					continue
+				try:
+					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
+					virtual_machine = tag_name.split(" - ")[1]
+					_insert_snapshot(snapshot, virtual_machine, random_snapshot)
+				except Exception:
+					log_error(
+						title="Virtual Disk Snapshot Sync Error",
+						snapshot=snapshot,
+					)
+					frappe.db.rollback()
+
+
+def _insert_snapshot(snapshot, virtual_machine, random_snapshot):
+	start_time = frappe.utils.format_datetime(snapshot["StartTime"], "yyyy-MM-dd HH:mm:ss")
+	new_snapshot = frappe.get_doc(
+		{
+			"doctype": "Virtual Disk Snapshot",
+			"snapshot_id": snapshot["SnapshotId"],
+			"virtual_machine": virtual_machine,
+			"volume_id": snapshot["VolumeId"],
+			"status": random_snapshot.get_aws_status_map(snapshot["State"]),
+			"description": snapshot["Description"],
+			"size": snapshot["VolumeSize"],
+			"start_time": start_time,
+			"progress": snapshot["Progress"],
+		}
+	).insert()
+	frappe.db.set_value(
+		"Virtual Disk Snapshot",
+		new_snapshot.name,
+		{"creation": start_time, "modified": start_time},
+		update_modified=False,
+	)
+	return new_snapshot
+
+
+def _should_skip_snapshot(snapshot):
+	tag_names = [tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name"]
+	if not tag_names:
+		return True
+	tag_name_parts = tag_names[0].split(" - ")
+	if len(tag_name_parts) != 3:
+		return True
+	identifier, virtual_machine, _ = tag_name_parts
+	if identifier != "Frappe Cloud":
+		return True
+	if not frappe.db.exists("Virtual Machine", virtual_machine):
+		return True
+	if frappe.db.exists("Virtual Disk Snapshot", {"snapshot_id": snapshot["SnapshotId"]}):
+		return True
+
+	return False
