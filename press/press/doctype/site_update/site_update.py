@@ -259,6 +259,21 @@ class SiteUpdate(Document):
 			},
 		)
 
+	def is_workload_diff_high(self) -> bool:
+		site_plan = frappe.get_value("Site", self.site, "plan")
+		cpu = frappe.get_value("Site Plan", site_plan, "cpu_time_per_day")
+
+		THRESHOLD = 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+
+		workload_diff_high = cpu > THRESHOLD
+
+		if not workload_diff_high:
+			source_bench = frappe.get_doc("Bench", self.source_bench)
+			dest_bench = frappe.get_doc("Bench", self.destination_bench)
+			workload_diff_high = (dest_bench.workload - source_bench.workload) > THRESHOLD
+
+		return workload_diff_high
+
 	def reallocate_workers(self):
 		"""
 		Reallocate workers on source and destination benches
@@ -267,28 +282,18 @@ class SiteUpdate(Document):
 		"""
 		group = frappe.get_doc("Release Group", self.destination_group)
 
-		if group.public or group.central_bench:
+		if group.public or group.central_bench or not self.is_workload_diff_high():
 			return
 
-		server = frappe.get_doc("Server", self.server)
-		site_plan = frappe.get_value("Site", self.site, "plan")
-		cpu = (
-			frappe.get_value("Site Plan", site_plan, "cpu_time_per_day") or 0
-		)  # if plan is not set, assume 0
-
-		if (
-			server.new_worker_allocation
-			and cpu >= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
-		):
-			frappe.enqueue_doc(
-				"Server",
-				server.name,
-				method="auto_scale_workers",
-				job_id=f"auto_scale_workers:{server.name}",
-				deduplicate=True,
-				enqueue_after_commit=True,
-				at_front=True,
-			)
+		frappe.enqueue_doc(
+			"Server",
+			self.server,
+			method="auto_scale_workers",
+			job_id=f"auto_scale_workers:{self.server}",
+			deduplicate=True,
+			enqueue_after_commit=True,
+			at_front=True,
+		)
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):
