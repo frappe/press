@@ -261,7 +261,7 @@ class SiteUpdate(Document):
 
 	def is_workload_diff_high(self) -> bool:
 		site_plan = frappe.get_value("Site", self.site, "plan")
-		cpu = frappe.get_value("Site Plan", site_plan, "cpu_time_per_day")
+		cpu = frappe.get_value("Site Plan", site_plan, "cpu_time_per_day") or 0  # if plan not set, assume 0
 
 		THRESHOLD = 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 
