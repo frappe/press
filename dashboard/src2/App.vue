@@ -10,8 +10,7 @@
 						v-if="
 							$session.user &&
 							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin' &&
-							!$route.name?.startsWith('IntegratedBilling')
+							$route.name != 'SaaSLogin'
 						"
 					/>
 				</div>
@@ -22,15 +21,13 @@
 							!isHideSidebar &&
 							$session.user &&
 							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin' &&
-							!$route.name?.startsWith('IntegratedBilling')
+							$route.name != 'SaaSLogin'
 						"
 					/>
 					<div
 						v-if="
 							!$session.user &&
 							!$route.meta.isLoginPage &&
-							!$route.name?.startsWith('IntegratedBilling') &&
 							$route.name != 'SaaSLogin' &&
 							!$route.name?.startsWith('SaaSSignup')
 						"
