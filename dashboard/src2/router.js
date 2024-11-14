@@ -327,6 +327,12 @@ router.beforeEach(async (to, from, next) => {
 		return;
 	}
 
+	// if user is trying to access saas login page, allow irrespective of login status
+	if (to.name == 'SaaSLogin') {
+		next();
+		return;
+	}
+
 	if (isLoggedIn) {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
