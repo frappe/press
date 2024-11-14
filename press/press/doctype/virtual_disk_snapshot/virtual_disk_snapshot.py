@@ -184,12 +184,8 @@ def sync_all_snapshots_from_aws():
 				if _should_skip_snapshot(snapshot):
 					continue
 				try:
-					frappe.db.set_value(
-						"Virtual Disk Snapshot",
-						{"snapshot_id": snapshot["SnapshotId"]},
-						"status",
-						random_snapshot.get_aws_status_map(snapshot["State"]),
-					)
+					if _update_snapshot_if_exists(snapshot, random_snapshot):
+						continue
 					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
 					virtual_machine = tag_name.split(" - ")[1]
 					_insert_snapshot(snapshot, virtual_machine, random_snapshot)
@@ -239,4 +235,16 @@ def _should_skip_snapshot(snapshot):
 	if not frappe.db.exists("Virtual Machine", virtual_machine):
 		return True
 
+	return False
+
+
+def _update_snapshot_if_exists(snapshot, random_snapshot):
+	snapshot_id = snapshot["SnapshotId"]
+	if frappe.db.exists("Virtual Disk Snapshot", {"snapshot_id": snapshot_id}):
+		frappe.db.set_value(
+			"Virtual Disk Snapshot",
+			{"snapshot_id": snapshot_id},
+			"status",
+			random_snapshot.get_aws_status_map(snapshot["State"]),
+		)
 	return False
