@@ -943,7 +943,10 @@ class BaseServer(Document, TagHelpers):
 		self.save()
 
 	def validate_mounts(self):
-		if self.virtual_machine and not self.mounts:
+		if not self.virtual_machine:
+			return
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if len(machine.volumes) > 1 and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
 			self.set_default_mount_points()
 			self.set_mount_properties()
