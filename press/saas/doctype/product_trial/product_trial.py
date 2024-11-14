@@ -6,6 +6,7 @@ from __future__ import annotations
 import frappe
 import frappe.utils
 from frappe.model.document import Document
+from frappe.utils.data import get_url
 from frappe.utils.momentjs import get_all_timezones
 
 from press.utils import log_error
@@ -279,3 +280,37 @@ def replenish_standby_sites():
 		except Exception:
 			log_error("Replenish Standby Sites Error", product=product.name)
 			frappe.db.rollback()
+
+
+def send_verification_mail_for_login(email: str, product: str, code: str):
+	"""Send verification mail for login."""
+	if frappe.conf.developer_mode:
+		print(f"\nVerification Code for {product}:")
+		print(f"Email : {email}")
+		print(f"Code : {code}")
+		print()
+		return
+	product_trial = frappe.get_doc("Product Trial", product)
+	sender = ""
+	subject = (
+		product_trial.email_subject.format(otp=code)
+		if product_trial.email_subject
+		else "Verify your email for Frappe"
+	)
+	args = {
+		"header_content": product_trial.email_header_content or "",
+		"otp": code,
+	}
+	if product_trial.email_full_logo:
+		args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+	if product_trial.email_account:
+		sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
+
+	frappe.sendmail(
+		sender=sender,
+		recipients=email,
+		subject=subject,
+		template="saas_verify_account",
+		args=args,
+		now=True,
+	)
