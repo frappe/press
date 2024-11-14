@@ -184,9 +184,17 @@ def sync_all_snapshots_from_aws():
 				if _should_skip_snapshot(snapshot):
 					continue
 				try:
+					frappe.db.set_value(
+						"Virtual Disk Snapshot",
+						{"snapshot_id": snapshot["SnapshotId"]},
+						"status",
+						random_snapshot.get_aws_status_map(snapshot["State"]),
+						debug=True,
+					)
 					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
 					virtual_machine = tag_name.split(" - ")[1]
 					_insert_snapshot(snapshot, virtual_machine, random_snapshot)
+					frappe.db.commit()
 				except Exception:
 					log_error(
 						title="Virtual Disk Snapshot Sync Error",
@@ -230,8 +238,6 @@ def _should_skip_snapshot(snapshot):
 	if identifier != "Frappe Cloud":
 		return True
 	if not frappe.db.exists("Virtual Machine", virtual_machine):
-		return True
-	if frappe.db.exists("Virtual Disk Snapshot", {"snapshot_id": snapshot["SnapshotId"]}):
 		return True
 
 	return False
