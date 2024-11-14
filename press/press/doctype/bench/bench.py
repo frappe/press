@@ -518,6 +518,9 @@ class Bench(Document):
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.name}/logs/{log}")
 
+	def get_server_log_for_log_browser(self, log):
+		return Agent(self.server).get(f"benches/{self.name}/logs_v2/{log}")
+
 	@frappe.whitelist()
 	def move_sites(self, server: str):
 		try:

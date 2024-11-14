@@ -47,6 +47,7 @@ export default {
 					query: this.query
 				},
 				auto: true,
+				initialData: this.options.initialData || [],
 				transform: data => {
 					return data.map(option => ({
 						label: option.label || option.value,

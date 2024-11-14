@@ -21,7 +21,8 @@
 	</div>
 	<div class="ml-5 py-1" v-if="isOpened">
 		<AppSidebarItem
-			v-for="subItem in item.children"
+			v-for="(subItem, i) in item.children"
+			:class="{ 'mt-0.5': i !== 0 }"
 			:key="subItem.name"
 			:item="subItem"
 		/>

@@ -1,0 +1,330 @@
+<template>
+	<div class="flex h-full flex-1 flex-shrink-0 flex-col overflow-hidden">
+		<div class="relative flex h-full w-full flex-col overflow-hidden">
+			<div>
+				<div class="mb-4 flex justify-between">
+					<div class="space-x-2">
+						<FormControl
+							type="select"
+							label="Filter By Level"
+							:options="[
+								{ label: 'All', value: '' },
+								{ label: 'Info', value: 'Info' },
+								{ label: 'Warning', value: 'warning' },
+								{ label: 'Error', value: 'error' },
+								{ label: 'Critical', value: 'critical' }
+							]"
+							class="w-24"
+							v-if="props?.columns.includes('Level')"
+							v-model="levelFilter"
+						/>
+					</div>
+					<div class="flex space-x-2">
+						<FormControl
+							type="select"
+							label="Sort By"
+							:options="[
+								{ label: 'Sort By', disabled: true },
+								{ label: 'Newest First', value: 'desc' },
+								{ label: 'Oldest First', value: 'asc' }
+							]"
+							class="w-32"
+							v-if="props?.columns.includes('Time')"
+							v-model="sortOrder"
+						/>
+						<FormControl
+							class="w-80"
+							label="Search log"
+							v-model="searchLogQuery"
+						>
+							<template #prefix>
+								<i-lucide-search class="h-4 w-4 text-gray-500" />
+							</template>
+						</FormControl>
+					</div>
+				</div>
+				<div class="flex h-full w-full flex-col overflow-hidden">
+					<div class="relative flex flex-1 flex-col overflow-auto">
+						<table
+							v-if="props?.columns?.length || props.log?.length"
+							class="w-full border-separate border-spacing-0 rounded border"
+							:class="{
+								'rounded-b-none border-b-0':
+									table.getRowModel().rows.length === 0,
+								'rounded-b-none': props.log?.length !== 0 && showPagination
+							}"
+						>
+							<thead class="z-5 sticky top-0 w-full rounded bg-gray-100">
+								<tr
+									v-for="headerGroup in table.getHeaderGroups()"
+									:key="headerGroup.id"
+								>
+									<th
+										v-for="header in headerGroup.headers"
+										:key="header.id"
+										:colSpan="header.colSpan"
+										class="text-gray-800"
+									>
+										<div
+											class="flex items-center truncate px-3 py-2 text-base font-semibold"
+										>
+											<FlexRender
+												v-if="!header.isPlaceholder"
+												:render="header.column.columnDef.header"
+												:props="header.getContext()"
+											/>
+										</div>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<template
+									v-for="(row, index) in table.getRowModel().rows"
+									:key="row.id"
+								>
+									<tr class="hover:bg-gray-50">
+										<td
+											v-for="cell in row.getVisibleCells()"
+											:key="cell.id"
+											class="max-w-[35rem] cursor-pointer truncate border-b px-3 py-2"
+											:class="{
+												'border-b-0':
+													index === table.getRowModel().rows.length - 1 ||
+													row.getIsExpanded()
+											}"
+											@click="handleExpand(row)"
+										>
+											<div
+												v-if="cell.column.columnDef.id === 'level'"
+												class="flex items-center space-x-2"
+											>
+												<i-lucide-info
+													v-if="getBadgeLabel(cell) === 'Info'"
+													class="h-4 w-4 text-blue-500"
+												/>
+												<i-lucide-alert-triangle
+													v-else-if="getBadgeLabel(cell) === 'Warning'"
+													class="h-4 w-4 text-yellow-500"
+												/>
+												<i-lucide-alert-circle
+													v-else-if="
+														getBadgeLabel(cell) === 'Error' ||
+														getBadgeLabel(cell) === 'Critical'
+													"
+													class="h-4 w-4 text-red-500"
+												/>
+												<span
+													class="text-xs"
+													:class="{
+														'text-blue-500': getBadgeLabel(cell) === 'Info',
+														'text-yellow-500':
+															getBadgeLabel(cell) === 'Warning',
+														'text-red-500':
+															getBadgeLabel(cell) === 'Error' ||
+															getBadgeLabel(cell) === 'Critical'
+													}"
+													>{{ getBadgeLabel(cell) }}</span
+												>
+											</div>
+											<div
+												v-else-if="cell.column.columnDef.id === 'description'"
+												class="truncate font-mono text-sm text-gray-600"
+											>
+												<FlexRender
+													:render="cell.column.columnDef.cell"
+													:props="cell.getContext()"
+												/>
+											</div>
+											<p v-else class="text-base text-gray-800">
+												<FlexRender
+													:render="cell.column.columnDef.cell"
+													:props="cell.getContext()"
+												/>
+											</p>
+										</td>
+									</tr>
+									<tr>
+										<td
+											v-if="row.getIsExpanded()"
+											:colspan="row.getAllCells().length"
+											class="max-w-[39.75rem] whitespace-pre-wrap break-words border-b bg-gray-900 px-3 py-4 font-mono text-sm text-gray-200"
+										>
+											{{ row.original.description }}
+										</td>
+									</tr>
+								</template>
+								<tr height="99%" class="border-b"></tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<div
+					v-if="table.getRowModel().rows.length === 0"
+					class="rounded rounded-t-none border border-t-0 p-4"
+					:class="{
+						'rounded-b-none': props.log?.length !== 0 && showPagination
+					}"
+				>
+					<p class="text-center text-sm text-gray-500">No logs found</p>
+				</div>
+			</div>
+			<div
+				class="flex justify-between rounded rounded-t-none border border-t-0 p-1"
+				v-if="props.log?.length !== 0 && showPagination"
+			>
+				<div></div>
+				<div class="flex flex-shrink-0 items-center justify-end gap-3">
+					<p class="tnum text-sm text-gray-600">
+						{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+					</p>
+					<div class="flex gap-2">
+						<Button
+							variant="ghost"
+							@click="table.previousPage()"
+							:disabled="!table.getCanPreviousPage()"
+							iconLeft="arrow-left"
+						>
+							Prev
+						</Button>
+						<Button
+							variant="ghost"
+							@click="table.nextPage()"
+							:disabled="!table.getCanNextPage()"
+							iconRight="arrow-right"
+						>
+							Next
+						</Button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script setup>
+import {
+	FlexRender,
+	getCoreRowModel,
+	getSortedRowModel,
+	getFilteredRowModel,
+	getExpandedRowModel,
+	getPaginationRowModel,
+	useVueTable
+} from '@tanstack/vue-table';
+import { defineProps, computed, ref } from 'vue';
+import { date as formatDate } from '../../../utils/format';
+
+const props = defineProps({
+	log: {
+		type: Array,
+		required: true
+	},
+	columns: {
+		type: Array,
+		required: true
+	}
+});
+
+const searchLogQuery = ref('');
+const levelFilter = ref('');
+const sortOrder = ref('');
+
+const columnFilters = computed(() => {
+	const filters = [];
+	if (levelFilter.value) {
+		filters.push({
+			id: 'level',
+			value: levelFilter.value
+		});
+	}
+	if (searchLogQuery.value) {
+		filters.push({
+			id: 'description',
+			value: searchLogQuery.value
+		});
+	}
+	return filters;
+});
+
+const logEntries = computed(() => props.log);
+const columns = computed(() => {
+	if (!props.columns?.length) return [];
+	return props.columns.map(column => {
+		return {
+			id: column.toLowerCase(),
+			header: column,
+			accessorKey: column.toLowerCase(),
+			enableSorting: column === 'Time' ? true : false,
+			sortingFn: column === 'Time' ? 'datetime' : null,
+			isNumber: false
+		};
+	});
+});
+const sortingState = computed(() => {
+	if (!sortOrder.value) return [];
+	return [
+		{
+			id: 'time',
+			desc: sortOrder.value === 'desc'
+		}
+	];
+});
+
+const table = useVueTable({
+	data: logEntries.value,
+	columns: columns.value,
+	state: {
+		get columnFilters() {
+			return columnFilters.value;
+		},
+		get sorting() {
+			return sortingState.value;
+		}
+	},
+	initialState: {
+		pagination: {
+			pageSize: 15,
+			pageIndex: 0
+		}
+	},
+	// debugTable: true, // Uncomment to see the table state in the console
+	getRowCanExpand: _row => true,
+	getCoreRowModel: getCoreRowModel(),
+	getSortedRowModel: getSortedRowModel(),
+	getExpandedRowModel: getExpandedRowModel(),
+	getFilteredRowModel: getFilteredRowModel(),
+	getPaginationRowModel: getPaginationRowModel()
+});
+
+const pageLength = computed(() => table.getState().pagination.pageSize);
+const currPage = computed(() => table.getState().pagination.pageIndex + 1);
+
+const pageStart = computed(() => (currPage.value - 1) * pageLength.value + 1);
+const pageEnd = computed(() => {
+	const end = currPage.value * pageLength.value;
+	return end > props.log.length ? props.log.length : end;
+});
+const totalRows = computed(() => props.log.length);
+const showPagination = computed(
+	() => props.log?.length && totalRows.value > pageLength.value
+);
+
+function capitalizeFirstLetter(string) {
+	if (!string) return '';
+	return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+}
+
+function getBadgeLabel(cell) {
+	return capitalizeFirstLetter(getValueFromCell(cell));
+}
+
+function getValueFromCell(cell) {
+	return cell.row.original[cell.column.columnDef.accessorKey];
+}
+
+function handleExpand(row) {
+	const toggleExpandedHandler = row.getToggleExpandedHandler();
+	if (row.getCanExpand()) toggleExpandedHandler();
+}
+</script>
