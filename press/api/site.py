@@ -1295,7 +1295,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 				"enabled": 1,
 			},
 		):
-			subscription = frappe.get_doc(
+			subscription = frappe.get_value(
 				"Subscription",
 				{
 					"site": site.name,
@@ -1304,6 +1304,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 					"enabled": 1,
 				},
 				["document_name as app", "plan"],
+				as_dict=True,
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
