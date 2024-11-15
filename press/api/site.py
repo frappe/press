@@ -1308,7 +1308,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
+				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
 			)
 
 			app_source.app_title = marketplace_app_info.title
