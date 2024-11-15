@@ -55,9 +55,7 @@ class SiteMigration(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site_migration_step.site_migration_step import (
-			SiteMigrationStep,
-		)
+		from press.press.doctype.site_migration_step.site_migration_step import SiteMigrationStep
 
 		backup: DF.Link | None
 		destination_bench: DF.Link
