@@ -1059,6 +1059,10 @@ class BaseServer(Document, TagHelpers):
 			for row in result.get("results", []):
 				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
 				if not mount:
+					mount = find(
+						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
 					continue
 				if task.task == "Show Block Device UUIDs":
 					mount.uuid = row.get("stdout", "").strip()

@@ -21,15 +21,16 @@
 - name: Show Block Device UUIDs
   command: 'lsblk {{ item.source }} -no UUID'
   loop: "{{ volume_mounts }}"
+  register: block_devices
 
 - name: Mount Volumes
   mount:
-    src: "{{ item.source }}"
-    path: "{{ item.mount_point }}"
-    fstype: "{{ item.filesystem }}"
-    opts: "{{ item.mount_options }}"
+    src: "UUID={{ item.stdout.strip() }}"
+    path: "{{ item.item.mount_point }}"
+    fstype: "{{ item.item.filesystem }}"
+    opts: "{{ item.item.mount_options }}"
     state: mounted
-  loop: "{{ volume_mounts }}"
+  loop: "{{ block_devices.results }}"
 
 - name: Create Mount Source Directories
   file:
