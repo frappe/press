@@ -59,31 +59,6 @@ let router = createRouter({
 			}
 		},
 		{
-			path: '/in-desk-billing/:accessToken',
-			name: 'IntegratedBilling',
-			component: () => import('./pages/saas/InDeskBilling.vue'),
-			children: [
-				{
-					path: '',
-					redirect: { name: 'IntegratedBillingOverview' }
-				},
-				{
-					path: 'overview',
-					name: 'IntegratedBillingOverview',
-					component: () => import('./pages/saas/in_desk_billing/Overview.vue')
-				},
-				{
-					path: 'invoices',
-					name: 'IntegratedBillingInvoices',
-					component: () => import('./pages/saas/in_desk_billing/Invoices.vue')
-				}
-			],
-			props: false,
-			meta: {
-				isLoginPage: true
-			}
-		},
-		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
@@ -321,11 +296,6 @@ router.beforeEach(async (to, from, next) => {
 		document.cookie.includes('user_id') &&
 		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
-
-	if (to.name.startsWith('IntegratedBilling')) {
-		next();
-		return;
-	}
 
 	// if user is trying to access saas login page, allow irrespective of login status
 	if (to.name == 'SaaSLogin') {
