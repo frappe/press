@@ -13,7 +13,8 @@
   "column_break_ygbk",
   "source",
   "mount_point",
-  "mount_options"
+  "mount_options",
+  "uuid"
  ],
  "fields": [
   {
@@ -79,12 +80,18 @@
    "label": "Status",
    "options": "Pending\nSuccess\nFailure",
    "reqd": 1
+  },
+  {
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "label": "UUID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-13 12:03:55.670197",
+ "modified": "2024-11-15 16:20:24.763321",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Mount",

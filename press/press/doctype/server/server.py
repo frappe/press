@@ -1046,23 +1046,29 @@ class BaseServer(Document, TagHelpers):
 	def _set_mount_status(self, play):
 		tasks = frappe.get_all(
 			"Ansible Task",
-			["result", "status"],
+			["result", "task"],
 			{
 				"play": play.name,
 				"status": ("in", ("Success", "Failure")),
-				"task": ("in", ("Mount Volumes", "Mount Bind Mounts")),
+				"task": ("in", ("Mount Volumes", "Mount Bind Mounts", "Show Block Device UUIDs")),
 			},
 		)
-		mount_status_changed = False
+		mounts_changed = False
 		for task in tasks:
 			result = json.loads(task.result)
 			for row in result.get("results", []):
-				mount_status = {True: "Failure", False: "Success"}[row.get("failed", False)]
 				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
-				if mount and mount.status != mount_status:
-					mount.status = mount_status
-					mount_status_changed = True
-		return mount_status_changed
+				if not mount:
+					continue
+				if task.task == "Show Block Device UUIDs":
+					mount.uuid = row.get("stdout", "").strip()
+					mounts_changed = True
+				else:
+					mount_status = {True: "Failure", False: "Success"}[row.get("failed", False)]
+					if mount.status != mount_status:
+						mount.status = mount_status
+						mounts_changed = True
+		return mounts_changed
 
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(

@@ -18,6 +18,10 @@
     force: false
   loop: "{{ volume_mounts }}"
 
+- name: Show Block Device UUIDs
+  command: 'lsblk {{ item.source }} -no UUID'
+  loop: "{{ volume_mounts }}"
+
 - name: Mount Volumes
   mount:
     src: "{{ item.source }}"

@@ -26,6 +26,7 @@ class ServerMount(Document):
 		parenttype: DF.Data
 		source: DF.Data
 		status: DF.Literal["Pending", "Success", "Failure"]
+		uuid: DF.Data | None
 		volume_id: DF.Data | None
 	# end: auto-generated types
 
