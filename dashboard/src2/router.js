@@ -59,31 +59,6 @@ let router = createRouter({
 			}
 		},
 		{
-			path: '/in-desk-billing/:accessToken',
-			name: 'IntegratedBilling',
-			component: () => import('./pages/saas/InDeskBilling.vue'),
-			children: [
-				{
-					path: '',
-					redirect: { name: 'IntegratedBillingOverview' }
-				},
-				{
-					path: 'overview',
-					name: 'IntegratedBillingOverview',
-					component: () => import('./pages/saas/in_desk_billing/Overview.vue')
-				},
-				{
-					path: 'invoices',
-					name: 'IntegratedBillingInvoices',
-					component: () => import('./pages/saas/in_desk_billing/Invoices.vue')
-				}
-			],
-			props: false,
-			meta: {
-				isLoginPage: true
-			}
-		},
-		{
 			path: '/subscription/:site?',
 			name: 'Subscription',
 			component: () => import('../src/views/checkout/Subscription.vue'),
@@ -230,21 +205,41 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'AppTrial',
-			path: '/app-trial',
+			name: 'SaaS',
+			path: '/saas',
 			redirect: { name: 'Home' },
 			children: [
 				{
-					name: 'AppTrialSignup',
-					path: 'signup/:productId',
+					name: 'SaaSLogin',
+					path: ':productId/login',
+					component: () => import('./pages/saas/Login.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'SaaSSignup',
+					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
 					props: true,
 					meta: { isLoginPage: true }
 				},
 				{
-					name: 'AppTrialSetup',
-					path: 'setup/:productId',
-					component: () => import('./pages/saas/Setup.vue'),
+					name: 'SaaSSignupVerifyEmail',
+					path: ':productId/verify-email',
+					component: () => import('./pages/saas/VerifyEmail.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
+					name: 'SaaSSignupSetup',
+					path: ':productId/setup',
+					component: () => import('./pages/saas/SetupSite.vue'),
+					props: true
+				},
+				{
+					name: 'SaaSSignupLoginToSite',
+					path: ':productId/login-to-site',
+					component: () => import('./pages/saas/LoginToSite.vue'),
 					props: true
 				}
 			]
@@ -302,7 +297,8 @@ router.beforeEach(async (to, from, next) => {
 		!document.cookie.includes('user_id=Guest');
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
-	if (to.name.startsWith('IntegratedBilling')) {
+	// if user is trying to access saas login page, allow irrespective of login status
+	if (to.name == 'SaaSLogin') {
 		next();
 		return;
 	}
@@ -326,8 +322,8 @@ router.beforeEach(async (to, from, next) => {
 		}
 
 		// If user is logged in and was moving to app trial signup, redirect to app trial setup
-		if (to.name == 'AppTrialSignup') {
-			next({ name: 'AppTrialSetup', params: to.params });
+		if (to.name == 'SaaSSignup') {
+			next({ name: 'SaaSSignupSetup', params: to.params });
 			return;
 		}
 
@@ -366,9 +362,9 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			if (to.name == 'AppTrialSetup') {
+			if (to.name == 'SaaSSignupSetup') {
 				next({
-					name: 'AppTrialSignup',
+					name: 'SaaSSignup',
 					params: to.params
 				});
 			} else {

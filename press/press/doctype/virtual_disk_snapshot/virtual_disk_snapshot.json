@@ -110,7 +110,8 @@
    "fieldtype": "Data",
    "label": "Snapshot ID",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "volume_id",
@@ -121,7 +122,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-26 14:00:36.492512",
+ "modified": "2024-11-14 13:59:01.305897",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

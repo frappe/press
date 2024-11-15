@@ -1,22 +1,29 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-from contextlib import suppress
+from __future__ import annotations
+
 import json
+import urllib
 import urllib.parse
+from contextlib import suppress
+from typing import TYPE_CHECKING
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils.data import now_datetime
 from frappe.utils.momentjs import get_all_timezones
-from frappe.utils.safe_exec import safe_exec
-from frappe.utils.password import encrypt as encrypt_password
 from frappe.utils.password import decrypt as decrypt_password
+from frappe.utils.password import encrypt as encrypt_password
 from frappe.utils.password_strength import test_password_strength
-import urllib
+from frappe.utils.safe_exec import safe_exec
+from frappe.utils.telemetry import init_telemetry
 
-from frappe.utils.telemetry import capture, init_telemetry
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class ProductTrialRequest(Document):
@@ -46,9 +53,9 @@ class ProductTrialRequest(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["site", "status", "product_trial"]
+	dashboard_fields = ("site", "status", "product_trial")
 
-	agent_job_step_to_frontend_step = {
+	agent_job_step_to_frontend_step = {  # noqa: RUF012
 		"New Site": {
 			"New Site": "Building Site",
 			"Install Apps": "Installing Apps",
@@ -109,9 +116,7 @@ class ProductTrialRequest(Document):
 			as_dict=True,
 		)
 		if data.setup_wizard_completion_mode != "auto":
-			frappe.throw(
-				"In manual Setup Wizard Completion Mode, the payload cannot be generated"
-			)
+			frappe.throw("In manual Setup Wizard Completion Mode, the payload cannot be generated")
 		if not data.setup_wizard_payload_generator_script:
 			return {}
 		signup_details = json.loads(self.signup_details)
@@ -179,7 +184,7 @@ class ProductTrialRequest(Document):
 						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
-	def create_site(self, cluster: str = None, signup_values: dict = None):
+	def create_site(self, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
 		product = frappe.get_doc("Product Trial", self.product_trial)
@@ -199,32 +204,13 @@ class ProductTrialRequest(Document):
 		self.site_creation_started_on = now_datetime()
 		self.save(ignore_permissions=True)
 		self.reload()
-		site, agent_job_name, _ = product.setup_trial_site(
-			self.team, product.trial_plan, cluster
-		)
+		site, agent_job_name, _ = product.setup_trial_site(self.team, product.trial_plan, cluster)
 		self.agent_job = agent_job_name
 		self.site = site.name
 		self.save(ignore_permissions=True)
 
-	def get_user_details(self):
-		user = frappe.db.get_value("Team", self.team, "user")
-		return frappe.db.get_value(
-			"User", user, ["email", "first_name", "last_name"], as_dict=True
-		)
-
 	@dashboard_whitelist()
-	def get_login_sid(self):
-		is_secondary_user_created = frappe.db.get_value(
-			"Site", self.site, "additional_system_user_created"
-		)
-		if is_secondary_user_created:
-			email = frappe.db.get_value("Team", self.team, "user")
-			return frappe.get_doc("Site", self.site).get_login_sid(user=email)
-		else:
-			return frappe.get_doc("Site", self.site).get_login_sid()
-
-	@dashboard_whitelist()
-	def get_progress(self, current_progress=None):
+	def get_progress(self, current_progress=None):  # noqa: C901
 		current_progress = current_progress or 0
 		if self.agent_job:
 			filters = {"name": self.agent_job, "site": self.site}
@@ -239,10 +225,9 @@ class ProductTrialRequest(Document):
 			if self.status == "Site Created":
 				return {"progress": 100}
 			return {"progress": 90, "current_step": self.status}
-		elif status == "Running":
-			mode = frappe.get_value(
-				"Product Trial", self.product_trial, "setup_wizard_completion_mode"
-			)
+
+		if status == "Running":
+			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")
 			steps = frappe.db.get_all(
 				"Agent Job Step",
 				filters={"agent_job": job_name},
@@ -263,11 +248,12 @@ class ProductTrialRequest(Document):
 					)
 					break
 			return {"progress": progress + 0.1, "current_step": current_running_step}
-		elif self.status == "Error":
+
+		if self.status == "Error":
 			return {"progress": current_progress, "error": True}
-		else:
-			# If agent job is undelivered, pending
-			return {"progress": current_progress + 0.1}
+
+		# If agent job is undelivered, pending
+		return {"progress": current_progress + 0.1}
 
 	def complete_setup_wizard(self):
 		if self.status == "Completing Setup Wizard":
@@ -279,6 +265,16 @@ class ProductTrialRequest(Document):
 		self.status = "Completing Setup Wizard"
 		self.save(ignore_permissions=True)
 
+	@dashboard_whitelist()
+	def get_login_sid(self):
+		site: Site = frappe.get_doc("Site", self.site)
+		is_secondary_user_created = site.additional_system_user_created
+		if is_secondary_user_created:
+			email = frappe.db.get_value("Team", self.team, "user")
+			return site.get_login_sid(user=email)
+
+		return site.get_login_sid()
+
 
 def get_app_trial_page_url():
 	referer = frappe.request.headers.get("referer", "")
@@ -288,9 +284,7 @@ def get_app_trial_page_url():
 		# parse the referer url
 		site = urllib.parse.urlparse(referer).hostname
 		# check if any product trial request exists for the site
-		product_trial_name = frappe.db.get_value(
-			"Product Trial Request", {"site": site}, "product_trial"
-		)
+		product_trial_name = frappe.db.get_value("Product Trial Request", {"site": site}, "product_trial")
 		if product_trial_name:
 			# Check site status
 			# site_status = frappe.db.get_value("Site", site, "status")
