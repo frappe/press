@@ -44,6 +44,7 @@
   "address_html",
   "tax_id",
   "phone_number",
+  "partner_commission",
   "custom_apps_section",
   "github_access_token",
   "partner_section",
@@ -453,6 +454,11 @@
    "fieldname": "phone_number",
    "fieldtype": "Data",
    "label": "Phone Number"
+  },
+  {
+   "fieldname": "partner_commission",
+   "fieldtype": "Percent",
+   "label": "Partner Commission"
   }
  ],
  "links": [
@@ -512,7 +518,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-11-12 11:53:14.234993",
+ "modified": "2024-11-15 11:46:09.082313",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

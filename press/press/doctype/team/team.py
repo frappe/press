@@ -68,6 +68,7 @@ class Team(Document):
 		last_used_team: DF.Link | None
 		notify_email: DF.Data | None
 		parent_team: DF.Link | None
+		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None

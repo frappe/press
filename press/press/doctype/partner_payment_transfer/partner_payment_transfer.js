@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("Partner Payment Transfer", {
     refresh(frm) {
+        if(frm.doc.docstatus == 0) {
         frm.add_custom_button("Fetch Payments", () => {
             frappe.call({
                 method: "press.press.doctype.partner_payment_transfer.partner_payment_transfer.fetch_payments",
@@ -30,6 +31,6 @@ frappe.ui.form.on("Partner Payment Transfer", {
                 }
             });
         });
-    }
+    }},
 });
 

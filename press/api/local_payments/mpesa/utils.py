@@ -2,7 +2,7 @@ import frappe
 from press.utils import get_current_team
 from frappe.query_builder import DocType
 import json
-from frappe import _  # Import this for translation functionality
+from frappe import _ 
 
 
 supported_mpesa_currencies = ["KES"]
@@ -104,31 +104,24 @@ def get_tax_percentage(payment_partner):
 			taxes_and_charges = payment_gateways[0].taxes_and_charges
 	return taxes_and_charges
 
-# def update_tax_id_or_phone_no(team, tax_id, phone_number):
-# 	"""Update the tax ID for the team."""
-# 	doc_name=frappe.get_value("Team", {"user": team}, "name")
-# 	team_doc = frappe.get_doc("Team", doc_name)
-# 	if not team_doc.tax_id:
-# 		team_doc.tax_id = tax_id
-# 		team_doc.save()
 
 def update_tax_id_or_phone_no(team, tax_id, phone_number):
-    """Update the tax ID or phone number for the team, only if they are different from existing values."""
-    
-    doc_name = frappe.get_value("Team", {"user": team}, "name")
-    team_doc = frappe.get_doc("Team", doc_name)
-    
-    # Check if updates are needed
-    tax_id_needs_update = tax_id and team_doc.tax_id != tax_id
-    phone_number_needs_update = phone_number and team_doc.phone_number != phone_number
+	"""Update the tax ID or phone number for the team, only if they are different from existing values."""
+	
+	doc_name = frappe.get_value("Team", {"user": team}, "name")
+	team_doc = frappe.get_doc("Team", doc_name)
+	
+	# Check if updates are needed
+	tax_id_needs_update = tax_id and team_doc.tax_id != tax_id
+	phone_number_needs_update = phone_number and team_doc.phone_number != phone_number
 
-    # Update only if at least one value needs updating
-    if tax_id_needs_update or phone_number_needs_update:
-        if tax_id_needs_update:
-            team_doc.tax_id = tax_id
-        if phone_number_needs_update:
-            team_doc.phone_number = phone_number
-        team_doc.save()
+	# Update only if at least one value needs updating
+	if tax_id_needs_update or phone_number_needs_update:
+		if tax_id_needs_update:
+			team_doc.tax_id = tax_id
+		if phone_number_needs_update:
+			team_doc.phone_number = phone_number
+		team_doc.save()
 
   
 def convert(from_currency, to_currency, amount):
@@ -251,3 +244,38 @@ def fetch_param_value(response, key, key_field):
 	for param in response:
 		if param[key_field] == key:
 			return param["Value"]
+
+@frappe.whitelist(allow_guest=True)
+def create_exchange_rate(**kwargs):
+    """Create a new exchange rate record."""
+    try:
+        from_currency = kwargs.get("from_currency", {}).get("value")
+        to_currency = kwargs.get("to_currency", {}).get("value")
+        exchange_rate = kwargs.get("exchange_rate")
+        date = kwargs.get("date")
+
+        if not from_currency or not to_currency or not exchange_rate:
+            raise ValueError("Missing required fields.")
+
+        exchange_rate_doc = frappe.get_doc({
+            "doctype": "Currency Exchange",
+            "from_currency": from_currency,
+            "to_currency": to_currency,
+            "exchange_rate": exchange_rate,
+            "date": date,
+        })
+        
+        exchange_rate_doc.insert(ignore_permissions=True)
+        return exchange_rate_doc.name
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+
+
+@frappe.whitelist(allow_guest=True)
+def fetch_currencies():
+	"""Fetch the list of currencies supported by the system."""
+	currencies = frappe.get_all("Currency", fields=["name"])
+	return [currency['name'] for currency in currencies]

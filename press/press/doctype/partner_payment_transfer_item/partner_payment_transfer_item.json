@@ -8,8 +8,11 @@
  "field_order": [
   "transaction_id",
   "posting_date",
+  "amount",
   "column_break_ayfd",
-  "amount"
+  "commission_amount",
+  "amount_in_local_currency",
+  "net_amount"
  ],
  "fields": [
   {
@@ -30,7 +33,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Amount"
+   "label": "Amount(USD)"
   },
   {
    "fieldname": "posting_date",
@@ -39,12 +42,31 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Posting Date"
+  },
+  {
+   "fieldname": "commission_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Commission Amount"
+  },
+  {
+   "fieldname": "net_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Net Amount"
+  },
+  {
+   "fieldname": "amount_in_local_currency",
+   "fieldtype": "Currency",
+   "label": "Amount(LC)"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-08 16:25:23.715574",
+ "modified": "2024-11-15 12:36:07.956691",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Partner Payment Transfer Item",

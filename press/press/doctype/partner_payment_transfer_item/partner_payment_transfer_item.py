@@ -15,6 +15,9 @@ class PartnerPaymentTransferItem(Document):
 		from frappe.types import DF
 
 		amount: DF.Currency
+		amount_in_local_currency: DF.Currency
+		commission_amount: DF.Currency
+		net_amount: DF.Currency
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

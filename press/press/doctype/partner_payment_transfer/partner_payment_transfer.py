@@ -16,7 +16,11 @@ class PartnerPaymentTransfer(Document):
 		from press.press.doctype.partner_payment_transfer_item.partner_payment_transfer_item import PartnerPaymentTransferItem
 
 		amended_from: DF.Link | None
+		commission: DF.Currency
 		from_date: DF.Date | None
+		net_amount: DF.Currency
+		partner: DF.Link | None
+		partner_commission: DF.Percent
 		to_date: DF.Date | None
 		total_amount: DF.Currency
 		transaction_doctype: DF.Link
@@ -26,6 +30,11 @@ class PartnerPaymentTransfer(Document):
 
 	def before_save(self):
 		self.total_amount = sum([item.amount for item in self.transfer_items])
+		self.commission = self.total_amount * (self.partner_commission / 100)
+		self.net_amount = self.total_amount - self.commission
+		for item in self.transfer_items:
+			item.commission_amount = item.amount * (self.partner_commission / 100)
+			item.net_amount = item.amount - item.commission_amount
   
 	def on_submit(self):
 		transaction_names = [item.transaction_id for item in self.transfer_items]
@@ -67,6 +76,7 @@ def fetch_payments():
 
 	if from_date and to_date:
 		filters['posting_date'] = ['between', [from_date, to_date]]
+
 
 	mpesa_payments = frappe.get_all(
 		'Mpesa Payment Record',
