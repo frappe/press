@@ -9,6 +9,9 @@
   file:
     dest: "{{ item.mount_point }}"
     state: directory
+    owner: "{{ item.mount_point_owner }}"
+    group: "{{ item.mount_point_group }}"
+    mode: "{{ item.mount_point_mode }}"
   loop: "{{ all_mounts }}"
 
 - name: Format Volumes

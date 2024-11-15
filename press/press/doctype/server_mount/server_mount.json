@@ -9,12 +9,18 @@
   "mount_type",
   "volume_id",
   "filesystem",
-  "status",
   "column_break_ygbk",
+  "status",
   "source",
+  "column_break_uvrc",
+  "uuid",
   "mount_point",
   "mount_options",
-  "uuid"
+  "permissions_section",
+  "mount_point_owner",
+  "mount_point_group",
+  "column_break_kwsz",
+  "mount_point_mode"
  ],
  "fields": [
   {
@@ -87,12 +93,46 @@
    "fieldtype": "Data",
    "label": "UUID",
    "read_only": 1
+  },
+  {
+   "fieldname": "permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Permissions"
+  },
+  {
+   "default": "root",
+   "fieldname": "mount_point_owner",
+   "fieldtype": "Data",
+   "label": "Mount Point Owner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_kwsz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_uvrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0755",
+   "fieldname": "mount_point_mode",
+   "fieldtype": "Data",
+   "label": "Mount Point Mode",
+   "reqd": 1
+  },
+  {
+   "default": "root",
+   "fieldname": "mount_point_group",
+   "fieldtype": "Data",
+   "label": "Mount Point Group",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-15 16:31:15.958951",
+ "modified": "2024-11-15 17:24:16.761964",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Mount",

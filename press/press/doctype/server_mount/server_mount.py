@@ -19,6 +19,9 @@ class ServerMount(Document):
 		filesystem: DF.Literal["ext4", "none"]
 		mount_options: DF.Data | None
 		mount_point: DF.Data
+		mount_point_group: DF.Data
+		mount_point_mode: DF.Data
+		mount_point_owner: DF.Data
 		mount_type: DF.Literal["Volume", "Bind"]
 		name: DF.Int | None
 		parent: DF.Data
