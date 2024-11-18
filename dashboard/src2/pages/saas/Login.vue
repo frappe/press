@@ -59,8 +59,9 @@
 							>
 								Login with email
 							</Button>
-							<p>or</p>
+							<p v-if="isGoogleOAuthEnabled">or</p>
 							<Button
+								v-if="isGoogleOAuthEnabled"
 								variant="subtle"
 								class="w-full font-medium"
 								type="button"
@@ -156,6 +157,9 @@ export default {
 	computed: {
 		saasProduct() {
 			return this.$resources.signupSettings.data?.product_trial || {};
+		},
+		isGoogleOAuthEnabled() {
+			return this.$resources.signupSettings.data?.enable_google_oauth || false;
 		}
 	},
 	resources: {

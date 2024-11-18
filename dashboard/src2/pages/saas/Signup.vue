@@ -94,8 +94,9 @@
 							>
 								Create Account
 							</Button>
-							<p>or</p>
+							<p v-if="isGoogleOAuthEnabled">or</p>
 							<Button
+								v-if="isGoogleOAuthEnabled"
 								:loading="$resources.signupWithOAuth?.loading"
 								@click="$resources.signupWithOAuth.submit()"
 								variant="subtle"
@@ -156,6 +157,9 @@ export default {
 		},
 		countries() {
 			return this.$resources.signupSettings.data?.countries || [];
+		},
+		isGoogleOAuthEnabled() {
+			return this.$resources.signupSettings.data?.enable_google_oauth || false;
 		}
 	},
 	resources: {
