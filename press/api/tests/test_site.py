@@ -699,7 +699,7 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.status, "Active")
 
-	def test_site_change_group(self):
+	def test_change_group_changes_group_and_bench_of_site(self):
 		from press.api.site import change_group, change_group_options
 		from press.press.doctype.site_update.site_update import process_update_site_job_update
 
@@ -709,7 +709,9 @@ erpnext 0.8.3	    HEAD
 		group2 = create_test_release_group([app])
 		bench1 = create_test_bench(group=group1, server=server)
 		bench2 = create_test_bench(group=group2, server=server)
-		site = create_test_site(bench=bench1.name)
+		site = create_test_site(
+			bench=bench1.name, team=self.team, plan=create_test_plan("Site", private_benches=True).name
+		)
 
 		self.assertEqual(change_group_options(site.name), [{"name": group2.name, "title": group2.title}])
 
@@ -792,7 +794,7 @@ erpnext 0.8.3	    HEAD
 		site.reload()
 		self.assertEqual(site.cluster, seoul_server.cluster)
 
-	def test_site_version_upgrade(self):
+	def test_version_upgrade_api_upgrades_site(self):
 		from press.api.site import get_private_groups_for_upgrade, version_upgrade
 		from press.press.doctype.site_update.site_update import process_update_site_job_update
 
