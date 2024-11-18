@@ -1,6 +1,7 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
 import random
@@ -130,7 +131,7 @@ class AccountRequest(Document):
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def send_verification_email(self):
+	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
 		if frappe.conf.developer_mode:
