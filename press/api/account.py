@@ -477,7 +477,7 @@ def signup_settings(product=None, fetch_countries=False, timezone=None):
 		product_trial = frappe.db.get_value(
 			"Product Trial",
 			{"name": product, "published": 1},
-			["title", "description", "logo"],
+			["title", "logo"],
 			as_dict=1,
 		)
 

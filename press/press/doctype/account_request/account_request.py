@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
@@ -22,6 +21,7 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.account_request_press_role.account_request_press_role import (
 			AccountRequestPressRole,
 		)
@@ -77,9 +77,11 @@ class AccountRequest(Document):
 		self.state = geo_location.get("regionName")
 
 		# check for US and EU
-		if geo_location.get("country") == "United States" or geo_location.get("continent") == "Europe":
-			self.is_us_eu = True
-		elif self.country == "United States":
+		if (
+			geo_location.get("country") == "United States"
+			or geo_location.get("continent") == "Europe"
+			or self.country == "United States"
+		):
 			self.is_us_eu = True
 		else:
 			self.is_us_eu = False
