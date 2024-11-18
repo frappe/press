@@ -59,13 +59,19 @@
 							>
 								Login with email
 							</Button>
-							<!-- <p>or</p>
-							<Button variant="subtle" class="w-full font-medium" type="button">
+							<p>or</p>
+							<Button
+								variant="subtle"
+								class="w-full font-medium"
+								type="button"
+								:loading="$resources.signupWithOAuth?.loading"
+								@click="$resources.signupWithOAuth.submit()"
+							>
 								<div class="flex flex-row items-center gap-1">
 									<GoogleIconSolid class="w-4" />
 									Login with google
 								</div>
-							</Button> -->
+							</Button>
 						</div>
 						<!-- buttons to handle email verification -->
 						<div class="mt-5 flex flex-col items-center gap-2" v-else>
@@ -196,6 +202,18 @@ export default {
 				auto: false,
 				onSuccess: data => {
 					this.moveToSiteLoginPage(data);
+				}
+			};
+		},
+		signupWithOAuth() {
+			return {
+				url: 'press.api.google.login',
+				params: {
+					product: this.productId
+				},
+				auto: false,
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		}

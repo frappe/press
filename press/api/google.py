@@ -15,20 +15,17 @@ from googleapiclient.discovery import build
 from oauthlib.oauth2 import AccessDeniedError
 
 from press.api.product_trial import _get_active_site as get_active_site_product_trial
-from press.api.product_trial import setup_account as setup_account_product_trial
 from press.utils import log_error
 
 
 @frappe.whitelist(allow_guest=True)
-def login(product=None, country=None):
+def login(product=None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
 	payload = {"state": state}
 	if product:
 		payload["product"] = product
-	if country:
-		payload["country"] = country
 	frappe.cache().set_value(f"google_oauth_flow:{state}", payload, expires_in_sec=minutes * 60)
 	return authorization_url
 
@@ -40,7 +37,6 @@ def callback(code=None, state=None):  # noqa: C901
 	if not payload:
 		return invalid_login()
 
-	country = payload.get("country")
 	product = payload.get("product")
 	product_trial = frappe.db.get_value("Product Trial", product, ["name"], as_dict=1) if product else None
 
@@ -115,27 +111,17 @@ def callback(code=None, state=None):  # noqa: C901
 		last_name=id_info.get("family_name"),
 		phone_number=phone_number,
 		role="Press Admin",
+		oauth_signup=True,
 	)
 	if product_trial:
-		if not country:
-			frappe.throw(_("Please provide a valid country name"))
-		account_request.country = country
 		account_request.product_trial = product_trial.name
 
 	account_request.insert(ignore_permissions=True)
 
-	if not account_request.product_trial:
-		frappe.local.response.type = "redirect"
-		frappe.local.response.location = account_request.get_verification_url()
-		frappe.db.commit()
-		return None
-
-	# setup account product trial
-	response = setup_account_product_trial(account_request.key)
 	frappe.db.commit()
 
 	frappe.local.response.type = "redirect"
-	frappe.local.response.location = response.get("location")
+	frappe.local.response.location = account_request.get_verification_url()
 	return None
 
 

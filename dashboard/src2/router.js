@@ -231,6 +231,13 @@ let router = createRouter({
 					meta: { isLoginPage: true }
 				},
 				{
+					name: 'SaaSSignupOAuthSetupAccount',
+					path: ':productId/oauth',
+					component: () => import('./pages/saas/OAuthSetupAccount.vue'),
+					props: true,
+					meta: { isLoginPage: true }
+				},
+				{
 					name: 'SaaSSignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),

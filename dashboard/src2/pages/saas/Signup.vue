@@ -96,7 +96,8 @@
 							</Button>
 							<p>or</p>
 							<Button
-								:loading="$resources.signup?.loading"
+								:loading="$resources.signupWithOAuth?.loading"
+								@click="$resources.signupWithOAuth.submit()"
 								variant="subtle"
 								class="w-full font-medium"
 								type="button"
@@ -201,6 +202,18 @@ export default {
 					if (res && res.country) {
 						this.country = res.country;
 					}
+				}
+			};
+		},
+		signupWithOAuth() {
+			return {
+				url: 'press.api.google.login',
+				params: {
+					product: this.productId
+				},
+				auto: false,
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		}
