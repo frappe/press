@@ -4,7 +4,7 @@
 frappe.ui.form.on('Ansible Play', {
 	refresh: function (frm) {
 		frappe.realtime.on('ansible_play_progress', (data) => {
-			if (data.progress) {
+			if (data.progress && data.play === frm.doc.name) {
 				const progress_title = __('Ansible Play Progress');
 				frm.dashboard.show_progress(
 					progress_title,

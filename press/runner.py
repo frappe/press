@@ -119,7 +119,7 @@ class AnsibleCallback(CallbackBase):
 	def publish_play_progress(self, task):
 		frappe.publish_realtime(
 			"ansible_play_progress",
-			{"progress": self.task_list.index(task), "total": len(self.task_list)},
+			{"progress": self.task_list.index(task), "total": len(self.task_list), "play": self.play},
 			doctype="Ansible Play",
 			docname=self.play,
 			user=frappe.session.user,
