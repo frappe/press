@@ -981,8 +981,6 @@ class BaseServer(Document, TagHelpers):
 					"mount_type": "Bind",
 					"mount_point": "/var/lib/mysql",
 					"source": "/opt/volumes/mariadb/var/lib/mysql",
-					"mount_point_owner": "mysql",
-					"mount_point_group": "mysql",
 				},
 			)
 			self.append(
