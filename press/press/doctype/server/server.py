@@ -12,7 +12,7 @@ from functools import cached_property
 import boto3
 import frappe
 from frappe import _
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
@@ -957,7 +957,7 @@ class BaseServer(Document, TagHelpers):
 			if volume.device == "/dev/sda1":
 				# Skip root volume. This is for AWS other providers may have different root volume
 				continue
-			self.append("mounts", {"mount_type": "Volume", "volume_id": volume.volume_id})
+			self.append("mounts", {"volume_id": volume.volume_id})
 
 	def set_default_mount_points(self):
 		first = self.mounts[0]
@@ -996,10 +996,14 @@ class BaseServer(Document, TagHelpers):
 
 	def set_mount_properties(self):
 		for mount in self.mounts:
-			if not mount.status:
-				mount.status = "Pending"
+			# set_defaults doesn't seem to work on children in a controller hook
+			default_fields = find_all(frappe.get_meta("Server Mount").fields, lambda x: x.default)
+			for field in default_fields:
+				fieldname = field.fieldname
+				if not mount.get(fieldname):
+					mount.set(fieldname, field.default)
+
 			if mount.mount_type == "Volume":
-				mount.filesystem = "ext4"
 				mount.mount_options = f"defaults,nofail,{mount.mount_options or ''}"
 			else:
 				mount.filesystem = "none"
