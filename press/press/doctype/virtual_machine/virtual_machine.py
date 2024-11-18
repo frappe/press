@@ -1013,7 +1013,7 @@ class VirtualMachine(Document):
 	def bulk_sync_aws(cls):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
-			["cluster", "max(`index`) as max_index"],
+			["cluster", "cloud_provider", "max(`index`) as max_index"],
 			{
 				"status": ("not in", ("Terminated", "Draft")),
 				"cloud_provider": "AWS EC2",
@@ -1028,7 +1028,9 @@ class VirtualMachine(Document):
 			for start, end in chunks:
 				# Pick a random machine
 				# TODO: This probably should be a method on the Cluster
-				machines = cls._get_active_aws_machines_within_chunk_range(cluster.cluster, start, end)
+				machines = cls._get_active_machines_within_chunk_range(
+					cluster.cloud_provider, cluster.cluster, start, end
+				)
 				if not machines:
 					# There might not be any running machines in the chunk range
 					continue
@@ -1046,7 +1048,9 @@ class VirtualMachine(Document):
 
 	def bulk_sync_aws_cluster(self, start, end):
 		client = self.client()
-		machines = self.__class__._get_active_aws_machines_within_chunk_range(self.cluster, start, end)
+		machines = self.__class__._get_active_machines_within_chunk_range(
+			self.cloud_provider, self.cluster, start, end
+		)
 		instance_ids = [machine.instance_id for machine in machines]
 		response = client.describe_instances(Filters=[{"Name": "instance-id", "Values": instance_ids}])
 		for reservation in response["Reservations"]:
@@ -1062,13 +1066,13 @@ class VirtualMachine(Document):
 					frappe.db.rollback()
 
 	@classmethod
-	def _get_active_aws_machines_within_chunk_range(cls, cluster, start, end):
+	def _get_active_machines_within_chunk_range(cls, provider, cluster, start, end):
 		return frappe.get_all(
 			"Virtual Machine",
 			fields=["name", "instance_id"],
 			filters=[
 				["status", "not in", ("Terminated", "Draft")],
-				["cloud_provider", "=", "AWS EC2"],
+				["cloud_provider", "=", provider],
 				["cluster", "=", cluster],
 				["instance_id", "is", "set"],
 				["index", ">=", start],
@@ -1080,34 +1084,49 @@ class VirtualMachine(Document):
 	def bulk_sync_oci(cls):
 		for cluster in frappe.get_all(
 			"Virtual Machine",
-			["cluster"],
-			{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "OCI"},
+			["cluster", "cloud_provider", "max(`index`) as max_index"],
+			{
+				"status": ("not in", ("Terminated", "Draft")),
+				"cloud_provider": "OCI",
+			},
 			group_by="cluster",
-			pluck="cluster",
 		):
-			# Pick a random machine
-			# TODO: This probably should be a method on the Cluster
-			machine = frappe.get_doc(
-				"Virtual Machine",
-				{
-					"status": ("not in", ("Terminated", "Draft")),
-					"cloud_provider": "OCI",
-					"cluster": cluster,
-				},
-			)
+			CHUNK_SIZE = 15  # Each call will pick up ~30 machines (2 x CHUNK_SIZE)
+			# Generate closed bounds for 15 indexes at a time
+			# (1, 15), (16, 30), (31, 45), ...
+			# We might have uneven chunks because of missing indexes
+			chunks = [(ii, ii + CHUNK_SIZE - 1) for ii in range(1, cluster.max_index, CHUNK_SIZE)]
+			for start, end in chunks:
+				# Pick a random machine
+				# TODO: This probably should be a method on the Cluster
+				machines = cls._get_active_machines_within_chunk_range(
+					cluster.cloud_provider, cluster.cluster, start, end
+				)
+				if not machines:
+					# There might not be any running machines in the chunk range
+					continue
+
 			frappe.enqueue_doc(
-				machine.doctype,
-				machine.name,
+				"Virtual Machine",
+				machines[0].name,
 				method="bulk_sync_oci_cluster",
+				start=start,
+				end=end,
 				queue="sync",
-				job_id=f"bulk_sync_oci:{machine.cluster}",
+				job_id=f"bulk_sync_oci:{machine.cluster}:{start}-{end}",
 				deduplicate=True,
 			)
 
-	def bulk_sync_oci_cluster(self):
+	def bulk_sync_oci_cluster(self, start, end):
 		cluster = frappe.get_doc("Cluster", self.cluster)
+		machines = self.__class__._get_active_machines_within_chunk_range(
+			self.cloud_provider, self.cluster, start, end
+		)
+		instance_ids = set([machine.instance_id for machine in machines])
 		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
 		for instance in response:
+			if instance.id not in instance_ids:
+				continue
 			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
 				return
