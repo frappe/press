@@ -1116,7 +1116,7 @@ class VirtualMachine(Document):
 				start=start,
 				end=end,
 				queue="sync",
-				job_id=f"bulk_sync_oci:{machine.cluster}:{start}-{end}",
+				job_id=f"bulk_sync_oci:{cluster.cluster}:{start}-{end}",
 				deduplicate=True,
 			)
 
