@@ -181,7 +181,7 @@ def setup_account(key: str):
 	frappe.local.login_manager.login_as(ar.email)
 	if _get_active_site(ar.product_trial, team.name):
 		return {
-			"location": f"/dashboard/saas/{ar.product_trial}/process",
+			"location": f"/dashboard/saas/{ar.product_trial}/login-to-site",
 		}
 
 	return {
