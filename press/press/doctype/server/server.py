@@ -1003,11 +1003,15 @@ class BaseServer(Document, TagHelpers):
 				if not mount.get(fieldname):
 					mount.set(fieldname, field.default)
 
-			if mount.mount_type == "Volume":
-				mount.mount_options = f"defaults,nofail,{mount.mount_options or ''}"
-			else:
+			mount_options = "defaults,nofail"  # Set default mount options
+			if mount.mount_options:
+				mount_options = f"{default_mount_options},{mount.mount_options}"
+
+			mount.mount_options = mount_options
+			if mount.mount_type == "Bind":
 				mount.filesystem = "none"
-				mount.mount_options = f"defaults,bind,nofail,{mount.mount_options or ''}"
+				mount.mount_options = f"{mount.mount_options},bind"
+
 			if mount.volume_id:
 				# EBS volumes are named by their volume id
 				# There's likely a better way to do this
