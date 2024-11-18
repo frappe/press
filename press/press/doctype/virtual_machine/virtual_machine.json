@@ -198,6 +198,7 @@
    "fieldname": "virtual_machine_image",
    "fieldtype": "Link",
    "label": "Virtual Machine Image",
+   "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
    "options": "Virtual Machine Image",
    "read_only_depends_on": "eval: doc.virtual_machine_image"
   },
@@ -323,7 +324,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-10-09 10:54:27.750679",
+ "modified": "2024-11-18 17:50:18.886441",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
