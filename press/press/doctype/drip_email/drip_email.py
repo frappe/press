@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Web Notes and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 from datetime import timedelta
-from typing import Dict, List
-import rq
 
 import frappe
-from frappe.model.document import Document
-from frappe.utils.make_random import get_random
+import rq
 import rq.exceptions
 import rq.timeouts
+from frappe.model.document import Document
+from frappe.utils.make_random import get_random
+
 from press.utils import log_error
 
 
@@ -50,6 +50,7 @@ class DripEmail(Document):
 		sender: DF.Data
 		sender_name: DF.Data
 		services: DF.Check
+		skip_sites_with_paid_plan: DF.Check
 		subject: DF.SmallText
 	# end: auto-generated types
 
@@ -119,7 +120,7 @@ class DripEmail(Document):
 		self.sender_name = consultant.full_name
 		return consultant
 
-	def get_setup_guides(self, account_request) -> List[Dict[str, str]]:
+	def get_setup_guides(self, account_request) -> list[dict[str, str]]:
 		if not account_request:
 			return []
 
@@ -127,9 +128,7 @@ class DripEmail(Document):
 		for guide in self.module_setup_guide:
 			if account_request.industry == guide.industry:
 				attachments.append(
-					frappe.db.get_value(
-						"File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1
-					)
+					frappe.db.get_value("File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1)
 				)
 
 		return attachments
@@ -142,6 +141,15 @@ class DripEmail(Document):
 
 		if self.saas_app:
 			conditions += f'AND site.standby_for = "{self.saas_app}"'
+
+		if self.skip_sites_with_paid_plan:
+			paid_site_plans = frappe.get_all(
+				"Site Plan", {"enabled": True, "is_trial_plan": False, "document_type": "Site"}, pluck="name"
+			)
+
+			if paid_site_plans:
+				paid_site_plans_str = ", ".join(f"'{plan}'" for plan in paid_site_plans)
+				conditions += f" AND site.plan NOT IN ({paid_site_plans_str})"
 
 		sites = frappe.db.sql(
 			f"""
@@ -159,8 +167,7 @@ class DripEmail(Document):
 					{conditions}
 			"""
 		)
-		sites = [t[0] for t in sites]
-		return sites
+		return [t[0] for t in sites]  # site names
 
 	def send_to_sites(self):
 		sites = self.sites_to_send_drip
@@ -201,9 +208,7 @@ def send_drip_emails():
 
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
-	welcome_drips = frappe.db.get_all(
-		"Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name"
-	)
+	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
 		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)

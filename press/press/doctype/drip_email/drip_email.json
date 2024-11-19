@@ -21,6 +21,7 @@
   "section_break_9",
   "message",
   "section_break_4",
+  "skip_sites_with_paid_plan",
   "send_after",
   "send_after_payment",
   "minimum_activation_level",
@@ -201,11 +202,17 @@
    "fieldtype": "Link",
    "label": "Saas App",
    "options": "Marketplace App"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_sites_with_paid_plan",
+   "fieldtype": "Check",
+   "label": "Skip Sites With Paid Plan"
   }
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2022-08-24 17:58:28.497406",
+ "modified": "2024-11-13 17:55:29.705979",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
