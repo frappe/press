@@ -110,6 +110,17 @@
 							</Button>
 						</div>
 					</form>
+					<div class="mt-6 text-center">
+						<router-link
+							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
+							:to="{
+								name: 'SaaSLogin',
+								params: $route.params
+							}"
+						>
+							Already have an account? Log in.
+						</router-link>
+					</div>
 				</template>
 			</LoginBox>
 		</div>
