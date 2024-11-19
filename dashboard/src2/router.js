@@ -214,40 +214,45 @@ let router = createRouter({
 					path: ':productId/login',
 					component: () => import('./pages/saas/Login.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: {
+						isLoginPage: true,
+						isSaaSFlow: true
+					}
 				},
 				{
 					name: 'SaaSSignup',
 					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true, isSaaSFlow: true }
 				},
 				{
 					name: 'SaaSSignupVerifyEmail',
 					path: ':productId/verify-email',
 					component: () => import('./pages/saas/VerifyEmail.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true, isSaaSFlow: true }
 				},
 				{
 					name: 'SaaSSignupOAuthSetupAccount',
 					path: ':productId/oauth',
 					component: () => import('./pages/saas/OAuthSetupAccount.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true, isSaaSFlow: true }
 				},
 				{
 					name: 'SaaSSignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),
-					props: true
+					props: true,
+					meta: { isSaaSFlow: true }
 				},
 				{
 					name: 'SaaSSignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
-					props: true
+					props: true,
+					meta: { isSaaSFlow: true }
 				}
 			]
 		},

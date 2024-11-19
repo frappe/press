@@ -3,33 +3,25 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!$isMobile && !isHideSidebar"
+					v-if="!$route.meta.isSaaSFlow && !$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar
-						v-if="
-							$session.user &&
-							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin'
-						"
-					/>
+					<AppSidebar v-if="$session.user" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
 						v-if="
+							!$route.meta.isSaaSFlow &&
 							$isMobile &&
 							!isHideSidebar &&
-							$session.user &&
-							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin'
+							$session.user
 						"
 					/>
 					<div
 						v-if="
+							!$route.meta.isSaaSFlow &&
 							!$session.user &&
-							!$route.meta.isLoginPage &&
-							$route.name != 'SaaSLogin' &&
-							!$route.name?.startsWith('SaaSSignup')
+							!$route.meta.isLoginPage
 						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
