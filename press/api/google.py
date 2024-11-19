@@ -136,7 +136,7 @@ def invalid_login():
 
 def google_oauth_flow():
 	google_credentials = get_google_credentials()
-	redirect_uri = google_credentials["web"].get("redirect_uris")[1]
+	redirect_uri = google_credentials["web"].get("redirect_uris")[0]
 	redirect_uri = redirect_uri.replace("press.api.oauth.callback", "press.api.google.callback")
 	return Flow.from_client_config(
 		client_config=google_credentials,
