@@ -94,9 +94,11 @@
 							>
 								Create Account
 							</Button>
-							<p>or</p>
+							<p v-if="isGoogleOAuthEnabled">or</p>
 							<Button
-								:loading="$resources.signup?.loading"
+								v-if="isGoogleOAuthEnabled"
+								:loading="$resources.signupWithOAuth?.loading"
+								@click="$resources.signupWithOAuth.submit()"
 								variant="subtle"
 								class="w-full font-medium"
 								type="button"
@@ -155,6 +157,9 @@ export default {
 		},
 		countries() {
 			return this.$resources.signupSettings.data?.countries || [];
+		},
+		isGoogleOAuthEnabled() {
+			return this.$resources.signupSettings.data?.enable_google_oauth || false;
 		}
 	},
 	resources: {
@@ -201,6 +206,18 @@ export default {
 					if (res && res.country) {
 						this.country = res.country;
 					}
+				}
+			};
+		},
+		signupWithOAuth() {
+			return {
+				url: 'press.api.google.login',
+				params: {
+					product: this.productId
+				},
+				auto: false,
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		}

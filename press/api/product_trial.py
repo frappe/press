@@ -148,12 +148,20 @@ def signup(
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def setup_account(key: str):
+def setup_account(key: str, country: str | None = None):
 	ar = get_account_request_from_key(key)
 	if not ar:
 		frappe.throw("Invalid or Expired Key")
 	if not ar.product_trial:
 		frappe.throw("Invalid Product Trial")
+
+	if country:
+		ar.country = country
+		ar.save(ignore_permissions=True)
+
+	if not ar.country:
+		frappe.throw("Please provide a valid country name")
+
 	frappe.set_user("Administrator")
 	# check if team already exists
 	if frappe.db.exists("Team", {"user": ar.email}):
@@ -181,7 +189,7 @@ def setup_account(key: str):
 	frappe.local.login_manager.login_as(ar.email)
 	if _get_active_site(ar.product_trial, team.name):
 		return {
-			"location": f"/dashboard/saas/{ar.product_trial}/process",
+			"location": f"/dashboard/saas/{ar.product_trial}/login-to-site",
 		}
 
 	return {
