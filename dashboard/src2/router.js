@@ -214,7 +214,9 @@ let router = createRouter({
 					path: ':productId/login',
 					component: () => import('./pages/saas/Login.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: {
+						isLoginPage: true
+					}
 				},
 				{
 					name: 'SaaSSignup',
@@ -305,7 +307,14 @@ router.beforeEach(async (to, from, next) => {
 	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
 
 	// if user is trying to access saas login page, allow irrespective of login status
-	if (to.name == 'SaaSLogin') {
+	if (
+		[
+			'SaaSLogin',
+			'SaaSSignup',
+			'SaaSSignupVerifyEmail',
+			'SaaSSignupOAuthSetupAccount'
+		].includes(to.name)
+	) {
 		next();
 		return;
 	}
@@ -326,12 +335,6 @@ router.beforeEach(async (to, from, next) => {
 			} catch (e) {
 				console.error(e);
 			}
-		}
-
-		// If user is logged in and was moving to app trial signup, redirect to app trial setup
-		if (to.name == 'SaaSSignup') {
-			next({ name: 'SaaSSignupSetup', params: to.params });
-			return;
 		}
 
 		// if team owner/admin enforce 2fa and user has not enabled 2fa, redirect to enable 2fa

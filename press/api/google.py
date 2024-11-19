@@ -14,7 +14,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from oauthlib.oauth2 import AccessDeniedError
 
-from press.api.product_trial import _get_active_site as get_active_site_product_trial
+from press.api.product_trial import _get_active_site as get_active_site_of_product_trial
 from press.utils import log_error
 
 
@@ -46,16 +46,6 @@ def callback(code=None, state=None):  # noqa: C901
 			frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/login"
 		else:
 			frappe.local.response.location = "/dashboard/login"
-
-	def _redirect_to_target_on_successful_authentication(team_name: str | None = None):
-		frappe.local.response.type = "redirect"
-		if product_trial:
-			if get_active_site_product_trial(product_trial.name, team_name):
-				frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/login-to-site"
-			else:
-				frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/setup"
-		else:
-			frappe.local.response.location = "/dashboard"
 
 	try:
 		flow = google_oauth_flow()
@@ -97,10 +87,12 @@ def callback(code=None, state=None):  # noqa: C901
 		frappe.throw(_("Account {0} has been deactivated").format(email))
 		return None
 
-	if team_name:
+	# if team exitst and  oauth is not using in saas login/signup flow
+	if team_name and not product_trial:
 		# login to existing account
 		frappe.local.login_manager.login_as(email)
-		_redirect_to_target_on_successful_authentication()
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = "/dashboard"
 		return None
 
 	# create account request
@@ -112,16 +104,28 @@ def callback(code=None, state=None):  # noqa: C901
 		phone_number=phone_number,
 		role="Press Admin",
 		oauth_signup=True,
+		product_trial=product_trial.name if product_trial else None,
 	)
-	if product_trial:
-		account_request.product_trial = product_trial.name
-
 	account_request.insert(ignore_permissions=True)
-
 	frappe.db.commit()
 
-	frappe.local.response.type = "redirect"
-	frappe.local.response.location = account_request.get_verification_url()
+	if team_name and product_trial:
+		frappe.local.login_manager.login_as(email)
+		active_site = get_active_site_of_product_trial(product_trial.name, team_name)
+		frappe.local.response.type = "redirect"
+		if active_site:
+			product_trial_request = frappe.get_value(
+				"Product Trial Request", {"site": active_site, "product_trial": product}, ["name"], as_dict=1
+			)
+			frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/login-to-site?product_trial_request={product_trial_request.name}"
+		else:
+			frappe.local.response.location = (
+				f"/dashboard/saas/{product_trial.name}/setup?account_request={account_request.name}"
+			)
+	else:
+		# create/setup account
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = account_request.get_verification_url()
 	return None
 
 

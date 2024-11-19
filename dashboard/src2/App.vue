@@ -3,34 +3,17 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!$isMobile && !isHideSidebar"
+					v-if="!isSaaSFlow && !$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar
-						v-if="
-							$session.user &&
-							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin'
-						"
-					/>
+					<AppSidebar v-if="$session.user" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="
-							$isMobile &&
-							!isHideSidebar &&
-							$session.user &&
-							!$route.name?.startsWith('SaaSSignup') &&
-							$route.name != 'SaaSLogin'
-						"
+						v-if="!isSaaSFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
 					<div
-						v-if="
-							!$session.user &&
-							!$route.meta.isLoginPage &&
-							$route.name != 'SaaSLogin' &&
-							!$route.name?.startsWith('SaaSSignup')
-						"
+						v-if="!isSaaSFlow && !$session.user && !$route.meta.isLoginPage"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
@@ -47,7 +30,7 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed, watch } from 'vue';
+import { defineAsyncComponent, computed, watch, ref } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
@@ -70,6 +53,15 @@ const isHideSidebar = computed(() => {
 		route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
 	);
 });
+
+const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
+
+watch(
+	() => route.name,
+	() => {
+		isSaaSFlow.value = window.location.pathname.startsWith('/dashboard/saas');
+	}
+);
 </script>
 
 <style src="../src/assets/style.css"></style>

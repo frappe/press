@@ -189,31 +189,34 @@ def setup_account(key: str, country: str | None = None):
 	frappe.local.login_manager.login_as(ar.email)
 	if _get_active_site(ar.product_trial, team.name):
 		return {
-			"location": f"/dashboard/saas/{ar.product_trial}/login-to-site",
+			"account_request": ar.name,
+			"location": f"/dashboard/saas/{ar.product_trial}/login-to-site?account_request={ar.name}",
 		}
 
 	return {
-		"location": f"/dashboard/saas/{ar.product_trial}/setup",
+		"account_request": ar.name,
+		"location": f"/dashboard/saas/{ar.product_trial}/setup?account_request={ar.name}",
 	}
 
 
 @frappe.whitelist(methods=["POST"])
-def get_request(product):
+def get_request(product: str, account_request: str | None = None):
 	team = frappe.local.team()
 	# validate if there is already a site
 	site = _get_active_site(product, team.name)
 	if site:
 		site_request = frappe.get_doc(
-			"Product Trial Request",
-			{"product_trial": product, "team": team, "site": site},
-			pluck="site",
+			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
 		)
 	else:
+		# check if account request is valid
+		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user
 		# create a new one
 		site_request = frappe.new_doc(
 			"Product Trial Request",
 			product_trial=product,
 			team=team.name,
+			account_request=account_request if is_valid_account_request else None,
 		).insert(ignore_permissions=True)
 
 	return {
