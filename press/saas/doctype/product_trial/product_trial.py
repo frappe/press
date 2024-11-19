@@ -28,6 +28,7 @@ class ProductTrial(Document):
 		)
 
 		apps: DF.Table[ProductTrialApp]
+		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -129,7 +130,7 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
-			if self.setup_wizard_completion_mode == "auto":
+			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
 			# set flag to ignore user
 			site.insert(ignore_permissions=True)
@@ -139,7 +140,7 @@ class ProductTrial(Document):
 		site.reload()
 		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True
-		if standby_site:
+		if standby_site and self.create_additional_system_user:
 			agent_job_name = site.create_user_with_team_info()
 		return site, agent_job_name, bool(standby_site)
 
