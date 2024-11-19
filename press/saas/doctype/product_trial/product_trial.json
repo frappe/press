@@ -128,7 +128,7 @@
    "label": "Signup Details"
   },
   {
-   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. ",
+   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. <br>\nIf you are not using <b>Setup Wizard Autocompletion</b>, you can add a password field (fieldname - <b>user_login_password</b>) to set it to the new user of site.",
    "fieldname": "signup_fields",
    "fieldtype": "Table",
    "label": "Signup Fields",
@@ -221,7 +221,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-22 11:20:54.136031",
+ "modified": "2024-11-19 15:15:41.151499",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

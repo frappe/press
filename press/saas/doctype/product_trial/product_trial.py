@@ -88,7 +88,7 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-	def setup_trial_site(self, team, plan, cluster=None):
+	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
@@ -105,6 +105,7 @@ class ProductTrial(Document):
 			site.is_standby = False
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
+			site.account_request = account_request
 			site.save(ignore_permissions=True)
 			agent_job_name = None
 			site.create_subscription(plan)
@@ -120,6 +121,7 @@ class ProductTrial(Document):
 				domain=self.domain,
 				group=self.release_group,
 				cluster=cluster,
+				account_request=account_request,
 				is_standby=False,
 				standby_for_product=self.name,
 				subscription_plan=plan,
@@ -127,6 +129,9 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
+			if self.setup_wizard_completion_mode == "auto":
+				site.flags.ignore_additional_system_user_creation = True
+			# set flag to ignore user
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
