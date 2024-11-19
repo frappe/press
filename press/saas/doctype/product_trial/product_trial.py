@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
@@ -105,17 +107,19 @@ class ProductTrial(Document):
 		site = None
 		agent_job_name = None
 		current_user = frappe.session.user
+		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		"""
 		We have set the current user to "Administrator" temporarily
 		to bypass the site creation validation
 		"""
 		frappe.set_user("Administrator")
 		if standby_site:
-			site = frappe.get_doc("Site", standby_site)
+			site: Site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
+			site._update_configuration(apps_site_config, save=False)
 			site.save(ignore_permissions=True)
 			agent_job_name = None
 			site.create_subscription(plan)
@@ -139,6 +143,7 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
+			site._update_configuration(apps_site_config, save=False)
 			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
 			# set flag to ignore user
@@ -282,6 +287,40 @@ class ProductTrial(Document):
 		while frappe.db.exists("Site", filters):
 			subdomain = generate_random_name()
 		return subdomain
+
+
+def get_app_subscriptions_site_config(apps: list[str]):
+	subscriptions = []
+	site_config = {}
+
+	for app in apps:
+		free_plan = frappe.get_all(
+			"Marketplace App Plan",
+			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+			pluck="name",
+		)
+		if free_plan:
+			new_subscription = frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan_type": "Marketplace App Plan",
+					"plan": free_plan[0],
+					"enabled": 0,
+					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+				}
+			).insert(ignore_permissions=True)
+
+			subscriptions.append(new_subscription)
+			config = frappe.db.get_value("Marketplace App", app, "site_config")
+			config = json.loads(config) if config else {}
+			site_config.update(config)
+
+	for s in subscriptions:
+		site_config.update({"sk_" + s.document_name: s.secret_key})
+
+	return site_config
 
 
 def replenish_standby_sites():
