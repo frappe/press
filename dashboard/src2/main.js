@@ -94,6 +94,7 @@ getInitialData().then(() => {
 					'SecurityException',
 					'AAAARecordExists',
 					'AuthenticationError',
+					'RateLimitExceededError',
 					'InsufficientSpaceOnServer'
 				];
 				const error = hint.originalException;
