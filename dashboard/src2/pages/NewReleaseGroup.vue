@@ -170,6 +170,13 @@ export default {
 		};
 	},
 	resources: {
+		defaultApps() {
+			return {
+				url: 'press.api.bench.get_default_apps',
+				initialData: {},
+				auto: true
+			};
+		},
 		options() {
 			return {
 				url: 'press.api.bench.options',
@@ -219,13 +226,14 @@ export default {
 			});
 
 			// add default apps
-			this.defaultApps.forEach(app => {
-				apps.push({
-					name: app.name,
-					source: app.source
-				});
-			});
-
+			apps.push(
+				...this.defaultApps[this.benchVersion].map(app => {
+					return {
+						name: app.app,
+						source: app.source
+					};
+				})
+			);
 			return apps;
 		}
 	},
@@ -234,27 +242,7 @@ export default {
 			return this.$resources.options.data;
 		},
 		defaultApps() {
-			let defaultApps = [];
-			this.options.versions.forEach(version => {
-				version.apps.forEach(app => {
-					if (app.is_default) {
-						let d = {
-							name: app.name,
-							source: app.source.name,
-							app_title: app.title,
-							route: app.source.repository_url
-						};
-						if (
-							defaultApps.filter(app => app.app_title === d.app_title)
-								.length === 0
-						) {
-							defaultApps.push(d);
-						}
-					}
-				});
-			});
-
-			return defaultApps;
+			return this.$resources.defaultApps.data;
 		},
 		defaultAppsList() {
 			return {
@@ -284,6 +272,13 @@ export default {
 				{
 					label: 'Frappe Framework Version',
 					value: this.benchVersion
+				},
+				{
+					label: 'Default Apps',
+					value: this.defaultApps[this.benchVersion]
+						.map(app => app.title)
+						.join(', '),
+					condition: () => this.defaultApps[this.benchVersion].length
 				},
 				{
 					label: 'Region',

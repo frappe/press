@@ -22,6 +22,7 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
@@ -248,7 +249,7 @@ class PressSettings(Document):
 		api_key_secret = self.get_password("twilio_api_key_secret")
 		return Client(api_key_sid, api_key_secret, account_sid)
 
-	def get_app_group(self):
+	def get_default_apps(self):
 		if self.enable_app_grouping:
 			return [app.app for app in self.default_apps]
 		return []
