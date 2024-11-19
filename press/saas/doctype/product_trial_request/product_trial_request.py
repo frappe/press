@@ -21,6 +21,7 @@ from frappe.utils.telemetry import init_telemetry
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.saas.doctype.product_trial.product_trial import ProductTrial
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -161,7 +162,7 @@ class ProductTrialRequest(Document):
 		"""
 		try:
 			signup_details = json.loads(self.signup_details)
-			encrypted_password = signup_details.get("user_login_password")
+			encrypted_password = signup_details.get(ProductTrial.USER_LOGIN_PASSWORD_FIELD)
 			if encrypted_password:
 				return decrypt_password(encrypted_password)
 		except Exception as e:

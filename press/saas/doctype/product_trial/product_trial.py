@@ -56,6 +56,8 @@ class ProductTrial(Document):
 		"trial_plan",
 	)
 
+	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
+
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
@@ -88,6 +90,13 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not for site")
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
+
+		for field in self.signup_fields:
+			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
+				if not field.required:
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
+				if field.fieldtype != "Password":
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
 
 	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
 		standby_site = self.get_standby_site(cluster)
