@@ -38,7 +38,16 @@
 					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Credits Available</div>
 						<Button
-							@click="showPrepaidCreditsDialog = true"
+							@click="
+								() => {
+									if (!$team.doc?.billing_details?.name) {
+										showBillingDetailsDialog = true;
+										showMessage = true;
+										return;
+									}
+									showPrepaidCreditsDialog = true;
+								}
+							"
 							theme="gray"
 							iconLeft="plus"
 							>Add</Button
@@ -127,6 +136,9 @@
 
 		<UpdateBillingDetails
 			v-model="showBillingDetailsDialog"
+			:message="
+				showMessage ? 'Please update your billing details to add credits' : ''
+			"
 			@updated="
 				showBillingDetailsDialog = false
 				// $resources.billingDetails.reload();
@@ -182,7 +194,8 @@ export default {
 			showBillingDetailsDialog: false,
 			showAddCardDialog: false,
 			showUpcomingInvoiceDialog: false,
-			title: 'Add credits to your account'
+			title: 'Add credits to your account',
+			showMessage: false
 		};
 	},
 	mounted() {
