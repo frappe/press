@@ -66,13 +66,18 @@
 					<div class="text-lg font-medium">
 						{{ $team?.doc?.payment_mode || 'Not set' }}
 					</div>
+					<div class="flex gap-2 items-center">
+						<p class="text-sm text-gray-600">
+							{{ paymentModeDescription }}
+						</p>
+					</div>
 				</div>
 				<div class="flex flex-col gap-2 rounded-md border p-4">
 					<div class="flex items-center justify-between text-sm text-gray-700">
 						<div>Billing Details</div>
 						<Button @click="showBillingDetailsDialog = true"> Update </Button>
 					</div>
-					<div class="overflow-hidden text-base font-medium">
+					<div class="overflow-hidden text-base leading-5">
 						<span v-if="$team?.doc?.billing_details">
 							{{ billingDetailsSummary }}
 						</span>
@@ -240,6 +245,13 @@ export default {
 			return [billing_name, address_line1, city, state, country, pincode, gstin]
 				.filter(Boolean)
 				.join(', ');
+		},
+		paymentModeDescription() {
+			return {
+				Card: `Your card will be charged for monthly subscription`,
+				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`,
+				'Paid By Partner': `Your partner will be charged for monthly subscription`
+			}[this.$team?.doc?.payment_mode];
 		}
 	}
 };
