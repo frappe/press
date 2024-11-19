@@ -36,6 +36,7 @@
   "email_header_content",
   "setup_wizard_tab",
   "setup_wizard_completion_mode",
+  "create_additional_system_user",
   "setup_wizard_payload_generator_script"
  ],
  "fields": [
@@ -128,7 +129,7 @@
    "label": "Signup Details"
   },
   {
-   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. ",
+   "description": "For timezone fields, append _tz at the end of fieldname and choose Select as fieldtype and you can leave the Options field empty. <br>\nIf you are not using <b>Setup Wizard Autocompletion</b>, you can add a password field (fieldname - <b>user_login_password</b>) to set it to the new user of site.",
    "fieldname": "signup_fields",
    "fieldtype": "Table",
    "label": "Signup Fields",
@@ -160,6 +161,7 @@
    "options": "manual\nauto"
   },
   {
+   "depends_on": "eval: doc.setup_wizard_completion_mode == \"auto\"",
    "description": "You can write python script to generate the payload for setup wizard\n<br>\n<br>\n\n<b>Available Variables - </b><br>\na. <b>signup_details</b> : This is a dictionary and it will contain user submitted data for app trial. If the user hasn't provided any value for specific info, then the value will be null.<br>\nb. <b>team</b>: This is dictionary and will contain information regarding team.\n\n<pre>{\n  \"name\" : \"jhd8dsw\",\n  \"user\" : {\n    \"email\" : \"test@example.com\",\n    \"full_name\" : \"Rahul Roy\",\n    \"first_name\" : \"Rahul\",\n    \"last_name\" : \"Roy\",\n  },\n  \"country\" : \"India\",\n  \"currency\" : \"INR\"\n}\n</pre>\n\n<b>Expected Result - </b>\nWrite the final result (dictionary) in a variable <b>payload</b>. It will be send to site for setup wizard completion.\n<br>\n<br>\n<b>Note - </b><br>\na. Use <b>decrypt_password(..)</b> to decrypt <b>password</b> signup field.",
    "fieldname": "setup_wizard_payload_generator_script",
    "fieldtype": "Code",
@@ -207,6 +209,14 @@
   {
    "fieldname": "column_break_cdhw",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.setup_wizard_completion_mode == \"manual\"",
+   "description": "Only configurable while using manual setup wizard completion mode",
+   "fieldname": "create_additional_system_user",
+   "fieldtype": "Check",
+   "label": "Create Additional System User"
   }
  ],
  "image_field": "logo",
@@ -221,7 +231,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-08-22 11:20:54.136031",
+ "modified": "2024-11-19 16:12:29.471858",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

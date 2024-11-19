@@ -28,6 +28,7 @@ class ProductTrial(Document):
 		)
 
 		apps: DF.Table[ProductTrialApp]
+		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -54,6 +55,8 @@ class ProductTrial(Document):
 		"trial_days",
 		"trial_plan",
 	)
+
+	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
 
 	def get_doc(self, doc):
 		if not self.published:
@@ -88,7 +91,14 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-	def setup_trial_site(self, team, plan, cluster=None):
+		for field in self.signup_fields:
+			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
+				if not field.required:
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
+				if field.fieldtype != "Password":
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
+
+	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
@@ -105,6 +115,7 @@ class ProductTrial(Document):
 			site.is_standby = False
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
+			site.account_request = account_request
 			site.save(ignore_permissions=True)
 			agent_job_name = None
 			site.create_subscription(plan)
@@ -120,6 +131,7 @@ class ProductTrial(Document):
 				domain=self.domain,
 				group=self.release_group,
 				cluster=cluster,
+				account_request=account_request,
 				is_standby=False,
 				standby_for_product=self.name,
 				subscription_plan=plan,
@@ -127,6 +139,9 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
+			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
+				site.flags.ignore_additional_system_user_creation = True
+			# set flag to ignore user
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
@@ -134,7 +149,7 @@ class ProductTrial(Document):
 		site.reload()
 		site.generate_saas_communication_secret(create_agent_job=True)
 		site.flags.ignore_permissions = True
-		if standby_site:
+		if standby_site and self.create_additional_system_user:
 			agent_job_name = site.create_user_with_team_info()
 		return site, agent_job_name, bool(standby_site)
 

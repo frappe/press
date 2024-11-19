@@ -34,7 +34,8 @@
    "fieldname": "account_request",
    "fieldtype": "Link",
    "label": "Account Request",
-   "options": "Account Request"
+   "options": "Account Request",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_cubd",
@@ -45,6 +46,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nWait for Site\nCompleting Setup Wizard\nSite Created\nError\nExpired"
   },
@@ -53,13 +55,15 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "search_index": 1
   },
   {
    "fieldname": "agent_job",
    "fieldtype": "Link",
    "label": "Agent Job",
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "search_index": 1
   },
   {
    "fieldname": "product_trial",
@@ -101,7 +105,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-12 11:32:08.901183",
+ "modified": "2024-11-19 15:17:20.958670",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",
