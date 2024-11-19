@@ -282,8 +282,7 @@ class ProductTrialRequest(Document):
 	@dashboard_whitelist()
 	def get_login_sid(self):
 		site: Site = frappe.get_doc("Site", self.site)
-		is_secondary_user_created = site.additional_system_user_created
-		if is_secondary_user_created:
+		if site.additional_system_user_created:
 			email = frappe.db.get_value("Team", self.team, "user")
 			return site.get_login_sid(user=email)
 

@@ -2862,6 +2862,7 @@ def process_complete_setup_wizard_job_update(job):
 		return
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		product_trial_request.status = "Site Created"
 		product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)
