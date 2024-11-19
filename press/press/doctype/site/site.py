@@ -1973,7 +1973,8 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
+		if not self.standby_for_product:
+			self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
