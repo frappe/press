@@ -95,6 +95,7 @@ export default {
 					if (data?.status !== 'Pending') {
 						this.$router.push({
 							name: 'SaaSSignupLoginToSite',
+							params: { productId: this.productId },
 							query: {
 								product_trial_request: data.name
 							}
@@ -132,6 +133,7 @@ export default {
 				onSuccess: data => {
 					this.$router.push({
 						name: 'SaaSSignupLoginToSite',
+						params: { productId: this.productId },
 						query: {
 							product_trial_request: this.$resources.siteRequest.data.name
 						}
