@@ -63,16 +63,34 @@ export default {
 			progressErrorCount: 0,
 			findingClosestServer: false,
 			closestCluster: null,
-			signupValues: {}
+			signupValues: {},
+			accountRequest: this.$route.query.account_request
 		};
+	},
+	mounted() {
+		// if account request is not available
+		// redirect to signup page
+		if (!this.accountRequest) {
+			if (this?.$session?.logoutWithoutReload?.submit) {
+				this.$session.logoutWithoutReload.submit().then(() => {
+					this.redirectToSignup();
+				});
+			} else {
+				this.redirectToSignup();
+			}
+		} else {
+			this.$resources.siteRequest.fetch();
+		}
 	},
 	resources: {
 		siteRequest() {
 			return {
 				url: 'press.api.product_trial.get_request',
-				params: { product: this.productId },
+				params: {
+					product: this.productId,
+					account_request: this.accountRequest
+				},
 				initialData: {},
-				auto: true,
 				onSuccess: data => {
 					if (data?.status !== 'Pending') {
 						this.$router.push({
@@ -165,6 +183,14 @@ export default {
 				console.warn(error);
 			}
 			return { server, pingTime };
+		},
+		redirectToSignup() {
+			this.$router.push({
+				name: 'SaaSSignup',
+				params: {
+					productId: this.productId
+				}
+			});
 		}
 	}
 };
