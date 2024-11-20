@@ -481,9 +481,7 @@ def app_details_for_new_public_site():
 		filters={"status": "Published", "show_for_site_creation": 1},
 	).run(as_dict=True)
 
-	marketplace_app_sources = [
-		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
-	]
+	marketplace_app_sources = [app["sources"][0]["source"] for app in marketplace_apps if app["sources"]]
 
 	if not marketplace_app_sources:
 		return []
@@ -519,11 +517,6 @@ def app_details_for_new_public_site():
 			app.update({**source_detail})
 
 	return marketplace_apps
-
-
-def _options_for_new(for_bench: str = None):
-	versions = get_available_versions(for_bench)
-	return versions
 
 
 @frappe.whitelist()
@@ -569,12 +562,15 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		)
 		total_installs_by_app = get_total_installs_by_app()
 		marketplace_details = {}
+
 		for app in unique_apps:
 			details = find(marketplace_apps, lambda x: x.app == app)
 			if details:
 				details["plans"] = get_plans_for_app(app)
 				details["total_installs"] = total_installs_by_app.get(app, 0)
 				marketplace_details[app] = details
+
+		set_default_apps(app_source_details_grouped)
 	else:
 		app_source_details_grouped = app_details_for_new_public_site()
 		# app source details are all fetched from marketplace apps for public sites
@@ -588,7 +584,16 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 	}
 
 
-def get_available_versions(for_bench: str = None):
+def set_default_apps(app_source_details_grouped):
+	press_settings = frappe.get_single("Press Settings")
+	default_apps = press_settings.get_default_apps()
+
+	for app_source in app_source_details_grouped.values():
+		if app_source["app"] in default_apps:
+			app_source["is_default"] = True
+
+
+def get_available_versions(for_bench: str = None):  # noqa
 	available_versions = []
 	restricted_release_group_names = get_restricted_release_group_names()
 

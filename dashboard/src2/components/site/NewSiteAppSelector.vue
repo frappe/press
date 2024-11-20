@@ -72,6 +72,8 @@ export default {
 
 			if (!publicApps.length) return;
 
+			this.apps = this.availableApps.filter(app => app.is_default === true);
+
 			return {
 				data: () => publicApps,
 				columns: [
@@ -192,7 +194,9 @@ export default {
 	},
 	methods: {
 		toggleApp(app) {
-			if (this.apps.map(a => a.app).includes(app.app)) {
+			if (app.is_default) {
+				throw new Error('Cannot remove default app');
+			} else if (this.apps.map(a => a.app).includes(app.app)) {
 				this.apps = this.apps.filter(a => a.app !== app.app);
 			} else {
 				if (app.subscription_type && app.subscription_type !== 'Free') {
