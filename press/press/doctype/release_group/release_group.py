@@ -311,6 +311,8 @@ class ReleaseGroup(Document, TagHelpers):
 		sanitized_common_site_config = [
 			{"key": c.key, "type": c.type, "value": c.value} for c in self.common_site_config_table
 		]
+		sanitized_bench_config = []
+		bench_config_keys = ["http_timeout"]
 
 		config = frappe.parse_json(config)
 
@@ -330,6 +332,9 @@ class ReleaseGroup(Document, TagHelpers):
 				self.name,
 			)
 
+			if key in bench_config_keys:
+				sanitized_bench_config.append({"key": key, "value": value, "type": config_type})
+
 			# update existing key
 			for row in sanitized_common_site_config:
 				if row["key"] == key:
@@ -339,9 +344,7 @@ class ReleaseGroup(Document, TagHelpers):
 			else:
 				sanitized_common_site_config.append({"key": key, "value": value, "type": config_type})
 
-		# using a tuple to avoid updating bench_config
-		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
-		self.update_config_in_release_group(sanitized_common_site_config, ())
+		self.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
 		self.update_benches_config()
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
@@ -369,9 +372,9 @@ class ReleaseGroup(Document, TagHelpers):
 			self.append("common_site_config_table", {"key": d.key, "value": value, "type": d.type})
 
 		for d in bench_config:
-			if d.key == "http_timeout":
+			if d["key"] == "http_timeout":
 				# http_timeout should be the only thing configurable in bench_config
-				self.bench_config = json.dumps({"http_timeout": int(d.value)}, indent=4)
+				self.bench_config = json.dumps({"http_timeout": int(d["value"])}, indent=4)
 		if bench_config == []:
 			self.bench_config = json.dumps({})
 
