@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 
-class PaymentPartnerBalanceTransaction(Document):
+class PaymentPartnerTransaction(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,15 +14,17 @@ class PaymentPartnerBalanceTransaction(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		actual_amount: DF.Currency
+		actual_currency: DF.Link | None
 		amended_from: DF.Link | None
 		amount: DF.Currency
 		currency: DF.Link | None
 		exchange_rate: DF.Float
-		paid_amount: DF.Currency
-		payment_currency: DF.Link | None
 		payment_gateway: DF.Link | None
 		payment_partner: DF.Link | None
 		payment_transaction_details: DF.Code | None
+		posting_date: DF.Date | None
+		submitted_to_frappe: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
 	def on_submit(self):

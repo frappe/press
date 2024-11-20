@@ -1,7 +1,7 @@
 // Copyright (c) 2024, Frappe and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Partner Payment Transfer", {
+frappe.ui.form.on("Partner Payment Payout", {
     refresh(frm) {
         if(frm.doc.docstatus == 0) {
         frm.add_custom_button("Fetch Payments", () => {

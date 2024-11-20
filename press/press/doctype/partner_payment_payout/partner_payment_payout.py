@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 
-class PartnerPaymentTransfer(Document):
+class PartnerPaymentPayout(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -19,8 +19,9 @@ class PartnerPaymentTransfer(Document):
 		commission: DF.Currency
 		from_date: DF.Date | None
 		net_amount: DF.Currency
-		partner: DF.Link | None
+		partner: DF.Link
 		partner_commission: DF.Percent
+		payment_gateway: DF.Link
 		to_date: DF.Date | None
 		total_amount: DF.Currency
 		transaction_doctype: DF.Link

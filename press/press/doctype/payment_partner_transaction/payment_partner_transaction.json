@@ -7,18 +7,20 @@
  "field_order": [
   "partner_details_section",
   "payment_partner",
+  "posting_date",
   "column_break_manc",
   "payment_gateway",
   "column_break_ejza",
   "team",
   "transaction_details_section",
   "amount",
-  "paid_amount",
+  "actual_amount",
   "column_break_xqsh",
   "currency",
-  "payment_currency",
+  "actual_currency",
   "column_break_jyxx",
   "exchange_rate",
+  "submitted_to_frappe",
   "section_break_yhqq",
   "payment_transaction_details",
   "section_break_7oh3",
@@ -34,7 +36,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Payment Partner Balance Transaction",
+   "options": "Payment Partner Transaction",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
@@ -113,26 +115,37 @@
    "read_only": 1
   },
   {
-   "fieldname": "paid_amount",
+   "fieldname": "actual_amount",
    "fieldtype": "Currency",
-   "label": "Paid Amount",
-   "options": "payment_currency"
+   "label": "Actual Amount",
+   "options": "actual_currency"
   },
   {
    "fetch_from": "payment_gateway.currency",
-   "fieldname": "payment_currency",
+   "fieldname": "actual_currency",
    "fieldtype": "Link",
-   "label": "Payment Currency",
+   "label": "Actual Currency",
    "options": "Currency"
+  },
+  {
+   "default": "0",
+   "fieldname": "submitted_to_frappe",
+   "fieldtype": "Check",
+   "label": "Submitted To Frappe"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-30 14:17:25.743280",
+ "modified": "2024-11-20 12:45:27.927557",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Payment Partner Balance Transaction",
+ "name": "Payment Partner Transaction",
  "owner": "Administrator",
  "permissions": [
   {
