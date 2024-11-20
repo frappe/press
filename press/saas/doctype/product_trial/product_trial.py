@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from frappe.utils.data import get_url
 from frappe.utils.momentjs import get_all_timezones
 
+from press.press.doctype.site.site import get_plan_config
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -114,15 +115,18 @@ class ProductTrial(Document):
 		"""
 		frappe.set_user("Administrator")
 		if standby_site:
-			site: Site = frappe.get_doc("Site", standby_site)
+			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
 			site.save(ignore_permissions=True)
-			agent_job_name = None
 			site.create_subscription(plan)
+			site.generate_saas_communication_secret(create_agent_job=True, save=True)
+			if self.create_additional_system_user:
+				agent_job_name = site.create_user_with_team_info()
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
@@ -144,18 +148,14 @@ class ProductTrial(Document):
 				trial_end_date=trial_end_date,
 			)
 			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
+			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
-			# set flag to ignore user
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		frappe.set_user(current_user)
-		site.reload()
-		site.generate_saas_communication_secret(create_agent_job=True)
-		site.flags.ignore_permissions = True
-		if standby_site and self.create_additional_system_user:
-			agent_job_name = site.create_user_with_team_info()
 		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
