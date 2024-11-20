@@ -534,7 +534,7 @@ def process_update_site_job_update(job):  # noqa: C901
 			"status",
 		)
 		if site_enable_step_status == "Success":
-			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
+			SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
@@ -549,6 +549,7 @@ def process_update_site_job_update(job):  # noqa: C901
 				trigger_recovery_job(site_update.name)
 			else:
 				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
+				SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
 
 def process_update_site_recover_job_update(job):
