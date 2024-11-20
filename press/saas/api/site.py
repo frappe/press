@@ -32,7 +32,7 @@ def get_plans():
 	filtered_plans = []
 
 	for plan in plans:
-		if plan.restricted_plan:
+		if plan.restricted_plan or plan.is_frappe_plan:
 			continue
 		if plan.is_trial_plan and plan.name != site.plan:
 			continue
