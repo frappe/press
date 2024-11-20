@@ -32,16 +32,15 @@ def get_plans():
 	filtered_plans = []
 
 	for plan in plans:
-		if plan.restricted_plan or plan.is_frappe_plan:
-			continue
-		if plan.is_trial_plan and plan.name != site.plan:
-			continue
-		if is_site_on_private_bench and not plan.private_benches:
-			continue
-		if plan.dedicated_server_plan and is_site_on_shared_server:
-			continue
-		if not plan.dedicated_server_plan and not is_site_on_shared_server:
-			continue
+		if plan.name != site.plan:
+			if plan.restricted_plan or plan.is_frappe_plan or plan.is_trial_plan:
+				continue
+			if is_site_on_private_bench and not plan.private_benches:
+				continue
+			if plan.dedicated_server_plan and is_site_on_shared_server:
+				continue
+			if not plan.dedicated_server_plan and not is_site_on_shared_server:
+				continue
 		filtered_plans.append(plan)
 
 	return filtered_plans
