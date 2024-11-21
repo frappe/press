@@ -41,27 +41,28 @@
 							v-model="country"
 							required
 						/>
-
-						<div class="mt-5 flex items-center text-base leading-4">
-							<FormControl
-								type="checkbox"
-								v-model="terms_accepted"
-								class="mr-1"
-							/>
-							I agree to Frappe&nbsp;
-							<Link href="https://frappecloud.com/terms" target="_blank">
-								TC </Link
-							>,&nbsp;
-							<Link href="https://frappecloud.com/privacy" target="_blank">
-								Privacy Policy
-							</Link>
-							&nbsp;&&nbsp;
-							<Link
-								href="https://frappecloud.com/cookie-policy"
-								target="_blank"
-							>
-								Cookie Policy
-							</Link>
+						<div class="mt-5 text-base">
+							<label class="leading-6 tracking-normal">
+								<FormControl
+									type="checkbox"
+									v-model="terms_accepted"
+									class="mr-0.5 py-1 align-baseline"
+								/>
+								I agree to Frappe&nbsp;
+								<Link href="https://frappecloud.com/terms" target="_blank">
+									Terms of Service </Link
+								>,&nbsp;
+								<Link href="https://frappecloud.com/privacy" target="_blank">
+									Privacy Policy
+								</Link>
+								&nbsp;&&nbsp;
+								<Link
+									href="https://frappecloud.com/cookie-policy"
+									target="_blank"
+								>
+									Cookie Policy
+								</Link>
+							</label>
 						</div>
 						<!-- Error Message -->
 						<ErrorMessage
