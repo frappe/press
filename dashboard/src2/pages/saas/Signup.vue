@@ -107,7 +107,7 @@
 							>
 								<div class="flex flex-row items-center gap-1">
 									<GoogleIconSolid class="w-4" />
-									Sign up with google
+									Sign up with Google
 								</div>
 							</Button>
 						</div>
