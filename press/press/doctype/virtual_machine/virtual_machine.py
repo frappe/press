@@ -1109,16 +1109,16 @@ class VirtualMachine(Document):
 					# There might not be any running machines in the chunk range
 					continue
 
-			frappe.enqueue_doc(
-				"Virtual Machine",
-				machines[0].name,
-				method="bulk_sync_oci_cluster",
-				start=start,
-				end=end,
-				queue="sync",
-				job_id=f"bulk_sync_oci:{cluster.cluster}:{start}-{end}",
-				deduplicate=True,
-			)
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					machines[0].name,
+					method="bulk_sync_oci_cluster",
+					start=start,
+					end=end,
+					queue="sync",
+					job_id=f"bulk_sync_oci:{cluster.cluster}:{start}-{end}",
+					deduplicate=True,
+				)
 
 	def bulk_sync_oci_cluster(self, start, end):
 		cluster = frappe.get_doc("Cluster", self.cluster)

@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
 import random
@@ -22,6 +22,7 @@ class AccountRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.account_request_press_role.account_request_press_role import (
 			AccountRequestPressRole,
 		)
@@ -80,9 +81,8 @@ class AccountRequest(Document):
 		if (
 			geo_location.get("country") == "United States"
 			or geo_location.get("continent") == "Europe"
+			or self.country == "United States"
 		):
-			self.is_us_eu = True
-		elif self.country == "United States":
 			self.is_us_eu = True
 		else:
 			self.is_us_eu = False
@@ -131,7 +131,7 @@ class AccountRequest(Document):
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def send_verification_email(self):
+	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
 		if frappe.conf.developer_mode:
@@ -207,12 +207,10 @@ class AccountRequest(Document):
 
 	def get_verification_url(self):
 		if self.saas:
-			return get_url(
-				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
-			)
+			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
 		if self.product_trial:
 			return get_url(
-				f"/api/method/press.api.saas.setup_account_product_trial?key={self.request_key}"
+				f"/dashboard/saas/{self.product_trial}/oauth?key={self.request_key}&email={self.email}"
 			)
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
@@ -221,9 +219,7 @@ class AccountRequest(Document):
 		return " ".join(filter(None, [self.first_name, self.last_name]))
 
 	def get_site_name(self):
-		return (
-			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
-		)
+		return self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
 
 	def is_using_new_saas_flow(self):
 		return bool(self.product_trial)

@@ -21,6 +21,8 @@ from frappe.utils.telemetry import init_telemetry
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.saas.doctype.product_trial.product_trial import ProductTrial
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
@@ -43,12 +45,7 @@ class ProductTrialRequest(Document):
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
 		status: DF.Literal[
-			"Pending",
-			"Wait for Site",
-			"Completing Setup Wizard",
-			"Site Created",
-			"Error",
-			"Expired",
+			"Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"
 		]
 		team: DF.Link | None
 	# end: auto-generated types
@@ -156,6 +153,22 @@ class ProductTrialRequest(Document):
 			frappe.log_error(title="Product Trial Reqeust Setup Wizard Payload Generation Error")
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
+	def get_user_login_password_from_signup_details(self) -> str | None:
+		"""
+		Handling the exception because without the password also
+		the site can be created and user can login through saas flow
+
+		Better than failing the site creation process
+		"""
+		try:
+			signup_details = json.loads(self.signup_details)
+			encrypted_password = signup_details.get(ProductTrial.USER_LOGIN_PASSWORD_FIELD)
+			if encrypted_password:
+				return decrypt_password(encrypted_password)
+		except Exception as e:
+			log_error("Failed to get user login password from signup details", data=e)
+		return None
+
 	def validate_signup_fields(self):
 		signup_values = json.loads(self.signup_details)
 		product = frappe.get_doc("Product Trial", self.product_trial)
@@ -204,7 +217,9 @@ class ProductTrialRequest(Document):
 		self.site_creation_started_on = now_datetime()
 		self.save(ignore_permissions=True)
 		self.reload()
-		site, agent_job_name, _ = product.setup_trial_site(self.team, product.trial_plan, cluster)
+		site, agent_job_name, _ = product.setup_trial_site(
+			self.team, product.trial_plan, cluster=cluster, account_request=self.account_request
+		)
 		self.agent_job = agent_job_name
 		self.site = site.name
 		self.save(ignore_permissions=True)
@@ -268,8 +283,7 @@ class ProductTrialRequest(Document):
 	@dashboard_whitelist()
 	def get_login_sid(self):
 		site: Site = frappe.get_doc("Site", self.site)
-		is_secondary_user_created = site.additional_system_user_created
-		if is_secondary_user_created:
+		if site.additional_system_user_created:
 			email = frappe.db.get_value("Team", self.team, "user")
 			return site.get_login_sid(user=email)
 

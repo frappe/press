@@ -522,99 +522,7 @@ def app_details_for_new_public_site():
 @frappe.whitelist()
 def options_for_new(for_bench: str | None = None):  # noqa: C901
 	for_bench = str(for_bench) if for_bench else None
-	if for_bench:
-		version = frappe.db.get_value("Release Group", for_bench, "version")
-		versions = frappe.db.get_all(
-			"Frappe Version",
-			["name", "default", "status", "number"],
-			{"name": version},
-			order_by="number desc",
-		)
-	else:
-		versions = frappe.db.get_all(
-			"Frappe Version",
-			["name", "default", "status", "number"],
-			{"public": True, "status": ("!=", "End of Life")},
-			order_by="number desc",
-		)
-	available_versions = []
-	restricted_release_group_names = frappe.db.get_all(
-		"Site Plan Release Group",
-		pluck="release_group",
-		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
-	)
-	for version in versions:
-		filters = (
-			{"name": for_bench}
-			if for_bench
-			else {
-				"enabled": 1,
-				"public": 1,
-				"version": version.name,
-				"name": ("not in", restricted_release_group_names),
-				"saas_bench": 0,
-			}
-		)
-		release_group = frappe.db.get_value(
-			"Release Group",
-			fieldname=["name", "`default`", "title", "public"],
-			filters=filters,
-			order_by="creation asc",
-			as_dict=1,
-		)
-		version.group = release_group
-		if version.group:
-			if for_bench:
-				version.group.is_dedicated_server = is_dedicated_server(
-					frappe.get_all(
-						"Release Group Server",
-						filters={"parent": release_group.name, "parenttype": "Release Group"},
-						pluck="server",
-						limit=1,
-					)[0]
-				)
-
-			# here we get the last created bench for the release group
-			# assuming the last created bench is the latest one
-			bench = frappe.db.get_value(
-				"Bench",
-				filters={"status": "Active", "group": version.group.name},
-				order_by="creation desc",
-			)
-			if bench:
-				version.group.bench = bench
-				version.group.bench_app_sources = frappe.db.get_all(
-					"Bench App", {"parent": bench, "app": ("!=", "frappe")}, pluck="source"
-				)
-				cluster_names = unique(
-					frappe.db.get_all(
-						"Bench",
-						filters={"candidate": frappe.db.get_value("Bench", bench, "candidate")},
-						pluck="cluster",
-					)
-				)
-				clusters = frappe.db.get_all(
-					"Cluster",
-					filters={"name": ("in", cluster_names)},
-					fields=["name", "title", "image", "beta"],
-				)
-				if not for_bench:
-					proxy_servers = frappe.db.get_all(
-						"Proxy Server",
-						{
-							"cluster": ("in", cluster_names),
-							"is_primary": 1,
-						},
-						["name", "cluster"],
-					)
-
-					for cluster in clusters:
-						cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
-
-				version.group.clusters = clusters
-
-				if version.group and version.group.bench and version.group.clusters:
-					available_versions.append(version)
+	available_versions = get_available_versions(for_bench)
 
 	unique_app_sources = []
 	for version in available_versions:
@@ -654,12 +562,15 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		)
 		total_installs_by_app = get_total_installs_by_app()
 		marketplace_details = {}
+
 		for app in unique_apps:
 			details = find(marketplace_apps, lambda x: x.app == app)
 			if details:
 				details["plans"] = get_plans_for_app(app)
 				details["total_installs"] = total_installs_by_app.get(app, 0)
 				marketplace_details[app] = details
+
+		set_default_apps(app_source_details_grouped)
 	else:
 		app_source_details_grouped = app_details_for_new_public_site()
 		# app source details are all fetched from marketplace apps for public sites
@@ -671,6 +582,121 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		"marketplace_details": marketplace_details,
 		"app_source_details": app_source_details_grouped,
 	}
+
+
+def set_default_apps(app_source_details_grouped):
+	press_settings = frappe.get_single("Press Settings")
+	default_apps = press_settings.get_default_apps()
+
+	for app_source in app_source_details_grouped.values():
+		if app_source["app"] in default_apps:
+			app_source["preinstalled"] = True
+
+
+def get_available_versions(for_bench: str = None):  # noqa
+	available_versions = []
+	restricted_release_group_names = get_restricted_release_group_names()
+
+	if for_bench:
+		version = frappe.db.get_value("Release Group", for_bench, "version")
+		filters = {"name": version}
+
+		release_group_filters = {"name": for_bench}
+	else:
+		filters = {"public": True, "status": ("!=", "End of Life")}
+		release_group_filters = {
+			"public": 1,
+			"enabled": 1,
+			"name": (
+				"not in",
+				restricted_release_group_names,
+			),  # filter out restricted release groups
+		}
+
+	versions = frappe.db.get_all(
+		"Frappe Version",
+		["name", "default", "status", "number"],
+		filters,
+		order_by="number desc",
+	)
+
+	for version in versions:
+		release_group_filters["version"] = version.name
+		release_group = frappe.db.get_value(
+			"Release Group",
+			fieldname=["name", "`default`", "title", "public"],
+			filters=release_group_filters,
+			order_by="creation desc",
+			as_dict=1,
+		)
+
+		if release_group:
+			version.group = release_group
+			if for_bench:
+				version.group.is_dedicated_server = is_dedicated_server(
+					frappe.get_all(
+						"Release Group Server",
+						filters={"parent": release_group.name, "parenttype": "Release Group"},
+						pluck="server",
+						limit=1,
+					)[0]
+				)
+
+			set_bench_and_clusters(version, for_bench)
+
+			if version.group and version.group.bench and version.group.clusters:
+				available_versions.append(version)
+
+	return available_versions
+
+
+def get_restricted_release_group_names():
+	return frappe.db.get_all(
+		"Site Plan Release Group",
+		pluck="release_group",
+		filters={"parenttype": "Site Plan", "parentfield": "release_groups"},
+	)
+
+
+def set_bench_and_clusters(version, for_bench):
+	# here we get the last created bench for the release group
+	# assuming the last created bench is the latest one
+	bench = frappe.db.get_value(
+		"Bench",
+		filters={"status": "Active", "group": version.group.name},
+		order_by="creation desc",
+	)
+	if bench:
+		version.group.bench = bench
+		version.group.bench_app_sources = frappe.db.get_all(
+			"Bench App", {"parent": bench, "app": ("!=", "frappe")}, pluck="source"
+		)
+		cluster_names = unique(
+			frappe.db.get_all(
+				"Bench",
+				filters={"candidate": frappe.db.get_value("Bench", bench, "candidate")},
+				pluck="cluster",
+			)
+		)
+		clusters = frappe.db.get_all(
+			"Cluster",
+			filters={"name": ("in", cluster_names)},
+			fields=["name", "title", "image", "beta"],
+		)
+		if not for_bench:
+			proxy_servers = frappe.db.get_all(
+				"Proxy Server",
+				{
+					"cluster": ("in", cluster_names),
+					"is_primary": 1,
+				},
+				["name", "cluster"],
+			)
+
+			for cluster in clusters:
+				cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
+
+		version.group.clusters = clusters
 
 
 @frappe.whitelist()
@@ -785,6 +811,7 @@ def get_site_plans():
 			"private_benches",
 			"monitor_access",
 			"dedicated_server_plan",
+			"is_trial_plan",
 			"allow_downgrading_from_other_plan",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
@@ -1303,7 +1330,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 					"document_name": app.app,
 					"enabled": 1,
 				},
-				["document_name as app", "plan"],
+				["document_name as app", "plan", "name"],
 				as_dict=True,
 			)
 			app_source.subscription = subscription

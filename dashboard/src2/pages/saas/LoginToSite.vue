@@ -89,7 +89,7 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			isRedirectingToSite: false,
-			currentBuildStep: 'Waiting for build to be started'
+			currentBuildStep: 'Preparing for build'
 		};
 	},
 	resources: {
@@ -130,7 +130,8 @@ export default {
 							};
 						},
 						onSuccess: data => {
-							this.currentStep = data.current_step || this.currentStep;
+							this.currentBuildStep =
+								data.current_step || this.currentBuildStep;
 							this.progressCount += 1;
 							if (data.progress == 100) {
 								this.loginToSite();
@@ -140,7 +141,7 @@ export default {
 									this.progressCount <= 10
 								)
 							) {
-								this.progressCount = data.progress;
+								this.progressCount = Math.round(data.progress * 10) / 10;
 								setTimeout(() => {
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);

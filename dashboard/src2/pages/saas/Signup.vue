@@ -58,26 +58,28 @@
 							v-model="email"
 							required
 						/>
-						<div class="mt-5 flex items-center text-base leading-4">
-							<FormControl
-								type="checkbox"
-								v-model="terms_accepted"
-								class="mr-1"
-							/>
-							I agree to Frappe&nbsp;
-							<Link href="https://frappecloud.com/terms" target="_blank">
-								TC </Link
-							>,&nbsp;
-							<Link href="https://frappecloud.com/privacy" target="_blank">
-								Privacy Policy
-							</Link>
-							&nbsp;&&nbsp;
-							<Link
-								href="https://frappecloud.com/cookie-policy"
-								target="_blank"
-							>
-								Cookie Policy
-							</Link>
+						<div class="mt-5 text-base">
+							<label class="leading-6 tracking-normal">
+								<FormControl
+									type="checkbox"
+									v-model="terms_accepted"
+									class="mr-0.5 py-1 align-baseline"
+								/>
+								I agree to Frappe&nbsp;
+								<Link href="https://frappecloud.com/terms" target="_blank">
+									Terms of Service </Link
+								>,&nbsp;
+								<Link href="https://frappecloud.com/privacy" target="_blank">
+									Privacy Policy
+								</Link>
+								&nbsp;&&nbsp;
+								<Link
+									href="https://frappecloud.com/cookie-policy"
+									target="_blank"
+								>
+									Cookie Policy
+								</Link>
+							</label>
 						</div>
 						<!-- Error Message -->
 						<ErrorMessage
@@ -94,9 +96,11 @@
 							>
 								Create Account
 							</Button>
-							<p>or</p>
+							<p v-if="isGoogleOAuthEnabled">or</p>
 							<Button
-								:loading="$resources.signup?.loading"
+								v-if="isGoogleOAuthEnabled"
+								:loading="$resources.signupWithOAuth?.loading"
+								@click="$resources.signupWithOAuth.submit()"
 								variant="subtle"
 								class="w-full font-medium"
 								type="button"
@@ -108,6 +112,17 @@
 							</Button>
 						</div>
 					</form>
+					<div class="mt-6 text-center">
+						<router-link
+							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
+							:to="{
+								name: 'SaaSLogin',
+								params: $route.params
+							}"
+						>
+							Already have an account? Log in.
+						</router-link>
+					</div>
 				</template>
 			</LoginBox>
 		</div>
@@ -155,6 +170,9 @@ export default {
 		},
 		countries() {
 			return this.$resources.signupSettings.data?.countries || [];
+		},
+		isGoogleOAuthEnabled() {
+			return this.$resources.signupSettings.data?.enable_google_oauth || false;
 		}
 	},
 	resources: {
@@ -201,6 +219,18 @@ export default {
 					if (res && res.country) {
 						this.country = res.country;
 					}
+				}
+			};
+		},
+		signupWithOAuth() {
+			return {
+				url: 'press.api.google.login',
+				params: {
+					product: this.productId
+				},
+				auto: false,
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		}

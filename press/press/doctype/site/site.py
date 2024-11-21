@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from collections import defaultdict
@@ -509,7 +510,7 @@ class Site(Document, TagHelpers):
 		if self.has_value_changed("status"):
 			create_site_status_update_webhook_event(self.name)
 
-	def generate_saas_communication_secret(self, create_agent_job=False):
+	def generate_saas_communication_secret(self, create_agent_job=False, save=True):
 		if not self.standby_for and not self.standby_for_product:
 			return
 		if not self.saas_communication_secret:
@@ -520,7 +521,7 @@ class Site(Document, TagHelpers):
 			if create_agent_job:
 				self.update_site_config(config)
 			else:
-				self._update_configuration(config=config, save=True)
+				self._update_configuration(config=config, save=save)
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -800,10 +801,17 @@ class Site(Document, TagHelpers):
 		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
+			"""
+			If the site is creating for saas / product trial purpose,
+			Create a system user with password at the time of site creation.
+
+			If `ignore_additional_system_user_creation` is set, don't create additional system user
+			"""
 			if (self.standby_for_product or self.standby_for) and not self.is_standby:
-				self.flags.new_site_agent_job_name = agent.new_site(
-					self, create_user=self.get_user_details()
-				).name
+				user_details = self.get_user_details()
+				if self.flags.get("ignore_additional_system_user_creation", False):
+					user_details = None
+				self.flags.new_site_agent_job_name = agent.new_site(self, create_user=user_details).name
 			else:
 				self.flags.new_site_agent_job_name = agent.new_site(self).name
 
@@ -2014,11 +2022,35 @@ class Site(Document, TagHelpers):
 			)
 			user_first_name = user.first_name if (user and user.first_name) else ""
 			user_last_name = user.last_name if (user and user.last_name) else ""
-		return {
+		payload = {
 			"email": user_email,
 			"first_name": user_first_name or "",
 			"last_name": user_last_name or "",
 		}
+		"""
+		If the site is created for product trial,
+		we might have collected the password from end-user for his site
+		"""
+		if self.account_request and self.standby_for_product and not self.is_standby:
+			with contextlib.suppress(frappe.DoesNotExistError):
+				# fetch the product trial request
+				product_trial_request = frappe.get_doc(
+					"Product Trial Request",
+					{
+						"account_request": self.account_request,
+						"product_trial": self.standby_for_product,
+						"site": self.name,
+					},
+				)
+				setup_wizard_completion_mode = frappe.get_value(
+					"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
+				)
+				if setup_wizard_completion_mode == "manual":
+					password = product_trial_request.get_user_login_password_from_signup_details()
+					if password:
+						payload["password"] = password
+
+		return payload
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
@@ -2830,6 +2862,7 @@ def process_complete_setup_wizard_job_update(job):
 		return
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
 		product_trial_request.status = "Site Created"
 		product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)

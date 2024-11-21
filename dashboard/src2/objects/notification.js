@@ -1,6 +1,7 @@
 import { h } from 'vue';
 import router from '../router';
 import { getDocResource } from '../utils/resource';
+import { unreadNotificationsCount } from '../data/notifications';
 import { Tooltip, frappeRequest } from 'frappe-ui';
 import { icon } from '../utils/components';
 import { getTeam } from '../data/team';
@@ -52,6 +53,7 @@ export default {
 			const notification = getNotification(row.name);
 
 			notification.markNotificationAsRead.submit().then(() => {
+				unreadNotificationsCount.setData(data => data - 1);
 				if (row.route) router.push(row.route);
 			});
 		},
