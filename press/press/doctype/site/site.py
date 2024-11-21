@@ -1965,8 +1965,6 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
-		if self.standby_for_product:
-			self.update_site_config({"disable_scheduler": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
