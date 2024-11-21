@@ -32,6 +32,7 @@ export default {
 		},
 		plans() {
 			let plans = getPlans();
+
 			if (this.isPrivateBenchSite) {
 				plans = plans.filter(plan => plan.private_benches);
 			}
