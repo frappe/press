@@ -64,9 +64,6 @@
 					</div>
 				</div>
 			</div>
-			<div v-if="benchVersion && defaultApps.length">
-				<ObjectList :options="defaultAppsList" />
-			</div>
 			<div
 				class="flex flex-col"
 				v-if="options?.clusters.length && benchVersion && !server"
@@ -170,7 +167,7 @@ export default {
 		};
 	},
 	resources: {
-		defaultApps() {
+		preInstalledApps() {
 			return {
 				url: 'press.api.bench.get_default_apps',
 				initialData: {},
@@ -227,7 +224,7 @@ export default {
 
 			// add default apps
 			apps.push(
-				...this.defaultApps[this.benchVersion].map(app => {
+				...this.preInstalledApps[this.benchVersion].map(app => {
 					return {
 						name: app.app,
 						source: app.source
@@ -241,12 +238,12 @@ export default {
 		options() {
 			return this.$resources.options.data;
 		},
-		defaultApps() {
-			return this.$resources.defaultApps.data;
+		preInstalledApps() {
+			return this.$resources.preInstalledApps.data;
 		},
-		defaultAppsList() {
+		preInstalledAppsList() {
 			return {
-				data: () => this.defaultApps,
+				data: () => this.preInstalledApps,
 				columns: [
 					{
 						label: 'Default Apps',
@@ -275,10 +272,10 @@ export default {
 				},
 				{
 					label: 'Preinstalled Apps',
-					value: this.defaultApps[this.benchVersion]
+					value: this.preInstalledApps[this.benchVersion]
 						.map(app => app.title)
 						.join(', '),
-					condition: () => this.defaultApps[this.benchVersion].length
+					condition: () => this.preInstalledApps[this.benchVersion].length
 				},
 				{
 					label: 'Region',
