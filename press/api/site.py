@@ -1330,7 +1330,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 					"document_name": app.app,
 					"enabled": 1,
 				},
-				["document_name as app", "plan"],
+				["document_name as app", "plan", "name"],
 				as_dict=True,
 			)
 			app_source.subscription = subscription
