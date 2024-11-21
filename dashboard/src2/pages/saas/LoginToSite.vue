@@ -89,7 +89,7 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			isRedirectingToSite: false,
-			currentBuildStep: 'Waiting for build to be started'
+			currentBuildStep: 'Preparing for build'
 		};
 	},
 	resources: {
