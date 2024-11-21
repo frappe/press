@@ -350,15 +350,11 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		print(f"Code : {code}")
 		print()
 		return
-	product_trial = frappe.get_doc("Product Trial", product)
+	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
 	sender = ""
-	subject = (
-		product_trial.email_subject.format(otp=code)
-		if product_trial.email_subject
-		else "Verify your email for Frappe"
-	)
+	subject = f"{code} - Verification Code for {product_trial.title} Login"
 	args = {
-		"header_content": product_trial.email_header_content or "",
+		"header_content": f"<p>You have requested a verification code to login to your {product_trial.title} site. The code is valid for 5 minutes.</p>",
 		"otp": code,
 	}
 	if product_trial.email_full_logo:
@@ -370,7 +366,7 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		sender=sender,
 		recipients=email,
 		subject=subject,
-		template="saas_verify_account",
+		template="product_trial_verify_account",
 		args=args,
 		now=True,
 	)
