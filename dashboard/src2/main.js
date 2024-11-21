@@ -12,6 +12,7 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
+import { unreadNotificationsCount } from './data/notifications.js';
 import './vendor/posthog.js';
 
 const request = options => {
@@ -48,6 +49,7 @@ getInitialData().then(() => {
 	if (session.isLoggedIn) {
 		fetchPlans();
 		session.roles.fetch();
+		unreadNotificationsCount.fetch();
 	}
 
 	if (window.press_dashboard_sentry_dsn.includes('https://')) {
