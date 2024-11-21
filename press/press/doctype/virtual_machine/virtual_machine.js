@@ -312,3 +312,16 @@ frappe.ui.form.on('Virtual Machine', {
 		}
 	},
 });
+
+frappe.ui.form.on('Virtual Machine Volume', {
+	detach(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to detach volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('detach', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
+	},
+});

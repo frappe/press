@@ -14,7 +14,9 @@
   "throughput",
   "last_updated_at",
   "section_break_frlu",
-  "device"
+  "device",
+  "column_break_buwy",
+  "detach"
  ],
  "fields": [
   {
@@ -79,12 +81,21 @@
    "in_list_view": 1,
    "label": "Device",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_buwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "detach",
+   "fieldtype": "Button",
+   "label": "Detach"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-28 17:00:47.389851",
+ "modified": "2024-11-21 16:20:36.656076",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",

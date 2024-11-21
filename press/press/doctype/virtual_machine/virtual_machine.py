@@ -1201,6 +1201,14 @@ class VirtualMachine(Document):
 		)
 		self.sync()
 
+	@frappe.whitelist()
+	def detach(self, volume_id):
+		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+		self.client().detach_volume(
+			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
+		)
+		self.sync()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
