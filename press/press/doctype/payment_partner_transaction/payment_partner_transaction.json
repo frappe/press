@@ -134,6 +134,7 @@
    "label": "Submitted To Frappe"
   },
   {
+   "default": "Today",
    "fieldname": "posting_date",
    "fieldtype": "Date",
    "label": "Posting Date"
@@ -142,7 +143,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-11-20 12:45:27.927557",
+ "modified": "2024-11-20 16:40:23.093473",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Partner Transaction",
