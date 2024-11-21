@@ -78,17 +78,17 @@ class PaymobCallbackLog(Document):
 			exchange_rate, amount, paid_amount = paymob_log_data
 
 			transaction_doc = frappe.get_doc({
-				"doctype": "Payment Partner Balance Transaction",
+				"doctype": "Payment Partner Transaction",
 				"team": self.team,
 				"payment_partner": self.payment_partner,
 				"exchange_rate": exchange_rate,
 				"payment_gateway": "Paymob",
 				"amount": amount,
-				"paid_amount": paid_amount,
+				"actual_amount": paid_amount,
 				"payment_transaction_details": as_json(parse_json(self.payload))
 			})
 			transaction_doc.insert()
 			transaction_doc.submit()
 		except Exception as e:
-			frappe.log_error("Error creating Payment Partner Balance Transaction", f"PaymobCallbackLog Error :\n{str(e)}")
+			frappe.log_error("Error creating Payment Partner Transaction", f"PaymobCallbackLog Error :\n{str(e)}")
 
