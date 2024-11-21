@@ -39,6 +39,7 @@ class ProductTrial(Document):
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
 		published: DF.Check
+		redirect_to_after_login: DF.Data
 		release_group: DF.Link
 		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
 		setup_wizard_payload_generator_script: DF.Code | None
@@ -56,6 +57,7 @@ class ProductTrial(Document):
 		"domain",
 		"trial_days",
 		"trial_plan",
+		"redirect_to_after_login",
 	)
 
 	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
@@ -99,6 +101,9 @@ class ProductTrial(Document):
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
 				if field.fieldtype != "Password":
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
+
+		if not self.redirect_to_after_login.startswith("/"):
+			frappe.throw("Redirection route after login should start with /")
 
 	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config

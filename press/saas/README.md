@@ -44,6 +44,7 @@ It has 2 doctypes.
     }
     ``` 
   - **Create Additional System User** [only for **manual** mode] - If this is checked, we will add an additional system user with the team's information after creating a new site. 
+  - **Redirect To After Login** - After SaaS signup/login, user is directly logged-in to his site. By default, we redirect the user to desk of site. With this option, we can configure the redirect path. For example, for gameplan the path would be `/g`
 
 #### FC Dashboard
 - UI/UX - The pages are available in https://github.com/frappe/press/tree/master/dashboard/src2/pages/saas
