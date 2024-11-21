@@ -54,9 +54,6 @@ class VirtualMachineMigration(Document):
 		self.add_volumes()
 		self.create_machine_copy()
 
-	def after_insert(self):
-		self.execute()
-
 	def add_steps(self):
 		for step in self.migration_steps:
 			step.update({"status": "Pending"})
@@ -272,7 +269,8 @@ class VirtualMachineMigration(Document):
 			return StepStatus.Success
 		return StepStatus.Pending
 
-	def execute(self):
+	@frappe.whitelist()
+	def start(self):
 		self.status = "Running"
 		self.start = frappe.utils.now_datetime()
 		self.save()
