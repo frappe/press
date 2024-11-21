@@ -9,8 +9,8 @@
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
 			<SaaSLoginBox
-				title="Let’s set up your account"
-				subtitle="Setup your default settings for your account"
+				title="Let’s set up your site"
+				subtitle="Setup your default settings for your site"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:default>
