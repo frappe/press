@@ -11,7 +11,6 @@ from frappe.model.document import Document
 from frappe.utils.data import get_url
 from frappe.utils.momentjs import get_all_timezones
 
-from press.press.doctype.site.site import get_plan_config
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -102,6 +101,8 @@ class ProductTrial(Document):
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
 
 	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
+		from press.press.doctype.site.site import get_plan_config
+
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
