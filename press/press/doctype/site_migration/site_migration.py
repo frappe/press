@@ -604,7 +604,7 @@ class SiteMigration(Document):
 		return None
 
 	def adjust_plan_if_required(self):
-		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
+		"""Update site plan from/to Unlimited"""
 		site: "Site" = frappe.get_doc("Site", self.site)
 		dest_server: Server = frappe.get_doc("Server", self.destination_server)
 		plan_change = None
