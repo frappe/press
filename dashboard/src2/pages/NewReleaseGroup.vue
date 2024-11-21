@@ -274,7 +274,7 @@ export default {
 					value: this.benchVersion
 				},
 				{
-					label: 'Default Apps',
+					label: 'Preinstalled Apps',
 					value: this.defaultApps[this.benchVersion]
 						.map(app => app.title)
 						.join(', '),

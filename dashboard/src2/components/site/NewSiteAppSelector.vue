@@ -41,6 +41,7 @@ import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
 import { Badge } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	props: ['availableApps', 'siteOnPublicBench', 'modelValue'],
@@ -72,7 +73,7 @@ export default {
 
 			if (!publicApps.length) return;
 
-			this.apps = this.availableApps.filter(app => app.is_default === true);
+			this.apps = this.availableApps.filter(app => app.preinstalled === true);
 
 			return {
 				data: () => publicApps,
@@ -95,6 +96,13 @@ export default {
 										src: row.image
 									}),
 									h('span', { class: 'ml-2' }, row.title || row.app_title),
+									row?.preinstalled
+										? h(Badge, {
+												class: 'ml-2',
+												theme: 'green',
+												label: 'Pre-Installed'
+										  })
+										: '',
 									row.subscription_type !== 'Free'
 										? h(Badge, {
 												class: 'ml-2',
@@ -194,8 +202,8 @@ export default {
 	},
 	methods: {
 		toggleApp(app) {
-			if (app.is_default) {
-				throw new Error('Cannot remove default app');
+			if (app.preinstalled) {
+				toast.error(app.title + ' is pre-installed and cannot be removed');
 			} else if (this.apps.map(a => a.app).includes(app.app)) {
 				this.apps = this.apps.filter(a => a.app !== app.app);
 			} else {

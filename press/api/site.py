@@ -590,7 +590,7 @@ def set_default_apps(app_source_details_grouped):
 
 	for app_source in app_source_details_grouped.values():
 		if app_source["app"] in default_apps:
-			app_source["is_default"] = True
+			app_source["preinstalled"] = True
 
 
 def get_available_versions(for_bench: str = None):  # noqa
