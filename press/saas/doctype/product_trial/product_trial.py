@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
@@ -99,12 +101,15 @@ class ProductTrial(Document):
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
 
 	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
+		from press.press.doctype.site.site import get_plan_config
+
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
 		current_user = frappe.session.user
+		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		"""
 		We have set the current user to "Administrator" temporarily
 		to bypass the site creation validation
@@ -116,9 +121,13 @@ class ProductTrial(Document):
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
+			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
 			site.save(ignore_permissions=True)
-			agent_job_name = None
 			site.create_subscription(plan)
+			site.generate_saas_communication_secret(create_agent_job=True, save=True)
+			if self.create_additional_system_user:
+				agent_job_name = site.create_user_with_team_info()
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
@@ -139,18 +148,15 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
+			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
+			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
-			# set flag to ignore user
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		frappe.set_user(current_user)
-		site.reload()
-		site.generate_saas_communication_secret(create_agent_job=True)
-		site.flags.ignore_permissions = True
-		if standby_site and self.create_additional_system_user:
-			agent_job_name = site.create_user_with_team_info()
 		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
@@ -282,6 +288,40 @@ class ProductTrial(Document):
 		while frappe.db.exists("Site", filters):
 			subdomain = generate_random_name()
 		return subdomain
+
+
+def get_app_subscriptions_site_config(apps: list[str]):
+	subscriptions = []
+	site_config = {}
+
+	for app in apps:
+		free_plan = frappe.get_all(
+			"Marketplace App Plan",
+			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+			pluck="name",
+		)
+		if free_plan:
+			new_subscription = frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan_type": "Marketplace App Plan",
+					"plan": free_plan[0],
+					"enabled": 0,
+					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+				}
+			).insert(ignore_permissions=True)
+
+			subscriptions.append(new_subscription)
+			config = frappe.db.get_value("Marketplace App", app, "site_config")
+			config = json.loads(config) if config else {}
+			site_config.update(config)
+
+	for s in subscriptions:
+		site_config.update({"sk_" + s.document_name: s.secret_key})
+
+	return site_config
 
 
 def replenish_standby_sites():
