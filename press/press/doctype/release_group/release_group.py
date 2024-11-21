@@ -785,7 +785,7 @@ class ReleaseGroup(Document, TagHelpers):
 		old_team = frappe.db.get_value("Team", self.team, "user")
 
 		if old_team == team_mail_id:
-			frappe.throw(f"Bench is already owned by the team {team_mail_id}")
+			frappe.throw(f"Bench group is already owned by the team {team_mail_id}")
 
 		team_change = frappe.get_doc(
 			{
