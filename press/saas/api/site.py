@@ -43,6 +43,39 @@ def get_plans():
 				continue
 		filtered_plans.append(plan)
 
+	"""
+	plans `site_api.get_site_plans()` doesn't include trial plan, as we don't have any roles specfied for trial plan
+	because from backend only we set the trial plan, end-user can't subscribe to trial plan directly
+	If the site is on a trial plan, add it to the starting of the list
+	"""
+
+	current_plan = frappe.get_doc("Site Plan", site.plan)
+	if current_plan.is_trial_plan:
+		filtered_plans.insert(
+			0,
+			{
+				"name": current_plan.name,
+				"plan_title": current_plan.plan_title,
+				"price_usd": current_plan.price_usd,
+				"price_inr": current_plan.price_inr,
+				"cpu_time_per_day": current_plan.cpu_time_per_day,
+				"max_storage_usage": current_plan.max_storage_usage,
+				"max_database_usage": current_plan.max_database_usage,
+				"database_access": current_plan.database_access,
+				"support_included": current_plan.support_included,
+				"offsite_backups": current_plan.offsite_backups,
+				"private_benches": current_plan.private_benches,
+				"monitor_access": current_plan.monitor_access,
+				"dedicated_server_plan": current_plan.dedicated_server_plan,
+				"is_trial_plan": current_plan.is_trial_plan,
+				"allow_downgrading_from_other_plan": False,
+				"clusters": [],
+				"allowed_apps": [],
+				"bench_versions": [],
+				"restricted_plan": False,
+			},
+		)
+
 	return filtered_plans
 
 
