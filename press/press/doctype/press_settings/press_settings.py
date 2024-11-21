@@ -250,6 +250,7 @@ class PressSettings(Document):
 		return Client(api_key_sid, api_key_secret, account_sid)
 
 	def get_default_apps(self):
-		if self.enable_app_grouping:
-			return [app.app for app in self.default_apps]
+		if hasattr(self, "enable_app_grouping") and hasattr(self, "default_apps"):  # noqa
+			if self.enable_app_grouping:
+				return [app.app for app in self.default_apps]
 		return []
