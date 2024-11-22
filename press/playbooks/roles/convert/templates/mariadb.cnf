@@ -5,7 +5,7 @@ default-storage-engine          = InnoDB
 
 # MyISAM #
 key-buffer-size                 = 32M
-myisam-recover                  = FORCE,BACKUP
+myisam-recover-options          = FORCE
 
 # SAFETY #
 max-allowed-packet              = 256M
