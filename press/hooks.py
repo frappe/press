@@ -168,9 +168,9 @@ doc_events = {
 	"Marketplace App Subscription": {
 		"on_update": "press.press.doctype.storage_integration_subscription.storage_integration_subscription.create_after_insert",
 	},
- "Mpesa Payment Record": {
-     "before_submit":"press.api.local_payments.mpesa.overrides.mpesa_record.after_save_mpesa_payment_record"
-},
+#  "Mpesa Payment Record": {
+#      "before_submit":"press.api.local_payments.mpesa.overrides.mpesa_record.after_save_mpesa_payment_record"
+# },
 }
 
 # Scheduled Tasks

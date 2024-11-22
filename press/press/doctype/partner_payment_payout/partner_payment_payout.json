@@ -10,13 +10,10 @@
   "amended_from",
   "from_date",
   "partner",
+  "payment_gateway",
   "column_break_plbi",
   "to_date",
   "partner_commission",
-  "payment_gateway",
-  "section_break_qhbe",
-  "transaction_doctype",
-  "column_break_iyec",
   "section_break_tvae",
   "transfer_items",
   "section_break_qxag",
@@ -43,6 +40,7 @@
    "search_index": 1
   },
   {
+   "default": "Today",
    "fieldname": "from_date",
    "fieldtype": "Date",
    "label": "From Date"
@@ -56,14 +54,6 @@
    "fieldname": "to_date",
    "fieldtype": "Date",
    "label": "To Date"
-  },
-  {
-   "fieldname": "section_break_qhbe",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_iyec",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_tvae",
@@ -80,18 +70,10 @@
    "non_negative": 1
   },
   {
-   "fieldname": "transaction_doctype",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Transaction DocType",
-   "options": "DocType",
-   "reqd": 1
-  },
-  {
    "fieldname": "transfer_items",
    "fieldtype": "Table",
    "label": "Partner Payment Transfer Item",
-   "options": "Partner Payment Transfer Item",
+   "options": "Partner Payment Payout Item",
    "reqd": 1
   },
   {
@@ -115,6 +97,7 @@
   {
    "fieldname": "partner",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Partner",
    "options": "Team",
    "reqd": 1
@@ -123,11 +106,13 @@
    "fetch_from": "partner.partner_commission",
    "fieldname": "partner_commission",
    "fieldtype": "Percent",
-   "label": "Partner Commission"
+   "label": "Partner Commission",
+   "read_only": 1
   },
   {
    "fieldname": "payment_gateway",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Payment Gateway",
    "options": "Payment Gateway",
    "reqd": 1
@@ -136,7 +121,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-11-20 12:43:17.250268",
+ "modified": "2024-11-22 11:22:22.557825",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Partner Payment Payout",

@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-11-08 13:09:19.307290",
+ "creation": "2024-11-22 11:16:54.513751",
+ "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -17,23 +18,13 @@
  "fields": [
   {
    "fieldname": "transaction_id",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Transaction Id"
-  },
-  {
-   "fieldname": "column_break_ayfd",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "amount",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "Amount(USD)"
+   "label": "Transaction Id",
+   "options": "Payment Partner Transaction",
+   "reqd": 1
   },
   {
    "fieldname": "posting_date",
@@ -44,6 +35,18 @@
    "label": "Posting Date"
   },
   {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Amount(USD)"
+  },
+  {
+   "fieldname": "column_break_ayfd",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "commission_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -51,25 +54,25 @@
    "label": "Commission Amount"
   },
   {
+   "fieldname": "amount_in_local_currency",
+   "fieldtype": "Currency",
+   "label": "Amount(LC)"
+  },
+  {
    "fieldname": "net_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Net Amount"
-  },
-  {
-   "fieldname": "amount_in_local_currency",
-   "fieldtype": "Currency",
-   "label": "Amount(LC)"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-15 12:36:07.956691",
+ "modified": "2024-11-22 11:17:55.345884",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Partner Payment Transfer Item",
+ "name": "Partner Payment Payout Item",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

@@ -272,10 +272,25 @@ def create_exchange_rate(**kwargs):
         print(f"Error: {e}")
         return None
 
-
+def create_payment_partner_transaction(team, payment_partner, exchange_rate, amount, paid_amount,payment_gateway, payload=None):
+			"""Create a Payment Partner Transaction record."""
+			transaction_doc = frappe.get_doc({
+				"doctype": "Payment Partner Transaction",
+				"team": team,
+				"payment_partner": payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": payment_gateway,
+				"amount": amount,
+				"actual_amount": paid_amount,
+				"payment_transaction_details": payload
+			})
+			transaction_doc.insert()
+			transaction_doc.submit()
+			return transaction_doc.name
 
 @frappe.whitelist(allow_guest=True)
 def fetch_currencies():
 	"""Fetch the list of currencies supported by the system."""
 	currencies = frappe.get_all("Currency", fields=["name"])
 	return [currency['name'] for currency in currencies]
+

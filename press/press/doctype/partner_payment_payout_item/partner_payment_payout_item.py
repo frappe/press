@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class PartnerPaymentTransferItem(Document):
+class PartnerPaymentPayoutItem(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -22,6 +22,6 @@ class PartnerPaymentTransferItem(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		posting_date: DF.Date | None
-		transaction_id: DF.Data | None
+		transaction_id: DF.Link
 	# end: auto-generated types
 	pass

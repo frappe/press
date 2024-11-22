@@ -28,7 +28,6 @@ class MpesaPaymentRecord(Document):
 		payment_partner: DF.Link | None
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
-		submitted_to_frappe: DF.Check
 		team: DF.Link | None
 		trans_amount: DF.Float
 		trans_id: DF.Data | None

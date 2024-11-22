@@ -42,10 +42,10 @@ get_team_and_partner_from_integration_request,
 get_payment_gateway, get_mpesa_settings_for_team,
 sanitize_mobile_number,
 split_request_amount_according_to_transaction_limit,
-fetch_param_value
-
+fetch_param_value,
 )
 from press.api.local_payments.mpesa.webhook import create_invoice_partner_site
+from press.press.doctype.paymob_callback_log.paymob_callback_log import create_payment_partner_transaction
 
 # other imports and the rest of your code...
 
@@ -767,7 +767,7 @@ def handle_transaction_result(transaction_response, integration_request):
 		try:
 			
 			integration_request.handle_success(transaction_response)
-			create_mpesa_payment_register_entry(transaction_response)
+			create_mpesa_payment_record(transaction_response)
 
 			integration_request.status = "Completed"
 		except Exception:
@@ -858,11 +858,9 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 		if error:
 			frappe.throw(_(getattr(response, "errorMessage")), title=_("Transaction Error"))
    
-def create_mpesa_payment_register_entry(transaction_response):
+def create_mpesa_payment_record(transaction_response):
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
-	# Extract necessary details from the transaction response
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
-	# Fetch relevant details from the response
 	transaction_id = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
 	trans_time = fetch_param_value(item_response, "TransactionDate", "Name")
 	msisdn = fetch_param_value(item_response, "PhoneNumber", "Name")
@@ -873,6 +871,7 @@ def create_mpesa_payment_register_entry(transaction_response):
 	amount_usd, exchange_rate=convert("USD", "KES", requested_amount)
 	gateway_name=get_payment_gateway(partner) 	
 	# Create a new entry in M-Pesa Payment Record
+ 
 	data={
 	"transaction_id": transaction_id,
 	"trans_amount": amount,
@@ -898,39 +897,8 @@ def create_mpesa_payment_register_entry(transaction_response):
 	})
 	new_entry.insert(ignore_permissions=True)
 	new_entry.submit()
+	'''create payment partner transaction which willl then create balance transaction'''
+	create_payment_partner_transaction(team,partner, exchange_rate, amount_usd, requested_amount, gateway_name)	
 
-	# frappe.db.commit()  
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 	
-	
-def create_balance_transaction(team, amount, invoice=None):
-	"""Create a new entry in the Balance Transaction table."""
- 
-	# Get the ending balance of this team
-	team_balance_transaction = frappe.get_all(
-		"Balance Transaction", 
-		filters={"team": team}, 
-		fields=["ending_balance"], 
-		order_by="creation desc", 
-		limit=1
-	)
-	ending_balance = team_balance_transaction[0].ending_balance if team_balance_transaction else 0
-
-	# Create a new entry in the Balance Transaction table
-	new_entry = frappe.get_doc({
-		"doctype": "Balance Transaction",
-		"team": team,
-		"type": "Adjustment",
-		"amount": amount,
-		"source": "Prepaid Credits",
-		"ending_balance": ending_balance + amount,
-		"docstatus": 1,
-		"invoice": invoice if invoice else None,
-		"description": "Added Credits through mpesa payments",
-	})
-
-	new_entry.insert(ignore_permissions=True)
-	frappe.db.commit()  
-	frappe.msgprint(_("Balance Transaction entry created successfully"))
-
-	return new_entry.name 

@@ -45,6 +45,21 @@
 
         <!-- Parent Component -->
         <AddExchangeRate v-model="showExchangeRateDialog" @closeDialog="showExchangeRateDialog = false" />
+
+        <!--Submit Payment Transaction To Frappe-->
+        <div class="flex flex-col gap-2 rounded-md border p-4">
+            <div class="flex justify-between items-center text-sm text-gray-700">
+              <div>Partner Payment Payout</div>
+              <Button @click="showPartnerPaymentPayout = true">Add</Button>
+            </div>
+            <div class="overflow-hidden text-ellipsis text-base font-medium">
+              <span class="font-normal text-gray-600">Not set</span>
+            </div>
+          </div>
+          <!--End of payment transaction-->
+
+        <!-- Parent Component -->
+        <PartnerPaymentPayout v-model="showPartnerPaymentPayout" @closeDialog="showPartnerPaymentPayout = false" />
         </div>
       </div>
   
@@ -66,6 +81,9 @@
       AddExchangeRate: defineAsyncComponent(() =>
         import('../AddExchangeRate.vue')
       ),
+      PartnerPaymentPayout: defineAsyncComponent(() =>
+        import('../PartnerPaymentPayout.vue')
+      ),
      
     },
     data() {
@@ -73,6 +91,7 @@
         showAddMpesaDialog: false,
         showAddPaymentGatewayDialog: false,
         showExchangeRateDialog:false,
+        showPartnerPaymentPayout:false,
       };
     },
   

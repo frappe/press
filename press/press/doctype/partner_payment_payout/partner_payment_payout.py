@@ -13,7 +13,7 @@ class PartnerPaymentPayout(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.partner_payment_transfer_item.partner_payment_transfer_item import PartnerPaymentTransferItem
+		from press.press.doctype.partner_payment_payout_item.partner_payment_payout_item import PartnerPaymentPayoutItem
 
 		amended_from: DF.Link | None
 		commission: DF.Currency
@@ -24,8 +24,7 @@ class PartnerPaymentPayout(Document):
 		payment_gateway: DF.Link
 		to_date: DF.Date | None
 		total_amount: DF.Currency
-		transaction_doctype: DF.Link
-		transfer_items: DF.Table[PartnerPaymentTransferItem]
+		transfer_items: DF.Table[PartnerPaymentPayoutItem]
 	# end: auto-generated types
 	pass
 
@@ -40,10 +39,9 @@ class PartnerPaymentPayout(Document):
 	def on_submit(self):
 		transaction_names = [item.transaction_id for item in self.transfer_items]
 
-		# Update Mpesa Payment Records
 		if transaction_names:
 			frappe.db.set_value(
-				"Mpesa Payment Record",
+				"Payment Partner Transaction",
 				{"name": ["in", transaction_names], "submitted_to_frappe": 0},
 				"submitted_to_frappe",
 				1
@@ -53,10 +51,10 @@ class PartnerPaymentPayout(Document):
 	def on_cancel(self):
 		transaction_names = [item.transaction_id for item in self.transfer_items]
 
-		# Update Mpesa Payment Records
+		# Update Payment Partner Records
 		if transaction_names:
 			frappe.db.set_value(
-				"Mpesa Payment Record",
+				"Payment Partner Transaction",
 				{"name": ["in", transaction_names], "submitted_to_frappe": 1},
 				"submitted_to_frappe",
 				0
@@ -66,24 +64,27 @@ class PartnerPaymentPayout(Document):
 
 @frappe.whitelist(allow_guest=True)
 def fetch_payments():
-	transaction_doctype = frappe.form_dict.get('transaction_doctype')
+	payment_gateway = frappe.form_dict.get('payment_gateway')
+	partner = frappe.form_dict.get('partner')
 	from_date = frappe.form_dict.get('from_date')
 	to_date = frappe.form_dict.get('to_date')
 
 	filters = {
 		'docstatus': 1,
-		'submitted_to_frappe': 0
+		'submitted_to_frappe': 0,
+		'payment_gateway': payment_gateway,
+		'payment_partner': partner
 	}
 
 	if from_date and to_date:
 		filters['posting_date'] = ['between', [from_date, to_date]]
 
 
-	mpesa_payments = frappe.get_all(
-		'Mpesa Payment Record',
+	partner_payments = frappe.get_all(
+		"Payment Partner Transaction",
 		filters=filters,
-		fields=['name', 'amount_usd', 'posting_date']
+		fields=['name', 'amount', 'posting_date']
 	)
 
-	frappe.response.message = mpesa_payments
+	frappe.response.message = partner_payments
 	
