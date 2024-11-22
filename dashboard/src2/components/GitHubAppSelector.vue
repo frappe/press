@@ -26,7 +26,7 @@
 			:options="
 				options.installations.map(i => ({
 					label: i.login,
-					value: i.id,
+					value: String(i.id), // type cast to string for search to work
 					image: i.image
 				}))
 			"
@@ -182,7 +182,7 @@ export default {
 		selectedGithubUserData() {
 			if (!this.selectedGithubUser) return null;
 			return this.options.installations.find(
-				i => i.id === this.selectedGithubUser.value
+				i => i.id === Number(this.selectedGithubUser.value)
 			);
 		},
 		needsAuthorization() {

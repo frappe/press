@@ -1,11 +1,16 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
+from __future__ import annotations
 
+import json
+
+import frappe
 import frappe.utils
+from frappe.model.document import Document
+from frappe.utils.data import get_url
 from frappe.utils.momentjs import get_all_timezones
+
 from press.utils import log_error
 from press.utils.unique_name_generator import generate as generate_random_name
 
@@ -18,12 +23,14 @@ class ProductTrial(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,
 		)
 
 		apps: DF.Table[ProductTrialApp]
+		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -32,6 +39,7 @@ class ProductTrial(Document):
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
 		published: DF.Check
+		redirect_to_after_login: DF.Data
 		release_group: DF.Link
 		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
 		setup_wizard_payload_generator_script: DF.Code | None
@@ -43,14 +51,16 @@ class ProductTrial(Document):
 		trial_plan: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"logo",
-		"description",
 		"domain",
 		"trial_days",
 		"trial_plan",
-	]
+		"redirect_to_after_login",
+	)
+
+	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
 
 	def get_doc(self, doc):
 		if not self.published:
@@ -85,20 +95,44 @@ class ProductTrial(Document):
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
 
-	def setup_trial_site(self, team, plan, cluster=None):
+		for field in self.signup_fields:
+			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
+				if not field.required:
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
+				if field.fieldtype != "Password":
+					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
+
+		if not self.redirect_to_after_login.startswith("/"):
+			frappe.throw("Redirection route after login should start with /")
+
+	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
+		from press.press.doctype.site.site import get_plan_config
+
 		standby_site = self.get_standby_site(cluster)
 		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
+		current_user = frappe.session.user
+		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
+		"""
+		We have set the current user to "Administrator" temporarily
+		to bypass the site creation validation
+		"""
+		frappe.set_user("Administrator")
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
 			site.team = team_record.name
 			site.trial_end_date = trial_end_date
+			site.account_request = account_request
+			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
 			site.save(ignore_permissions=True)
-			agent_job_name = None
 			site.create_subscription(plan)
+			site.generate_saas_communication_secret(create_agent_job=True, save=True)
+			if self.create_additional_system_user:
+				agent_job_name = site.create_user_with_team_info()
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
@@ -111,6 +145,7 @@ class ProductTrial(Document):
 				domain=self.domain,
 				group=self.release_group,
 				cluster=cluster,
+				account_request=account_request,
 				is_standby=False,
 				standby_for_product=self.name,
 				subscription_plan=plan,
@@ -118,14 +153,15 @@ class ProductTrial(Document):
 				apps=apps,
 				trial_end_date=trial_end_date,
 			)
+			site._update_configuration(apps_site_config, save=False)
+			site._update_configuration(get_plan_config(plan), save=False)
+			site.generate_saas_communication_secret(create_agent_job=False, save=False)
+			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
+				site.flags.ignore_additional_system_user_creation = True
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
-		site.reload()
-		site.generate_saas_communication_secret(create_agent_job=True)
-		site.flags.ignore_permissions = True
-		if standby_site:
-			agent_job_name = site.create_user_with_team_info()
+		frappe.set_user(current_user)
 		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
@@ -160,10 +196,9 @@ class ProductTrial(Document):
 			pluck="Cluster",
 		)
 		clusters = list(set(clusters))
-		public_clusters = frappe.db.get_all(
+		return frappe.db.get_all(
 			"Cluster", {"name": ("in", clusters), "public": 1}, order_by="name asc", pluck="name"
 		)
-		return public_clusters
 
 	def get_standby_site(self, cluster=None):
 		filters = {
@@ -185,6 +220,7 @@ class ProductTrial(Document):
 		if cluster:
 			# if site is not found and cluster was specified, try to find a site in any cluster
 			return self.get_standby_site()
+		return None
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:
@@ -204,7 +240,7 @@ class ProductTrial(Document):
 		if sites_to_create > self.standby_queue_size:
 			sites_to_create = self.standby_queue_size
 
-		for i in range(sites_to_create):
+		for _i in range(sites_to_create):
 			self.create_standby_site(cluster)
 			frappe.db.commit()
 
@@ -259,6 +295,40 @@ class ProductTrial(Document):
 		return subdomain
 
 
+def get_app_subscriptions_site_config(apps: list[str]):
+	subscriptions = []
+	site_config = {}
+
+	for app in apps:
+		free_plan = frappe.get_all(
+			"Marketplace App Plan",
+			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+			pluck="name",
+		)
+		if free_plan:
+			new_subscription = frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan_type": "Marketplace App Plan",
+					"plan": free_plan[0],
+					"enabled": 0,
+					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+				}
+			).insert(ignore_permissions=True)
+
+			subscriptions.append(new_subscription)
+			config = frappe.db.get_value("Marketplace App", app, "site_config")
+			config = json.loads(config) if config else {}
+			site_config.update(config)
+
+	for s in subscriptions:
+		site_config.update({"sk_" + s.document_name: s.secret_key})
+
+	return site_config
+
+
 def replenish_standby_sites():
 	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("Product Trial", {"enable_pooling": 1}, pluck="name")
@@ -270,3 +340,33 @@ def replenish_standby_sites():
 		except Exception:
 			log_error("Replenish Standby Sites Error", product=product.name)
 			frappe.db.rollback()
+
+
+def send_verification_mail_for_login(email: str, product: str, code: str):
+	"""Send verification mail for login."""
+	if frappe.conf.developer_mode:
+		print(f"\nVerification Code for {product}:")
+		print(f"Email : {email}")
+		print(f"Code : {code}")
+		print()
+		return
+	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
+	sender = ""
+	subject = f"{code} - Verification Code for {product_trial.title} Login"
+	args = {
+		"header_content": f"<p>You have requested a verification code to login to your {product_trial.title} site. The code is valid for 5 minutes.</p>",
+		"otp": code,
+	}
+	if product_trial.email_full_logo:
+		args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+	if product_trial.email_account:
+		sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
+
+	frappe.sendmail(
+		sender=sender,
+		recipients=email,
+		subject=subject,
+		template="product_trial_verify_account",
+		args=args,
+		now=True,
+	)

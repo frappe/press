@@ -82,8 +82,9 @@ def check_if_all_fetch_column_stats_was_sucessful(doc):
 
 
 def fetch_column_stats_update(job, response_data):
-	doc_name = response_data["data"]["doc_name"]
-	table = json.loads(job.request_data)["table"]
+	request_data_json = json.loads(job.request_data)
+	doc_name = request_data_json["doc_name"]
+	table = request_data_json["table"]
 
 	if job.status == "Success":
 		column_statistics = response_data["steps"][0]["data"]["output"]
@@ -148,9 +149,7 @@ def get_status_of_mariadb_analyze_query(name, query):
 
 
 def mariadb_analyze_query_already_exists(site, normalized_query):
-	if frappe.db.exists(
-		"MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}
-	):
+	if frappe.db.exists("MariaDB Analyze Query", {"site": site, "normalized_query": normalized_query}):
 		return True
 	return False
 

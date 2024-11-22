@@ -618,7 +618,7 @@ class Bench(Document):
 			self.memory_high = 0
 			self.memory_max = 0
 			self.memory_swap = 0
-		self.save()
+		self.save(ignore_permissions=True)
 		return self.gunicorn_workers, self.background_workers
 
 	def docker_execute(

@@ -1166,6 +1166,10 @@ class Server(BaseServer):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
+		# Enable bench memory limits for public servers
+		if self.public:
+			self.set_bench_memory_limits = True
+
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
 			add_permission_for_newly_created_doc,

@@ -31,7 +31,8 @@
    "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fetch_from": "site.bench",
@@ -155,7 +156,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-14 16:45:36.956416",
+ "modified": "2024-11-15 16:53:44.667863",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",

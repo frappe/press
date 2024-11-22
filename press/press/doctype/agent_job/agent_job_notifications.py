@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 DOC_URLS = {
 	"oom-issues": "https://frappecloud.com/docs/common-issues/oom-issues",
 	"row-size-too-large-error": "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
+	"data-truncated-for-column": "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
 }
 
 
@@ -81,6 +82,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 137", update_with_oom_error),
 		("returned non-zero exit status 143", update_with_oom_error),
 		("Row size too large", update_with_row_size_too_large_error),
+		("Data truncated for column", update_with_data_truncated_for_column_error),
 	]
 
 
@@ -123,7 +125,7 @@ def get_details(job: AgentJob, title: str, message: str) -> Details:
 	title = title or get_default_title(job)
 	message = message or get_default_message(job)
 
-	details: Details = dict(
+	details = Details(
 		title=title,
 		message=message,
 		traceback=tb,
@@ -168,7 +170,7 @@ def update_with_oom_error(
 	details[
 		"message"
 	] = f"""<p>The server ran out of memory while {job_type} job was running and was killed by the system.</p>
-	p>It is recommended to increase the memory available for the server <a class="underline" href="/dashboard/servers/{job.server}">{job.server}</a>.</p>
+	<p>It is recommended to increase the memory available for the server <a class="underline" href="/dashboard/servers/{job.server}">{job.server}</a>.</p>
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
@@ -191,6 +193,21 @@ def update_with_row_size_too_large_error(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS["row-size-too-large-error"]
+
+	return True
+
+
+def update_with_data_truncated_for_column_error(details: Details, job: AgentJob):
+	details["title"] = "Data truncated for column error"
+
+	details[
+		"message"
+	] = f"""<p>The server encountered a data truncated for column error while migrating the site <b>{job.site}</b>.</p>
+	<p>This tends to happen when the datatype of a field changes, but there is existing data in the doctype that don't fit to the new datatype</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS["data-truncated-for-column"]
 
 	return True
 
@@ -225,7 +242,7 @@ def send_job_failure_notification(job: AgentJob):
 	)
 
 	# site migration has its own notification handling
-	site_migration = get_ongoing_migration(job.site)
+	site_migration = get_ongoing_migration(job.site) if job.site else None
 	if site_migration and job_matches_site_migration(job, site_migration):
 		return
 

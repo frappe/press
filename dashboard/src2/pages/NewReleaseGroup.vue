@@ -129,17 +129,7 @@
 								version: benchVersion,
 								cluster: benchRegion,
 								saas_app: null,
-								apps: [
-									// some wizardry to only pick frappe for the chosen version
-									options.versions
-										.find(v => v.name === benchVersion)
-										.apps.find(app => app.name === 'frappe')
-								].map(app => {
-									return {
-										name: app.name,
-										source: app.source.name
-									};
-								}),
+								apps: getAppsToInstall(),
 								server: server || null
 							}
 						})
@@ -156,12 +146,16 @@
 import Summary from '../components/Summary.vue';
 import Header from '../components/Header.vue';
 import { DashboardError } from '../utils/error';
+import { h } from 'vue';
+import { Badge } from 'frappe-ui';
+import ObjectList from '../components/ObjectList.vue';
 
 export default {
 	name: 'NewReleaseGroup',
 	components: {
 		Summary,
-		Header
+		Header,
+		ObjectList
 	},
 	props: ['server'],
 	data() {
@@ -173,6 +167,13 @@ export default {
 		};
 	},
 	resources: {
+		preInstalledApps() {
+			return {
+				url: 'press.api.bench.get_default_apps',
+				initialData: {},
+				auto: true
+			};
+		},
 		options() {
 			return {
 				url: 'press.api.bench.options',
@@ -208,15 +209,73 @@ export default {
 			};
 		}
 	},
+	methods: {
+		getAppsToInstall() {
+			let apps = [
+				this.options.versions
+					.find(v => v.name === this.benchVersion)
+					.apps.find(app => app.name === 'frappe')
+			].map(app => {
+				return {
+					name: app.name,
+					source: app.source.name
+				};
+			});
+
+			// add default apps
+			apps.push(
+				...this.preInstalledApps[this.benchVersion].map(app => {
+					return {
+						name: app.app,
+						source: app.source
+					};
+				})
+			);
+			return apps;
+		}
+	},
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		preInstalledApps() {
+			return this.$resources.preInstalledApps.data;
+		},
+		preInstalledAppsList() {
+			return {
+				data: () => this.preInstalledApps,
+				columns: [
+					{
+						label: 'Default Apps',
+						fieldname: 'app_title',
+						type: 'Component',
+						component: ({ row }) => {
+							return h(
+								'a',
+								{
+									class: 'flex items-center text-sm',
+									href: `${row.route}`,
+									target: '_blank'
+								},
+								[h('span', { class: 'ml-2' }, row.app_title)]
+							);
+						}
+					}
+				]
+			};
 		},
 		summaryOptions() {
 			return [
 				{
 					label: 'Frappe Framework Version',
 					value: this.benchVersion
+				},
+				{
+					label: 'Preinstalled Apps',
+					value: this.preInstalledApps[this.benchVersion]
+						.map(app => app.title)
+						.join(', '),
+					condition: () => this.preInstalledApps[this.benchVersion].length
 				},
 				{
 					label: 'Region',

@@ -133,7 +133,7 @@ export default {
 					return value || row.name;
 				}
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.7 },
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
@@ -144,7 +144,7 @@ export default {
 					}
 					const $team = getTeam();
 					if (row.price_usd > 0) {
-						const india = $team.doc.currency === 'INR';
+						const india = $team.doc?.currency === 'INR';
 						const formattedValue = userCurrency(
 							india ? row.price_inr : row.price_usd,
 							0

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import ClassVar
 
 import frappe
 from frappe.utils import rounded
@@ -48,8 +47,8 @@ class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
 	audit_type = "Bench Field Check"
-	server_map = ClassVar[dict[str, str]]
-	press_map = ClassVar[dict[str, str]]
+	server_map = {}
+	press_map = {}
 
 	def __init__(self):
 		log = {}

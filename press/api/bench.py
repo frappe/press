@@ -191,7 +191,22 @@ def exists(title):
 
 
 @frappe.whitelist()
-def options():
+def get_default_apps():
+	press_settings = frappe.get_single("Press Settings")
+	default_apps = press_settings.get_default_apps()
+
+	versions, rows = get_app_versions_list()
+
+	version_based_default_apps = {v.version: [] for v in versions}
+
+	for row in rows:
+		if row.app in default_apps:
+			version_based_default_apps[row.version].append(row)
+
+	return version_based_default_apps
+
+
+def get_app_versions_list(only_frappe=False):
 	AppSource = frappe.qb.DocType("App Source")
 	FrappeVersion = frappe.qb.DocType("Frappe Version")
 	AppSourceVersion = frappe.qb.DocType("App Source Version")
@@ -201,12 +216,7 @@ def options():
 		.on(AppSourceVersion.parent == AppSource.name)
 		.left_join(FrappeVersion)
 		.on(AppSourceVersion.version == FrappeVersion.name)
-		.where(
-			(AppSource.enabled == 1)
-			& (AppSource.public == 1)
-			& (FrappeVersion.public == 1)
-			& (AppSource.frappe == 1)
-		)
+		.where((AppSource.enabled == 1) & (AppSource.public == 1) & (FrappeVersion.public == 1))
 		.select(
 			FrappeVersion.name.as_("version"),
 			FrappeVersion.status,
@@ -221,18 +231,34 @@ def options():
 			AppSource.frappe,
 		)
 		.orderby(AppSource.creation)
-		.run(as_dict=True)
 	)
 
+	if only_frappe:
+		rows = rows.where(AppSource.frappe == 1)
+
+	rows = rows.run(as_dict=True)
+
 	version_list = unique(rows, lambda x: x.version)
+
+	return version_list, rows
+
+
+@frappe.whitelist()
+def options():
+	version_list, rows = get_app_versions_list(only_frappe=True)
+	approved_apps = frappe.get_all("Marketplace App", filters={"frappe_approved": 1}, pluck="app")
+
 	versions = []
 	for d in version_list:
 		version_dict = {"name": d.version, "status": d.status, "default": d.default}
 		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
+		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
+
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
 			app_dict = {"name": app, "title": app_rows[0].title}
+
 			for source in app_rows:
 				source_dict = {
 					"name": source.source,
@@ -242,6 +268,7 @@ def options():
 					"repository_owner": source.repository_owner,
 				}
 				app_dict.setdefault("sources", []).append(source_dict)
+
 			app_dict["source"] = app_dict["sources"][0]
 			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
