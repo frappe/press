@@ -1,5 +1,5 @@
 <template>
-    <Dialog :class="showDialog" :options="{ title: 'Fetch Partner Payments', size: 'lg' }">
+    <Dialog :class="showDialog" :options="{ title: 'Partner Payments Payouts', size: 'lg' }">
       <template #body-content>
         <div class="grid grid-cols-2 gap-4">
           <!-- Filters -->
@@ -7,19 +7,22 @@
             label="Payment Gateway"
             v-model="paymentGateway"
             name="payment_gateway"
-            autocomplete="off"
+            type="autocomplete"
+            :options="paymentGatewayList"
+             size="sm"
+            variant="subtle"
             class="mb-5"
-            type="text"
             placeholder="Enter Payment Gateway"
           />
   
           <FormControl
             label="Partner"
             v-model="partner"
-            name="partner"
-            autocomplete="off"
+            :options="partnerList"
+            size="sm"
+            variant="subtle"
+            type="autocomplete"
             class="mb-5"
-            type="text"
             placeholder="Enter Partner"
           />
   
@@ -75,12 +78,24 @@
         <div v-if="payments.length === 0 && fetchAttempted" class="text-center mt-4 text-gray-500">
           No payments found.
         </div>
+        <div class="mt-4 flex w-full justify-end">
+      <Button
+        variant="solid"
+        @click="createAndSubmitPayout"
+        :loading="paymentInProgress"
+      >
+        Submit Payments
+      </Button>
+    </div>
+
+        
       </template>
     </Dialog>
   </template>
   
   <script>
   import { toast } from 'vue-sonner';
+  import { frappeRequest } from 'frappe-ui';
   
   export default {
     name: 'PartnerPaymentPayout',
@@ -96,34 +111,108 @@
         partner: '',
         fromDate: '',
         toDate: '',
+        partnerList:[],
         payments: [],
         fetchAttempted: false,
+        paymentGatewayList:[],
       };
     },
+
+    resources: {
+      createPaymentPartnerPayout(){
+          return {
+            url: 'press.api.local_payments.mpesa.utils.create_payment_partner_payout',
+            method: 'POST',
+            params: {
+              payment_gateway: this.paymentGateway.value,
+              payment_partner: this.partner.value,
+              from_date: this.fromDate,
+              to_date: this.toDate,
+              payments: this.payments,
+            },
+            onSuccess: () => {
+              toast.success('Payments submitted successfully');
+              this.$emit('close');
+            },
+            onError: (error) => {
+              toast.error(`Error submitting payments: ${error.message}`);
+            },
+          }
+      }
+    },
     methods: {
+
+      async createAndSubmitPayout(){
+        try{
+          this.paymentInProgress = true;
+          await this.$resources.createPaymentPartnerPayout.submit();
+        }catch(error){
+          toast.error(`Error submitting payments: ${error.message}`);
+        }
+        finally {
+        this.paymentInProgress = false;
+      }
+      },
       async fetchPayments() {
         try {
           this.fetchAttempted = true;
-          const response = await this.$axios.get('/api/method/press.api.fetch_payments', {
+          const response = await frappeRequest({
+    url: '/api/method/press.api.local_payments.mpesa.utils.fetch_payments',
+            method: 'GET',
             params: {
-              payment_gateway: this.paymentGateway,
-              partner: this.partner,
+              payment_gateway: this.paymentGateway.value,
+              partner: this.partner.value,
               from_date: this.fromDate,
               to_date: this.toDate,
             },
-          });
-  
-          if (response.data && response.data.message) {
-            this.payments = response.data.message;
-            toast.success('Payments fetched successfully!');
+          })
+          if (Array.isArray(response)) {
+            console.log("Hapa",response);
+            this.payments = response;
           } else {
-            this.payments = [];
-            toast.error('No payments found.');
+            console.log("No Data");
           }
         } catch (error) {
           toast.error(`Error fetching payments: ${error.message}`);
         }
       },
+
+      async fetchPartners(){
+        try {
+        const response = await frappeRequest({
+          url: '/api/method/press.api.local_payments.mpesa.utils.display_payment_partners',
+          method: 'GET',
+        });
+        if (Array.isArray(response)) {
+          this.partnerList = response;
+        } else {
+          console.log("No Data");
+        }
+      } catch (error) {
+        this.errorMessage = `Failed to fetch teams ${error.message}`;
+      }
+      },
+       
+      async fetchPaymentGateway(){
+        try{
+          const response = await frappeRequest({
+            url: '/api/method/press.api.local_payments.mpesa.utils.display_payment_gateway',
+            method: 'GET',
+          });
+          if(Array.isArray(response)){
+            this.paymentGatewayList=response;
+          }else{
+            console.log("No Data");
+          }
+        }catch(error){
+          this.errorMessage=`Failed to fetch payment gateway ${error.message}`;
+        }
+      }
+    },
+    mounted() {
+     
+      this.fetchPartners();
+      this.fetchPaymentGateway();
     },
   };
   </script>

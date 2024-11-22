@@ -62,29 +62,5 @@ class PartnerPaymentPayout(Document):
 			frappe.db.commit()
 	  
 
-@frappe.whitelist(allow_guest=True)
-def fetch_payments():
-	payment_gateway = frappe.form_dict.get('payment_gateway')
-	partner = frappe.form_dict.get('partner')
-	from_date = frappe.form_dict.get('from_date')
-	to_date = frappe.form_dict.get('to_date')
 
-	filters = {
-		'docstatus': 1,
-		'submitted_to_frappe': 0,
-		'payment_gateway': payment_gateway,
-		'payment_partner': partner
-	}
-
-	if from_date and to_date:
-		filters['posting_date'] = ['between', [from_date, to_date]]
-
-
-	partner_payments = frappe.get_all(
-		"Payment Partner Transaction",
-		filters=filters,
-		fields=['name', 'amount', 'posting_date']
-	)
-
-	frappe.response.message = partner_payments
 	

@@ -6,7 +6,7 @@ frappe.ui.form.on("Partner Payment Payout", {
         if(frm.doc.docstatus == 0) {
         frm.add_custom_button("Fetch Payments", () => {
             frappe.call({
-                method: "press.press.doctype.partner_payment_payout.partner_payment_payout.fetch_payments",
+                method: "press.api.local_payments.mpesa.utils.fetch_payments",
                 args: {
                     // transaction_doctype: frm.doc.transaction_doctype,
                     from_date: frm.doc.from_date,

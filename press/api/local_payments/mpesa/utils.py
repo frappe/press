@@ -149,6 +149,26 @@ def display_mpesa_payment_partners():
 
 	return [partner['user'] for partner in mpesa_partners]
 
+@frappe.whitelist(allow_guest=True)
+def display_payment_partners():
+	"""Display the list of partners in the system."""
+	Team = DocType("Team")
+	query = (
+		frappe.qb.from_(Team)
+		.select(Team.user)
+		.where(Team.erpnext_partner == 1)
+	)
+
+	partners = query.run(as_dict=True)
+	
+	return [partner['user'] for partner in partners]
+
+@frappe.whitelist(allow_guest=True)
+def display_payment_gateway():
+	"""Display the payment gateway for the partner."""
+	gateways=frappe.get_all("Payment Gateway", filters={}, fields=["gateway"])
+	return [gateway["gateway"] for gateway in gateways]
+
 def get_team_and_partner_from_integration_request(transaction_id):
 	"""Get the team and partner associated with the Mpesa Request Log."""
 	integration_request = frappe.get_doc("Mpesa Request Log", transaction_id)
@@ -247,30 +267,30 @@ def fetch_param_value(response, key, key_field):
 
 @frappe.whitelist(allow_guest=True)
 def create_exchange_rate(**kwargs):
-    """Create a new exchange rate record."""
-    try:
-        from_currency = kwargs.get("from_currency", {}).get("value")
-        to_currency = kwargs.get("to_currency", {}).get("value")
-        exchange_rate = kwargs.get("exchange_rate")
-        date = kwargs.get("date")
+	"""Create a new exchange rate record."""
+	try:
+		from_currency = kwargs.get("from_currency", {}).get("value")
+		to_currency = kwargs.get("to_currency", {}).get("value")
+		exchange_rate = kwargs.get("exchange_rate")
+		date = kwargs.get("date")
 
-        if not from_currency or not to_currency or not exchange_rate:
-            raise ValueError("Missing required fields.")
+		if not from_currency or not to_currency or not exchange_rate:
+			raise ValueError("Missing required fields.")
 
-        exchange_rate_doc = frappe.get_doc({
-            "doctype": "Currency Exchange",
-            "from_currency": from_currency,
-            "to_currency": to_currency,
-            "exchange_rate": exchange_rate,
-            "date": date,
-        })
-        
-        exchange_rate_doc.insert(ignore_permissions=True)
-        return exchange_rate_doc.name
+		exchange_rate_doc = frappe.get_doc({
+			"doctype": "Currency Exchange",
+			"from_currency": from_currency,
+			"to_currency": to_currency,
+			"exchange_rate": exchange_rate,
+			"date": date,
+		})
+		
+		exchange_rate_doc.insert(ignore_permissions=True)
+		return exchange_rate_doc.name
 
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+	except Exception as e:
+		print(f"Error: {e}")
+		return None
 
 def create_payment_partner_transaction(team, payment_partner, exchange_rate, amount, paid_amount,payment_gateway, payload=None):
 			"""Create a Payment Partner Transaction record."""
@@ -294,3 +314,57 @@ def fetch_currencies():
 	currencies = frappe.get_all("Currency", fields=["name"])
 	return [currency['name'] for currency in currencies]
 
+
+@frappe.whitelist(allow_guest=True)
+def fetch_payments(payment_gateway, partner, from_date, to_date):
+	print("fetching payments", payment_gateway)
+	partner = frappe.get_value("Team", {"user": partner}, "name")
+	filters = {
+		'docstatus': 1,
+		'submitted_to_frappe': 0,
+		'payment_gateway': payment_gateway,
+		'payment_partner':partner
+	}
+
+	if from_date and to_date:
+		filters['posting_date'] = ['between', [from_date, to_date]]
+
+
+	partner_payments = frappe.get_all(
+		"Payment Partner Transaction",
+		filters=filters,
+		fields=['name', 'amount', 'posting_date']
+	)
+	frappe.response.message = partner_payments
+	return partner_payments
+
+
+@frappe.whitelist(allow_guest=True)
+def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_partner, payments):
+	"""Create a Payment Partner Payout record."""
+	partner_commission = frappe.get_value("Team", {"user": payment_partner}, "partner_commission")
+	
+	# Initialize the main document
+	payout_doc = frappe.get_doc({
+		"doctype": "Partner Payment Payout",
+		"from_date": from_date,
+		"to_date": to_date,
+		"payment_gateway": payment_gateway,
+		"partner": payment_partner,
+		"partner_commission": partner_commission,
+		"transfer_items": []  # Initialize an empty child table
+	})
+
+	# Add each payment to the child table
+	for payment in payments:
+		payout_doc.append("transfer_items", {
+			"transaction_id": payment.get("name"),
+			"amount": payment.get("amount"),
+			"posting_date": payment.get("posting_date"),
+		})
+	print("payout_doc", payout_doc)
+	# Save and submit the document
+	payout_doc.insert()
+	payout_doc.submit()
+
+	return payout_doc.name
