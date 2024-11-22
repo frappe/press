@@ -1296,6 +1296,8 @@ def get_installed_apps(site, query_filters: dict | None = None):
 	installed_apps = []
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
+		if not app_source:
+			continue
 		app_source.hash = app.hash
 		app_source.commit_message = frappe.db.get_value("App Release", {"hash": app_source.hash}, "message")
 		app_tags = frappe.db.get_value(
@@ -1341,16 +1343,16 @@ def get_installed_apps(site, query_filters: dict | None = None):
 			app_source.app_title = marketplace_app_info.title
 			app_source.app_image = marketplace_app_info.image
 
-			app_source.plan_info = frappe.db.get_value(
-				"Marketplace App Plan",
-				subscription.plan,
-				["price_usd", "price_inr", "name", "plan"],
-				as_dict=True,
-			)
+			# app_source.plan_info = frappe.db.get_value(
+			# 	"Marketplace App Plan",
+			# 	subscription.plan,
+			# 	["price_usd", "price_inr", "name", "plan"],
+			# 	as_dict=True,
+			# )
 
 			app_source.plans = get_plans_for_app(app.app)
 
-			app_source.is_free = app_source.plan_info.price_usd <= 0
+			# app_source.is_free = app_source.plan_info.price_usd <= 0
 		else:
 			app_source.subscription = {}
 
