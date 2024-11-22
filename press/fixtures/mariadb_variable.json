@@ -370,5 +370,17 @@
   "name": "net_write_timeout",
   "set_on_new_servers": 0,
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "FORCE",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2024-11-22 12:31:31.593757",
+  "name": "myisam_recover_options",
+  "set_on_new_servers": 0,
+  "skippable": 0
  }
 ]
