@@ -112,6 +112,17 @@ def get_trial_expiry(secret_key):
 	return api_handler.get_trial_expiry()
 
 
+"""
+NOTE: These mentioned apis are used for all type of saas sites to allow login to frappe cloud
+- request_login_to_fc
+- validate_login_to_fc
+- login_to_fc
+
+Don't change the file name or the method names
+It can potentially break the integrations.
+"""
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=5, seconds=60)
 def request_login_to_fc(domain: str):
