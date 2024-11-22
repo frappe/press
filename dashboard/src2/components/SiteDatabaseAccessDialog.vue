@@ -44,9 +44,9 @@
 		:site="site"
 		:key="selectedUser ? selectedUser : 'new'"
 		:db_user_name="selectedUser"
-		v-model="showDatabaseAddUserDialog"
-		v-if="showDatabaseAddUserDialog"
-		@success="showDatabaseAddUserDialog = false"
+		v-model="showDatabaseAddEditUserDialog"
+		v-if="showDatabaseAddEditUserDialog"
+		@success="this.hideSiteDatabaseAddEditUserDialog"
 	/>
 </template>
 <script>
@@ -78,7 +78,7 @@ export default {
 			showChangePlanDialog: false,
 			selectedUser: '',
 			showDatabaseUserCredentialDialog: false,
-			showDatabaseAddUserDialog: false
+			showDatabaseAddEditUserDialog: false
 		};
 	},
 	watch: {
@@ -87,7 +87,7 @@ export default {
 				this.show = true;
 			}
 		},
-		showDatabaseAddUserDialog(val) {
+		showDatabaseAddEditUserDialog(val) {
 			if (!val) {
 				this.show = true;
 			}
@@ -181,7 +181,7 @@ export default {
 							onClick: () => {
 								this.selectedUser = row.name;
 								this.show = false;
-								this.showDatabaseAddUserDialog = true;
+								this.showDatabaseAddEditUserDialog = true;
 							}
 						},
 						{
@@ -229,7 +229,7 @@ export default {
 						onClick: () => {
 							this.show = false;
 							this.selectedUser = null;
-							this.showDatabaseAddUserDialog = true;
+							this.showDatabaseAddEditUserDialog = true;
 						}
 					};
 				}
@@ -246,8 +246,8 @@ export default {
 		}
 	},
 	methods: {
-		deleteSiteDatabaseUser(docname) {
-			return;
+		hideSiteDatabaseAddEditUserDialog() {
+			this.showDatabaseAddEditUserDialog = false;
 		}
 	}
 };

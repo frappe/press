@@ -98,24 +98,24 @@ import { FormControl } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
-import SiteDatabseColumnsSelector from './SiteDatabseColumnsSelector.vue';
+import SiteDatabaseColumnsSelector from './SiteDatabaseColumnsSelector.vue';
 
 export default {
 	name: 'SiteDatabaseAddEditUserDialog',
-	props: ['site', 'db_user_name'], // db_user_name is optional, only provide to edit
-	emits: ['update:modelValue', 'success'],
+	props: ['site', 'db_user_name', 'modelValue'], // db_user_name is optional, only provide to edit
+	emits: ['success'],
 	components: {
 		FormControl,
 		ObjectList,
 		icon,
 		AlertBanner,
-		SiteDatabseColumnsSelector
+		SiteDatabaseColumnsSelector
 	},
 	data() {
 		return {
 			mode: 'read_only',
 			permissions: [],
-			lastGenratedRowId: 0
+			lastGeneratedRowId: 0
 		};
 	},
 	mounted() {
@@ -276,7 +276,7 @@ export default {
 						align: 'center',
 						type: 'Component',
 						component: ({ row }) => {
-							return h(SiteDatabseColumnsSelector, {
+							return h(SiteDatabaseColumnsSelector, {
 								modelValue: row.columns,
 								availableColumns: this.getColumns(row.table),
 								'onUpdate:modelValue': newValues => {
@@ -364,11 +364,11 @@ export default {
 			return columns;
 		},
 		addNewTablePermissionEntry() {
-			this.lastGenratedRowId = this.lastGenratedRowId + 1;
+			this.lastGeneratedRowId = this.lastGeneratedRowId + 1;
 			this.permissions = [
 				...this.permissions,
 				{
-					name: String(this.lastGenratedRowId),
+					name: String(this.lastGeneratedRowId),
 					table: '',
 					mode: 'read_only',
 					columns: []

@@ -58,7 +58,7 @@ import ClickToCopyField from '../ClickToCopyField.vue';
 
 export default {
 	name: 'SiteDatabaseUserCredentialDialog',
-	props: ['name'],
+	props: ['name', 'modelValue'],
 	emits: ['update:modelValue'],
 	components: { ClickToCopyField },
 	data() {
