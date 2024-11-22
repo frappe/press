@@ -5,6 +5,11 @@ It has 2 doctypes.
 1. **Product Trial** - Hold the configuration for a specific product.
 2. **Product Trial Request** - This holds the records of request for a specific product from a user.
 
+#### How to know, which site is available for allocation to user ?
+
+In **Site** doctype, there will be a field `standby_for_product`, this field should have the link to the product trial (e.g. erpnext, crm)
+If `is_standby` field is checked, that site can be allocated to a user.
+
 #### Configure a new Product Trial
 - Create a new record in `Product Trial` doctype
 - **Details Tab**
