@@ -146,19 +146,22 @@ def validate_plan(secret_key):
 
 
 def check_spam(message: bytes):
-	resp = requests.post(
-		"https://server.frappemail.com/spamd/score",
-		files={"message": message},
-	)
-	if resp.status_code == 200:
+	try:
+		resp = requests.post(
+			"https://server.frappemail.com/spamd/score",
+			files={"message": message},
+		)
+		resp.raise_for_status()
 		data = resp.json()
 		if data["message"] > 3.5:
 			frappe.throw(
 				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
 				SpamDetectionError,
 			)
-	else:
-		log_error("Spam Detection: Error", data=resp.text, message=message.decode("utf-8"))
+	except requests.exceptions.HTTPError as e:
+		# Ignore error, if server.frappemail.com is being updated.
+		if e.response.status_code != 503:
+			log_error("Spam Detection : Error", data=e)
 
 
 @frappe.whitelist(allow_guest=True)
