@@ -91,12 +91,22 @@ def get_invoices():
 			"stripe_payment_failed",
 		],
 		filters={"team": frappe.local.team_name},
+		order_by="due_date desc, creation desc",
 	)
 
 
 @whitelist_saas_api
 def upcoming_invoice():
 	return billing_api.upcoming_invoice()
+
+
+@whitelist_saas_api
+def get_unpaid_invoices():
+	invoices = billing_api.unpaid_invoices()
+	unpaid_invoices = [invoice for invoice in invoices if invoice.status == "Unpaid"]
+	if len(unpaid_invoices) == 1:
+		return get_invoice(unpaid_invoices[0].name)
+	return unpaid_invoices
 
 
 @whitelist_saas_api

@@ -323,7 +323,7 @@ export default {
 								variant: 'solid',
 								theme: 'red',
 								onClick: ({ hide }) => {
-									toast.promise(this.$bench(bench.name).restart.submit(), {
+									toast.promise(this.$bench(bench.name).restart.submit({}), {
 										loading: 'Restarting bench...',
 										success: () => {
 											hide();

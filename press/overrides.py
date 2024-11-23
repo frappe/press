@@ -118,9 +118,9 @@ def has_permission(doc, ptype, user):
 	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
-	team = get_current_team(True)
-	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
-	if doc.team == team.name or doc.team in child_team_members:
+	team = get_current_team()
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])]
+	if doc.team == team or doc.team in child_team_members:
 		return True
 
 	return False

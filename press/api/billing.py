@@ -640,7 +640,7 @@ def total_unpaid_amount():
 	return (
 		frappe.get_all(
 			"Invoice",
-			{"status": "Unpaid", "team": team.name, "type": "Subscription"},
+			{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
 			["sum(amount_due) as total"],
 			pluck="total",
 		)[0]

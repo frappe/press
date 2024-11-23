@@ -10,7 +10,9 @@
 				<p class="text-lg font-medium leading-snug text-gray-900">
 					{{ app.title }}
 				</p>
-				<p class="line-clamp-2 text-sm tracking-[0.26px] text-gray-700">
+				<p
+					class="line-clamp-2 text-sm leading-5 tracking-[0.26px] text-gray-700"
+				>
 					{{ app.description }}
 				</p>
 			</div>

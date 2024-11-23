@@ -61,7 +61,7 @@ class StripeWebhookLog(Document):
 					"name",
 				)
 
-		if self.event_type == "invoice.payment_failed" and self.invoice:
+		if self.event_type == "invoice.payment_failed" and self.invoice and payload.get("data", {}).get("object", {}).get("next_payment_attempt"):
 			next_payment_attempt_date = datetime.fromtimestamp(
 				payload.get("data", {}).get("object", {}).get("next_payment_attempt")
 			).strftime("%Y-%m-%d")

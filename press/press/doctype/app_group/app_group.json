@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-03 15:07:30.256352",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "column_break_jvou",
+  "app_title"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_jvou",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "app_title",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "App Title"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-04 12:02:25.463128",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Group",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

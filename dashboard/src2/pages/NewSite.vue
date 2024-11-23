@@ -544,9 +544,11 @@ export default {
 			else
 				apps = this.selectedVersion.group.bench_app_sources.map(app_source => {
 					let app_source_details = this.options.app_source_details[app_source];
+
 					let marketplace_details = app_source_details
 						? this.options.marketplace_details[app_source_details.app]
 						: {};
+
 					return {
 						app_title: app_source,
 						...app_source_details,
