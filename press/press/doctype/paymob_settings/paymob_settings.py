@@ -29,3 +29,23 @@ class PaymobSettings(Document):
 		accept = AcceptAPI()
 		token = accept.retrieve_auth_token()
 		return token
+
+@frappe.whitelist()
+def update_paymob_settings(**kwargs):
+	args = frappe._dict(kwargs)
+	fields = frappe._dict(
+		{
+			"api_key": args.get("api_key"),
+			"secret_key": args.get("secret_key"),
+			"public_key": args.get("public_key"), 
+			"hmac": args.get("hmac"), 
+			"iframe": args.get("iframe"), 
+			"payment_integration": args.get("payment_integration"), 
+		}
+	)
+	try:
+		paymob_settings = frappe.get_doc("Paymob Settings").update(fields)
+		paymob_settings.save()
+		return "Paymob Credentials Successfully"
+	except Exception as e:
+		return "Failed to Update Paymob Credentials"

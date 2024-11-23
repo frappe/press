@@ -1,6 +1,20 @@
 <template>
     <div class="p-5">
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+			<!-- Add Paymob Details -->
+			<div v-if="$team.doc.country === 'Egypt'" class="flex flex-col gap-2 rounded-md border p-4">
+				<div class="flex justify-between items-center text-sm text-gray-700">
+				<div>Add Paymob Credentials</div>
+				<Button @click="showAddPaymobDialog = true">Add</Button>
+				</div>
+				<div class="overflow-hidden text-ellipsis text-base font-medium">
+				<span class="font-normal text-gray-600">Not set</span>
+				</div>
+			</div>
+
+			<AddPaymobCredentials v-model="showAddPaymobDialog" @closeDialog="showAddPaymobDialog = false" />
+
           
           <!-- Adding Mpesa Details -->
            
@@ -80,6 +94,9 @@
       ),
       AddExchangeRate: defineAsyncComponent(() =>
         import('../AddExchangeRate.vue')
+		),
+		AddPaymobCredentials: defineAsyncComponent(() =>
+        import('../AddPaymobCredentials.vue')
       ),
       PartnerPaymentPayout: defineAsyncComponent(() =>
         import('../PartnerPaymentPayout.vue')
@@ -88,7 +105,8 @@
     },
     data() {
       return {
-        showAddMpesaDialog: false,
+		showAddMpesaDialog: false,
+		showAddPaymobDialog: false,
         showAddPaymentGatewayDialog: false,
         showExchangeRateDialog:false,
         showPartnerPaymentPayout:false,
