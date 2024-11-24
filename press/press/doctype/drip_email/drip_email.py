@@ -28,32 +28,22 @@ class DripEmail(Document):
 
 		condition: DF.Code | None
 		content_type: DF.Literal["Rich Text", "Markdown", "HTML"]
-		distribution: DF.Check
-		education: DF.Check
 		email_type: DF.Literal[
 			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
 		]
 		enabled: DF.Check
-		healthcare: DF.Check
-		manufacturing: DF.Check
-		maximum_activation_level: DF.Int
 		message_html: DF.HTMLEditor
 		message_markdown: DF.MarkdownEditor | None
 		message_rich_text: DF.TextEditor | None
-		minimum_activation_level: DF.Int
 		module_setup_guide: DF.Table[ModuleSetupGuide]
-		non_profit: DF.Check
-		other: DF.Check
 		pre_header: DF.Data | None
 		reply_to: DF.Data | None
-		retail: DF.Check
 		saas_app: DF.Link | None
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
-		services: DF.Check
 		skip_sites_with_paid_plan: DF.Check
 		subject: DF.SmallText
 	# end: auto-generated types
