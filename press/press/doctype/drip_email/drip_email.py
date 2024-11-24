@@ -26,6 +26,8 @@ class DripEmail(Document):
 
 		from press.press.doctype.module_setup_guide.module_setup_guide import ModuleSetupGuide
 
+		condition: DF.Code | None
+		content_type: DF.Literal["Rich Text", "Markdown", "HTML"]
 		distribution: DF.Check
 		education: DF.Check
 		email_type: DF.Literal[
@@ -35,7 +37,9 @@ class DripEmail(Document):
 		healthcare: DF.Check
 		manufacturing: DF.Check
 		maximum_activation_level: DF.Int
-		message: DF.TextEditor
+		message_html: DF.HTMLEditor
+		message_markdown: DF.MarkdownEditor | None
+		message_rich_text: DF.TextEditor | None
 		minimum_activation_level: DF.Int
 		module_setup_guide: DF.Table[ModuleSetupGuide]
 		non_profit: DF.Check
@@ -54,8 +58,8 @@ class DripEmail(Document):
 		subject: DF.SmallText
 	# end: auto-generated types
 
-	def send(self, site_name=None, lead=None):
-		if self.email_type in ["Drip", "Sign Up"] and site_name:
+	def send(self, site_name=None):
+		if self.evaluate_condition(site_name) and self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
 	def send_drip_email(self, site_name):
@@ -103,6 +107,33 @@ class DripEmail(Document):
 			template="drip_email",
 			args={"message": message, "title": title},
 		)
+
+	@property
+	def message(self):
+		if self.content_type == "Markdown":
+			return frappe.utils.md_to_html(self.message_markdown)
+		if self.content_type == "Rich Text":
+			return self.message_rich_text
+		return self.message_html
+
+	def evaluate_condition(self, site_name: str) -> bool:
+		"""
+		Evaluate the condition to check if the email should be sent.
+		"""
+		if not self.condition:
+			return True
+
+		saas_app = frappe.get_doc("Marketplace App", self.saas_app)
+		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
+		account_request = frappe.get_doc("Account Request", site_account_request)
+
+		eval_locals = dict(
+			app=saas_app,
+			doc=self,
+			account_request=account_request,
+		)
+
+		return frappe.safe_eval(self.condition, None, eval_locals)
 
 	def select_consultant(self, site) -> str:
 		"""
