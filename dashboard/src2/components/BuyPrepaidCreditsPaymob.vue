@@ -97,6 +97,7 @@ export default {
 					team: this.partnerInput,
 					actual_amount: this.actualAmount,
 					exchange_rate: this.currencyExchangeRate,
+					tax_id: this.taxID,
 				},
 				validate() {
 					if (!this.actualAmount || !this.taxID || !this.partnerInput) {
@@ -142,7 +143,7 @@ export default {
 		},
 		fetchTaxId() {
 			return {
-				url: 'press.api.billing.get_tax_id',
+				url: 'press.api.local_payments.mpesa.utils.get_tax_id',
 				params: {},
 				async onSuccess(taxID) {
 					if (taxID) {

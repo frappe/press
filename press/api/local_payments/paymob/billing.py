@@ -6,16 +6,16 @@ from frappe.model.naming import _generate_random_string
 from press.utils import log_error
 
 @frappe.whitelist()
-def intent_to_buying_credits(amount, team, actual_amount, exchange_rate):
+def intent_to_buying_credits(amount, team, actual_amount, exchange_rate, tax_id):
 	try:
-		iframe = create_payment_intent_for_buying_credits(amount, team, actual_amount, exchange_rate)
+		iframe = create_payment_intent_for_buying_credits(amount, team, actual_amount, exchange_rate, tax_id)
 		return iframe
 	except Exception as e:
 		log_error("Intent to Buying Credits using Paymob")
 		frappe.throw(e)
 	
 
-def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchange_rate):
+def create_payment_intent_for_buying_credits(amount, team, actual_amount, exchange_rate, tax_id):
 	payment_partner = team.get("value")
 	# get current team details
 	team = get_current_team(True)
@@ -23,9 +23,11 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 
 	if amount < total_unpaid and not team.erpnext_partner:
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
+	
+	update_tax_id(tax_id.strip(), team)
 
 	# build payment_data payload
-	payment_data = build_payment_data(team, payment_partner, amount=actualAmount)
+	payment_data = build_payment_data(team, payment_partner, amount=actual_amount)
 	validate_billing_data(payment_data)
 
 	# create paymob log
@@ -34,7 +36,7 @@ def create_payment_intent_for_buying_credits(amount, team, actualAmount, exchang
 	paymob_log.payment_partner = payment_partner
 	paymob_log.team = team.name
 	paymob_log.amount = amount
-	paymob_log.actual_amount = actualAmount
+	paymob_log.actual_amount = actual_amount
 	paymob_log.exchange_rate = exchange_rate
 	paymob_log.special_reference = payment_data.get("special_reference")
 
@@ -118,3 +120,7 @@ def validate_billing_data(payment_data: dict):
 def get_payment_getway(payment_getway):
 	return frappe.get_doc("Payment Gateway", payment_getway).as_dict()
 
+def update_tax_id(tax_id, team):
+	is_tax_id_need_to_update = tax_id and tax_id != team.get("tax_id")
+	if not team.get("tax_id") or is_tax_id_need_to_update:
+		frappe.db.set_value("Team", team.name, "tax_id", tax_id)
