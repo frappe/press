@@ -2543,12 +2543,12 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Inactive", "Broken"],
 				"doc_method": "activate",
 			},
-			{
-				"action": "Manage database users",
-				"description": "Manage users and permissions for your site database",
-				"button_label": "Manage",
-				"doc_method": "dummy",
-			},
+			# {
+			# 	"action": "Manage database users",
+			# 	"description": "Manage users and permissions for your site database",
+			# 	"button_label": "Manage",
+			# 	"doc_method": "dummy",
+			# },
 			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",
