@@ -1948,12 +1948,6 @@ def update_auto_update_info(name, info=None):
 
 
 @frappe.whitelist()
-@protected("Site")
-def get_database_access_info(name):
-	return frappe.get_doc("Site", name).get_database_access_info()
-
-
-@frappe.whitelist()
 def get_job_status(job_name):
 	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
 
