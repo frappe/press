@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-31 17:08:37.280675",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "table",
+  "column_break_fbqg",
+  "mode",
+  "section_break_rswb",
+  "allow_all_columns",
+  "selected_columns"
+ ],
+ "fields": [
+  {
+   "fieldname": "table",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Table",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Mode",
+   "options": "read_only\nread_write",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fbqg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rswb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_all_columns",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Allow All Columns"
+  },
+  {
+   "depends_on": "eval: !doc.allow_all_columns",
+   "description": "Comma seperated column names",
+   "fieldname": "selected_columns",
+   "fieldtype": "Small Text",
+   "label": "Selected Columns",
+   "mandatory_depends_on": "eval: !doc.allow_all_columns",
+   "not_nullable": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-10-31 17:17:51.606102",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Database Table Permission",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

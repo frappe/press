@@ -248,6 +248,9 @@ def send_job_failure_notification(job: AgentJob):
 	notification_type = get_notification_type(job)
 	team = None
 
+	if job.reference_doctype == "Site Database User":
+		return
+
 	if job.site:
 		team = frappe.get_value("Site", job.site, "team")
 	else:
