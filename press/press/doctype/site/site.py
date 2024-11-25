@@ -1268,6 +1268,18 @@ class Site(Document, TagHelpers):
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
 
+		db_users = frappe.get_all(
+			"Site Database User",
+			filters={
+				"site": self.name,
+				"status": ("!=", "Archived"),
+			},
+			pluck="name",
+		)
+
+		for db_user in db_users:
+			frappe.get_doc("Site Database User", db_user).archive(raise_error=True)
+
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
 		site_cleanup_after_archive(self.name)
@@ -2543,12 +2555,12 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Inactive", "Broken"],
 				"doc_method": "activate",
 			},
-			# {
-			# 	"action": "Manage database users",
-			# 	"description": "Manage users and permissions for your site database",
-			# 	"button_label": "Manage",
-			# 	"doc_method": "dummy",
-			# },
+			{
+				"action": "Manage database users",
+				"description": "Manage users and permissions for your site database",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+			},
 			{
 				"action": "Schedule backup",
 				"description": "Schedule a backup for this site",

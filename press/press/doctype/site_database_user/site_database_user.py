@@ -211,7 +211,9 @@ class SiteDatabaseUser(Document):
 		}
 
 	@dashboard_whitelist()
-	def archive(self):
+	def archive(self, raise_error: bool = True):
+		if not raise_error and self.status == "Archived":
+			return
 		self._raise_error_if_archived()
 		self.status = "Pending"
 		self.save()
