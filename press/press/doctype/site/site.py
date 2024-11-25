@@ -1268,19 +1268,7 @@ class Site(Document, TagHelpers):
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
 
-		db_users = frappe.get_all(
-			"Site Database User",
-			filters={
-				"site": self.name,
-				"status": ("!=", "Archived"),
-			},
-			pluck="name",
-		)
-
-		for db_user in db_users:
-			frappe.get_doc("Site Database User", db_user).archive(
-				raise_error=False, skip_remove_db_user_step=True
-			)
+		self.archive_site_database_users()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
@@ -1924,14 +1912,27 @@ class Site(Document, TagHelpers):
 		)
 		return ret
 
+	def archive_site_database_users(self):
+		db_users = frappe.get_all(
+			"Site Database User",
+			filters={
+				"site": self.name,
+				"status": ("!=", "Archived"),
+			},
+			pluck="name",
+		)
+
+		for db_user in db_users:
+			frappe.get_doc("Site Database User", db_user).archive(
+				raise_error=False, skip_remove_db_user_step=True
+			)
+
 	def revoke_database_access_on_plan_change(self):
 		# If the new plan doesn't have database access, disable it
-		if not self.is_database_access_enabled:
-			return
 		if frappe.db.get_value("Site Plan", self.plan, "database_access"):
 			return
 
-		self.disable_database_access()
+		self.archive_site_database_users()
 
 	def unsuspend_if_applicable(self):
 		try:
@@ -2211,96 +2212,6 @@ class Site(Document, TagHelpers):
 		):
 			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
 
-	def check_db_access_enabled_already(self):
-		if frappe.db.get_value(self.doctype, self.name, "is_database_access_enabled", for_update=True):
-			frappe.throw("Database Access already enabled. Reload the page and try.")
-
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def enable_database_access(self, mode="read_only"):
-		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
-			frappe.throw(f"Database Access is not available on {self.plan} plan")
-		self.check_db_access_enabling()
-		self.check_db_access_enabled_already()
-
-		server_agent = Agent(self.server)
-		credentials = server_agent.create_database_access_credentials(self, mode)
-		self.database_access_mode = mode
-		self.database_access_user = credentials["user"]
-		self.database_access_password = credentials["password"]
-		self.save()
-
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
-
-		database_server_name = frappe.db.get_value("Server", self.server, "database_server")
-		database_server = frappe.get_doc("Database Server", database_server_name)
-
-		job = agent.add_proxysql_user(
-			self,
-			credentials["database"],
-			credentials["user"],
-			credentials["password"],
-			database_server,
-		)
-		log_site_activity(self.name, "Enable Database Access", job=job.name)
-
-		# BREAKING CHANGE: This may cause problems for
-		# serverscripts that rely on the return value of this function
-		return job.name
-
-	@dashboard_whitelist()
-	@site_action(["Active"])
-	def disable_database_access(self):
-		server_agent = Agent(self.server)
-		server_agent.revoke_database_access_credentials(self)
-
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
-
-		user = self.database_access_user
-
-		self.database_access_mode = None
-		self.database_access_user = None
-		self.database_access_password = None
-		self.save()
-		job = agent.remove_proxysql_user(self, user)
-
-		log_site_activity(self.name, "Disable Database Access", job=job.name)
-		return job
-
-	@dashboard_whitelist()
-	def get_database_credentials(self):
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		config = self.fetch_info()["config"]
-
-		return {
-			"host": proxy_server,
-			"port": 3306,
-			"database": config["db_name"],
-			"username": self.database_access_user,
-			"password": self.get_password("database_access_password"),
-			"mode": self.database_access_mode,
-		}
-
-	def get_database_access_info(self):
-		db_access_info = frappe._dict({})
-
-		is_available_on_current_plan = (
-			frappe.db.get_value("Site Plan", self.plan, "database_access") if self.plan else None
-		)
-
-		db_access_info.is_available_on_current_plan = is_available_on_current_plan
-		db_access_info.is_database_access_enabled = self.is_database_access_enabled
-
-		if not self.is_database_access_enabled:
-			# Nothing more we can return here
-			return db_access_info
-
-		db_access_info.credentials = self.get_database_credentials()
-
-		return db_access_info
-
 	def get_auto_update_info(self):
 		fields = [
 			"auto_updates_scheduled",
@@ -2536,14 +2447,6 @@ class Site(Document, TagHelpers):
 	def run_after_migrate_steps(self):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
-
-	@frappe.whitelist()
-	def enable_read_write(self):
-		self.enable_database_access("read_write")
-
-	@frappe.whitelist()
-	def disable_read_write(self):
-		self.enable_database_access("read_only")
 
 	@frappe.whitelist()
 	def get_actions(self):

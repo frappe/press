@@ -1954,21 +1954,6 @@ def get_database_access_info(name):
 
 
 @frappe.whitelist()
-@protected("Site")
-def enable_database_access(name, mode="read_only"):
-	site_doc = frappe.get_doc("Site", name)
-	return site_doc.enable_database_access(mode)
-
-
-@frappe.whitelist()
-@protected("Site")
-def disable_database_access(name):
-	site_doc = frappe.get_doc("Site", name)
-	disable_access_job = site_doc.disable_database_access()
-	return disable_access_job.name
-
-
-@frappe.whitelist()
 def get_job_status(job_name):
 	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
 
