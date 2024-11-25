@@ -281,7 +281,7 @@ export default {
 					},
 					{
 						label: 'Columns',
-						width: '180px',
+						width: '200px',
 						fieldname: 'columns',
 						align: 'center',
 						type: 'Component',
