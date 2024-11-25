@@ -61,6 +61,7 @@ import { date } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
 import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
 import SiteDatabaseAddEditUserDialog from './site_database_user/SiteDatabaseAddEditUserDialog.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
