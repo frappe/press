@@ -211,15 +211,24 @@ class SiteDatabaseUser(Document):
 		}
 
 	@dashboard_whitelist()
-	def archive(self, raise_error: bool = True):
+	def archive(self, raise_error: bool = True, skip_remove_db_user_step: bool = False):
 		if not raise_error and self.status == "Archived":
 			return
 		self._raise_error_if_archived()
 		self.status = "Pending"
 		self.save()
 
-		if self.user_created_in_database:
+		if self.user_created_in_database and not skip_remove_db_user_step:
+			"""
+			If we are dropping the database, there is no need to drop
+			db users separately.
+			In those cases, use `skip_remove_db_user_step` param to skip it
+			"""
 			self.remove_user()
+		else:
+			self.user_created_in_database = False
+			self.save()
+
 		if self.user_added_in_proxysql:
 			self.remove_user_from_proxysql()
 

@@ -1278,7 +1278,9 @@ class Site(Document, TagHelpers):
 		)
 
 		for db_user in db_users:
-			frappe.get_doc("Site Database User", db_user).archive(raise_error=False)
+			frappe.get_doc("Site Database User", db_user).archive(
+				raise_error=False, skip_remove_db_user_step=True
+			)
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
