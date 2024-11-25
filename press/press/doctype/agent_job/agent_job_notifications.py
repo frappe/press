@@ -234,7 +234,6 @@ def get_default_message(job: AgentJob) -> str:
 	return f"<b>{job.job_type}</b> job failed on server <b>{job.server}</b>."
 
 
-
 def send_job_failure_notification(job: AgentJob):
 	from press.press.doctype.site_migration.site_migration import (
 		get_ongoing_migration,
