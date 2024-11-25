@@ -109,27 +109,7 @@ frappe.ui.form.on('Site', {
 			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Optimize Tables'), 'optimize_tables'],
 			[__('Update Site Config'), 'update_site_config'],
-			[
-				__('Enable Database Access'),
-				'enable_database_access',
-				!frm.doc.is_database_access_enabled,
-			],
-			[
-				__('Disable Database Access'),
-				'disable_database_access',
-				frm.doc.is_database_access_enabled,
-			],
 			[__('Create DNS Record'), 'create_dns_record'],
-			[
-				__('Enable Database Write Access'),
-				'enable_read_write',
-				frm.doc.database_access_mode == 'read_only',
-			],
-			[
-				__('Disable Database Write Access'),
-				'disable_read_write',
-				frm.doc.database_access_mode == 'read_write',
-			],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 			[__('Retry Rename'), 'retry_rename'],
 			[
