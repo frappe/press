@@ -112,6 +112,17 @@ def get_trial_expiry(secret_key):
 	return api_handler.get_trial_expiry()
 
 
+"""
+NOTE: These mentioned apis are used for all type of saas sites to allow login to frappe cloud
+- request_login_to_fc
+- validate_login_to_fc
+- login_to_fc
+
+Don't change the file name or the method names
+It can potentially break the integrations.
+"""
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=5, seconds=60)
 def request_login_to_fc(domain: str):
@@ -130,6 +141,11 @@ def request_login_to_fc(domain: str):
 		frappe.throw(
 			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
 		)
+	if (
+		team_info.get("user") == "Administrator"
+		or frappe.db.get_value("User", team_info.get("user"), "user_type") != "Website User"
+	):
+		frappe.throw("Sorry, you cannot login with this method. Please contact support for more details.")
 
 	# restrict to SaaS Site
 	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):

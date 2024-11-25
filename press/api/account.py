@@ -73,7 +73,7 @@ def signup(email, referrer=None):
 def verify_otp(account_request: str, otp: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}):
+	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid OTP. Please try again.")
 	if account_request.otp != otp:
 		frappe.throw("Invalid OTP. Please try again.")
@@ -85,7 +85,7 @@ def verify_otp(account_request: str, otp: str):
 def resend_otp(account_request: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
-	if frappe.db.exists("Team", {"user": account_request.email}):
+	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
 	account_request.send_verification_email()
@@ -477,7 +477,7 @@ def signup_settings(product=None, fetch_countries=False, timezone=None):
 		product_trial = frappe.db.get_value(
 			"Product Trial",
 			{"name": product, "published": 1},
-			["title", "description", "logo"],
+			["title", "logo"],
 			as_dict=1,
 		)
 

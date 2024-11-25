@@ -695,9 +695,14 @@
    "group": "Related Documents",
    "link_doctype": "Site Access Token",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Database User",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2024-10-15 12:22:11.037182",
+ "modified": "2024-11-04 09:40:44.252728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

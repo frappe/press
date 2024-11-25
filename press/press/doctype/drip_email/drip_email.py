@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2015, Web Notes and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 from datetime import timedelta
-from typing import Dict, List
-import rq
 
 import frappe
-from frappe.model.document import Document
-from frappe.utils.make_random import get_random
+import rq
 import rq.exceptions
 import rq.timeouts
+from frappe.model.document import Document
+from frappe.utils.make_random import get_random
+
 from press.utils import log_error
 
 
@@ -26,35 +26,30 @@ class DripEmail(Document):
 
 		from press.press.doctype.module_setup_guide.module_setup_guide import ModuleSetupGuide
 
-		distribution: DF.Check
-		education: DF.Check
+		condition: DF.Code | None
+		content_type: DF.Literal["Rich Text", "Markdown", "HTML"]
 		email_type: DF.Literal[
 			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
 		]
 		enabled: DF.Check
-		healthcare: DF.Check
-		manufacturing: DF.Check
-		maximum_activation_level: DF.Int
-		message: DF.TextEditor
-		minimum_activation_level: DF.Int
+		message_html: DF.HTMLEditor | None
+		message_markdown: DF.MarkdownEditor | None
+		message_rich_text: DF.TextEditor | None
 		module_setup_guide: DF.Table[ModuleSetupGuide]
-		non_profit: DF.Check
-		other: DF.Check
 		pre_header: DF.Data | None
 		reply_to: DF.Data | None
-		retail: DF.Check
 		saas_app: DF.Link | None
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
-		services: DF.Check
+		skip_sites_with_paid_plan: DF.Check
 		subject: DF.SmallText
 	# end: auto-generated types
 
-	def send(self, site_name=None, lead=None):
-		if self.email_type in ["Drip", "Sign Up"] and site_name:
+	def send(self, site_name=None):
+		if self.evaluate_condition(site_name) and self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
 	def send_drip_email(self, site_name):
@@ -103,6 +98,33 @@ class DripEmail(Document):
 			args={"message": message, "title": title},
 		)
 
+	@property
+	def message(self):
+		if self.content_type == "Markdown":
+			return frappe.utils.md_to_html(self.message_markdown)
+		if self.content_type == "Rich Text":
+			return self.message_rich_text
+		return self.message_html
+
+	def evaluate_condition(self, site_name: str) -> bool:
+		"""
+		Evaluate the condition to check if the email should be sent.
+		"""
+		if not self.condition:
+			return True
+
+		saas_app = frappe.get_doc("Marketplace App", self.saas_app)
+		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
+		account_request = frappe.get_doc("Account Request", site_account_request)
+
+		eval_locals = dict(
+			app=saas_app,
+			doc=self,
+			account_request=account_request,
+		)
+
+		return frappe.safe_eval(self.condition, None, eval_locals)
+
 	def select_consultant(self, site) -> str:
 		"""
 		Select random ERPNext Consultant to send email.
@@ -119,7 +141,7 @@ class DripEmail(Document):
 		self.sender_name = consultant.full_name
 		return consultant
 
-	def get_setup_guides(self, account_request) -> List[Dict[str, str]]:
+	def get_setup_guides(self, account_request) -> list[dict[str, str]]:
 		if not account_request:
 			return []
 
@@ -127,9 +149,7 @@ class DripEmail(Document):
 		for guide in self.module_setup_guide:
 			if account_request.industry == guide.industry:
 				attachments.append(
-					frappe.db.get_value(
-						"File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1
-					)
+					frappe.db.get_value("File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1)
 				)
 
 		return attachments
@@ -142,6 +162,15 @@ class DripEmail(Document):
 
 		if self.saas_app:
 			conditions += f'AND site.standby_for = "{self.saas_app}"'
+
+		if self.skip_sites_with_paid_plan:
+			paid_site_plans = frappe.get_all(
+				"Site Plan", {"enabled": True, "is_trial_plan": False, "document_type": "Site"}, pluck="name"
+			)
+
+			if paid_site_plans:
+				paid_site_plans_str = ", ".join(f"'{plan}'" for plan in paid_site_plans)
+				conditions += f" AND site.plan NOT IN ({paid_site_plans_str})"
 
 		sites = frappe.db.sql(
 			f"""
@@ -159,8 +188,7 @@ class DripEmail(Document):
 					{conditions}
 			"""
 		)
-		sites = [t[0] for t in sites]
-		return sites
+		return [t[0] for t in sites]  # site names
 
 	def send_to_sites(self):
 		sites = self.sites_to_send_drip
@@ -201,9 +229,7 @@ def send_drip_emails():
 
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
-	welcome_drips = frappe.db.get_all(
-		"Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name"
-	)
+	welcome_drips = frappe.db.get_all("Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name")
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
 		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)

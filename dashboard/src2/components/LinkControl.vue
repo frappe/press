@@ -65,8 +65,8 @@ export default {
 	},
 	computed: {
 		autocompleteOptions() {
-			let options = this.$resources.options.data || [];
-			let currentValueInOptions = options.find(
+			const options = this.$resources.options.data || [];
+			const currentValueInOptions = options.find(
 				o => o.value === this.modelValue
 			);
 
@@ -74,9 +74,14 @@ export default {
 				this.currentValidValueInOptions = currentValueInOptions;
 			}
 
-			if (this.modelValue && !currentValueInOptions) {
+			if (
+				this.modelValue &&
+				!currentValueInOptions &&
+				this.currentValidValueInOptions
+			) {
 				options = [this.currentValidValueInOptions, ...options];
 			}
+
 			return options;
 		}
 	}
