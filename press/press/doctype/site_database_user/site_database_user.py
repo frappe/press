@@ -60,6 +60,8 @@ class SiteDatabaseUser(Document):
 		site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
+		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
+			frappe.throw(f"Database Access is not available on {site.plan} plan")
 		self.status = "Pending"
 		if not self.username:
 			self.username = frappe.generate_hash(length=15)
