@@ -56,9 +56,19 @@
 							Configure Permissions
 						</p>
 						<ObjectList :options="listOptions" />
-						<div class="mt-4 flex w-full">
-							<Button variant="outline" @click="addNewTablePermissionEntry"
+						<div class="mt-4 flex w-full gap-2">
+							<Button
+								variant="outline"
+								iconLeft="plus"
+								@click="addNewTablePermissionEntry"
 								>Add Table</Button
+							>
+							<Button
+								variant="outline"
+								iconLeft="refresh-ccw"
+								:loading="isLoadingTableSchemas"
+								@click="() => fetchTableSchemas(true)"
+								>Refresh Schema</Button
 							>
 						</div>
 					</div>
