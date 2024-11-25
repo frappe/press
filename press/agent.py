@@ -619,14 +619,23 @@ class Agent:
 			upstream=bench.server,
 		)
 
-	def add_proxysql_user(self, site, database, username, password, database_server):
+	def add_proxysql_user(
+		self, site, database, username, password, database_server, reference_doctype=None, reference_name=None
+	):
 		data = {
 			"username": username,
 			"password": password,
 			"database": database,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
-		return self.create_agent_job("Add User to ProxySQL", "proxysql/users", data, site=site.name)
+		return self.create_agent_job(
+			"Add User to ProxySQL",
+			"proxysql/users",
+			data,
+			site=site.name,
+			reference_name=reference_name,
+			reference_doctype=reference_doctype,
+		)
 
 	def add_proxysql_backend(self, database_server):
 		data = {
@@ -634,12 +643,14 @@ class Agent:
 		}
 		return self.create_agent_job("Add Backend to ProxySQL", "proxysql/backends", data)
 
-	def remove_proxysql_user(self, site, username):
+	def remove_proxysql_user(self, site, username, reference_doctype=None, reference_name=None):
 		return self.create_agent_job(
 			"Remove User from ProxySQL",
 			f"proxysql/users/{username}",
 			method="DELETE",
 			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
 		)
 
 	def create_database_access_credentials(self, site, mode):
@@ -661,6 +672,60 @@ class Agent:
 			),
 		}
 		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data)
+
+	def create_database_user(self, site, username, password, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"username": username,
+			"password": password,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Create Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users",
+			data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def remove_database_user(self, site, username, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			)
+		}
+		return self.create_agent_job(
+			"Remove Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}",
+			method="DELETE",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def modify_database_user_permissions(self, site, username, mode, permissions: dict, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mode": mode,
+			"permissions": permissions,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Modify Database User Permissions",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}/permissions",
+			method="POST",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
 
 	def update_site_status(self, server, site, status, skip_reload=False):
 		data = {"status": status, "skip_reload": skip_reload}
