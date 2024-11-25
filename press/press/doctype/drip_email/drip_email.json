@@ -18,23 +18,20 @@
   "sender",
   "reply_to",
   "pre_header",
+  "section_break_ehlw",
+  "condition",
+  "column_break_jext",
+  "html_pzsv",
   "section_break_9",
-  "message",
+  "content_type",
+  "message_html",
+  "message_markdown",
+  "message_rich_text",
   "section_break_4",
   "skip_sites_with_paid_plan",
   "send_after",
   "send_after_payment",
-  "minimum_activation_level",
-  "maximum_activation_level",
   "column_break_2",
-  "distribution",
-  "manufacturing",
-  "retail",
-  "services",
-  "education",
-  "healthcare",
-  "non_profit",
-  "other",
   "section_break_25",
   "module_setup_guide"
  ],
@@ -91,14 +88,8 @@
   },
   {
    "fieldname": "section_break_9",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "message",
-   "fieldtype": "Text Editor",
-   "in_list_view": 1,
-   "label": "Message",
-   "reqd": 1
+   "fieldtype": "Section Break",
+   "label": "Content"
   },
   {
    "fieldname": "section_break_4",
@@ -118,69 +109,9 @@
    "label": "Send After Payment"
   },
   {
-   "description": "1-7",
-   "fieldname": "minimum_activation_level",
-   "fieldtype": "Int",
-   "label": "Minimum Activation Level"
-  },
-  {
-   "description": "1-7",
-   "fieldname": "maximum_activation_level",
-   "fieldtype": "Int",
-   "label": "Maximum Activation Level"
-  },
-  {
    "default": "(1-7)",
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "distribution",
-   "fieldtype": "Check",
-   "label": "Distribution"
-  },
-  {
-   "default": "0",
-   "fieldname": "manufacturing",
-   "fieldtype": "Check",
-   "label": "Manufacturing"
-  },
-  {
-   "default": "0",
-   "fieldname": "retail",
-   "fieldtype": "Check",
-   "label": "Retail"
-  },
-  {
-   "default": "0",
-   "fieldname": "services",
-   "fieldtype": "Check",
-   "label": "Services"
-  },
-  {
-   "default": "0",
-   "fieldname": "education",
-   "fieldtype": "Check",
-   "label": "Education"
-  },
-  {
-   "default": "0",
-   "fieldname": "healthcare",
-   "fieldtype": "Check",
-   "label": "Healthcare"
-  },
-  {
-   "default": "0",
-   "fieldname": "non_profit",
-   "fieldtype": "Check",
-   "label": "Non Profit"
-  },
-  {
-   "default": "0",
-   "fieldname": "other",
-   "fieldtype": "Check",
-   "label": "Other"
   },
   {
    "fieldname": "pre_header",
@@ -208,11 +139,56 @@
    "fieldname": "skip_sites_with_paid_plan",
    "fieldtype": "Check",
    "label": "Skip Sites With Paid Plan"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Code",
+   "label": "Condition"
+  },
+  {
+   "fieldname": "html_pzsv",
+   "fieldtype": "HTML",
+   "options": "<p><strong>Condition Examples:</strong></p>\n<pre>doc.status==\"Open\"<br>account_request.country==\"Spain\"<br>doc.total &gt; 40000\n</pre>\n\n<p>App doc is available as <code>app</code>, Account Request as <code>account_request</code> and the current doc as just <code>doc</code>"
+  },
+  {
+   "fieldname": "section_break_ehlw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_jext",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Content Type",
+   "options": "Rich Text\nMarkdown\nHTML"
+  },
+  {
+   "depends_on": "eval: doc.content_type === 'Markdown'",
+   "fieldname": "message_markdown",
+   "fieldtype": "Markdown Editor",
+   "in_list_view": 1,
+   "label": "Message (Markdown)"
+  },
+  {
+   "depends_on": "eval: doc.content_type === 'Rich Text'",
+   "fieldname": "message_rich_text",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Message (Rich Text)"
+  },
+  {
+   "depends_on": "eval: doc.content_type === 'HTML'",
+   "fieldname": "message_html",
+   "fieldtype": "HTML Editor",
+   "in_list_view": 1,
+   "label": "Message (HTML)"
   }
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2024-11-13 17:55:29.705979",
+ "modified": "2024-11-25 09:50:47.777689",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
