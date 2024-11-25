@@ -47,9 +47,9 @@ frappe.ui.form.on('Site Database User', {
 		});
 
 		frm.add_custom_button(
-			__('Show Credentials'),
+			__('Show Credential'),
 			() =>
-				frm.call('get_credentials').then((r) => {
+				frm.call('get_credential').then((r) => {
 					let message = `Host: ${r.message.host}
 
 Port: ${r.message.port}
