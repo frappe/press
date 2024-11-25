@@ -32,7 +32,7 @@ class DripEmail(Document):
 			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
 		]
 		enabled: DF.Check
-		message_html: DF.HTMLEditor
+		message_html: DF.HTMLEditor | None
 		message_markdown: DF.MarkdownEditor | None
 		message_rich_text: DF.TextEditor | None
 		module_setup_guide: DF.Table[ModuleSetupGuide]

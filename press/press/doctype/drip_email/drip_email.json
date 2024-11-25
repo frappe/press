@@ -183,13 +183,12 @@
    "fieldname": "message_html",
    "fieldtype": "HTML Editor",
    "in_list_view": 1,
-   "label": "Message (HTML)",
-   "reqd": 1
+   "label": "Message (HTML)"
   }
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2024-11-24 15:46:31.537795",
+ "modified": "2024-11-25 09:50:47.777689",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
