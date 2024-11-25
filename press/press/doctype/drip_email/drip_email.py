@@ -26,36 +26,30 @@ class DripEmail(Document):
 
 		from press.press.doctype.module_setup_guide.module_setup_guide import ModuleSetupGuide
 
-		distribution: DF.Check
-		education: DF.Check
+		condition: DF.Code | None
+		content_type: DF.Literal["Rich Text", "Markdown", "HTML"]
 		email_type: DF.Literal[
 			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
 		]
 		enabled: DF.Check
-		healthcare: DF.Check
-		manufacturing: DF.Check
-		maximum_activation_level: DF.Int
-		message: DF.TextEditor
-		minimum_activation_level: DF.Int
+		message_html: DF.HTMLEditor | None
+		message_markdown: DF.MarkdownEditor | None
+		message_rich_text: DF.TextEditor | None
 		module_setup_guide: DF.Table[ModuleSetupGuide]
-		non_profit: DF.Check
-		other: DF.Check
 		pre_header: DF.Data | None
 		reply_to: DF.Data | None
-		retail: DF.Check
 		saas_app: DF.Link | None
 		send_after: DF.Int
 		send_after_payment: DF.Check
 		send_by_consultant: DF.Check
 		sender: DF.Data
 		sender_name: DF.Data
-		services: DF.Check
 		skip_sites_with_paid_plan: DF.Check
 		subject: DF.SmallText
 	# end: auto-generated types
 
-	def send(self, site_name=None, lead=None):
-		if self.email_type in ["Drip", "Sign Up"] and site_name:
+	def send(self, site_name=None):
+		if self.evaluate_condition(site_name) and self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
 	def send_drip_email(self, site_name):
@@ -103,6 +97,33 @@ class DripEmail(Document):
 			template="drip_email",
 			args={"message": message, "title": title},
 		)
+
+	@property
+	def message(self):
+		if self.content_type == "Markdown":
+			return frappe.utils.md_to_html(self.message_markdown)
+		if self.content_type == "Rich Text":
+			return self.message_rich_text
+		return self.message_html
+
+	def evaluate_condition(self, site_name: str) -> bool:
+		"""
+		Evaluate the condition to check if the email should be sent.
+		"""
+		if not self.condition:
+			return True
+
+		saas_app = frappe.get_doc("Marketplace App", self.saas_app)
+		site_account_request = frappe.db.get_value("Site", site_name, "account_request")
+		account_request = frappe.get_doc("Account Request", site_account_request)
+
+		eval_locals = dict(
+			app=saas_app,
+			doc=self,
+			account_request=account_request,
+		)
+
+		return frappe.safe_eval(self.condition, None, eval_locals)
 
 	def select_consultant(self, site) -> str:
 		"""
