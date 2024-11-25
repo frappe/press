@@ -60,6 +60,8 @@ class SiteDatabaseUser(Document):
 		site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
+		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
+			frappe.throw(f"Database Access is not available on {site.plan} plan")
 		self.status = "Pending"
 		if not self.username:
 			self.username = frappe.generate_hash(length=15)
@@ -211,13 +213,24 @@ class SiteDatabaseUser(Document):
 		}
 
 	@dashboard_whitelist()
-	def archive(self):
+	def archive(self, raise_error: bool = True, skip_remove_db_user_step: bool = False):
+		if not raise_error and self.status == "Archived":
+			return
 		self._raise_error_if_archived()
 		self.status = "Pending"
 		self.save()
 
-		if self.user_created_in_database:
+		if self.user_created_in_database and not skip_remove_db_user_step:
+			"""
+			If we are dropping the database, there is no need to drop
+			db users separately.
+			In those cases, use `skip_remove_db_user_step` param to skip it
+			"""
 			self.remove_user()
+		else:
+			self.user_created_in_database = False
+			self.save()
+
 		if self.user_added_in_proxysql:
 			self.remove_user_from_proxysql()
 

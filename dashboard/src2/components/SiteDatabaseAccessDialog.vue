@@ -1,6 +1,9 @@
 <template>
 	<Dialog
-		:options="{ title: 'Manage Database Users', size: '2xl' }"
+		:options="{
+			title: 'Manage Database Users',
+			size: planSupportsDatabaseAccess ? '2xl' : 'xl'
+		}"
 		v-model="show"
 	>
 		<template #body-content>
@@ -8,7 +11,7 @@
 			<div v-if="!planSupportsDatabaseAccess">
 				<div>
 					<p class="text-base">
-						Database access is not available on your current plan. Please
+						Database access is not available on your current plan. <br />Please
 						upgrade to a higher plan to use this feature.
 					</p>
 

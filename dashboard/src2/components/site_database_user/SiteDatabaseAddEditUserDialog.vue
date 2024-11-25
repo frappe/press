@@ -74,12 +74,19 @@
 					</div>
 				</div>
 			</div>
+			<ErrorMessage
+				:message="
+					this.$resources?.createDatabaseUser?.error ||
+					this.$resources?.updateDatabaseUser?.error
+				"
+				class="mt-2"
+			/>
 		</template>
 
 		<template #actions>
 			<Button
 				v-if="!isEditMode"
-				class="mt-2 w-full"
+				class="w-full"
 				variant="solid"
 				theme="gray"
 				:disabled="mode == 'granular' && isLoadingTableSchemas"
@@ -90,7 +97,7 @@
 			</Button>
 			<Button
 				v-else
-				class="mt-2 w-full"
+				class="w-full"
 				variant="solid"
 				theme="gray"
 				:disabled="mode == 'granular' && isLoadingTableSchemas"
@@ -104,7 +111,7 @@
 <script>
 import { h } from 'vue';
 import ObjectList from '../ObjectList.vue';
-import { FormControl } from 'frappe-ui';
+import { ErrorMessage, FormControl } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
