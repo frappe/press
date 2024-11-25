@@ -765,14 +765,16 @@ def handle_transaction_result(transaction_response, integration_request):
 
 	if result_code == 0:
 		try:
-			
 			integration_request.handle_success(transaction_response)
-			create_mpesa_payment_record(transaction_response)
-
 			integration_request.status = "Completed"
-		except Exception:
+
+			create_mpesa_payment_record(transaction_response)
+		except Exception as e:
 			integration_request.handle_failure(transaction_response)
-			frappe.log_error("Mpesa: Failed to verify transaction")
+			integration_request.status = "Failed"
+			frappe.log_error(f"Mpesa: Transaction failed with error {e}")
+      
+
 	elif result_code == 1037:  # User unreachable (Phone off or timeout)
 		integration_request.handle_failure(transaction_response)
 		integration_request.status = "Failed"
@@ -820,10 +822,10 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 '''request for payments'''
 @frappe.whitelist(allow_guest=True)
 def request_for_payment(**kwargs):
-    
-    #TODO get the team and transaction from mpesa setting doctype
+	team=frappe.get_doc("Team", get_current_team()).user
+	#TODO get the team and transaction from mpesa setting doctype
 	kwargs.setdefault("transaction_limit", 150000)
-	kwargs.setdefault('team', 'Administrator')
+	kwargs.setdefault('team', team)
 	args = frappe._dict(kwargs)
 	update_tax_id_or_phone_no(args.team, args.tax_id, args.phone_number)
 	request_amounts = split_request_amount_according_to_transaction_limit(args.request_amount, args.transaction_limit)
@@ -899,6 +901,6 @@ def create_mpesa_payment_record(transaction_response):
 	new_entry.submit()
 	'''create payment partner transaction which willl then create balance transaction'''
 	create_payment_partner_transaction(team,partner, exchange_rate, amount_usd, requested_amount, gateway_name)	
-
+	
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
 	

@@ -57,6 +57,7 @@ class MpesaRequestLog(Document):
 			response = json.loads(response)
 		self.db_set("status", "Completed")
 		self.db_set("output", json.dumps(response, default=json_handler))
+		
 
 	def handle_failure(self, response):
 		"""update the error field with the response along with the relevant status"""

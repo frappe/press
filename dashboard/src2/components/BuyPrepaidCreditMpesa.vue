@@ -1,4 +1,4 @@
-<template>
+<template v-if="$team.doc.country === 'Kenya' && $team.doc.erpnext_partner === 1">
   <div>
     <label class="block mt-4">
       <span class="text-sm leading-4 text-gray-700">

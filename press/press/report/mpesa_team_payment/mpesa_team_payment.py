@@ -47,19 +47,21 @@ def get_data(filters):
 	
   
 def apply_filters(query, filters, mpesa_record):
-    doc_status = {"Draft": 0, "Submitted": 1, "Cancelled": 2}
+	doc_status = {"Draft": 0, "Submitted": 1, "Cancelled": 2}
 
-    for filter_key, filter_value in filters.items():
-        if filter_key == "from_date":
-            query = query.where(mpesa_record.posting_date >= filter_value)
-        elif filter_key == "to_date":
-            query = query.where(mpesa_record.posting_date <= filter_value)
-        elif filter_key == "team":
-            query = query.where(mpesa_record.team == filter_value)
-        elif filter_key == "transaction_type":
-            query = query.where(mpesa_record.transaction_type == filter_value)
-        elif filter_key == "docstatus":
-            query = query.where(mpesa_record.docstatus == doc_status.get(filter_value, 0))
-    
-    return query
+	for filter_key, filter_value in filters.items():
+		if filter_key == "from_date":
+			query = query.where(mpesa_record.posting_date >= filter_value)
+		elif filter_key == "to_date":
+			query = query.where(mpesa_record.posting_date <= filter_value)
+		elif filter_key == "team":
+			query = query.where(mpesa_record.team == filter_value)
+		elif filter_key == "payment_partner":
+			query = query.where(mpesa_record.payment_partner == filter_value)
+		elif filter_key == "transaction_type":
+			query = query.where(mpesa_record.transaction_type == filter_value)
+		elif filter_key == "docstatus":
+			query = query.where(mpesa_record.docstatus == doc_status.get(filter_value, 0))
+	
+	return query
 
