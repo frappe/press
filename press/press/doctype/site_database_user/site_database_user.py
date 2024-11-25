@@ -61,10 +61,17 @@ class SiteDatabaseUser(Document):
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
 		self.status = "Pending"
-		self.username = frappe.generate_hash(length=15)
-		self.password = frappe.generate_hash(length=20)
+		if not self.username:
+			self.username = frappe.generate_hash(length=15)
+		if not self.password:
+			self.password = frappe.generate_hash(length=20)
 
 	def after_insert(self):
+		if hasattr(self.flags, "ignore_after_insert_hooks") and self.flags.ignore_after_insert_hooks:
+			"""
+			Added for make it easy to migrate records of db access users from site doctype to site database user
+			"""
+			return
 		self.apply_changes()
 
 	def _raise_error_if_archived(self):
