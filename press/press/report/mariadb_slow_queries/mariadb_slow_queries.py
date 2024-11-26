@@ -1,6 +1,8 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import json
 import re
 from collections import defaultdict
@@ -25,7 +27,7 @@ from press.press.report.mariadb_slow_queries.db_optimizer import (
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press Admin", "Press Member"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 
 	make_access_log(
@@ -150,9 +152,7 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	}
 
 	if search_pattern and search_pattern != ".*":
-		query["query"]["bool"]["filter"].append(
-			{"regexp": {"mysql.slowlog.query": search_pattern}}
-		)
+		query["query"]["bool"]["filter"].append({"regexp": {"mysql.slowlog.query": search_pattern}})
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
@@ -176,9 +176,7 @@ def normalize_query(query: str) -> str:
 	q = format_query(q, strip_comments=True)
 
 	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
-	q = re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
-
-	return q
+	return re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
 
 
 def format_query(q, strip_comments=False):
@@ -241,12 +239,12 @@ class OptimizeDatabaseQuery:
 			stats = _fetch_table_stats(self.site, table)
 			if not stats:
 				# Old framework version
-				return
+				return None
 			db_table = DBTable.from_frappe_ouput(stats)
 			column_stats = _fetch_column_stats(self.site, table)
 			if not column_stats:
 				# Failing due to large size, TODO: move this to a job
-				return
+				return None
 			db_table.update_cardinality(column_stats)
 			optimizer.update_table_data(db_table)
 
@@ -254,9 +252,7 @@ class OptimizeDatabaseQuery:
 
 	def fetch_explain(self) -> list[dict]:
 		site = frappe.get_cached_doc("Site", self.site)
-		db_server_name = frappe.db.get_value(
-			"Server", site.server, "database_server", cache=True
-		)
+		db_server_name = frappe.db.get_value("Server", site.server, "database_server", cache=True)
 		database_server = frappe.get_cached_doc("Database Server", db_server_name)
 		agent = Agent(database_server.name, "Database Server")
 
@@ -284,9 +280,7 @@ def _fetch_table_stats(site: str, table: str):
 @redis_cache(ttl=60 * 5)
 def _fetch_column_stats(site, table, doc_name):
 	site = frappe.get_cached_doc("Site", site)
-	db_server_name = frappe.db.get_value(
-		"Server", site.server, "database_server", cache=True
-	)
+	db_server_name = frappe.db.get_value("Server", site.server, "database_server", cache=True)
 	database_server = frappe.get_cached_doc("Database Server", db_server_name)
 	agent = Agent(database_server.name, "Database Server")
 
@@ -324,6 +318,4 @@ def _add_suggested_index(site_name, indexes):
 		site = frappe.get_cached_doc("Site", site_name)
 		agent = Agent(site.server)
 		agent.add_database_index(site, doctype=doctype, columns=[column])
-		frappe.msgprint(
-			f"Index {index} added on site {site_name} successfully", realtime=True
-		)
+		frappe.msgprint(f"Index {index} added on site {site_name} successfully", realtime=True)
