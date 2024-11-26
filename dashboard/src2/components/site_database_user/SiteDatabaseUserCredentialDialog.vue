@@ -34,6 +34,7 @@
 					<p class="ml-1 font-mono text-sm">
 						Password: {{ databaseCredential?.password }}
 					</p>
+					<p class="ml-1 font-mono text-sm">Use SSL: Yes</p>
 				</div>
 				<div class="pb-2 pt-5">
 					<p class="mb-2 text-base font-semibold text-gray-700">
