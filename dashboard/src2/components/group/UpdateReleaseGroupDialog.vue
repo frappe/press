@@ -481,7 +481,8 @@ export default {
 					this.$router.push({
 						name: 'Deploy Candidate',
 						params: {
-							id: candidate
+							id: candidate,
+							name: this.bench
 						}
 					});
 					this.restrictMessage = '';
