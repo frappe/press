@@ -270,7 +270,7 @@ class VirtualMachineMigration(Document):
 		return StepStatus.Pending
 
 	@frappe.whitelist()
-	def start(self):
+	def execute(self):
 		self.status = "Running"
 		self.start = frappe.utils.now_datetime()
 		self.save()

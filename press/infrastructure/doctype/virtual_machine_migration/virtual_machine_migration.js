@@ -4,7 +4,7 @@
 frappe.ui.form.on('Virtual Machine Migration', {
 	refresh(frm) {
 		[
-			[__('Start'), 'start', frm.doc.status === 'Pending'],
+			[__('Start'), 'execute', frm.doc.status === 'Pending'],
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
 			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
