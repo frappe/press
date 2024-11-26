@@ -25,12 +25,7 @@ frappe.ui.form.on('Site Database User', {
 				'remove_user_from_proxysql',
 				frm.doc.user_added_in_proxysql,
 			],
-			[
-				__('Modify Permissions'),
-				'modify_permissions',
-				frm.doc.user_created_in_database,
-			],
-			[__('Archive'), 'archive'],
+			[__('Archive User'), 'archive', frm.doc.status !== 'Archived'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

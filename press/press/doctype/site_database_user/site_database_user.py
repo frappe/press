@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.site_activity.site_activity import log_site_activity
 
 
 class SiteDatabaseUser(Document):
@@ -69,12 +70,25 @@ class SiteDatabaseUser(Document):
 			self.password = frappe.generate_hash(length=20)
 
 	def after_insert(self):
+		log_site_activity(
+			self.site,
+			"Create Database User",
+			reason=f"Created user {self.username} with {self.mode} permission",
+		)
 		if hasattr(self.flags, "ignore_after_insert_hooks") and self.flags.ignore_after_insert_hooks:
 			"""
 			Added for make it easy to migrate records of db access users from site doctype to site database user
 			"""
 			return
 		self.apply_changes()
+
+	def on_update(self):
+		if self.has_value_changed("status") and self.status == "Archived":
+			log_site_activity(
+				self.site,
+				"Remove Database User",
+				reason=f"Removed user {self.username} with {self.mode} permission",
+			)
 
 	def _raise_error_if_archived(self):
 		if self.status == "Archived":
@@ -177,6 +191,11 @@ class SiteDatabaseUser(Document):
 	@frappe.whitelist()
 	def modify_permissions(self):
 		self._raise_error_if_archived()
+		log_site_activity(
+			self.site,
+			"Modify Database User Permissions",
+			reason=f"Modified user {self.username} with {self.mode} permission",
+		)
 		server = frappe.db.get_value("Site", self.site, "server")
 		agent = Agent(server)
 		table_permissions = {}
