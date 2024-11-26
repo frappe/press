@@ -71,7 +71,9 @@ class SiteDatabaseUser(Document):
 
 	def after_insert(self):
 		log_site_activity(
-			self.site, "Create Database User", reason=f"Created user {self.username} with {self.mode} mode"
+			self.site,
+			"Create Database User",
+			reason=f"Created user {self.username} with {self.mode} permission",
 		)
 		if hasattr(self.flags, "ignore_after_insert_hooks") and self.flags.ignore_after_insert_hooks:
 			"""
@@ -85,7 +87,7 @@ class SiteDatabaseUser(Document):
 			log_site_activity(
 				self.site,
 				"Remove Database User",
-				reason=f"Removed user {self.username} with {self.mode} mode",
+				reason=f"Removed user {self.username} with {self.mode} permission",
 			)
 
 	def _raise_error_if_archived(self):
@@ -192,7 +194,7 @@ class SiteDatabaseUser(Document):
 		log_site_activity(
 			self.site,
 			"Modify Database User Permissions",
-			reason=f"Modified user {self.username} with {self.mode} mode",
+			reason=f"Modified user {self.username} with {self.mode} permission",
 		)
 		server = frappe.db.get_value("Site", self.site, "server")
 		agent = Agent(server)

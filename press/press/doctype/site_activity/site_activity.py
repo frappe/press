@@ -36,6 +36,9 @@ class SiteActivity(Document):
 			"Drop Offsite Backups",
 			"Enable Database Access",
 			"Disable Database Access",
+			"Create Database User",
+			"Remove Database User",
+			"Modify Database User Permissions",
 		]
 		job: DF.Link | None
 		reason: DF.SmallText | None
