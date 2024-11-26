@@ -64,7 +64,7 @@ export default {
 	},
 	computed: {
 		autocompleteOptions() {
-			const options = this.$resources.options.data || [];
+			let options = this.$resources.options.data || [];
 			const currentValueInOptions = options.find(
 				o => o.value === this.modelValue
 			);
