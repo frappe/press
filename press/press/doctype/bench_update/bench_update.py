@@ -164,10 +164,10 @@ def get_bench_update(
 	if sites is None:
 		sites = []
 
-	team = get_current_team(True)
+	current_team = get_current_team()
 	rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != team.name:
+	if rg_team != current_team:
 		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
