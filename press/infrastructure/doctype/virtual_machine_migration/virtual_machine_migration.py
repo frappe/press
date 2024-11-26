@@ -54,6 +54,54 @@ class VirtualMachineMigration(Document):
 		self.add_volumes()
 		self.create_machine_copy()
 
+	def after_insert(self):
+		self.add_devices()
+
+	def add_devices(self):
+		command = "lsblk --json --output name,type,uuid,mountpoint,size,label"
+		inventory = f"{self.virtual_machine},"
+		ansible = AnsibleAdHoc(sources=inventory)
+		output = ansible.run(command, self.name)[0]["output"]
+
+		"""Sample output of the command
+		{
+			"blockdevices": [
+				{"name":"loop0", "type":"loop", "uuid":null, "mountpoint":"/snap/amazon-ssm-agent/9882", "size":"22.9M", "label":null},
+				{"name":"loop1", "type":"loop", "uuid":null, "mountpoint":"/snap/core20/2437", "size":"59.5M", "label":null},
+				{"name":"loop2", "type":"loop", "uuid":null, "mountpoint":"/snap/core22/1666", "size":"68.9M", "label":null},
+				{"name":"loop3", "type":"loop", "uuid":null, "mountpoint":"/snap/snapd/21761", "size":"33.7M", "label":null},
+				{"name":"loop4", "type":"loop", "uuid":null, "mountpoint":"/snap/lxd/29631", "size":"92M", "label":null},
+				{"name":"nvme0n1", "type":"disk", "uuid":null, "mountpoint":null, "size":"25G", "label":null,
+					"children": [
+						{"name":"nvme0n1p1", "type":"part", "uuid":"b8932e17-9ed7-47b7-8bf3-75ff6669e018", "mountpoint":"/", "size":"24.9G", "label":"cloudimg-rootfs"},
+						{"name":"nvme0n1p15", "type":"part", "uuid":"7569-BCF0", "mountpoint":"/boot/efi", "size":"99M", "label":"UEFI"}
+					]
+				},
+				{"name":"nvme1n1", "type":"disk", "uuid":"41527fb0-f6e9-404e-9dba-0451dfa2195e", "mountpoint":"/opt/volumes/mariadb", "size":"10G", "label":null}
+			]
+		}"""
+		devices = json.loads(output)["blockdevices"]
+		self.raw_devices = json.dumps(devices, indent=2)
+		self.parsed_devices = json.dumps(self._parse_devices(devices), indent=2)
+		self.save()
+
+	def _parse_devices(self, devices):
+		parsed = []
+		for device in devices:
+			# We only care about disks and partitions
+			if device["type"] != "disk":
+				continue
+
+			# Disk has partitions. e.g root volume
+			if "children" in device:
+				for partition in device["children"]:
+					if partition["type"] == "part":
+						parsed.append(partition)
+			else:
+				# Single partition. e.g data volume
+				parsed.append(device)
+		return parsed
+
 	def add_steps(self):
 		for step in self.migration_steps:
 			step.update({"status": "Pending"})
