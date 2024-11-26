@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -135,12 +136,9 @@ class BenchUpdate(Document):
 						limit=1,
 					):
 						continue
-					current_user = frappe.session.user
-					frappe.set_user(self.owner)
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)
-					frappe.set_user(current_user)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
 				except Exception:
