@@ -265,7 +265,7 @@ class SiteUpdate(Document):
 
 		THRESHOLD = 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 
-		workload_diff_high = cpu > THRESHOLD
+		workload_diff_high = cpu >= THRESHOLD
 
 		if not workload_diff_high:
 			source_bench = frappe.get_doc("Bench", self.source_bench)
