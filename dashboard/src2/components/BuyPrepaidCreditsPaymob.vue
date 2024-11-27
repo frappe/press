@@ -154,7 +154,7 @@ export default {
 		},
 		getCurrencyExchangeRate() {
 			return {
-				url: "press.api.local_payments.paymob.paymob_utils.get_exchange_rate",
+				url: "press.api.local_payments.paymob.utils.get_exchange_rate",
 				params: {
 					from_currency: "USD",
 					to_currency: "EGP",
