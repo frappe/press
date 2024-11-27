@@ -20,6 +20,7 @@ class PaymobCallbackLog(Document):
 		payload: DF.Code | None
 		payment_partner: DF.Link | None
 		special_reference: DF.Data | None
+		success: DF.Check
 		team: DF.Link | None
 		transaction_id: DF.Data | None
 	# end: auto-generated types
