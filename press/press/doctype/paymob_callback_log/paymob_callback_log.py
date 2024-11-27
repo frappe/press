@@ -16,7 +16,6 @@ class PaymobCallbackLog(Document):
 		from frappe.types import DF
 
 		event_type: DF.Data | None
-		invoice_id: DF.Data | None
 		order_id: DF.Data | None
 		payload: DF.Code | None
 		payment_partner: DF.Link | None
