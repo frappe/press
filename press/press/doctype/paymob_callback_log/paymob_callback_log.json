@@ -12,6 +12,7 @@
   "special_reference",
   "order_id",
   "transaction_id",
+  "success",
   "section_break_yzyu",
   "payload"
  ],
@@ -67,11 +68,18 @@
    "fieldname": "event_type",
    "fieldtype": "Data",
    "label": "Event Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "success",
+   "fieldtype": "Check",
+   "label": "Success",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-27 13:12:13.825198",
+ "modified": "2024-11-27 14:55:09.850919",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Paymob Callback Log",

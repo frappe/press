@@ -34,7 +34,8 @@ def paymob_callback_handler():
 				event_type=payload.get("type"),
 				transaction_id=payload.get("obj", {}).get("id"),
 				order_id=payload.get("obj", {}).get("payment_key_claims", {}).get("order_id"),
-				special_reference=payload.get("obj", {}).get("order", {}).get("merchant_order_id")
+				special_reference=payload.get("obj", {}).get("order", {}).get("merchant_order_id"),
+				success=payload.get("obj", {}).get("success")
 			).insert(ignore_if_duplicate=True)
 
 	except Exception as e:
