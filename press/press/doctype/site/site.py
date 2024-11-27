@@ -2465,6 +2465,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
+				"condition": not self.hybrid_site,
 			},
 			{
 				"action": "Schedule backup",
@@ -2557,6 +2558,10 @@ class Site(Document, TagHelpers):
 		]
 
 		return [d for d in actions if d.get("condition", True)]
+
+	@property
+	def hybrid_site(self) -> bool:
+		return bool(frappe.get_cached_value("Server", self.server, "is_self_hosted"))
 
 	@property
 	def pending_for_long(self) -> bool:
