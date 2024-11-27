@@ -172,7 +172,7 @@ frappe.ui.form.on('Server', {
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
 				true,
-				frm.doc.virtual_machine,
+				frm.doc.provider === 'AWS EC2',
 			],
 			[
 				__('Enable Public Bench and Site Creation'),
