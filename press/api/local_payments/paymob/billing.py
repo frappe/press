@@ -27,7 +27,7 @@ def create_payment_intent_for_buying_credits(amount, team, actual_amount, exchan
 	update_tax_id(tax_id.strip(), team)
 
 	# build payment_data payload
-	payment_data = build_payment_data(team, payment_partner, amount=actual_amount)
+	payment_data = build_payment_data(team, payment_partner, amount=actual_amount, amount_in_usd=amount, exchange_rate=exchange_rate)
 	validate_billing_data(payment_data)
 
 	# create paymob log
@@ -58,7 +58,7 @@ def create_payment_intent_for_buying_credits(amount, team, actual_amount, exchan
 	# return iframe url to UI and rediret to it
 	return iframe_url
 
-def build_payment_data(team, payment_partner, amount):
+def build_payment_data(team, payment_partner, amount, amount_in_usd, exchange_rate):
 	payment_integration_id = frappe.db.get_single_value("Paymob Settings", "payment_integration")
 	address_details = team.billing_details()
 	first_name, last_name = frappe.db.get_value("User", team.user, ["first_name", "last_name"])
@@ -101,7 +101,11 @@ def build_payment_data(team, payment_partner, amount):
 		},
 		"extras": {
 			"payment_partner": payment_partner,
+			"payment_partner_user": frappe.db.get_value("Team", payment_partner, "user"),
 			"team_name": team.name,
+			"team_user": frappe.db.get_value("Team", team.name, "user"),
+			"amount_in_usd": amount_in_usd,
+			"exchange_rate": exchange_rate,
 		}
 	}
 
