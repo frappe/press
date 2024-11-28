@@ -151,12 +151,15 @@
 								<tr height="99%" class="border-b"></tr>
 							</tbody>
 						</table>
+
+						<div v-if="table.getRowModel().rows.length === 0" class="p-8">
+							<p class="text-center text-sm text-gray-500">
+								No log entries found
+							</p>
+						</div>
 					</div>
 
-					<div
-						class="flex justify-between rounded rounded-t-none border-t p-1"
-						v-if="props.log?.length !== 0 && showPagination"
-					>
+					<div class="flex justify-between rounded rounded-t-none border-t p-1">
 						<div></div>
 						<div class="flex flex-shrink-0 items-center justify-end gap-3">
 							<p class="tnum text-sm text-gray-600">
@@ -182,16 +185,6 @@
 							</div>
 						</div>
 					</div>
-				</div>
-
-				<div
-					v-if="table.getRowModel().rows.length === 0"
-					class="rounded rounded-t-none border border-t-0 p-4"
-					:class="{
-						'rounded-b-none': props.log?.length !== 0 && showPagination
-					}"
-				>
-					<p class="text-center text-sm text-gray-500">No logs found</p>
 				</div>
 			</div>
 		</div>
@@ -296,15 +289,14 @@ const table = useVueTable({
 const pageLength = computed(() => table.getState().pagination.pageSize);
 const currPage = computed(() => table.getState().pagination.pageIndex + 1);
 
-const pageStart = computed(() => (currPage.value - 1) * pageLength.value + 1);
+const totalRows = computed(() => props.log.length);
+const pageStart = computed(() =>
+	totalRows.value ? (currPage.value - 1) * pageLength.value + 1 : 0
+);
 const pageEnd = computed(() => {
 	const end = currPage.value * pageLength.value;
 	return end > props.log.length ? props.log.length : end;
 });
-const totalRows = computed(() => props.log.length);
-const showPagination = computed(
-	() => props.log?.length && totalRows.value > pageLength.value
-);
 
 function capitalizeFirstLetter(string) {
 	if (!string) return '';
