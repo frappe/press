@@ -72,9 +72,7 @@ class VirtualMachineMigration(Document):
 
 	def add_devices(self):
 		command = "lsblk --json --output name,type,uuid,mountpoint,size,label,fstype"
-		inventory = f"{self.virtual_machine},"
-		ansible = AnsibleAdHoc(sources=inventory)
-		output = ansible.run(command, self.name)[0]["output"]
+		output = self.ansible_run(command)["output"]
 
 		"""Sample output of the command
 		{
@@ -268,7 +266,6 @@ class VirtualMachineMigration(Document):
 
 			labeler = {"ext4": "e2label", "vfat": "fatlabel"}[device["fstype"]]
 			new_label = {"cloudimg-rootfs": "old-rootfs", "UEFI": "OLD-UEFI"}[old_label]
-			inventory = f"{self.virtual_machine},"
 			commands = [
 				# Reference: https://wiki.archlinux.org/title/Persistent_block_device_naming#by-label
 				f"{labeler} /dev/{device['name']} {new_label}",
@@ -279,9 +276,9 @@ class VirtualMachineMigration(Document):
 				commands.append(f"fsck -a /dev/{device['name']}")
 
 			for command in commands:
-				result = AnsibleAdHoc(sources=inventory).run(command, self.name)
-				if result[0]["status"] != "Success":
-					self.add_comment(text=f"Error updating partition labels: {result[0]}")
+				result = self.ansible_run(command)
+				if result["status"] != "Success":
+					self.add_comment(text=f"Error updating partition labels: {result}")
 					return StepStatus.Failure
 		return StepStatus.Success
 
@@ -422,7 +419,6 @@ class VirtualMachineMigration(Document):
 		# 	1. Find mount matching the source mount point in fstab
 		# 	2. Update UUID for this mountpoint
 		for mount in self.mounts:
-			inventory = f"{self.virtual_machine},"
 			escaped_mount_point = mount.target_mount_point.replace("/", "\\/")
 			# Reference: https://stackoverflow.com/questions/16637799/sed-error-invalid-reference-1-on-s-commands-rhs#comment88576787_16637847
 			commands = [
@@ -430,9 +426,9 @@ class VirtualMachineMigration(Document):
 				f"sed -Ei 's/^UUID\\=.*\\s({escaped_mount_point}\\s.*$)/UUID\\={mount.uuid} \\1/g' /etc/fstab",
 			]
 			for command in commands:
-				result = AnsibleAdHoc(sources=inventory).run(command, self.name)
-				if result[0]["status"] != "Success":
-					self.add_comment(text=f"Error updating mounts: {result[0]}")
+				result = self.ansible_run(command)
+				if result["status"] != "Success":
+					self.add_comment(text=f"Error updating mounts: {result}")
 					return StepStatus.Failure
 
 		return StepStatus.Success
@@ -541,3 +537,14 @@ class VirtualMachineMigration(Document):
 			if step.name == step_name:
 				return step
 		return None
+
+	def ansible_run(self, command):
+		inventory = f"{self.virtual_machine},"
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		self.add_command(command, result)
+		return result
+
+	def add_command(self, command, result):
+		pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
+		comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
+		self.add_comment(text=comment)
