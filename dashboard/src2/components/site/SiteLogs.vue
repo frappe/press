@@ -192,6 +192,17 @@ export default {
 								};
 							}
 						}
+					],
+					actions: () => [
+						{
+							label: '✨ View in Log Browser',
+							onClick: () => {
+								this.$router.push({
+									name: 'Log Browser',
+									params: { mode: 'site', docName: this.name }
+								});
+							}
+						}
 					]
 				};
 			}
