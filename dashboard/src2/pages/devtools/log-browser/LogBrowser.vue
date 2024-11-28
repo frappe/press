@@ -119,7 +119,7 @@
 						v-else-if="$resources.log.error"
 						:message="$resources.log.error"
 					/>
-					<LogViewer v-else-if="logId" :log="log" :columns="columns" />
+					<LogViewer v-else-if="logId" :log="log" />
 					<div
 						v-else
 						class="flex h-full min-h-[90vh] w-full items-center justify-center gap-2 text-gray-700"
@@ -186,28 +186,6 @@ export default {
 	computed: {
 		log() {
 			return this.$resources.log?.data;
-		},
-		columns() {
-			// make sure to add columns for each log type
-			const columnMap = {
-				worker: ['Time', 'Description'],
-				'redis-queue': ['Time', 'Description'],
-				'redis-cache': ['Time', 'Description'],
-				bench: ['Level', 'Time', 'Description'],
-				'worker.error': ['Time', 'Description'],
-				'monitor.json': ['Time', 'Description'],
-				ipython: ['Level', 'Time', 'Description'],
-				database: ['Level', 'Time', 'Description'],
-				scheduler: ['Level', 'Time', 'Description'],
-				'web.error': ['Level', 'Time', 'Description']
-			};
-
-			// if the log file has a number at the end, it's a rotated log
-			// and we don't need to consider the number for formatter mapping
-			const shiftIndex = !isNaN(this.logId.split('.').pop()) ? -2 : -1;
-			const logKey = this.logId.split('.').slice(0, shiftIndex).join('.');
-
-			return columnMap[logKey] || ['Description'];
 		}
 	}
 };

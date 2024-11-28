@@ -15,7 +15,7 @@
 								{ label: 'Critical', value: 'critical' }
 							]"
 							class="w-24"
-							v-if="props?.columns.includes('Level')"
+							v-if="columns.includes('level')"
 							v-model="levelFilter"
 						/>
 					</div>
@@ -29,7 +29,7 @@
 								{ label: 'Oldest First', value: 'asc' }
 							]"
 							class="w-32"
-							v-if="props?.columns.includes('Time')"
+							v-if="columns.includes('time')"
 							v-model="sortOrder"
 						/>
 						<FormControl
@@ -48,7 +48,7 @@
 				>
 					<div class="relative flex flex-1 flex-col overflow-auto">
 						<table
-							v-if="props?.columns?.length || props.log?.length"
+							v-if="columns?.length || props.log?.length"
 							class="w-full border-separate border-spacing-0"
 						>
 							<thead class="z-5 sticky top-0 w-full rounded bg-gray-100">
@@ -205,14 +205,9 @@ import {
 	useVueTable
 } from '@tanstack/vue-table';
 import { defineProps, computed, ref } from 'vue';
-import { date as formatDate } from '../../../utils/format';
 
 const props = defineProps({
 	log: {
-		type: Array,
-		required: true
-	},
-	columns: {
 		type: Array,
 		required: true
 	}
@@ -241,17 +236,14 @@ const columnFilters = computed(() => {
 
 const logEntries = computed(() => props.log);
 const columns = computed(() => {
-	if (!props.columns?.length) return [];
-	return props.columns.map(column => {
-		return {
-			id: column.toLowerCase(),
-			header: column,
-			accessorKey: column.toLowerCase(),
-			enableSorting: column === 'Time' ? true : false,
-			sortingFn: column === 'Time' ? 'datetime' : null,
-			isNumber: false
-		};
+	const columns = Object.keys(logEntries.value[0]);
+	columns.sort((a, b) => {
+		if (a === 'description') return 1;
+		if (b === 'description') return -1;
+		return 0;
 	});
+
+	return columns;
 });
 const sortingState = computed(() => {
 	if (!sortOrder.value) return [];
@@ -265,7 +257,16 @@ const sortingState = computed(() => {
 
 const table = useVueTable({
 	data: logEntries.value,
-	columns: columns.value,
+	columns: columns.value.map(column => {
+		return {
+			id: column,
+			header: capitalizeFirstLetter(column),
+			accessorKey: column,
+			enableSorting: column === 'time' ? true : false,
+			sortingFn: column === 'time' ? 'datetime' : null,
+			isNumber: false
+		};
+	}),
 	state: {
 		get columnFilters() {
 			return columnFilters.value;
