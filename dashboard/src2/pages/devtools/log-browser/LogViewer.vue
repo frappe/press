@@ -61,6 +61,10 @@
 										:key="header.id"
 										:colSpan="header.colSpan"
 										class="text-gray-800"
+										:class="{
+											'w-2/12': header.column.columnDef.id === 'level',
+											'w-3/12': header.column.columnDef.id === 'time'
+										}"
 									>
 										<div
 											class="flex items-center truncate px-3 py-2 text-base font-semibold"
@@ -122,20 +126,19 @@
 												>
 											</div>
 											<div
-												v-else-if="cell.column.columnDef.id === 'description'"
-												class="truncate font-mono text-sm text-gray-600"
+												v-else
+												class="truncate font-mono text-sm"
+												:class="{
+													'font-mono ': cell.column.columnDef.id === 'time',
+													'font-mono text-gray-600':
+														cell.column.columnDef.id === 'description'
+												}"
 											>
 												<FlexRender
 													:render="cell.column.columnDef.cell"
 													:props="cell.getContext()"
 												/>
 											</div>
-											<p v-else class="text-base text-gray-800">
-												<FlexRender
-													:render="cell.column.columnDef.cell"
-													:props="cell.getContext()"
-												/>
-											</p>
 										</td>
 									</tr>
 									<tr>
