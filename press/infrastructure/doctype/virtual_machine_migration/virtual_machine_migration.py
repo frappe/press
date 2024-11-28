@@ -275,6 +275,15 @@ class VirtualMachineMigration(Document):
 				"wait_for_completion": True,
 			},
 			{
+				"step": self.check_cloud_init_status.__doc__,
+				"method": self.check_cloud_init_status.__name__,
+			},
+			{
+				"step": self.wait_for_cloud_init.__doc__,
+				"method": self.wait_for_cloud_init.__name__,
+				"wait_for_completion": True,
+			},
+			{
 				"step": self.update_mounts.__doc__,
 				"method": self.update_mounts.__name__,
 			},
@@ -422,6 +431,26 @@ class VirtualMachineMigration(Document):
 			limit=1,
 		)
 		if plays and plays[0].status == "Success":
+			return StepStatus.Success
+		return StepStatus.Pending
+
+	def check_cloud_init_status(self) -> StepStatus:
+		"Check cloud-init status"
+		server = self.machine.get_server()
+		server.wait_for_cloud_init()
+		return StepStatus.Success
+
+	def wait_for_cloud_init(self) -> StepStatus:
+		"Wait for cloud-init to finish"
+		server = self.machine.get_server()
+		plays = frappe.get_all(
+			"Ansible Play",
+			{"server": server.name, "play": "Wait for Cloud Init to finish"},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if plays and plays[0].status in ("Success", "Failure"):
 			return StepStatus.Success
 		return StepStatus.Pending
 
