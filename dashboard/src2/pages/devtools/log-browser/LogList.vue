@@ -93,12 +93,24 @@ export default {
 	},
 	computed: {
 		logs() {
+			let logs = [];
 			if (this.mode === 'bench') {
-				return this.$resources.benchLogs?.data || [];
+				logs = this.$resources.benchLogs?.data || [];
 			} else if (this.mode === 'site') {
-				return this.$resources.siteLogs?.data || [];
+				logs = this.$resources.siteLogs?.data || [];
 			}
-			return [];
+
+			// filter out rotated logs that ends with .1, .2, .3, etc
+			// TODO: do the filtering in agent instead
+			// logs = logs.filter(log => !log.name.match(/\.\d+$/));
+
+			if (this.searchLogQuery) {
+				logs = logs.filter(log =>
+					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase())
+				);
+			}
+
+			return logs;
 		},
 		bench() {
 			if (this.mode === 'bench') {

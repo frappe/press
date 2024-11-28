@@ -170,27 +170,6 @@ export default {
 		};
 	},
 	resources: {
-		benchLogs() {
-			return {
-				url: 'press.api.bench.logs',
-				params: {
-					name: this.bench?.split('-').slice(0, 2).join('-'), // TODO: fetch group instead of hardcoding
-					bench: this.bench
-				},
-				auto: this.mode === 'bench' && this.bench,
-				cache: ['BenchLogs', this.bench]
-			};
-		},
-		siteLogs() {
-			return {
-				url: 'press.api.site.logs',
-				params: {
-					name: this.site
-				},
-				auto: this.mode === 'site' && this.site,
-				cache: ['SiteLogs', this.site]
-			};
-		},
 		log() {
 			return {
 				url: 'press.api.log_browser.get_log',
@@ -205,26 +184,6 @@ export default {
 		}
 	},
 	computed: {
-		logs() {
-			let logs = [];
-			if (this.mode === 'bench') {
-				logs = this.$resources.benchLogs?.data || [];
-			} else if (this.mode === 'site') {
-				logs = this.$resources.siteLogs?.data || [];
-			}
-
-			// filter out rotated logs that ends with .1, .2, .3, etc
-			// TODO: do the filtering in agent instead
-			// logs = logs.filter(log => !log.name.match(/\.\d+$/));
-
-			if (this.searchLogQuery) {
-				logs = logs.filter(log =>
-					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase())
-				);
-			}
-
-			return logs;
-		},
 		log() {
 			return this.$resources.log?.data;
 		},
