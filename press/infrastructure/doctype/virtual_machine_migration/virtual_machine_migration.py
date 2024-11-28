@@ -58,7 +58,7 @@ class VirtualMachineMigration(Document):
 		self.add_devices()
 
 	def add_devices(self):
-		command = "lsblk --json --output name,type,uuid,mountpoint,size,label"
+		command = "lsblk --json --output name,type,uuid,mountpoint,size,label,fstype"
 		inventory = f"{self.virtual_machine},"
 		ansible = AnsibleAdHoc(sources=inventory)
 		output = ansible.run(command, self.name)[0]["output"]
@@ -66,18 +66,18 @@ class VirtualMachineMigration(Document):
 		"""Sample output of the command
 		{
 			"blockdevices": [
-				{"name":"loop0", "type":"loop", "uuid":null, "mountpoint":"/snap/amazon-ssm-agent/9882", "size":"22.9M", "label":null},
-				{"name":"loop1", "type":"loop", "uuid":null, "mountpoint":"/snap/core20/2437", "size":"59.5M", "label":null},
-				{"name":"loop2", "type":"loop", "uuid":null, "mountpoint":"/snap/core22/1666", "size":"68.9M", "label":null},
-				{"name":"loop3", "type":"loop", "uuid":null, "mountpoint":"/snap/snapd/21761", "size":"33.7M", "label":null},
-				{"name":"loop4", "type":"loop", "uuid":null, "mountpoint":"/snap/lxd/29631", "size":"92M", "label":null},
-				{"name":"nvme0n1", "type":"disk", "uuid":null, "mountpoint":null, "size":"25G", "label":null,
+				{"name":"loop0", "type":"loop", "uuid":null, "mountpoint":"/snap/amazon-ssm-agent/9882", "size":"22.9M", "label":null, "fstype":null},
+				{"name":"loop1", "type":"loop", "uuid":null, "mountpoint":"/snap/core20/2437", "size":"59.5M", "label":null, "fstype":null},
+				{"name":"loop2", "type":"loop", "uuid":null, "mountpoint":"/snap/core22/1666", "size":"68.9M", "label":null, "fstype":null},
+				{"name":"loop3", "type":"loop", "uuid":null, "mountpoint":"/snap/snapd/21761", "size":"33.7M", "label":null, "fstype":null},
+				{"name":"loop4", "type":"loop", "uuid":null, "mountpoint":"/snap/lxd/29631", "size":"92M", "label":null, "fstype":null},
+				{"name":"nvme0n1", "type":"disk", "uuid":null, "mountpoint":null, "size":"25G", "label":null, "fstype":null,
 					"children": [
-						{"name":"nvme0n1p1", "type":"part", "uuid":"b8932e17-9ed7-47b7-8bf3-75ff6669e018", "mountpoint":"/", "size":"24.9G", "label":"cloudimg-rootfs"},
-						{"name":"nvme0n1p15", "type":"part", "uuid":"7569-BCF0", "mountpoint":"/boot/efi", "size":"99M", "label":"UEFI"}
+						{"name":"nvme0n1p1", "type":"part", "uuid":"b8932e17-9ed7-47b7-8bf3-75ff6669e018", "mountpoint":"/", "size":"24.9G", "label":"cloudimg-rootfs", "fstype":"ext4"},
+						{"name":"nvme0n1p15", "type":"part", "uuid":"7569-BCF0", "mountpoint":"/boot/efi", "size":"99M", "label":"UEFI", "fstype":"vfat"}
 					]
 				},
-				{"name":"nvme1n1", "type":"disk", "uuid":"41527fb0-f6e9-404e-9dba-0451dfa2195e", "mountpoint":"/opt/volumes/mariadb", "size":"10G", "label":null}
+				{"name":"nvme1n1", "type":"disk", "uuid":"41527fb0-f6e9-404e-9dba-0451dfa2195e", "mountpoint":"/opt/volumes/mariadb", "size":"10G", "label":null, "fstype":"ext4"}
 			]
 		}"""
 		devices = json.loads(output)["blockdevices"]
