@@ -225,6 +225,10 @@ class VirtualMachineMigration(Document):
 	def migration_steps(self):
 		return [
 			{
+				"step": self.update_partition_labels.__doc__,
+				"method": self.update_partition_labels.__name__,
+			},
+			{
 				"step": self.stop_machine.__doc__,
 				"method": self.stop_machine.__name__,
 				"wait_for_completion": True,
@@ -275,6 +279,37 @@ class VirtualMachineMigration(Document):
 				"method": self.update_plan.__name__,
 			},
 		]
+
+	def update_partition_labels(self) -> StepStatus:
+		"Update partition labels"
+		# Ubuntu images have labels for root (cloudimg-rootfs) and efi (UEFI) partitions
+		# Remove these labels from the old volume
+		# So the new machine doesn't mount these as root or efi partitions
+		# Important: Update fstab so we can still boot the old machine
+		parsed_devices = json.loads(self.parsed_devices)
+		for device in parsed_devices:
+			old_label = device["label"]
+			if not old_label:
+				continue
+
+			labeler = {"ext4": "e2label", "vfat": "fatlabel"}[device["fstype"]]
+			new_label = {"cloudimg-rootfs": "old-rootfs", "UEFI": "OLD-UEFI"}[old_label]
+			inventory = f"{self.virtual_machine},"
+			commands = [
+				# Reference: https://wiki.archlinux.org/title/Persistent_block_device_naming#by-label
+				f"{labeler} /dev/{device['name']} {new_label}",
+				f"sed -i 's/LABEL\\={old_label}/LABEL\\={new_label}/g' /etc/fstab",  # Ansible implementation quirk
+			]
+			if old_label == "UEFI":
+				# efi mounts have dirty bit set. This resets it.
+				commands.append(f"fsck -a /dev/{device['name']}")
+
+			for command in commands:
+				result = AnsibleAdHoc(sources=inventory).run(command, self.name)
+				if result[0]["status"] != "Success":
+					self.add_comment(text=f"Error updating partition labels: {result[0]}")
+					return StepStatus.Failure
+		return StepStatus.Success
 
 	def stop_machine(self) -> StepStatus:
 		"Stop machine"
