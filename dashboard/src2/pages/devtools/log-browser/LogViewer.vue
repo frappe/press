@@ -217,7 +217,7 @@ const props = defineProps({
 
 const searchLogQuery = ref('');
 const levelFilter = ref('');
-const sortOrder = ref('');
+const sortOrder = ref('desc');
 
 const columnFilters = computed(() => {
 	const filters = [];
