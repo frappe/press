@@ -3032,17 +3032,6 @@ def process_rename_site_job_update(job):  # noqa: C901
 		create_site_status_update_webhook_event(job.site)
 
 
-# TODO
-def process_add_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", True)
-
-
-def process_remove_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
-
-
 def process_move_site_to_bench_job_update(job):
 	updated_status = {
 		"Pending": "Pending",
