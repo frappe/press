@@ -49,6 +49,7 @@ class SiteDatabaseUser(Document):
 		"failed_agent_job",
 		"failure_reason",
 		"permissions",
+		"max_database_connections",
 	)
 
 	def validate(self):
@@ -64,6 +65,20 @@ class SiteDatabaseUser(Document):
 			frappe.throw("You don't have permission to create database user")
 		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {site.plan} plan")
+
+		# validate connection limit
+		exists_db_users_connection_limit = frappe.db.get_all(
+			"Site Database User",
+			{"site": self.site, "status": ("!=", "Archived")},
+			pluck="max_database_connections",
+		)
+		total_used_connections = sum(exists_db_users_connection_limit)
+		allowed_max_connections_for_site = site.max_database_connections - total_used_connections
+		if self.max_database_connections > allowed_max_connections_for_site:
+			frappe.throw(
+				f"Your site has quota of {site.max_database_connections} connections. You can't allocate more than {allowed_max_connections_for_site} connections. You can drop other database users to allocate more connections."
+			)
+
 		self.status = "Pending"
 		if not self.username:
 			self.username = frappe.generate_hash(length=15)
