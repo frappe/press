@@ -331,8 +331,18 @@ class VirtualMachine(Document):
 						mariadb_context,
 						is_path=True,
 					),
+					"mariadb_root_config": frappe.render_template(
+						"press/playbooks/roles/mariadb/templates/my.cnf",
+						mariadb_context,
+						is_path=True,
+					),
 					"mariadb_exporter_config": frappe.render_template(
 						"press/playbooks/roles/mysqld_exporter/templates/mysqld_exporter.service",
+						mariadb_context,
+						is_path=True,
+					),
+					"deadlock_logger_config": frappe.render_template(
+						"press/playbooks/roles/deadlock_logger/templates/deadlock_logger.service",
 						mariadb_context,
 						is_path=True,
 					),
