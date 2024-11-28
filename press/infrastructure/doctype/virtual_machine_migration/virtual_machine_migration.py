@@ -223,75 +223,36 @@ class VirtualMachineMigration(Document):
 
 	@property
 	def migration_steps(self):
-		return [
-			{
-				"step": self.update_partition_labels.__doc__,
-				"method": self.update_partition_labels.__name__,
-			},
-			{
-				"step": self.stop_machine.__doc__,
-				"method": self.stop_machine.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.wait_for_machine_to_stop.__doc__,
-				"method": self.wait_for_machine_to_stop.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.disable_delete_on_termination_for_all_volumes.__doc__,
-				"method": self.disable_delete_on_termination_for_all_volumes.__name__,
-			},
-			{
-				"step": self.terminate_previous_machine.__doc__,
-				"method": self.terminate_previous_machine.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.wait_for_previous_machine_to_terminate.__doc__,
-				"method": self.wait_for_previous_machine_to_terminate.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.reset_virtual_machine_attributes.__doc__,
-				"method": self.reset_virtual_machine_attributes.__name__,
-			},
-			{
-				"step": self.provision_new_machine.__doc__,
-				"method": self.provision_new_machine.__name__,
-			},
-			{
-				"step": self.wait_for_machine_to_start.__doc__,
-				"method": self.wait_for_machine_to_start.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.attach_volumes.__doc__,
-				"method": self.attach_volumes.__name__,
-			},
-			{
-				"step": self.wait_for_machine_to_be_accessible.__doc__,
-				"method": self.wait_for_machine_to_be_accessible.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.check_cloud_init_status.__doc__,
-				"method": self.check_cloud_init_status.__name__,
-			},
-			{
-				"step": self.wait_for_cloud_init.__doc__,
-				"method": self.wait_for_cloud_init.__name__,
-				"wait_for_completion": True,
-			},
-			{
-				"step": self.update_mounts.__doc__,
-				"method": self.update_mounts.__name__,
-			},
-			{
-				"step": self.update_plan.__doc__,
-				"method": self.update_plan.__name__,
-			},
+		Wait = True
+		NoWait = False
+		methods = [
+			(self.update_partition_labels, NoWait),
+			(self.stop_machine, Wait),
+			(self.wait_for_machine_to_stop, Wait),
+			(self.disable_delete_on_termination_for_all_volumes, NoWait),
+			(self.terminate_previous_machine, Wait),
+			(self.wait_for_previous_machine_to_terminate, Wait),
+			(self.reset_virtual_machine_attributes, NoWait),
+			(self.provision_new_machine, NoWait),
+			(self.wait_for_machine_to_start, Wait),
+			(self.attach_volumes, NoWait),
+			(self.wait_for_machine_to_be_accessible, Wait),
+			(self.check_cloud_init_status, NoWait),
+			(self.wait_for_cloud_init, Wait),
+			(self.update_mounts, NoWait),
+			(self.update_plan, NoWait),
 		]
+
+		steps = []
+		for method, wait_for_completion in methods:
+			steps.append(
+				{
+					"step": method.__doc__,
+					"method": method.__name__,
+					"wait_for_completion": wait_for_completion,
+				}
+			)
+		return steps
 
 	def update_partition_labels(self) -> StepStatus:
 		"Update partition labels"
@@ -418,7 +379,7 @@ class VirtualMachineMigration(Document):
 		machine.sync()
 		return StepStatus.Success
 
-	def wait_for_machine_to_be_accessible(self) -> StepStatus:
+	def wait_for_machine_to_be_accessible(self):
 		"Wait for machine to be accessible"
 		server = self.machine.get_server()
 		server.ping_ansible()
