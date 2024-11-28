@@ -203,23 +203,22 @@ def monitor_json_log_formatter(log_entries: list) -> list:
 		list: A list of dictionaries, where each dictionary represents a formatted log entry.
 	"""
 
-	import json
-
 	if not log_entries:
 		return []  # Return empty list if no log entries
 
 	formatted_logs = []
 	for entry in log_entries:
-		# parse the json log entry
 		try:
-			log_entry = json.loads(entry)
-			time = log_entry.get("timestamp")
-			formatted_time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f%z").strftime(
+			timestamp_key = '"timestamp":"'
+			timestamp_start = entry.index(timestamp_key) + len(timestamp_key)
+			timestamp_end = entry.index('"', timestamp_start)
+			time = entry[timestamp_start:timestamp_end]
+			formatted_time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
 				"%Y-%m-%d %H:%M:%S"
 			)
 
 			formatted_logs.append({"time": formatted_time, "description": entry})
-		except json.JSONDecodeError:
+		except ValueError:
 			formatted_logs.append({"description": entry})
 
 	return formatted_logs
