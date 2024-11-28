@@ -189,7 +189,7 @@
 				title="Slow logs frequency"
 			>
 				<BarChart
-					title="Slow logs frequency"
+					title="Frequent Slow queries"
 					:key="slowLogsCountData"
 					:data="slowLogsCountData"
 					unit="queries"
@@ -204,16 +204,16 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slow logs frequency (normalized)"
+				title="Frequent Slow queries (normalized)"
 			>
 				<BarChart
-					title="Slow logs frequency (normalized)"
-					:key="slowLogsCountData"
-					:data="slowLogsCountData"
+					title="Frequent Slow queries (normalized)"
+					:key="normalizedSlowLogsCountData"
+					:data="normalizedSlowLogsCountData"
 					unit="queries"
 					:chartTheme="chartColors"
-					:loading="$resources.slowLogsCount.loading"
-					:error="$resources.slowLogsCount.error"
+					:loading="$resources.normalizedSlowLogsCount.loading"
+					:error="$resources.normalizedSlowLogsCount.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -222,10 +222,10 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slowest logs"
+				title="Slowest queries"
 			>
 				<BarChart
-					title="Slowest logs"
+					title="Slowest queries"
 					:key="slowLogsDurationData"
 					:data="slowLogsDurationData"
 					unit="seconds"
@@ -240,16 +240,16 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slowest logs (normalized)"
+				title="Slowest queries (normalized)"
 			>
 				<BarChart
-					title="Slowest logs"
-					:key="slowLogsDurationData"
-					:data="slowLogsDurationData"
+					title="Slowest queries (normalized)"
+					:key="normalizedSlowLogsDurationData"
+					:data="normalizedSlowLogsDurationData"
 					unit="seconds"
 					:chartTheme="chartColors"
-					:loading="$resources.slowLogsDuration.loading"
-					:error="$resources.slowLogsDuration.error"
+					:loading="$resources.normalizedSlowLogsDuration.loading"
+					:error="$resources.normalizedSlowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
