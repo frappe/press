@@ -2,12 +2,16 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import json
 import time
 from enum import Enum
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
+
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
@@ -27,6 +31,9 @@ class VirtualMachineMigration(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.infrastructure.doctype.virtual_machine_migration_mount.virtual_machine_migration_mount import (
+			VirtualMachineMigrationMount,
+		)
 		from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 			VirtualMachineMigrationStep,
 		)
@@ -38,7 +45,10 @@ class VirtualMachineMigration(Document):
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		machine_type: DF.Data
+		mounts: DF.Table[VirtualMachineMigrationMount]
 		name: DF.Int | None
+		parsed_devices: DF.Code | None
+		raw_devices: DF.Code | None
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
@@ -56,6 +66,7 @@ class VirtualMachineMigration(Document):
 
 	def after_insert(self):
 		self.add_devices()
+		self.set_default_mounts()
 
 	def add_devices(self):
 		command = "lsblk --json --output name,type,uuid,mountpoint,size,label,fstype"
@@ -101,6 +112,38 @@ class VirtualMachineMigration(Document):
 				# Single partition. e.g data volume
 				parsed.append(device)
 		return parsed
+
+	def set_default_mounts(self):
+		# Set root partition from old machine as the data partition in the new machine
+
+		if self.mounts:
+			# We've already set the mounts
+			return
+
+		parsed_devices = json.loads(self.parsed_devices)
+		device = find(parsed_devices, lambda x: x["mountpoint"] == "/")
+		if not device:
+			# No root volume found
+			return
+
+		server_type = self.machine.get_server().doctype
+		if server_type == "Server":
+			target_mount_point = "/opt/volumes/benches"
+		elif server_type == "Database Server":
+			target_mount_point = "/opt/volumes/mariadb"
+		else:
+			# Data volumes are only supported for Server and Database Server
+			return
+
+		self.append(
+			"mounts",
+			{
+				"uuid": device["uuid"],
+				"source_mount_point": device.mountpoint,
+				"target_mount_point": target_mount_point,
+			},
+		)
+		self.save()
 
 	def add_steps(self):
 		for step in self.migration_steps:

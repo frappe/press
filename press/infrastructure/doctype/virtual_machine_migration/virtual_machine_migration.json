@@ -19,6 +19,7 @@
   "volumes",
   "raw_devices",
   "parsed_devices",
+  "mounts",
   "section_break_mjhg",
   "steps"
  ],
@@ -132,6 +133,12 @@
    "label": "Parsed Devices",
    "options": "JSON",
    "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Virtual Machine Migration Mount"
   }
  ],
  "index_web_pages_for_search": 1,
