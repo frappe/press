@@ -236,14 +236,14 @@ const columnFilters = computed(() => {
 
 const logEntries = computed(() => props.log);
 const columns = computed(() => {
-	const columns = Object.keys(logEntries.value[0]);
+	const columns = Object.keys(logEntries.value[0] || {});
 	columns.sort((a, b) => {
 		if (a === 'description') return 1;
 		if (b === 'description') return -1;
 		return 0;
 	});
 
-	return columns;
+	return columns.length ? columns : ['description'];
 });
 const sortingState = computed(() => {
 	if (!sortOrder.value) return [];
