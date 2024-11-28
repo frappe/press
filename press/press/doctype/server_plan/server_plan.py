@@ -37,6 +37,7 @@ class ServerPlan(Plan):
 		"vcpu",
 		"memory",
 		"disk",
+		"platform",
 	)
 
 	def get_doc(self, doc):
