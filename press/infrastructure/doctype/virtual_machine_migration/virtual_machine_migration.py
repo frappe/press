@@ -47,6 +47,7 @@ class VirtualMachineMigration(Document):
 		machine_type: DF.Data
 		mounts: DF.Table[VirtualMachineMigrationMount]
 		name: DF.Int | None
+		new_plan: DF.Link | None
 		parsed_devices: DF.Code | None
 		raw_devices: DF.Code | None
 		start: DF.Datetime | None
@@ -63,6 +64,7 @@ class VirtualMachineMigration(Document):
 		self.add_steps()
 		self.add_volumes()
 		self.create_machine_copy()
+		self.set_new_plan()
 
 	def after_insert(self):
 		self.add_devices()
@@ -174,6 +176,24 @@ class VirtualMachineMigration(Document):
 		copied_machine = frappe.copy_doc(self.machine)
 		copied_machine.insert(set_name=self.copied_virtual_machine)
 
+	def set_new_plan(self):
+		server = self.machine.get_server()
+		old_plan = frappe.get_doc("Server Plan", server.plan)
+		matching_plans = frappe.get_all(
+			"Server Plan",
+			{
+				"enabled": True,
+				"server_type": old_plan.server_type,
+				"cluster": old_plan.cluster,
+				"instance_type": self.machine_type,
+				"premium": old_plan.premium,
+			},
+			pluck="name",
+			limit=1,
+		)
+		if matching_plans:
+			self.new_plan = matching_plans[0]
+
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
 			frappe.throw("This feature is only available for AWS EC2")
@@ -247,6 +267,10 @@ class VirtualMachineMigration(Document):
 				"step": self.wait_for_machine_to_be_accessible.__doc__,
 				"method": self.wait_for_machine_to_be_accessible.__name__,
 				"wait_for_completion": True,
+			},
+			{
+				"step": self.update_plan.__doc__,
+				"method": self.update_plan.__name__,
 			},
 		]
 
@@ -359,6 +383,14 @@ class VirtualMachineMigration(Document):
 		if plays and plays[0].status == "Success":
 			return StepStatus.Success
 		return StepStatus.Pending
+
+	def update_plan(self) -> StepStatus:
+		"Update plan"
+		if self.new_plan:
+			server = self.machine.get_server()
+			plan = frappe.get_doc("Server Plan", self.new_plan)
+			server._change_plan(plan)
+		return StepStatus.Success
 
 	@frappe.whitelist()
 	def execute(self):

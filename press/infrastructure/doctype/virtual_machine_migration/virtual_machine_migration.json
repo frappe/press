@@ -7,6 +7,7 @@
  "field_order": [
   "virtual_machine",
   "status",
+  "new_plan",
   "column_break_pega",
   "virtual_machine_image",
   "machine_type",
@@ -139,11 +140,18 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Virtual Machine Migration Mount"
+  },
+  {
+   "fieldname": "new_plan",
+   "fieldtype": "Link",
+   "label": "New Plan",
+   "options": "Server Plan",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-26 13:34:05.457603",
+ "modified": "2024-11-27 00:23:24.743022",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration",

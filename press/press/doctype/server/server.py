@@ -723,6 +723,10 @@ class BaseServer(Document, TagHelpers):
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Server Plan", plan)
+		self._change_plan(plan)
+		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+
+	def _change_plan(self, plan):
 		self.ram = plan.memory
 		self.save()
 		self.reload()
@@ -735,7 +739,6 @@ class BaseServer(Document, TagHelpers):
 				"to_plan": plan.name,
 			}
 		).insert()
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):
