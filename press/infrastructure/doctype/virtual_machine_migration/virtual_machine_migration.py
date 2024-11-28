@@ -161,6 +161,8 @@ class VirtualMachineMigration(Document):
 				{
 					"status": "Unattached",
 					"volume_id": volume.volume_id,
+					# This is the device name that will be used in the new machine
+					# Only needed for the attach_volumes call
 					"device_name": f"/dev/sd{device_name_index}",
 				},
 			)
@@ -352,7 +354,7 @@ class VirtualMachineMigration(Document):
 			return StepStatus.Success
 		return StepStatus.Pending
 
-	def attach_volumes(self):
+	def attach_volumes(self) -> StepStatus:
 		"Attach volumes"
 		machine = self.machine
 		for volume in self.volumes:
@@ -368,7 +370,7 @@ class VirtualMachineMigration(Document):
 		machine.sync()
 		return StepStatus.Success
 
-	def wait_for_machine_to_be_accessible(self):
+	def wait_for_machine_to_be_accessible(self) -> StepStatus:
 		"Wait for machine to be accessible"
 		server = self.machine.get_server()
 		server.ping_ansible()
