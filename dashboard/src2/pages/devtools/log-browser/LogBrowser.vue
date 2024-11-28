@@ -106,68 +106,7 @@
 				</p>
 			</div>
 			<div v-else-if="mode" class="flex h-full w-full">
-				<div class="m-4 mr-0 w-1/4">
-					<div>
-						<FormControl
-							class="mb-4"
-							label="Search log files"
-							v-model="searchLogQuery"
-						>
-							<template #prefix>
-								<i-lucide-search class="h-4 w-4 text-gray-500" />
-							</template>
-						</FormControl>
-						<div class="h-[82vh] space-y-2 overflow-auto">
-							<div
-								v-if="
-									$resources.benchLogs?.loading || $resources.siteLogs?.loading
-								"
-								class="mt-20 flex justify-center space-x-2 text-sm text-gray-700"
-							>
-								<Spinner class="w-4" />
-								<span> Fetching logs... </span>
-							</div>
-							<div
-								v-else-if="logs.length === 0"
-								class="mt-20 flex justify-center text-sm text-gray-700"
-							>
-								No logs found
-							</div>
-							<template v-else v-for="log in logs">
-								<div
-									class="cursor-pointer rounded border border-gray-200 p-3 hover:bg-gray-50"
-									:class="{
-										'border-gray-800': logId === log.name
-									}"
-									@click="
-										() => {
-											$router.push({
-												name: 'Log Browser',
-												params: {
-													mode,
-													docName: mode === 'bench' ? bench : site,
-													logId: log.name
-												}
-											});
-										}
-									"
-								>
-									<div class="flex items-center justify-between">
-										<div class="space-y-1">
-											<p class="text-base text-gray-700">{{ log.name }}</p>
-											<p class="text-xs text-gray-500">
-												{{ $format.date(log.modified, 'YYYY-MM-DD HH:mm') }}
-											</p>
-										</div>
-										<p class="text-sm text-gray-500">
-											{{ $format.bytes(log.size) }}
-										</p>
-									</div>
-								</div>
-							</template>
-						</div>
-					</div>
-				</div>
+				<LogList :mode="mode" :docName="docName" />
 				<div class="m-4 flex h-full w-3/4 flex-col">
 					<div
 						v-if="$resources.log.loading"
@@ -196,12 +135,14 @@
 <script>
 import Header from '../../../components/Header.vue';
 import LinkControl from '../../../components/LinkControl.vue';
+import LogList from './LogList.vue';
 import LogViewer from './LogViewer.vue';
 import { Breadcrumbs } from 'frappe-ui';
 
 export default {
 	components: {
 		Header,
+		LogList,
 		LogViewer,
 		LinkControl,
 		Breadcrumbs
@@ -274,7 +215,7 @@ export default {
 
 			// filter out rotated logs that ends with .1, .2, .3, etc
 			// TODO: do the filtering in agent instead
-			logs = logs.filter(log => !log.name.match(/\.\d+$/));
+			// logs = logs.filter(log => !log.name.match(/\.\d+$/));
 
 			if (this.searchLogQuery) {
 				logs = logs.filter(log =>

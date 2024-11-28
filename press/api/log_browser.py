@@ -311,10 +311,9 @@ def get_log(log_type: LOG_TYPE, doc_name: str, log_name: str) -> list:
 
 def get_raw_log(log_type: LOG_TYPE, doc_name: str, log_name: str) -> list:
 	if log_type == LOG_TYPE.BENCH:
-		# group = frappe.get_value('Bench', doc_name, 'group')
-		return frappe.get_doc("Bench", doc_name).get_server_log_for_log_browser(log_name)
+		return frappe.get_doc("Bench", doc_name).get_server_log(log_name)
 	if log_type == LOG_TYPE.SITE:
-		return frappe.get_doc("Site", doc_name).get_server_log_for_log_browser(log_name)
+		return frappe.get_doc("Site", doc_name).get_server_log(log_name)
 	return frappe.throw("Invalid log type")
 
 

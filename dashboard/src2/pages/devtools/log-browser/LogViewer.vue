@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full flex-1 flex-shrink-0 flex-col overflow-hidden">
+	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div>
 				<div class="mb-4 flex justify-between">
@@ -43,16 +43,13 @@
 						</FormControl>
 					</div>
 				</div>
-				<div class="flex h-full w-full flex-col overflow-hidden">
+				<div
+					class="flex h-[81.5vh] w-full flex-col overflow-hidden rounded border"
+				>
 					<div class="relative flex flex-1 flex-col overflow-auto">
 						<table
 							v-if="props?.columns?.length || props.log?.length"
-							class="w-full border-separate border-spacing-0 rounded border"
-							:class="{
-								'rounded-b-none border-b-0':
-									table.getRowModel().rows.length === 0,
-								'rounded-b-none': props.log?.length !== 0 && showPagination
-							}"
+							class="w-full border-separate border-spacing-0"
 						>
 							<thead class="z-5 sticky top-0 w-full rounded bg-gray-100">
 								<tr
@@ -88,9 +85,7 @@
 											:key="cell.id"
 											class="max-w-[35rem] cursor-pointer truncate border-b px-3 py-2"
 											:class="{
-												'border-b-0':
-													index === table.getRowModel().rows.length - 1 ||
-													row.getIsExpanded()
+												'border-b-0': row.getIsExpanded()
 											}"
 											@click="handleExpand(row)"
 										>
@@ -157,6 +152,36 @@
 							</tbody>
 						</table>
 					</div>
+
+					<div
+						class="flex justify-between rounded rounded-t-none border-t p-1"
+						v-if="props.log?.length !== 0 && showPagination"
+					>
+						<div></div>
+						<div class="flex flex-shrink-0 items-center justify-end gap-3">
+							<p class="tnum text-sm text-gray-600">
+								{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+							</p>
+							<div class="flex gap-2">
+								<Button
+									variant="ghost"
+									@click="table.previousPage()"
+									:disabled="!table.getCanPreviousPage()"
+									iconLeft="arrow-left"
+								>
+									Prev
+								</Button>
+								<Button
+									variant="ghost"
+									@click="table.nextPage()"
+									:disabled="!table.getCanNextPage()"
+									iconRight="arrow-right"
+								>
+									Next
+								</Button>
+							</div>
+						</div>
+					</div>
 				</div>
 
 				<div
@@ -167,35 +192,6 @@
 					}"
 				>
 					<p class="text-center text-sm text-gray-500">No logs found</p>
-				</div>
-			</div>
-			<div
-				class="flex justify-between rounded rounded-t-none border border-t-0 p-1"
-				v-if="props.log?.length !== 0 && showPagination"
-			>
-				<div></div>
-				<div class="flex flex-shrink-0 items-center justify-end gap-3">
-					<p class="tnum text-sm text-gray-600">
-						{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
-					</p>
-					<div class="flex gap-2">
-						<Button
-							variant="ghost"
-							@click="table.previousPage()"
-							:disabled="!table.getCanPreviousPage()"
-							iconLeft="arrow-left"
-						>
-							Prev
-						</Button>
-						<Button
-							variant="ghost"
-							@click="table.nextPage()"
-							:disabled="!table.getCanNextPage()"
-							iconRight="arrow-right"
-						>
-							Next
-						</Button>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -284,7 +280,7 @@ const table = useVueTable({
 	},
 	initialState: {
 		pagination: {
-			pageSize: 15,
+			pageSize: 20,
 			pageIndex: 0
 		}
 	},
