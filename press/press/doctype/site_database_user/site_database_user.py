@@ -28,6 +28,7 @@ class SiteDatabaseUser(Document):
 
 		failed_agent_job: DF.Link | None
 		failure_reason: DF.SmallText
+		max_database_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
 		password: DF.Password
 		permissions: DF.Table[SiteDatabaseTablePermission]
