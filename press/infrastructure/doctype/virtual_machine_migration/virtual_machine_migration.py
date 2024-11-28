@@ -275,6 +275,10 @@ class VirtualMachineMigration(Document):
 				"wait_for_completion": True,
 			},
 			{
+				"step": self.update_mounts.__doc__,
+				"method": self.update_mounts.__name__,
+			},
+			{
 				"step": self.update_plan.__doc__,
 				"method": self.update_plan.__name__,
 			},
@@ -420,6 +424,28 @@ class VirtualMachineMigration(Document):
 		if plays and plays[0].status == "Success":
 			return StepStatus.Success
 		return StepStatus.Pending
+
+	def update_mounts(self) -> StepStatus:
+		"Update mounts"
+		# Mount the volume using the old UUID
+		# Update fstab
+		# 	1. Find mount matching the source mount point in fstab
+		# 	2. Update UUID for this mountpoint
+		for mount in self.mounts:
+			inventory = f"{self.virtual_machine},"
+			escaped_mount_point = mount.target_mount_point.replace("/", "\\/")
+			# Reference: https://stackoverflow.com/questions/16637799/sed-error-invalid-reference-1-on-s-commands-rhs#comment88576787_16637847
+			commands = [
+				f"mount --uuid {mount.uuid} {mount.target_mount_point}",
+				f"sed -Ei 's/^UUID\\=.*\\s({escaped_mount_point}\\s.*$)/UUID\\={mount.uuid} \\1/g' /etc/fstab",
+			]
+			for command in commands:
+				result = AnsibleAdHoc(sources=inventory).run(command, self.name)
+				if result[0]["status"] != "Success":
+					self.add_comment(text=f"Error updating mounts: {result[0]}")
+					return StepStatus.Failure
+
+		return StepStatus.Success
 
 	def update_plan(self) -> StepStatus:
 		"Update plan"
