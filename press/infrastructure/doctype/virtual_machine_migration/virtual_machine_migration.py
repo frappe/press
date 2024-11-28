@@ -139,7 +139,7 @@ class VirtualMachineMigration(Document):
 			"mounts",
 			{
 				"uuid": device["uuid"],
-				"source_mount_point": device.mountpoint,
+				"source_mount_point": device["mountpoint"],
 				"target_mount_point": target_mount_point,
 			},
 		)
