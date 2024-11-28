@@ -69,6 +69,34 @@ def worker_log_formatter(log_entries: list) -> list:
 	return formatted_logs
 
 
+def frappe_log_formatter(log_entries: list) -> list:
+	"""
+	Formats frappe logs by extracting timestamp, level, and description.
+
+	Args:
+		log_entries (list): A list of log entries, where each entry is a string.
+
+	Returns:
+		list: A list of dictionaries, where each dictionary represents a formatted log entry.
+	"""
+
+	if not log_entries:
+		return []  # Return empty list if no log entries
+
+	formatted_logs = []
+	for entry in log_entries:
+		date, time, level, *description_parts = entry.split(" ")
+		description = " ".join(description_parts)
+
+		formatted_time = datetime.datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M:%S,%f").strftime(
+			"%Y-%m-%d %H:%M:%S"
+		)
+
+		formatted_logs.append({"level": level, "time": formatted_time, "description": description})
+
+	return formatted_logs
+
+
 def database_log_formatter(log_entries: list) -> list:
 	"""
 	Formats database logs by extracting timestamp, level, and description.
@@ -273,6 +301,7 @@ def fallback_log_formatter(log_entries: list) -> list:
 FORMATTER_MAP = {
 	"bench": bench_log_formatter,
 	"worker": worker_log_formatter,
+	"frappe": frappe_log_formatter,
 	"ipython": ipython_log_formatter,
 	"database": database_log_formatter,
 	"redis-cache": redis_log_formatter,
@@ -286,18 +315,16 @@ FORMATTER_MAP = {
 
 @frappe.whitelist()
 def get_log(log_type: LOG_TYPE, doc_name: str, log_name: str) -> list:
+	MULTILINE_LOGS = ("database.log", "scheduler.log", "worker", "ipython", "frappe.log")
+
 	log = get_raw_log(log_type, doc_name, log_name)
+
 	log_entries = []
 	for k, v in log.items():
 		if k == log_name:
 			if v == "":
 				return []
-			if (
-				log_name.startswith("database.log")
-				or log_name.startswith("scheduler.log")
-				or log_name.startswith("worker")
-				or log_name.startswith("ipython")
-			):
+			if log_name.startswith(MULTILINE_LOGS):
 				# split line if nextline starts with timestamp
 				log_entries = re.split(r"\n(?=\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", v)
 				break
