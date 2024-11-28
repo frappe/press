@@ -291,6 +291,12 @@ let router = createRouter({
 			component: () =>
 				import('./pages/devtools/database/DatabaseSQLPlayground.vue')
 		},
+		{
+			path: '/log-browser/:mode?/:docName?/:logId?',
+			name: 'Log Browser',
+			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
+			props: true
+		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',
