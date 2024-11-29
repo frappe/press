@@ -28,6 +28,7 @@ class SiteDatabaseUser(Document):
 
 		failed_agent_job: DF.Link | None
 		failure_reason: DF.SmallText
+		label: DF.Data
 		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
 		password: DF.Password
@@ -41,6 +42,7 @@ class SiteDatabaseUser(Document):
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"label",
 		"status",
 		"site",
 		"username",
