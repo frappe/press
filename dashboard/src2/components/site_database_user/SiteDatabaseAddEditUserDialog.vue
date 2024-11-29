@@ -40,6 +40,14 @@
 					label="Access Mode"
 					v-model="mode"
 				/>
+				<FormControl
+					class="mt-2"
+					type="number"
+					size="sm"
+					variant="subtle"
+					label="Database Connections"
+					v-model="database_connections"
+				/>
 				<!-- Permission configuration for Granular Mode -->
 				<div v-if="mode == 'granular'">
 					<div
@@ -131,6 +139,7 @@ export default {
 	data() {
 		return {
 			mode: 'read_only',
+			database_connections: 1,
 			permissions: [],
 			lastGeneratedRowId: 0
 		};
@@ -171,6 +180,7 @@ export default {
 						};
 					});
 					this.permissions = fetched_permissions;
+					this.database_connections = data?.max_connections ?? 1;
 				}
 			};
 		},
@@ -195,7 +205,8 @@ export default {
 							team: this.$team.doc.name,
 							site: this.site,
 							mode: this.mode,
-							permissions: permissions
+							permissions: permissions,
+							max_connections: parseInt(this.database_connections || 1)
 						}
 					};
 				},

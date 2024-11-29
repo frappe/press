@@ -62,6 +62,11 @@ class SiteDatabaseUser(Document):
 		if not self.is_new() and self.has_value_changed("max_connections"):
 			frappe.throw("You can't update the max database connections. Archive it and create a new one.")
 
+		if not self.max_connections:
+			frappe.throw(
+				"Max database connections can't be zero. You need to opt for at least one connection."
+			)
+
 	def before_insert(self):
 		site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
@@ -76,10 +81,10 @@ class SiteDatabaseUser(Document):
 			pluck="max_connections",
 		)
 		total_used_connections = sum(exists_db_users_connection_limit)
-		allowed_max_connections_for_site = site.max_connections - total_used_connections
+		allowed_max_connections_for_site = site.database_access_connection_limit - total_used_connections
 		if self.max_connections > allowed_max_connections_for_site:
 			frappe.throw(
-				f"Your site has quota of {site.max_connections} connections. You can't allocate more than {allowed_max_connections_for_site} connections. You can drop other database users to allocate more connections."
+				f"Your site has quota of {site.database_access_connection_limit} database connections.\nYou can't allocate more than {allowed_max_connections_for_site} connections for new user. You can drop other database users to allocate more connections."
 			)
 
 		self.status = "Pending"
