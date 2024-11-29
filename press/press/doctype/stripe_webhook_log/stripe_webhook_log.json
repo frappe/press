@@ -13,6 +13,7 @@
   "customer_id",
   "invoice_id",
   "stripe_payment_method",
+  "stripe_payment_intent_id",
   "section_break_ecbt",
   "payload"
  ],
@@ -39,7 +40,8 @@
    "fieldname": "invoice",
    "fieldtype": "Link",
    "label": "Invoice",
-   "options": "Invoice"
+   "options": "Invoice",
+   "search_index": 1
   },
   {
    "fieldname": "invoice_id",
@@ -50,7 +52,8 @@
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_hywj",
@@ -67,10 +70,15 @@
   {
    "fieldname": "section_break_ecbt",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID"
   }
  ],
  "links": [],
- "modified": "2024-06-12 14:53:14.051698",
+ "modified": "2024-11-29 10:44:55.011202",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",
