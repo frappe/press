@@ -28,7 +28,7 @@ class SiteDatabaseUser(Document):
 
 		failed_agent_job: DF.Link | None
 		failure_reason: DF.SmallText
-		max_database_connections: DF.Int
+		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
 		password: DF.Password
 		permissions: DF.Table[SiteDatabaseTablePermission]
@@ -49,7 +49,7 @@ class SiteDatabaseUser(Document):
 		"failed_agent_job",
 		"failure_reason",
 		"permissions",
-		"max_database_connections",
+		"max_connections",
 	)
 
 	def validate(self):
@@ -59,7 +59,7 @@ class SiteDatabaseUser(Document):
 		if self.mode != "granular":
 			self.permissions.clear()
 
-		if not self.is_new() and self.has_value_changed("max_database_connections"):
+		if not self.is_new() and self.has_value_changed("max_connections"):
 			frappe.throw("You can't update the max database connections. Archive it and create a new one.")
 
 	def before_insert(self):
@@ -73,13 +73,13 @@ class SiteDatabaseUser(Document):
 		exists_db_users_connection_limit = frappe.db.get_all(
 			"Site Database User",
 			{"site": self.site, "status": ("!=", "Archived")},
-			pluck="max_database_connections",
+			pluck="max_connections",
 		)
 		total_used_connections = sum(exists_db_users_connection_limit)
-		allowed_max_connections_for_site = site.max_database_connections - total_used_connections
-		if self.max_database_connections > allowed_max_connections_for_site:
+		allowed_max_connections_for_site = site.max_connections - total_used_connections
+		if self.max_connections > allowed_max_connections_for_site:
 			frappe.throw(
-				f"Your site has quota of {site.max_database_connections} connections. You can't allocate more than {allowed_max_connections_for_site} connections. You can drop other database users to allocate more connections."
+				f"Your site has quota of {site.max_connections} connections. You can't allocate more than {allowed_max_connections_for_site} connections. You can drop other database users to allocate more connections."
 			)
 
 		self.status = "Pending"
@@ -189,7 +189,7 @@ class SiteDatabaseUser(Document):
 			database,
 			self.username,
 			self.get_password("password"),
-			self.max_database_connections,
+			self.max_connections,
 			database_server,
 			reference_doctype="Site Database User",
 			reference_name=self.name,
@@ -249,6 +249,7 @@ class SiteDatabaseUser(Document):
 			"username": self.username,
 			"password": self.get_password("password"),
 			"mode": self.mode,
+			"max_connections": self.max_connections,
 		}
 
 	@dashboard_whitelist()

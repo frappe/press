@@ -10,7 +10,7 @@
   "site",
   "team",
   "column_break_udtx",
-  "max_database_connections",
+  "max_connections",
   "username",
   "password",
   "user_created_in_database",
@@ -129,9 +129,9 @@
   },
   {
    "default": "16",
-   "fieldname": "max_database_connections",
+   "fieldname": "max_connections",
    "fieldtype": "Int",
-   "label": "Max Database Connections",
+   "label": "Max Connections",
    "set_only_once": 1
   }
  ],
@@ -143,7 +143,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-29 12:42:22.786821",
+ "modified": "2024-11-29 13:49:11.220888",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
