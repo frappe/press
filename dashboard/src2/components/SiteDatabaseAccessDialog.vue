@@ -122,7 +122,7 @@ export default {
 					site: this.site,
 					status: ['!=', 'Archived']
 				},
-				searchField: 'username',
+				searchField: 'label',
 				filterControls() {
 					return [
 						{
@@ -135,9 +135,9 @@ export default {
 				},
 				columns: [
 					{
-						label: 'Username',
-						fieldname: 'username',
-						width: 0.5
+						label: 'Label',
+						fieldname: 'label',
+						width: '150px'
 					},
 					{
 						label: 'Status',

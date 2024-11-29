@@ -19,6 +19,14 @@
 				>
 				</AlertBanner>
 				<FormControl
+					class="mt-2"
+					type="text"
+					size="sm"
+					variant="subtle"
+					label="Label (to identify the user)"
+					v-model="label"
+				/>
+				<FormControl
 					type="select"
 					:options="[
 						{
@@ -138,6 +146,7 @@ export default {
 	},
 	data() {
 		return {
+			label: '',
 			mode: 'read_only',
 			database_connections: 1,
 			permissions: [],
@@ -172,6 +181,7 @@ export default {
 				name: this.db_user_name,
 				auto: false,
 				onSuccess: data => {
+					this.label = data?.label;
 					this.mode = data?.mode;
 					let fetched_permissions = (data?.permissions ?? []).map(x => {
 						return {
@@ -202,6 +212,7 @@ export default {
 					return {
 						doc: {
 							doctype: 'Site Database User',
+							label: this.label,
 							team: this.$team.doc.name,
 							site: this.site,
 							mode: this.mode,
