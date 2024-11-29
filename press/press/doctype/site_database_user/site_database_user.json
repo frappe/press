@@ -131,7 +131,8 @@
    "default": "4",
    "fieldname": "max_database_connections",
    "fieldtype": "Int",
-   "label": "Max Database Connections"
+   "label": "Max Database Connections",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -142,7 +143,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-28 17:17:57.639463",
+ "modified": "2024-11-29 12:25:19.446170",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",

@@ -59,6 +59,9 @@ class SiteDatabaseUser(Document):
 		if self.mode != "granular":
 			self.permissions.clear()
 
+		if not self.is_new() and self.has_value_changed("max_database_connections"):
+			frappe.throw("You can't update the max database connections. Archive it and create a new one.")
+
 	def before_insert(self):
 		site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
@@ -186,6 +189,7 @@ class SiteDatabaseUser(Document):
 			database,
 			self.username,
 			self.get_password("password"),
+			self.max_database_connections,
 			database_server,
 			reference_doctype="Site Database User",
 			reference_name=self.name,
