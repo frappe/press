@@ -138,6 +138,7 @@
   {
    "fieldname": "label",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Label",
    "reqd": 1
   }
@@ -150,7 +151,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-11-29 15:54:25.951266",
+ "modified": "2024-11-29 16:29:57.632579",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
