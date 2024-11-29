@@ -424,7 +424,9 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain)
 
 
-def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
+def get_slow_logs(
+	name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE, normalize=False
+):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -432,7 +434,7 @@ def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FIL
 		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+	password = str(get_decrypted_password("Log Server", log_server, "kibana_password"))
 
 	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
 
@@ -497,7 +499,7 @@ def get_slow_logs(name, query_type, timezone, timespan, timegrain, filter_by=FIL
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
 	return get_stacked_histogram_chart_result(
-		search, query_type, start, end, timegrain, to_s_divisor=1e9, normalize_slow_logs=True
+		search, query_type, start, end, timegrain, to_s_divisor=1e9, normalize_slow_logs=normalize
 	)
 
 

@@ -41,6 +41,7 @@ import { createResource } from 'frappe-ui';
 import { defineProps, ref } from 'vue';
 import ObjectList from '../ObjectList.vue';
 import { date } from '../../utils/format';
+import router from '../../router';
 
 const props = defineProps({
 	bench: String
@@ -98,6 +99,18 @@ const listOptions = ref({
 			fieldname: 'created',
 			format(value) {
 				return value ? date(value, 'lll') : '';
+			}
+		}
+	],
+	actions: () => [
+		{
+			label: '✨ View in Log Browser',
+			onClick: () => {
+				show.value = false;
+				router.push({
+					name: 'Log Browser',
+					params: { mode: 'bench', docName: props.bench }
+				});
 			}
 		}
 	]

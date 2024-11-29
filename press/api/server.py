@@ -317,12 +317,12 @@ def get_request_by_site(name, query, timezone, duration):
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
-def get_slow_logs_by_site(name, query, timezone, duration):
+def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 	from press.api.analytics import FILTER_BY_RESOURCE, get_slow_logs
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_slow_logs(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER)
+	return get_slow_logs(name, query, timezone, timespan, timegrain, FILTER_BY_RESOURCE.SERVER, normalize)
 
 
 def prometheus_query(query, function, timezone, timespan, timegrain):

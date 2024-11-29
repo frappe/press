@@ -2267,6 +2267,9 @@ class Site(Document, TagHelpers):
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
 
+	def get_server_log_for_log_browser(self, log):
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs_v2/{log}")
+
 	@property
 	def has_paid(self) -> bool:
 		"""Has the site been paid for by customer."""
