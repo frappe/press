@@ -11,7 +11,6 @@ from typing import Optional, TypedDict
 
 import frappe
 from frappe.model.document import Document
-from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
 
@@ -222,15 +221,7 @@ class AppRelease(Document):
 		self.output += self.run(f"git reset --hard {self.hash}")
 
 	def _get_repo_url(self, source: "AppSource") -> str:
-		if not source.github_installation_id:
-			return source.repository_url
-
-		token = get_access_token(source.github_installation_id)
-		if token is None:
-			# Do not edit without updating deploy_notifications.py
-			raise Exception("App installation token could not be fetched", self.app)
-
-		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
+		return source.get_repo_url()
 
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
