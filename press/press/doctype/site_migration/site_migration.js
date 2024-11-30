@@ -45,7 +45,7 @@ frappe.ui.form.on('Site Migration', {
 		} else if (frm.doc.status === 'Running') {
 			frm.add_custom_button(__('Fail'), () => {
 				frappe.confirm(
-					`Are you sure you want to stop and fail the migration?<br>
+					`Are you sure you want to skip pending jobs and fail the migration?<br>
 
 					This will attempt to stop the migration and put everything back to the original state.<br>
 
