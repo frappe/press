@@ -11,7 +11,7 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": _("name"), "fieldname": "name", "fieldtype": "Link","options":"Mpesa Payment Record","width": 100},
+		{"label": _("Transaction ID"), "fieldname": "name", "fieldtype": "Link","options":"Payment Partner Transaction","width": 100},
 		{"label": _("Team"), "fieldname": "team", "fieldtype": "Link", "options": "Team", "width": 150},
 		{"label": _("Posting Date"), "fieldname": "posting_date", "fieldtype": "Date", "width": 120},
 		{"label": _("Payment Gateway"), "fieldname": "payment_gateway", "fieldtype": "Link","options":"Payment Gateway","width": 150},
