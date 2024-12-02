@@ -301,7 +301,8 @@ class SiteMigration(Document):
 			lambda x: x.method_name == self.restore_site_on_destination_server.__name__,
 		).status in ["Success", "Failure"]
 
-	def fail(self, cleanup=True, reason=None, activate=False):
+	@frappe.whitelist()
+	def fail(self, cleanup=True, reason=None, force_activate=False):
 		self.set_pending_steps_to_skipped()
 		if cleanup and not self.possibly_archived_site_on_source and self.restore_on_destination_happened:
 			self.append(
@@ -317,7 +318,7 @@ class SiteMigration(Document):
 		self.status = "Failure"
 		self.save()
 		self.send_fail_notification(reason)
-		self.activate_site_if_appropriate(force=activate)
+		self.activate_site_if_appropriate(force=force_activate)
 
 	@property
 	def failed_step(self):
@@ -637,7 +638,7 @@ def job_matches_site_migration(job, site_migration_name: str):
 
 
 def process_site_migration_job_update(job, site_migration_name: str):
-	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
+	site_migration = SiteMigration("Site Migration", site_migration_name)
 	if job.name != site_migration.next_step.step_job:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
 		return
@@ -654,7 +655,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 			site_migration.run_next_step()
 		except Exception as e:
 			log_error("Site Migration Step Error", doc=site_migration)
-			site_migration.fail(reason=str(e), activate=True)
+			site_migration.fail(reason=str(e), force_activate=True)
 	elif job.status in ["Failure", "Delivery Failure"]:
 		site_migration.fail()
 
@@ -665,15 +666,15 @@ def run_scheduled_migrations():
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
 	)
 	for migration in migrations:
-		site_migration: SiteMigration = frappe.get_doc("Site Migration", migration)
+		site_migration = SiteMigration("Site Migration", migration)
 		try:
 			site_migration.start()
 		except OngoingAgentJob:
 			pass
 		except MissingAppsInBench as e:
-			site_migration.fail(reason=str(e), activate=True)
+			site_migration.fail(reason=str(e), force_activate=True)
 		except InsufficientSpaceOnServer as e:
-			site_migration.fail(reason=str(e), activate=True)
+			site_migration.fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)
 

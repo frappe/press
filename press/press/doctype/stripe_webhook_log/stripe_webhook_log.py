@@ -104,9 +104,9 @@ def stripe_webhook_handler():
 def get_intent_id(form_dict):
 	try:
 		form_dict_str = frappe.as_json(form_dict)
-		intent_id = re.search(r"pi_\w+", form_dict_str)
+		intent_id = re.findall(r"pi_\w+", form_dict_str)
 		if intent_id:
-			return intent_id.group(0)
+			return intent_id[1]
 		return None
 	except Exception:
 		frappe.log_error(title="Failed to capture intent id from stripe webhook log")
