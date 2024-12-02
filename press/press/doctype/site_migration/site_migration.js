@@ -45,7 +45,7 @@ frappe.ui.form.on('Site Migration', {
 		} else if (frm.doc.status === 'Running') {
 			frm.add_custom_button(__('Cleanup and fail'), () => {
 				frappe.confirm(
-					`Are you sure you want to cleanup and fail the migration?<br>
+					`Are you sure you want to skip pending steps and fail the migration?<br>
 
 					This will attempt to stop the migration and put everything back to the original state.<br>
 
