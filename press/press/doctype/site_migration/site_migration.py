@@ -301,20 +301,28 @@ class SiteMigration(Document):
 			lambda x: x.method_name == self.restore_site_on_destination_server.__name__,
 		).status in ["Success", "Failure"]
 
-	@frappe.whitelist()
-	def fail(self, cleanup=True, reason=None, force_activate=False):
+	def cleanup_if_appropriate(self):
 		self.set_pending_steps_to_skipped()
-		if cleanup and not self.possibly_archived_site_on_source and self.restore_on_destination_happened:
-			self.append(
-				"steps",
-				{
-					"step_title": self.archive_site_on_destination_server.__doc__,
-					"method_name": self.archive_site_on_destination_server.__name__,
-					"status": "Pending",
-				},
-			)
-			self.run_next_step()
-			return
+		if self.possibly_archived_site_on_source or not self.restore_on_destination_happened:
+			return False
+		self.append(
+			"steps",
+			{
+				"step_title": self.archive_site_on_destination_server.__doc__,
+				"method_name": self.archive_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+		)
+		self.run_next_step()
+		return True
+
+	@frappe.whitelist()
+	def cleanup_and_fail(self, *args, **kwargs):
+		if self.cleanup_if_appropriate():
+			return  # callback will trigger fail
+		self.fail(*args, **kwargs)
+
+	def fail(self, reason: str | None = None, force_activate: bool = False):
 		self.status = "Failure"
 		self.save()
 		self.send_fail_notification(reason)
@@ -647,7 +655,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration.update_next_step_status(job.status)
 
 	if site_migration.is_cleanup_done(job):
-		site_migration.fail(cleanup=False)
+		site_migration.fail()
 		return
 
 	if job.status == "Success":
@@ -655,9 +663,9 @@ def process_site_migration_job_update(job, site_migration_name: str):
 			site_migration.run_next_step()
 		except Exception as e:
 			log_error("Site Migration Step Error", doc=site_migration)
-			site_migration.fail(reason=str(e), force_activate=True)
+			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 	elif job.status in ["Failure", "Delivery Failure"]:
-		site_migration.fail()
+		site_migration.cleanup_and_fail()
 
 
 def run_scheduled_migrations():
@@ -672,9 +680,9 @@ def run_scheduled_migrations():
 		except OngoingAgentJob:
 			pass
 		except MissingAppsInBench as e:
-			site_migration.fail(reason=str(e), force_activate=True)
+			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except InsufficientSpaceOnServer as e:
-			site_migration.fail(reason=str(e), force_activate=True)
+			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)
 
