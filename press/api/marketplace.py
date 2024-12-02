@@ -37,6 +37,7 @@ def get(app):
 		"title": record.title,
 		"description": record.description,
 		"image": record.image,
+		"show_for_new_site": record.show_for_site_creation,
 	}
 
 

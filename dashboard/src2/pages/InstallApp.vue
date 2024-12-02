@@ -319,7 +319,8 @@ export default {
 				validate() {
 					if (
 						!this.$team.doc.payment_mode &&
-						this.$team.doc.onboarding.site_created
+						(this.$team.doc.onboarding.site_created ||
+							!this.appDoc.show_for_new_site)
 					) {
 						throw new DashboardError('Please add a valid payment mode');
 					}
