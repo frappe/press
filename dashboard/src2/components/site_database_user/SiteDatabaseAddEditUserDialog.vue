@@ -49,6 +49,7 @@
 					v-model="mode"
 				/>
 				<FormControl
+					v-if="!isEditMode"
 					class="mt-2"
 					type="number"
 					size="sm"
@@ -247,6 +248,7 @@ export default {
 						dn: this.db_user_name,
 						method: 'save_and_apply_changes',
 						args: {
+							label: this.label,
 							mode: this.mode,
 							permissions: permissions
 						}

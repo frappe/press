@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 
 import frappe
 from frappe.model.document import Document
@@ -128,27 +129,48 @@ class SiteDatabaseUser(Document):
 		return db_name
 
 	@dashboard_whitelist()
-	def save_and_apply_changes(self, mode: str, permissions: list):
+	def save_and_apply_changes(self, label: str, mode: str, permissions: list):  # noqa: C901
 		if self.status == "Pending" or self.status == "Archived":
 			frappe.throw(f"You can't modify information in {self.status} state. Please try again later")
-		self.mode = mode
-		new_permissions = permissions
-		new_permission_tables = [p["table"] for p in new_permissions]
-		current_permission_tables = [p.table for p in self.permissions]
-		# add new permissions
-		for permission in new_permissions:
-			if permission["table"] not in current_permission_tables:
-				self.append("permissions", permission)
-		# modify permissions
-		for permission in self.permissions:
-			for new_permission in new_permissions:
-				if permission.table == new_permission["table"]:
-					permission.update(new_permission)
-					break
-		# delete permissions which are not in the modified list
-		self.permissions = [p for p in self.permissions if p.table in new_permission_tables]
+
+		self.label = label
+		is_db_user_configuration_changed = self.mode != mode or self._is_permissions_changed(permissions)
+		if is_db_user_configuration_changed:
+			self.mode = mode
+			new_permissions = permissions
+			new_permission_tables = [p["table"] for p in new_permissions]
+			current_permission_tables = [p.table for p in self.permissions]
+			# add new permissions
+			for permission in new_permissions:
+				if permission["table"] not in current_permission_tables:
+					self.append("permissions", permission)
+			# modify permissions
+			for permission in self.permissions:
+				for new_permission in new_permissions:
+					if permission.table == new_permission["table"]:
+						permission.update(new_permission)
+						break
+			# delete permissions which are not in the modified list
+			self.permissions = [p for p in self.permissions if p.table in new_permission_tables]
+
 		self.save()
-		self.apply_changes()
+		if is_db_user_configuration_changed:
+			self.apply_changes()
+
+	def _is_permissions_changed(self, new_permissions):
+		if len(new_permissions) != len(self.permissions):
+			return True
+
+		for permission in new_permissions:
+			for p in self.permissions:
+				if permission["table"] == p.table and (
+					permission["mode"] != p.mode
+					or permission["allow_all_columns"] != p.allow_all_columns
+					or Counter(permission["selected_columns"]) != Counter(p.selected_columns)
+				):
+					return True
+
+		return False
 
 	@frappe.whitelist()
 	def apply_changes(self):
