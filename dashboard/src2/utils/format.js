@@ -50,7 +50,7 @@ export function planTitle(plan) {
 	const priceField = india ? 'price_inr' : 'price_usd';
 	const price =
 		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
-	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
+	return price > 0 ? `${userCurrency(price, 0)}` : plan.plan_title;
 }
 
 export function userCurrency(value, fractions = 2) {
