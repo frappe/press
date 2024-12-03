@@ -133,6 +133,7 @@ import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 import SiteDatabaseColumnsSelector from './SiteDatabaseColumnsSelector.vue';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SiteDatabaseAddEditUserDialog',
@@ -222,6 +223,10 @@ export default {
 						}
 					};
 				},
+				validate() {
+					if (!this.label)
+						throw new DashboardError('Please provide a label for the user');
+				},
 				onSuccess() {
 					toast.success('User created successfully');
 					this.$emit('success');
@@ -253,6 +258,10 @@ export default {
 							permissions: permissions
 						}
 					};
+				},
+				validate() {
+					if (!this.label)
+						throw new DashboardError('Please provide a label for the user');
 				},
 				onSuccess() {
 					toast.success('User updated successfully');
