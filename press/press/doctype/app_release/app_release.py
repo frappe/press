@@ -508,13 +508,16 @@ def check_python_syntax(dirpath: str) -> str:
 
 
 def _get_python_path() -> str:
-	from frappe.utils import get_bench_path
+	try:
+		from frappe.utils import get_bench_path
 
-	bench_path = get_bench_path()
+		bench_path = get_bench_path()
+		_python_path = f"{bench_path}/env/bin/python3"
 
-	_python_path = f"{bench_path}/env/bin/python3"
+		if not os.path.exists(_python):
+			_python_path = "python3"
 
-	if not os.path.exists(_python):
+	except ImportError:
 		_python_path = "python3"
 
 	return _python_path
