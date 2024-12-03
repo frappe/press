@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Manage Database Users',
-			size: planSupportsDatabaseAccess ? '2xl' : 'xl'
+			size: planSupportsDatabaseAccess ? '3xl' : 'xl'
 		}"
 		v-model="show"
 	>
@@ -122,7 +122,7 @@ export default {
 					site: this.site,
 					status: ['!=', 'Archived']
 				},
-				searchField: 'username',
+				searchField: 'label',
 				filterControls() {
 					return [
 						{
@@ -135,9 +135,9 @@ export default {
 				},
 				columns: [
 					{
-						label: 'Username',
-						fieldname: 'username',
-						width: 1
+						label: 'Label',
+						fieldname: 'label',
+						width: '150px'
 					},
 					{
 						label: 'Status',
@@ -145,6 +145,13 @@ export default {
 						width: 0.5,
 						align: 'center',
 						type: 'Badge'
+					},
+					{
+						label: 'DB Connections',
+						fieldname: 'max_connections',
+						width: 0.5,
+						align: 'center',
+						format: value => `${value} Connection` + (value > 1 ? 's' : '')
 					},
 					{
 						label: 'Mode',
@@ -168,7 +175,7 @@ export default {
 					}
 				],
 				rowActions: ({ row, listResource, documentResource }) => {
-					if (row.status === 'Archived') {
+					if (row.status === 'Archived' || row.status === 'Pending') {
 						return [];
 					}
 					return [

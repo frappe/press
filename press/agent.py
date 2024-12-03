@@ -620,12 +620,21 @@ class Agent:
 		)
 
 	def add_proxysql_user(
-		self, site, database, username, password, database_server, reference_doctype=None, reference_name=None
+		self,
+		site,
+		database: str,
+		username: str,
+		password: str,
+		max_connections: int,
+		database_server,
+		reference_doctype=None,
+		reference_name=None,
 	):
 		data = {
 			"username": username,
 			"password": password,
 			"database": database,
+			"max_connections": max_connections,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
 		return self.create_agent_job(

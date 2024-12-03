@@ -35,6 +35,11 @@
 						Password: {{ databaseCredential?.password }}
 					</p>
 					<p class="ml-1 font-mono text-sm">Use SSL: Yes</p>
+					<p class="ml-1 font-mono text-sm">
+						Max Database Connection{{
+							databaseCredential?.max_connections > 1 ? 's' : ''
+						}}: {{ databaseCredential?.max_connections }}
+					</p>
 				</div>
 				<div class="pb-2 pt-5">
 					<p class="mb-2 text-base font-semibold text-gray-700">

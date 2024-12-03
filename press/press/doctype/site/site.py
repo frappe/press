@@ -125,9 +125,7 @@ class Site(Document, TagHelpers):
 		current_cpu_usage: DF.Int
 		current_database_usage: DF.Int
 		current_disk_usage: DF.Int
-		database_access_mode: DF.Literal["", "read_only", "read_write"]
-		database_access_password: DF.Password | None
-		database_access_user: DF.Data | None
+		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
@@ -136,7 +134,6 @@ class Site(Document, TagHelpers):
 		hide_config: DF.Check
 		host_name: DF.Data | None
 		hybrid_saas_pool: DF.Link | None
-		is_database_access_enabled: DF.Check
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
 		notify_email: DF.Data | None
@@ -189,7 +186,7 @@ class Site(Document, TagHelpers):
 		"cluster",
 		"bench",
 		"group",
-		"is_database_access_enabled",
+		"database_access_connection_limit",
 		"trial_end_date",
 		"tags",
 		"server",
@@ -3036,17 +3033,6 @@ def process_rename_site_job_update(job):  # noqa: C901
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
-
-
-# TODO
-def process_add_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", True)
-
-
-def process_remove_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
 
 
 def process_move_site_to_bench_job_update(job):
