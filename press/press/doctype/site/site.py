@@ -788,10 +788,11 @@ class Site(Document, TagHelpers):
 
 	def check_enough_space_on_server(self):
 		app: "Server" = frappe.get_doc("Server", self.server)
-		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-
 		self.check_and_increase_disk(app, self.space_required_on_app_server)
-		self.check_and_increase_disk(db, self.space_required_on_db_server)
+
+		if app.database_server:
+			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+			self.check_and_increase_disk(db, self.space_required_on_db_server)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -2581,6 +2582,7 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def forcefully_remove_site(self, bench):
 		"""Bypass all agent/press callbacks and just remove this site from the target bench/server"""
+		from press.utils import get_mariadb_root_password
 
 		frappe.only_for("System Manager")
 
@@ -2588,11 +2590,9 @@ class Site(Document, TagHelpers):
 			frappe.throw("Use <b>Archive Site</b> action to remove site from current bench")
 
 		# Mimic archive_site method in the agent.py
-		server, database_server = frappe.db.get_value("Bench", bench, ["server", "database_server"])
+		server = frappe.db.get_value("Bench", bench, ["server"])
 		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": get_mariadb_root_password(self),
 			"force": True,
 		}
 

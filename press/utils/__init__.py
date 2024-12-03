@@ -821,3 +821,22 @@ def mask_email(email: str, percentage: float) -> str:
 	masked_domain = mask_middle(domain, domain_mask_length)
 
 	return masked_local_part + "@" + masked_domain
+
+
+def get_mariadb_root_password(site):
+	from frappe.utils.password import get_decrypted_password
+
+	database_server, managed_database_service = frappe.get_cached_value(
+		"Bench", site.bench, ["database_server", "managed_database_service"]
+	)
+
+	if managed_database_service:
+		doctype = "Managed Database Service"
+		name = managed_database_service
+		field = "root_user_password"
+	else:
+		doctype = "Database Server"
+		name = database_server
+		field = "mariadb_root_password"
+
+	return get_decrypted_password(doctype, name, field)
