@@ -37,6 +37,9 @@ export function duration(value) {
 }
 
 export function plural(number, singular, plural) {
+	if (typeof number === 'string') {
+		number = parseInt(number);
+	}
 	if (number === 1) {
 		return singular;
 	}
