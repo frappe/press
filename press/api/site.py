@@ -1377,19 +1377,27 @@ def available_apps(name):
 	bench_sources = [app.source for app in bench.apps]
 
 	available_sources = []
-	sources = frappe.get_all(
-		"App Source",
-		fields=[
-			"name",
-			"app",
-			"repository_url",
-			"repository_owner",
-			"branch",
-			"team",
-			"public",
-			"app_title as title",
-		],
-		filters={"name": ("in", bench_sources)},
+
+	AppSource = frappe.qb.DocType("App Source")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+
+	sources = (
+		frappe.qb.from_(AppSource)
+		.left_join(MarketplaceApp)
+		.on(AppSource.app == MarketplaceApp.app)
+		.select(
+			AppSource.name,
+			AppSource.app,
+			AppSource.repository_url,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.team,
+			AppSource.public,
+			AppSource.app_title,
+			MarketplaceApp.title,
+		)
+		.where(AppSource.name.isin(bench_sources))
+		.run(as_dict=True)
 	)
 
 	for source in sources:

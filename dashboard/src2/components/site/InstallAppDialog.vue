@@ -120,7 +120,8 @@ export default {
 						label: 'Title',
 						fieldname: 'title',
 						class: 'font-medium',
-						width: 2
+						width: 2,
+						format: (value, row) => value || row.app_title
 					},
 					{
 						label: 'Repo',
