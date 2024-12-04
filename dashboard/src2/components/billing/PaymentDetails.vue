@@ -170,7 +170,6 @@ import ChangeCardDialog from './ChangeCardDialog.vue';
 import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
 import { cardBrandIcon } from '../../utils/components';
 import { computed, ref, inject, h } from 'vue';
-import router from '../../router';
 
 const team = inject('team');
 const { availableCredits, upcomingInvoice } = inject('billing');
@@ -186,6 +185,11 @@ const billingDetails = createResource({
 	url: 'press.api.account.get_billing_information',
 	cache: 'billingDetails',
 	auto: true
+});
+
+const changePaymentMode = createResource({
+	url: 'press.api.billing.change_payment_mode',
+	onSuccess: () => team.reload()
 });
 
 const billingDetailsSummary = computed(() => {
@@ -245,20 +249,12 @@ function updatePaymentMode(mode) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
 	}
-	createResource({
-		url: 'press.api.billing.change_payment_mode',
-		params: { mode },
-		auto: true,
-		onSuccess: () => team.reload()
-	});
+	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }
 
 function changeMethod() {
 	if (team.doc.payment_method) {
-		// showChangeCardDialog.value = true;
-		router.push({
-			name: 'BillingPaymentMethods'
-		});
+		showChangeCardDialog.value = true;
 	} else {
 		showMessage.value = false;
 		showAddCardDialog.value = true;

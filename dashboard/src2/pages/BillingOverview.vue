@@ -3,7 +3,7 @@
 		v-if="team.doc"
 		class="flex flex-1 flex-col gap-8 overflow-y-auto px-60 pt-6"
 	>
-		<!-- <CurrentPlan @changePlan="router.push({ name: 'Plans' })" /> -->
+		<BillingSummary />
 		<PaymentDetails />
 	</div>
 	<div v-else class="mt-12 flex flex-1 items-center justify-center">
@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-// import CurrentPlan from '../components/billing/CurrentPlan.vue';
+import BillingSummary from '../components/billing/BillingSummary.vue';
 import PaymentDetails from '../components/billing/PaymentDetails.vue';
 import { Spinner, createResource } from 'frappe-ui';
 import { computed, provide, inject } from 'vue';

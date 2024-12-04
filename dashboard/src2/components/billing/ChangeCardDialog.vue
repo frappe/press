@@ -13,13 +13,15 @@
 						class="flex justify-between gap-2 rounded p-2.5 text-base text-gray-900 hover:bg-gray-100"
 					>
 						<div class="flex gap-2">
-							<component :is="cardBrandIcon(card.brand)" class="size-7" />
+							<component :is="cardBrandIcon(card.brand)" class="my-auto" />
 							<div>
 								<div class="flex h-7 items-center gap-1 font-medium">
 									<div>{{ card.name_on_card }}</div>
 									<div>&middot;</div>
-									<div>Card ending in ••••</div>
-									<div>{{ card.last_4 }}</div>
+									<div class="flex gap-1 text-gray-700">
+										<div>Card ending in ••••</div>
+										<div>{{ card.last_4 }}</div>
+									</div>
 									<Badge
 										v-if="card.is_default"
 										class="ml-1.5"

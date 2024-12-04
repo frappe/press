@@ -375,6 +375,15 @@ def unpaid_invoices():
 
 
 @frappe.whitelist()
+def get_unpaid_invoices():
+	invoices = unpaid_invoices()
+	unpaid_inv = [invoice for invoice in invoices if invoice.status == "Unpaid"]
+	if len(unpaid_inv) == 1:
+		return frappe.get_doc("Invoice", unpaid_inv[0].name)
+	return unpaid_inv
+
+
+@frappe.whitelist()
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
 	unpaid_invoices = frappe.get_all(
