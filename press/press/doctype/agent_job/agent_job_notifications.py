@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from enum import Enum, auto
 from typing import Protocol, TypedDict
 
 import frappe
@@ -51,10 +52,18 @@ if typing.TYPE_CHECKING:
 	]
 
 
+class JobErr(Enum):
+	OOM = auto()
+	ROW_SIZE_TOO_LARGE = auto()
+	DATA_TRUNCATED_FOR_COLUMN = auto()
+	BROKEN_PIPE_ERR = auto()
+
+
 DOC_URLS = {
-	"oom-issues": "https://frappecloud.com/docs/common-issues/oom-issues",
-	"row-size-too-large-error": "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
-	"data-truncated-for-column": "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
+	JobErr.OOM: "https://frappecloud.com/docs/common-issues/oom-issues",
+	JobErr.ROW_SIZE_TOO_LARGE: "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
+	JobErr.DATA_TRUNCATED_FOR_COLUMN: "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
+	JobErr.BROKEN_PIPE_ERR: None,
 }
 
 
@@ -83,6 +92,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 143", update_with_oom_error),
 		("Row size too large", update_with_row_size_too_large_error),
 		("Data truncated for column", update_with_data_truncated_for_column_error),
+		("BrokenPipeError", update_with_broken_pipe_err),
 	]
 
 
@@ -174,7 +184,7 @@ def update_with_oom_error(
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["oom-issues"]
+	details["assistance_url"] = DOC_URLS[JobErr.OOM]
 
 	# user addressable if the server is a dedicated server
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
@@ -192,7 +202,7 @@ def update_with_row_size_too_large_error(details: Details, job: AgentJob):
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["row-size-too-large-error"]
+	details["assistance_url"] = DOC_URLS[JobErr.ROW_SIZE_TOO_LARGE]
 
 	return True
 
@@ -207,7 +217,22 @@ def update_with_data_truncated_for_column_error(details: Details, job: AgentJob)
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["data-truncated-for-column"]
+	details["assistance_url"] = DOC_URLS[JobErr.DATA_TRUNCATED_FOR_COLUMN]
+
+	return True
+
+
+def update_with_broken_pipe_err(details: Details, job: AgentJob):
+	if not job.failed_because_of_agent_update:
+		return False
+
+	details["title"] = "Job failed due to maintenance activity on the server"
+
+	details[
+		"message"
+	] = f"""<p>The ongoing job coincided with a maintenance activity on the server <b>{job.server}</b> and hence failed.</p>
+	<p>Please try again in a few minutes.</p>
+	"""
 
 	return True
 

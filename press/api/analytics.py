@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 		histogram_of_method: HistogramOfMethod
 
 
-class FILTER_BY_RESOURCE(Enum):
+class FilterByResource(Enum):
 	SITE = "site"
 	SERVER = "server"
 
@@ -262,7 +262,7 @@ def get_stacked_histogram_chart_result(
 	return {"datasets": datasets, "labels": labels}
 
 
-def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE):
+def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=FilterByResource.SITE):
 	"""
 	:param name: site/server name depending on filter_by
 	:param query_type: count, duration, average_duration
@@ -298,10 +298,10 @@ def get_request_by_(name, query_type, timezone, timespan, timegrain, filter_by=F
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
-	if filter_by == FILTER_BY_RESOURCE.SITE:
+	if filter_by == FilterByResource.SITE:
 		search = search.filter("match_phrase", json__site=name)
 		group_by_field = "json.request.path"
-	elif filter_by == FILTER_BY_RESOURCE.SERVER:
+	elif filter_by == FilterByResource.SERVER:
 		search = search.filter("match_phrase", agent__name=name)
 		group_by_field = "json.site"
 
@@ -425,7 +425,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 
 
 def get_slow_logs(
-	name, query_type, timezone, timespan, timegrain, filter_by=FILTER_BY_RESOURCE.SITE, normalize=False
+	name, query_type, timezone, timespan, timegrain, filter_by=FilterByResource.SITE, normalize=False
 ):
 	MAX_NO_OF_PATHS = 10
 
@@ -456,11 +456,11 @@ def get_slow_logs(
 		)
 		.extra(size=0)
 	)
-	if filter_by == FILTER_BY_RESOURCE.SITE and (
+	if filter_by == FilterByResource.SITE and (
 		database_name := frappe.db.get_value("Site", name, "database_name")
 	):
 		search = search.filter("match", mysql__slowlog__current_user=database_name)
-	elif filter_by == FILTER_BY_RESOURCE.SERVER:
+	elif filter_by == FilterByResource.SERVER:
 		search = search.filter("match", agent__name=name)
 	else:
 		return {"datasets": [], "labels": []}
