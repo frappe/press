@@ -124,7 +124,7 @@ function onDropServer() {
 		message: `Are you sure you want to drop your servers?<br>Both the Application server (<b>${server.doc.name}</b>) and Database server (<b>${server.doc.database_server}</b>) will be archived.<br>This action cannot be undone.`,
 		fields: [
 			{
-				label: 'Please type the server name to confirm',
+				label: "Please type either server's name to confirm",
 				fieldname: 'confirmServerName'
 			}
 		],
