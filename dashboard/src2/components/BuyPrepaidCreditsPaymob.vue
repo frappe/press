@@ -174,11 +174,14 @@ export default {
 				return 
 			}
 
-			this.actualAmount = Number(
-					(
-						(this.amount * (this.currencyExchangeRate || 0)) + (this.amount * (this.taxPercetange / 100))
-					).toFixed(2)
-			);
+			// Convert amount to EGP
+			const convertedAmount = this.amount * this.currencyExchangeRate;
+
+			// Calculate tax on the converted amount
+			const taxAmount = convertedAmount * (this.taxPercetange / 100);
+
+			// Calculate the final amount (including tax)
+			this.actualAmount = Number((convertedAmount + taxAmount).toFixed(2));
 
 			return this.actualAmount
 		}
