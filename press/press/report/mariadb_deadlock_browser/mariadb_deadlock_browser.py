@@ -5,16 +5,23 @@ from __future__ import annotations
 
 import contextlib
 import re
+from typing import TYPE_CHECKING
 
 import frappe
 from elasticsearch import Elasticsearch
 from frappe.core.doctype.access_log.access_log import make_access_log
+from frappe.utils import get_datetime
 from frappe.utils.password import get_decrypted_password
 
+if TYPE_CHECKING:
+	from datetime import datetime
 
-def fetch_mariadb_error_logs(site: str, start_datetime: str, end_datetime: str) -> list[tuple[str, str]]:
+
+def fetch_mariadb_error_logs(
+	site: str, start_datetime: datetime, end_datetime: datetime
+) -> list[tuple[str, str]]:
 	server = frappe.get_value("Site", site, "server")
-	database_server = frappe.get_value("Database Server", server, "database_server")
+	database_server = frappe.get_value("Server", server, "database_server")
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
 		return []
@@ -56,8 +63,8 @@ def fetch_mariadb_error_logs(site: str, start_datetime: str, end_datetime: str) 
 					"range": {
 						"@timestamp": {
 							"format": "strict_date_optional_time",
-							"gte": start_datetime,
-							"lte": end_datetime,
+							"gte": int(start_datetime.timestamp() * 1000),
+							"lte": int(end_datetime.timestamp() * 1000),
 						}
 					}
 				},
@@ -129,7 +136,10 @@ class DatabaseTransactionLog:
 
 	def __init__(self, data: str):
 		self.transaction_id = transaction_id_pattern.search(data).group(1)
-		self.database = db_table_pattern.search(actual_transaction_pattern.search(data).group(1)).group(1)
+		actual_transaction_info = actual_transaction_pattern.search(data).group(1)
+		db_table_info = db_table_pattern.search(actual_transaction_info)
+		self.database = db_table_info.group(1)
+		self.table = db_table_info.group(2)
 		self.query = query_pattern.search(data).group(1)
 
 		conflicted_transaction_info = conflicted_transaction_pattern.search(data).group(1)
@@ -172,7 +182,7 @@ def deadlock_summary(transactions: list[DatabaseTransactionLog]) -> list[dict]:
 	deadlock_transaction_ids = {}
 
 	for transaction in transactions:
-		# usually if their is a deadlock, their will be two records
+		# usually if there is a deadlock, there will be two records
 		# one record for deadlock of query A due to query B
 		# and another record for deadlock of query B due to query A
 		# so, we want to record only one instance of deadlock
@@ -194,8 +204,9 @@ def deadlock_summary(transactions: list[DatabaseTransactionLog]) -> list[dict]:
 		deadlock_infos.append(
 			{
 				"txn_id": transaction.transaction_id,
+				"table": transaction.table,
 				"conflicted_txn_id": transaction.conflicted_transaction_id,
-				"table": transaction.conflicted_table,
+				"conflicted_table": transaction.conflicted_table,
 				"query": transaction.query,
 				"conflicted_query": conflicted_transaction.query,
 			}
@@ -235,6 +246,10 @@ COLUMNS = [
 def execute(filters=None):
 	frappe.only_for(["System Manager", "Site Manager"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
+	if not filters.database:
+		frappe.throw(
+			f"Database name not found for site {filters.site}\nRun `Sync Info` from Site doctype actions to set the database name.\nThen retry"
+		)
 
 	make_access_log(
 		doctype="Site",
@@ -243,7 +258,9 @@ def execute(filters=None):
 		report_name="MariaDB Deadlock Browser",
 		filters=filters,
 	)
-	records = fetch_mariadb_error_logs(filters.site)
+	records = fetch_mariadb_error_logs(
+		filters.site, get_datetime(filters.start_datetime), get_datetime(filters.stop_datetime)
+	)
 	data = []
 
 	for record in records:
@@ -262,10 +279,11 @@ def execute(filters=None):
 			data.append(
 				{
 					"timestamp": "",
-					"table": "",
+					"table": summary["conflicted_table"],
 					"transaction_id": summary["conflicted_txn_id"],
 					"query": summary["conflicted_query"],
 				}
 			)
+			data.append({})  # empty line to separate records
 
 	return COLUMNS, data
