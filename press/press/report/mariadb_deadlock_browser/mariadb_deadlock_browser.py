@@ -62,7 +62,6 @@ def fetch_mariadb_error_logs(
 				{
 					"range": {
 						"@timestamp": {
-							"format": "strict_date_optional_time",
 							"gte": int(start_datetime.timestamp() * 1000),
 							"lte": int(end_datetime.timestamp() * 1000),
 						}
