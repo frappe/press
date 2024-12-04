@@ -23,11 +23,5 @@ frappe.query_reports['MariaDB Deadlock Browser'] = {
 			fieldtype: 'Datetime',
 			reqd: 1,
 		},
-		{
-			fieldname: 'max_lines',
-			label: __('Max Lines'),
-			fieldtype: 'Int',
-			default: 4000,
-		},
 	],
 };
