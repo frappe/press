@@ -56,12 +56,14 @@ class JobErr(Enum):
 	OOM = auto()
 	ROW_SIZE_TOO_LARGE = auto()
 	DATA_TRUNCATED_FOR_COLUMN = auto()
+	BROKEN_PIPE_ERR = auto()
 
 
 DOC_URLS = {
 	JobErr.OOM: "https://frappecloud.com/docs/common-issues/oom-issues",
 	JobErr.ROW_SIZE_TOO_LARGE: "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
 	JobErr.DATA_TRUNCATED_FOR_COLUMN: "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
+	JobErr.BROKEN_PIPE_ERR: None,
 }
 
 
@@ -90,6 +92,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("returned non-zero exit status 143", update_with_oom_error),
 		("Row size too large", update_with_row_size_too_large_error),
 		("Data truncated for column", update_with_data_truncated_for_column_error),
+		("BrokenPipeError", update_with_broken_pipe_err),
 	]
 
 
@@ -215,6 +218,21 @@ def update_with_data_truncated_for_column_error(details: Details, job: AgentJob)
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.DATA_TRUNCATED_FOR_COLUMN]
+
+	return True
+
+
+def update_with_broken_pipe_err(details: Details, job: AgentJob):
+	if not job.failed_because_of_agent_update:
+		return False
+
+	details["title"] = "Job failed due to maintenance activity on the server"
+
+	details[
+		"message"
+	] = f"""<p>The ongoing job coincided with a maintenance activity on the server <b>{job.server}</b> and hence failed.</p>
+	<p>Please try again in a few minutes.</p>
+	"""
 
 	return True
 
