@@ -84,7 +84,7 @@ def fetch_mariadb_error_logs(
 		query=query,
 	)
 
-	if not data or not data.get("hits"):
+	if not data:
 		return []
 
 	# prepare logs
