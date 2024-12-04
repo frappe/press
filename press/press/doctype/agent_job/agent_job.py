@@ -328,6 +328,19 @@ class AgentJob(Document):
 
 		return None
 
+	@property
+	def failed_because_of_agent_update(self) -> bool:
+		if "BrokenPipeError" in str(self.traceback) and frappe.db.exists(
+			"Ansible Play",
+			{
+				"play": "Update Agent",
+				"server": self.server,
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-15)),
+			},
+		):
+			return True
+		return False
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
