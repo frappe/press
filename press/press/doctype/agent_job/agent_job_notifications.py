@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from enum import Enum, auto
 from typing import Protocol, TypedDict
 
 import frappe
@@ -51,10 +52,16 @@ if typing.TYPE_CHECKING:
 	]
 
 
+class JobErr(Enum):
+	OOM = auto()
+	ROW_SIZE_TOO_LARGE = auto()
+	DATA_TRUNCATED_FOR_COLUMN = auto()
+
+
 DOC_URLS = {
-	"oom-issues": "https://frappecloud.com/docs/common-issues/oom-issues",
-	"row-size-too-large-error": "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
-	"data-truncated-for-column": "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
+	JobErr.OOM: "https://frappecloud.com/docs/common-issues/oom-issues",
+	JobErr.ROW_SIZE_TOO_LARGE: "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
+	JobErr.DATA_TRUNCATED_FOR_COLUMN: "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
 }
 
 
@@ -174,7 +181,7 @@ def update_with_oom_error(
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["oom-issues"]
+	details["assistance_url"] = DOC_URLS[JobErr.OOM]
 
 	# user addressable if the server is a dedicated server
 	if not frappe.db.get_value(job.server_type, job.server, "public"):
@@ -192,7 +199,7 @@ def update_with_row_size_too_large_error(details: Details, job: AgentJob):
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["row-size-too-large-error"]
+	details["assistance_url"] = DOC_URLS[JobErr.ROW_SIZE_TOO_LARGE]
 
 	return True
 
@@ -207,7 +214,7 @@ def update_with_data_truncated_for_column_error(details: Details, job: AgentJob)
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""
 
-	details["assistance_url"] = DOC_URLS["data-truncated-for-column"]
+	details["assistance_url"] = DOC_URLS[JobErr.DATA_TRUNCATED_FOR_COLUMN]
 
 	return True
 
