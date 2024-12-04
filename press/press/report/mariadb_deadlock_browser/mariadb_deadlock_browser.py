@@ -248,7 +248,7 @@ def execute(filters=None):
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 	if not filters.database:
 		frappe.throw(
-			f"Database name not found for site {filters.site}\nRun `Sync Info` from Site doctype actions to set the database name.\nThen retry"
+			f"Database name not found for site {filters.site}\nRun `Sync Info` from Site doctype actions to set the database name.\nThen retry again."
 		)
 
 	make_access_log(
