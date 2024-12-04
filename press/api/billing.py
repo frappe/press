@@ -360,7 +360,7 @@ def finalize_invoices():
 @frappe.whitelist()
 def unpaid_invoices():
 	team = get_current_team()
-	invoices = frappe.get_all(
+	return frappe.db.get_all(
 		"Invoice",
 		{
 			"team": team,
@@ -371,16 +371,24 @@ def unpaid_invoices():
 		order_by="creation asc",
 	)
 
-	return invoices  # noqa: RET504
-
 
 @frappe.whitelist()
 def get_unpaid_invoices():
-	invoices = unpaid_invoices()
-	unpaid_inv = [invoice for invoice in invoices if invoice.status == "Unpaid"]
-	if len(unpaid_inv) == 1:
-		return frappe.get_doc("Invoice", unpaid_inv[0].name)
-	return unpaid_inv
+	team = get_current_team()
+	unpaid_invoices = frappe.db.get_all(
+		"Invoice",
+		{
+			"team": team,
+			"status": "Unpaid",
+			"type": "Subscription",
+		},
+		["name", "status", "period_end", "currency", "amount_due", "total"],
+		order_by="creation asc",
+	)
+
+	if len(unpaid_invoices) == 1:
+		return frappe.get_doc("Invoice", unpaid_invoices[0].name)
+	return unpaid_invoices
 
 
 @frappe.whitelist()
