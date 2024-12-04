@@ -1269,29 +1269,35 @@ def get_installed_apps(site, query_filters: dict | None = None):
 	bench = frappe.get_doc("Bench", site.bench)
 	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
 
-	filters = {"name": ("in", [d.source for d in installed_bench_apps])}
+	AppSource = frappe.qb.DocType("App Source")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+
+	query = (
+		frappe.qb.from_(AppSource)
+		.left_join(MarketplaceApp)
+		.on(AppSource.app == MarketplaceApp.app)
+		.select(
+			AppSource.name,
+			AppSource.app,
+			AppSource.repository,
+			AppSource.repository_url,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.team,
+			AppSource.public,
+			AppSource.app_title,
+			MarketplaceApp.title,
+		)
+		.where(AppSource.name.isin([d.source for d in installed_bench_apps]))
+	)
 
 	if owner := query_filters.get("repository_owner"):
-		filters["repository_owner"] = owner
+		query = query.where(AppSource.repository_owner == owner)
 
 	if branch := query_filters.get("branch"):
-		filters["branch"] = branch
+		query = query.where(AppSource.branch == branch)
 
-	sources = frappe.get_all(
-		"App Source",
-		fields=[
-			"name",
-			"app",
-			"repository",
-			"repository_url",
-			"repository_owner",
-			"branch",
-			"team",
-			"public",
-			"app_title as title",
-		],
-		filters=filters,
-	)
+	sources = query.run(as_dict=True)
 
 	installed_apps = []
 	for app in installed_bench_apps:
