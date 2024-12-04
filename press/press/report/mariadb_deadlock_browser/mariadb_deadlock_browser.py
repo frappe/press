@@ -199,6 +199,10 @@ def deadlock_summary(transactions: list[DatabaseTransactionLog]) -> list[dict]:
 
 	deadlock_infos = []
 	for transaction_id in deadlock_transaction_ids:
+		if transaction_id not in transaction_map:
+			continue
+		if transaction.conflicted_transaction_id not in transaction_map:
+			continue
 		transaction = transaction_map[transaction_id]
 		conflicted_transaction = transaction_map[transaction.conflicted_transaction_id]
 		deadlock_infos.append(
