@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def fetch_mariadb_error_logs(
-	site: str, start_datetime: datetime, end_datetime: datetime
+	site: str, start_datetime: datetime, end_datetime: datetime, log_size: int
 ) -> list[tuple[str, str]]:
 	server = frappe.get_value("Site", site, "server")
 	database_server = frappe.get_value("Server", server, "database_server")
@@ -79,6 +79,7 @@ def fetch_mariadb_error_logs(
 	client = Elasticsearch(url, basic_auth=("frappe", password))
 
 	data = client.search(
+		size=log_size,
 		index="filebeat-*",
 		query=query,
 	)
@@ -258,7 +259,10 @@ def execute(filters=None):
 		filters=filters,
 	)
 	records = fetch_mariadb_error_logs(
-		filters.site, get_datetime(filters.start_datetime), get_datetime(filters.stop_datetime)
+		filters.site,
+		get_datetime(filters.start_datetime),
+		get_datetime(filters.stop_datetime),
+		filters.max_log_size,
 	)
 	data = []
 

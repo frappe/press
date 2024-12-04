@@ -23,5 +23,11 @@ frappe.query_reports['MariaDB Deadlock Browser'] = {
 			fieldtype: 'Datetime',
 			reqd: 1,
 		},
+		{
+			fieldname: 'max_log_size',
+			label: __('Max Log Size'),
+			fieldtype: 'Int',
+			default: 500,
+		},
 	],
 };
