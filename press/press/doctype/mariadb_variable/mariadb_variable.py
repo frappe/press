@@ -1,10 +1,14 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 
-from press.press.doctype.database_server.database_server import DatabaseServer
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 class MariaDBVariable(Document):
@@ -16,6 +20,8 @@ class MariaDBVariable(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		available_values: DF.SmallText
+		configurable_by_user: DF.Check
 		datatype: DF.Literal["Int", "Float", "Str"]
 		default_value: DF.Data | None
 		doc_section: DF.Literal["server", "replication-and-binary-log", "innodb"]
