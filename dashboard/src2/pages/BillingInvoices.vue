@@ -17,7 +17,7 @@
 				</template>
 			</template>
 		</Dialog>
-		<BuyPrepaidCreditsDialog
+		<AddPrepaidCreditsDialog
 			v-if="showBuyPrepaidCreditsDialog"
 			v-model="showBuyPrepaidCreditsDialog"
 			:minimumAmount="minimumAmount"
@@ -36,7 +36,7 @@ import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import { userCurrency, date } from '../utils/format';
 import { confirmDialog, icon, renderInDialog } from '../utils/components';
-import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
+import AddPrepaidCreditsDialog from '../components/billing/AddPrepaidCreditsDialog.vue';
 import { dayjsLocal } from '../utils/dayjs';
 import router from '../router';
 
@@ -46,7 +46,7 @@ export default {
 	components: {
 		ObjectList,
 		InvoiceTable,
-		BuyPrepaidCreditsDialog
+		AddPrepaidCreditsDialog
 	},
 	data() {
 		return {
