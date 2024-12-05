@@ -95,22 +95,26 @@ function payNow() {
 async function payUnpaidInvoices() {
 	let _unpaidInvoices = await unpaidInvoices.submit();
 	if (_unpaidInvoices.length > 1) {
-		confirmDialog({
-			title: 'Multiple unpaid invoices',
-			message:
-				'You have multiple unpaid invoices. Please pay them from the invoices page',
-			primaryAction: {
-				label: 'Go to invoices',
-				variant: 'solid',
-				onClick: ({ hide }) => {
-					router.push({ name: 'BillingInvoices' });
-					hide();
+		if (team.doc.payment_mode === 'Prepaid Credits') {
+			showAddPrepaidCreditsDialog.value = true;
+		} else {
+			confirmDialog({
+				title: 'Multiple unpaid invoices',
+				message:
+					'You have multiple unpaid invoices. Please pay them from the invoices page',
+				primaryAction: {
+					label: 'Go to invoices',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						router.push({ name: 'BillingInvoices' });
+						hide();
+					}
 				}
-			}
-		});
+			});
+		}
 	} else {
 		let invoice = _unpaidInvoices;
-		if (invoice.stripe_invoice_url && team.doc.payment_mode == 'Card') {
+		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
 			window.open(
 				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`
 			);
