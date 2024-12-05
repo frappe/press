@@ -47,33 +47,12 @@
 			v-model="showAddPrepaidCreditsDialog"
 			@success="upcomingInvoice.reload()"
 		/>
-		<Dialog
-			v-model="showInvoiceDialog"
-			:options="{
-				size: '3xl',
-				title: upcomingInvoice.data?.upcoming_invoice?.name
-			}"
-		>
-			<template #body-content>
-				<template v-if="upcomingInvoice.data.upcoming_invoice">
-					<div
-						v-if="upcomingInvoice.data.upcoming_invoice.status === 'Empty'"
-						class="text-base text-gray-600"
-					>
-						Nothing to show
-					</div>
-					<InvoiceTable
-						v-else
-						:invoiceId="upcomingInvoice.data.upcoming_invoice.name"
-					/>
-				</template>
-			</template>
-		</Dialog>
+		<UpcomingInvoiceDialog v-model="showInvoiceDialog" />
 	</div>
 </template>
 <script setup>
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
-import InvoiceTable from '../InvoiceTable.vue';
+import UpcomingInvoiceDialog from './UpcomingInvoiceDialog.vue';
 import { Button, createResource } from 'frappe-ui';
 import { ref, computed, inject } from 'vue';
 import { confirmDialog } from '../../utils/components';
