@@ -27,7 +27,13 @@ export const clusterOptions = [
 ];
 
 export function getUpsellBanner(site: DocumentResource, title: string) {
-	if (site.doc.current_plan?.private_benches || !site.doc.group_public) return;
+	if (
+		!site.doc.current_plan ||
+		site.doc.current_plan?.private_benches ||
+		site.doc.current_plan?.is_trial_plan ||
+		!site.doc.group_public
+	)
+		return;
 
 	return {
 		title: title,
