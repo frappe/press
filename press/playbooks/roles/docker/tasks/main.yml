@@ -54,8 +54,27 @@
     src: daemon.json
     dest: /etc/docker/daemon.json
 
+- name: Create Docker SystemD drop-in directory
+  file:
+    dest: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: true
+
+- name: Set Docker to depend on Mounts
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/docker.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: docker_depends_on_mounts | default(false) | bool
+
 - name: Restart Docker Daemon
   systemd:
+    daemon_reload: true
     name: docker
     state: restarted
 

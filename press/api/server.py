@@ -386,7 +386,7 @@ def options():
 
 
 @frappe.whitelist()
-def plans(name, cluster=None):
+def plans(name, cluster=None, platform="x86_64"):
 	return Plan.get_plans(
 		doctype="Server Plan",
 		fields=[
@@ -401,7 +401,12 @@ def plans(name, cluster=None):
 			"instance_type",
 			"premium",
 		],
-		filters={"server_type": name, "cluster": cluster} if cluster else {"server_type": name},
+		filters={"server_type": name, "platform": platform, "cluster": cluster}
+		if cluster
+		else {
+			"server_type": name,
+			"platform": platform,
+		},
 	)
 
 

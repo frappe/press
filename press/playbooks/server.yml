@@ -9,6 +9,7 @@
     - role: user
     - role: nginx
     - role: agent
+    - role: mount
     - role: bench
     - role: docker
     - role: node_exporter

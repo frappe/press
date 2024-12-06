@@ -101,7 +101,8 @@ export default {
 				url: 'press.api.server.plans',
 				params: {
 					name: this.serverType,
-					cluster: this.$server.doc.cluster
+					cluster: this.$server.doc.cluster,
+					platform: this.$server.doc.current_plan.platform
 				},
 				auto: true,
 				initialData: []

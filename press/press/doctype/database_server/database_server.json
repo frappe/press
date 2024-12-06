@@ -54,6 +54,8 @@
   "column_break_apox",
   "tags_section",
   "tags",
+  "mounts_section",
+  "mounts",
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
@@ -517,11 +519,22 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "fieldname": "mounts_section",
+   "fieldtype": "Section Break",
+   "label": "Mounts"
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Server Mount"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-13 11:02:07.399141",
+ "modified": "2024-10-28 18:05:38.289733",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

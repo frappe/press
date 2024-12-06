@@ -17,6 +17,7 @@
   "server_type",
   "cluster",
   "instance_type",
+  "platform",
   "column_break_ypkt",
   "vcpu",
   "memory",
@@ -118,11 +119,19 @@
    "fieldname": "premium",
    "fieldtype": "Check",
    "label": "Premium"
+  },
+  {
+   "default": "x86_64",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-29 12:19:06.709403",
+ "modified": "2024-11-21 13:49:02.682602",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",

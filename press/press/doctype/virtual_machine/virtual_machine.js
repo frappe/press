@@ -270,6 +270,33 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		if (frm.doc.status == 'Running') {
+			frm.add_custom_button(
+				'Attach New Volume',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Int',
+								label: 'Size',
+								fieldname: 'size',
+								reqd: 1,
+								default: 10,
+							},
+						],
+						({ size }) => {
+							frm
+								.call('attach_new_volume', {
+									size,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Attach New Volume'),
+					);
+				},
+				__('Actions'),
+			);
+		}
 		if (frm.doc.instance_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(
@@ -283,5 +310,18 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		}
+	},
+});
+
+frappe.ui.form.on('Virtual Machine Volume', {
+	detach(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to detach volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('detach', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
 	},
 });

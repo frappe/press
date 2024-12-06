@@ -34,6 +34,7 @@ runcmd:
 - systemctl daemon-reload
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
+- systemctl restart deadlock_logger
 {% endif %}
 {% if server.provider == 'OCI' %}
 - iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited
@@ -74,6 +75,14 @@ write_files:
 - path: /etc/systemd/system/mysqld_exporter.service
   content: |
     {{ mariadb_exporter_config | indent(4) }}
+
+- path: /root/.my.cnf
+  content: |
+    {{ mariadb_root_config | indent(4) }}
+
+- path: /etc/systemd/system/deadlock_logger.service
+  content: |
+    {{ deadlock_logger_config | indent(4) }}
 {% endif %}
 
 swap:

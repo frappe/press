@@ -65,6 +65,15 @@
     insertafter: '\[Service\]'
     state: present
 
+- name: Set MariaDB to depend on Mounts
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/mariadb.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: mariadb_depends_on_mounts | default(false) | bool
+
 - name: Restart MariaDB Service
   systemd:
     daemon_reload: true

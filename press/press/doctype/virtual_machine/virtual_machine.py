@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import ipaddress
+import time
 
 import boto3
 import botocore
@@ -284,6 +285,8 @@ class VirtualMachine(Document):
 
 	def get_cloud_init(self):
 		server = self.get_server()
+		if not server:
+			return ""
 		log_server, kibana_password = server.get_log_server()
 		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
 		context = {
@@ -328,8 +331,18 @@ class VirtualMachine(Document):
 						mariadb_context,
 						is_path=True,
 					),
+					"mariadb_root_config": frappe.render_template(
+						"press/playbooks/roles/mariadb/templates/my.cnf",
+						mariadb_context,
+						is_path=True,
+					),
 					"mariadb_exporter_config": frappe.render_template(
 						"press/playbooks/roles/mysqld_exporter/templates/mysqld_exporter.service",
+						mariadb_context,
+						is_path=True,
+					),
+					"deadlock_logger_config": frappe.render_template(
+						"press/playbooks/roles/deadlock_logger/templates/deadlock_logger.service",
 						mariadb_context,
 						is_path=True,
 					),
@@ -1163,6 +1176,48 @@ class VirtualMachine(Document):
 			virtual_machine_image=virtual_machine_image,
 			machine_type=machine_type,
 		).insert()
+
+	@frappe.whitelist()
+	def attach_new_volume(self, size):
+		if self.cloud_provider != "AWS EC2":
+			return
+		volume_id = self.client().create_volume(
+			AvailabilityZone=self.availability_zone,
+			Size=size,
+			VolumeType="gp3",
+			TagSpecifications=[
+				{
+					"ResourceType": "volume",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
+				},
+			],
+		)["VolumeId"]
+		# Wait for the volume to be available
+		while (
+			self.client().describe_volumes(
+				VolumeIds=[
+					volume_id,
+				],
+			)["Volumes"][0]["State"]
+			!= "available"
+		):
+			time.sleep(1)
+		# First volume starts from /dev/sdf
+		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+		self.client().attach_volume(
+			Device=f"/dev/sd{device_name_index}",
+			InstanceId=self.instance_id,
+			VolumeId=volume_id,
+		)
+		self.sync()
+
+	@frappe.whitelist()
+	def detach(self, volume_id):
+		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+		self.client().detach_volume(
+			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
+		)
+		self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
