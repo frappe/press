@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed, watch, ref } from 'vue';
+import { defineAsyncComponent, computed, watch, ref, provide } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
@@ -45,10 +45,10 @@ const MobileNav = defineAsyncComponent(() =>
 );
 
 const route = useRoute();
+const team = getTeam();
 
 const isHideSidebar = computed(() => {
 	if (!session.user) return false;
-	const team = getTeam();
 	return (
 		route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
 	);
@@ -62,6 +62,8 @@ watch(
 		isSaaSFlow.value = window.location.pathname.startsWith('/dashboard/saas');
 	}
 );
+
+provide('team', team);
 </script>
 
 <style src="../src/assets/style.css"></style>
