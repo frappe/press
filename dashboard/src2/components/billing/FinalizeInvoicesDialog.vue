@@ -23,9 +23,9 @@
 						}}
 					</li>
 				</ul>
-				Please finalize and settle them before removing all payment methods or
-				disabling the account. You can check the details of invoices and make
-				the payment from
+				Please finalize and settle them before removing all payment methods,
+				switching to Paid by Partner method or disabling the account. You can
+				check the details of invoices and make the payment from
 				<Link to="/billing/invoices/">here</Link>. It might take up to 2 hours
 				for the payment to reflect against your invoices.
 			</div>

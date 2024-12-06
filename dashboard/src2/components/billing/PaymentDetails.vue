@@ -168,12 +168,21 @@ import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
 import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
-import { cardBrandIcon, confirmDialog } from '../../utils/components';
-import { computed, ref, inject, h } from 'vue';
+import {
+	cardBrandIcon,
+	confirmDialog,
+	renderDialog
+} from '../../utils/components';
+import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
 
 const team = inject('team');
-const { availableCredits, upcomingInvoice, unpaidInvoices } = inject('billing');
+const {
+	availableCredits,
+	upcomingInvoice,
+	currentBillingAmount,
+	unpaidInvoices
+} = inject('billing');
 
 const showBillingDetailsDialog = ref(false);
 const showAddPrepaidCreditsDialog = ref(false);
@@ -190,7 +199,7 @@ const billingDetails = createResource({
 
 const changePaymentMode = createResource({
 	url: 'press.api.billing.change_payment_mode',
-	onSuccess: () => team.reload()
+	onSuccess: () => setTimeout(() => team.reload(), 1000)
 });
 
 const billingDetailsSummary = computed(() => {
@@ -293,9 +302,17 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
-	} else if (mode === 'Paid By Partner' && unpaidInvoices.data.length > 0) {
-		payUnpaidInvoices();
-		return;
+	} else if (mode === 'Paid By Partner') {
+		if (unpaidInvoices.data.length > 0) {
+			payUnpaidInvoices();
+			return;
+		}
+		if (currentBillingAmount.value) {
+			const finalizeInvoicesDialog = defineAsyncComponent(() =>
+				import('./FinalizeInvoicesDialog.vue')
+			);
+			renderDialog(h(finalizeInvoicesDialog));
+		}
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }

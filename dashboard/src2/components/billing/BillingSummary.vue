@@ -38,7 +38,7 @@
 					</div>
 				</div>
 				<div>
-					<Button variant="outline" label="Pay now" @click="payNow" />
+					<Button variant="solid" label="Pay now" @click="payNow" />
 				</div>
 			</div>
 		</div>

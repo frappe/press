@@ -19,6 +19,9 @@
 					:invoiceId="upcomingInvoice.data.upcoming_invoice.name"
 				/>
 			</template>
+			<template v-else>
+				<div class="text-base text-gray-600">Nothing to show</div>
+			</template>
 		</template>
 	</Dialog>
 </template>
