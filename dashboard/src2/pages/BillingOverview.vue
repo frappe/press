@@ -25,11 +25,18 @@ const upcomingInvoice = createResource({
 	auto: true
 });
 
+const unpaidInvoices = createResource({
+	url: 'press.api.billing.get_unpaid_invoices',
+	cache: ['unpaidInvoices', team.name],
+	auto: true
+});
+
 provide('billing', {
 	upcomingInvoice,
 	availableCredits: computed(() => upcomingInvoice.data?.available_credits),
 	currentBillingAmount: computed(
 		() => upcomingInvoice.data?.upcoming_invoice?.total
-	)
+	),
+	unpaidInvoices
 });
 </script>

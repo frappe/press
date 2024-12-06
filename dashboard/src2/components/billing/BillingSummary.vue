@@ -59,7 +59,8 @@ import { confirmDialog } from '../../utils/components';
 import router from '../../router';
 
 const team = inject('team');
-const { currentBillingAmount, upcomingInvoice } = inject('billing');
+const { currentBillingAmount, upcomingInvoice, unpaidInvoices } =
+	inject('billing');
 
 const showAddPrepaidCreditsDialog = ref(false);
 const showInvoiceDialog = ref(false);
@@ -82,18 +83,14 @@ const currentMonthEnd = () => {
 	});
 };
 
-const unpaidInvoices = createResource({
-	url: 'press.api.billing.get_unpaid_invoices'
-});
-
 function payNow() {
 	team.doc.payment_mode == 'Prepaid Credits'
 		? (showAddPrepaidCreditsDialog.value = true)
 		: payUnpaidInvoices();
 }
 
-async function payUnpaidInvoices() {
-	let _unpaidInvoices = await unpaidInvoices.submit();
+function payUnpaidInvoices() {
+	let _unpaidInvoices = unpaidInvoices.data;
 	if (_unpaidInvoices.length > 1) {
 		if (team.doc.payment_mode === 'Prepaid Credits') {
 			showAddPrepaidCreditsDialog.value = true;

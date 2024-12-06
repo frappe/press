@@ -168,11 +168,12 @@ import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
 import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
-import { cardBrandIcon } from '../../utils/components';
+import { cardBrandIcon, confirmDialog } from '../../utils/components';
 import { computed, ref, inject, h } from 'vue';
+import router from '../../router';
 
 const team = inject('team');
-const { availableCredits, upcomingInvoice } = inject('billing');
+const { availableCredits, upcomingInvoice, unpaidInvoices } = inject('billing');
 
 const showBillingDetailsDialog = ref(false);
 const showAddPrepaidCreditsDialog = ref(false);
@@ -226,12 +227,56 @@ const paymentModeOptions = [
 				active: team.doc.payment_mode === 'Prepaid Credits',
 				onClick: () => updatePaymentMode('Prepaid Credits')
 			})
+	},
+	{
+		label: 'Paid by Partner',
+		value: 'Paid By Partner',
+		condition: () => team.doc.partner_email,
+		description: 'Your partner will be charged for monthly subscription',
+		component: () =>
+			h(DropdownItem, {
+				label: 'Paid by Partner',
+				active: team.doc.payment_mode === 'Paid by Partner',
+				onClick: () => updatePaymentMode('Paid By Partner')
+			})
 	}
 ];
 
 const paymentMode = computed(() => {
 	return paymentModeOptions.find(o => o.value === team.doc.payment_mode);
 });
+
+function payUnpaidInvoices() {
+	let _unpaidInvoices = unpaidInvoices.data;
+	if (_unpaidInvoices.length > 1) {
+		if (team.doc.payment_mode === 'Prepaid Credits') {
+			showAddPrepaidCreditsDialog.value = true;
+		} else {
+			confirmDialog({
+				title: 'Multiple unpaid invoices',
+				message:
+					'You have multiple unpaid invoices. Please pay them from the invoices page',
+				primaryAction: {
+					label: 'Go to invoices',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						router.push({ name: 'BillingInvoices' });
+						hide();
+					}
+				}
+			});
+		}
+	} else {
+		let invoice = _unpaidInvoices;
+		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
+			window.open(
+				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`
+			);
+		} else {
+			showAddPrepaidCreditsDialog.value = true;
+		}
+	}
+}
 
 const showMessage = ref(false);
 function updatePaymentMode(mode) {
@@ -248,6 +293,9 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
+	} else if (mode === 'Paid By Partner' && unpaidInvoices.data.length > 0) {
+		payUnpaidInvoices();
+		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }
