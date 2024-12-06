@@ -1272,7 +1272,7 @@ class DeployCandidate(Document):
 		group = []
 		if custom_workers:
 			for worker_name in custom_workers:
-				group.append(f"frappe-bench-{ worker_name }-worker")
+				group.append(f"frappe-bench-{worker_name}-worker")
 		return ", ".join(group)
 
 	def _generate_apps_txt(self):
