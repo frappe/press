@@ -23,7 +23,8 @@ function getCurrentTeam() {
 		document.cookie.includes('user_id=Guest') ||
 		!document.cookie.includes('user_id')
 	) {
-		window.location.href = '/login';
+		if (!window.location.pathname.endsWith('/login'))
+			window.location.href = '/dashboard/login';
 	}
 	let currentTeam = localStorage.getItem('current_team');
 	if (
