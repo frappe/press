@@ -61,7 +61,6 @@ if typing.TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
-	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -202,9 +201,12 @@ class DeployCandidate(Document):
 			{"document_type": self.doctype, "document_name": self.name},
 		)
 
+	@property
+	def release_group(self):
+		return frappe.get_doc("Release Group", self.group)
+
 	def get_unpublished_marketplace_releases(self) -> list[str]:
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		marketplace_app_sources = rg.get_marketplace_app_sources()
+		marketplace_app_sources = self.release_group.get_marketplace_app_sources()
 
 		if not marketplace_app_sources:
 			return []
@@ -1185,8 +1187,32 @@ class DeployCandidate(Document):
 		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
 		with open(supervisor_conf, "w") as f:
 			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(supervisor_conf_template, {"doc": self}, is_path=True)
+			custom_workers = self._get_custom_workers()
+
+			content = frappe.render_template(
+				supervisor_conf_template,
+				{
+					"doc": self,
+					"custom_workers": custom_workers,
+					"custom_workers_group": self._get_custom_workers_group(custom_workers),
+				},
+				is_path=True,
+			)
 			f.write(content)
+
+	def _get_custom_workers(self):
+		if self.release_group.common_site_config:
+			common_site_config = json.loads(self.release_group.common_site_config) or frappe._dict()
+			return common_site_config.get("workers", frappe._dict())
+
+		return frappe._dict()
+
+	def _get_custom_workers_group(self, custom_workers):
+		group = []
+		if custom_workers:
+			for worker_name in custom_workers:
+				group.append(f"frappe-bench-{ worker_name }-worker")
+		return ", ".join(group)
 
 	def _generate_apps_txt(self):
 		apps_txt = os.path.join(self.build_directory, "apps.txt")
@@ -1334,8 +1360,7 @@ class DeployCandidate(Document):
 		)
 
 	def create_deploy(self):
-		servers = frappe.get_doc("Release Group", self.group).servers
-		servers = [server.server for server in servers]
+		servers = [server.server for server in self.release_group.servers]
 		if not servers:
 			return None
 
@@ -1469,8 +1494,7 @@ class DeployCandidate(Document):
 		return None
 
 	def get_duplicate_dc(self) -> "DeployCandidate | None":
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		if not (dc := rg.create_deploy_candidate()):
+		if not (dc := self.release_group.create_deploy_candidate()):
 			return None
 
 		# Set new DC apps to pull from the same sources
