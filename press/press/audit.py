@@ -176,12 +176,9 @@ class BackupRecordCheck(Audit):
 	list_key = "Sites with no backup yesterday"
 	backup_summary = "Backup Summary"
 
-	def __init__(self):
-		log = {self.list_key: [], self.backup_summary: {}}
-		yesterday = frappe.utils.today() - timedelta(days=1)
-		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
+	def get_sites_with_backup_in_interval(self, trial_plans: tuple[str]):
 		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
-		sites_with_backup_in_interval = set(
+		return set(
 			frappe.db.sql_list(
 				f"""
 				SELECT
@@ -195,28 +192,37 @@ class BackupRecordCheck(Audit):
 				WHERE
 					site.status = "Active" and
 					site_backup.owner = "Administrator" and
-					DATE(site_backup.creation) == "{yesterday}"
+					DATE(site_backup.creation) == "{self.yesterday}"
 					{cond_filters}
 			"""
 			)
 		)
+
+	def get_all_sites(self, trial_plans: tuple[str]):
 		filters = {
 			"status": "Active",
-			"creation": ("<=", datetime.combine(yesterday, datetime.min.time())),
+			"creation": ("<=", datetime.combine(self.yesterday, datetime.min.time())),
 			"is_standby": False,
 			"skip_scheduled_backups": False,
 		}
 		if trial_plans:
 			filters.update({"plan": ("not in", trial_plans)})
-		all_sites = set(
+		return set(
 			frappe.get_all(
 				"Site",
 				filters=filters,
 				pluck="name",
 			)
 		)
-		sites_without_backups = all_sites.difference(sites_with_backup_in_interval)
 
+	def __init__(self):
+		log = {self.list_key: [], self.backup_summary: {}}
+		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
+
+		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
+		sites_with_backup_in_interval = self.get_sites_with_backup_in_interval(trial_plans)
+		all_sites = self.get_all_sites(trial_plans)
+		sites_without_backups = all_sites - sites_with_backup_in_interval
 		try:
 			success_rate = (len(sites_with_backup_in_interval) / len(all_sites)) * 100
 		except ZeroDivisionError:
