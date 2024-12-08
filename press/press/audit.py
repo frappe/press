@@ -225,7 +225,7 @@ class BackupRecordCheck(Audit):
 				for t in frappe.qb.from_(site_activites)
 				.select(site_activites.site)
 				.where(site_activites.action == "Activate Site")
-				.where(fn.Date(site_activites.creation) == self.yesterday)
+				.where(fn.Date(site_activites.creation) <= self.yesterday)
 				.run()
 			]
 		)
