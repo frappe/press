@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 
 import frappe
 from frappe.utils import rounded
@@ -23,6 +24,8 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
+	audit_type = None
+
 	def log(
 		self, log: dict, status: str, telegram_group: str | None = None, telegram_topic: str | None = None
 	):
@@ -38,7 +41,7 @@ class Audit:
 		).insert()
 
 
-def get_benches_in_server(server: str) -> list[dict]:
+def get_benches_in_server(server: str) -> dict:
 	agent = Agent(server)
 	return agent.get("/benches")
 
@@ -47,11 +50,11 @@ class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
 	audit_type = "Bench Field Check"
-	server_map = {}
-	press_map = {}
 
 	def __init__(self):
 		log = {}
+		self.server_map = {}
+		self.press_map = {}
 		status = "Success"
 
 		self.generate_server_map()
@@ -95,7 +98,7 @@ class BenchFieldCheck(Audit):
 
 	def get_sites_only_on_press(self):
 		sites = []
-		for site, _bench in self.press_map.items():
+		for site, _ in self.press_map.items():
 			if site not in self.server_map:
 				sites.append(site)
 		return sites
@@ -170,17 +173,17 @@ class BackupRecordCheck(Audit):
 	"""Check if latest automated backup records for sites are created."""
 
 	audit_type = "Backup Record Check"
-	interval = 24  # At least 1 automated backup a day
-	list_key = f"Sites with no backup in {interval} hrs"
+	list_key = "Sites with no backup yesterday"
 	backup_summary = "Backup Summary"
 
 	def __init__(self):
 		log = {self.list_key: [], self.backup_summary: {}}
-		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-self.interval)
+		yesterday = frappe.utils.today() - timedelta(days=1)
 		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
 		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
-		tuples = frappe.db.sql(
-			f"""
+		sites_with_backup_in_interval = set(
+			frappe.db.sql_list(
+				f"""
 				SELECT
 					site.name
 				FROM
@@ -192,15 +195,16 @@ class BackupRecordCheck(Audit):
 				WHERE
 					site.status = "Active" and
 					site_backup.owner = "Administrator" and
-					site_backup.creation >= "{interval_hrs_ago}
-					{cond_filters}"
+					DATE(site_backup.creation) == "{yesterday}"
+					{cond_filters}
 			"""
+			)
 		)
-		sites_with_backup_in_interval = set([t[0] for t in tuples])
 		filters = {
 			"status": "Active",
-			"creation": ("<=", interval_hrs_ago),
+			"creation": ("<=", datetime.combine(yesterday, datetime.min.time())),
 			"is_standby": False,
+			"skip_scheduled_backups": False,
 		}
 		if trial_plans:
 			filters.update({"plan": ("not in", trial_plans)})
