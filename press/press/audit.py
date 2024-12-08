@@ -177,7 +177,7 @@ class BackupRecordCheck(Audit):
 	backup_summary = "Backup Summary"
 
 	def get_sites_with_backup_in_interval(self, trial_plans: tuple[str]):
-		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
+		cond_filters = f" AND site.plan NOT IN {trial_plans}" if trial_plans else ""
 		return set(
 			frappe.db.sql_list(
 				f"""
