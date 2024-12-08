@@ -10,6 +10,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.telegram_utils import Telegram
 
@@ -61,6 +62,15 @@ class TestBackupRecordCheck(FrappeTestCase):
 		# no backup
 		BackupRecordCheck()
 
+		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
+		self.assertEqual(audit_log.status, "Success")
+
+	def test_sites_that_were_recently_activated_are_ignored(self):
+		create_test_press_settings()
+		site = create_test_site(creation=self._2_hrs_before_yesterday)
+		act = log_site_activity(site.name, "Activate Site")
+		act.db_set("creation", self._2_hrs_before_yesterday + timedelta(hours=24))
+		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 

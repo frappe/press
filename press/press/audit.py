@@ -215,6 +215,21 @@ class BackupRecordCheck(Audit):
 			)
 		)
 
+	def get_sites_activated_yesterday(self):
+		from pypika import functions as fn
+
+		site_activites = frappe.qb.DocType("Site Activity")
+		return set(
+			[
+				t[0]
+				for t in frappe.qb.from_(site_activites)
+				.select(site_activites.site)
+				.where(site_activites.action == "Activate Site")
+				.where(fn.Date(site_activites.creation) == self.yesterday)
+				.run()
+			]
+		)
+
 	def __init__(self):
 		log = {self.list_key: [], self.backup_summary: {}}
 		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
@@ -222,7 +237,9 @@ class BackupRecordCheck(Audit):
 		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
 		sites_with_backup_in_interval = self.get_sites_with_backup_in_interval(trial_plans)
 		all_sites = self.get_all_sites(trial_plans)
-		sites_without_backups = all_sites - sites_with_backup_in_interval
+		sites_without_backups = (
+			all_sites - sites_with_backup_in_interval - self.get_sites_activated_yesterday()
+		)
 		try:
 			success_rate = (len(sites_with_backup_in_interval) / len(all_sites)) * 100
 		except ZeroDivisionError:
