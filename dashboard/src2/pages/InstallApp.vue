@@ -111,18 +111,18 @@
 									.{{ options.domain }}
 								</div>
 							</div>
-							<div
-								v-if="$resources.subdomainExists.loading"
-								class="text-base text-gray-600"
-							>
-								Checking...
-							</div>
 						</div>
 
 						<div class="mt-1">
 							<ErrorMessage :message="$resources.subdomainExists.error" />
+							<div
+								v-if="$resources.subdomainExists.loading"
+								class="text-sm text-gray-600"
+							>
+								Checking...
+							</div>
 							<template
-								v-if="
+								v-else-if="
 									!$resources.subdomainExists.error &&
 									$resources.subdomainExists.data != null
 								"
