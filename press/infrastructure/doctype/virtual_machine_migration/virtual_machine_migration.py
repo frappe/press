@@ -131,8 +131,10 @@ class VirtualMachineMigration(Document):
 		server_type = self.machine.get_server().doctype
 		if server_type == "Server":
 			target_mount_point = "/opt/volumes/benches"
+			service = "docker"
 		elif server_type == "Database Server":
 			target_mount_point = "/opt/volumes/mariadb"
+			service = "mariadb"
 		else:
 			# Data volumes are only supported for Server and Database Server
 			return
@@ -143,6 +145,7 @@ class VirtualMachineMigration(Document):
 				"uuid": device["uuid"],
 				"source_mount_point": device["mountpoint"],
 				"target_mount_point": target_mount_point,
+				"service": service,
 			},
 		)
 		self.save()
@@ -431,9 +434,11 @@ class VirtualMachineMigration(Document):
 			escaped_mount_point = mount.target_mount_point.replace("/", "\\/")
 			# Reference: https://stackoverflow.com/questions/16637799/sed-error-invalid-reference-1-on-s-commands-rhs#comment88576787_16637847
 			commands = [
-				f"mount --uuid {mount.uuid} {mount.target_mount_point}",
 				f"sed -Ei 's/^UUID\\=.*\\s({escaped_mount_point}\\s.*$)/UUID\\={mount.uuid} \\1/g' /etc/fstab",
+				"systemctl daemon-reload",
 			]
+			if mount.service:
+				commands.append(f"systemctl start {mount.service}")
 			for command in commands:
 				result = self.ansible_run(command)
 				if result["status"] != "Success":

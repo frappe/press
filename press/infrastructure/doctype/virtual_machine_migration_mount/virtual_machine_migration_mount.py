@@ -19,6 +19,7 @@ class VirtualMachineMigrationMount(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		service: DF.Data | None
 		source_mount_point: DF.Data | None
 		target_mount_point: DF.Data | None
 		uuid: DF.Data | None

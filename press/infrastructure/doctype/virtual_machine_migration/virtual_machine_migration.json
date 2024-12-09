@@ -131,6 +131,7 @@
   {
    "fieldname": "parsed_devices",
    "fieldtype": "Code",
+   "hidden": 1,
    "label": "Parsed Devices",
    "options": "JSON",
    "read_only": 1
@@ -151,7 +152,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-28 13:35:50.846550",
+ "modified": "2024-12-09 16:31:29.250443",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration",

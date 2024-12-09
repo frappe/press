@@ -8,7 +8,8 @@
  "field_order": [
   "source_mount_point",
   "target_mount_point",
-  "uuid"
+  "uuid",
+  "service"
  ],
  "fields": [
   {
@@ -19,7 +20,7 @@
    "label": "Source Mount Point"
   },
   {
-   "columns": 4,
+   "columns": 3,
    "fieldname": "target_mount_point",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -31,12 +32,19 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "UUID"
+  },
+  {
+   "columns": 1,
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Service"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-26 20:59:56.757231",
+ "modified": "2024-12-09 16:32:43.323509",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration Mount",
