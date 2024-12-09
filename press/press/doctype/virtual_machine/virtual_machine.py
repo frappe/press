@@ -630,7 +630,7 @@ class VirtualMachine(Document):
 				if not existing_volume:
 					self.append("volumes", row)
 
-			self.disk_size = self.volumes[0].size if self.volumes else self.disk_size
+			self.disk_size = self._get_root_volume_size()
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in attached_volumes:
@@ -647,6 +647,14 @@ class VirtualMachine(Document):
 			self.status = "Terminated"
 		self.save()
 		self.update_servers()
+
+	def _get_root_volume_size(self):
+		if self.volumes:
+			volume = find(self.volumes, lambda v: v.device == "/dev/sda1")
+			if volume:
+				return volume.size
+			return self.volumes[0].size
+		return self.disk_size
 
 	def update_servers(self):
 		status_map = {
