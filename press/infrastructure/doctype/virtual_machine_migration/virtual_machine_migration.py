@@ -389,7 +389,7 @@ class VirtualMachineMigration(Document):
 
 		plays = frappe.get_all(
 			"Ansible Play",
-			{"server": server.name, "play": "Ping Server"},
+			{"server": server.name, "play": "Ping Server", "creation": (">", self.creation)},
 			["status"],
 			order_by="creation desc",
 			limit=1,
@@ -409,7 +409,11 @@ class VirtualMachineMigration(Document):
 		server = self.machine.get_server()
 		plays = frappe.get_all(
 			"Ansible Play",
-			{"server": server.name, "play": "Wait for Cloud Init to finish"},
+			{
+				"server": server.name,
+				"play": "Wait for Cloud Init to finish",
+				"creation": (">", self.creation),
+			},
 			["status"],
 			order_by="creation desc",
 			limit=1,
