@@ -7,7 +7,8 @@ export function bytes(bytes, decimals = 2, current = 0) {
 	const k = 1024;
 	const dm = decimals < 0 ? 0 : decimals;
 	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-	const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+	let i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+	if (i < 0) i++;
 
 	return (
 		parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i + current]
@@ -36,6 +37,9 @@ export function duration(value) {
 }
 
 export function plural(number, singular, plural) {
+	if (typeof number === 'string') {
+		number = parseInt(number);
+	}
 	if (number === 1) {
 		return singular;
 	}
@@ -49,7 +53,7 @@ export function planTitle(plan) {
 	const priceField = india ? 'price_inr' : 'price_usd';
 	const price =
 		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
-	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
+	return price > 0 ? `${userCurrency(price, 0)}` : plan.plan_title;
 }
 
 export function userCurrency(value, fractions = 2) {

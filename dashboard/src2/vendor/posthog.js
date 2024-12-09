@@ -12,8 +12,11 @@
 					});
 			}
 			((p = t.createElement('script')).type = 'text/javascript'),
+				(p.crossOrigin = 'anonymous'),
 				(p.async = !0),
-				(p.src = s.api_host + '/static/array.js'),
+				(p.src =
+					s.api_host.replace('.i.posthog.com', '-assets.i.posthog.com') +
+					'/static/array.js'),
 				(r = t.getElementsByTagName('script')[0]).parentNode.insertBefore(p, r);
 			var u = e;
 			for (
@@ -27,7 +30,7 @@
 						return u.toString(1) + '.people (stub)';
 					},
 					o =
-						'capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId'.split(
+						'init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug'.split(
 							' '
 						),
 					n = 0;

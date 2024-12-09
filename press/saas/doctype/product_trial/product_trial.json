@@ -36,8 +36,9 @@
   "email_header_content",
   "setup_wizard_tab",
   "setup_wizard_completion_mode",
+  "setup_wizard_payload_generator_script",
   "create_additional_system_user",
-  "setup_wizard_payload_generator_script"
+  "redirect_to_after_login"
  ],
  "fields": [
   {
@@ -217,6 +218,13 @@
    "fieldname": "create_additional_system_user",
    "fieldtype": "Check",
    "label": "Create Additional System User"
+  },
+  {
+   "default": "/desk",
+   "fieldname": "redirect_to_after_login",
+   "fieldtype": "Data",
+   "label": "Redirect To After Login",
+   "reqd": 1
   }
  ],
  "image_field": "logo",
@@ -231,7 +239,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-11-19 16:12:29.471858",
+ "modified": "2024-11-21 22:13:33.724250",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

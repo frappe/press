@@ -51,7 +51,7 @@
 							:loading="$resources.resendOTP?.loading"
 							@click="$resources.resendOTP.submit()"
 						>
-							Email didn't arrive? Resend
+							Didn't get email? Resend
 						</Button>
 					</form>
 				</template>

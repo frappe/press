@@ -189,7 +189,7 @@
 				title="Slow logs frequency"
 			>
 				<BarChart
-					title="Slow logs frequency"
+					title="Frequent Slow queries"
 					:key="slowLogsCountData"
 					:data="slowLogsCountData"
 					unit="queries"
@@ -204,16 +204,52 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slowest logs"
+				title="Frequent Slow queries (normalized)"
 			>
 				<BarChart
-					title="Slowest logs"
+					title="Frequent Slow queries (normalized)"
+					:key="normalizedSlowLogsCountData"
+					:data="normalizedSlowLogsCountData"
+					unit="queries"
+					:chartTheme="chartColors"
+					:loading="$resources.normalizedSlowLogsCount.loading"
+					:error="$resources.normalizedSlowLogsCount.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="!isServerType('Application Server')"
+				class="sm:col-span-2"
+				title="Slowest queries"
+			>
+				<BarChart
+					title="Slowest queries"
 					:key="slowLogsDurationData"
 					:data="slowLogsDurationData"
 					unit="seconds"
 					:chartTheme="chartColors"
 					:loading="$resources.slowLogsDuration.loading"
 					:error="$resources.slowLogsDuration.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				v-if="!isServerType('Application Server')"
+				class="sm:col-span-2"
+				title="Slowest queries (normalized)"
+			>
+				<BarChart
+					title="Slowest queries (normalized)"
+					:key="normalizedSlowLogsDurationData"
+					:data="normalizedSlowLogsDurationData"
+					unit="seconds"
+					:chartTheme="chartColors"
+					:loading="$resources.normalizedSlowLogsDuration.loading"
+					:error="$resources.normalizedSlowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -378,6 +414,20 @@ export default {
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
 			};
 		},
+		normalizedSlowLogsCount() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'count',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: true
+				},
+				auto:
+					this.showAdvancedAnalytics && !this.isServerType('Application Server')
+			};
+		},
 		slowLogsDuration() {
 			return {
 				url: 'press.api.server.get_slow_logs_by_site',
@@ -386,6 +436,20 @@ export default {
 					query: 'duration',
 					timezone: this.localTimezone,
 					duration: this.duration
+				},
+				auto:
+					this.showAdvancedAnalytics && !this.isServerType('Application Server')
+			};
+		},
+		normalizedSlowLogsDuration() {
+			return {
+				url: 'press.api.server.get_slow_logs_by_site',
+				params: {
+					name: this.chosenServer,
+					query: 'duration',
+					timezone: this.localTimezone,
+					duration: this.duration,
+					normalize: true
 				},
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
@@ -472,6 +536,18 @@ export default {
 		},
 		slowLogsCountData() {
 			const slowLogs = this.$resources.slowLogsCount.data;
+			if (!slowLogs) return;
+
+			return slowLogs;
+		},
+		normalizedSlowLogsDurationData() {
+			const slowLogs = this.$resources.normalizedSlowLogsDuration.data;
+			if (!slowLogs) return;
+
+			return slowLogs;
+		},
+		normalizedSlowLogsCountData() {
+			const slowLogs = this.$resources.normalizedSlowLogsCount.data;
 			if (!slowLogs) return;
 
 			return slowLogs;

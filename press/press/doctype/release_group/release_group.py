@@ -415,7 +415,10 @@ class ReleaseGroup(Document, TagHelpers):
 			},
 			limit=1,
 		):
-			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
+			frappe.throw(
+				f"Bench Group of name {self.title} already exists. Please try another name.",
+				frappe.ValidationError,
+			)
 
 	def validate_frappe_app(self):
 		if self.apps[0].app != "frappe":

@@ -72,7 +72,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
 				true,
-				frm.doc.status === 'Running',
+				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

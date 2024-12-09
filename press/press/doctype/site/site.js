@@ -109,27 +109,7 @@ frappe.ui.form.on('Site', {
 			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Optimize Tables'), 'optimize_tables'],
 			[__('Update Site Config'), 'update_site_config'],
-			[
-				__('Enable Database Access'),
-				'enable_database_access',
-				!frm.doc.is_database_access_enabled,
-			],
-			[
-				__('Disable Database Access'),
-				'disable_database_access',
-				frm.doc.is_database_access_enabled,
-			],
 			[__('Create DNS Record'), 'create_dns_record'],
-			[
-				__('Enable Database Write Access'),
-				'enable_read_write',
-				frm.doc.database_access_mode == 'read_only',
-			],
-			[
-				__('Disable Database Write Access'),
-				'disable_read_write',
-				frm.doc.database_access_mode == 'read_write',
-			],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 			[__('Retry Rename'), 'retry_rename'],
 			[
@@ -204,29 +184,6 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
-
-		if (frm.doc.is_database_access_enabled) {
-			frm.add_custom_button(
-				__('Show Database Credentials'),
-				() =>
-					frm.call('get_database_credentials').then((r) => {
-						let message = `Host: ${r.message.host}
-
-Port: ${r.message.port}
-
-Database: ${r.message.database}
-
-Username: ${r.message.username}
-
-Password: ${r.message.password}
-
-\`\`\`\nmysql -u ${r.message.username} -p${r.message.password} -h ${r.message.host} -P ${r.message.port} --ssl --ssl-verify-server-cert\n\`\`\``;
-
-						frappe.msgprint(frappe.markdown(message), 'Database Credentials');
-					}),
-				__('Actions'),
-			);
-		}
 
 		frm.add_custom_button(
 			__('Replicate Site'),

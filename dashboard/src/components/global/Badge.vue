@@ -29,6 +29,7 @@ export default {
 				Running: 'blue',
 				Pending: 'orange',
 				Failure: 'red',
+				Failed: 'red',
 				'Update Available': 'blue',
 				Enabled: 'blue',
 				'Awaiting Approval': 'orange',

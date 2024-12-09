@@ -30,6 +30,7 @@ class StripeWebhookLog(Document):
 		invoice: DF.Link | None
 		invoice_id: DF.Data | None
 		payload: DF.Code | None
+		stripe_payment_intent_id: DF.Data | None
 		stripe_payment_method: DF.Link | None
 		team: DF.Link | None
 	# end: auto-generated types
@@ -40,6 +41,11 @@ class StripeWebhookLog(Document):
 		self.event_type = payload.get("type")
 		customer_id = get_customer_id(payload)
 		invoice_id = get_invoice_id(payload)
+		self.stripe_payment_intent_id = ""
+
+		if self.event_type in ["payment_intent.succeeded", "payment_intent.failed", "payment_intent.requires_action"]:
+			self.stripe_payment_intent_id = get_intent_id(payload)
+
 		if customer_id:
 			self.customer_id = customer_id
 			self.team = frappe.db.get_value("Team", {"stripe_customer_id": customer_id}, "name")
@@ -61,7 +67,11 @@ class StripeWebhookLog(Document):
 					"name",
 				)
 
-		if self.event_type == "invoice.payment_failed" and self.invoice:
+		if (
+			self.event_type == "invoice.payment_failed"
+			and self.invoice
+			and payload.get("data", {}).get("object", {}).get("next_payment_attempt")
+		):
 			next_payment_attempt_date = datetime.fromtimestamp(
 				payload.get("data", {}).get("object", {}).get("next_payment_attempt")
 			).strftime("%Y-%m-%d")
@@ -93,6 +103,17 @@ def stripe_webhook_handler():
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
 		frappe.set_user(current_user)
 		raise
+
+
+def get_intent_id(form_dict):
+	try:
+		form_dict_str = frappe.as_json(form_dict)
+		intent_id = re.findall(r"pi_\w+", form_dict_str)
+		if intent_id:
+			return intent_id[1]
+		return None
+	except Exception:
+		frappe.log_error(title="Failed to capture intent id from stripe webhook log")
 
 
 def get_customer_id(form_dict):

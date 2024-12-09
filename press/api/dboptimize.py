@@ -1,28 +1,26 @@
 import json
 
 import frappe
-from press.utils import log_error
 
 from press.api.site import protected
-
-from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
-	OptimizeDatabaseQuery,
-	_fetch_column_stats,
-	_fetch_table_stats,
-)
 from press.press.report.mariadb_slow_queries.db_optimizer import (
 	ColumnStat,
 	DBExplain,
 	DBOptimizer,
 	DBTable,
 )
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	OptimizeDatabaseQuery,
+	_fetch_column_stats,
+	_fetch_table_stats,
+)
+from press.utils import log_error
 
 
 @frappe.whitelist()
 @protected("Site")
 def mariadb_analyze_query(name, row):
-	suggested_index = analyze_query(row=row, site=name)
-	return suggested_index
+	return analyze_query(row=row, site=name)
 
 
 def analyze_query(row, site):
@@ -43,11 +41,11 @@ def analyze_query(row, site):
 
 	if not query.lower().startswith(("select", "update", "delete")):
 		doc.status = "Failure"
-		doc.save()
+		doc.save(ignore_permissions=True)
 		frappe.db.commit()
-		return
+		return None
 
-	doc.save()
+	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
 	analyzer = OptimizeDatabaseQuery(site, query)
@@ -63,22 +61,19 @@ def analyze_query(row, site):
 		if not stats:
 			# Old framework version
 			doc.status = "Failure"
-			doc.save()
+			doc.save(ignore_permissions=True)
 			frappe.db.commit()
-			return
+			return None
 
 		# This is an agent job. Remaining is processed in the callback.
 		_fetch_column_stats(analyzer.site, table, doc.get_title())
 
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.status
 
 
-def check_if_all_fetch_column_stats_was_sucessful(doc):
-	for item in doc.tables_in_query:
-		if not item.status == "Success":
-			return False
-	return True
+def check_if_all_fetch_column_stats_was_successful(doc):
+	return all(item.status == "Success" for item in doc.tables_in_query)
 
 
 def fetch_column_stats_update(job, response_data):
@@ -95,11 +90,11 @@ def fetch_column_stats_update(job, response_data):
 				item.status = "Success"
 				doc.save()
 				frappe.db.commit()
-		if check_if_all_fetch_column_stats_was_sucessful(doc):
+		if check_if_all_fetch_column_stats_was_successful(doc):
 			doc.status = "Success"
 			doc.save()
 			frappe.db.commit()
-			# Perisists within doctype
+			# Persists within doctype
 			save_suggested_index(doc)
 	elif job.status == "Failure":
 		doc = frappe.get_doc("MariaDB Analyze Query", doc_name)
@@ -144,8 +139,7 @@ def get_status_of_mariadb_analyze_query(name, query):
 	)
 	if doc:
 		return doc[0]
-	else:
-		return None
+	return None
 
 
 def mariadb_analyze_query_already_exists(site, normalized_query):
@@ -165,13 +159,12 @@ def mariadb_analyze_query_already_running_for_site(name):
 @frappe.whitelist()
 @protected("Site")
 def get_suggested_index(name, normalized_query):
-	suggested_index = frappe.get_value(
+	return frappe.get_value(
 		"MariaDB Analyze Query",
 		{"site": name, "status": "Success", "normalized_query": normalized_query},
 		["site", "normalized_query", "suggested_index"],
 		as_dict=True,
 	)
-	return suggested_index
 
 
 def delete_all_occurences_of_mariadb_analyze_query(job):
@@ -180,4 +173,4 @@ def delete_all_occurences_of_mariadb_analyze_query(job):
 			frappe.db.delete("MariaDB Analyze Query", {"site": job.site})
 			frappe.db.commit()
 	except Exception as e:
-		log_error("Deleting all occurences of MariaDB Analyze Query Failed", data=e)
+		log_error("Deleting all occurrences of MariaDB Analyze Query Failed", data=e)

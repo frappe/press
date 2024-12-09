@@ -8,6 +8,8 @@
 					{
 						label: 'Change Team',
 						icon: 'command',
+						condition: () =>
+							$team?.doc?.valid_teams?.length > 1 || $team?.doc?.is_desk_user,
 						onClick: () => (showTeamSwitcher = true)
 					},
 					{

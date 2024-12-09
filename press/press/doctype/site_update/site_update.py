@@ -19,6 +19,7 @@ from press.api.client import dashboard_whitelist
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site.site import Site
 
 
@@ -265,7 +266,7 @@ class SiteUpdate(Document):
 
 		THRESHOLD = 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 
-		workload_diff_high = cpu > THRESHOLD
+		workload_diff_high = cpu >= THRESHOLD
 
 		if not workload_diff_high:
 			source_bench = frappe.get_doc("Bench", self.source_bench)
@@ -507,7 +508,7 @@ def is_site_in_deploy_hours(site):
 	return False
 
 
-def process_update_site_job_update(job):  # noqa: C901
+def process_update_site_job_update(job: AgentJob):  # noqa: C901
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
@@ -545,6 +546,12 @@ def process_update_site_job_update(job):  # noqa: C901
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+			frappe.db.set_value(
+				"Site Update",
+				site_update.name,
+				"cause_of_failure_is_resolved",
+				job.failed_because_of_agent_update,
+			)
 			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
 				trigger_recovery_job(site_update.name)
 			else:

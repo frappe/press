@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -135,12 +136,9 @@ class BenchUpdate(Document):
 						limit=1,
 					):
 						continue
-					current_user = frappe.session.user
-					frappe.set_user(self.owner)
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)
-					frappe.set_user(current_user)
 					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
 				except Exception:
@@ -164,10 +162,10 @@ def get_bench_update(
 	if sites is None:
 		sites = []
 
-	team = get_current_team(True)
+	current_team = get_current_team()
 	rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != team.name:
+	if rg_team != current_team:
 		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(

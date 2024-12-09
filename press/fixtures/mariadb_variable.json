@@ -138,9 +138,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-09-22 08:38:16.807229",
+  "modified": "2024-11-22 12:51:29.101315",
   "name": "tmp_disk_table_size",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -150,9 +150,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2024-03-05 12:55:47.689706",
+  "modified": "2024-11-22 12:52:00.473677",
   "name": "extra_max_connections",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -162,9 +162,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 0,
-  "modified": "2024-03-05 12:55:54.950776",
+  "modified": "2024-11-22 12:52:35.958089",
   "name": "extra_port",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -174,9 +174,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2024-07-29 13:26:57.153685",
+  "modified": "2024-11-22 12:50:54.084797",
   "name": "max_connections",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -270,9 +270,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-09-22 14:02:04.157025",
+  "modified": "2024-11-22 12:50:46.547631",
   "name": "innodb_old_blocks_time",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -282,9 +282,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-09-22 08:38:25.704420",
+  "modified": "2024-11-22 12:51:34.994866",
   "name": "max_allowed_packet",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -294,19 +294,19 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2024-03-28 15:23:30.635417",
+  "modified": "2024-11-22 12:50:58.514076",
   "name": "max_statement_time",
-  "set_on_new_servers": 1,
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
   "datatype": "Str",
-  "default_value": null,
+  "default_value": "ON",
   "doc_section": "innodb",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2024-07-03 07:13:23.014958",
+  "modified": "2024-12-04 16:30:16.720727",
   "name": "innodb_print_all_deadlocks",
   "set_on_new_servers": 0,
   "skippable": 0
@@ -368,6 +368,18 @@
   "dynamic": 1,
   "modified": "2024-10-21 13:03:05.958798",
   "name": "net_write_timeout",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "FORCE",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2024-11-22 12:31:31.593757",
+  "name": "myisam_recover_options",
   "set_on_new_servers": 0,
   "skippable": 0
  }

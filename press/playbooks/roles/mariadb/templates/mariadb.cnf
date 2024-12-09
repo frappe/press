@@ -5,10 +5,9 @@ default-storage-engine          = InnoDB
 
 # MyISAM #
 key-buffer-size                 = 32M
-myisam-recover                  = FORCE,BACKUP
+myisam-recover-options          = FORCE
 
 # SAFETY #
-max-allowed-packet              = 256M
 max-connect-errors              = 1000000
 innodb                          = FORCE
 
@@ -29,13 +28,15 @@ tmp-table-size                  = 32M
 max-heap-table-size             = 32M
 query-cache-type                = 0
 query-cache-size                = 0
-max-connections                 = 500
+max-connections                 = 200
 thread-cache-size               = 50
 open-files-limit                = 65535
 table-definition-cache          = 4096
 table-open-cache                = 10240
 tmp-disk-table-size             = 5120M
-max-statement-time              = 10800
+max-statement-time              = 3600
+extra_port                      = 3307
+extra_max_connections           = 5
 
 # INNODB #
 innodb-flush-method             = O_DIRECT
@@ -47,6 +48,7 @@ innodb-buffer-pool-size         = {{ (ansible_memtotal_mb * 0.6)|round|int }}M
 innodb-file-format              = barracuda
 innodb-large-prefix             = 1
 innodb-old-blocks-time          = 5000
+innodb_print_all_deadlocks      = on
 collation-server                = utf8mb4_unicode_ci
 character-set-server            = utf8mb4
 character-set-client-handshake  = FALSE

@@ -39,6 +39,7 @@ class ProductTrial(Document):
 		enable_pooling: DF.Check
 		logo: DF.AttachImage | None
 		published: DF.Check
+		redirect_to_after_login: DF.Data
 		release_group: DF.Link
 		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
 		setup_wizard_payload_generator_script: DF.Code | None
@@ -56,6 +57,7 @@ class ProductTrial(Document):
 		"domain",
 		"trial_days",
 		"trial_plan",
+		"redirect_to_after_login",
 	)
 
 	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
@@ -99,6 +101,9 @@ class ProductTrial(Document):
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
 				if field.fieldtype != "Password":
 					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
+
+		if not self.redirect_to_after_login.startswith("/"):
+			frappe.throw("Redirection route after login should start with /")
 
 	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
@@ -345,15 +350,11 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		print(f"Code : {code}")
 		print()
 		return
-	product_trial = frappe.get_doc("Product Trial", product)
+	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
 	sender = ""
-	subject = (
-		product_trial.email_subject.format(otp=code)
-		if product_trial.email_subject
-		else "Verify your email for Frappe"
-	)
+	subject = f"{code} - Verification Code for {product_trial.title} Login"
 	args = {
-		"header_content": product_trial.email_header_content or "",
+		"header_content": f"<p>You have requested a verification code to login to your {product_trial.title} site. The code is valid for 5 minutes.</p>",
 		"otp": code,
 	}
 	if product_trial.email_full_logo:
@@ -365,7 +366,7 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		sender=sender,
 		recipients=email,
 		subject=subject,
-		template="saas_verify_account",
+		template="product_trial_verify_account",
 		args=args,
 		now=True,
 	)

@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
-
-from typing import List
+from __future__ import annotations
 
 import frappe
 
@@ -53,7 +52,7 @@ class SitePlan(Plan):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"plan_title",
 		"document_type",
@@ -68,7 +67,8 @@ class SitePlan(Plan):
 		"support_included",
 		"private_benches",
 		"monitor_access",
-	]
+		"is_trial_plan",
+	)
 
 	def get_doc(self, doc):
 		doc["price_per_day_inr"] = self.get_price_per_day("INR")
@@ -76,7 +76,7 @@ class SitePlan(Plan):
 		return doc
 
 	@classmethod
-	def get_ones_without_offsite_backups(cls) -> List[str]:
+	def get_ones_without_offsite_backups(cls) -> list[str]:
 		return frappe.get_all("Site Plan", filters={"offsite_backups": False}, pluck="name")
 
 

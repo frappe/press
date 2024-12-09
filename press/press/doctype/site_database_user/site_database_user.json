@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-31 16:54:56.752608",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "label",
+  "mode",
+  "site",
+  "team",
+  "column_break_udtx",
+  "max_connections",
+  "username",
+  "password",
+  "user_created_in_database",
+  "user_added_in_proxysql",
+  "section_break_cpbg",
+  "permissions",
+  "section_break_ubkn",
+  "column_break_rczb",
+  "failed_agent_job",
+  "failure_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mode",
+   "options": "read_only\nread_write\ngranular",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_udtx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "username",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Username",
+   "not_nullable": 1,
+   "read_only": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password",
+   "not_nullable": 1,
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_cpbg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.mode == \"granular\"",
+   "fieldname": "permissions",
+   "fieldtype": "Table",
+   "label": "Permissions",
+   "options": "Site Database Table Permission"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nActive\nFailed\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "user_added_in_proxysql",
+   "fieldtype": "Check",
+   "label": "User Added in ProxySQL",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "user_created_in_database",
+   "fieldtype": "Check",
+   "label": "User Created in Database",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.status === \"Failed\"",
+   "fieldname": "section_break_ubkn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.status === \"Failed\"",
+   "fieldname": "column_break_rczb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "failed_agent_job",
+   "fieldtype": "Link",
+   "label": "Failed Agent Job",
+   "options": "Agent Job"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason",
+   "not_nullable": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "16",
+   "fieldname": "max_connections",
+   "fieldtype": "Int",
+   "label": "Max Connections",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Related Documents",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2024-11-29 16:29:57.632579",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Database User",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

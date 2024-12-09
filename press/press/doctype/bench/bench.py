@@ -518,6 +518,9 @@ class Bench(Document):
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.name}/logs/{log}")
 
+	def get_server_log_for_log_browser(self, log):
+		return Agent(self.server).get(f"benches/{self.name}/logs_v2/{log}")
+
 	@frappe.whitelist()
 	def move_sites(self, server: str):
 		try:
@@ -1103,8 +1106,10 @@ def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 		# Bench is Broken but a reset to a working state is being attempted
 		if (
 			bench.resetting_bench
-			or bench.last_archive_failure
-			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
+			or (
+				bench.last_archive_failure
+				and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
+			)
 			or get_archive_jobs(bench.name)  # already being archived
 			or get_ongoing_jobs(bench.name)
 			or get_active_site_updates(bench.name)

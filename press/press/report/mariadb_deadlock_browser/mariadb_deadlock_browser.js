@@ -24,10 +24,10 @@ frappe.query_reports['MariaDB Deadlock Browser'] = {
 			reqd: 1,
 		},
 		{
-			fieldname: 'max_lines',
-			label: __('Max Lines'),
+			fieldname: 'max_log_size',
+			label: __('Max Log Size'),
 			fieldtype: 'Int',
-			default: 4000,
+			default: 500,
 		},
 	],
 };

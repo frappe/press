@@ -70,7 +70,7 @@
 							>
 								<div class="flex flex-row items-center gap-1">
 									<GoogleIconSolid class="w-4" />
-									Login with google
+									Login with Google
 								</div>
 							</Button>
 						</div>
@@ -92,7 +92,7 @@
 								type="button"
 								@click="$resources.sendVerificationCodeForLogin.submit()"
 							>
-								Didn't receive email? Resend
+								Didn't get email? Resend
 							</Button>
 						</div>
 					</form>

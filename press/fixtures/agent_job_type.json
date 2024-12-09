@@ -1831,6 +1831,12 @@
     "parent": "Restore Site",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
+    "step_name": "Checksum of Downloaded Backup Files"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
     "step_name": "Delete Downloaded Backup Files"
    },
    {
@@ -2198,6 +2204,60 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Fetch Database Table Schema"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 1,
+  "modified": "2024-11-04 14:49:18.592247",
+  "name": "Create Database User",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/database/users",
+  "steps": [
+   {
+    "parent": "Create Database User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create Database User"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 1,
+  "modified": "2024-11-04 14:49:18.592247",
+  "name": "Remove Database User",
+  "request_method": "DELETE",
+  "request_path": "/benches/{bench}/sites/{site}/database/users/{username}",
+  "steps": [
+   {
+    "parent": "Remove Database User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Database User"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 1,
+  "modified": "2024-11-04 14:49:18.592247",
+  "name": "Modify Database User Permissions",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/database/users/{db_user}/permissions",
+  "steps": [
+   {
+    "parent": "Modify Database User Permissions",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Modify Database User Permissions"
    }
   ]
  }

@@ -13,7 +13,7 @@ import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
 
-from press.utils import log_error, sanitize_config
+from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
 if TYPE_CHECKING:
 	from io import BufferedReader
@@ -94,22 +94,6 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
-	def _get_mariadb_root_password(self, site):
-		database_server, managed_database_service = frappe.get_cached_value(
-			"Bench", site.bench, ["database_server", "managed_database_service"]
-		)
-
-		if database_server:
-			doctype = "Database Server"
-			name = database_server
-			field = "mariadb_root_password"
-		else:
-			doctype = "Managed Database Service"
-			name = managed_database_service
-			field = "root_user_password"
-
-		return get_decrypted_password(doctype, name, field)
-
 	def _get_managed_db_config(self, site):
 		managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
 
@@ -130,7 +114,7 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -144,7 +128,7 @@ class Agent:
 
 	def reinstall_site(self, site):
 		data = {
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -168,7 +152,7 @@ class Agent:
 
 		data = {
 			"apps": apps,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
@@ -273,7 +257,7 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
@@ -619,14 +603,32 @@ class Agent:
 			upstream=bench.server,
 		)
 
-	def add_proxysql_user(self, site, database, username, password, database_server):
+	def add_proxysql_user(
+		self,
+		site,
+		database: str,
+		username: str,
+		password: str,
+		max_connections: int,
+		database_server,
+		reference_doctype=None,
+		reference_name=None,
+	):
 		data = {
 			"username": username,
 			"password": password,
 			"database": database,
+			"max_connections": max_connections,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
-		return self.create_agent_job("Add User to ProxySQL", "proxysql/users", data, site=site.name)
+		return self.create_agent_job(
+			"Add User to ProxySQL",
+			"proxysql/users",
+			data,
+			site=site.name,
+			reference_name=reference_name,
+			reference_doctype=reference_doctype,
+		)
 
 	def add_proxysql_backend(self, database_server):
 		data = {
@@ -634,12 +636,14 @@ class Agent:
 		}
 		return self.create_agent_job("Add Backend to ProxySQL", "proxysql/backends", data)
 
-	def remove_proxysql_user(self, site, username):
+	def remove_proxysql_user(self, site, username, reference_doctype=None, reference_name=None):
 		return self.create_agent_job(
 			"Remove User from ProxySQL",
 			f"proxysql/users/{username}",
 			method="DELETE",
 			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
 		)
 
 	def create_database_access_credentials(self, site, mode):
@@ -661,6 +665,60 @@ class Agent:
 			),
 		}
 		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data)
+
+	def create_database_user(self, site, username, password, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"username": username,
+			"password": password,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Create Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users",
+			data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def remove_database_user(self, site, username, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			)
+		}
+		return self.create_agent_job(
+			"Remove Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}",
+			method="DELETE",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def modify_database_user_permissions(self, site, username, mode, permissions: dict, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mode": mode,
+			"permissions": permissions,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Modify Database User Permissions",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}/permissions",
+			method="POST",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
 
 	def update_site_status(self, server, site, status, skip_reload=False):
 		data = {"status": status, "skip_reload": skip_reload}

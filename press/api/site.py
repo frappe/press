@@ -1269,33 +1269,41 @@ def get_installed_apps(site, query_filters: dict | None = None):
 	bench = frappe.get_doc("Bench", site.bench)
 	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
 
-	filters = {"name": ("in", [d.source for d in installed_bench_apps])}
+	AppSource = frappe.qb.DocType("App Source")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+
+	query = (
+		frappe.qb.from_(AppSource)
+		.left_join(MarketplaceApp)
+		.on(AppSource.app == MarketplaceApp.app)
+		.select(
+			AppSource.name,
+			AppSource.app,
+			AppSource.repository,
+			AppSource.repository_url,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.team,
+			AppSource.public,
+			AppSource.app_title,
+			MarketplaceApp.title,
+		)
+		.where(AppSource.name.isin([d.source for d in installed_bench_apps]))
+	)
 
 	if owner := query_filters.get("repository_owner"):
-		filters["repository_owner"] = owner
+		query = query.where(AppSource.repository_owner == owner)
 
 	if branch := query_filters.get("branch"):
-		filters["branch"] = branch
+		query = query.where(AppSource.branch == branch)
 
-	sources = frappe.get_all(
-		"App Source",
-		fields=[
-			"name",
-			"app",
-			"repository",
-			"repository_url",
-			"repository_owner",
-			"branch",
-			"team",
-			"public",
-			"app_title as title",
-		],
-		filters=filters,
-	)
+	sources = query.run(as_dict=True)
 
 	installed_apps = []
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
+		if not app_source:
+			continue
 		app_source.hash = app.hash
 		app_source.commit_message = frappe.db.get_value("App Release", {"hash": app_source.hash}, "message")
 		app_tags = frappe.db.get_value(
@@ -1375,19 +1383,27 @@ def available_apps(name):
 	bench_sources = [app.source for app in bench.apps]
 
 	available_sources = []
-	sources = frappe.get_all(
-		"App Source",
-		fields=[
-			"name",
-			"app",
-			"repository_url",
-			"repository_owner",
-			"branch",
-			"team",
-			"public",
-			"app_title as title",
-		],
-		filters={"name": ("in", bench_sources)},
+
+	AppSource = frappe.qb.DocType("App Source")
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+
+	sources = (
+		frappe.qb.from_(AppSource)
+		.left_join(MarketplaceApp)
+		.on(AppSource.app == MarketplaceApp.app)
+		.select(
+			AppSource.name,
+			AppSource.app,
+			AppSource.repository_url,
+			AppSource.repository_owner,
+			AppSource.branch,
+			AppSource.team,
+			AppSource.public,
+			AppSource.app_title,
+			MarketplaceApp.title,
+		)
+		.where(AppSource.name.isin(bench_sources))
+		.run(as_dict=True)
 	)
 
 	for source in sources:
@@ -1943,27 +1959,6 @@ def update_auto_update_info(name, info=None):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
 	site_doc.update(info or {})
 	site_doc.save()
-
-
-@frappe.whitelist()
-@protected("Site")
-def get_database_access_info(name):
-	return frappe.get_doc("Site", name).get_database_access_info()
-
-
-@frappe.whitelist()
-@protected("Site")
-def enable_database_access(name, mode="read_only"):
-	site_doc = frappe.get_doc("Site", name)
-	return site_doc.enable_database_access(mode)
-
-
-@frappe.whitelist()
-@protected("Site")
-def disable_database_access(name):
-	site_doc = frappe.get_doc("Site", name)
-	disable_access_job = site_doc.disable_database_access()
-	return disable_access_job.name
 
 
 @frappe.whitelist()

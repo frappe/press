@@ -924,15 +924,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def reboot_with_serial_console(self):
-		if self.provider in ("AWS EC2",):
-			console = frappe.new_doc("Serial Console Log")
-			console.server_type = self.doctype
-			console.server = self.name
-			console.virtual_machine = self.virtual_machine
-			console.action = "reboot"
-			console.save()
-			console.reload()
-			console.run_sysrq()
+		if self.provider != "AWS EC2":
+			raise NotImplementedError
+		console = frappe.new_doc("Serial Console Log")
+		console.server_type = self.doctype
+		console.server = self.name
+		console.virtual_machine = self.virtual_machine
+		console.action = "reboot"
+		console.save()
+		console.reload()
+		console.run_sysrq()
 
 	@dashboard_whitelist()
 	def reboot(self):

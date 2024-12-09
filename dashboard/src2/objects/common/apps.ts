@@ -33,34 +33,37 @@ function getAppsTabList(forSite: boolean) {
 		filters: () => ({}),
 		...options,
 		columns: getAppsTabColumns(forSite),
-		searchField: 'title',
-		filterControls: r =>
-			[
-				{
-					type: 'select',
-					label: 'Branch',
-					class: !isMobile() ? 'w-24' : '',
-					fieldname: 'branch',
-					options: [
-						'',
-						...new Set(r.listResource.data?.map(i => String(i.branch)) || [])
-					]
-				},
-				{
-					type: 'select',
-					label: 'Owner',
-					class: !isMobile() ? 'w-24' : '',
-					fieldname: 'repository_owner',
-					options: [
-						'',
-						...new Set(
-							r.listResource.data?.map(
-								i => String(i.repository_url).split('/').at(-2) || ''
-							) || []
-						)
-					]
-				}
-			] satisfies FilterField[]
+		searchField: !forSite ? 'title' : undefined,
+		filterControls: r => {
+			if (forSite) return [];
+			else
+				return [
+					{
+						type: 'select',
+						label: 'Branch',
+						class: !isMobile() ? 'w-24' : '',
+						fieldname: 'branch',
+						options: [
+							'',
+							...new Set(r.listResource.data?.map(i => String(i.branch)) || [])
+						]
+					},
+					{
+						type: 'select',
+						label: 'Owner',
+						class: !isMobile() ? 'w-24' : '',
+						fieldname: 'repository_owner',
+						options: [
+							'',
+							...new Set(
+								r.listResource.data?.map(
+									i => String(i.repository_url).split('/').at(-2) || ''
+								) || []
+							)
+						]
+					}
+				] satisfies FilterField[];
+		}
 	};
 
 	return list;
@@ -85,7 +88,8 @@ function getAppsTabColumns(forSite: boolean) {
 					},
 					h(icon('hash', 'w-3 h-3'))
 				);
-			}
+			},
+			format: (value, row) => value || row.app_title
 		},
 		{
 			label: 'Plan',

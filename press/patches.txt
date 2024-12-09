@@ -132,3 +132,6 @@ press.marketplace.doctype.app_user_review.patches.add_rating_values_to_apps
 press.press.doctype.site.patches.set_status_wizard_check_next_retry_datetime_in_site
 press.patches.v0_7_0.update_enable_performance_tuning
 press.press.doctype.server.patches.set_plan_and_subscription
+press.patches.v0_7_0.move_site_db_access_users_to_site_db_perm_manager
+press.press.doctype.drip_email.patches.set_correct_field_for_html
+press.patches.v0_7_0.set_label_for_site_database_user

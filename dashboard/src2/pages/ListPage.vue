@@ -43,7 +43,6 @@
 				class="mb-5"
 				v-if="hasUnpaidInvoices > 0"
 				:amount="hasUnpaidInvoices"
-				:currency="$team?.doc?.currency === 'INR' ? '₹' : '$'"
 			/>
 			<ObjectList :options="listOptions" />
 		</div>
@@ -58,7 +57,6 @@ import { getObject } from '../objects';
 import { defineAsyncComponent } from 'vue';
 import dayjs from '../utils/dayjs';
 import AlertBanner from '../components/AlertBanner.vue';
-import AlertUnpaidInvoices from '../components/AlertUnpaidInvoices.vue';
 
 export default {
 	components: {
