@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import functools
 from collections import deque
@@ -12,7 +12,7 @@ from time import time
 from typing import Dict, List
 
 import frappe
-import pytz
+from zoneinfo import ZoneInfo
 
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
@@ -41,9 +41,7 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
-	def _expire_and_get_remote_files(
-		self, offsite_backups: List[Dict[str, str]]
-	) -> List[str]:
+	def _expire_and_get_remote_files(self, offsite_backups: List[Dict[str, str]]) -> List[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
@@ -191,12 +189,8 @@ class ScheduledBackupJob:
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
-		self.offset: int = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
-		)
-		self.limit = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
-		)
+		self.offset: int = frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+		self.limit = frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
 
 		self.offsite_setup = PressSettings.is_offsite_setup()
 		self.server_time = datetime.now()
@@ -212,7 +206,7 @@ class ScheduledBackupJob:
 
 	def get_site_time(self, site: Dict[str, str]) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
-		site_timezone = pytz.timezone(timezone)
+		site_timezone = ZoneInfo(timezone)
 		return self.server_time.astimezone(site_timezone)
 
 	class ModifiableCycle:
@@ -301,15 +295,11 @@ def schedule():
 
 def cleanup_offsite():
 	"""Delete expired (based on policy) offsite backups and mark em as Unavailable."""
-	frappe.enqueue(
-		"press.press.doctype.site.backups._cleanup_offsite", queue="long", timeout=3600
-	)
+	frappe.enqueue("press.press.doctype.site.backups._cleanup_offsite", queue="long", timeout=3600)
 
 
 def _cleanup_offsite():
-	scheme = (
-		frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
-	)
+	scheme = frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
 	if scheme == "FIFO":
 		rotation = FIFO()
 	elif scheme == "Grandfather-father-son":
