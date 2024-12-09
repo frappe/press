@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shlex
+import subprocess
 import time
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -237,6 +239,7 @@ class VirtualMachineMigration(Document):
 			(self.wait_for_machine_to_be_accessible, Wait),
 			(self.check_cloud_init_status, NoWait),
 			(self.wait_for_cloud_init, Wait),
+			(self.remove_old_host_key, NoWait),
 			(self.update_mounts, NoWait),
 			(self.update_plan, NoWait),
 		]
@@ -411,6 +414,12 @@ class VirtualMachineMigration(Document):
 		if plays and plays[0].status in ("Success", "Failure"):
 			return StepStatus.Success
 		return StepStatus.Pending
+
+	def remove_old_host_key(self) -> StepStatus:
+		"Remove old host key"
+		command = f"ssh-keygen -R '{self.virtual_machine}'"
+		subprocess.check_call(shlex.split(command))
+		return StepStatus.Success
 
 	def update_mounts(self) -> StepStatus:
 		"Update mounts"
