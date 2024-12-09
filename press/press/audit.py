@@ -192,7 +192,7 @@ class BackupRecordCheck(Audit):
 				WHERE
 					site.status = "Active" and
 					site_backup.owner = "Administrator" and
-					DATE(site_backup.creation) = "{self.yesterday}"
+					DATE(site_backup.creation) >= "{self.yesterday}"
 					{cond_filters}
 			"""
 			)
