@@ -482,9 +482,9 @@ class VirtualMachineMigration(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def next(self, arguments=None) -> None:
+	def next(self, ignore_version=False) -> None:
 		self.status = "Running"
-		self.save()
+		self.save(ignore_version=ignore_version)
 		next_step = self.next_step
 
 		if not next_step:
@@ -530,6 +530,7 @@ class VirtualMachineMigration(Document):
 		if not step.start:
 			step.start = frappe.utils.now_datetime()
 		step.status = "Running"
+		ignore_version_while_saving = False
 		try:
 			result = getattr(self, step.method)()
 			step.status = result.name
@@ -537,6 +538,7 @@ class VirtualMachineMigration(Document):
 				step.attempts = step.attempts + 1
 				if result == StepStatus.Pending:
 					# Wait some time before the next run
+					ignore_version_while_saving = True
 					time.sleep(1)
 		except Exception:
 			step.status = "Failure"
@@ -548,7 +550,7 @@ class VirtualMachineMigration(Document):
 		if step.status == "Failure":
 			self.fail()
 		else:
-			self.next()
+			self.next(ignore_version_while_saving)
 
 	def get_step(self, step_name) -> VirtualMachineMigrationStep | None:
 		for step in self.steps:
