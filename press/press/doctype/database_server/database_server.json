@@ -490,7 +490,7 @@
    "label": "Public"
   },
   {
-   "default": "System",
+   "default": "TCMalloc",
    "fieldname": "memory_allocator",
    "fieldtype": "Select",
    "label": "Memory Allocator",
@@ -534,7 +534,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-28 18:05:38.289733",
+ "modified": "2024-12-09 19:35:23.683437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
