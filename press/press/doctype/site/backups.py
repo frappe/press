@@ -53,6 +53,11 @@ class BackupRotationScheme:
 			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
+	@staticmethod
+	@functools.lru_cache(maxsize=128)
+	def _get_expiry(config: str):
+		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
+
 	def expire_local_backups(self):
 		"""Mark local backups deleted by FF as unavailable."""
 		sites_with_config = frappe.db.sql(
@@ -66,17 +71,13 @@ class BackupRotationScheme:
 			as_dict=True,
 		)
 		for d in sites_with_config:
-			d.config = self._get_expiry(d.config)
+			d.config = _get_expiry(d.config)
 
 		for config, site_confs in groupby(sites_with_config, lambda d: d.config):
 			sites = []
 			for site_conf in list(site_confs):
 				sites.append(site_conf.name)
 			self._expire_backups_of_site_in_bench(sites, config)
-
-	@functools.lru_cache(maxsize=128)
-	def _get_expiry(self, config: str):
-		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
 
 	def _expire_backups_of_site_in_bench(self, sites: list[str], expiry: int):
 		if sites:
