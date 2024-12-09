@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -27,6 +26,7 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 			DatabaseServerMariaDBVariable,
 		)
@@ -86,6 +86,30 @@ class DatabaseServer(BaseServer):
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
+	def get_doc(self, doc):
+		from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+
+		doc = super().get_doc(doc)
+		doc.available_mariadb_system_variables = MariaDBVariable.get_available_configurable_variables(
+			doc_section="server", include_non_dynamic_variables=False
+		)
+		available_mariadb_system_variable_names = [x.name for x in doc.available_mariadb_system_variables]
+		doc.mariadb_system_variables = [
+			{
+				"name": x.mariadb_variable,
+				"value": x.value_str
+				if x.datatype == "Str"
+				else x.value_int
+				if x.datatype == "Int"
+				else x.value_float
+				if x.datatype == "Float"
+				else "",
+				"configurable": x.mariadb_variable in available_mariadb_system_variable_names,
+			}
+			for x in self.mariadb_system_variables
+		]
+		return doc
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()
@@ -98,7 +122,11 @@ class DatabaseServer(BaseServer):
 
 	def validate_mariadb_system_variables(self):
 		variable: DatabaseServerMariaDBVariable
+		added_variables = set()
 		for variable in self.mariadb_system_variables:
+			if variable.mariadb_variable in added_variables:
+				frappe.throw(f"Variable {variable.mariadb_variable} already added to database server")
+			added_variables.add(variable.mariadb_variable)
 			variable.validate()
 
 	def on_update(self):
@@ -112,11 +140,7 @@ class DatabaseServer(BaseServer):
 		):
 			self.update_memory_limits()
 
-		if (
-			self.has_value_changed("team")
-			and self.subscription
-			and self.subscription.team != self.team
-		):
+		if self.has_value_changed("team") and self.subscription and self.subscription.team != self.team:
 			self.subscription.disable()
 
 			# enable subscription if exists
@@ -146,9 +170,7 @@ class DatabaseServer(BaseServer):
 					frappe.log_error("Database Subscription Creation Error")
 
 	def update_memory_limits(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True)
 
 	def _update_memory_limits(self):
 		self.memory_swap_max = self.memory_swap_max or 0.1
@@ -205,13 +227,13 @@ class DatabaseServer(BaseServer):
 		if not old_doc:
 			return self.mariadb_system_variables
 		diff = get_diff(old_doc, self) or {}
-		return self.get_changed_variables(
-			diff.get("row_changed", {})
-		) + self.get_newly_added_variables(diff.get("added", []))
+		return self.get_changed_variables(diff.get("row_changed", {})) + self.get_newly_added_variables(
+			diff.get("added", [])
+		)
 
-	def _update_mariadb_system_variables(
-		self, variables: list[DatabaseServerMariaDBVariable] = []
-	):
+	def _update_mariadb_system_variables(self, variables: list[DatabaseServerMariaDBVariable] | None = None):
+		if variables is None:
+			variables = []
 		restart = False
 		for variable in variables:
 			variable.update_on_server()
@@ -323,9 +345,7 @@ class DatabaseServer(BaseServer):
 		persist: bool = True,
 	):
 		"""Add or update MariaDB variable on the server"""
-		existing = find(
-			self.mariadb_system_variables, lambda x: x.mariadb_variable == variable
-		)
+		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
 		if existing:
 			existing.set(value_type, value)
 			existing.set("skip", skip)
@@ -344,9 +364,7 @@ class DatabaseServer(BaseServer):
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
-			server_ids = frappe.get_all(
-				"Database Server", fields=["server_id"], pluck="server_id"
-			)
+			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
 			else:
@@ -356,9 +374,7 @@ class DatabaseServer(BaseServer):
 		config = self._get_config()
 		try:
 			ansible = Ansible(
-				playbook="self_hosted_db.yml"
-				if getattr(self, "is_self_hosted", False)
-				else "database.yml",
+				playbook="self_hosted_db.yml" if getattr(self, "is_self_hosted", False) else "database.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
@@ -400,9 +416,7 @@ class DatabaseServer(BaseServer):
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -457,9 +471,7 @@ class DatabaseServer(BaseServer):
 
 	def process_hybrid_server_setup(self):
 		try:
-			hybird_server = frappe.db.get_value(
-				"Self Hosted Server", {"database_server": self.name}, "name"
-			)
+			hybird_server = frappe.db.get_value("Self Hosted Server", {"database_server": self.name}, "name")
 
 			if hybird_server:
 				hybird_server = frappe.get_doc("Self Hosted Server", hybird_server)
@@ -471,9 +483,7 @@ class DatabaseServer(BaseServer):
 
 	def _setup_primary(self, secondary):
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		secondary_root_public_key = frappe.db.get_value(
-			"Database Server", secondary, "root_public_key"
-		)
+		secondary_root_public_key = frappe.db.get_value("Database Server", secondary, "root_public_key")
 		try:
 			ansible = Ansible(
 				playbook="primary.yml",
@@ -532,9 +542,7 @@ class DatabaseServer(BaseServer):
 			return
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=18000
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_replication", queue="long", timeout=18000)
 
 	@frappe.whitelist()
 	def perform_physical_backup(self, path):
@@ -597,9 +605,7 @@ class DatabaseServer(BaseServer):
 			return
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200)
 
 	def _convert_from_frappe_server(self):
 		mariadb_root_password = self.get_password("mariadb_root_password")
@@ -633,15 +639,11 @@ class DatabaseServer(BaseServer):
 	def convert_from_frappe_server(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_convert_from_frappe_server", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_convert_from_frappe_server", queue="long", timeout=1200)
 
 	def _install_exporters(self):
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 		try:
 			ansible = Ansible(
 				playbook="database_exporters.yml",
@@ -690,9 +692,7 @@ class DatabaseServer(BaseServer):
 			elif isinstance(value, str):
 				type_key = "value_str"
 
-			existing_variable = find(
-				self.mariadb_system_variables, lambda x: x.mariadb_variable == key
-			)
+			existing_variable = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == key)
 
 			if existing_variable:
 				existing_variable.set(type_key, value)
@@ -741,9 +741,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_deadlock_logger(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_deadlock_logger", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_deadlock_logger", queue="long", timeout=1200)
 
 	def _setup_deadlock_logger(self):
 		try:
@@ -761,9 +759,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_pt_stalk(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200)
 
 	def _setup_pt_stalk(self):
 		extra_port_variable = find(
@@ -845,14 +841,10 @@ class DatabaseServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -926,9 +918,7 @@ class DatabaseServer(BaseServer):
 			)
 			ansible.run()
 		except Exception:
-			log_error(
-				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
-			)
+			log_error("Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def update_memory_allocator(self, memory_allocator):
@@ -971,9 +961,7 @@ class DatabaseServer(BaseServer):
 				self.save()
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Database Server"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
 PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance_schema": "1",
