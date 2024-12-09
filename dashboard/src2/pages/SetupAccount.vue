@@ -60,12 +60,8 @@
 							v-model="country"
 							required
 						/>
-						<div class="mt-4 flex items-start gap-2">
-							<FormControl
-								type="checkbox"
-								v-model="termsAccepted"
-								class="mt-[0.05rem]"
-							/>
+						<div class="mt-4 flex items-center gap-2">
+							<FormControl type="checkbox" v-model="termsAccepted" />
 							<label class="text-base text-gray-900">
 								By clicking on
 								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
