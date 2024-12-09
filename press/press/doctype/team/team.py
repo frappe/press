@@ -511,7 +511,8 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.partner_email = self.user
+		if not self.partner_email:
+			self.partner_email = self.user
 		self.frappe_partnership_date = self.get_partnership_start_date()
 		self.servers_enabled = 1
 		self.save(ignore_permissions=True)
