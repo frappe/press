@@ -198,6 +198,7 @@
    "fieldname": "virtual_machine_image",
    "fieldtype": "Link",
    "label": "Virtual Machine Image",
+   "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
    "options": "Virtual Machine Image",
    "read_only_depends_on": "eval: doc.virtual_machine_image"
   },
@@ -281,12 +282,10 @@
    "read_only": 1
   },
   {
-   "default": "x86_64",
    "fieldname": "platform",
    "fieldtype": "Select",
    "label": "Platform",
    "options": "x86_64\narm64",
-   "read_only_depends_on": "eval: doc.platform",
    "reqd": 1
   }
  ],
@@ -323,7 +322,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-10-09 10:54:27.750679",
+ "modified": "2024-11-18 18:55:50.846189",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

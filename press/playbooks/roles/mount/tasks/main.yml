@@ -1,0 +1,55 @@
+---
+- name: Set JSON Variables
+  set_fact:
+    all_mounts: '{{ all_mounts_json | from_json }}'
+    volume_mounts: '{{ volume_mounts_json | from_json }}'
+    bind_mounts: '{{ bind_mounts_json | from_json }}'
+
+- name: Create Mount Points
+  file:
+    dest: "{{ item.mount_point }}"
+    state: directory
+    owner: "{{ item.mount_point_owner }}"
+    group: "{{ item.mount_point_group }}"
+    mode: "{{ item.mount_point_mode }}"
+  loop: "{{ all_mounts }}"
+
+- name: Format Volumes
+  filesystem:
+    fstype: "{{ item.filesystem }}"
+    dev: "{{ item.source }}"
+    force: false
+  loop: "{{ volume_mounts }}"
+
+- name: Show Block Device UUIDs
+  command: 'lsblk {{ item.source }} -no UUID'
+  loop: "{{ volume_mounts }}"
+  register: block_devices
+
+- name: Mount Volumes
+  mount:
+    src: "UUID={{ item.stdout.strip() }}"
+    path: "{{ item.item.mount_point }}"
+    fstype: "{{ item.item.filesystem }}"
+    opts: "{{ item.item.mount_options }}"
+    state: mounted
+  loop: "{{ block_devices.results }}"
+
+- name: Create Mount Source Directories
+  file:
+    dest: "{{ item.source }}"
+    state: directory
+    owner: "{{ item.mount_point_owner }}"
+    group: "{{ item.mount_point_group }}"
+    mode: "{{ item.mount_point_mode }}"
+  loop: "{{ bind_mounts }}"
+
+- name: Mount Bind Mounts
+  mount:
+    src: "{{ item.source }}"
+    path: "{{ item.mount_point }}"
+    fstype: none
+    opts: "{{ item.mount_options }}"
+    state: mounted
+  loop: "{{ bind_mounts }}"
+

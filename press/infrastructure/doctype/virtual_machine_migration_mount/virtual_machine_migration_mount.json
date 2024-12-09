@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-26 15:14:54.328130",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_mount_point",
+  "target_mount_point",
+  "uuid",
+  "service"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "source_mount_point",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source Mount Point"
+  },
+  {
+   "columns": 3,
+   "fieldname": "target_mount_point",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Target Mount Point"
+  },
+  {
+   "columns": 4,
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "UUID"
+  },
+  {
+   "columns": 1,
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Service"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-09 16:32:43.323509",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine Migration Mount",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
