@@ -155,7 +155,7 @@ def delete_old_snapshots():
 		{"status": "Completed", "creation": ("<=", frappe.utils.add_days(None, -2))},
 		pluck="name",
 		order_by="creation asc",
-		limit=50,
+		limit=500,
 	)
 	for snapshot in snapshots:
 		try:
