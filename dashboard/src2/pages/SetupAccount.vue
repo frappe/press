@@ -60,25 +60,19 @@
 							v-model="country"
 							required
 						/>
-						<div class="mt-4 flex items-start">
+						<div class="mt-4 flex items-start gap-2">
+							<FormControl
+								type="checkbox"
+								v-model="termsAccepted"
+								class="mt-[0.05rem]"
+							/>
 							<label class="text-base text-gray-900">
-								<FormControl type="checkbox" v-model="termsAccepted" />
 								By clicking on
 								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
 								>, you accept our
-								<Link href="https://frappecloud.com/terms" target="_blank"
-									>Terms of Service </Link
-								>,
-								<Link href="https://frappecloud.com/privacy" target="_blank">
-									Privacy Policy
-								</Link>
-								&#38;
-								<Link
-									href="https://frappecloud.com/cookie-policy"
-									target="_blank"
+								<Link href="https://frappecloud.com/policies" target="_blank"
+									>Terms and Policies</Link
 								>
-									Cookie Policy
-								</Link>
 							</label>
 						</div>
 					</div>
