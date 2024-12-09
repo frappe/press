@@ -50,7 +50,11 @@ const team = getTeam();
 const isHideSidebar = computed(() => {
 	if (!session.user) return false;
 	return (
-		route.name == 'Welcome' && session.user && team?.doc?.hide_sidebar === true
+		// using window.location.pathname as router is undefined initially
+		(window.location.pathname === '/dashboard/welcome' ||
+			route.name === 'Welcome') &&
+		session.user &&
+		team?.doc?.hide_sidebar === true
 	);
 });
 
