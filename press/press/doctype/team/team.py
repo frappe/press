@@ -185,6 +185,8 @@ class Team(Document):
 	def before_insert(self):
 		self.set_notification_emails()
 
+		self.currency = "INR" if self.country == "India" else "USD"
+
 		if not self.referrer_id:
 			self.set_referrer_id()
 
@@ -394,9 +396,6 @@ class Team(Document):
 	def set_team_currency(self):
 		if not self.currency and self.country:
 			self.currency = "INR" if self.country == "India" else "USD"
-
-		if self.is_new() and self.country == "India" and self.currency != "INR":
-			self.currency = "INR"
 
 	def get_user_list(self):
 		return [row.user for row in self.team_members]
