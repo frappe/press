@@ -348,6 +348,7 @@ class VirtualMachineMigration(Document):
 		# Set new machine image and machine type
 		machine.virtual_machine_image = self.virtual_machine_image
 		machine.machine_type = self.machine_type
+		machine.disk_size = 10  # Default disk size for new machines
 		machine.save()
 		return StepStatus.Success
 
