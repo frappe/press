@@ -74,8 +74,9 @@ class BackupRotationScheme:
 				sites.append(site_conf.name)
 			self._expire_backups_of_site_in_bench(sites, config)
 
+	@staticmethod
 	@functools.lru_cache(maxsize=128)
-	def _get_expiry(self, config: str):
+	def _get_expiry(config: str):
 		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
 
 	def _expire_backups_of_site_in_bench(self, sites: list[str], expiry: int):
