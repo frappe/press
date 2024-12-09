@@ -78,11 +78,10 @@
 							</a>
 						</div>
 						<p class="mt-2 text-p-base text-gray-800">
-							Your trial will expire on
+							Your trial is set to expire on
 							<span class="font-medium">
 								{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
-							>. After that you won't be able to access your site. Set up
-							billing to enjoy uninterrupted service.
+							>. Set up billing now to ensure uninterrupted access to your site.
 						</p>
 					</div>
 				</div>

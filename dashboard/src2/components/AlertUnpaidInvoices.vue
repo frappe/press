@@ -1,8 +1,5 @@
 <template>
-	<AlertBanner
-		:title="`Your account currently has an outstanding balance of ${currency} ${amount}. Please settle the balance to avoid any site suspension.`"
-		type="warning"
-	>
+	<AlertBanner :title="outstandingBalanceMessage" type="warning">
 		<Button class="ml-auto" route="/billing" variant="outline">
 			Pay Now
 		</Button>
@@ -21,6 +18,13 @@ export default {
 		},
 		currency: {
 			type: String
+		}
+	},
+	computed: {
+		outstandingBalanceMessage() {
+			return `Your account currently has an outstanding balance of ${this.$format.userCurrency(
+				this.amount
+			)}. Please settle the balance to avoid any site suspension.`;
 		}
 	}
 };
