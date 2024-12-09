@@ -86,6 +86,30 @@ class DatabaseServer(BaseServer):
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
+	def get_doc(self, doc):
+		from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
+
+		doc = super().get_doc(doc)
+		doc.available_mariadb_system_variables = MariaDBVariable.get_available_configurable_variables(
+			doc_section="server", include_non_dynamic_variables=False
+		)
+		available_mariadb_system_variable_names = [x.name for x in doc.available_mariadb_system_variables]
+		doc.mariadb_system_variables = [
+			{
+				"name": x.mariadb_variable,
+				"value": x.value_str
+				if x.datatype == "Str"
+				else x.value_int
+				if x.datatype == "Int"
+				else x.value_float
+				if x.datatype == "Float"
+				else "",
+				"configurable": x.mariadb_variable in available_mariadb_system_variable_names,
+			}
+			for x in self.mariadb_system_variables
+		]
+		return doc
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()
@@ -98,7 +122,11 @@ class DatabaseServer(BaseServer):
 
 	def validate_mariadb_system_variables(self):
 		variable: DatabaseServerMariaDBVariable
+		added_variables = set()
 		for variable in self.mariadb_system_variables:
+			if variable.mariadb_variable in added_variables:
+				frappe.throw(f"Variable {variable.mariadb_variable} already added to database server")
+			added_variables.add(variable.mariadb_variable)
 			variable.validate()
 
 	def on_update(self):
