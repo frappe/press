@@ -64,7 +64,7 @@ class AccountRequest(Document):
 
 	def before_insert(self):
 		# validate email address
-		if not is_valid_email_address(self.email):
+		if not frappe.conf.developer_mode and not is_valid_email_address(self.email):
 			frappe.throw(f"{self.email} is not a valid email address")
 
 		if not self.team:
