@@ -193,6 +193,7 @@
   "column_break_rdlr",
   "disable_auto_retry",
   "disable_agent_job_deduplication",
+  "enable_email_pre_verification",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1249,8 +1250,8 @@
    "fieldtype": "Link",
    "label": "Press Trial Plan",
    "options": "Site Plan"
-   },
-   {
+  },
+  {
    "fieldname": "section_break_jstu",
    "fieldtype": "Section Break"
   },
@@ -1265,11 +1266,17 @@
    "fieldtype": "Table",
    "label": "Default Apps",
    "options": "App Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_email_pre_verification",
+   "fieldtype": "Check",
+   "label": "Enable Email Pre-Verification"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-10-14 21:02:12.948747",
+ "modified": "2024-12-10 15:07:57.494659",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
