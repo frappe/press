@@ -56,7 +56,13 @@
 								class="w-4 p-0.5 text-white rounded bg-red-500"
 								name="x"
 							/>
-							The Github Repository is private
+							The Github Repository is private.
+							<Link
+								href="https://frappecloud.com/marketplace/terms"
+								class="font-medium"
+							>
+								Terms and Policy
+							</Link>
 						</div>
 					</div>
 					<div v-else class="h-4"></div>
