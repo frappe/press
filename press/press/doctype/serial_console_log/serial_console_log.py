@@ -1,6 +1,8 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import time
 from io import StringIO
 
@@ -60,13 +62,12 @@ class SerialConsoleLog(Document):
 			method="_run_sysrq",
 			queue="long",
 			enqueue_after_commit=True,
+			at_front=True,
 		)
 		frappe.db.commit()
 
 	def _run_sysrq(self):
-		credentials = frappe.get_doc(
-			"Virtual Machine", self.virtual_machine
-		).get_serial_console_credentials()
+		credentials = frappe.get_doc("Virtual Machine", self.virtual_machine).get_serial_console_credentials()
 		ssh = pexpect.spawn(credentials["command"], encoding="utf-8")
 		ssh.logfile = FakeIO(self)
 
@@ -116,9 +117,7 @@ class FakeIO(StringIO):
 	def flush(self):
 		super().flush()
 		output = ansi_escape(self.getvalue())
-		frappe.db.set_value(
-			"Serial Console Log", self.console, "output", output, update_modified=False
-		)
+		frappe.db.set_value("Serial Console Log", self.console, "output", output, update_modified=False)
 
 		message = {"name": self.console, "output": output}
 		frappe.publish_realtime(

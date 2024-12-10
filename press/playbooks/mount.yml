@@ -1,8 +1,8 @@
 ---
-- name: Wait for Cloud Init to finish
+- name: Mount Volumes
   hosts: all
   become: yes
   become_user: root
   gather_facts: no
   roles:
-    - role: wait_for_cloud_init
+    - role: mount

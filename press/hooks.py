@@ -182,7 +182,6 @@ scheduler_events = {
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
 		"press.press.audit.check_offsite_backups",
-		"press.press.audit.check_backup_records",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
@@ -234,6 +233,9 @@ scheduler_events = {
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
+		],
+		"10 0 * * *": [
+			"press.press.audit.check_backup_records",
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",

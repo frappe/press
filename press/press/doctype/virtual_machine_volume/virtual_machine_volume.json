@@ -14,10 +14,13 @@
   "throughput",
   "last_updated_at",
   "section_break_frlu",
-  "device"
+  "device",
+  "column_break_buwy",
+  "detach"
  ],
  "fields": [
   {
+   "columns": 1,
    "fieldname": "volume_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -26,6 +29,7 @@
    "read_only_depends_on": "eval: doc.volume_type"
   },
   {
+   "columns": 1,
    "fieldname": "size",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -33,6 +37,7 @@
    "read_only_depends_on": "eval: doc.size"
   },
   {
+   "columns": 1,
    "fieldname": "iops",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -40,6 +45,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "throughput",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -47,6 +53,7 @@
    "read_only": 1
   },
   {
+   "columns": 4,
    "fieldname": "volume_id",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -68,16 +75,27 @@
    "fieldtype": "Section Break"
   },
   {
+   "columns": 2,
    "fieldname": "device",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Device",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_buwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "detach",
+   "fieldtype": "Button",
+   "label": "Detach"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-09 10:45:41.294356",
+ "modified": "2024-11-21 16:20:36.656076",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",
