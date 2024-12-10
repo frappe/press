@@ -10,7 +10,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
-from press.utils import get_country_info
+from press.utils import get_country_info, is_valid_email_address
 from press.utils.telemetry import capture
 
 
@@ -63,6 +63,10 @@ class AccountRequest(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
+		# validate email address
+		if not is_valid_email_address(self.email):
+			frappe.throw(f"{self.email} is not a valid email address")
+
 		if not self.team:
 			self.team = self.email
 
