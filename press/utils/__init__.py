@@ -13,13 +13,13 @@ from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
 
 import frappe
-import pytz
 import requests
 import wrapt
 from babel.dates import format_timedelta
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+from zoneinfo import ZoneInfo
 
 
 class SupervisorProcess(TypedDict):
@@ -535,9 +535,9 @@ def group_children_in_result(result, child_field_map):
 
 
 def convert_user_timezone_to_utc(datetime):
-	timezone = pytz.timezone(get_system_timezone())
+	timezone = ZoneInfo(get_system_timezone())
 	datetime_obj = get_datetime(datetime)
-	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
+	return datetime_obj.replace(tzinfo=timezone).astimezone(ZoneInfo("UTC")).isoformat()
 
 
 class ttl_cache:

@@ -8,11 +8,11 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 import frappe
-import pytz
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
+from zoneinfo import ZoneInfo
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -499,7 +499,7 @@ def is_site_in_deploy_hours(site):
 		return True
 	server_time = datetime.now()
 	timezone = site.timezone or "Asia/Kolkata"
-	site_timezone = pytz.timezone(timezone)
+	site_timezone = ZoneInfo(timezone)
 	site_time = server_time.astimezone(site_timezone)
 	deploy_hours = frappe.get_hooks("deploy_hours")
 

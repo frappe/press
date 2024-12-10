@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import frappe
-import pytz
 import sqlparse
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import (
@@ -11,6 +10,7 @@ from frappe.utils import (
 	get_datetime_str,
 	get_system_timezone,
 )
+from zoneinfo import ZoneInfo
 
 from press.agent import Agent
 
@@ -106,6 +106,6 @@ def get_files_in_timespan(files: list[dict[str, str]], start: str, stop: str) ->
 
 
 def convert_user_timezone_to_utc(datetime):
-	timezone = pytz.timezone(get_system_timezone())
+	timezone = ZoneInfo(get_system_timezone())
 	datetime = get_datetime(datetime)
-	return get_datetime_str(timezone.localize(datetime).astimezone(pytz.utc))
+	return get_datetime_str(datetime.replace(tzinfo=timezone).astimezone(ZoneInfo("UTC")))
