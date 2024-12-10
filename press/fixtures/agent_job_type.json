@@ -1,5 +1,47 @@
 [
  {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-08-20 12:32:56.100866",
+  "name": "Update In Place",
+  "request_method": "POST",
+  "request_path": "/bench/{bench}/update_inplace",
+  "steps": [
+   {
+    "parent": "Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Pull App Changes"
+   },
+   {
+    "parent": "Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Sites"
+   },
+   {
+    "parent": "Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
+   },
+   {
+    "parent": "Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Commit Container Changes"
+   },
+   {
+    "parent": "Update In Place",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
+   }
+  ]
+ },
+ {
   "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
@@ -1990,36 +2032,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.626647",
-  "name": "Add Site to Upstream",
-  "request_method": "POST",
-  "request_path": "/proxy/upstreams/{upstream}/sites",
-  "steps": [
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Add Site File to Upstream Directory"
-   },
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "parent": "Add Site to Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.663533",
   "name": "Update Site Configuration",
   "request_method": "POST",
@@ -2134,24 +2146,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2024-09-11 13:28:32.120581",
-  "name": "Ping Job",
-  "request_method": "POST",
-  "request_path": "ping_job",
-  "steps": [
-   {
-    "parent": "Ping Job",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Ping Step"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
   "modified": "2024-08-20 12:51:05.293373",
   "name": "Update Bench In Place",
   "request_method": "POST",
@@ -2186,6 +2180,120 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Bench Restart"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-21 11:18:53.122319",
+  "name": "Start Devbox",
+  "request_method": "POST",
+  "request_path": "devboxes/{devbox.name}/{devbox.websockify_port}/start",
+  "steps": [
+   {
+    "parent": "Start Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run Devbox"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-23 20:30:22.356484",
+  "name": "Stop Devbox",
+  "request_method": "POST",
+  "request_path": "devboxes/{devbox.name}/stop",
+  "steps": [
+   {
+    "parent": "Stop Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Stop Devbox"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-09-11 13:28:32.120581",
+  "name": "Ping Job",
+  "request_method": "POST",
+  "request_path": "ping_job",
+  "steps": [
+   {
+    "parent": "Ping Job",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Ping Step"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.626647",
+  "name": "Add Site to Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites",
+  "steps": [
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Site File to Upstream Directory"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-21 11:00:39.229673",
+  "name": "New Devbox",
+  "request_method": "POST",
+  "request_path": "/devboxes",
+  "steps": [
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Initialize Devbox"
+   },
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run Devbox"
+   },
+   {
+    "parent": "New Devbox",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Devbox Setup NGINX"
    }
   ]
  },

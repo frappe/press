@@ -160,7 +160,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
    "set_only_once": 1
   },
   {
@@ -400,7 +400,7 @@
   }
  ],
  "links": [],
- "modified": "2024-09-10 15:44:10.989216",
+ "modified": "2024-10-01 16:20:05.048227",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
