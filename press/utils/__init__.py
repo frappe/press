@@ -20,10 +20,11 @@ import pytz
 import requests
 import wrapt
 from babel.dates import format_timedelta
-from email_validator import validate_email
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+
+from press.utils.email_validator import validate_email
 
 
 class SupervisorProcess(TypedDict):
@@ -847,12 +848,13 @@ def get_mariadb_root_password(site):
 
 
 def is_valid_email_address(email) -> bool:
-	if frappe.cache.exists(f"email_validity:{email}", expires=True):
-		return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
+	# if frappe.cache.exists(f"email_validity:{email}"):
+	# 	return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
 	try:
-		validate_email(email, check_deliverability=True)
-		frappe.cache.set_value(f"email_validity:{email}", 1, expires_in_sec=3600)
+		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
+		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
 		return True
-	except Exception:
+	except Exception as e:
+		print(e)
 		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
 		return False
