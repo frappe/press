@@ -54,7 +54,9 @@ def account_request(
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
 		frappe.throw(f"Account {email} already exists with unpaid invoices")
 
+	current_user = frappe.session.user
 	try:
+		frappe.set_user("Administrator")
 		account_request = frappe.get_doc(
 			{
 				"doctype": "Account Request",
@@ -82,6 +84,8 @@ def account_request(
 	except Exception as e:
 		log_error("Account Request Creation Failed", data=e)
 		raise
+	finally:
+		frappe.set_user(current_user)
 
 	create_or_rename_saas_site(app, account_request)
 
