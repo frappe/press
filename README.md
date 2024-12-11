@@ -44,7 +44,7 @@ Need help
 <details>
 <summary>Screenshots</summary>
 
-![Dashboard](https://frappe.io/files/press-dashboard.webp)
+![Dashboard](https://frappecloud.com/files/HOME_DASHBOARDc70e16.webp)
 ![Permissions](https://frappe.io/files/press-permissions.webp)
 ![Bench Group Update](https://frappe.io/files/image66de45.png)
 ![Marketplace](https://frappe.io/files/press-marketplace.webp)
@@ -58,16 +58,9 @@ Need help
 - [**Frappe UI**](https://github.com/frappe/frappe-ui): A Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
 
 
-## Production Setup
+## Setup
 
-### Self Hosting
-
-Follow these steps to set up Press in production:
-
-
-## Development Setup
-
-To setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://frappecloud.com/docs/local-fc-setup).
+To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://frappecloud.com/docs/local-fc-setup) or [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
 
 ## Learn and connect
 
