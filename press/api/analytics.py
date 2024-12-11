@@ -19,7 +19,7 @@ from frappe.utils import (
 	get_datetime,
 )
 from frappe.utils.password import get_decrypted_password
-from zoneinfo import ZoneInfo
+from pytz import timezone as pytz_timezone
 
 from press.agent import Agent
 from press.api.site import protected
@@ -155,7 +155,7 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
 	"""
-	end = datetime.now(ZoneInfo(timezone))
+	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
@@ -169,7 +169,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.now(ZoneInfo(timezone))
+	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": (

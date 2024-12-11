@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import boto3
 import frappe
+import pytz
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
-from zoneinfo import ZoneInfo
 
 from press.utils import log_error
 
@@ -78,7 +78,7 @@ class VirtualDiskSnapshot(Document):
 			self.size = snapshot.size_in_gbs
 
 			self.start_time = frappe.utils.format_datetime(
-				snapshot.time_created.astimezone(ZoneInfo(frappe.utils.get_system_timezone())),
+				snapshot.time_created.astimezone(pytz.timezone(frappe.utils.get_system_timezone())),
 				"yyyy-MM-dd HH:mm:ss",
 			)
 		self.save()

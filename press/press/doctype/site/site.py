@@ -13,6 +13,7 @@ from typing import Any
 
 import dateutil.parser
 import frappe
+import pytz
 import requests
 from frappe import _
 from frappe.core.utils import find
@@ -31,7 +32,6 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -1539,8 +1539,8 @@ class Site(Document, TagHelpers):
 		# Empty string is fine, since we default to IST
 		if timezone:
 			try:
-				ZoneInfo(timezone)
-			except ZoneInfoNotFoundError:
+				pytz.timezone(timezone)
+			except pytz.exceptions.UnknownTimeZoneError:
 				return False
 
 		if self.timezone != timezone:
