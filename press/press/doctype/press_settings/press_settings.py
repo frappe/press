@@ -64,6 +64,7 @@ class PressSettings(Document):
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_app_grouping: DF.Check
+		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
 		enable_site_pooling: DF.Check
 		enforce_storage_limits: DF.Check
