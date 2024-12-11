@@ -1251,6 +1251,7 @@ class Server(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
+		is_devbox_server: DF.Check
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -1269,7 +1270,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
