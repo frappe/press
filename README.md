@@ -71,7 +71,6 @@ To self host or to setup Press locally follow the steps in the [Local Developmen
 - [Telegram Public Group](https://t.me/frappecloud)
 - [Discuss Forum](https://discuss.frappe.io/c/frappe-cloud/77)
 - [Documentation](https://frappecloud.com/docs)
-- [YouTube](https://frappe.io)
 
 <h2></h2>
 <div align="center" style="padding-top: 0.75rem;">
