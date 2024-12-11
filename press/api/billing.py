@@ -694,10 +694,9 @@ def generate_stk_push(**kwargs):
 	mpesa_settings = get_mpesa_settings_for_team(partner.name)
 	try:
 		callback_url = (
-			#get_request_site_address(True)
-			"https://9876-41-80-113-21.ngrok-free.app"+ "/api/method/press.api.billing.verify_mpesa_transaction"
+			get_request_site_address(True)+
+			"/api/method/press.api.billing.verify_mpsa_transaction"
 		)
-
 		env = "production" if not mpesa_settings.sandbox else "sandbox"
 		# for sandbox, business shortcode is same as till number
 		business_shortcode = (
@@ -713,7 +712,7 @@ def generate_stk_push(**kwargs):
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount= args.amount_with_tax,
+			amount= 3,#args.amount_with_tax,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
@@ -730,12 +729,11 @@ def generate_stk_push(**kwargs):
 		)
 
 @frappe.whitelist(allow_guest=True)
-def verify_mpesa_transaction(**kwargs):
+def verify_mpsa_transaction(**kwargs):
 	"""Verify the transaction result received via callback from STK."""    
-	transaction_response, integration_request = parse_transaction_response(kwargs)    
+	transaction_response, integration_request = parse_transaction_response(kwargs) 
 	handle_transaction_result(transaction_response, integration_request)
 	save_integration_request(integration_request)
-
 	return {
 		"status": integration_request.status,
 		"ResultDesc": transaction_response.get("ResultDesc")
@@ -873,7 +871,6 @@ def create_mpesa_payment_record(transaction_response):
 	amount_usd, exchange_rate=convert("USD", "KES", requested_amount)
 	gateway_name=get_payment_gateway(partner) 	
 	# Create a new entry in M-Pesa Payment Record
- 
 	data={
 	"transaction_id": transaction_id,
 	"trans_amount": amount,
@@ -887,7 +884,7 @@ def create_mpesa_payment_record(transaction_response):
 		"trans_time": trans_time,
 		"transaction_type":"Mpesa Express",
 		"team": team,
-		"msisdn": msisdn,
+		"msisdn": str(msisdn),
 		"trans_amount": requested_amount,
 		"grand_total":amount,
 		"merchant_request_id": request_id,
