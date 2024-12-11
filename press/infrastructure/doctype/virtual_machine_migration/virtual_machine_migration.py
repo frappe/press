@@ -486,7 +486,7 @@ class VirtualMachineMigration(Document):
 				("systemctl daemon-reload", DontAllowFailure),
 			]
 			if mount.service:
-				commands.append(f"systemctl start {mount.service}", AllowFailure)
+				commands.append((f"systemctl start {mount.service}", AllowFailure))
 			for command, allow_failure in commands:
 				result = self.ansible_run(command)
 				if allow_failure == DontAllowFailure and result["status"] != "Success":
