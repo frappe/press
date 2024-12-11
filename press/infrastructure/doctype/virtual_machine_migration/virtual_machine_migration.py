@@ -474,18 +474,22 @@ class VirtualMachineMigration(Document):
 		# Update fstab
 		# 	1. Find mount matching the source mount point in fstab
 		# 	2. Update UUID for this mountpoint
+		AllowFailure, DontAllowFailure = True, False
 		for mount in self.mounts:
 			escaped_mount_point = mount.target_mount_point.replace("/", "\\/")
 			# Reference: https://stackoverflow.com/questions/16637799/sed-error-invalid-reference-1-on-s-commands-rhs#comment88576787_16637847
 			commands = [
-				f"sed -Ei 's/^UUID\\=.*\\s({escaped_mount_point}\\s.*$)/UUID\\={mount.uuid} \\1/g' /etc/fstab",
-				"systemctl daemon-reload",
+				(
+					f"sed -Ei 's/^UUID\\=.*\\s({escaped_mount_point}\\s.*$)/UUID\\={mount.uuid} \\1/g' /etc/fstab",
+					DontAllowFailure,
+				),
+				("systemctl daemon-reload", DontAllowFailure),
 			]
 			if mount.service:
-				commands.append(f"systemctl start {mount.service}")
-			for command in commands:
+				commands.append(f"systemctl start {mount.service}", AllowFailure)
+			for command, allow_failure in commands:
 				result = self.ansible_run(command)
-				if result["status"] != "Success":
+				if allow_failure == DontAllowFailure and result["status"] != "Success":
 					self.add_comment(text=f"Error updating mounts: {result}")
 					return StepStatus.Failure
 
