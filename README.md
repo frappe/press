@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="https://frappe.io/files/press8d2e84.webp" alt="Press logo" width="100"/>
+<img src="https://frappe.io/files/Group%202%20(1).png" alt="Press logo" width="100"/>
 <h1>Press</h1>
 
 **Full Service Cloud Hosting For The Frappe Stack - Powers Frappe Cloud**
@@ -41,14 +41,12 @@ Need help
 -  **Marketplace**: The marketplace allows developers to list apps with flexible pricing models, ensures compatibility checks, and provides a streamlined system for sales and payouts.
 
 
-<details>
-<summary>Screenshots</summary>
+## Screenshots
 
 ![Dashboard](https://frappecloud.com/files/HOME_DASHBOARDc70e16.webp)
 ![Permissions](https://frappe.io/files/press-permissions.webp)
 ![Bench Group Update](https://frappe.io/files/image66de45.png)
 ![Marketplace](https://frappe.io/files/press-marketplace.webp)
-</details>
 
 
 ## Under the Hood
