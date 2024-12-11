@@ -1,63 +1,87 @@
-## Press
+<div align="center" markdown="1">
+
+<img src="https://frappe.io/files/press8d2e84.webp" alt="Press logo" width="100"/>
+<h1>Press</h1>
+
+**Full service cloud hosting for the Frappe stack - powers Frappe Cloud**
 
 [![codecov](https://codecov.io/gh/frappe/press/branch/master/graph/badge.svg?token=0puvH0jUx9)](https://codecov.io/gh/frappe/press)
 [![unittests](https://github.com/frappe/press/actions/workflows/main.yaml/badge.svg)](https://github.com/frappe/press/actions/workflows/main.yaml)
 
+</div>
 
-This is `press`, a Frappe custom app that runs [Frappe Cloud](https://frappecloud.com). This app manages infrastructure, subscription, marketplace, SaaS and much more.
+<div align="center">
+	<img src="https://frappe.io/files/frappe-press-architecture526fba.webp" alt="Hero Image" width="72%" />
+</div>
+<br />
+<div align="center">
+	<a href="https://frappe.io/press">Website</a>
+	-
+	<a href="https://frappecloud.com/docs/">Documentation</a>
+</div>
 
-The other half of the Frappe Cloud infrastructure is [agent](https://github.com/frappe/agent). Which is a flask application that runs on every server in a typical cluster and carries out tasks on HTTP requests. Creating a new site, installing an app, updating a site, creating a bench and everything in between is just a request (`Agent Job`) away.
+## Press
+Press is a 100% open-source cloud hosting for the Frappe stack.
 
-For updates, join our Telegram group: [@frappecloud](https://t.me/frappecloud)
+## Motivation
+Need help
 
-## Typical FC Cluster
+## Key Features
 
-![FC Cluster Diagram](.github/images/fc-cluster.png)
+- **Multitenancy Made Easy**: Press simplifies multi-tenancy by enabling multiple sites on a single platform, each with its app version, allowing independent updates and minimal downtime, even for large sites.
+  
+- **Dashboard**: The dashboard provides a centralized interface to manage apps, servers, sites, billing, backups, and updates, offering real-time insights and streamlined control of complex operations.
 
-## Prerequisites
+- **Permissions**: Granular access controls let team owners manage roles and resources efficiently, ensuring users have access only to relevant information and actions for their roles.
 
-- Frappe Bench (https://github.com/frappe/bench)
-- Docker
-- Certbot with route53 plugin
-- AWS account (for route53 & S3)
-- Digital Ocean account (for [container registry](https://www.digitalocean.com/products/container-registry))
+- **Simplified Management**: Press streamlines site management with automated backups, real-time monitoring, role-based access, and easy scaling, making it ideal for growing Frappe environments.
 
-## Local Setup
+-  **Billing**: Automated billing supports daily or monthly subscriptions, flexible payment methods, wallet credits, and ERP integration, simplifying customer invoicing and payments.
 
-You can find a detailed walkthough for setting up a local FC cluster [here](https://frappecloud.com/docs/local-fc-setup).
+-  **Marketplace**: The marketplace allows developers to list apps with flexible pricing models, ensures compatibility checks, and provides a streamlined system for sales and payouts.
 
-## Some Core DocTypes
 
-- Server
-- Database Server
-- Proxy Server
-- Site
-- Release Group
-- Deploy Candidate
-- Bench
-- App
-- App Source
-- App Release
-- TLS Certificate
+<details>
+<summary>Screenshots</summary>
 
-## The Front-end
+![Dashboard](https://frappe.io/files/press-dashboard.webp)
+![Permissions](https://frappe.io/files/press-permissions.webp)
+![Bench Group Update](https://frappe.io/files/image66de45.png)
+![Marketplace](https://frappe.io/files/press-marketplace.webp)
+</details>
 
-You can read more about the VueJS frontend for Frappe Cloud [here](./dashboard/README.md).
 
-## Contributing
+## Under the Hood
 
-> Journey of a thousand PRs begins with a single typo fix!
+- [**Frappe Framework**](https://github.com/frappe/frappe): A full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
 
-You can contribute in many ways, some of which are:
+- [**Frappe UI**](https://github.com/frappe/frappe-ui): A Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
 
-1. Reporting Issues: If you find a bug, typo etc. Feel free to raise an issue and we will take it from there.
 
-2. Feature PRs: You can start by creating an issue with a feature proposal, we can discuss whether we should go ahead with it or not.
+## Production Setup
 
-3. Give us a star!
+### Self Hosting
 
-4. Documentation
+Follow these steps to set up Press in production:
 
-#### License
 
-[GNU Affero General Public License v3.0](https://github.com/frappe/press/blob/master/license.txt)
+## Development Setup
+
+To setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://frappecloud.com/docs/local-fc-setup).
+
+## Learn and connect
+
+- [Telegram Public Group](https://t.me/frappecloud)
+- [Discuss Forum](https://discuss.frappe.io/c/frappe-cloud/77)
+- [Documentation](https://frappecloud.com/docs)
+- [YouTube](https://frappe.io)
+
+<h2></h2>
+<div align="center" style="padding-top: 0.75rem;">
+	<a href="https://frappe.io" target="_blank">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
+			<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
+		</picture>
+	</a>
+</div>
