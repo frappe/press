@@ -693,7 +693,7 @@ def generate_stk_push(**kwargs):
 	# Get Mpesa settings for the partner's team
 	mpesa_settings = get_mpesa_settings_for_team(partner.name)
 	try:
-		callback_url = (
+		callback_url =(
 			get_request_site_address(True)+
 			"/api/method/press.api.billing.verify_mpsa_transaction"
 		)
@@ -702,7 +702,6 @@ def generate_stk_push(**kwargs):
 		business_shortcode = (
 			mpesa_settings.business_shortcode if env == "production" else mpesa_settings.till_number
 		)
-
 		connector = MpesaConnector(
 			env=env,
 			app_key=mpesa_settings.consumer_key,
@@ -712,7 +711,7 @@ def generate_stk_push(**kwargs):
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount= 3,#args.amount_with_tax,
+			amount= 1, #args.amount_with_tax,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
@@ -734,6 +733,7 @@ def verify_mpsa_transaction(**kwargs):
 	transaction_response, integration_request = parse_transaction_response(kwargs) 
 	handle_transaction_result(transaction_response, integration_request)
 	save_integration_request(integration_request)
+	print("Response coming ----", transaction_response)
 	return {
 		"status": integration_request.status,
 		"ResultDesc": transaction_response.get("ResultDesc")

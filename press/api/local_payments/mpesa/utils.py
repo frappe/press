@@ -142,7 +142,7 @@ def display_mpesa_payment_partners():
 		.join(MpesaSettings)
 		.on(Team.name == MpesaSettings.team)
 		.select(Team.user)
-		.where((Team.country == "Kenya") & (MpesaSettings.sandbox == 1))
+		.where((Team.country == "Kenya") ) #(MpesaSettings.sandbox == 1)
 	)
 
 	mpesa_partners = query.run(as_dict=True)
@@ -362,7 +362,6 @@ def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_p
 			"amount": payment.get("amount"),
 			"posting_date": payment.get("posting_date"),
 		})
-	print("payout_doc", payout_doc)
 	# Save and submit the document
 	payout_doc.insert()
 	payout_doc.submit()
