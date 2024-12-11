@@ -1982,20 +1982,14 @@ def send_change_team_request(name, team_mail_id, reason):
 
 @frappe.whitelist(allow_guest=True)
 def confirm_site_transfer(key):
-	cache = frappe.cache.get_value(f"site_transfer_data:{key}")
-
-	if cache:
-		site, team_change = cache
-
+	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
-		frappe.cache.delete_value(f"site_transfer_data:{key}")
-
 		frappe.response.type = "redirect"
-		frappe.response.location = f"/dashboard/sites/{site}"
+		frappe.response.location = f"/dashboard/sites/{team_change.document_name}"
 	else:
 		from frappe import _
 
