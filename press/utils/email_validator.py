@@ -25,6 +25,8 @@ import smtplib
 
 from dns.resolver import Resolver
 
+from press.api.site import NAMESERVERS
+
 __all__ = ["validate_email"]
 
 log = logging.getLogger(__name__)
@@ -87,8 +89,8 @@ def get_mx_ip(mx_host):
 	if mx_host not in MX_DNS_CACHE:
 		try:
 			resolver = Resolver(configure=False)
-			resolver.nameservers = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
-			answers = resolver.query("frappe.io", "MX")
+			resolver.nameservers = NAMESERVERS
+			answers = resolver.query(mx_host, "MX")
 
 			mx_lookup_result = []
 
