@@ -33,6 +33,9 @@ class VirtualMachineMigration(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.infrastructure.doctype.virtual_machine_migration_bind_mount.virtual_machine_migration_bind_mount import (
+			VirtualMachineMigrationBindMount,
+		)
 		from press.infrastructure.doctype.virtual_machine_migration_mount.virtual_machine_migration_mount import (
 			VirtualMachineMigrationMount,
 		)
@@ -43,6 +46,7 @@ class VirtualMachineMigration(Document):
 			VirtualMachineMigrationVolume,
 		)
 
+		bind_mounts: DF.Table[VirtualMachineMigrationBindMount]
 		copied_virtual_machine: DF.Link | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
@@ -71,6 +75,7 @@ class VirtualMachineMigration(Document):
 	def after_insert(self):
 		self.add_devices()
 		self.set_default_mounts()
+		self.set_default_bind_mounts()
 
 	def add_devices(self):
 		command = "lsblk --json --output name,type,uuid,mountpoint,size,label,fstype"
@@ -148,6 +153,39 @@ class VirtualMachineMigration(Document):
 				"service": service,
 			},
 		)
+		self.save()
+
+	def set_default_bind_mounts(self):
+		# These are the same as Server.set_default_mount_points
+		if self.bind_mounts:
+			return
+
+		server_type = self.machine.get_server().doctype
+		if server_type == "Server":
+			self.append(
+				"bind_mounts",
+				{
+					"source_mount_point": "/opt/volumes/benches/home/frappe/benches",
+					"service": "docker",
+					"mount_point_owner": "frappe",
+					"mount_point_group": "frappe",
+				},
+			)
+		elif server_type == "Database Server":
+			self.append(
+				"bind_mounts",
+				{
+					"source_mount_point": "/opt/volumes/mariadb/var/lib/mysql",
+					"service": "mariadb",
+					"mount_point_owner": "mysql",
+					"mount_point_group": "mysql",
+				},
+			)
+			# Don't worry about /etc/mysql
+			# It is going to be owned by root, uid=0 and gid=0 everywhere
+		else:
+			return
+
 		self.save()
 
 	def add_steps(self):
@@ -244,6 +282,7 @@ class VirtualMachineMigration(Document):
 			(self.wait_for_cloud_init, Wait),
 			(self.remove_old_host_key, NoWait),
 			(self.update_mounts, NoWait),
+			(self.update_bind_mount_permissions, NoWait),
 			(self.update_plan, NoWait),
 		]
 
@@ -448,6 +487,23 @@ class VirtualMachineMigration(Document):
 				result = self.ansible_run(command)
 				if result["status"] != "Success":
 					self.add_comment(text=f"Error updating mounts: {result}")
+					return StepStatus.Failure
+
+		return StepStatus.Success
+
+	def update_bind_mount_permissions(self) -> StepStatus:
+		"Update bind mount permissions"
+		# linux uid / gid might not be the same in the new machine
+		for mount in self.bind_mounts:
+			commands = [
+				f"chown -R {mount.mount_point_owner}:{mount.mount_point_group} {mount.source_mount_point}",
+				# The dependent service might have failed. Start it
+				f"systemctl start {mount.service}",
+			]
+			for command in commands:
+				result = self.ansible_run(command)
+				if result["status"] != "Success":
+					self.add_comment(text=f"Error updating bind mount permissions: {result}")
 					return StepStatus.Failure
 
 		return StepStatus.Success
