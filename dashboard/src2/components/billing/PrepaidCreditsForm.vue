@@ -108,11 +108,12 @@ const minimumAmount = computed(() => {
 	);
 });
 
-const creditsToBuy = computed(() => minimumAmount.value);
+const creditsToBuy = ref(minimumAmount.value);
 const paymentGateway = ref('');
 
 const totalAmount = computed(() => {
-	let _creditsToBuy = creditsToBuy.value || 0;
+	const _creditsToBuy = creditsToBuy.value || 0;
+
 	if (team.doc?.currency === 'INR') {
 		return (
 			_creditsToBuy +
