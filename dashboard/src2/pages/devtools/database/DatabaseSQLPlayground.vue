@@ -250,7 +250,7 @@ export default {
 			for (const tableName in tableSchemas) {
 				childrenSchemas[tableName] = {
 					self: { label: tableName, type: 'table' },
-					children: tableSchemas[tableName].map(x => ({
+					children: tableSchemas[tableName].columns.map(x => ({
 						label: x.column,
 						type: 'column',
 						detail: x.data_type
