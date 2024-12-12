@@ -11,7 +11,7 @@
 </div>
 
 <div align="center">
-	<img src="https://frappe.io/files/frappe-press-architecture526fba.webp" alt="Hero Image" width="72%" />
+	<img src=".github/images/press-cluster.png" alt="Hero Image" width="72%" />
 </div>
 <br />
 <div align="center">
@@ -21,33 +21,32 @@
 </div>
 
 ## Press
+
 Press is a 100% open-source cloud hosting for the Frappe stack.
 
 ## Motivation
+
 Need help
 
 ## Key Features
 
 - **Multitenancy Made Easy**: Press simplifies multi-tenancy by enabling multiple sites on a single platform, each with its app version, allowing independent updates and minimal downtime, even for large sites.
-  
 - **Dashboard**: The dashboard provides a centralized interface to manage apps, servers, sites, billing, backups, and updates, offering real-time insights and streamlined control of complex operations.
 
 - **Permissions**: Granular access controls let team owners manage roles and resources efficiently, ensuring users have access only to relevant information and actions for their roles.
 
 - **Simplified Management**: Press streamlines site management with automated backups, real-time monitoring, role-based access, and easy scaling, making it ideal for growing Frappe environments.
 
--  **Billing**: Automated billing supports daily or monthly subscriptions, flexible payment methods, wallet credits, and ERP integration, simplifying customer invoicing and payments.
+- **Billing**: Automated billing supports daily or monthly subscriptions, flexible payment methods, wallet credits, and ERP integration, simplifying customer invoicing and payments.
 
--  **Marketplace**: The marketplace allows developers to list apps with flexible pricing models, ensures compatibility checks, and provides a streamlined system for sales and payouts.
-
+- **Marketplace**: The marketplace allows developers to list apps with flexible pricing models, ensures compatibility checks, and provides a streamlined system for sales and payouts.
 
 ## Screenshots
 
-![Dashboard](https://frappecloud.com/files/HOME_DASHBOARDc70e16.webp)
-![Permissions](https://frappe.io/files/press-permissions.webp)
-![Bench Group Update](https://frappe.io/files/image66de45.png)
-![Marketplace](https://frappe.io/files/press-marketplace.webp)
-
+![Dashboard](.github/images/press-dashboard.png)
+![Permissions](.github/images/press-role-permission.png)
+![Bench Group Update](.github/images/press-manage-bench-group.png)
+![Marketplace](.github/images/marketplace.png)
 
 ## Under the Hood
 
@@ -60,7 +59,6 @@ Need help
 - [**Docker**](https://www.docker.com): An open-source platform that enables developers to build, package, and deploy applications in lightweight, portable containers.
 
 - [**Ansible**](https://www.ansible.com): An open-source IT automation tool that simplifies the management, configuration, and deployment of systems and applications.
-
 
 ## Setup
 
