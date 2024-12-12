@@ -912,6 +912,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_archive_site_job_update,
 			process_complete_setup_wizard_job_update,
 			process_create_user_job_update,
+			process_fetch_database_table_schema_job_update,
 			process_install_app_site_job_update,
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
@@ -923,9 +924,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
-		from press.press.doctype.site_database_table_schema.site_database_table_schema import (
-			SiteDatabaseTableSchema,
-		)
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
@@ -1025,7 +1023,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
 		elif job.job_type == "Fetch Database Table Schema":
-			SiteDatabaseTableSchema.process_job_update(job)
+			process_fetch_database_table_schema_job_update(job)
 		elif job.job_type in [
 			"Create Database User",
 			"Remove Database User",

@@ -13,6 +13,8 @@ from typing import Any
 
 import dateutil.parser
 import frappe
+import frappe.data
+import frappe.utils
 import pytz
 import requests
 from frappe import _
@@ -2606,17 +2608,37 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def fetch_database_table_schema(self, reload=False):
-		if not frappe.db.exists("Site Database Table Schema", {"site": self.name}):
-			frappe.get_doc({"doctype": "Site Database Table Schema", "site": self.name}).insert(
-				ignore_permissions=True
-			)
+		"""
+		Store dump in redis cache
+		"""
+		key_for_schema = f"database_table_schema__data:{self.name}"
+		key_for_schema_status = (
+			f"database_table_schema__status:{self.name}"  # 1 - loading, 2 - done, None - not available
+		)
 
-		doc = frappe.get_doc("Site Database Table Schema", {"site": self.name})
-		loading, data = doc.fetch(reload)
+		if reload:
+			frappe.cache().delete_value(key_for_schema)
+			frappe.cache().delete_value(key_for_schema_status)
+
+		status = frappe.utils.cint(frappe.cache().get_value(key_for_schema_status))
+		if status:
+			if status == 1:
+				return {
+					"loading": True,
+					"data": [],
+				}
+			if status == 2:
+				return {
+					"loading": False,
+					"data": json.loads(frappe.cache().get_value(key_for_schema)),
+				}
+
+		# create the agent job and put it in loading state
+		frappe.cache().set_value(key_for_schema_status, 1, expires_in_sec=600)
+		Agent(self.server).fetch_database_table_schema(self, include_index_info=True, include_table_size=True)
 		return {
-			"loading": loading,
-			"data": data,
-			"last_updated": doc.last_updated,
+			"loading": True,
+			"data": [],
 		}
 
 	@dashboard_whitelist()
@@ -2668,6 +2690,23 @@ def release_name(name):
 	new_name = f"{name}.archived"
 	new_name = append_number_if_name_exists("Site", new_name, separator=".")
 	frappe.rename_doc("Site", name, new_name)
+
+
+def process_fetch_database_table_schema_job_update(job):
+	key_for_schema = f"database_table_schema__data:{job.site}"
+	key_for_schema_status = (
+		f"database_table_schema__status:{job.site}"  # 1 - loading, 2 - done, None - not available
+	)
+
+	if job.status == "Pending":
+		return
+
+	if job.status == "Success":
+		frappe.cache().set_value(key_for_schema, job.data, expires_in_sec=600)
+		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=600)
+	else:
+		frappe.cache().delete_value(key_for_schema)
+		frappe.cache().delete_value(key_for_schema_status)
 
 
 def process_new_site_job_update(job):  # noqa: C901
