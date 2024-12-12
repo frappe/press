@@ -1756,6 +1756,7 @@ class Site(Document, TagHelpers):
 
 	def delete_multiple_config(self, keys: list[str]):
 		# relies on self._keys_removed_in_last_update in self.validate
+		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
 		config_list: list[dict] = []
 		for key in self.configuration:
 			config = {}
