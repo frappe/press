@@ -76,12 +76,12 @@ RUN mkdir -p /home/frappe/.config /home/frappe/.vnc /home/frappe/.local && \
 # Set up VNC configuration
 RUN mkdir -p /home/frappe/.vnc && \
     echo "#!/bin/bash\n\
-export XDG_SESSION_TYPE=x11\n\
-export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket\n\
-export XDG_RUNTIME_DIR=/run/user/1000\n\
-unset SESSION_MANAGER\n\
-unset DBUS_SESSION_BUS_ADDRESS\n\
-exec dbus-launch --exit-with-session startxfce4" > /home/frappe/.vnc/xstartup && \
+    export XDG_SESSION_TYPE=x11\n\
+    export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket\n\
+    export XDG_RUNTIME_DIR=/run/user/1000\n\
+    unset SESSION_MANAGER\n\
+    unset DBUS_SESSION_BUS_ADDRESS\n\
+    exec dbus-launch --exit-with-session startxfce4" > /home/frappe/.vnc/xstartup && \
     chmod +x /home/frappe/.vnc/xstartup && \
     chown -R frappe:frappe /home/frappe/.vnc
 
@@ -113,8 +113,8 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 # Create code-server config directory and default config
 RUN mkdir -p /home/frappe/.config/code-server && \
     echo "bind-addr: 0.0.0.0:8443\n\
-auth: password\n\
-cert: false" > /home/frappe/.config/code-server/config.yaml
+    auth: password\n\
+    cert: false" > /home/frappe/.config/code-server/config.yaml
 
 # Copy supervisor configuration and startup script
 COPY --chown=frappe:frappe supervisord.conf /etc/supervisor/conf.d/supervisord.conf
