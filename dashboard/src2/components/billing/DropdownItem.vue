@@ -9,6 +9,7 @@
 			<template v-if="active" #suffix>
 				<FeatherIcon class="h-4" name="check" />
 			</template>
+			<slot />
 		</Button>
 	</div>
 </template>

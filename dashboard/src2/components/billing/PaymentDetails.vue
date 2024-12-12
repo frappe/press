@@ -248,6 +248,26 @@ const paymentModeOptions = [
 				active: team.doc.payment_mode === 'Paid by Partner',
 				onClick: () => updatePaymentMode('Paid By Partner')
 			})
+	},
+	{
+		component: () =>
+			h('div', [
+				h('div', { class: 'border-t border-gray-200 my-1' }),
+				h(DropdownItem, null, {
+					default: () =>
+						h('div', { class: 'flex gap-2' }, [
+							h(
+								'a',
+								{
+									href: 'https://frappecloud.com/payment-options',
+									target: '_blank'
+								},
+								'Alternate Payment Methods'
+							),
+							h(FeatherIcon, { name: 'external-link', class: 'h-4' })
+						])
+				})
+			])
 	}
 ];
 
