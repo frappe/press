@@ -4,37 +4,22 @@
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
-    "parent": "Version 12",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.36.0"
    },
    {
     "dependency": "NODE_VERSION",
-    "parent": "Version 12",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "12.19.0"
    },
    {
     "dependency": "PYTHON_VERSION",
-    "parent": "Version 12",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "3.7"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
-    "parent": "Version 12",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.12.5"
    },
    {
     "dependency": "BENCH_VERSION",
-    "parent": "Version 12",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "5.15.2"
    }
   ],
@@ -51,37 +36,22 @@
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
-    "parent": "Version 13",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.36.0"
    },
    {
     "dependency": "NODE_VERSION",
-    "parent": "Version 13",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "14.19.0"
    },
    {
     "dependency": "PYTHON_VERSION",
-    "parent": "Version 13",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "3.8"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
-    "parent": "Version 13",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.12.5"
    },
    {
     "dependency": "BENCH_VERSION",
-    "parent": "Version 13",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "5.15.2"
    }
   ],
@@ -98,37 +68,22 @@
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
-    "parent": "Nightly",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.36.0"
    },
    {
     "dependency": "NODE_VERSION",
-    "parent": "Nightly",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "18.16.0"
    },
    {
     "dependency": "PYTHON_VERSION",
-    "parent": "Nightly",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "3.11"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
-    "parent": "Nightly",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.12.5"
    },
    {
     "dependency": "BENCH_VERSION",
-    "parent": "Nightly",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "5.22.6"
    }
   ],
@@ -145,37 +100,22 @@
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
-    "parent": "Version 14",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.36.0"
    },
    {
     "dependency": "NODE_VERSION",
-    "parent": "Version 14",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "14.19.0"
    },
    {
     "dependency": "PYTHON_VERSION",
-    "parent": "Version 14",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "3.10"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
-    "parent": "Version 14",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.12.5"
    },
    {
     "dependency": "BENCH_VERSION",
-    "parent": "Version 14",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "5.15.2"
    }
   ],
@@ -192,37 +132,22 @@
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
-    "parent": "Version 15",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.36.0"
    },
    {
     "dependency": "NODE_VERSION",
-    "parent": "Version 15",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "18.16.0"
    },
    {
     "dependency": "PYTHON_VERSION",
-    "parent": "Version 15",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "3.11"
    },
    {
     "dependency": "WKHTMLTOPDF_VERSION",
-    "parent": "Version 15",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "0.12.5"
    },
    {
     "dependency": "BENCH_VERSION",
-    "parent": "Version 15",
-    "parentfield": "dependencies",
-    "parenttype": "Frappe Version",
     "version": "5.22.6"
    }
   ],

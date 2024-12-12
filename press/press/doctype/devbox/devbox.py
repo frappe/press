@@ -32,8 +32,10 @@ class Devbox(Document):
 		codeserver_port: DF.Int
 		container_id: DF.Data | None
 		cpu_cores: DF.Int
+		database_volume_size: DF.Data | None
 		disk_mb: DF.Int
 		domain: DF.Link | None
+		home_volume_size: DF.Data | None
 		initialized: DF.Check
 		ram: DF.Int
 		server: DF.Link
@@ -43,6 +45,7 @@ class Devbox(Document):
 		vnc_port: DF.Int
 		websockify_port: DF.Int
 	# end: auto-generated types
+
 	pass
 
 	def _get_devbox_name(self, subdomain: str):
@@ -127,6 +130,14 @@ class Devbox(Document):
 		if len(status) > 10:
 			status = "Exited"
 		frappe.db.set_value(dt="Devbox", dn=self.name, field="status", val=status)
+
+	@frappe.whitelist()
+	def sync_devbox_docker_volumes_size(self):
+		agent = Agent(server_type="Server", server=self.server)
+		parsed_result = agent.post(f"devboxes/{self.name}/docker_volumes_size")["message"]
+
+		for field in ["database_volume_size", "home_volume_size"]:
+			frappe.db.set_value(dt="Devbox", dn=self.name, field=field, val=parsed_result.get(field))
 
 
 def process_new_devbox_job_update(job: AgentJob):

@@ -7,74 +7,38 @@
   "name": "PYTHON_VERSION",
   "supported_versions": [
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "3.7"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "3.7"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "3.8"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "3.10"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "3.10"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "3.10"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "3.11"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "3.11"
    },
    {
-    "is_custom": 0,
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "3.11"
    }
@@ -89,50 +53,26 @@
   "name": "NODE_VERSION",
   "supported_versions": [
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "18.16.0"
    },
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "18.16.0"
    },
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "16.11.0"
    },
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "16.16.0"
    },
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "14.19.0"
    },
    {
-    "is_custom": 0,
-    "parent": "NODE_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "12.19.0"
    }
@@ -147,122 +87,62 @@
   "name": "WKHTMLTOPDF_VERSION",
   "supported_versions": [
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "0.12.4"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "0.12.4"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "0.12.4"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "0.12.4"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "0.12.4"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "0.12.5"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "0.12.5"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "0.12.5"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "0.12.5"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "0.12.5"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "0.12.6"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "0.12.6"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "0.12.6"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "0.12.6"
    },
    {
-    "is_custom": 0,
-    "parent": "WKHTMLTOPDF_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "0.12.6"
    }
@@ -277,114 +157,58 @@
   "name": "BENCH_VERSION",
   "supported_versions": [
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "5.15.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "5.15.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "5.15.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "5.16.0"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "5.17.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "5.17.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "5.17.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "5.17.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "5.17.2"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "5.18.0"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "5.18.0"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "5.18.0"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "5.18.0"
    },
    {
-    "is_custom": 0,
-    "parent": "BENCH_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "5.18.0"
    }
@@ -399,42 +223,22 @@
   "name": "NVM_VERSION",
   "supported_versions": [
    {
-    "is_custom": 0,
-    "parent": "NVM_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
     "version": "0.39.1"
    },
    {
-    "is_custom": 0,
-    "parent": "NVM_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "0.39.1"
    },
    {
-    "is_custom": 0,
-    "parent": "NVM_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
     "version": "0.39.1"
    },
    {
-    "is_custom": 0,
-    "parent": "NVM_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
     "version": "0.39.1"
    },
    {
-    "is_custom": 0,
-    "parent": "NVM_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "0.39.1"
    }

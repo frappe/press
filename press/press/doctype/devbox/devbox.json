@@ -23,7 +23,10 @@
   "container_id",
   "cpu_cores",
   "ram",
-  "disk_mb"
+  "disk_mb",
+  "column_break_lmyb",
+  "home_volume_size",
+  "database_volume_size"
  ],
  "fields": [
   {
@@ -139,6 +142,22 @@
    "fieldtype": "Data",
    "label": "Codeserver Password",
    "read_only": 1
+  },
+  {
+   "fieldname": "home_volume_size",
+   "fieldtype": "Data",
+   "label": "Home Volume Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_volume_size",
+   "fieldtype": "Data",
+   "label": "Database Volume Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lmyb",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -149,7 +168,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-11-05 22:19:26.735978",
+ "modified": "2024-12-12 18:22:16.606760",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

@@ -157,6 +157,18 @@
  },
  {
   "datatype": "Str",
+  "default_value": "3307",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2024-11-22 12:52:35.958089",
+  "name": "extra_port",
+  "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
   "default_value": "200",
   "doc_section": "server",
   "docstatus": 0,
@@ -368,30 +380,6 @@
   "dynamic": 0,
   "modified": "2024-11-22 12:31:31.593757",
   "name": "myisam_recover_options",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "3307",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 0,
-  "modified": "2024-11-22 12:52:35.958089",
-  "name": "extra_port",
-  "set_on_new_servers": 0,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
-  "default_value": "MIXED",
-  "doc_section": "replication-and-binary-log",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 0,
-  "modified": "2024-12-12 12:59:33.579411",
-  "name": "binlog_format",
   "set_on_new_servers": 0,
   "skippable": 0
  }

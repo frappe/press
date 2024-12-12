@@ -49,6 +49,14 @@ frappe.ui.form.on('Devbox', {
 			__('Actions'),
 		);
 
+		frm.add_custom_button(
+			__('Sync Docker Volumes Size'),
+			() => {
+				frm.call('sync_devbox_docker_volumes_size');
+			},
+			__('Actions'),
+		);
+
 		if (['Starting', 'Running'].includes(frm.doc.status)) {
 			frm.add_custom_button(
 				__('Go to Devbox'),
