@@ -10,11 +10,11 @@ from itertools import groupby
 from typing import TYPE_CHECKING, Generator, Iterable, Literal
 
 import frappe
+import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from frappe.utils import get_system_timezone
-from zoneinfo import ZoneInfo
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -1221,8 +1221,8 @@ def sync_bench_analytics(name):
 
 
 def convert_user_timezone_to_utc(datetime):
-	timezone = ZoneInfo(get_system_timezone())
-	return timezone.localize(datetime).astimezone(datetime.timezone.utc)
+	timezone = pytz.timezone(get_system_timezone())
+	return timezone.localize(datetime).astimezone(pytz.utc)
 
 
 def sort_supervisor_processes(processes: "list[SupervisorProcess]"):

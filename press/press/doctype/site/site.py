@@ -13,6 +13,7 @@ from typing import Any
 
 import dateutil.parser
 import frappe
+import pytz
 import requests
 from frappe import _
 from frappe.core.utils import find
@@ -31,7 +32,6 @@ from frappe.utils import (
 	sbool,
 	time_diff_in_hours,
 )
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from press.exceptions import (
 	CannotChangePlan,
@@ -1333,7 +1333,8 @@ class Site(Document, TagHelpers):
 		if old_team == team_mail_id:
 			frappe.throw(f"Site is already owned by the team {team_mail_id}")
 
-		team_change = frappe.get_doc(
+		key = frappe.generate_hash("Site Transfer Link", 20)
+		frappe.get_doc(
 			{
 				"doctype": "Team Change",
 				"document_type": "Site",
@@ -1341,19 +1342,9 @@ class Site(Document, TagHelpers):
 				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
 				"from_team": self.team,
 				"reason": reason,
+				"key": key,
 			}
 		).insert()
-
-		key = frappe.generate_hash("Site Transfer Link", 20)
-		minutes = 20
-		frappe.cache.set_value(
-			f"site_transfer_data:{key}",
-			(
-				self.name,
-				team_change.name,
-			),
-			expires_in_sec=minutes * 60,
-		)
 
 		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
 
@@ -1370,7 +1361,6 @@ class Site(Document, TagHelpers):
 				"old_team": old_team,
 				"new_team": team_mail_id,
 				"transfer_url": link,
-				"minutes": minutes,
 			},
 		)
 
@@ -1539,8 +1529,8 @@ class Site(Document, TagHelpers):
 		# Empty string is fine, since we default to IST
 		if timezone:
 			try:
-				ZoneInfo(timezone)
-			except ZoneInfoNotFoundError:
+				pytz.timezone(timezone)
+			except pytz.exceptions.UnknownTimeZoneError:
 				return False
 
 		if self.timezone != timezone:

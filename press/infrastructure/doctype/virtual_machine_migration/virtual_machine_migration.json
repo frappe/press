@@ -21,6 +21,7 @@
   "mounts",
   "raw_devices",
   "parsed_devices",
+  "bind_mounts",
   "section_break_mjhg",
   "steps"
  ],
@@ -148,11 +149,17 @@
    "label": "New Plan",
    "options": "Server Plan",
    "read_only": 1
+  },
+  {
+   "fieldname": "bind_mounts",
+   "fieldtype": "Table",
+   "label": "Bind Mounts",
+   "options": "Virtual Machine Migration Bind Mount"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-09 16:31:29.250443",
+ "modified": "2024-12-10 10:51:08.790005",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration",
