@@ -2262,6 +2262,7 @@ class Site(Document, TagHelpers):
 			)
 			if existed_agent_job_name:
 				return {
+					"success": True,
 					"message": "Optimize Tables job is already running on this site.",
 					"job_name": existed_agent_job_name,
 				}
@@ -2272,15 +2273,20 @@ class Site(Document, TagHelpers):
 					"site": self.name,
 					"job_type": "Optimize Tables",
 					"status": ["not in", ["Failure", "Delivery Failure"]],
-					"creation": [">", frappe.utils.add_to_date(hours=-1)],
+					"creation": [">", frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)],
 				},
 			)
 			if recent_agent_job_name:
-				frappe.throw("Optimize Tables job has already run in the last 1 hour.")
+				return {
+					"success": False,
+					"message": "Optimize Tables job has already run in the last 1 hour.",
+					"job_name": None,
+				}
 
 		agent = Agent(self.server)
 		job_name = agent.optimize_tables(self).name
 		return {
+			"success": True,
 			"message": "Optimize Tables has been triggered on this site.",
 			"job_name": job_name,
 		}

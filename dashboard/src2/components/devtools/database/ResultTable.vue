@@ -10,7 +10,8 @@ import { unparse } from 'papaparse';
 
 const props = defineProps({
 	columns: { type: Array, required: true },
-	data: { type: Array, required: true }
+	data: { type: Array, required: true },
+	enableCSVExport: { type: Boolean, default: true }
 });
 
 const generateData = computed(() => {
@@ -145,7 +146,11 @@ const downloadCSV = async () => {
 		</div>
 
 		<div class="flex justify-between p-1" v-if="props.data?.length != 0">
-			<Button @click="downloadCSV" iconLeft="download" variant="ghost"
+			<Button
+				@click="downloadCSV"
+				iconLeft="download"
+				variant="ghost"
+				v-if="enableCSVExport"
 				>Download as CSV</Button
 			>
 			<div

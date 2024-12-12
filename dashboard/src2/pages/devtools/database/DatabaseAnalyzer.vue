@@ -22,7 +22,7 @@
 				<Button
 					iconLeft="refresh-ccw"
 					variant="subtle"
-					:loading="site && !isSQLEditorReady"
+					:loading="site && !isSchemaInformationReceived"
 					:disabled="!site"
 					@click="
 						() =>
@@ -39,8 +39,11 @@
 	</Header>
 	<div class="m-5">
 		<!-- body -->
-		<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
-			<div class="overflow-hidden rounded border">hekki</div>
+		<div class="mt-2 flex flex-col" v-if="isSchemaInformationReceived">
+			<div>
+				<Button @click="optimizeTable"> Optimize Table </Button>
+			</div>
+			<ObjectList :options="tableAnalysisTableOptions" />
 		</div>
 		<div
 			v-else-if="!site"
@@ -56,15 +59,13 @@
 		</div>
 	</div>
 </template>
-<style scoped>
-.output-container {
-	@apply rounded border p-4 text-base text-gray-700;
-}
-</style>
 <script>
 import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
 import LinkControl from '../../../components/LinkControl.vue';
+import ObjectList from '../../../components/ObjectList.vue';
+import { h } from 'vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -72,22 +73,18 @@ export default {
 		Header,
 		Breadcrumbs,
 		FTabs: Tabs,
-		LinkControl
+		LinkControl,
+		ObjectList
 	},
 	data() {
 		return {
 			site: null,
-			errorMessage: null
+			errorMessage: null,
+			optimize_table_job_name: null
 		};
 	},
 	mounted() {},
 	watch: {
-		query() {
-			window.localStorage.setItem(
-				`sql_playground_query_${this.site}`,
-				this.query
-			);
-		},
 		site(site_name) {
 			// reset state
 			this.data = null;
@@ -109,15 +106,89 @@ export default {
 					}
 				}
 			};
+		},
+		optimizeTable() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				auto: false,
+				onSuccess: data => {
+					if (data?.message) {
+						if (data?.message?.success) {
+							toast.success(data?.message?.message);
+						} else {
+							toast.error(data?.message?.message);
+						}
+						this.optimize_table_job_name = data?.message?.job_name;
+					}
+				}
+			};
 		}
 	},
 	computed: {
-		isSQLEditorReady() {
+		isSchemaInformationReceived() {
 			if (this.$resources.tableSchemas.loading) return false;
 			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
 			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
 			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false;
 			return true;
+		},
+		tableSchemas() {
+			if (!this.isSchemaInformationReceived) return [];
+			return this.$resources.tableSchemas?.data?.message?.data;
+		},
+		tableSizeInfo() {
+			if (!this.isSchemaInformationReceived) return [];
+			let data = [];
+			for (const tableName in this.tableSchemas) {
+				const table = this.tableSchemas[tableName];
+				data.push({
+					table_name: tableName,
+					size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
+					no_of_columns: table.columns.length
+				});
+			}
+			return data;
+		},
+		tableAnalysisTableOptions() {
+			if (!this.isSchemaInformationReceived) return [];
+			return {
+				data: () => this.tableSizeInfo,
+				hideControls: true,
+				columns: [
+					{
+						label: 'Table Name',
+						fieldname: 'table_name',
+						width: 0.5,
+						type: 'Component',
+						component({ row }) {
+							return h(
+								'div',
+								{
+									class: 'truncate text-base cursor-copy',
+									onClick() {
+										if ('clipboard' in navigator) {
+											navigator.clipboard.writeText(row.table_name);
+											toast.success('Copied to clipboard');
+										}
+									}
+								},
+								[row.table_name]
+							);
+						}
+					},
+					{
+						label: 'Size (MB)',
+						fieldname: 'size_mb',
+						width: 0.5
+					},
+					{
+						label: 'No of Columns',
+						fieldname: 'no_of_columns',
+						width: 0.5
+					}
+				]
+			};
 		}
 	},
 	methods: {
@@ -131,6 +202,13 @@ export default {
 				args: {
 					reload
 				}
+			});
+		},
+		optimizeTable() {
+			this.$resources.optimizeTable.submit({
+				dt: 'Site',
+				dn: this.site,
+				method: 'optimize_tables'
 			});
 		}
 	}
