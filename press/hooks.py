@@ -271,6 +271,7 @@ scheduler_events = {
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
+			"press.press.doctype.devbox.devbox_helper.sync_all_active_devboxes",
 		],
 		"*/10 * * * *": [
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",

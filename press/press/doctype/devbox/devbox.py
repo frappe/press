@@ -37,6 +37,7 @@ class Devbox(Document):
 		domain: DF.Link | None
 		home_volume_size: DF.Data | None
 		initialized: DF.Check
+		is_removed: DF.Check
 		ram: DF.Int
 		server: DF.Link
 		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]

@@ -9,6 +9,7 @@
   "subdomain",
   "domain",
   "initialized",
+  "is_removed",
   "websockify_port",
   "codeserver_port",
   "vnc_port",
@@ -158,6 +159,12 @@
   {
    "fieldname": "column_break_lmyb",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_removed",
+   "fieldtype": "Check",
+   "label": "Removed"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -168,7 +175,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-12-12 18:22:16.606760",
+ "modified": "2024-12-13 11:10:28.142206",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
