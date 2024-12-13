@@ -39,23 +39,23 @@ frappe.ui.form.on('Devbox', {
 				},
 				__('Actions'),
 			);
+
+			frm.add_custom_button(
+				__('Sync Status'),
+				() => {
+					frm.call('sync_devbox_status');
+				},
+				__('Actions'),
+			);
+
+			frm.add_custom_button(
+				__('Sync Docker Volumes Size'),
+				() => {
+					frm.call('sync_devbox_docker_volumes_size');
+				},
+				__('Actions'),
+			);
 		}
-
-		frm.add_custom_button(
-			__('Sync Status'),
-			() => {
-				frm.call('sync_devbox_status');
-			},
-			__('Actions'),
-		);
-
-		frm.add_custom_button(
-			__('Sync Docker Volumes Size'),
-			() => {
-				frm.call('sync_devbox_docker_volumes_size');
-			},
-			__('Actions'),
-		);
 
 		if (['Starting', 'Running'].includes(frm.doc.status)) {
 			frm.add_custom_button(
@@ -66,5 +66,12 @@ frappe.ui.form.on('Devbox', {
 				__('Actions'),
 			);
 		}
+		frm.add_custom_button(
+			__('Destroy Devbox'),
+			() => {
+				frm.call('destroy_devbox');
+			},
+			__('Actions'),
+		);
 	},
 });

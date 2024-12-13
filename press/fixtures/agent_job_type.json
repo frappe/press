@@ -1435,27 +1435,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 6,
-  "modified": "2023-11-06 07:28:18.587094",
-  "name": "Remove Site from Upstream",
-  "request_method": "DELETE",
-  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
-  "steps": [
-   {
-    "step_name": "Remove Site File from Upstream Directory"
-   },
-   {
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 0,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 6,
   "modified": "2023-11-06 07:28:18.510770",
   "name": "Archive Site",
   "request_method": null,
@@ -1520,21 +1499,6 @@
    },
    {
     "step_name": "Bench Restart"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
-  "modified": "2024-10-21 11:18:53.122319",
-  "name": "Start Devbox",
-  "request_method": "POST",
-  "request_path": "devboxes/{devbox.name}/{devbox.websockify_port}/start",
-  "steps": [
-   {
-    "step_name": "Run Devbox"
    }
   ]
  },
@@ -1673,6 +1637,66 @@
    },
    {
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-10-21 11:18:53.122319",
+  "name": "Start Devbox",
+  "request_method": "POST",
+  "request_path": "devboxes/{devbox.name}/{devbox.websockify_port}/start",
+  "steps": [
+   {
+    "step_name": "Run Devbox"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.587094",
+  "name": "Remove Site from Upstream",
+  "request_method": "DELETE",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
+  "steps": [
+   {
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-12-13 16:38:43.930665",
+  "name": "Destroy Devbox",
+  "request_method": "POST",
+  "request_path": "/devboxes/{devbox.name}/destroy",
+  "steps": [
+   {
+    "step_name": "Delete Devbox Directory"
+   },
+   {
+    "step_name": "Stop Devbox"
+   },
+   {
+    "step_name": "Delete Devbox Database Volume"
+   },
+   {
+    "step_name": "Delete Devbox Home Volume"
    }
   ]
  }

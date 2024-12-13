@@ -1029,7 +1029,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
-		elif job.job_type == "New Devbox" or job.job_type == "Start Devbox" or job.job_type == "Stop Devbox":
+		elif job.job_type in ("New Devbox", "Start Devbox", "Stop Devbox", "Destroy Devbox"):
 			process_new_devbox_job_update(job=job)
 		elif job.job_type == "Fetch Database Table Schema":
 			SiteDatabaseTableSchema.process_job_update(job)

@@ -37,7 +37,7 @@ class Devbox(Document):
 		domain: DF.Link | None
 		home_volume_size: DF.Data | None
 		initialized: DF.Check
-		is_removed: DF.Check
+		is_destroyed: DF.Check
 		ram: DF.Int
 		server: DF.Link
 		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]
@@ -61,6 +61,28 @@ class Devbox(Document):
 	@frappe.whitelist()
 	def get_available_cpu_and_ram(self):
 		print("meow")
+
+	@frappe.whitelist()
+	def destroy_devbox(self):
+		devbox = self
+		reverse_proxy = frappe.db.get_value(doctype="Server", filters=devbox.server, fieldname="proxy_server")
+		proxy_agent = Agent(server_type="Proxy Server", server=reverse_proxy)
+		server_private_ip = frappe.db.get_value(
+			doctype="Server", filters=devbox.server, fieldname="private_ip"
+		)
+		proxy_agent.create_agent_job(
+			"Remove Site from Upstream",
+			path=f"/proxy/upstreams/{server_private_ip}/sites/{devbox.name}",
+			data={"name": devbox.name},
+			devbox=devbox.name,
+			method="DELETE",
+		)
+		server_agent = Agent(server_type="Server", server=devbox.server)
+		server_agent.create_agent_job(
+			"Destroy Devbox",
+			path=f"/devboxes/{devbox.name}/destroy",
+			devbox=devbox.name,
+		)
 
 	@frappe.whitelist()
 	def initialize_devbox(self):
@@ -150,6 +172,12 @@ def process_new_devbox_job_update(job: AgentJob):
 			"vnc_port": data["vnc_port"],
 			"codeserver_port": data["codeserver_port"],
 			"browser_port": data["browser_port"],
+		}
+		frappe.db.set_value("Devbox", job.devbox, update_fields)
+
+	if job.job_type == "Destroy Devbox" and job.status == "Success":
+		update_fields = {
+			"is_destroyed": True,
 		}
 		frappe.db.set_value("Devbox", job.devbox, update_fields)
 

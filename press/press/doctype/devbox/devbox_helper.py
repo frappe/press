@@ -4,8 +4,7 @@ from press.press.doctype.devbox.devbox import Devbox
 
 
 def sync_all_active_devboxes():
-	devboxes = frappe.get_all("Devbox", filters={"is_removed": False}, pluck="name")
-	print(devboxes)
+	devboxes = frappe.get_all("Devbox", filters={"is_destroyed": False}, pluck="name")
 	for devbox_name in devboxes:
 		frappe.enqueue(
 			"press.press.doctype.devbox.devbox_helper.sync_devbox",

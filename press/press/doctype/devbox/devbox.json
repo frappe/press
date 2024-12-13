@@ -9,7 +9,7 @@
   "subdomain",
   "domain",
   "initialized",
-  "is_removed",
+  "is_destroyed",
   "websockify_port",
   "codeserver_port",
   "vnc_port",
@@ -162,9 +162,9 @@
   },
   {
    "default": "0",
-   "fieldname": "is_removed",
+   "fieldname": "is_destroyed",
    "fieldtype": "Check",
-   "label": "Removed"
+   "label": "Destroyed"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -175,7 +175,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-12-13 11:10:28.142206",
+ "modified": "2024-12-13 14:11:07.884598",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
