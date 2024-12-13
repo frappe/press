@@ -73,7 +73,9 @@ class DeployCandidate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
+		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+			DeployCandidateApp,
+		)
 		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 			DeployCandidateBuildStep,
 		)
@@ -93,7 +95,6 @@ class DeployCandidate(Document):
 		build_end: DF.Datetime | None
 		build_error: DF.Code | None
 		build_output: DF.Code | None
-		build_platform: DF.Literal["linux/amd64", "linux/arm64"]
 		build_server: DF.Link | None
 		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
@@ -117,7 +118,6 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
-		platform: DF.Literal["x86_64", "arm64"]
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
@@ -236,7 +236,6 @@ class DeployCandidate(Document):
 
 		no_build = kwargs.get("no_build", False)
 		self.set_build_server(no_build)
-		self.set_build_platform()
 		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
@@ -273,15 +272,6 @@ class DeployCandidate(Document):
 			return
 
 		throw_no_build_server()
-
-	def set_build_platform(self):
-		DEFAULT_BUILD_PLATFORM = "linux/amd64"
-		PLATFORM_MAP = {
-			"x86_64": "linux/amd64",
-			"arm64": "linux/arm64",
-		}
-		self.platform = frappe.db.get_value("Server", self.build_server, "platform")
-		self.build_platform = PLATFORM_MAP.get(self.platform, DEFAULT_BUILD_PLATFORM)
 
 	def validate_status(self):
 		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -522,7 +512,6 @@ class DeployCandidate(Document):
 				# read in `process_run_build`
 				"deploy_candidate": self.name,
 				"deploy_after_build": deploy_after_build,
-				"platform": self.build_platform,
 			}
 		)
 		self.last_updated = now()

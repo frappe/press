@@ -28,8 +28,6 @@
   "pending_end",
   "build_server",
   "no_cache",
-  "platform",
-  "build_platform",
   "section_break_11",
   "docker_image",
   "docker_image_id",
@@ -417,25 +415,6 @@
    "fieldname": "no_cache",
    "fieldtype": "Check",
    "label": "No Cache"
-  },
-  {
-   "default": "x86_64",
-   "fetch_from": "build_server.platform",
-   "fieldname": "platform",
-   "fieldtype": "Select",
-   "label": "Platform",
-   "options": "x86_64\narm64",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "default": "linux/amd64",
-   "fieldname": "build_platform",
-   "fieldtype": "Select",
-   "label": "Build Platform",
-   "options": "linux/amd64\nlinux/arm64",
-   "read_only": 1,
-   "reqd": 1
   }
  ],
  "links": [
@@ -452,7 +431,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-12-12 18:10:16.212187",
+ "modified": "2024-06-21 14:12:47.335402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
