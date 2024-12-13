@@ -27,7 +27,6 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import Bench
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 

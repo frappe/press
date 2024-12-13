@@ -509,3 +509,15 @@ class TestSite(unittest.TestCase):
 			json.loads(update_job.request_data).get("remove"),
 			["key1", "key2"],
 		)
+
+	def test_apps_are_reordered_to_follow_bench_order(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		app3 = create_test_app("crm", "Frappe CRM")
+		group = create_test_release_group([app1, app2, app3])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name, apps=["frappe", "crm", "erpnext"])
+		site.reload()
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.apps[2].app, "crm")
