@@ -58,18 +58,9 @@
 		<nav class="px-2">
 			<NavigationItems>
 				<template v-slot="{ navigation }">
-					<template v-for="(item, i) in navigation">
-						<AppSidebarItemGroup
-							v-if="item.children"
-							:key="item.name"
-							:item="item"
-						/>
-						<AppSidebarItem
-							class="mt-0.5"
-							v-else
-							:key="item.name"
-							:item="item"
-						/>
+					<template v-for="(item, i) in navigation" :key="item.name">
+						<AppSidebarItemGroup v-if="item.children" :item="item" />
+						<AppSidebarItem class="mt-0.5" v-else :item="item" />
 					</template>
 				</template>
 			</NavigationItems>

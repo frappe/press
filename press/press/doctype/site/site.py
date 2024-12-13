@@ -85,7 +85,10 @@ from press.utils.dns import _change_dns_record, create_dns_record
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from frappe.types.DF import Table
+
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.bench_app.bench_app import BenchApp
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
@@ -358,7 +361,7 @@ class Site(Document, TagHelpers):
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
-		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		bench_apps: Table[BenchApp] = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
 			if not find(bench_apps, lambda x: x.app == app.app):
 				frappe.throw(f"app {app.app} is not available on Bench {self.bench}.")
@@ -372,8 +375,13 @@ class Site(Document, TagHelpers):
 
 		# Install apps in the same order as bench
 		if self.is_new():
-			bench_app_names = [app.app for app in bench_apps]
-			self.apps.sort(key=lambda x: bench_app_names.index(x.app))
+			self.sort_apps(bench_apps)
+
+	def sort_apps(self, bench_apps: Table[BenchApp]):
+		bench_app_names = [app.app for app in bench_apps]
+		self.apps.sort(key=lambda x: bench_app_names.index(x.app))
+		for idx, app in enumerate(self.apps):
+			app.idx = idx + 1
 
 	def validate_host_name(self):
 		# set or update site.host_name
@@ -1744,7 +1752,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def delete_config(self, key, save=True):
+	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
 			return None
@@ -1754,10 +1762,21 @@ class Site(Document, TagHelpers):
 			if row.key != key and not row.internal:
 				updated_config.append({"key": row.key, "value": row.value, "type": row.type})
 
-		self._set_configuration(updated_config)
-		if save:
-			return Agent(self.server).update_site_config(self)
-		return None
+		return self.update_site_config(updated_config)
+
+	def delete_multiple_config(self, keys: list[str]):
+		# relies on self._keys_removed_in_last_update in self.validate
+		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
+		config_list: list[dict] = []
+		for key in self.configuration:
+			config = {}
+			if key.key in keys:
+				continue
+			config["key"] = key.key
+			config["value"] = key.value
+			config["type"] = key.type
+			config_list.append(config)
+		self.update_site_config(config_list)
 
 	@frappe.whitelist()
 	def update_site_config(self, config=None):
