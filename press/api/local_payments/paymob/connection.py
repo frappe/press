@@ -3,8 +3,8 @@ from typing import Any, Dict, Tuple, Union
 import requests
 from requests import HTTPError, JSONDecodeError, RequestException
 
-from paymob.data_classes import ResponseFeedBack
-from paymob.response_codes import (
+from .data_classes.response_feedback_dataclass import ResponseFeedBack
+from .response_codes import (
 	HTTP_EXCEPTION,
 	HTTP_EXCEPTION_MESSAGE,
 	JSON_DECODE_EXCEPTION,
