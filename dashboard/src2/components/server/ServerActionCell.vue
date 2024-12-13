@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';
 import router from '../../router';
@@ -119,12 +119,17 @@ function onRenameServer() {
 }
 
 function onDropServer() {
+	const databaseServer = createDocumentResource({
+		doctype: 'Database Server',
+		name: server.doc.database_server
+	});
+
 	confirmDialog({
 		title: 'Drop Server',
-		message: `Are you sure you want to drop your servers?<br>Both the Application server (<b>${server.doc.name}</b>) and Database server (<b>${server.doc.database_server}</b>) will be archived.<br>This action cannot be undone.`,
+		message: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
 		fields: [
 			{
-				label: 'Please type the server name to confirm',
+				label: "Please type either server's name or title to confirm",
 				fieldname: 'confirmServerName'
 			}
 		],
@@ -136,7 +141,9 @@ function onDropServer() {
 			if (server.dropServer.loading) return;
 			if (
 				values.confirmServerName !== server.doc.name &&
-				values.confirmServerName !== server.doc.database_server
+				values.confirmServerName !== server.doc.database_server &&
+				values.confirmServerName.trim() !== server.doc.title.trim() &&
+				values.confirmServerName.trim() !== databaseServer.doc.title.trim()
 			) {
 				throw new Error('Server name does not match');
 			}

@@ -28,6 +28,7 @@ export default {
 					'brand',
 					'stripe_mandate_id'
 				],
+				emptyStateMessage: 'No cards added.',
 				columns: [
 					{
 						label: 'Name on Card',

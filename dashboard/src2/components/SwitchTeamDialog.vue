@@ -13,6 +13,7 @@
 						class="font-medium"
 						:class="{ underline: $team.doc.is_desk_user }"
 						:href="$team.doc.is_desk_user ? `/app/team/${$team.name}` : null"
+						target="_blank"
 					>
 						{{ $team.doc.user }}
 					</component>

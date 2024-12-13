@@ -13,7 +13,7 @@ import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
 
-from press.utils import log_error, sanitize_config
+from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
 if TYPE_CHECKING:
 	from io import BufferedReader
@@ -94,22 +94,6 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
-	def _get_mariadb_root_password(self, site):
-		database_server, managed_database_service = frappe.get_cached_value(
-			"Bench", site.bench, ["database_server", "managed_database_service"]
-		)
-
-		if database_server:
-			doctype = "Database Server"
-			name = database_server
-			field = "mariadb_root_password"
-		else:
-			doctype = "Managed Database Service"
-			name = managed_database_service
-			field = "root_user_password"
-
-		return get_decrypted_password(doctype, name, field)
-
 	def _get_managed_db_config(self, site):
 		managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
 
@@ -130,7 +114,7 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -144,7 +128,7 @@ class Agent:
 
 	def reinstall_site(self, site):
 		data = {
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -168,7 +152,7 @@ class Agent:
 
 		data = {
 			"apps": apps,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
@@ -273,7 +257,7 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
@@ -620,12 +604,21 @@ class Agent:
 		)
 
 	def add_proxysql_user(
-		self, site, database, username, password, database_server, reference_doctype=None, reference_name=None
+		self,
+		site,
+		database: str,
+		username: str,
+		password: str,
+		max_connections: int,
+		database_server,
+		reference_doctype=None,
+		reference_name=None,
 	):
 		data = {
 			"username": username,
 			"password": password,
 			"database": database,
+			"max_connections": max_connections,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
 		return self.create_agent_job(

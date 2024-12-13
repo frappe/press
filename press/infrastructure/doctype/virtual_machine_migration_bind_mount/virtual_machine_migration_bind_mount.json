@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-12-10 10:47:58.739108",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "column_break_ygbk",
+  "source_mount_point",
+  "service",
+  "column_break_llpc",
+  "mount_point_owner",
+  "mount_point_group"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_ygbk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 2,
+   "default": "root",
+   "fieldname": "mount_point_owner",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mount Point Owner",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "default": "root",
+   "fieldname": "mount_point_group",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mount Point Group",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_llpc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 5,
+   "fieldname": "source_mount_point",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source Mount Point",
+   "mandatory_depends_on": "eval: doc.mount_type === \"Bind\"",
+   "read_only_depends_on": "eval: doc.mount_type === \"Volume\"",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-10 10:54:24.835566",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine Migration Bind Mount",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

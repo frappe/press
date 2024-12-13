@@ -7,6 +7,7 @@
  "field_order": [
   "virtual_machine",
   "status",
+  "new_plan",
   "column_break_pega",
   "virtual_machine_image",
   "machine_type",
@@ -17,6 +18,10 @@
   "duration",
   "section_break_pplo",
   "volumes",
+  "mounts",
+  "raw_devices",
+  "parsed_devices",
+  "bind_mounts",
   "section_break_mjhg",
   "steps"
  ],
@@ -27,6 +32,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Virtual Machine",
+   "link_filters": "[[\"Virtual Machine\",\"status\",\"not in\",[\"Draft\",\"Terminated\",null]]]",
    "options": "Virtual Machine",
    "reqd": 1,
    "set_only_once": 1
@@ -80,6 +86,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Virtual Machine Image",
+   "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
    "options": "Virtual Machine Image",
    "reqd": 1,
    "set_only_once": 1
@@ -113,11 +120,46 @@
    "fieldtype": "Duration",
    "label": "Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "raw_devices",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Raw Devices",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parsed_devices",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Parsed Devices",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Virtual Machine Migration Mount"
+  },
+  {
+   "fieldname": "new_plan",
+   "fieldtype": "Link",
+   "label": "New Plan",
+   "options": "Server Plan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bind_mounts",
+   "fieldtype": "Table",
+   "label": "Bind Mounts",
+   "options": "Virtual Machine Migration Bind Mount"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-20 15:27:50.984335",
+ "modified": "2024-12-10 10:51:08.790005",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Migration",

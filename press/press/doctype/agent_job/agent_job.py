@@ -328,6 +328,19 @@ class AgentJob(Document):
 
 		return None
 
+	@property
+	def failed_because_of_agent_update(self) -> bool:
+		if "BrokenPipeError" in str(self.traceback) and frappe.db.exists(
+			"Ansible Play",
+			{
+				"play": "Update Agent",
+				"server": self.server,
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-15)),
+			},
+		):
+			return True
+		return False
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
@@ -896,7 +909,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site.site import (
-			process_add_proxysql_user_job_update,
 			process_archive_site_job_update,
 			process_complete_setup_wizard_job_update,
 			process_create_user_job_update,
@@ -905,7 +917,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
-			process_remove_proxysql_user_job_update,
 			process_rename_site_job_update,
 			process_restore_job_update,
 			process_restore_tables_job_update,
@@ -979,16 +990,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_add_ssh_user_job_update(job)
 		elif job.job_type == "Remove User from Proxy":
 			process_remove_ssh_user_job_update(job)
-		elif job.job_type == "Add User to ProxySQL":
+		elif job.job_type == "Add User to ProxySQL" or job.job_type == "Remove User from ProxySQL":
 			if job.reference_doctype == "Site Database User":
 				SiteDatabaseUser.process_job_update(job)
-			else:
-				process_add_proxysql_user_job_update(job)
-		elif job.job_type == "Remove User from ProxySQL":
-			if job.reference_doctype == "Site Database User":
-				SiteDatabaseUser.process_job_update(job)
-			else:
-				process_remove_proxysql_user_job_update(job)
 		elif job.job_type == "Reload NGINX":
 			process_update_nginx_job_update(job)
 		elif job.job_type == "Move Site to Bench":

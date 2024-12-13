@@ -111,18 +111,18 @@
 									.{{ options.domain }}
 								</div>
 							</div>
-							<div
-								v-if="$resources.subdomainExists.loading"
-								class="text-base text-gray-600"
-							>
-								Checking...
-							</div>
 						</div>
 
 						<div class="mt-1">
 							<ErrorMessage :message="$resources.subdomainExists.error" />
+							<div
+								v-if="$resources.subdomainExists.loading"
+								class="text-sm text-gray-600"
+							>
+								Checking...
+							</div>
 							<template
-								v-if="
+								v-else-if="
 									!$resources.subdomainExists.error &&
 									$resources.subdomainExists.data != null
 								"
@@ -319,7 +319,8 @@ export default {
 				validate() {
 					if (
 						!this.$team.doc.payment_mode &&
-						this.$team.doc.onboarding.site_created
+						(this.$team.doc.onboarding.site_created ||
+							!this.appDoc.show_for_new_site)
 					) {
 						throw new DashboardError('Please add a valid payment mode');
 					}

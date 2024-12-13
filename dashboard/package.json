@@ -42,7 +42,7 @@
 		"socket.io-client": "^4.5.1",
 		"unplugin-icons": "^0.17.0",
 		"unplugin-vue-components": "^0.25.2",
-		"vue": "^3.3.4",
+		"vue": "^3.4.12",
 		"vue-codemirror": "^6.1.1",
 		"vue-echarts": "^6.6.1",
 		"vue-qrcode": "^2.2.2",

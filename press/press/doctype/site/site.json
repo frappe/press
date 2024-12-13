@@ -72,11 +72,7 @@
   "setup_wizard_status_check_retries",
   "setup_wizard_status_check_next_retry_on",
   "database_section",
-  "is_database_access_enabled",
-  "database_access_mode",
-  "column_break_lfuz",
-  "database_access_user",
-  "database_access_password",
+  "database_access_connection_limit",
   "saas_section",
   "is_standby",
   "standby_for",
@@ -453,13 +449,6 @@
    "label": "Database Access"
   },
   {
-   "default": "0",
-   "fieldname": "is_database_access_enabled",
-   "fieldtype": "Check",
-   "label": "Is Database Access Enabled",
-   "read_only": 1
-  },
-  {
    "fieldname": "standby_for",
    "fieldtype": "Link",
    "label": "Standby For",
@@ -527,29 +516,6 @@
    "fieldname": "hide_config",
    "fieldtype": "Check",
    "label": "Hide Config"
-  },
-  {
-   "fieldname": "database_access_password",
-   "fieldtype": "Password",
-   "label": "Database Access Password",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database_access_mode",
-   "fieldtype": "Select",
-   "label": "Database Access Mode",
-   "options": "\nread_only\nread_write",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_lfuz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "database_access_user",
-   "fieldtype": "Data",
-   "label": "Database Access User",
-   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -628,6 +594,12 @@
    "fieldname": "setup_wizard_status_check_next_retry_on",
    "fieldtype": "Datetime",
    "label": "Next Retry On"
+  },
+  {
+   "default": "16",
+   "fieldname": "database_access_connection_limit",
+   "fieldtype": "Int",
+   "label": "Database Access Connection Limit"
   }
  ],
  "links": [
@@ -702,7 +674,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-11-04 09:40:44.252728",
+ "modified": "2024-11-28 15:40:02.431631",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

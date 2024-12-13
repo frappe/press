@@ -125,9 +125,7 @@ class Site(Document, TagHelpers):
 		current_cpu_usage: DF.Int
 		current_database_usage: DF.Int
 		current_disk_usage: DF.Int
-		database_access_mode: DF.Literal["", "read_only", "read_write"]
-		database_access_password: DF.Password | None
-		database_access_user: DF.Data | None
+		database_access_connection_limit: DF.Int
 		database_name: DF.Data | None
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
@@ -136,7 +134,6 @@ class Site(Document, TagHelpers):
 		hide_config: DF.Check
 		host_name: DF.Data | None
 		hybrid_saas_pool: DF.Link | None
-		is_database_access_enabled: DF.Check
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
 		notify_email: DF.Data | None
@@ -189,7 +186,7 @@ class Site(Document, TagHelpers):
 		"cluster",
 		"bench",
 		"group",
-		"is_database_access_enabled",
+		"database_access_connection_limit",
 		"trial_end_date",
 		"tags",
 		"server",
@@ -791,10 +788,11 @@ class Site(Document, TagHelpers):
 
 	def check_enough_space_on_server(self):
 		app: "Server" = frappe.get_doc("Server", self.server)
-		db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
-
 		self.check_and_increase_disk(app, self.space_required_on_app_server)
-		self.check_and_increase_disk(db, self.space_required_on_db_server)
+
+		if app.database_server:
+			db: "DatabaseServer" = frappe.get_doc("Database Server", app.database_server)
+			self.check_and_increase_disk(db, self.space_required_on_db_server)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -1335,7 +1333,8 @@ class Site(Document, TagHelpers):
 		if old_team == team_mail_id:
 			frappe.throw(f"Site is already owned by the team {team_mail_id}")
 
-		team_change = frappe.get_doc(
+		key = frappe.generate_hash("Site Transfer Link", 20)
+		frappe.get_doc(
 			{
 				"doctype": "Team Change",
 				"document_type": "Site",
@@ -1343,19 +1342,9 @@ class Site(Document, TagHelpers):
 				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
 				"from_team": self.team,
 				"reason": reason,
+				"key": key,
 			}
 		).insert()
-
-		key = frappe.generate_hash("Site Transfer Link", 20)
-		minutes = 20
-		frappe.cache.set_value(
-			f"site_transfer_data:{key}",
-			(
-				self.name,
-				team_change.name,
-			),
-			expires_in_sec=minutes * 60,
-		)
 
 		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
 
@@ -1372,7 +1361,6 @@ class Site(Document, TagHelpers):
 				"old_team": old_team,
 				"new_team": team_mail_id,
 				"transfer_url": link,
-				"minutes": minutes,
 			},
 		)
 
@@ -1754,7 +1742,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def delete_config(self, key, save=True):
+	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
 			return None
@@ -1764,10 +1752,21 @@ class Site(Document, TagHelpers):
 			if row.key != key and not row.internal:
 				updated_config.append({"key": row.key, "value": row.value, "type": row.type})
 
-		self._set_configuration(updated_config)
-		if save:
-			return Agent(self.server).update_site_config(self)
-		return None
+		return self.update_site_config(updated_config)
+
+	def delete_multiple_config(self, keys: list[str]):
+		# relies on self._keys_removed_in_last_update in self.validate
+		# used by https://frappecloud.com/app/marketplace-app/email_delivery_service
+		config_list: list[dict] = []
+		for key in self.configuration:
+			config = {}
+			if key.key in keys:
+				continue
+			config["key"] = key.key
+			config["value"] = key.value
+			config["type"] = key.type
+			config_list.append(config)
+		self.update_site_config(config_list)
 
 	@frappe.whitelist()
 	def update_site_config(self, config=None):
@@ -2468,6 +2467,7 @@ class Site(Document, TagHelpers):
 				"description": "Manage users and permissions for your site database",
 				"button_label": "Manage",
 				"doc_method": "dummy",
+				"condition": not self.hybrid_site,
 			},
 			{
 				"action": "Schedule backup",
@@ -2562,6 +2562,10 @@ class Site(Document, TagHelpers):
 		return [d for d in actions if d.get("condition", True)]
 
 	@property
+	def hybrid_site(self) -> bool:
+		return bool(frappe.get_cached_value("Server", self.server, "is_self_hosted"))
+
+	@property
 	def pending_for_long(self) -> bool:
 		if self.status != "Pending":
 			return False
@@ -2584,6 +2588,7 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def forcefully_remove_site(self, bench):
 		"""Bypass all agent/press callbacks and just remove this site from the target bench/server"""
+		from press.utils import get_mariadb_root_password
 
 		frappe.only_for("System Manager")
 
@@ -2591,11 +2596,9 @@ class Site(Document, TagHelpers):
 			frappe.throw("Use <b>Archive Site</b> action to remove site from current bench")
 
 		# Mimic archive_site method in the agent.py
-		server, database_server = frappe.db.get_value("Bench", bench, ["server", "database_server"])
+		server = frappe.db.get_value("Bench", bench, ["server"])
 		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": get_mariadb_root_password(self),
 			"force": True,
 		}
 
@@ -3036,17 +3039,6 @@ def process_rename_site_job_update(job):  # noqa: C901
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
-
-
-# TODO
-def process_add_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", True)
-
-
-def process_remove_proxysql_user_job_update(job):
-	if job.status == "Success":
-		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
 
 
 def process_move_site_to_bench_job_update(job):

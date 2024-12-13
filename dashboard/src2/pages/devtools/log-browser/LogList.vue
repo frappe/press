@@ -1,11 +1,15 @@
 <template>
 	<div class="m-4 mr-0 flex h-full w-1/4 flex-col">
-		<FormControl class="mb-4" label="Search log files" v-model="searchLogQuery">
+		<FormControl
+			class="mb-4 mr-4"
+			label="Search log files"
+			v-model="searchLogQuery"
+		>
 			<template #prefix>
 				<i-lucide-search class="h-4 w-4 text-gray-500" />
 			</template>
 		</FormControl>
-		<div class="h-[81.5vh] space-y-2 overflow-auto">
+		<div class="h-[81.5vh] space-y-2 overflow-auto pr-4">
 			<div
 				v-if="$resources.benchLogs?.loading || $resources.siteLogs?.loading"
 				class="mt-20 flex justify-center space-x-2 text-sm text-gray-700"

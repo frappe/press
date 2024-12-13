@@ -120,17 +120,20 @@ export default {
 						label: 'Title',
 						fieldname: 'title',
 						class: 'font-medium',
-						width: 2
+						width: 2,
+						format: (value, row) => value || row.app_title
 					},
 					{
 						label: 'Repo',
 						fieldname: 'repository_owner',
-						class: 'text-gray-600'
+						class: 'text-gray-600',
+						width: '10rem'
 					},
 					{
 						label: 'Branch',
 						fieldname: 'branch',
-						class: 'text-gray-600'
+						class: 'text-gray-600',
+						width: '20rem'
 					},
 					{
 						label: '',

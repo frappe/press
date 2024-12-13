@@ -19,6 +19,14 @@
 				>
 				</AlertBanner>
 				<FormControl
+					class="mt-2"
+					type="text"
+					size="sm"
+					variant="subtle"
+					label="Label (to identify the user)"
+					v-model="label"
+				/>
+				<FormControl
 					type="select"
 					:options="[
 						{
@@ -39,6 +47,15 @@
 					:disabled="false"
 					label="Access Mode"
 					v-model="mode"
+				/>
+				<FormControl
+					v-if="!isEditMode"
+					class="mt-2"
+					type="number"
+					size="sm"
+					variant="subtle"
+					label="Database Connections"
+					v-model="database_connections"
 				/>
 				<!-- Permission configuration for Granular Mode -->
 				<div v-if="mode == 'granular'">
@@ -116,6 +133,7 @@ import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 import SiteDatabaseColumnsSelector from './SiteDatabaseColumnsSelector.vue';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SiteDatabaseAddEditUserDialog',
@@ -130,7 +148,9 @@ export default {
 	},
 	data() {
 		return {
+			label: '',
 			mode: 'read_only',
+			database_connections: 1,
 			permissions: [],
 			lastGeneratedRowId: 0
 		};
@@ -163,6 +183,7 @@ export default {
 				name: this.db_user_name,
 				auto: false,
 				onSuccess: data => {
+					this.label = data?.label;
 					this.mode = data?.mode;
 					let fetched_permissions = (data?.permissions ?? []).map(x => {
 						return {
@@ -171,6 +192,7 @@ export default {
 						};
 					});
 					this.permissions = fetched_permissions;
+					this.database_connections = data?.max_connections ?? 1;
 				}
 			};
 		},
@@ -192,12 +214,18 @@ export default {
 					return {
 						doc: {
 							doctype: 'Site Database User',
+							label: this.label,
 							team: this.$team.doc.name,
 							site: this.site,
 							mode: this.mode,
-							permissions: permissions
+							permissions: permissions,
+							max_connections: parseInt(this.database_connections || 1)
 						}
 					};
+				},
+				validate() {
+					if (!this.label)
+						throw new DashboardError('Please provide a label for the user');
 				},
 				onSuccess() {
 					toast.success('User created successfully');
@@ -225,10 +253,15 @@ export default {
 						dn: this.db_user_name,
 						method: 'save_and_apply_changes',
 						args: {
+							label: this.label,
 							mode: this.mode,
 							permissions: permissions
 						}
 					};
+				},
+				validate() {
+					if (!this.label)
+						throw new DashboardError('Please provide a label for the user');
 				},
 				onSuccess() {
 					toast.success('User updated successfully');

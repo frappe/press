@@ -67,7 +67,7 @@
 					v-if="$resources.ARecords.data?.length == 0"
 				>
 					<p class="text-sm text-gray-700">
-						<strong>Note</strong>: This site seem to have custom domains with
+						<strong>Note</strong>: This site seems to have custom domains with
 						<strong>A record</strong>. Please update the same after migration to
 						avoid downtime. To know more, refer
 						<a

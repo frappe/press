@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 
 import frappe
 from frappe.model.document import Document
@@ -28,6 +29,8 @@ class SiteDatabaseUser(Document):
 
 		failed_agent_job: DF.Link | None
 		failure_reason: DF.SmallText
+		label: DF.Data
+		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
 		password: DF.Password
 		permissions: DF.Table[SiteDatabaseTablePermission]
@@ -40,6 +43,7 @@ class SiteDatabaseUser(Document):
 	# end: auto-generated types
 
 	dashboard_fields = (
+		"label",
 		"status",
 		"site",
 		"username",
@@ -48,6 +52,7 @@ class SiteDatabaseUser(Document):
 		"failed_agent_job",
 		"failure_reason",
 		"permissions",
+		"max_connections",
 	)
 
 	def validate(self):
@@ -57,12 +62,34 @@ class SiteDatabaseUser(Document):
 		if self.mode != "granular":
 			self.permissions.clear()
 
+		if not self.is_new() and self.has_value_changed("max_connections"):
+			frappe.throw("You can't update the max database connections. Archive it and create a new one.")
+
+		if not self.max_connections:
+			frappe.throw(
+				"Max database connections can't be zero. You need to opt for at least one connection."
+			)
+
 	def before_insert(self):
 		site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
 		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {site.plan} plan")
+
+		# validate connection limit
+		exists_db_users_connection_limit = frappe.db.get_all(
+			"Site Database User",
+			{"site": self.site, "status": ("!=", "Archived")},
+			pluck="max_connections",
+		)
+		total_used_connections = sum(exists_db_users_connection_limit)
+		allowed_max_connections_for_site = site.database_access_connection_limit - total_used_connections
+		if self.max_connections > allowed_max_connections_for_site:
+			frappe.throw(
+				f"Your site has quota of {site.database_access_connection_limit} database connections.\nYou can't allocate more than {allowed_max_connections_for_site} connections for new user. You can drop other database users to allocate more connections."
+			)
+
 		self.status = "Pending"
 		if not self.username:
 			self.username = frappe.generate_hash(length=15)
@@ -102,27 +129,48 @@ class SiteDatabaseUser(Document):
 		return db_name
 
 	@dashboard_whitelist()
-	def save_and_apply_changes(self, mode: str, permissions: list):
+	def save_and_apply_changes(self, label: str, mode: str, permissions: list):  # noqa: C901
 		if self.status == "Pending" or self.status == "Archived":
 			frappe.throw(f"You can't modify information in {self.status} state. Please try again later")
-		self.mode = mode
-		new_permissions = permissions
-		new_permission_tables = [p["table"] for p in new_permissions]
-		current_permission_tables = [p.table for p in self.permissions]
-		# add new permissions
-		for permission in new_permissions:
-			if permission["table"] not in current_permission_tables:
-				self.append("permissions", permission)
-		# modify permissions
-		for permission in self.permissions:
-			for new_permission in new_permissions:
-				if permission.table == new_permission["table"]:
-					permission.update(new_permission)
-					break
-		# delete permissions which are not in the modified list
-		self.permissions = [p for p in self.permissions if p.table in new_permission_tables]
+
+		self.label = label
+		is_db_user_configuration_changed = self.mode != mode or self._is_permissions_changed(permissions)
+		if is_db_user_configuration_changed:
+			self.mode = mode
+			new_permissions = permissions
+			new_permission_tables = [p["table"] for p in new_permissions]
+			current_permission_tables = [p.table for p in self.permissions]
+			# add new permissions
+			for permission in new_permissions:
+				if permission["table"] not in current_permission_tables:
+					self.append("permissions", permission)
+			# modify permissions
+			for permission in self.permissions:
+				for new_permission in new_permissions:
+					if permission.table == new_permission["table"]:
+						permission.update(new_permission)
+						break
+			# delete permissions which are not in the modified list
+			self.permissions = [p for p in self.permissions if p.table in new_permission_tables]
+
 		self.save()
-		self.apply_changes()
+		if is_db_user_configuration_changed:
+			self.apply_changes()
+
+	def _is_permissions_changed(self, new_permissions):
+		if len(new_permissions) != len(self.permissions):
+			return True
+
+		for permission in new_permissions:
+			for p in self.permissions:
+				if permission["table"] == p.table and (
+					permission["mode"] != p.mode
+					or permission["allow_all_columns"] != p.allow_all_columns
+					or Counter(permission["selected_columns"]) != Counter(p.selected_columns)
+				):
+					return True
+
+		return False
 
 	@frappe.whitelist()
 	def apply_changes(self):
@@ -170,6 +218,7 @@ class SiteDatabaseUser(Document):
 			database,
 			self.username,
 			self.get_password("password"),
+			self.max_connections,
 			database_server,
 			reference_doctype="Site Database User",
 			reference_name=self.name,
@@ -229,6 +278,7 @@ class SiteDatabaseUser(Document):
 			"username": self.username,
 			"password": self.get_password("password"),
 			"mode": self.mode,
+			"max_connections": self.max_connections,
 		}
 
 	@dashboard_whitelist()
