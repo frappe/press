@@ -879,10 +879,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 	start = now_datetime()
 
 	try:
-		from press.api.dboptimize import (
-			delete_all_occurences_of_mariadb_analyze_query,
-			fetch_column_stats_update,
-		)
 		from press.press.doctype.agent_job.agent_job_notifications import (
 			send_job_failure_notification,
 		)
@@ -1014,8 +1010,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
-		elif job.job_type == "Add Database Index":
-			delete_all_occurences_of_mariadb_analyze_query(job)
 		elif job.job_type == "Complete Setup Wizard":
 			process_complete_setup_wizard_job_update(job)
 		elif job.job_type == "Update Bench In Place":
