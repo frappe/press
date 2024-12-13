@@ -594,7 +594,8 @@ class VirtualMachineMigration(Document):
 		return None
 
 	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine},"
+		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
+		inventory = f"{virtual_machine_ip},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result
