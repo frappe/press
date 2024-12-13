@@ -1264,7 +1264,6 @@ class Server(BaseServer):
 		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
-		platform: DF.Literal["x86_64", "arm64"]
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None

@@ -15,7 +15,6 @@
   "cluster",
   "provider",
   "virtual_machine",
-  "platform",
   "ignore_incidents_since",
   "is_server_prepared",
   "is_server_setup",
@@ -537,18 +536,10 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Server Mount"
-  },
-  {
-   "default": "x86_64",
-   "fetch_from": "virtual_machine.platform",
-   "fieldname": "platform",
-   "fieldtype": "Select",
-   "label": "Platform",
-   "options": "x86_64\narm64"
   }
  ],
  "links": [],
- "modified": "2024-12-12 16:23:14.868758",
+ "modified": "2024-11-12 14:45:00.123456",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
