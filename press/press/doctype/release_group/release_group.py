@@ -639,6 +639,9 @@ class ReleaseGroup(Document, TagHelpers):
 			if not find(sorted_apps, lambda x: x["app"] == app["app"]):
 				sorted_apps.append(app)
 
+		for idx, app in enumerate(sorted_apps):
+			app.idx = idx + 1
+
 		return sorted_apps
 
 	@frappe.whitelist()
