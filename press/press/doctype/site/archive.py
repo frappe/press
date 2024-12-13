@@ -7,7 +7,7 @@ from press.utils import log_error
 
 
 def archive_suspended_trial_sites():
-	ARCHIVE_AFTER_DAYS = 45
+	ARCHIVE_AFTER_DAYS = 21
 	ARCHIVE_AT_ONCE = 10
 
 	filters = [
