@@ -684,8 +684,14 @@ class VirtualMachine(Document):
 			)
 
 	@frappe.whitelist()
-	def create_image(self):
-		image = frappe.get_doc({"doctype": "Virtual Machine Image", "virtual_machine": self.name}).insert()
+	def create_image(self, public=True):
+		image = frappe.get_doc(
+			{
+				"doctype": "Virtual Machine Image",
+				"virtual_machine": self.name,
+				"public": public,
+			}
+		).insert()
 		return image.name
 
 	@frappe.whitelist()

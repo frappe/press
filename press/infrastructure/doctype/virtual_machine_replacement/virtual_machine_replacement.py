@@ -97,9 +97,12 @@ class VirtualMachineReplacement(Document):
 		methods = [
 			(self.stop_machine, Wait),
 			(self.wait_for_machine_to_stop, Wait),
+			(self.create_image, NoWait),
+			(self.wait_for_image_to_be_available, Wait),
 			(self.disable_delete_on_termination_for_all_volumes, NoWait),
 			(self.terminate_previous_machine, Wait),
 			(self.wait_for_previous_machine_to_terminate, Wait),
+			(self.reset_virtual_machine_attributes, NoWait),
 			(self.provision_new_machine, NoWait),
 			(self.wait_for_machine_to_start, Wait),
 			(self.wait_for_machine_to_be_accessible, Wait),
@@ -137,6 +140,22 @@ class VirtualMachineReplacement(Document):
 			return StepStatus.Success
 		return StepStatus.Pending
 
+	def create_image(self) -> StepStatus:
+		"Create image"
+		machine = self.machine
+		self.image = machine.create_image(public=False)
+		return StepStatus.Success
+
+	def wait_for_image_to_be_available(self) -> StepStatus:
+		"Wait for image to be available"
+		# We need to make sure image is ready before we proceed
+		# Otherwise we might not be able to create a new machine
+		image = frappe.get_doc("Virtual Machine Image", self.image)
+		image.sync()
+		if image.status == "Available":
+			return StepStatus.Success
+		return StepStatus.Pending
+
 	def disable_delete_on_termination_for_all_volumes(self) -> StepStatus:
 		"Disable Delete-on-Termination for all volumes"
 		# After this we can safely terminate the instance without losing any data
@@ -166,6 +185,18 @@ class VirtualMachineReplacement(Document):
 		if copied_machine.status == "Terminated":
 			return StepStatus.Success
 		return StepStatus.Pending
+
+	def reset_virtual_machine_attributes(self) -> StepStatus:
+		"Reset virtual machine attributes"
+		machine = self.machine
+		machine.instance_id = None
+		machine.public_ip_address = None
+		machine.volumes = []
+
+		# Set new machine image and machine type
+		machine.virtual_machine_image = self.image
+		machine.save()
+		return StepStatus.Success
 
 	def provision_new_machine(self) -> StepStatus:
 		"Provision new machine"
