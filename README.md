@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="https://frappe.io/files/Group%202%20(1).png" alt="Press logo" width="100"/>
+<img src="https://frappe.io/files/Group%202%20(1).png" alt="Press logo" width="80"/>
 <h1>Press</h1>
 
 **Full Service Cloud Hosting For The Frappe Stack - Powers Frappe Cloud**
@@ -24,13 +24,13 @@
 
 Press is a 100% open-source cloud hosting for the Frappe stack.
 
-## Motivation
+### Motivation
 
 We originally hosted our customer sites on an internal cloud platform called "Central," designed to automate creating and hosting sites when customers signed up on our website. Central was primarily built to host ERPNext, our flagship product. However, as our customers' needs evolved, they began requesting the ability to host custom applications, a feature that was not a priority in Central.
 
 Additionally, customers lacked full control over their servers—no SSH access, no ability to manage updates, and limited flexibility in interacting with their environment. This led us to launch Frappe Cloud, to build a self-serve cloud platform that would empower our customers with complete control over their hosting experience.
 
-## Key Features
+### Key Features
 
 - **Multitenancy Made Easy**: Press simplifies multi-tenancy by enabling multiple sites on a single platform, each with its app version, allowing independent updates and minimal downtime, even for large sites.
 - **Dashboard**: The dashboard provides a centralized interface to manage apps, servers, sites, billing, backups, and updates, offering real-time insights and streamlined control of complex operations.
@@ -43,17 +43,16 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 
 - **Marketplace**: The marketplace allows developers to list apps with flexible pricing models, ensures compatibility checks, and provides a streamlined system for sales and payouts.
 
-## Screenshots
+<details>
+  <summary>Screenshots</summary>
 
 ![Dashboard](https://github.com/user-attachments/assets/1904fa3e-39aa-4151-8276-d3cc622ed582)
 ![Permissions](https://github.com/user-attachments/assets/60da6b5e-8f48-4483-99cf-67886ccc8bd6)
 ![Bench Group Update](https://github.com/user-attachments/assets/2be6b0ee-084d-4949-8d13-218b5a218d3d)
 ![Marketplace](https://github.com/user-attachments/assets/2f325737-7929-485d-a670-549f986fd07e)
+</details>
 
-
-
-
-## Under the Hood
+### Under the Hood
 
 - [**Frappe Framework**](https://github.com/frappe/frappe): A full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
 
@@ -75,7 +74,8 @@ To self host or to setup Press locally follow the steps in the [Local Developmen
 - [Discuss Forum](https://discuss.frappe.io/c/frappe-cloud/77)
 - [Documentation](https://frappecloud.com/docs)
 
-<h2></h2>
+<br/>
+<br/>
 <div align="center" style="padding-top: 0.75rem;">
 	<a href="https://frappe.io" target="_blank">
 		<picture>
