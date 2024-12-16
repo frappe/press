@@ -493,6 +493,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"primary_private_ip": primary.private_ip,
+					"private_ip": self.private_ip,
 				},
 			)
 			play = ansible.run()

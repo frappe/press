@@ -204,7 +204,7 @@ import {
 	getPaginationRowModel,
 	useVueTable
 } from '@tanstack/vue-table';
-import { defineProps, computed, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
 	log: {
