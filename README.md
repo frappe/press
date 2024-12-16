@@ -45,10 +45,13 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 
 ## Screenshots
 
-![Dashboard](.github/images/press-dashboard.png)
-![Permissions](.github/images/press-role-permission.png)
-![Bench Group Update](.github/images/press-manage-bench-group.png)
-![Marketplace](.github/images/marketplace.png)
+![Dashboard](https://github.com/user-attachments/assets/1904fa3e-39aa-4151-8276-d3cc622ed582)
+![Permissions](https://github.com/user-attachments/assets/60da6b5e-8f48-4483-99cf-67886ccc8bd6)
+![Bench Group Update](https://github.com/user-attachments/assets/2be6b0ee-084d-4949-8d13-218b5a218d3d)
+![Marketplace](https://github.com/user-attachments/assets/2f325737-7929-485d-a670-549f986fd07e)
+
+
+
 
 ## Under the Hood
 
