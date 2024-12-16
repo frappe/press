@@ -101,7 +101,7 @@
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								formatCurrency(doc.amount_due_with_tax)
+								formatCurrency(doc.total + doc.gst)
 							}}
 						</td>
 					</tr>
