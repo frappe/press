@@ -8,16 +8,19 @@
   "server_section",
   "subdomain",
   "domain",
+  "status",
+  "add_site_to_upstream",
   "initialized",
   "is_destroyed",
+  "column_break_ydvd",
+  "server",
+  "team",
+  "ports_and_config_tab",
   "websockify_port",
   "codeserver_port",
   "vnc_port",
+  "column_break_onqt",
   "browser_port",
-  "column_break_cdoo",
-  "server",
-  "status",
-  "add_site_to_upstream",
   "vnc_password",
   "codeserver_password",
   "machine_configuration_section",
@@ -86,10 +89,6 @@
    "fieldtype": "Link",
    "label": "Domain",
    "options": "Root Domain"
-  },
-  {
-   "fieldname": "column_break_cdoo",
-   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -165,6 +164,26 @@
    "fieldname": "is_destroyed",
    "fieldtype": "Check",
    "label": "Destroyed"
+  },
+  {
+   "fieldname": "ports_and_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Ports and Config"
+  },
+  {
+   "fieldname": "column_break_onqt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ydvd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -175,7 +194,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-12-13 14:11:07.884598",
+ "modified": "2024-12-16 10:41:42.488282",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

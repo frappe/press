@@ -42,6 +42,7 @@ class Devbox(Document):
 		server: DF.Link
 		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]
 		subdomain: DF.Data
+		team: DF.Link
 		vnc_password: DF.Data | None
 		vnc_port: DF.Int
 		websockify_port: DF.Int
