@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+import platform
 import subprocess
 from pathlib import Path
 
@@ -10,9 +11,13 @@ class Hypervisor:
 		self.shell = shell
 
 	def setup(self):
-		self.preinstall()
-		self.install()
-		self.verify()
+		system = platform.system()
+		if system == "Linux":
+			self.preinstall()
+			self.install()
+			self.verify()
+		elif system == "Darwin":
+			self.verify_mac()
 
 	def build(self, size):
 		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init.yml"))
@@ -77,6 +82,10 @@ class Hypervisor:
 		if kvm_connect.returncode:
 			raise Exception("Cannot connect to KVM")
 
+	def verify_mac(self):
+		kvm_connect = self.shell.execute("virsh list --all")
+		if kvm_connect.returncode:
+			raise Exception("Cannot connect to KVM")
 
 class Shell:
 	def __init__(self, directory=None):
