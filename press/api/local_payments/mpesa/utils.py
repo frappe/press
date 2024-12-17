@@ -367,3 +367,4 @@ def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_p
 	payout_doc.submit()
 
 	return payout_doc.name
+
