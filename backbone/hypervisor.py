@@ -21,26 +21,17 @@ class Hypervisor:
 	def build(self, size):
 		system = platform.system()
 		if system == "Linux":
-			self.build_linux(size=size)
+			self.build_cloud_init_linux()
 		elif system == "Darwin":
-			self.build_mac(size=size)
+			self.build_cloud_init_mac()
+		self.build_packer("backbone", size=size)
 
-	def build_linux(self, size):
+	def build_cloud_init_linux(self):
 		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init.yml"))
 		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init.img"))
 		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
-		packer_template = str(Path(__file__).parent.joinpath("packer", "backbone.json"))
-		packer = self.shell.execute(f"packer build -var 'disk_size={size}' {packer_template}")
-		if packer.returncode:
-			raise Exception("Build Failed")
-
-		box = str(Path(__file__).parent.joinpath("packer", "builds", "backbone.box"))
-		add = self.shell.execute(f"vagrant box add {box} --name backbone --force")
-		if add.returncode:
-			raise Exception(f"Cannot add box {box}")
-
-	def build_mac(self, size):
+	def build_cloud_init_mac(self):
 		# cloud-localds isn't availble on macOS.
 		# So we do what it does ourselves
 		# user-data is the same as cloud-init.yml
@@ -56,37 +47,30 @@ class Hypervisor:
 
 		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init.img"))
 		# Reference: https://github.com/canonical/cloud-utils/blob/49e5dd7849ee3c662f3db35e857148d02e72694b/bin/cloud-localds#L235-L237
-		self.shell.execute(f"mkisofs -joliet -rock -volid cidata -output {cloud_init_image} {user_data} {meta_data}")
+		self.shell.execute(
+			f"mkisofs -joliet -rock -volid cidata -output {cloud_init_image} {user_data} {meta_data}"
+		)
 
-		packer_template = str(Path(__file__).parent.joinpath("packer", "backbone.json"))
+	def build_packer(self, template, size):
+		packer_template = str(Path(__file__).parent.joinpath("packer", f"{template}.json"))
 		packer = self.shell.execute(f"packer build -var 'disk_size={size}' {packer_template}")
 		if packer.returncode:
 			raise Exception("Build Failed")
 
-		box = str(Path(__file__).parent.joinpath("packer", "builds", "backbone.box"))
-		add = self.shell.execute(f"vagrant box add {box} --name backbone --force")
+		box = str(Path(__file__).parent.joinpath("packer", "builds", f"{template}.box"))
+		add = self.shell.execute(f"vagrant box add {box} --name {template} --force")
 		if add.returncode:
 			raise Exception(f"Cannot add box {box}")
-
 
 	def build_scaleway(self, size):
-		cloud_init_yml = str(
-			Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.yml")
-		)
-		cloud_init_image = str(
-			Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.img")
-		)
+		self.build_cloud_init_scaleway()
+		self.build_packer("scaleway", size=size)
+
+	def build_cloud_init_scaleway(self):
+		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.yml"))
+
+		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.img"))
 		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
-
-		packer_template = str(Path(__file__).parent.joinpath("packer", "scaleway.json"))
-		packer = self.shell.execute(f"packer build -var 'disk_size={size}' {packer_template}")
-		if packer.returncode:
-			raise Exception("Build Failed")
-
-		box = str(Path(__file__).parent.joinpath("packer", "builds", "scaleway.box"))
-		add = self.shell.execute(f"vagrant box add {box} --name scaleway --force")
-		if add.returncode:
-			raise Exception(f"Cannot add box {box}")
 
 	def up(self):
 		vagrant = self.shell.execute("vagrant init backbone")
