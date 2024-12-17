@@ -312,6 +312,16 @@ def analytics(name, query, timezone, duration):
 			f"""avg by (instance) ((mysql_global_variables_innodb_buffer_pool_size{{instance=~"{name}"}} * 100)) / on (instance) (avg by (instance) (node_memory_MemTotal_bytes{{instance=~"{name}"}}))""",
 			lambda x: "",
 		),
+		"innodb_bp_miss_percent": (
+			f"""
+avg by (instance) (
+        rate(mysql_global_status_innodb_buffer_pool_reads{{instance=~"{name}"}}[{timegrain}s])
+		/
+		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
+)
+""",
+			lambda x: "",
+		),
 	}
 
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)

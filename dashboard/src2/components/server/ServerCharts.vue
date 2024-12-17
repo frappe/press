@@ -130,6 +130,21 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="InnoDB Buffer Pool Miss Percentage">
+				<LineChart
+					type="time"
+					title="InnoDB Buffer Pool Miss Percentage"
+					:key="innodbBufferPoolMissPercentageData"
+					:data="innodbBufferPoolMissPercentageData"
+					unit="%"
+					:chartTheme="[$theme.colors.orange[500]]"
+					:loading="$resources.innodbBufferPoolMissPercentage.loading"
+					:error="$resources.innodbBufferPoolMissPercentage.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="Disk Space">
 				<LineChart
 					type="time"
@@ -544,6 +559,18 @@ export default {
 				},
 				auto: this.isServerType('Database Server')
 			};
+		},
+		innodbBufferPoolMissPercentage() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'innodb_bp_miss_percent',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -660,6 +687,11 @@ export default {
 		},
 		innodbBufferPoolSizeOfTotalRamData() {
 			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
+			if (!data) return;
+			return this.transformSingleLineChartData(data, true);
+		},
+		innodbBufferPoolMissPercentageData() {
+			let data = this.$resources.innodbBufferPoolMissPercentage.data;
 			if (!data) return;
 			return this.transformSingleLineChartData(data, true);
 		}
