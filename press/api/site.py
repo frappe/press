@@ -1581,9 +1581,10 @@ def restore(name, files, skip_failing_patches=False):
 
 @frappe.whitelist()
 def exists(subdomain, domain):
+	from press.press.doctype.devbox.devbox import Devbox
 	from press.press.doctype.site.site import Site
 
-	return Site.exists(subdomain, domain)
+	return Site.exists(subdomain, domain) or Devbox.exists(subdomain, domain)
 
 
 @frappe.whitelist()

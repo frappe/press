@@ -59,6 +59,24 @@ class Devbox(Document):
 	def autoname(self):
 		self.name = self._get_devbox_name(subdomain=self.subdomain)
 
+	@classmethod
+	def exists(cls, subdomain, domain) -> bool:
+		"""Check if subdomain is available"""
+		banned_domains = frappe.get_all("Blocked Domain", {"block_for_all": 1}, pluck="name")
+		if banned_domains and subdomain in banned_domains:
+			return True
+		return bool(
+			frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": domain})
+			or frappe.db.exists(
+				"Site",
+				{
+					"subdomain": subdomain,
+					"domain": domain,
+					"is_destroyed": False,
+				},
+			)
+		)
+
 	@frappe.whitelist()
 	def get_available_cpu_and_ram(self):
 		print("meow")
