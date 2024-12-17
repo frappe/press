@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -23,13 +24,16 @@ class PressRolePermission(Document):
 		team: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["site", "release_group", "server", "role"]
+	dashboard_fields = ("site", "release_group", "server", "role")
 
 	def before_insert(self):
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
+		is_admin_role = frappe.db.get_value("Press Role", self.role, "admin_access")
+		if (
+			not frappe.local.system_user()
+			and frappe.session.user != frappe.db.get_value("Team", self.team, "user")
+			and not is_admin_role
 		):
-			frappe.throw("Only the team owner can create role permissions")
+			frappe.throw("Only the team owner or admin can create role permissions")
 
 		if frappe.db.exists(
 			"Press Role Permission",
