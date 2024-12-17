@@ -107,6 +107,7 @@ class Invoice(Document):
 		"total_discount_amount",
 		"invoice_pdf",
 		"stripe_invoice_url",
+		"amount_due_with_tax",
 	)
 
 	@staticmethod

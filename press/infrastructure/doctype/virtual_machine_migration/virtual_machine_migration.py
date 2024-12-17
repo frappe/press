@@ -533,6 +533,7 @@ class VirtualMachineMigration(Document):
 			"execute_step",
 			step_name=next_step.name,
 			enqueue_after_commit=True,
+			at_front=True,
 		)
 
 	@frappe.whitelist()

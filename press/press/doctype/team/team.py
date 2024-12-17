@@ -1102,7 +1102,7 @@ class Team(Document):
 			"Site",
 			{
 				"team": self.name,
-				"status": ("in", ("Active", "Inactive")),
+				"status": ("not in", ("Archived", "Suspended")),
 				"free": 0,
 				"plan": ("not in", frappe_plans),
 			},
