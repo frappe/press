@@ -300,6 +300,10 @@ def analytics(name, query, timezone, duration):
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
 			lambda x: "Used",
 		),
+		"database_commands_count": (
+			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
+			lambda x: x["command"],
+		),
 	}
 
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)

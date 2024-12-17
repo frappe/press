@@ -76,6 +76,30 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="Queries" v-if="isServerType('Database Server')">
+				<LineChart
+					type="time"
+					title="Queries"
+					unit="queries"
+					:key="databaseCommandsCountData"
+					:data="databaseCommandsCountData"
+					:chartTheme="[
+						$theme.colors.green[500],
+						$theme.colors.red[500],
+						$theme.colors.yellow[500],
+						$theme.colors.pink[500],
+						$theme.colors.purple[500],
+						$theme.colors.blue[500],
+						$theme.colors.teal[500],
+						$theme.colors.cyan[500]
+					]"
+					:loading="$resources.databaseCommandsCount.loading"
+					:error="$resources.databaseCommandsCount.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="Disk Space">
 				<LineChart
 					type="time"
@@ -454,6 +478,18 @@ export default {
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
 			};
+		},
+		databaseCommandsCount() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'database_commands_count',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -551,6 +587,16 @@ export default {
 			if (!slowLogs) return;
 
 			return slowLogs;
+		},
+		databaseCommandsCountData() {
+			const commandsCount = this.$resources.databaseCommandsCount.data;
+			if (!commandsCount) return;
+
+			return this.transformMultiLineChartData(
+				commandsCount,
+				'database_commands_count',
+				false
+			);
 		}
 	},
 	methods: {
