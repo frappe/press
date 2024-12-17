@@ -100,6 +100,21 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="InnoDB Buffer Pool Size">
+				<LineChart
+					type="time"
+					title="InnoDB Buffer Pool Size"
+					:key="innodbBufferPoolSizeData"
+					:data="innodbBufferPoolSizeData"
+					unit="bytes"
+					:chartTheme="[$theme.colors.teal[500]]"
+					:loading="$resources.innodbBufferPoolSize.loading"
+					:error="$resources.innodbBufferPoolSize.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="Disk Space">
 				<LineChart
 					type="time"
@@ -490,6 +505,18 @@ export default {
 				},
 				auto: this.isServerType('Database Server')
 			};
+		},
+		innodbBufferPoolSize() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'innodb_bp_size',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -597,6 +624,12 @@ export default {
 				'database_commands_count',
 				false
 			);
+		},
+		innodbBufferPoolSizeData() {
+			let innodbBufferPoolSize = this.$resources.innodbBufferPoolSize.data;
+			if (!innodbBufferPoolSize) return;
+
+			return this.transformSingleLineChartData(innodbBufferPoolSize, false);
 		}
 	},
 	methods: {

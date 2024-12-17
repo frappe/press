@@ -304,6 +304,10 @@ def analytics(name, query, timezone, duration):
 			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
 			lambda x: x["command"],
 		),
+		"innodb_bp_size": (
+			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
+			lambda x: "Buffer Pool Size",
+		),
 	}
 
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)
