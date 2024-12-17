@@ -308,6 +308,10 @@ def analytics(name, query, timezone, duration):
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
 			lambda x: "Buffer Pool Size",
 		),
+		"innodb_bp_size_of_total_ram": (
+			f"""avg by (instance) ((mysql_global_variables_innodb_buffer_pool_size{{instance=~"{name}"}} * 100)) / on (instance) (avg by (instance) (node_memory_MemTotal_bytes{{instance=~"{name}"}}))""",
+			lambda x: "",
+		),
 	}
 
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)

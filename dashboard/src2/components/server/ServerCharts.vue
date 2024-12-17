@@ -115,6 +115,21 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="InnoDB Buffer Pool Size of Total Ram">
+				<LineChart
+					type="time"
+					title="InnoDB Buffer Pool Size of Total Ram"
+					:key="innodbBufferPoolSizeOfTotalRamData"
+					:data="innodbBufferPoolSizeOfTotalRamData"
+					unit="%"
+					:chartTheme="[$theme.colors.cyan[500]]"
+					:loading="$resources.innodbBufferPoolSizeOfTotalRam.loading"
+					:error="$resources.innodbBufferPoolSizeOfTotalRam.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="Disk Space">
 				<LineChart
 					type="time"
@@ -517,6 +532,18 @@ export default {
 				},
 				auto: this.isServerType('Database Server')
 			};
+		},
+		innodbBufferPoolSizeOfTotalRam() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'innodb_bp_size_of_total_ram',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -630,6 +657,11 @@ export default {
 			if (!innodbBufferPoolSize) return;
 
 			return this.transformSingleLineChartData(innodbBufferPoolSize, false);
+		},
+		innodbBufferPoolSizeOfTotalRamData() {
+			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
+			if (!data) return;
+			return this.transformSingleLineChartData(data, true);
 		}
 	},
 	methods: {
