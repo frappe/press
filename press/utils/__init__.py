@@ -339,7 +339,8 @@ class RemoteFrappeSite:
 			frappe.throw("Invalid Frappe Site")
 
 		if res.json().get("message") == "pong":
-			url = res.url.split("/api")[0]
+			# Get final redirect URL
+			url = res.url.split("/api/method")[0]
 			self._site = url
 
 	def _validate_user_permissions(self):
