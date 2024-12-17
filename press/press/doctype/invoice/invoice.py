@@ -66,6 +66,7 @@ class Invoice(Document):
 		razorpay_payment_id: DF.Data | None
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
+		refund_reason: DF.Data | None
 		status: DF.Literal[
 			"Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"
 		]
@@ -891,6 +892,7 @@ class Invoice(Document):
 
 		stripe.Refund.create(charge=charge)
 		self.status = "Refunded"
+		self.refund_reason = reason
 		self.save()
 		self.add_comment(text=f"Refund reason: {reason}")
 

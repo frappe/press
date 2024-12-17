@@ -268,7 +268,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-11 17:33:21.986307",
+ "modified": "2024-12-17 11:18:35.247936",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
@@ -289,6 +289,10 @@
   {
    "create": 1,
    "role": "Press Admin"
+  },
+  {
+   "create": 1,
+   "role": "Press Member"
   }
  ],
  "sort_field": "modified",

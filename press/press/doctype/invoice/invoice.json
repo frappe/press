@@ -16,6 +16,7 @@
   "billing_email",
   "column_break_4",
   "status",
+  "refund_reason",
   "marketplace",
   "type",
   "period_start",
@@ -462,6 +463,12 @@
    "fieldname": "next_payment_attempt_date",
    "fieldtype": "Date",
    "label": "Next Payment Attempt Date"
+  },
+  {
+   "depends_on": "eval: doc.status=='Refunded'",
+   "fieldname": "refund_reason",
+   "fieldtype": "Data",
+   "label": "Refund Reason"
   }
  ],
  "is_submittable": 1,
@@ -487,7 +494,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-11-08 17:52:33.922115",
+ "modified": "2024-12-16 20:08:37.566622",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
