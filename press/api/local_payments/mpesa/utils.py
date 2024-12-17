@@ -67,7 +67,6 @@ def create_payment_gateway_settings(**kwargs):
 
 		return payment_gateway_settings.name
 	except Exception as e:
-		print(str(e))
 		frappe.log_error(message=f"Error creating Payment Gateway Settings: {str(e)}", title="Payment Gateway Settings Creation Error")
 		return None
 

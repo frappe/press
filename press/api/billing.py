@@ -711,7 +711,7 @@ def generate_stk_push(**kwargs):
 		mobile_number = sanitize_mobile_number(args.sender)
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
-			amount= 1, #args.amount_with_tax,
+			amount= args.amount_with_tax,
 			passcode=mpesa_settings.get_password("online_passkey"),
 			callback_url=callback_url,
 			reference_code=mpesa_settings.till_number,
