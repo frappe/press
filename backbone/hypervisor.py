@@ -106,13 +106,13 @@ class Hypervisor:
 		if kvm_connect.returncode:
 			raise Exception("Cannot connect to KVM")
 
+
 class Shell:
 	def __init__(self, directory=None):
 		self.directory = directory
 
 	def execute(self, command, directory=None):
 		directory = directory or self.directory
-		process = subprocess.run(
+		return subprocess.run(
 			command, check=False, stderr=subprocess.STDOUT, cwd=directory, shell=True, text=True
 		)
-		return process
