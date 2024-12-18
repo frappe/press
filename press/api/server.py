@@ -314,7 +314,7 @@ def analytics(name, query, timezone, duration):
 		),
 		"innodb_bp_size_of_total_ram": (
 			f"""avg by (instance) ((mysql_global_variables_innodb_buffer_pool_size{{instance=~"{name}"}} * 100)) / on (instance) (avg by (instance) (node_memory_MemTotal_bytes{{instance=~"{name}"}}))""",
-			lambda x: "",
+			lambda x: "Buffer Pool Size of Total Ram",
 		),
 		"innodb_bp_miss_percent": (
 			f"""
@@ -324,11 +324,11 @@ avg by (instance) (
 		rate(mysql_global_status_innodb_buffer_pool_read_requests{{instance=~"{name}"}}[{timegrain}s])
 )
 """,
-			lambda x: "",
+			lambda x: "Buffer Pool Miss Percentage",
 		),
 		"innodb_avg_row_lock_time": (
 			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{timegrain}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{timegrain}s])""",
-			lambda x: "",
+			lambda x: "Avg Row Lock Time",
 		),
 	}
 
