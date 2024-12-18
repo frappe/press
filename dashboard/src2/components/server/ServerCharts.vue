@@ -100,6 +100,24 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="Database Connections">
+				<LineChart
+					type="time"
+					title="Database Connections"
+					:key="databaseConnectionsData"
+					:data="databaseConnectionsData"
+					unit="connections"
+					:chartTheme="[
+						this.$theme.colors.yellow[500],
+						this.$theme.colors.green[500]
+					]"
+					:loading="$resources.databaseConnections.loading"
+					:error="$resources.databaseConnections.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="InnoDB Buffer Pool Size">
 				<LineChart
 					type="time"
@@ -598,6 +616,18 @@ export default {
 				},
 				auto: this.isServerType('Database Server')
 			};
+		},
+		databaseConnections() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'database_connections',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -703,6 +733,16 @@ export default {
 			return this.transformMultiLineChartData(
 				commandsCount,
 				'database_commands_count',
+				false
+			);
+		},
+		databaseConnectionsData() {
+			const connections = this.$resources.databaseConnections.data;
+			if (!connections) return;
+
+			return this.transformMultiLineChartData(
+				connections,
+				'database_connections',
 				false
 			);
 		},
