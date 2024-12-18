@@ -1386,7 +1386,14 @@ class Site(Document, TagHelpers):
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
-			return f"https://{self.host_name or self.name}/desk?sid={sid}"
+			if self.standby_for_product:
+				redirect_route = (
+					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
+					or "/desk"
+				)
+			else:
+				redirect_route = "/desk"
+			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 
 		frappe.throw("No additional system user created for this site")
 		return None
