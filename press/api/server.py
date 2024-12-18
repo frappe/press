@@ -322,6 +322,10 @@ avg by (instance) (
 """,
 			lambda x: "",
 		),
+		"innodb_avg_row_lock_time": (
+			f"""(rate(mysql_global_status_innodb_row_lock_time{{instance="{name}"}}[{timegrain}s]) / 1000)/rate(mysql_global_status_innodb_row_lock_waits{{instance="{name}"}}[{timegrain}s])""",
+			lambda x: "",
+		),
 	}
 
 	return prometheus_query(query_map[query][0], query_map[query][1], timezone, timespan, timegrain)

@@ -145,6 +145,21 @@
 				/>
 			</AnalyticsCard>
 
+			<AnalyticsCard title="InnoDB Average Row Lock Time">
+				<LineChart
+					type="time"
+					title="InnoDB Average Row Lock Time"
+					:key="innodbAvgRowLockTimeData"
+					:data="innodbAvgRowLockTimeData"
+					unit="seconds"
+					:chartTheme="[$theme.colors.purple[500]]"
+					:loading="$resources.innodbAvgRowLockTime.loading"
+					:error="$resources.innodbAvgRowLockTime.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="Disk Space">
 				<LineChart
 					type="time"
@@ -571,6 +586,18 @@ export default {
 				},
 				auto: this.isServerType('Database Server')
 			};
+		},
+		innodbAvgRowLockTime() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'innodb_avg_row_lock_time',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
 		}
 	},
 	computed: {
@@ -692,6 +719,11 @@ export default {
 		},
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
+			if (!data) return;
+			return this.transformSingleLineChartData(data, true);
+		},
+		innodbAvgRowLockTimeData() {
+			let data = this.$resources.innodbAvgRowLockTime.data;
 			if (!data) return;
 			return this.transformSingleLineChartData(data, true);
 		}
