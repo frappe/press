@@ -21,7 +21,8 @@ let router = createRouter({
 		{
 			path: '/welcome',
 			name: 'Welcome',
-			component: () => import('./pages/Welcome.vue')
+			component: () => import('./pages/Welcome.vue'),
+			meta: { hideSidebar: true }
 		},
 		{
 			path: '/login',
@@ -34,6 +35,12 @@ let router = createRouter({
 			name: 'Signup',
 			component: () => import('./pages/LoginSignup.vue'),
 			meta: { isLoginPage: true }
+		},
+		{
+			path: '/start-center',
+			name: 'Start Center',
+			component: () => import('./pages/StartCenter.vue'),
+			meta: { hideSidebar: true }
 		},
 		{
 			path: '/setup-account/:requestKey/:joinRequest?',
@@ -206,7 +213,7 @@ let router = createRouter({
 		},
 		{
 			name: 'SaaS',
-			path: '/saas',
+			path: '/create-site',
 			redirect: { name: 'Home' },
 			children: [
 				{
@@ -272,10 +279,9 @@ let router = createRouter({
 			props: true
 		},
 		{
-			path: '/user-review/:marketplaceApp',
-			name: 'ReviewMarketplaceApp',
-			component: () =>
-				import('./components/marketplace/ReviewMarketplaceApp.vue'),
+			name: 'CreateSiteForMarketplaceAppPublic',
+			path: '/site-creation/:app',
+			component: () => import('./pages/onboarding/SiteCreation.vue'),
 			props: true
 		},
 		{
@@ -329,7 +335,7 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let defaultRoute = 'Site List';
+		let defaultRoute = 'Start Center';
 		let onboardingRoute = 'Welcome';
 
 		// identify user in posthog

@@ -47,16 +47,16 @@ export function getPatchesTab(forBench: boolean) {
 					}
 				] satisfies FilterField[],
 			columns: getPatchesTabColumns(forBench),
-			primaryAction({ listResource: apps, documentResource: releaseGroup }) {
+			primaryAction({ listResource: apps, documentResource: doc }) {
 				return {
 					label: 'Apply Patch',
 					slots: {
 						prefix: icon('plus')
 					},
 					onClick() {
-						renderDialog(
-							h(PatchAppDialog, { group: releaseGroup.name, app: '' })
-						);
+						const group = doc.doctype === 'Bench' ? doc.doc.group : doc.name;
+
+						renderDialog(h(PatchAppDialog, { group: group, app: '' }));
 					}
 				};
 			},

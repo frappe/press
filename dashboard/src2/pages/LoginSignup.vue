@@ -480,7 +480,7 @@ export default {
 					onSuccess: res => {
 						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
 						if (this.$route.query.product) {
-							loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
+							loginRoute = `/dashboard/start-center?product=${this.$route.query.product}`;
 						}
 						localStorage.setItem('login_email', this.email);
 						window.location.href = loginRoute;
@@ -582,7 +582,7 @@ export default {
 				return 'Sign in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create ${this.saasProduct.title} site`;
+					return `Sign up to create a ${this.saasProduct.title} site`;
 				}
 				return 'Create a new account';
 			}

@@ -175,12 +175,21 @@ export default {
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain
 				},
-				onSuccess() {
+				onSuccess(account_request) {
 					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard/app-trial/setup/${this.saasProduct.name}`;
+						path = `/dashboard/create-site/${this.saasProduct}/setup?account_request=${account_request}`;
 					}
 					window.location.href = path;
+					// if (this.saasProduct) {
+					// 	this.$router.push({
+					// 		name: 'SaaSSignupSetup',
+					// 		params: { productId: this.saasProduct },
+					// 		query: {
+					// 			account_request: account_request
+					// 		}
+					// 	});
+					// } else this.$router.push({ name: 'Home' });
 				}
 			};
 		}

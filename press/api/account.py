@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, referrer=None):
+def signup(email, product=None, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -58,6 +58,7 @@ def signup(email, referrer=None):
 				"role": "Press Admin",
 				"referrer_id": referrer,
 				"send_email": True,
+				"product_trial": product,
 			}
 		).insert()
 
@@ -159,6 +160,8 @@ def setup_account(  # noqa: C901
 	# Telemetry: Created account
 	capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
+
+	return account_request.name
 
 
 @frappe.whitelist(allow_guest=True)
@@ -321,6 +324,7 @@ def validate_request_key(key, timezone=None):
 			"oauth_domain": frappe.db.exists(
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
+			"product_trial": account_request.product_trial,
 		}
 	return None
 
@@ -1084,7 +1088,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60 * 60)
+# @rate_limit(limit=5, seconds=60 * 60)
 def is_2fa_enabled(user):
 	return frappe.db.get_value("User 2FA", user, "enabled")
 

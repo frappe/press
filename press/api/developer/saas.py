@@ -114,8 +114,8 @@ def get_trial_expiry(secret_key):
 
 """
 NOTE: These mentioned apis are used for all type of saas sites to allow login to frappe cloud
-- request_login_to_fc
-- validate_login_to_fc
+- send_verification_code
+- verify_verification_code
 - login_to_fc
 
 Don't change the file name or the method names
@@ -125,7 +125,7 @@ It can potentially break the integrations.
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=5, seconds=60)
-def request_login_to_fc(domain: str):
+def send_verification_code(domain: str):
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
 		frappe.throw("The domain is not active currently. Please try again.")
@@ -184,9 +184,9 @@ def request_login_to_fc(domain: str):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def validate_login_to_fc(domain: str, otp: str):
-	otp_hash = frappe.cache().get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
-	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(otp)):
+def verify_verification_code(domain: str, verification_code: str, target: str = "start-center"):
+	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
+	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
 		frappe.throw("Invalid Code. Please try again.")
 
 	site = frappe.get_value("Site Domain", domain, "site")
@@ -194,21 +194,30 @@ def validate_login_to_fc(domain: str, otp: str):
 	user = frappe.get_value("Team", team, "user")
 
 	# as otp is valid, delete the otp from redis
-	frappe.cache().delete_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}")
+	frappe.cache.delete_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}")
 
 	# login and generate a login_token to store sid
 	login_token = frappe.generate_hash(length=64)
 	frappe.cache.set_value(f"saas_fc_login_token:{login_token}", user, expires_in_sec=60)
+	if target == "site-dashboard":
+		frappe.cache.set_value(f"saas_fc_login_site:{login_token}", domain, expires_in_sec=60)
 
 	frappe.response["login_token"] = login_token
 
 
 @frappe.whitelist(allow_guest=True)
 def login_to_fc(token: str):
-	cache_key = f"saas_fc_login_token:{token}"
-	email = frappe.cache().get_value(cache_key, expires=True)
+	email_cache_key = f"saas_fc_login_token:{token}"
+	domain_cache_key = f"saas_fc_login_site:{token}"
+	email = frappe.cache.get_value(email_cache_key, expires=True)
+	domain = frappe.cache.get_value(domain_cache_key, expires=True)
+
 	if email:
-		frappe.cache().delete_value(cache_key)
+		frappe.cache.delete_value(email_cache_key)
 		frappe.local.login_manager.login_as(email)
 	frappe.response.type = "redirect"
-	frappe.response.location = "/dashboard"
+	if domain:
+		frappe.cache.delete_value(domain_cache_key)
+		frappe.response.location = f"/dashboard/sites/{domain}"
+	else:
+		frappe.response.location = "/dashboard/start-center"
