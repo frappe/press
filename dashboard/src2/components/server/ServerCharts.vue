@@ -19,6 +19,21 @@
 			/>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<AnalyticsCard title="Uptime" v-if="!isServerType('Application Server')">
+				<LineChart
+					type="time"
+					title="Uptime"
+					:key="databaseUptimeData"
+					:data="databaseUptimeData"
+					unit="seconds"
+					:chartTheme="[$theme.colors.purple[500]]"
+					:loading="$resources.databaseUptime.loading"
+					:error="$resources.databaseUptime.error"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
 			<AnalyticsCard title="CPU">
 				<LineChart
 					type="time"
@@ -572,6 +587,18 @@ export default {
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
 			};
 		},
+		databaseUptime() {
+			return {
+				url: 'press.api.server.analytics',
+				params: {
+					name: this.chosenServer,
+					timezone: this.localTimezone,
+					query: 'database_uptime',
+					duration: this.duration
+				},
+				auto: this.isServerType('Database Server')
+			};
+		},
 		databaseCommandsCount() {
 			return {
 				url: 'press.api.server.analytics',
@@ -741,6 +768,12 @@ export default {
 
 			return slowLogs;
 		},
+		databaseUptimeData() {
+			const uptime = this.$resources.databaseUptime.data;
+			if (!uptime) return;
+
+			return this.transformSingleLineChartData(uptime);
+		},
 		databaseCommandsCountData() {
 			const commandsCount = this.$resources.databaseCommandsCount.data;
 			if (!commandsCount) return;
@@ -775,12 +808,12 @@ export default {
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, true);
+			return this.transformSingleLineChartData(data, false);
 		},
 		innodbAvgRowLockTimeData() {
 			let data = this.$resources.innodbAvgRowLockTime.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, true);
+			return this.transformSingleLineChartData(data, false);
 		}
 	},
 	methods: {

@@ -300,13 +300,19 @@ def analytics(name, query, timezone, duration):
 			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
 			lambda x: "Used",
 		),
+		"database_uptime": (
+			f"""mysql_up{{instance="{name}",job="mariadb"}}""",
+			lambda x: "Uptime",
+		),
 		"database_commands_count": (
 			f"""sum(round(increase(mysql_global_status_commands_total{{instance='{name}', command=~"select|update|insert|delete|begin|commit|rollback"}}[{timegrain}s]))) by (command)""",
 			lambda x: x["command"],
 		),
 		"database_connections": (
 			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: "Max Connections" if x["__name__"] == "mysql_global_variables_max_connections" else "Connected Clients",
+			lambda x: "Max Connections"
+			if x["__name__"] == "mysql_global_variables_max_connections"
+			else "Connected Clients",
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",
