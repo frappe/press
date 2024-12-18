@@ -195,3 +195,8 @@ class CustomUser(User):
 			WHERE name = %s""",
 			(new_name, new_name),
 		)
+
+
+def before_after_migrate():
+	# frappe.clear_cache() on press doesn't clear everything. See hooks.py
+	frappe.cache.flushall()

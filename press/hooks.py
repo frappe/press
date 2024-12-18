@@ -358,7 +358,7 @@ export_python_type_annotations = True
 
 
 # These are used for some business logic, they should be manually evicted.
-__persistent_cache_keys =[
+__persistent_cache_keys = [
 	"agent-jobs",
 	"monitor-transactions",
 	"google_oauth_flow*",
@@ -373,26 +373,27 @@ __persistent_cache_keys =[
 # - Adding more keys here will slow down `frappe.clear_cache` but it's "rare" enough.
 # - This also means that other "valid" frappe.clear_cache() usage won't clear these keys!
 # - Use frappe.cache.flushall() instead.
-persistent_cache_keys = __persistent_cache_keys + [
+persistent_cache_keys = [
+	*__persistent_cache_keys,
 	"agent_job_step_output",
 	"all_apps",
 	"app_hooks",
 	"assets_json",
 	"assignment_rule_map",
 	"bootinfo",
-	"builder.builder*", # path resolution, it has its own cache eviction.
+	"builder.builder*",  # path resolution, it has its own cache eviction.
 	"db_tables",
 	"defaults",
 	"doctype_form_meta",
-	"doctype_meta"
+	"doctype_meta",
 	"doctypes_with_web_view",
 	"document_cache::*",
 	"document_naming_rule_map",
 	"domain_restricted_doctypes",
 	"domain_restricted_pages",
 	"energy_point_rule_map",
-	"frappe.utils.scheduler.schedule_jobs_based_on_activity*", # dormant checks
-	"frappe.website.page_renderers*", # FW's routing
+	"frappe.utils.scheduler.schedule_jobs_based_on_activity*",  # dormant checks
+	"frappe.website.page_renderers*",  # FW's routing
 	"home_page",
 	"information_schema:counts",
 	"installed_app_modules",
@@ -403,9 +404,12 @@ persistent_cache_keys = __persistent_cache_keys + [
 	"marketplace_apps",
 	"merged_translations",
 	"metadata_version",
-	"server_script_map", # Routing and actual server scripts
+	"server_script_map",  # Routing and actual server scripts
 	"session",
 	"table_columns",
 	"website_page",
 	"website_route_rules",
 ]
+
+before_migrate = ["press.overrides.before_after_migrate"]
+after_migrate = ["press.overrides.before_after_migrate"]
