@@ -206,5 +206,22 @@ export function validateSubdomain(subdomain) {
 	return null;
 }
 
+export function downloadAsCSV(data, filename) {
+	if (!data || data.length === 0) return;
+	let result = [];
+	result[0] = Object.keys(data[0]);
+	data.forEach(row => {
+		result.push(Object.values(row));
+	});
+	const csv = result.map(row => Object.values(row).join(',')).join('\n');
+	const blob = new Blob([csv], { type: 'text/csv' });
+	const url = window.URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	a.click();
+	window.URL.revokeObjectURL(url);
+}
+
 export { utils };
 export { default as dayjs } from './utils/dayjs';
