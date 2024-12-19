@@ -2733,6 +2733,15 @@ class Site(Document, TagHelpers):
 		}
 
 	@dashboard_whitelist()
+	def fetch_database_processes(self):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return None
+		return agent.get(
+			f"benches/{self.bench}/sites/{self.name}/database/processes",
+		)
+
+	@dashboard_whitelist()
 	def run_sql_query_in_database(self, query: str, commit: bool):
 		if not query:
 			return {"success": False, "output": "SQL Query cannot be empty"}

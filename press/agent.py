@@ -1208,6 +1208,11 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			},
 		)
 
+	def fetch_database_processes(self, site):
+		return self.get(
+			f"benches/{site.bench}/sites/{site.name}/database/processes",
+		)
+
 
 class AgentCallbackException(Exception):
 	pass

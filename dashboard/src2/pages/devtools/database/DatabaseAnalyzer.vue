@@ -191,6 +191,27 @@
 				</FTabs>
 			</ToggleContent>
 
+			<!-- Database Processes -->
+			<ToggleContent
+				class="mt-3"
+				label="Database Processes"
+				subLabel="Analyze the processes of the database"
+			>
+				<div
+					v-if="this.$resources.databaseProcesses.loading"
+					class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+				>
+					<Spinner class="w-4" /> Loading Database Processes
+				</div>
+				<ResultTable
+					v-else
+					:columns="databaseProcesses.columns"
+					:data="databaseProcesses.data"
+					:enableCSVExport="false"
+					:borderLess="true"
+				/>
+			</ToggleContent>
+
 			<!-- <ObjectList :options="tableAnalysisTableOptions" /> -->
 		</div>
 		<div
@@ -247,9 +268,9 @@ export default {
 			this.fetchTableSchemas({
 				site_name: site_name
 			});
-			this.$resources.site.reload();
-			this.$resources.databasePerformanceReport.reload();
-			this.$resources.suggestDatabaseIndexes.reload();
+			this.$resources.site.submit();
+			this.$resources.databasePerformanceReport.submit();
+			this.$resources.databaseProcesses.submit();
 		}
 	},
 	resources: {
@@ -315,6 +336,20 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'suggest_database_indexes'
+					};
+				},
+				auto: false
+			};
+		},
+		databaseProcesses() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_processes'
 					};
 				},
 				auto: false
@@ -510,6 +545,32 @@ export default {
 			return {
 				columns: ['Table', 'Column', 'Index Name', 'Sample Query'],
 				data: data
+			};
+		},
+		databaseProcesses() {
+			if (!this.isRequiredInformationReceived) return null;
+			const result = this.$resources.databaseProcesses.data?.message ?? [];
+			return {
+				columns: [
+					'ID',
+					'State',
+					'Time (s)',
+					'User',
+					'Host',
+					'Command',
+					'Query'
+				],
+				data: result.map(e => {
+					return [
+						e['id'],
+						e['state'],
+						e['time'],
+						e['db_user'],
+						e['db_user_host'],
+						e['command'],
+						e['query']
+					];
+				})
 			};
 		}
 	},
