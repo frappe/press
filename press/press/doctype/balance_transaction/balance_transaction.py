@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -39,20 +38,24 @@ class BalanceTransaction(Document):
 			"Marketplace Consumption",
 		]
 		team: DF.Link
-		type: DF.Literal["Adjustment", "Applied To Invoice"]
+		type: DF.Literal["Adjustment", "Applied To Invoice", "Partnership Fee"]
 		unallocated_amount: DF.Currency
 	# end: auto-generated types
 
-	dashboard_fields = ["type", "amount", "ending_balance", "invoice", "source"]
+	dashboard_fields = ("type", "amount", "ending_balance", "invoice", "source")
 
 	def validate(self):
 		if self.amount == 0:
 			frappe.throw("Amount cannot be 0")
 
 	def before_submit(self):
+		if self.type == "Partnership Fee":
+			# don't update ending balance or unallocated amount for partnership fee
+			return
+
 		last_balance = frappe.db.get_all(
 			"Balance Transaction",
-			filters={"team": self.team, "docstatus": 1},
+			filters={"team": self.team, "docstatus": 1, "type": ("!=", "Partnership Fee")},
 			fields=["sum(amount) as ending_balance"],
 			group_by="team",
 			pluck="ending_balance",
@@ -133,6 +136,4 @@ class BalanceTransaction(Document):
 			)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Balance Transaction"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Balance Transaction")

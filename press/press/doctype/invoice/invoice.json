@@ -302,7 +302,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Subscription\nPrepaid Credits\nService\nSummary"
+   "options": "Subscription\nPrepaid Credits\nService\nSummary\nPartnership Fees"
   },
   {
    "depends_on": "eval:doc.type == 'Prepaid Credits'",
@@ -494,7 +494,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-12-16 20:08:37.566622",
+ "modified": "2024-12-18 22:28:29.793591",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
