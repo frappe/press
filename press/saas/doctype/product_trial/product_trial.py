@@ -105,7 +105,7 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
+	def setup_trial_site(self, team, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
 
 		standby_site = self.get_standby_site(cluster)
@@ -114,11 +114,12 @@ class ProductTrial(Document):
 		agent_job_name = None
 		current_user = frappe.session.user
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
-		"""
-		We have set the current user to "Administrator" temporarily
-		to bypass the site creation validation
-		"""
+		plan = self.trial_plan
+		# We have set the current user to "Administrator" temporarily
+		# to bypass the site creation validation
 		frappe.set_user("Administrator")
+
+		user = frappe.db.get_value("User", current_user, ["first_name", "full_name"], as_dict=1)
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
@@ -127,8 +128,10 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
+			site.site_label = f"{user.first_name} {user.last_name}'s {self.title} site"
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
+			site.reload()
 			site.generate_saas_communication_secret(create_agent_job=True, save=True)
 			if self.create_additional_system_user:
 				agent_job_name = site.create_user_with_team_info()
@@ -138,7 +141,7 @@ class ProductTrial(Document):
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
-			user = frappe.get_doc("User", current_user)
+
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=self.get_unique_site_name(),
