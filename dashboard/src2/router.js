@@ -281,12 +281,6 @@ let router = createRouter({
 			props: true
 		},
 		{
-			name: 'CreateSiteForMarketplaceAppPublic',
-			path: '/site-creation/:app',
-			component: () => import('./pages/onboarding/SiteCreation.vue'),
-			props: true
-		},
-		{
 			path: '/developer-reply/:marketplaceApp/:reviewId',
 			name: 'ReplyMarketplaceApp',
 			component: () =>
