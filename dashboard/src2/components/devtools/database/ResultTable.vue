@@ -10,7 +10,12 @@ import { unparse } from 'papaparse';
 
 const props = defineProps({
 	columns: { type: Array, required: true },
-	data: { type: Array, required: true }
+	data: { type: Array, required: true },
+	borderLess: { type: Boolean, default: false },
+	enableCSVExport: { type: Boolean, default: true },
+	actionHeaderLabel: { type: String },
+	actionComponent: { type: Object },
+	actionComponentProps: { type: Object, default: {} }
 });
 
 const generateData = computed(() => {
@@ -89,7 +94,12 @@ const downloadCSV = async () => {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col overflow-hidden rounded border">
+	<div
+		class="flex h-full w-full flex-col overflow-hidden"
+		:class="{
+			'rounded border': !borderLess
+		}"
+	>
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<table
 				v-if="props?.columns?.length || props.data?.length"
@@ -105,7 +115,9 @@ const downloadCSV = async () => {
 							:key="header.id"
 							:colSpan="header.colSpan"
 							class="border-b border-r text-gray-800"
-							:width="header.column.columnDef.id === 'index' ? '6rem' : 'auto'"
+							:width="
+								header.column.columnDef.id === '__index' ? '6rem' : 'auto'
+							"
 						>
 							<div class="flex items-center gap-2 truncate px-3 py-2">
 								<FlexRender
@@ -115,6 +127,12 @@ const downloadCSV = async () => {
 								/>
 							</div>
 						</td>
+						<td
+							class="border-b border-r text-center text-gray-800"
+							v-if="actionHeaderLabel"
+						>
+							{{ actionHeaderLabel }}
+						</td>
 					</tr>
 				</thead>
 				<tbody>
@@ -122,14 +140,27 @@ const downloadCSV = async () => {
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
-							class="truncate border-b border-r px-3 py-2"
-							:class="[
-								cell.column.columnDef.id !== 'index' ? 'min-w-[6rem] ' : ''
-							]"
+							class="truncate border-r px-3 py-2"
+							:class="{
+								'border-b': !(
+									index === table.getRowModel().rows.length - 1 && borderLess
+								),
+								'min-w-[6rem] ': cell.column.columnDef.id !== 'index'
+							}"
 						>
 							<FlexRender
 								:render="cell.column.columnDef.cell"
 								:props="cell.getContext()"
+							/>
+						</td>
+						<td
+							class="border-b border-r text-center text-gray-800"
+							v-if="actionComponent"
+						>
+							<component
+								:is="actionComponent"
+								:row="row.original"
+								v-bind="actionComponentProps"
 							/>
 						</td>
 					</tr>
@@ -144,10 +175,19 @@ const downloadCSV = async () => {
 			</div>
 		</div>
 
-		<div class="flex justify-between p-1" v-if="props.data?.length != 0">
-			<Button @click="downloadCSV" iconLeft="download" variant="ghost"
+		<div
+			class="flex justify-between p-1"
+			v-if="props.data?.length != 0 && (enableCSVExport || showPagination)"
+		>
+			<Button
+				@click="downloadCSV"
+				iconLeft="download"
+				variant="ghost"
+				v-if="enableCSVExport"
 				>Download as CSV</Button
 			>
+			<div v-else></div>
+			<!-- blank div added to prevent broken layout -->
 			<div
 				v-if="showPagination"
 				class="flex flex-shrink-0 items-center justify-end gap-3"

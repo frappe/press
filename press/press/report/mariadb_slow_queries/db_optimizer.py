@@ -3,10 +3,13 @@
 This is largely based on heuristics and known good practices for indexing.
 """
 
+from __future__ import annotations
+
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
-import re
+
 import frappe
 from frappe.utils import cint, cstr, flt
 from sql_metadata import Parser
@@ -90,11 +93,7 @@ class DBIndex:
 	_score: float = 0.0
 
 	def __eq__(self, other: "DBIndex") -> bool:
-		return (
-			self.column == other.column
-			and self.sequence == other.sequence
-			and self.table == other.table
-		)
+		return self.column == other.column and self.sequence == other.sequence and self.table == other.table
 
 	def __repr__(self):
 		return f"DBIndex(`{self.table}`.`{self.column}`)"
@@ -132,9 +131,7 @@ class ColumnStat:
 			avg_frequency=data["avg_frequency"],
 			avg_length=data["avg_length"],
 			nulls_ratio=data["nulls_ratio"],
-			histogram=[flt(bin) for bin in data["histogram"].split(",")]
-			if data["histogram"]
-			else [],
+			histogram=[flt(bin) for bin in data["histogram"].split(",")] if data["histogram"] else [],
 		)
 
 
@@ -155,11 +152,7 @@ class DBTable:
 		"""Estimate cardinality using mysql.column_stat"""
 		for column_stat in column_stats:
 			for col in self.schema:
-				if (
-					col.name == column_stat.column_name
-					and not col.cardinality
-					and column_stat.avg_frequency
-				):
+				if col.name == column_stat.column_name and not col.cardinality and column_stat.avg_frequency:
 					# "hack" or "math" - average frequency is on average how frequently a row value appears.
 					# Avg = total_rows / cardinality, so...
 					col.cardinality = self.total_rows / column_stat.avg_frequency
@@ -176,10 +169,7 @@ class DBTable:
 		)
 
 	def has_column(self, column: str) -> bool:
-		for col in self.schema:
-			if col.name == column:
-				return True
-		return False
+		return any(col.name == column for col in self.schema)
 
 
 @dataclass
@@ -226,14 +216,14 @@ class DBOptimizer:
 			possible_indexes.extend(join_columns)
 
 		# Top N query variant - Order by column can possibly speed up the query
-		if order_by_columns := self.parsed_query.columns_dict.get("order_by"):
-			if self.parsed_query.limit_and_offset:
-				possible_indexes.extend(order_by_columns)
+		if (
+			order_by_columns := self.parsed_query.columns_dict.get("order_by")
+			and self.parsed_query.limit_and_offset
+		):
+			possible_indexes.extend(order_by_columns)
 
 		possible_db_indexes = [self._convert_to_db_index(i) for i in possible_indexes]
-		possible_db_indexes = [
-			i for i in possible_db_indexes if i.column not in ("*", "name")
-		]
+		possible_db_indexes = [i for i in possible_db_indexes if i.column not in ("*", "name")]
 		possible_db_indexes.sort(key=lambda i: (i.table, i.column))
 
 		return self._remove_existing_indexes(possible_db_indexes)
@@ -251,7 +241,7 @@ class DBOptimizer:
 					break
 		return DBIndex(column=column_name, name=column_name, table=table)
 
-	def _remove_existing_indexes(self, potential_indexes: list[DBIndex]) -> list[DBIndex]:
+	def _remove_existing_indexes(self, potential_indexes: list[DBIndex]) -> list[DBIndex]:  # noqa: C901
 		"""Given list of potential index candidates remove the ones that already exist.
 
 		This also removes multi-column indexes for parts that are applicable to query.
@@ -262,24 +252,22 @@ class DBOptimizer:
 		def remove_maximum_indexes(idx: list[DBIndex]):
 			"""Try to remove entire index from potential indexes, if not possible, reduce one part and try again until no parts are left."""
 			if not idx:
-				return
+				return None
 			matched_sub_index = []
 			for idx_part in list(idx):
 				matching_part = [
-					i
-					for i in potential_indexes
-					if i.column == idx_part.column and i.table == idx_part.table
+					i for i in potential_indexes if i.column == idx_part.column and i.table == idx_part.table
 				]
 				if not matching_part:
 					# pop and recurse
 					idx.pop()
 					return remove_maximum_indexes(idx)
-				else:
-					matched_sub_index.extend(matching_part)
+				matched_sub_index.extend(matching_part)
 
 			# Every part matched now, lets remove those parts
 			for i in matched_sub_index:
 				potential_indexes.remove(i)
+			return None
 
 		# Reconstruct multi-col index
 		for table in self.tables.values():
@@ -305,7 +293,7 @@ class DBOptimizer:
 			table = self.tables[index.table]
 
 			# Data type is not easily indexable - skip
-			column = [c for c in table.schema if c.name == index.column][0]
+			column = next(c for c in table.schema if c.name == index.column)
 			if "text" in column.data_type.lower() or "json" in column.data_type.lower():
 				potential_indexes.remove(index)
 			# Update cardinality from column so scoring can be done
@@ -321,6 +309,7 @@ class DBOptimizer:
 			and best_index._score < INDEX_SCORE_THRESHOLD
 		):
 			return best_index
+		return None
 
 	def index_score(self, index: DBIndex) -> float:
 		"""Score an index from 0 to 1 based on usefulness.

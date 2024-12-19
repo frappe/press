@@ -143,7 +143,7 @@
 import { toast } from 'vue-sonner';
 import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
-import SQLResultTable from '../../../components/devtools/database/SQLResultTable.vue';
+import SQLResultTable from '../../../components/devtools/database/ResultTable.vue';
 import SQLCodeEditor from '../../../components/devtools/database/SQLCodeEditor.vue';
 import { confirmDialog } from '../../../utils/components';
 import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue';
@@ -250,7 +250,7 @@ export default {
 			for (const tableName in tableSchemas) {
 				childrenSchemas[tableName] = {
 					self: { label: tableName, type: 'table' },
-					children: tableSchemas[tableName].map(x => ({
+					children: tableSchemas[tableName].columns.map(x => ({
 						label: x.column,
 						type: 'column',
 						detail: x.data_type

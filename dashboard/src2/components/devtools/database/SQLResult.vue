@@ -33,7 +33,7 @@
 }
 </style>
 <script>
-import SQLResultTable from './SQLResultTable.vue';
+import SQLResultTable from './ResultTable.vue';
 export default {
 	name: 'SQLResult',
 	props: ['result'],

@@ -51,6 +51,7 @@
 import { h } from 'vue';
 import { FormControl } from 'frappe-ui';
 import ObjectList from '../../ObjectList.vue';
+import { icon } from '../../../utils/components';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -77,7 +78,7 @@ export default {
 			if (!this.selectedSchema || !this.selectedSchema.value) return {};
 			return {
 				data: () => {
-					return this.tableSchemas[this.selectedSchema.value] ?? [];
+					return this.tableSchemas[this.selectedSchema.value]?.columns ?? [];
 				},
 				hideControls: true,
 				columns: [
@@ -124,15 +125,15 @@ export default {
 						},
 						align: 'center'
 					},
-
 					{
 						label: 'Is Indexed',
-						fieldname: 'indexes',
 						width: 0.15,
 						align: 'center',
-						type: 'Icon',
-						Icon(value) {
-							return value.length > 0 ? 'check' : 'x';
+						type: 'Component',
+						component({ row }) {
+							return row.index_info.is_indexed
+								? icon('check', 'w-4 w-4')
+								: icon('x', 'w-4 w-4');
 						}
 					}
 				]
