@@ -1189,6 +1189,25 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			data={"mariadb_root_password": get_mariadb_root_password(site)},
 		)
 
+	def analyze_slow_queries(self, site, normalized_queries: list[dict]):
+		"""
+		normalized_queries format:
+		[
+			{
+				"example": "",
+				"normalized" : "",
+			}
+		]
+		"""
+		# TODO move to agent job
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/analyze-slow-queries",
+			data={
+				"queries": normalized_queries,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
 
 class AgentCallbackException(Exception):
 	pass

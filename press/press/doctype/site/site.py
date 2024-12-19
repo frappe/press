@@ -2750,6 +2750,27 @@ class Site(Document, TagHelpers):
 		doc.insert(ignore_permissions=True)
 		return response
 
+	@dashboard_whitelist()
+	def suggest_database_indexes(self):
+		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
+
+		# fetch slow queries of last 7 days
+		slow_queries = get_slow_queries(
+			frappe._dict(
+				{
+					"database": self.database_name,
+					"start_datetime": frappe.utils.add_to_date(None, days=-7),
+					"stop_datetime": frappe.utils.now_datetime(),
+					"search_pattern": ".*",
+					"max_lines": 2000,
+					"normalize_queries": True,
+				}
+			)
+		)
+		slow_queries = [{"example": x["example"], "normalized": x["query"]} for x in slow_queries]
+		agent = Agent(self.server)
+		return agent.analyze_slow_queries(self, slow_queries)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)

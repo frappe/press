@@ -149,7 +149,39 @@
 					v-if="databaseIndexesTab.length"
 				>
 					<template #default="{ tab }">
+						<div v-if="tab.label === 'Suggested Indexes'">
+							<div
+								v-if="
+									!isIndexSuggestionTriggered ||
+									this.$resources.suggestDatabaseIndexes.loading
+								"
+								class="flex h-60 flex-col items-center justify-center gap-4"
+							>
+								<Button
+									variant="outline"
+									@click="
+										() => {
+											this.isIndexSuggestionTriggered = true;
+											this.$resources.suggestDatabaseIndexes.submit();
+										}
+									"
+									:loading="this.$resources.suggestDatabaseIndexes.loading"
+									>Suggest Indexes</Button
+								>
+								<p class="text-base text-gray-700">
+									This may take a while to analyze
+								</p>
+							</div>
+							<ResultTable
+								v-else
+								:columns="suggestedDatabaseIndexes.columns"
+								:data="suggestedDatabaseIndexes.data"
+								:enableCSVExport="false"
+								:borderLess="true"
+							/>
+						</div>
 						<ResultTable
+							v-else
 							:columns="tab.columns"
 							:data="tab.data"
 							:enableCSVExport="false"
@@ -201,6 +233,7 @@ export default {
 			site: null,
 			errorMessage: null,
 			optimizeTableJobName: null,
+			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0
 		};
@@ -216,6 +249,7 @@ export default {
 			});
 			this.$resources.site.reload();
 			this.$resources.databasePerformanceReport.reload();
+			this.$resources.suggestDatabaseIndexes.reload();
 		}
 	},
 	resources: {
@@ -267,6 +301,20 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'get_database_performance_report'
+					};
+				},
+				auto: false
+			};
+		},
+		suggestDatabaseIndexes() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'suggest_database_indexes'
 					};
 				},
 				auto: false
@@ -416,6 +464,11 @@ export default {
 			if (!result) return [];
 			let prepared_result = [
 				{
+					label: 'Suggested Indexes',
+					columns: ['Table', 'Column', 'Index Name', 'Sample Query'],
+					data: []
+				},
+				{
 					label: 'Redundant Indexes',
 					columns: [
 						'Table Name',
@@ -442,8 +495,22 @@ export default {
 					})
 				}
 			];
-			console.log(prepared_result);
 			return prepared_result;
+		},
+		suggestedDatabaseIndexes() {
+			if (!this.isRequiredInformationReceived) return [];
+			const result = this.$resources.suggestDatabaseIndexes?.data?.message;
+			if (!result) return [];
+			let data = [];
+			for (const record of result) {
+				for (const index of record.suggested_indexes) {
+					data.push([index.table, index.column, index.name, record.normalized]);
+				}
+			}
+			return {
+				columns: ['Table', 'Column', 'Index Name', 'Sample Query'],
+				data: data
+			};
 		}
 	},
 	methods: {
