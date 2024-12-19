@@ -102,7 +102,14 @@ const sites = createListResource({
 	doctype: 'Site',
 	filters: { status: 'Active', standby_for_product: ['is', 'set'] },
 	fields: ['name', 'site_label'],
-	auto: true
+	auto: true,
+	onSuccess: data => {
+		if (data.length === 1) {
+			selectedSite.value = {
+				value: data[0].name
+			};
+		}
+	}
 });
 
 function loginToSite() {
