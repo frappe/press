@@ -43,7 +43,9 @@
 			<!-- Database Size Analyzer -->
 			<div>
 				<div class="flex flex-row items-center justify-between">
-					<p class="text-sm font-semibold">Database Size Breakup</p>
+					<p class="text-base font-medium text-gray-800">
+						Database Size Breakup
+					</p>
 					<div class="flex flex-row gap-2">
 						<Button @click="optimizeTable"> View Details </Button>
 						<Button @click="optimizeTable"> Optimize Table </Button>
@@ -111,6 +113,52 @@
 				</div>
 			</div>
 
+			<!-- Queries Information -->
+			<ToggleContent
+				class="mt-5"
+				label="SQL Query Analysis"
+				subLabel="Check the concerning queries that might be affecting your database performance"
+			>
+				<FTabs
+					class="mt-1"
+					:tabs="queryTabs"
+					v-model="queryTabIndex"
+					v-if="queryTabs.length"
+				>
+					<template #default="{ tab }">
+						<ResultTable
+							:columns="tab.columns"
+							:data="tab.data"
+							:enableCSVExport="false"
+							:borderLess="true"
+						/>
+					</template>
+				</FTabs>
+			</ToggleContent>
+
+			<!-- Indexes Information -->
+			<ToggleContent
+				class="mt-3"
+				label="Database Index Analysis"
+				subLabel="Analyze the indexes of the database"
+			>
+				<FTabs
+					class="mt-1"
+					:tabs="databaseIndexesTab"
+					v-model="dbIndexTabIndex"
+					v-if="databaseIndexesTab.length"
+				>
+					<template #default="{ tab }">
+						<ResultTable
+							:columns="tab.columns"
+							:data="tab.data"
+							:enableCSVExport="false"
+							:borderLess="true"
+						/>
+					</template>
+				</FTabs>
+			</ToggleContent>
+
 			<!-- <ObjectList :options="tableAnalysisTableOptions" /> -->
 		</div>
 		<div
@@ -134,6 +182,8 @@ import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h } from 'vue';
 import { toast } from 'vue-sonner';
+import ToggleContent from '../../../components/ToggleContent.vue';
+import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -142,13 +192,17 @@ export default {
 		Breadcrumbs,
 		FTabs: Tabs,
 		LinkControl,
-		ObjectList
+		ObjectList,
+		ToggleContent,
+		ResultTable
 	},
 	data() {
 		return {
 			site: null,
 			errorMessage: null,
-			optimizeTableJobName: null
+			optimizeTableJobName: null,
+			queryTabIndex: 0,
+			dbIndexTabIndex: 0
 		};
 	},
 	mounted() {},
@@ -161,6 +215,7 @@ export default {
 				site_name: site_name
 			});
 			this.$resources.site.reload();
+			this.$resources.databasePerformanceReport.reload();
 		}
 	},
 	resources: {
@@ -201,6 +256,20 @@ export default {
 						this.optimizeTableJobName = data?.message?.job_name;
 					}
 				}
+			};
+		},
+		databasePerformanceReport() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_database_performance_report'
+					};
+				},
+				auto: false
 			};
 		}
 	},
@@ -301,6 +370,80 @@ export default {
 					(index_size / database_size_limit) * 100
 				)
 			};
+		},
+		queryTabs() {
+			if (!this.isRequiredInformationReceived) return [];
+			const result = this.$resources.databasePerformanceReport?.data?.message;
+			if (!result) return [];
+			let prepared_result = [
+				{
+					label: 'Slow Queries',
+					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Duration', 'Query'],
+					data: result['slow_queries'].map(e => {
+						return [e.rows_examined, e.rows_sent, e.count, e.duration, e.query];
+					})
+				},
+				{
+					label: 'Time Consuming Queries',
+					columns: ['Percentage', 'Calls', 'Avg Time (ms)', 'Query'],
+					data: result['top_10_time_consuming_queries'].map(e => {
+						return [
+							Math.round(e['percent'], 1),
+							e['calls'],
+							e['avg_time_ms'],
+							e['query']
+						];
+					})
+				},
+				{
+					label: 'Full Table Scan',
+					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Query'],
+					data: result['top_10_queries_with_full_table_scan'].map(e => {
+						return [
+							e['rows_examined'],
+							e['rows_sent'],
+							e['calls'],
+							e['example']
+						];
+					})
+				}
+			];
+			return prepared_result;
+		},
+		databaseIndexesTab() {
+			if (!this.isRequiredInformationReceived) return [];
+			const result = this.$resources.databasePerformanceReport?.data?.message;
+			if (!result) return [];
+			let prepared_result = [
+				{
+					label: 'Redundant Indexes',
+					columns: [
+						'Table Name',
+						'Dominant Index',
+						'Dominant Index Columns',
+						'Redundant Index',
+						'Redundant Index Columns'
+					],
+					data: result['redundant_indexes'].map(e => {
+						return [
+							e['table_name'],
+							e['dominant_index_name'],
+							e['dominant_index_columns'],
+							e['redundant_index_name'],
+							e['redundant_index_columns']
+						];
+					})
+				},
+				{
+					label: 'Unused Indexes',
+					columns: ['Table Name', 'Index Name'],
+					data: result['unused_indexes'].map(e => {
+						return [e['table_name'], e['index_name']];
+					})
+				}
+			];
+			console.log(prepared_result);
+			return prepared_result;
 		}
 	},
 	methods: {

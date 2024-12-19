@@ -1183,6 +1183,12 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			data={"query": query, "commit": commit, "as_dict": False},
 		)
 
+	def get_summarized_performance_report_of_database(self, site):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/performance-report",
+			data={"mariadb_root_password": get_mariadb_root_password(site)},
+		)
+
 
 class AgentCallbackException(Exception):
 	pass

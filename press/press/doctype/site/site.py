@@ -2310,6 +2310,40 @@ class Site(Document, TagHelpers):
 			"job_name": job_name,
 		}
 
+	@dashboard_whitelist()
+	def get_database_performance_report(self):
+		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
+
+		agent = Agent(self.server)
+		result = agent.get_summarized_performance_report_of_database(self)
+		# fetch slow queries of last 7 days
+		slow_queries = get_slow_queries(
+			frappe._dict(
+				{
+					"database": self.database_name,
+					"start_datetime": frappe.utils.add_to_date(None, days=-7),
+					"stop_datetime": frappe.utils.now_datetime(),
+					"search_pattern": ".*",
+					"max_lines": 2000,
+					"normalize_queries": True,
+				}
+			)
+		)
+		# remove `parent` & `creation` indexes from unused_indexes
+		result["unused_indexes"] = [
+			index
+			for index in result.get("unused_indexes", [])
+			if index["index_name"] not in ["parent", "creation"]
+		]
+
+		# convert all the float to int
+		for query in slow_queries:
+			for key, value in query.items():
+				if isinstance(value, float):
+					query[key] = int(value)
+		result["slow_queries"] = slow_queries
+		return result
+
 	@property
 	def server_logs(self):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
@@ -2759,8 +2793,8 @@ def process_fetch_database_table_schema_job_update(job):
 		return
 
 	if job.status == "Success":
-		frappe.cache().set_value(key_for_schema, job.data, expires_in_sec=600)
-		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=600)
+		frappe.cache().set_value(key_for_schema, job.data, expires_in_sec=6000)
+		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
 	else:
 		frappe.cache().delete_value(key_for_schema)
 		frappe.cache().delete_value(key_for_schema_status)
