@@ -1213,6 +1213,9 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			f"benches/{site.bench}/sites/{site.name}/database/processes",
 		)
 
+	def kill_database_process(self, site, id):
+		return self.post(f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}")
+
 
 class AgentCallbackException(Exception):
 	pass

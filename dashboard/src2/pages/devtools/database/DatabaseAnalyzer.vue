@@ -205,8 +205,14 @@
 				</div>
 				<ResultTable
 					v-else
+					class="mt-2"
 					:columns="databaseProcesses.columns"
 					:data="databaseProcesses.data"
+					actionHeaderLabel="Kill Process"
+					:actionComponent="DatabaseProcessKillButton"
+					:actionComponentProps="{
+						site: this.site
+					}"
 					:enableCSVExport="false"
 					:borderLess="true"
 				/>
@@ -237,6 +243,7 @@ import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
+import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -247,7 +254,8 @@ export default {
 		LinkControl,
 		ObjectList,
 		ToggleContent,
-		ResultTable
+		ResultTable,
+		DatabaseProcessKillButton
 	},
 	data() {
 		return {
@@ -256,7 +264,8 @@ export default {
 			optimizeTableJobName: null,
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
-			dbIndexTabIndex: 0
+			dbIndexTabIndex: 0,
+			DatabaseProcessKillButton
 		};
 	},
 	mounted() {},

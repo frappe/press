@@ -12,7 +12,10 @@ const props = defineProps({
 	columns: { type: Array, required: true },
 	data: { type: Array, required: true },
 	borderLess: { type: Boolean, default: false },
-	enableCSVExport: { type: Boolean, default: true }
+	enableCSVExport: { type: Boolean, default: true },
+	actionHeaderLabel: { type: String },
+	actionComponent: { type: Object },
+	actionComponentProps: { type: Object, default: {} }
 });
 
 const generateData = computed(() => {
@@ -124,6 +127,12 @@ const downloadCSV = async () => {
 								/>
 							</div>
 						</td>
+						<td
+							class="border-b border-r text-center text-gray-800"
+							v-if="actionHeaderLabel"
+						>
+							{{ actionHeaderLabel }}
+						</td>
 					</tr>
 				</thead>
 				<tbody>
@@ -142,6 +151,16 @@ const downloadCSV = async () => {
 							<FlexRender
 								:render="cell.column.columnDef.cell"
 								:props="cell.getContext()"
+							/>
+						</td>
+						<td
+							class="border-b border-r text-center text-gray-800"
+							v-if="actionComponent"
+						>
+							<component
+								:is="actionComponent"
+								:row="row.original"
+								v-bind="actionComponentProps"
 							/>
 						</td>
 					</tr>

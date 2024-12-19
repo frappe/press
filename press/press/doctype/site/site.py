@@ -2737,9 +2737,14 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
 			return None
-		return agent.get(
-			f"benches/{self.bench}/sites/{self.name}/database/processes",
-		)
+		return agent.fetch_database_processes(self)
+
+	@dashboard_whitelist()
+	def kill_database_process(self, id):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return None
+		return agent.kill_database_process(self, id)
 
 	@dashboard_whitelist()
 	def run_sql_query_in_database(self, query: str, commit: bool):
