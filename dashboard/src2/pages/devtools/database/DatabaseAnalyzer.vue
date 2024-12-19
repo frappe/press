@@ -22,7 +22,7 @@
 				<Button
 					iconLeft="refresh-ccw"
 					variant="subtle"
-					:loading="site && !isSchemaInformationReceived"
+					:loading="site && !isRequiredInformationReceived"
 					:disabled="!site"
 					@click="
 						() =>
@@ -39,11 +39,79 @@
 	</Header>
 	<div class="m-5">
 		<!-- body -->
-		<div class="mt-2 flex flex-col" v-if="isSchemaInformationReceived">
+		<div class="mt-2 flex flex-col" v-if="isRequiredInformationReceived">
+			<!-- Database Size Analyzer -->
 			<div>
-				<Button @click="optimizeTable"> Optimize Table </Button>
+				<div class="flex flex-row items-center justify-between">
+					<p class="text-sm font-semibold">Database Size Breakup</p>
+					<div class="flex flex-row gap-2">
+						<Button @click="optimizeTable"> View Details </Button>
+						<Button @click="optimizeTable"> Optimize Table </Button>
+					</div>
+				</div>
+
+				<!-- TODO: Make it a separate component to reuse it  -->
+				<!-- Slider -->
+				<div
+					class="mb-4 mt-4 flex h-7 w-full items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+				>
+					<div
+						class="h-7"
+						:style="{
+							backgroundColor: '#E86C13',
+							width: `${databaseSizeBreakup.data_size_percentage}%`
+						}"
+					></div>
+					<div
+						class="h-7"
+						:style="{
+							backgroundColor: '#34BAE3',
+							width: `${databaseSizeBreakup.index_size_percentage}%`
+						}"
+					></div>
+				</div>
+				<!-- Table -->
+				<div
+					class="full flex w-full flex-col items-start justify-start overflow-y-auto rounded px-1.5"
+				>
+					<div class="flex w-full items-center justify-start gap-x-2 py-3">
+						<div
+							class="h-2 w-2 rounded-full"
+							style="background-color: #e86c13"
+						></div>
+						<span class="text-sm text-gray-800">Data Size</span
+						><span class="ml-auto text-sm text-gray-800"
+							>{{ this.databaseSizeBreakup.data_size }} MB</span
+						>
+					</div>
+					<div
+						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
+					>
+						<div
+							class="h-2 w-2 rounded-full"
+							style="background-color: #34bae3"
+						></div>
+						<span class="text-sm text-gray-800">Index Size</span
+						><span class="ml-auto text-sm text-gray-800"
+							>{{ this.databaseSizeBreakup.index_size }} MB</span
+						>
+					</div>
+					<div
+						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
+					>
+						<div
+							class="h-2 w-2 rounded-full"
+							style="background-color: #e2e2e2"
+						></div>
+						<span class="text-sm text-gray-800">Free Space</span
+						><span class="ml-auto text-sm text-gray-800"
+							>{{ this.databaseSizeBreakup.free_size }} MB</span
+						>
+					</div>
+				</div>
 			</div>
-			<ObjectList :options="tableAnalysisTableOptions" />
+
+			<!-- <ObjectList :options="tableAnalysisTableOptions" /> -->
 		</div>
 		<div
 			v-else-if="!site"
@@ -80,7 +148,7 @@ export default {
 		return {
 			site: null,
 			errorMessage: null,
-			optimize_table_job_name: null
+			optimizeTableJobName: null
 		};
 	},
 	mounted() {},
@@ -92,9 +160,20 @@ export default {
 			this.fetchTableSchemas({
 				site_name: site_name
 			});
+			this.$resources.site.reload();
 		}
 	},
 	resources: {
+		site() {
+			return {
+				url: 'press.api.client.get',
+				initialData: {},
+				makeParams: () => {
+					return { doctype: 'Site', name: this.site };
+				},
+				auto: false
+			};
+		},
 		tableSchemas() {
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -119,14 +198,18 @@ export default {
 						} else {
 							toast.error(data?.message?.message);
 						}
-						this.optimize_table_job_name = data?.message?.job_name;
+						this.optimizeTableJobName = data?.message?.job_name;
 					}
 				}
 			};
 		}
 	},
 	computed: {
-		isSchemaInformationReceived() {
+		site_info() {
+			return this.$resources.site.data;
+		},
+		isRequiredInformationReceived() {
+			if (this.$resources.site?.loading ?? true) return false;
 			if (this.$resources.tableSchemas.loading) return false;
 			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
 			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
@@ -134,24 +217,26 @@ export default {
 			return true;
 		},
 		tableSchemas() {
-			if (!this.isSchemaInformationReceived) return [];
+			if (!this.isRequiredInformationReceived) return [];
 			return this.$resources.tableSchemas?.data?.message?.data;
 		},
 		tableSizeInfo() {
-			if (!this.isSchemaInformationReceived) return [];
+			if (!this.isRequiredInformationReceived) return [];
 			let data = [];
 			for (const tableName in this.tableSchemas) {
 				const table = this.tableSchemas[tableName];
 				data.push({
 					table_name: tableName,
-					size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
+					data_size_mb: (table.size.data_length / (1024 * 1024)).toFixed(3),
+					index_size_mb: (table.size.index_length / (1024 * 1024)).toFixed(3),
+					total_size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
 					no_of_columns: table.columns.length
 				});
 			}
 			return data;
 		},
 		tableAnalysisTableOptions() {
-			if (!this.isSchemaInformationReceived) return [];
+			if (!this.isRequiredInformationReceived) return [];
 			return {
 				data: () => this.tableSizeInfo,
 				hideControls: true,
@@ -179,7 +264,7 @@ export default {
 					},
 					{
 						label: 'Size (MB)',
-						fieldname: 'size_mb',
+						fieldname: 'total_size_mb',
 						width: 0.5
 					},
 					{
@@ -188,6 +273,33 @@ export default {
 						width: 0.5
 					}
 				]
+			};
+		},
+		databaseSizeBreakup() {
+			if (!this.isRequiredInformationReceived) return null;
+			let data_size = this.tableSizeInfo.reduce(
+				(a, b) => a + parseFloat(b.data_size_mb),
+				0
+			);
+			data_size = data_size.toFixed(2);
+
+			let index_size = this.tableSizeInfo.reduce(
+				(a, b) => a + parseFloat(b.index_size_mb),
+				0
+			);
+			index_size = index_size.toFixed(2);
+
+			let database_size_limit = this.site_info.current_plan.max_database_usage;
+
+			return {
+				data_size,
+				index_size,
+				database_size_limit,
+				free_size: database_size_limit - data_size - index_size,
+				data_size_percentage: parseInt((data_size / database_size_limit) * 100),
+				index_size_percentage: parseInt(
+					(index_size / database_size_limit) * 100
+				)
 			};
 		}
 	},
