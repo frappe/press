@@ -104,6 +104,8 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
+		partnership_fee_inr: DF.Int
+		partnership_fee_usd: DF.Int
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None

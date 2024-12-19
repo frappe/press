@@ -199,12 +199,17 @@
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
-  "code_spaces_tab",
-  "spaces_domain",
+  "partner_tab",
+  "partnership_fees_section",
+  "partnership_fee_usd",
+  "column_break_yxrj",
+  "partnership_fee_inr",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
-  "tls_renewal_queue_size"
+  "tls_renewal_queue_size",
+  "code_spaces_tab",
+  "spaces_domain"
  ],
  "fields": [
   {
@@ -1285,6 +1290,30 @@
    "fieldname": "redis_cache_size",
    "fieldtype": "Int",
    "label": "Redis Cache Size (MB)"
+  },
+  {
+   "fieldname": "partner_tab",
+   "fieldtype": "Tab Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "partnership_fees_section",
+   "fieldtype": "Section Break",
+   "label": "Partnership Fees"
+  },
+  {
+   "fieldname": "partnership_fee_usd",
+   "fieldtype": "Int",
+   "label": "Partnership Fee USD"
+  },
+  {
+   "fieldname": "column_break_yxrj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partnership_fee_inr",
+   "fieldtype": "Int",
+   "label": "Partnership Fee INR"
   }
  ],
  "issingle": 1,

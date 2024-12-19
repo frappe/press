@@ -57,9 +57,9 @@ def get_partner_details(partner_email):
 			"partner_type",
 			"company_name",
 			"custom_ongoing_period_fc_invoice_contribution",
-			"custom_ongoing_period_enterprise_invoice_contribution",
 			"partner_name",
 			"custom_number_of_certified_members",
+			"end_date",
 		],
 	)
 	if data:

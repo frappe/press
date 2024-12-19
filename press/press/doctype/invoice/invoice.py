@@ -82,7 +82,7 @@ class Invoice(Document):
 		transaction_fee: DF.Currency
 		transaction_fee_details: DF.Table[InvoiceTransactionFee]
 		transaction_net: DF.Currency
-		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary", "Partnership Fees"]
 		write_off_amount: DF.Float
 	# end: auto-generated types
 
