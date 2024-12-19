@@ -250,13 +250,15 @@ let router = createRouter({
 					name: 'SaaSSignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),
-					props: true
+					props: true,
+					meta: { hideSidebar: true }
 				},
 				{
 					name: 'SaaSSignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
-					props: true
+					props: true,
+					meta: { hideSidebar: true }
 				}
 			]
 		},

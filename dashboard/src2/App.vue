@@ -48,11 +48,18 @@ const route = useRoute();
 const team = getTeam();
 
 const isHideSidebar = computed(() => {
-	// return false;
+	const alwaysHideSidebarRoutes = ['Start Center'];
+	const alwaysHideSidebarPaths = ['/dashboard/start-center'];
+
 	if (!session.user) return false;
+	if (
+		alwaysHideSidebarRoutes.includes(route.name) ||
+		alwaysHideSidebarPaths.includes(window.location.pathname)
+	)
+		return true;
 
 	return (
-		route.meta.hideSidebar || (session.user && team?.doc?.hide_sidebar === true)
+		route.meta.hideSidebar && session.user && team?.doc?.hide_sidebar === true
 	);
 });
 
