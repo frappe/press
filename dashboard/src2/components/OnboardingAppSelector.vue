@@ -3,7 +3,7 @@
 		<div
 			v-for="app in apps"
 			class="flex cursor-pointer flex-col gap-2.5 rounded-md border border-gray-300 p-4 transition duration-300 hover:border-gray-400"
-			@click.capture="() => openInstallAppPage(app.name)"
+			@click.capture="() => openInstallAppPage(app)"
 		>
 			<img :src="app.image" class="h-6 w-6" />
 			<div class="flex flex-col gap-1">
@@ -37,9 +37,45 @@ export default {
 	components: {
 		DownloadIcon
 	},
+	resources: {
+		// TODO: if only saas app use account_request
+		// TODO: handle the same for apps that aren't saas-ified (either make em all saas or handle case for it)
+		productTrialSignup() {
+			return {
+				url: 'press.api.product_trial.signup'
+
+				// onSuccess(account_request) {
+				// 	this.$router.push({
+				// 		name: 'SaaSSignupVerifyEmail',
+				// 		query: {
+				// 			email: this.email,
+				// 			account_request: account_request
+				// 		}
+				// 	});
+				// }
+			};
+		}
+	},
 	methods: {
 		openInstallAppPage(app) {
-			this.$router.push(`/install-app/${app}`);
+			this.$resources.productTrialSignup
+				.submit({
+					email: this.$team.doc.user_info.email,
+					first_name: this.$team.doc.user_info.first_name,
+					last_name: this.$team.doc.user_info.last_name,
+					country: this.$team.doc.country,
+					product: app.product_id,
+					terms_accepted: true
+				})
+				.then(account_request =>
+					this.$router.push({
+						name: 'SaaSSignupSetup',
+						params: { productId: app.product_id },
+						query: {
+							account_request: account_request
+						}
+					})
+				);
 		}
 	}
 };
