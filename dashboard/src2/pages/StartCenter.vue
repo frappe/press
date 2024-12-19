@@ -23,7 +23,7 @@
 										(sites.data || []).map(site => ({
 											label: site.site_label || site.name,
 											value: site.name,
-											description: site.name
+											description: site.site_label ? site.name : null
 										}))
 									"
 									v-model="selectedSite"
@@ -84,7 +84,7 @@ const login = createResource({
 });
 
 const product = route.query.product;
-const productSites = createListResource({
+createListResource({
 	doctype: 'Site',
 	filters: { status: 'Active', standby_for_product: product },
 	fields: ['name', 'site_label'],
