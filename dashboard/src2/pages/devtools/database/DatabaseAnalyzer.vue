@@ -231,6 +231,7 @@
 								:actionComponentProps="{
 									site: this.site
 								}"
+								:isTruncateText="true"
 							/>
 						</div>
 						<ResultTable

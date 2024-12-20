@@ -7,6 +7,7 @@ import {
 } from '@tanstack/vue-table';
 import { computed, ref } from 'vue';
 import { unparse } from 'papaparse';
+import MaximizedIcon from '~icons/lucide/maximize-2';
 
 const props = defineProps({
 	columns: { type: Array, required: true },
@@ -15,7 +16,9 @@ const props = defineProps({
 	enableCSVExport: { type: Boolean, default: true },
 	actionHeaderLabel: { type: String },
 	actionComponent: { type: Object },
-	actionComponentProps: { type: Object, default: {} }
+	actionComponentProps: { type: Object, default: {} },
+	isTruncateText: { type: Boolean, default: false },
+	truncateLength: { type: Number, default: 100 }
 });
 
 const generateData = computed(() => {
@@ -43,6 +46,19 @@ const table = useVueTable({
 		const cols = props.columns.map(column => {
 			return {
 				id: column,
+				cell: cellProps => {
+					const value = cellProps.getValue();
+					if (props.isTruncateText) {
+						if (
+							value &&
+							typeof value === 'string' &&
+							value.length > props.truncateLength
+						) {
+							return `${value.substring(0, props.truncateLength)}...`;
+						}
+					}
+					return value;
+				},
 				header: column,
 				accessorKey: column,
 				enableSorting: false,
@@ -61,6 +77,26 @@ const table = useVueTable({
 	getCoreRowModel: getCoreRowModel(),
 	getPaginationRowModel: getPaginationRowModel()
 });
+
+const isTextTruncated = cell => {
+	const value = cell.getValue();
+	return (
+		props.isTruncateText &&
+		value &&
+		typeof value === 'string' &&
+		value.length > props.truncateLength
+	);
+};
+
+const fullViewDialogHeader = ref(null);
+const fullViewDialogBody = ref(null);
+const showFullViewDialog = ref(false);
+const handleViewFull = cell => {
+	const fullText = cell.getValue();
+	fullViewDialogHeader.value = cell.column.columnDef.header;
+	fullViewDialogBody.value = fullText;
+	showFullViewDialog.value = true;
+};
 
 const pageLength = computed(() => table.getState().pagination.pageSize);
 const currPage = computed(() => table.getState().pagination.pageIndex + 1);
@@ -94,6 +130,22 @@ const downloadCSV = async () => {
 </script>
 
 <template>
+	<!-- Full Value -->
+	<Dialog
+		:options="{
+			title: fullViewDialogHeader,
+			size: '2xl'
+		}"
+		v-model="showFullViewDialog"
+	>
+		<template #body-content>
+			<pre
+				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				>{{ fullViewDialogBody }}</pre
+			>
+		</template>
+	</Dialog>
+	<!-- Table -->
 	<div
 		class="flex h-full w-full flex-col overflow-hidden"
 		:class="{
@@ -151,6 +203,11 @@ const downloadCSV = async () => {
 							<FlexRender
 								:render="cell.column.columnDef.cell"
 								:props="cell.getContext()"
+							/>
+							<MaximizedIcon
+								v-if="isTextTruncated(cell)"
+								@click="handleViewFull(cell)"
+								class="!m-0 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
 							/>
 						</td>
 						<td
