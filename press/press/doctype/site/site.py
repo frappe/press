@@ -2267,23 +2267,25 @@ class Site(Document, TagHelpers):
 		out.update_available = any([app["update_available"] for app in out.apps])
 		return out
 
+	def fetch_running_optimize_tables_job(self):
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Optimize Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
+
 	@dashboard_whitelist()
 	def optimize_tables(self, ignore_checks: bool = False):
 		if not ignore_checks:
 			# check for running `Optimize Tables` agent job
-			existed_agent_job_name = frappe.db.exists(
-				"Agent Job",
-				{
-					"site": self.name,
-					"job_type": "Optimize Tables",
-					"status": ["in", ["Undelivered", "Running", "Pending"]],
-				},
-			)
-			if existed_agent_job_name:
+			if job := self.fetch_running_optimize_tables_job():
 				return {
 					"success": True,
 					"message": "Optimize Tables job is already running on this site.",
-					"job_name": existed_agent_job_name,
+					"job_name": job,
 				}
 			# check if `Optimize Tables` has run in last 1 hour
 			recent_agent_job_name = frappe.db.exists(
@@ -2298,7 +2300,7 @@ class Site(Document, TagHelpers):
 			if recent_agent_job_name:
 				return {
 					"success": False,
-					"message": "Optimize Tables job has already run in the last 1 hour.",
+					"message": "Optimize Tables job has already run in the last 1 hour. Try later.",
 					"job_name": None,
 				}
 

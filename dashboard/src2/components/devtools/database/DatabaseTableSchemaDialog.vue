@@ -20,7 +20,10 @@
 					v-if="selectedSchema"
 				/>
 			</div>
-			<div class="mt-3 flex flex-row gap-2" v-if="selectedSchema">
+			<div
+				class="mt-3 flex flex-row gap-2"
+				v-if="selectedSchema && showSQLActions"
+			>
 				<Button
 					iconLeft="play"
 					class="grow"
@@ -56,7 +59,24 @@ import { toast } from 'vue-sonner';
 
 export default {
 	name: 'DatabaseTableSchemaDialog',
-	props: ['site', 'tableSchemas'],
+	props: {
+		site: {
+			type: String,
+			required: true
+		},
+		tableSchemas: {
+			type: Object,
+			required: true
+		},
+		showSQLActions: {
+			type: Boolean,
+			default: false
+		},
+		preSelectedSchema: {
+			type: String,
+			default: null
+		}
+	},
 	emits: ['runSQLQuery'],
 	components: {
 		FormControl,
@@ -67,10 +87,20 @@ export default {
 			selectedSchema: null
 		};
 	},
+	mounted() {
+		this.preSelectSchema();
+	},
+	watch: {
+		preSelectedSchema() {
+			this.preSelectSchema();
+		}
+	},
 	computed: {
 		autocompleteOptions() {
 			return Object.keys(this.tableSchemas).map(x => ({
-				label: x,
+				label: `${x} (${this.bytesToMB(
+					this.tableSchemas[x].size.total_size
+				)}MB)`,
 				value: x
 			}));
 		},
@@ -78,7 +108,7 @@ export default {
 			if (!this.selectedSchema || !this.selectedSchema.value) return {};
 			return {
 				data: () => {
-					return this.tableSchemas[this.selectedSchema.value]?.columns ?? [];
+					return this.tableSchemas?.[this.selectedSchema.value]?.columns ?? [];
 				},
 				hideControls: true,
 				columns: [
@@ -164,6 +194,18 @@ export default {
 				'runSQLQuery',
 				`SELECT * FROM \`${this.selectedSchema.value}\`;`
 			);
+		},
+		bytesToMB(bytes) {
+			return (bytes / (1024 * 1024)).toFixed(2);
+		},
+		preSelectSchema() {
+			if (!this.preSelectedSchema) return;
+			if (!this.tableSchemas) return;
+			if (this.autocompleteOptions.length == 0) return;
+			this.selectedSchema = {
+				label: this.preSelectedSchema,
+				value: this.preSelectedSchema
+			};
 		}
 	}
 };

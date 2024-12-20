@@ -47,15 +47,23 @@
 						Database Size Breakup
 					</p>
 					<div class="flex flex-row gap-2">
-						<Button @click="optimizeTable"> View Details </Button>
-						<Button @click="optimizeTable"> Optimize Table </Button>
+						<Button @click="this.showTableSchemaSizeDetailsDialog = true">
+							View Details
+						</Button>
+						<Button
+							@click="optimizeTable"
+							:loading="this.$resources.optimizeTable.loading"
+						>
+							Optimize Table
+						</Button>
 					</div>
 				</div>
 
 				<!-- TODO: Make it a separate component to reuse it  -->
 				<!-- Slider -->
 				<div
-					class="mb-4 mt-4 flex h-7 w-full items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+					@click="showTableSchemaSizeDetailsDialog = true"
 				>
 					<div
 						class="h-7"
@@ -231,7 +239,21 @@
 				</FTabs>
 			</ToggleContent>
 
-			<!-- <ObjectList :options="tableAnalysisTableOptions" /> -->
+			<DatabaseTableSchemaSizeDetailsDialog
+				v-if="this.site"
+				:site="this.site"
+				:tableSchemas="tableSchemas"
+				v-model="showTableSchemaSizeDetailsDialog"
+				:viewSchemaDetails="viewTableSchemaDetails"
+			/>
+
+			<DatabaseTableSchemaDialog
+				v-if="this.site"
+				:site="this.site"
+				:tableSchemas="tableSchemas"
+				:pre-selected-schema="preSelectedSchemaForSchemaDialog"
+				v-model="showTableSchemasDialog"
+			/>
 		</div>
 		<div
 			v-else-if="!site"
@@ -257,6 +279,8 @@ import { toast } from 'vue-sonner';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
+import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
+import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -268,16 +292,20 @@ export default {
 		ObjectList,
 		ToggleContent,
 		ResultTable,
+		DatabaseTableSchemaDialog,
+		DatabaseTableSchemaSizeDetailsDialog,
 		DatabaseProcessKillButton
 	},
 	data() {
 		return {
 			site: null,
 			errorMessage: null,
-			optimizeTableJobName: null,
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0,
+			showTableSchemaSizeDetailsDialog: false,
+			preSelectedSchemaForSchemaDialog: null,
+			showTableSchemasDialog: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton)
 		};
 	},
@@ -327,10 +355,12 @@ export default {
 					if (data?.message) {
 						if (data?.message?.success) {
 							toast.success(data?.message?.message);
+							this.$router.push(
+								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`
+							);
 						} else {
 							toast.error(data?.message?.message);
 						}
-						this.optimizeTableJobName = data?.message?.job_name;
 					}
 				}
 			};
@@ -392,7 +422,8 @@ export default {
 		},
 		tableSchemas() {
 			if (!this.isRequiredInformationReceived) return [];
-			return this.$resources.tableSchemas?.data?.message?.data;
+			let result = this.$resources.tableSchemas?.data?.message?.data ?? [];
+			return result;
 		},
 		tableSizeInfo() {
 			if (!this.isRequiredInformationReceived) return [];
@@ -615,6 +646,11 @@ export default {
 				dn: this.site,
 				method: 'optimize_tables'
 			});
+		},
+		viewTableSchemaDetails(tableName) {
+			this.showTableSchemaSizeDetailsDialog = false;
+			this.preSelectedSchemaForSchemaDialog = tableName;
+			this.showTableSchemasDialog = true;
 		}
 	}
 };

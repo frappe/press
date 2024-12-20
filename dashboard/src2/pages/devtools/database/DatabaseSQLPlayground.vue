@@ -130,6 +130,7 @@
 			:site="this.site"
 			:tableSchemas="$resources.tableSchemas?.data?.message?.data ?? {}"
 			v-model="showTableSchemasDialog"
+			:showSQLActions="true"
 			@runSQLQuery="runSQLQueryForViewingTable"
 		/>
 	</div>
