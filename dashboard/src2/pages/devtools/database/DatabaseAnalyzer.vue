@@ -113,6 +113,46 @@
 				</div>
 			</div>
 
+			<!-- Database Processes -->
+			<ToggleContent
+				class="mt-3"
+				label="Database Processes"
+				subLabel="Analyze the processes of the database"
+			>
+				<template #actions>
+					<div>
+						<Button
+							:loading="this.$resources.databaseProcesses.loading"
+							loading-text="Refreshing"
+							icon-left="rotate-ccw"
+							@click.stop="this.$resources.databaseProcesses.submit()"
+							>Refresh</Button
+						>
+					</div>
+				</template>
+				<template #default>
+					<div
+						v-if="this.$resources.databaseProcesses.loading"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+					>
+						<Spinner class="w-4" /> Loading Database Processes
+					</div>
+					<ResultTable
+						v-else
+						class="mt-2"
+						:columns="databaseProcesses.columns"
+						:data="databaseProcesses.data"
+						actionHeaderLabel="Kill Process"
+						:actionComponent="DatabaseProcessKillButton"
+						:actionComponentProps="{
+							site: this.site
+						}"
+						:enableCSVExport="false"
+						:borderLess="true"
+					/>
+				</template>
+			</ToggleContent>
+
 			<!-- Queries Information -->
 			<ToggleContent
 				class="mt-5"
@@ -191,33 +231,6 @@
 				</FTabs>
 			</ToggleContent>
 
-			<!-- Database Processes -->
-			<ToggleContent
-				class="mt-3"
-				label="Database Processes"
-				subLabel="Analyze the processes of the database"
-			>
-				<div
-					v-if="this.$resources.databaseProcesses.loading"
-					class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
-				>
-					<Spinner class="w-4" /> Loading Database Processes
-				</div>
-				<ResultTable
-					v-else
-					class="mt-2"
-					:columns="databaseProcesses.columns"
-					:data="databaseProcesses.data"
-					actionHeaderLabel="Kill Process"
-					:actionComponent="DatabaseProcessKillButton"
-					:actionComponentProps="{
-						site: this.site
-					}"
-					:enableCSVExport="false"
-					:borderLess="true"
-				/>
-			</ToggleContent>
-
 			<!-- <ObjectList :options="tableAnalysisTableOptions" /> -->
 		</div>
 		<div
@@ -239,7 +252,7 @@ import Header from '../../../components/Header.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
 import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
-import { h } from 'vue';
+import { h, markRaw } from 'vue';
 import { toast } from 'vue-sonner';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
@@ -265,7 +278,7 @@ export default {
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0,
-			DatabaseProcessKillButton
+			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton)
 		};
 	},
 	mounted() {},

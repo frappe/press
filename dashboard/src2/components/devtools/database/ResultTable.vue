@@ -128,7 +128,7 @@ const downloadCSV = async () => {
 							</div>
 						</td>
 						<td
-							class="border-b border-r text-center text-gray-800"
+							class="min-w-[10rem] border-b border-r text-center text-gray-800"
 							v-if="actionHeaderLabel"
 						>
 							{{ actionHeaderLabel }}
@@ -154,7 +154,7 @@ const downloadCSV = async () => {
 							/>
 						</td>
 						<td
-							class="border-b border-r text-center text-gray-800"
+							class="min-w-[10rem] border-b border-r text-center text-gray-800"
 							v-if="actionComponent"
 						>
 							<component

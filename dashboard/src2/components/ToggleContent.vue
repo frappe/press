@@ -1,17 +1,12 @@
 <template>
 	<div class="rounded border text-base">
 		<div
-			class="flex cursor-pointer select-none flex-row items-center gap-2 p-4"
+			class="flex cursor-pointer select-none flex-row items-center justify-between gap-2 p-4"
 			@click="toggleVisibility"
 			:class="{
 				'!pb-2': isVisible
 			}"
 		>
-			<!-- <Button
-				:icon="isVisible ? 'chevron-down' : 'chevron-right'"
-				variant="ghost"
-				@click="toggleVisibility"
-			></Button> -->
 			<div>
 				<p class="font-medium text-gray-800">
 					{{ label }}
@@ -20,6 +15,7 @@
 					{{ subLabel }}
 				</p>
 			</div>
+			<slot name="actions" v-if="isVisible"></slot>
 		</div>
 
 		<div v-if="isVisible" class="text-sm leading-normal">
