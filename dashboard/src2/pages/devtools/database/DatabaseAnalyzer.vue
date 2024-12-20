@@ -426,6 +426,8 @@ export default {
 			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
 			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
 			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false;
+			if (!this.$resources.databasePerformanceReport?.data?.message)
+				return false;
 			return true;
 		},
 		tableSchemas() {
@@ -601,7 +603,7 @@ export default {
 			let data = [];
 			for (const record of result) {
 				for (const index of record.suggested_indexes) {
-					data.push([index.table, index.column, index.name, record.normalized]);
+					data.push([index.table, index.column, record.normalized]);
 				}
 			}
 			return {
