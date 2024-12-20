@@ -218,8 +218,7 @@ class DBOptimizer:
 		# Top N query variant - Order by column can possibly speed up the query
 		if (
 			order_by_columns := self.parsed_query.columns_dict.get("order_by")
-			and self.parsed_query.limit_and_offset
-		):
+		) and self.parsed_query.limit_and_offset:
 			possible_indexes.extend(order_by_columns)
 
 		possible_db_indexes = [self._convert_to_db_index(i) for i in possible_indexes]
