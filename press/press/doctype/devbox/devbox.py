@@ -31,16 +31,13 @@ class Devbox(Document):
 		codeserver_password: DF.Data | None
 		codeserver_port: DF.Int
 		container_id: DF.Data | None
-		cpu_cores: DF.Int
 		database_volume_size: DF.Data | None
-		disk_mb: DF.Int
 		domain: DF.Link | None
 		home_volume_size: DF.Data | None
 		initialized: DF.Check
 		is_destroyed: DF.Check
-		ram: DF.Int
 		server: DF.Link
-		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited"]
+		status: DF.Literal["Pending", "Starting", "Paused", "Running", "Archived", "Exited", "Destroyed"]
 		subdomain: DF.Data
 		team: DF.Link
 		vnc_password: DF.Data | None
@@ -49,6 +46,14 @@ class Devbox(Document):
 	# end: auto-generated types
 
 	pass
+
+	def validate(self):
+		from press.press.doctype.site.site import Site
+
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		if Site.exists(self.subdomain, self.domain) or self.exists(self.subdomain, self.domain):
+			frappe.throw(exc=frappe.ValidationError, msg="Subdomain already exists")
 
 	def _get_devbox_name(self, subdomain: str):
 		"""Get full devbox domain name given subdomain."""
@@ -165,13 +170,16 @@ class Devbox(Document):
 
 	@frappe.whitelist()
 	def sync_devbox_status(self):
-		agent = Agent(server_type="Server", server=self.server)
-		result = agent.post(f"devboxes/{self.name}/status")
-		status = result.get("output").title()
-		# hoping this is a error. I know this is shit code.
-		if len(status) > 10:
-			status = "Exited"
-		frappe.db.set_value(dt="Devbox", dn=self.name, field="status", val=status)
+		try:
+			agent = Agent(server_type="Server", server=self.server)
+			result = agent.post(f"devboxes/{self.name}/status")
+			status = result.get("output").title()
+			# hoping this is a error. I know this is shit code.
+			if len(status) > 10:
+				status = "Exited"
+			frappe.db.set_value(dt="Devbox", dn=self.name, field="status", val=status)
+		except Exception:
+			pass
 
 	@frappe.whitelist()
 	def sync_devbox_docker_volumes_size(self):
@@ -197,6 +205,7 @@ def process_new_devbox_job_update(job: AgentJob):
 	if job.job_type == "Destroy Devbox" and job.status == "Success":
 		update_fields = {
 			"is_destroyed": True,
+			"status": "Destroyed",
 		}
 		frappe.db.set_value("Devbox", job.devbox, update_fields)
 
@@ -209,8 +218,10 @@ def process_new_devbox_job_update(job: AgentJob):
 
 	if job.job_type == "Stop Devbox" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Exited")
+		devbox = frappe.get_doc("Devbox", job.devbox)
+		devbox.sync_devbox_status()
 
 	status = frappe.db.get_value("Devbox", job.devbox, ["initialized", "add_site_to_upstream"], as_dict=True)
 
 	if status.initialized and status.add_site_to_upstream:
-		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Starting")
+		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Running")

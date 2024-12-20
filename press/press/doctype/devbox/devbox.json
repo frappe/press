@@ -25,9 +25,6 @@
   "codeserver_password",
   "machine_configuration_section",
   "container_id",
-  "cpu_cores",
-  "ram",
-  "disk_mb",
   "column_break_lmyb",
   "home_volume_size",
   "database_volume_size"
@@ -50,33 +47,12 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending\nStarting\nPaused\nRunning\nArchived\nExited"
+   "options": "Pending\nStarting\nPaused\nRunning\nArchived\nExited\nDestroyed"
   },
   {
    "fieldname": "machine_configuration_section",
    "fieldtype": "Section Break",
    "label": "Machine Configuration"
-  },
-  {
-   "fieldname": "cpu_cores",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "CPU Cores (vCPU)",
-   "reqd": 1
-  },
-  {
-   "fieldname": "ram",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "RAM (MB)",
-   "reqd": 1
-  },
-  {
-   "fieldname": "disk_mb",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Disk (GB)",
-   "reqd": 1
   },
   {
    "fieldname": "subdomain",
@@ -194,7 +170,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-12-16 10:41:42.488282",
+ "modified": "2024-12-20 13:27:23.759545",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",
