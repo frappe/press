@@ -11,7 +11,7 @@
 </div>
 
 <div align="center">
-	<img src=".github/images/press-cluster.png" alt="Hero Image" width="72%" />
+	<img width="889" alt="Managed press" src="https://github.com/user-attachments/assets/2675e828-d5ed-4527-a038-7742a5cfa3db" />
 </div>
 <br />
 <div align="center">
