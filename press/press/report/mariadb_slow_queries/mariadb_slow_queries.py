@@ -120,6 +120,10 @@ def get_data(filters):
 			get_system_timezone(),
 		)
 
+	# Filter out queries starting with `SET`
+	dql_stmt = ["SELECT", "UPDATE", "DELETE", "INSERT"]
+	rows = [x for x in rows if any(x["query"].startswith(stmt) for stmt in dql_stmt)]
+
 	if filters.normalize_queries:
 		rows = summarize_by_query(rows)
 
