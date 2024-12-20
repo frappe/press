@@ -778,21 +778,13 @@ export default {
 			const commandsCount = this.$resources.databaseCommandsCount.data;
 			if (!commandsCount) return;
 
-			return this.transformMultiLineChartData(
-				commandsCount,
-				'database_commands_count',
-				false
-			);
+			return this.transformMultiLineChartData(commandsCount, null, false);
 		},
 		databaseConnectionsData() {
 			const connections = this.$resources.databaseConnections.data;
 			if (!connections) return;
 
-			return this.transformMultiLineChartData(
-				connections,
-				'database_connections',
-				false
-			);
+			return this.transformMultiLineChartData(connections, null, false);
 		},
 		innodbBufferPoolSizeData() {
 			let innodbBufferPoolSize = this.$resources.innodbBufferPoolSize.data;
