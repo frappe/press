@@ -226,6 +226,11 @@
 								:data="suggestedDatabaseIndexes.data"
 								:enableCSVExport="false"
 								:borderLess="true"
+								actionHeaderLabel="Add Index"
+								:actionComponent="DatabaseAddIndexButton"
+								:actionComponentProps="{
+									site: this.site
+								}"
 							/>
 						</div>
 						<ResultTable
@@ -281,6 +286,7 @@ import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
 import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
 import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
+import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -306,7 +312,8 @@ export default {
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
-			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton)
+			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
+			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton)
 		};
 	},
 	mounted() {},
@@ -494,13 +501,14 @@ export default {
 			);
 			index_size = index_size.toFixed(2);
 
-			let database_size_limit = this.site_info.current_plan.max_database_usage;
+			let database_size_limit =
+				this.site_info.current_plan.max_database_usage.toFixed(2);
 
 			return {
 				data_size,
 				index_size,
 				database_size_limit,
-				free_size: database_size_limit - data_size - index_size,
+				free_size: (database_size_limit - data_size - index_size).toFixed(2),
 				data_size_percentage: parseInt((data_size / database_size_limit) * 100),
 				index_size_percentage: parseInt(
 					(index_size / database_size_limit) * 100
@@ -596,7 +604,7 @@ export default {
 				}
 			}
 			return {
-				columns: ['Table', 'Column', 'Index Name', 'Sample Query'],
+				columns: ['Table', 'Column', 'Slow Query'],
 				data: data
 			};
 		},

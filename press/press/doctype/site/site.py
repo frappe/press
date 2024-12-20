@@ -70,6 +70,9 @@ from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_plan.site_plan import get_plan_config
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	get_doctype_name,
+)
 from press.utils import (
 	convert,
 	fmt_timedelta,
@@ -2786,6 +2789,31 @@ class Site(Document, TagHelpers):
 		slow_queries = [{"example": x["example"], "normalized": x["query"]} for x in slow_queries]
 		agent = Agent(self.server)
 		return agent.analyze_slow_queries(self, slow_queries)
+
+	@dashboard_whitelist()
+	def add_database_index(self, table, column):
+		record = frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+				"job_type": "Add Database Index",
+			},
+		)
+		if record:
+			return {
+				"success": False,
+				"message": "There is already a job running for adding database index. Please wait until finished.",
+				"job_name": record,
+			}
+		doctype = get_doctype_name(table)
+		agent = Agent(self.server)
+		job = agent.add_database_index(self, doctype=doctype, columns=[column])
+		return {
+			"success": True,
+			"message": "Database index will be added on site.",
+			"job_name": job.name,
+		}
 
 
 def site_cleanup_after_archive(site):
