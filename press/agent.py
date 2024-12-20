@@ -1209,12 +1209,20 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		)
 
 	def fetch_database_processes(self, site):
-		return self.get(
+		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/database/processes",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
 		)
 
 	def kill_database_process(self, site, id):
-		return self.post(f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}")
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
 
 
 class AgentCallbackException(Exception):
