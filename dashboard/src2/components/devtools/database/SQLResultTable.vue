@@ -5,7 +5,7 @@ import {
 	getPaginationRowModel,
 	useVueTable
 } from '@tanstack/vue-table';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { unparse } from 'papaparse';
 
 const props = defineProps({
@@ -69,6 +69,12 @@ const totalRows = computed(() => props.data.length);
 const showPagination = computed(
 	() => props.data?.length && totalRows.value > pageLength.value
 );
+
+const pageSize = ref(10);
+watch(pageSize, () => {
+	currPage.value = 1;
+	table.setPageSize(pageSize.value);
+});
 
 const downloadCSV = async () => {
 	let csv = unparse({
@@ -148,10 +154,15 @@ const downloadCSV = async () => {
 			<Button @click="downloadCSV" iconLeft="download" variant="ghost"
 				>Download as CSV</Button
 			>
-			<div
-				v-if="showPagination"
-				class="flex flex-shrink-0 items-center justify-end gap-3"
-			>
+			<div class="flex flex-shrink-0 items-center justify-end gap-3">
+				<div class="flex flex-shrink-0 items-center gap-2 border-r-2 pr-3">
+					<p class="text-sm text-gray-600">Per Page</p>
+					<select class="form-select block !py-0.5 text-sm" v-model="pageSize">
+						<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option value="20">20&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+					</select>
+				</div>
 				<p class="tnum text-sm text-gray-600">
 					{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 				</p>
