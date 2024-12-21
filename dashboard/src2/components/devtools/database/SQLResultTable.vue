@@ -159,8 +159,9 @@ const downloadCSV = async () => {
 					<p class="text-sm text-gray-600">Per Page</p>
 					<select class="form-select block !py-0.5 text-sm" v-model="pageSize">
 						<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-						<option value="20">20&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 						<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option value="100">100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option value="200">200&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
 					</select>
 				</div>
 				<p class="tnum text-sm text-gray-600">
