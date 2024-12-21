@@ -27,7 +27,7 @@ def execute(filters=None):
 	return columns, data
 
 
-def get_data(resource_type, action_type):
+def get_data(resource_type, action_type):  # noqa: C901
 	settings = frappe.get_single("Press Settings")
 	client = boto3.client(
 		"cost-optimization-hub",
@@ -88,6 +88,10 @@ def get_data(resource_type, action_type):
 				["name", "team", "public"],
 				as_dict=True,
 			)
+
+			if not server:
+				continue
+
 			data = {
 				"resource_type": resource_type,
 				"virtual_machine": virtual_machine,

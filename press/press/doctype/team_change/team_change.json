@@ -10,7 +10,8 @@
   "from_team",
   "to_team",
   "transfer_completed",
-  "reason"
+  "reason",
+  "key"
  ],
  "fields": [
   {
@@ -60,11 +61,17 @@
    "fieldname": "reason",
    "fieldtype": "Long Text",
    "label": "Reason"
+  },
+  {
+   "fieldname": "key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-16 18:11:15.948763",
+ "modified": "2024-12-11 14:16:51.527123",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team Change",

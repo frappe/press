@@ -7,7 +7,7 @@
 				{
 					label: 'Add App',
 					variant: 'solid',
-					disabled: !appValidated && !selectedVersion,
+					disabled: (!appValidated && !selectedVersion) || !this.app.is_public,
 					onClick: addApp
 				}
 			]
@@ -42,8 +42,30 @@
 					Validating app...
 				</div>
 				<div v-if="appValidated" class="flex text-base text-gray-700">
-					<GreenCheckIcon class="mr-2 w-4" />
-					Found {{ this.app.title }} ({{ this.app.name }})
+					<div v-if="this.app.is_public === true" class="flex gap-1">
+						<FeatherIcon
+							class="w-4 p-0.5 text-white rounded bg-green-500"
+							name="check"
+							:stroke-width="3"
+						/>
+						Found {{ this.app.title }} ({{ this.app.name }})
+					</div>
+					<div v-else-if="this.app.is_public === false">
+						<div class="flex text-base text-gray-700 gap-1">
+							<FeatherIcon
+								class="w-4 p-0.5 text-white rounded bg-red-500"
+								name="x"
+							/>
+							The Github Repository is private.
+							<Link
+								href="https://frappecloud.com/marketplace/terms"
+								class="font-medium"
+							>
+								Terms and Policy
+							</Link>
+						</div>
+					</div>
+					<div v-else class="h-4"></div>
 				</div>
 			</div>
 			<ErrorMessage :message="$resources.validateApp.error" />
@@ -77,7 +99,7 @@ export default {
 		validateApp() {
 			return {
 				url: 'press.api.github.app',
-				onSuccess(data) {
+				onSuccess: async data => {
 					this.appValidated = true;
 					if (!data) {
 						return;
@@ -86,13 +108,16 @@ export default {
 					const repo_owner = this.selectedGithubUser?.login;
 					const repo = this.selectedGithubRepository || data.name;
 					const repository_url = `https://github.com/${repo_owner}/${repo}`;
+					this.app = {};
+					const isPublic = await this.checkRepoVisibility(repo_owner, repo);
 
 					this.app = {
 						name: data.name,
 						title: data.title,
 						repository_url,
 						github_installation_id: this.selectedGithubUser?.id,
-						branch: this.selectedBranch.value
+						branch: this.selectedBranch.value,
+						is_public: isPublic
 					};
 				}
 			};
@@ -139,6 +164,22 @@ export default {
 				...data,
 				installation: data.selectedGithubUser.id
 			});
+		},
+		async checkRepoVisibility(owner, repo) {
+			try {
+				const response = await fetch(
+					`https://api.github.com/repos/${owner}/${repo}`
+				);
+				if (!response.ok) {
+					throw new Error('Repository not found or private');
+				}
+
+				const repoData = await response.json();
+				return !repoData.private; // Returns true if public, false if private
+			} catch (error) {
+				console.error(error);
+				return false; // Assume false if there was an error
+			}
 		}
 	}
 };

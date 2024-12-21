@@ -12,7 +12,7 @@ from functools import cached_property
 import boto3
 import frappe
 from frappe import _
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
@@ -27,7 +27,6 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import Bench
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -204,6 +203,8 @@ class BaseServer(Document, TagHelpers):
 
 		if not self.hostname_abbreviation:
 			self._set_hostname_abbreviation()
+
+		self.validate_mounts()
 
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
@@ -721,6 +722,10 @@ class BaseServer(Document, TagHelpers):
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Server Plan", plan)
+		self._change_plan(plan)
+		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+
+	def _change_plan(self, plan):
 		self.ram = plan.memory
 		self.save()
 		self.reload()
@@ -733,7 +738,6 @@ class BaseServer(Document, TagHelpers):
 				"to_plan": plan.name,
 			}
 		).insert()
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):
@@ -941,6 +945,148 @@ class BaseServer(Document, TagHelpers):
 		self.title = title
 		self.save()
 
+	def validate_mounts(self):
+		if not self.virtual_machine:
+			return
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if len(machine.volumes) > 1 and not self.mounts:
+			self.fetch_volumes_from_virtual_machine()
+			self.set_default_mount_points()
+			self.set_mount_properties()
+
+	def fetch_volumes_from_virtual_machine(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		for volume in machine.volumes:
+			if volume.device == "/dev/sda1":
+				# Skip root volume. This is for AWS other providers may have different root volume
+				continue
+			self.append("mounts", {"volume_id": volume.volume_id})
+
+	def set_default_mount_points(self):
+		first = self.mounts[0]
+		if self.doctype == "Server":
+			first.mount_point = "/opt/volumes/benches"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/home/frappe/benches",
+					"source": "/opt/volumes/benches/home/frappe/benches",
+					"mount_point_owner": "frappe",
+					"mount_point_group": "frappe",
+				},
+			)
+		elif self.doctype == "Database Server":
+			first.mount_point = "/opt/volumes/mariadb"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/mysql",
+					"source": "/opt/volumes/mariadb/var/lib/mysql",
+				},
+			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/etc/mysql",
+					"source": "/opt/volumes/mariadb/etc/mysql",
+				},
+			)
+
+	def set_mount_properties(self):
+		for mount in self.mounts:
+			# set_defaults doesn't seem to work on children in a controller hook
+			default_fields = find_all(frappe.get_meta("Server Mount").fields, lambda x: x.default)
+			for field in default_fields:
+				fieldname = field.fieldname
+				if not mount.get(fieldname):
+					mount.set(fieldname, field.default)
+
+			mount_options = "defaults,nofail"  # Set default mount options
+			if mount.mount_options:
+				mount_options = f"{default_mount_options},{mount.mount_options}"
+
+			mount.mount_options = mount_options
+			if mount.mount_type == "Bind":
+				mount.filesystem = "none"
+				mount.mount_options = f"{mount.mount_options},bind"
+
+			if mount.volume_id:
+				# EBS volumes are named by their volume id
+				# There's likely a better way to do this
+				# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-using-volumes.html
+				stripped_id = mount.volume_id.replace("-", "")
+				mount.source = f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{ stripped_id }"
+				if not mount.mount_point:
+					# If we don't know where to mount, mount it in /mnt/<volume_id>
+					mount.mount_point = f"/mnt/{stripped_id}"
+
+	def get_mount_variables(self):
+		return {
+			"all_mounts_json": json.dumps([mount.as_dict() for mount in self.mounts], indent=4, default=str),
+			"volume_mounts_json": json.dumps(
+				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"],
+				indent=4,
+				default=str,
+			),
+			"bind_mounts_json": json.dumps(
+				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Bind"],
+				indent=4,
+				default=str,
+			),
+		}
+
+	@frappe.whitelist()
+	def mount_volumes(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+
+	def _mount_volumes(self):
+		try:
+			ansible = Ansible(
+				playbook="mount.yml",
+				server=self,
+				variables={**self.get_mount_variables()},
+			)
+			play = ansible.run()
+			self.reload()
+			if self._set_mount_status(play):
+				self.save()
+		except Exception:
+			log_error("Server Mount Exception", server=self.as_dict())
+
+	def _set_mount_status(self, play):
+		tasks = frappe.get_all(
+			"Ansible Task",
+			["result", "task"],
+			{
+				"play": play.name,
+				"status": ("in", ("Success", "Failure")),
+				"task": ("in", ("Mount Volumes", "Mount Bind Mounts", "Show Block Device UUIDs")),
+			},
+		)
+		mounts_changed = False
+		for task in tasks:
+			result = json.loads(task.result)
+			for row in result.get("results", []):
+				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
+				if not mount:
+					mount = find(
+						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
+					continue
+				if task.task == "Show Block Device UUIDs":
+					mount.uuid = row.get("stdout", "").strip()
+					mounts_changed = True
+				else:
+					mount_status = {True: "Failure", False: "Success"}[row.get("failed", False)]
+					if mount.status != mount_status:
+						mount.status = mount_status
+						mounts_changed = True
+		return mounts_changed
+
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1089,6 +1235,7 @@ class Server(BaseServer):
 		from frappe.types import DF
 
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
@@ -1114,6 +1261,7 @@ class Server(BaseServer):
 		is_standalone_setup: DF.Check
 		is_upstream_setup: DF.Check
 		managed_database_service: DF.Link | None
+		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		primary: DF.Link | None
@@ -1301,10 +1449,13 @@ class Server(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					**self.get_mount_variables(),
 				},
 			)
 			play = ansible.run()
 			self.reload()
+			self._set_mount_status(play)
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
@@ -1707,6 +1858,12 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
+
+	@property
+	def docker_depends_on_mounts(self):
+		mount_points = set(mount.mount_point for mount in self.mounts)
+		bench_mount_points = set(["/home/frappe/benches"])
+		return bench_mount_points.issubset(mount_points)
 
 
 def scale_workers(now=False):

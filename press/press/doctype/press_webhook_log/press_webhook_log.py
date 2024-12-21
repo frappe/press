@@ -197,7 +197,7 @@ def process():
 			"Press Webhook Log",
 			record,
 			method="send",
-			queue="long",
+			queue="default",
 			job_id=f"press_webhook_log:{record}",
 			deduplicate=True,
 		)

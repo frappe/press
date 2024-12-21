@@ -213,7 +213,9 @@ class VirtualMachineImage(Document):
 		return None
 
 	@classmethod
-	def get_available_for_series(cls, series: str, region: str | None = None) -> str | None:
+	def get_available_for_series(
+		cls, series: str, region: str | None = None, platform: str | None = None
+	) -> str | None:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
@@ -223,9 +225,12 @@ class VirtualMachineImage(Document):
 			.where(
 				images.series == series,
 			)
+			.orderby(images.creation, order=frappe.qb.desc)
 		)
 		if region:
 			get_available_images = get_available_images.where(images.region == region)
+		if platform:
+			get_available_images = get_available_images.where(images.platform == platform)
 		available_images = get_available_images.run(as_dict=True)
 		if not available_images:
 			return None

@@ -4,8 +4,5 @@
   become: yes
   become_user: root
   gather_facts: no
-
-  tasks:
-    - name: Wait for Cloud Init to finish
-      command: 'cloud-init status --wait'
-
+  roles:
+    - role: wait_for_cloud_init

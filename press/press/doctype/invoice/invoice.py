@@ -6,7 +6,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, getdate
+from frappe.utils import cint, flt, getdate
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
@@ -66,6 +66,7 @@ class Invoice(Document):
 		razorpay_payment_id: DF.Data | None
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
+		refund_reason: DF.Data | None
 		status: DF.Literal[
 			"Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"
 		]
@@ -107,6 +108,7 @@ class Invoice(Document):
 		"total_discount_amount",
 		"invoice_pdf",
 		"stripe_invoice_url",
+		"amount_due_with_tax",
 	)
 
 	@staticmethod
@@ -299,7 +301,7 @@ class Invoice(Document):
 		total = 0
 		for item in self.items:
 			total += item.amount
-		self.total = total
+		self.total = flt(total, 2)
 
 	def apply_taxes_if_applicable(self):
 		self.amount_due_with_tax = self.amount_due
@@ -310,11 +312,11 @@ class Invoice(Document):
 
 		if self.currency == "INR" and self.type == "Subscription":
 			gst_rate = frappe.db.get_single_value("Press Settings", "gst_percentage")
-			self.gst = self.amount_due * gst_rate
-			self.amount_due_with_tax = self.amount_due + self.gst
+			self.gst = flt(self.amount_due * gst_rate, 2)
+			self.amount_due_with_tax = flt(self.amount_due + self.gst, 2)
 
 	def calculate_amount_due(self):
-		self.amount_due = self.total - self.applied_credits
+		self.amount_due = flt(self.total - self.applied_credits, 2)
 		if self.amount_due < 0 and self.amount_due > -0.1:
 			self.write_off_amount = self.amount_due
 			self.amount_due = 0
@@ -590,7 +592,7 @@ class Invoice(Document):
 			if row.quantity == 0:
 				items_to_remove.append(row)
 			else:
-				row.amount = row.quantity * row.rate
+				row.amount = flt((row.quantity * row.rate), 2)
 
 		for item in items_to_remove:
 			self.remove(item)
@@ -614,7 +616,7 @@ class Invoice(Document):
 	def calculate_discounts(self):
 		for item in self.items:
 			if item.discount_percentage:
-				item.discount = item.amount * (item.discount_percentage / 100)
+				item.discount = flt(item.amount * (item.discount_percentage / 100), 2)
 
 		self.total_discount_amount = sum([item.discount for item in self.items]) + sum(
 			[d.amount for d in self.discounts]
@@ -622,7 +624,7 @@ class Invoice(Document):
 		# TODO: handle percent discount from discount table
 
 		self.total_before_discount = self.total
-		self.total = self.total_before_discount - self.total_discount_amount
+		self.total = flt(self.total_before_discount - self.total_discount_amount, 2)
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
@@ -890,6 +892,7 @@ class Invoice(Document):
 
 		stripe.Refund.create(charge=charge)
 		self.status = "Refunded"
+		self.refund_reason = reason
 		self.save()
 		self.add_comment(text=f"Refund reason: {reason}")
 

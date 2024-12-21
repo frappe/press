@@ -1037,20 +1037,14 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 @frappe.whitelist(allow_guest=True)
 def confirm_bench_transfer(key):
-	cache = frappe.cache.get_value(f"bench_transfer_data:{key}")
-
-	if cache:
-		bench, team_change = cache
-
+	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
-		frappe.cache.delete_value(f"bench_transfer_data:{key}")
-
 		frappe.response.type = "redirect"
-		frappe.response.location = f"/dashboard/groups/{bench}"
+		frappe.response.location = f"/dashboard/groups/{team_change.document_name}"
 	else:
 		from frappe import _
 

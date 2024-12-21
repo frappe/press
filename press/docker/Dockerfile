@@ -255,6 +255,7 @@ RUN mkdir -p {{ m.destination }} && \
 {% endfor %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
+ENV HISTTIMEFORMAT "%Y-%m-%d %T "
 
 EXPOSE 8000 9000 2200 8088
 CMD ["supervisord"]

@@ -31,6 +31,7 @@ class DatabaseServer(BaseServer):
 			DatabaseServerMariaDBVariable,
 		)
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
@@ -57,6 +58,7 @@ class DatabaseServer(BaseServer):
 		memory_high: DF.Float
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
+		mounts: DF.Table[ServerMount]
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
@@ -388,14 +390,18 @@ class DatabaseServer(BaseServer):
 					"kibana_password": config.kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
+					"allocator": self.memory_allocator.lower(),
 					"mariadb_root_password": config.mariadb_root_password,
 					"certificate_private_key": config.certificate.private_key,
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
+					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
+					**self.get_mount_variables(),
 				},
 			)
 			play = ansible.run()
 			self.reload()
+			self._set_mount_status(play)
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
@@ -515,6 +521,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"primary_private_ip": primary.private_ip,
+					"private_ip": self.private_ip,
 				},
 			)
 			play = ansible.run()
@@ -959,6 +966,12 @@ class DatabaseServer(BaseServer):
 				self.memory_allocator = memory_allocator
 				self.memory_allocator_version = query_result[0][0]["Value"]
 				self.save()
+
+	@property
+	def mariadb_depends_on_mounts(self):
+		mount_points = set(mount.mount_point for mount in self.mounts)
+		mariadb_mount_points = set(["/var/lib/mysql", "/etc/mysql"])
+		return mariadb_mount_points.issubset(mount_points)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
