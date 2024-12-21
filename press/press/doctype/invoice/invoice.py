@@ -518,6 +518,11 @@ class Invoice(Document):
 						item.description = f"{server_title} Storage Add-on for {how_many_days}"
 					else:
 						item.description = f"{server_title} active for {how_many_days}"
+				elif item.document_type == "Marketplace App":
+					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
+					item.description = f"Marketplace app {app_title} active for {how_many_days}"
+				else:
+					item.description = "Prepaid Credits"
 
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":
