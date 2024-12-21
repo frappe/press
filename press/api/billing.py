@@ -83,6 +83,7 @@ def balances():
 			"source": ("in", ("Prepaid Credits", "Transferred Credits", "Free Credits")),
 			"team": team,
 			"docstatus": 1,
+			"type": ("!=", "Partnership Fee"),
 		},
 		limit=1,
 	)
@@ -231,6 +232,33 @@ def create_payment_intent_for_micro_debit(payment_method_name):
 		},
 	)
 	return {"client_secret": intent["client_secret"]}
+
+
+@frappe.whitelist()
+def create_payment_intent_for_partnership_fees():
+	team = get_current_team(True)
+	press_settings = frappe.get_cached_doc("Press Settings")
+	metadata = {"payment_for": "partnership_fee"}
+	fee_amount = press_settings.partnership_fee_usd
+
+	if team.currency == "INR":
+		fee_amount = press_settings.partnership_fee_inr
+		gst_amount = fee_amount * press_settings.gst_percentage
+		fee_amount += gst_amount
+		metadata.update({"gst": round(gst_amount, 2)})
+
+	stripe = get_stripe()
+	intent = stripe.PaymentIntent.create(
+		amount=int(fee_amount * 100),
+		currency=team.currency.lower(),
+		customer=team.stripe_customer_id,
+		description="Partnership Fee",
+		metadata=metadata,
+	)
+	return {
+		"client_secret": intent["client_secret"],
+		"publishable_key": get_publishable_key(),
+	}
 
 
 @frappe.whitelist()
