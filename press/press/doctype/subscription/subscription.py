@@ -127,7 +127,7 @@ class Subscription(Document):
 			frappe.log_error(title="Disable Subscription Error")
 
 	@frappe.whitelist()
-	def create_usage_record(self):
+	def create_usage_record(self, date: DF.Date | None = None):
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
 			return None
@@ -163,6 +163,7 @@ class Subscription(Document):
 			plan_type=self.plan_type,
 			plan=plan.name,
 			amount=amount,
+			date=date,
 			subscription=self.name,
 			interval=self.interval,
 			site=(
