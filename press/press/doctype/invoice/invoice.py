@@ -66,6 +66,7 @@ class Invoice(Document):
 		razorpay_payment_id: DF.Data | None
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
+		refund_reason: DF.Data | None
 		status: DF.Literal[
 			"Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"
 		]
@@ -505,11 +506,23 @@ class Invoice(Document):
 
 	def update_item_descriptions(self):
 		for item in self.items:
-			if not item.description and item.document_type == "Site" and item.plan:
-				site_name = item.document_name.split(".archived")[0]
-				plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
+			if not item.description:
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
+				if item.document_type == "Site" and item.plan:
+					site_name = item.document_name.split(".archived")[0]
+					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
+					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
+				elif item.document_type in ["Server", "Database Server"]:
+					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
+					if item.plan == "Add-on Storage plan":
+						item.description = f"{server_title} Storage Add-on for {how_many_days}"
+					else:
+						item.description = f"{server_title} active for {how_many_days}"
+				elif item.document_type == "Marketplace App":
+					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
+					item.description = f"Marketplace app {app_title} active for {how_many_days}"
+				else:
+					item.description = "Prepaid Credits"
 
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":
@@ -891,6 +904,7 @@ class Invoice(Document):
 
 		stripe.Refund.create(charge=charge)
 		self.status = "Refunded"
+		self.refund_reason = reason
 		self.save()
 		self.add_comment(text=f"Refund reason: {reason}")
 
