@@ -1452,6 +1452,7 @@ class Server(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"is_devbox_server": self.is_devbox_server,
 					**self.get_mount_variables(),
 				},
 			)
