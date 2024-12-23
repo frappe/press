@@ -2867,7 +2867,9 @@ def process_fetch_database_table_schema_job_update(job):
 		f"database_table_schema__status:{job.site}"  # 1 - loading, 2 - done, None - not available
 	)
 
-	if job.status == "Pending":
+	if job.status in ["Failure", "Delivery Failure"]:
+		frappe.cache().delete_value(key_for_schema)
+		frappe.cache().delete_value(key_for_schema_status)
 		return
 
 	if job.status == "Success":
@@ -2902,9 +2904,6 @@ def process_fetch_database_table_schema_job_update(job):
 
 		frappe.cache().set_value(key_for_schema, json.dumps(data), expires_in_sec=6000)
 		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
-	else:
-		frappe.cache().delete_value(key_for_schema)
-		frappe.cache().delete_value(key_for_schema_status)
 
 
 def process_new_site_job_update(job):  # noqa: C901
