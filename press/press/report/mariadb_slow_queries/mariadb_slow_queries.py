@@ -189,6 +189,6 @@ def summarize_by_query(data):
 
 	return result
 
+
 def get_doctype_name(table_name: str) -> str:
 	return table_name.removeprefix("tab")
-
