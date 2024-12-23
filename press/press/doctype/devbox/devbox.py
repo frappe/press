@@ -83,10 +83,6 @@ class Devbox(Document):
 		)
 
 	@frappe.whitelist()
-	def get_available_cpu_and_ram(self):
-		print("meow")
-
-	@frappe.whitelist()
 	def destroy_devbox(self):
 		devbox = self
 		reverse_proxy = frappe.db.get_value(doctype="Server", filters=devbox.server, fieldname="proxy_server")
@@ -150,10 +146,6 @@ class Devbox(Document):
 			data={
 				"vnc_password": devbox.vnc_password,
 				"codeserver_password": devbox.codeserver_password,
-				"websockify_port": devbox.websockify_port,
-				"vnc_port": devbox.vnc_port,
-				"codeserver_port": devbox.codeserver_port,
-				"browser_port": devbox.browser_port,
 			},
 			devbox=devbox.name,
 		)
@@ -201,6 +193,7 @@ def process_new_devbox_job_update(job: AgentJob):
 			"browser_port": data["browser_port"],
 		}
 		frappe.db.set_value("Devbox", job.devbox, update_fields)
+		devbox_setup_complete_check(job)
 
 	if job.job_type == "Destroy Devbox" and job.status == "Success":
 		update_fields = {
@@ -211,17 +204,29 @@ def process_new_devbox_job_update(job: AgentJob):
 
 	if job.job_type == "Add Site to Upstream" and job.status == "Success":
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="add_site_to_upstream", val=True)
+		devbox_setup_complete_check(job)
 
 	if job.job_type == "Start Devbox" and job.status == "Success":
-		devbox = frappe.get_doc("Devbox", job.devbox)
+		data = json.loads(job.data)["message"]
+		update_fields = {
+			"websockify_port": data["websockify_port"],
+			"vnc_port": data["vnc_port"],
+			"codeserver_port": data["codeserver_port"],
+			"browser_port": data["browser_port"],
+		}
+		frappe.db.set_value("Devbox", job.devbox, update_fields)
+		devbox = Devbox("Devbox", job.devbox)
 		devbox.sync_devbox_status()
 
 	if job.job_type == "Stop Devbox" and job.status == "Success":
-		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Exited")
-		devbox = frappe.get_doc("Devbox", job.devbox)
-		devbox.sync_devbox_status()
+		update_fields = {
+			"status": "Exited",
+		}
+		frappe.db.set_value("Devbox", job.devbox, update_fields)
+		frappe.db.commit()
 
+
+def devbox_setup_complete_check(job: AgentJob):
 	status = frappe.db.get_value("Devbox", job.devbox, ["initialized", "add_site_to_upstream"], as_dict=True)
-
 	if status.initialized and status.add_site_to_upstream:
 		frappe.db.set_value(dt="Devbox", dn=job.devbox, field="status", val="Running")

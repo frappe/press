@@ -2,16 +2,18 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Devbox', {
+	setup: function (frm) {
+		frm.set_query('server', function () {
+			// Replace your_link_field with the actual field name
+			return {
+				filters: [
+					['Server', 'is_devbox_server', '=', true], // Replace YourLinkedDocType with the linked DocType
+				],
+			};
+		});
+	},
 	refresh(frm) {
-		frm.add_custom_button(
-			__('Get Available CPU and RAM'),
-			() => {
-				frm.call('get_available_cpu_and_ram');
-			},
-			__('Information'),
-		);
-
-		if (!frm.doc.initialized) {
+		if (!frm.doc.initialized && frm.doc.status == 'Pending') {
 			frm.add_custom_button(
 				__('Initialize'),
 				() => {
@@ -31,14 +33,16 @@ frappe.ui.form.on('Devbox', {
 			);
 		}
 
-		if (!(frm.doc.status == 'Exited')) {
-			frm.add_custom_button(
-				__('Stop'),
-				() => {
-					frm.call('stop_devbox');
-				},
-				__('Actions'),
-			);
+		if (!(frm.doc.status == 'Destroyed')) {
+			if (!(frm.doc.status == 'Exited') || !(frm.doc.status == 'Pending')) {
+				frm.add_custom_button(
+					__('Stop'),
+					() => {
+						frm.call('stop_devbox');
+					},
+					__('Actions'),
+				);
+			}
 
 			frm.add_custom_button(
 				__('Sync Status'),
