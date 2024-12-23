@@ -27,6 +27,8 @@ from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
 
+from press.utils.email_validator import validate_email
+
 
 class SupervisorProcess(TypedDict):
 	program: str
@@ -846,6 +848,21 @@ def get_mariadb_root_password(site):
 		field = "mariadb_root_password"
 
 	return get_decrypted_password(doctype, name, field)
+
+
+def is_valid_email_address(email) -> bool:
+	if frappe.cache.exists(f"email_validity:{email}"):
+		return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
+	try:
+		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
+		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
+		if not is_valid:
+			log_error("Invalid email address on signup", data=email)
+		return bool(is_valid)
+	except Exception as e:
+		log_error("Email validation error on signup", data=e)
+		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
+		return False
 
 
 def get_full_chain_cert_of_domain(domain: str) -> str:
