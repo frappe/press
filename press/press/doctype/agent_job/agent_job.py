@@ -995,19 +995,6 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
 			DeployCandidate.process_run_build(job, response_data)
-		elif job.job_type == "Column Statistics":
-			frappe.enqueue(
-				fetch_column_stats_update,
-				queue="default",
-				timeout=None,
-				is_async=True,
-				now=False,
-				job_name="Fetch Column Updates Through Enque",
-				enqueue_after_commit=False,
-				at_front=False,
-				job=job,
-				response_data=response_data,
-			)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
 		elif job.job_type == "Complete Setup Wizard":
