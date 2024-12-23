@@ -6,11 +6,14 @@ import contextlib
 import functools
 import json
 import re
+import socket
+import ssl
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
+from urllib.request import urlopen
 
 import frappe
 import frappe.data
@@ -20,6 +23,9 @@ import pytz
 import requests
 import wrapt
 from babel.dates import format_timedelta
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
@@ -858,3 +864,35 @@ def is_valid_email_address(email) -> bool:
 		print(e)
 		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
 		return False
+
+def get_full_chain_cert_of_domain(domain: str) -> str:
+	cert_chain = []
+
+	# Get initial certificate
+	context = ssl.create_default_context()
+	with socket.create_connection((domain, 443)) as sock:  # noqa: SIM117
+		with context.wrap_socket(sock, server_hostname=domain) as ssl_socket:
+			cert_pem = ssl.DER_cert_to_PEM_cert(ssl_socket.getpeercert(True))
+			cert = x509.load_pem_x509_certificate(cert_pem.encode(), default_backend())
+			cert_chain.append(cert_pem)
+
+	# Walk up the chain via certificate authority information access (AIA)
+	while True:
+		try:
+			aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+			for access in aia.value:
+				if access.access_method._name == "caIssuers":
+					uri = access.access_location._value
+					with urlopen(uri) as response:
+						der_cert = response.read()
+						pem_cert = ssl.DER_cert_to_PEM_cert(der_cert)
+						cert = x509.load_pem_x509_certificate(pem_cert.encode(), default_backend())
+						cert_chain.append(pem_cert)
+						break
+		except:  # noqa: E722
+			break
+
+	cert_chain_str = ""
+	for cert in cert_chain:
+		cert_chain_str += cert + "\n"
+	return cert_chain_str
