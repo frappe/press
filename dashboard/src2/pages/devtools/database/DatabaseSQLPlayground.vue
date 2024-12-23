@@ -63,6 +63,8 @@
 					v-model="query"
 					v-if="sqlSchemaForAutocompletion"
 					:schema="sqlSchemaForAutocompletion"
+					@codeSelected="handleCodeSelected"
+					@codeUnselected="handleCodeUnselected"
 				/>
 			</div>
 			<div class="mt-2 flex flex-row items-center justify-between">
@@ -73,13 +75,24 @@
 					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
 				</div>
 
-				<Button
-					@click="() => runSQLQuery()"
-					:loading="$resources.runSQLQuery.loading"
-					iconLeft="play"
-					variant="solid"
-					>Run Query</Button
-				>
+				<div class="flex gap-2">
+					<Button
+						v-if="selectedQuery"
+						@click="runSelectedSQLQuery"
+						:loading="$resources.runSQLQuery.loading"
+						iconLeft="play"
+						variant="outline"
+					>
+						Run Selected Query
+					</Button>
+					<Button
+						@click="() => runSQLQuery()"
+						:loading="$resources.runSQLQuery.loading"
+						iconLeft="play"
+						variant="solid"
+						>Run Query</Button
+					>
+				</div>
 			</div>
 			<div
 				class="mt-4"
@@ -171,6 +184,7 @@ export default {
 			site: null,
 			tabIndex: 0,
 			query: '',
+			selectedQuery: null,
 			commit: false,
 			execution_successful: null,
 			data: null,
@@ -285,6 +299,12 @@ export default {
 		}
 	},
 	methods: {
+		handleCodeSelected(selectedCode) {
+			this.selectedQuery = selectedCode;
+		},
+		handleCodeUnselected() {
+			this.selectedQuery = null;
+		},
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
 			if (!site_name) site_name = this.site;
 			if (!site_name) return;
@@ -297,7 +317,7 @@ export default {
 				}
 			});
 		},
-		runSQLQuery(ignore_validation = false) {
+		runSQLQuery(ignore_validation = false, run_selected_query = false) {
 			if (!this.query) return;
 			if (this.mode === 'read-only' || ignore_validation) {
 				this.$resources.runSQLQuery.submit({
@@ -305,7 +325,7 @@ export default {
 					dn: this.site,
 					method: 'run_sql_query_in_database',
 					args: {
-						query: this.query,
+						query: run_selected_query ? this.selectedQuery : this.query,
 						commit: this.mode === 'read-write'
 					}
 				});
@@ -322,7 +342,28 @@ Are you sure you want to run the query?`,
 					label: 'Run Query',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						this.runSQLQuery(true);
+						this.runSQLQuery(true, run_selected_query);
+						hide();
+					}
+				}
+			});
+		},
+		runSelectedSQLQuery() {
+			if (!this.selectedQuery) {
+				return;
+			}
+			confirmDialog({
+				title: 'Verify Query',
+				message: `
+Are you sure you want to run the query?
+<br>
+<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-700">${this.selectedQuery}</pre>
+				`,
+				primaryAction: {
+					label: 'Run Query',
+					variant: 'solid',
+					onClick: ({ hide }) => {
+						this.runSQLQuery(false, true);
 						hide();
 					}
 				}
