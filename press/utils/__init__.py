@@ -17,8 +17,6 @@ from urllib.request import urlopen
 
 import frappe
 import frappe.data
-import frappe.utils
-import frappe.utils.data
 import pytz
 import requests
 import wrapt
@@ -854,16 +852,17 @@ def get_mariadb_root_password(site):
 
 
 def is_valid_email_address(email) -> bool:
-	# if frappe.cache.exists(f"email_validity:{email}"):
-	# 	return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
+	if frappe.cache.exists(f"email_validity:{email}"):
+		return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
 	try:
 		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
 		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
 		return True
 	except Exception as e:
-		print(e)
+		frappe.log_error("Email validation error on signup", data=e)
 		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
 		return False
+
 
 def get_full_chain_cert_of_domain(domain: str) -> str:
 	cert_chain = []
