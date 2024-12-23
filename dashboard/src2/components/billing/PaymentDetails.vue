@@ -1,15 +1,13 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-gray-900">
-			{{ 'Payment details' }}
-		</div>
+		<div class="text-lg font-semibold text-gray-900">Payment details</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
 				class="flex items-center justify-between text-base text-gray-900"
 			>
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Active card' }}</div>
+					<div class="font-medium">Active Card</div>
 					<div class="overflow-hidden text-ellipsis text-gray-700">
 						<div
 							v-if="team.doc.payment_method"
@@ -42,7 +40,7 @@
 			/>
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Mode of payment' }}</div>
+					<div class="font-medium">Mode of payment</div>
 					<div
 						v-if="team.doc.payment_mode"
 						class="inline-flex items-center gap-2 text-gray-700"
@@ -72,7 +70,7 @@
 			<div class="my-3 h-px bg-gray-100" />
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Credit balance' }}</div>
+					<div class="font-medium">Credit balance</div>
 					<div class="text-gray-700">
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
@@ -101,7 +99,7 @@
 			<div class="my-3 h-px bg-gray-100" />
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">{{ 'Billing address' }}</div>
+					<div class="font-medium">Billing address</div>
 					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
 						{{ billingDetailsSummary }}
 					</div>
