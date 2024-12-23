@@ -63,9 +63,9 @@
 					<Button
 						class="mt-3"
 						:loading="this.$resources.downloadSSLCert.loading"
-						loading-text="Downloading SSL Certificate (.pem)"
+						loading-text="Downloading Full Chain SSL Certificate (.pem)"
 						@click="this.$resources.downloadSSLCert.submit()"
-						>Download SSL Certificate (.pem)</Button
+						>Download Full Chain SSL Certificate (.pem)</Button
 					>
 					<ErrorMessage
 						class="mt-2"
