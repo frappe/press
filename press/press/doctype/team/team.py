@@ -527,7 +527,7 @@ class Team(Document):
 
 	def create_partner_referral_code(self):
 		if not self.partner_referral_code:
-			self.partner_referral_code = random_string(10)
+			self.partner_referral_code = random_string(10).upper()
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
