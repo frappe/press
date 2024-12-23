@@ -2729,9 +2729,22 @@ class Site(Document, TagHelpers):
 					"data": json.loads(frappe.cache().get_value(key_for_schema)),
 				}
 
-		# create the agent job and put it in loading state
-		frappe.cache().set_value(key_for_schema_status, 1, expires_in_sec=600)
-		Agent(self.server).fetch_database_table_schema(self, include_index_info=True, include_table_size=True)
+		# Check if any agent job is created within 5 minutes and in pending/running condition
+		# Checks to prevent duplicate agent job creation due to race condition
+		if not frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Fetch Database Table Schema",
+				"site": self.name,
+				"status": ["in", ["Undelivered", "Pending", "Running"]],
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-5)),
+			},
+		):
+			# create the agent job and put it in loading state
+			frappe.cache().set_value(key_for_schema_status, 1, expires_in_sec=600)
+			Agent(self.server).fetch_database_table_schema(
+				self, include_index_info=True, include_table_size=True
+			)
 		return {
 			"loading": True,
 			"data": [],
@@ -2858,7 +2871,36 @@ def process_fetch_database_table_schema_job_update(job):
 		return
 
 	if job.status == "Success":
-		frappe.cache().set_value(key_for_schema, job.data, expires_in_sec=6000)
+		"""
+		Support old agent versions
+		Remove this once all agents are updated
+		"""
+		data = json.loads(job.data)
+		is_old_agent = False
+
+		if len(data) > 0 and isinstance(data[next(iter(data.keys()))], list):
+			is_old_agent = True
+
+		if is_old_agent:
+			data_copy = data.copy()
+			data = {}
+			for key, value in data_copy.items():
+				data[key] = {
+					"columns": value,
+					"size": {
+						"data_length": 0,
+						"index_length": 0,
+						"total_size": 0,
+					},  # old agent api doesn't have size info
+				}
+				for column in data[key]["columns"]:
+					column["index_info"] = {
+						"index_usage": {x: 0 for x in column["indexes"]},  # just fill some dummy value
+						"indexes": column["indexes"],
+						"is_indexed": len(column["indexes"]) > 0,
+					}
+
+		frappe.cache().set_value(key_for_schema, json.dumps(data), expires_in_sec=6000)
 		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
 	else:
 		frappe.cache().delete_value(key_for_schema)
