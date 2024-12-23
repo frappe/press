@@ -19,17 +19,11 @@ exception of a circular definition (see comments below), and
 with the omission of the pattern components marked as "obsolete".
 """
 
-import logging
+import contextlib
 import re
 import smtplib
 
 from dns.resolver import Resolver
-
-from press.api.site import NAMESERVERS
-
-__all__ = ["validate_email"]
-
-log = logging.getLogger(__name__)
 
 # All we are really doing is comparing the input string to one
 # gigantic regular expression.  But building that regexp, and
@@ -89,7 +83,7 @@ def get_mx_ip(mx_host):
 	if mx_host not in MX_DNS_CACHE:
 		try:
 			resolver = Resolver(configure=False)
-			resolver.nameservers = NAMESERVERS
+			resolver.nameservers = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 			answers = resolver.query(mx_host, "MX")
 
 			mx_lookup_result = []
@@ -102,7 +96,7 @@ def get_mx_ip(mx_host):
 	return MX_DNS_CACHE[mx_host]
 
 
-def check_mx_record(email, verify=False, smtp_timeout=10):  # noqa: C901
+def check_mx_record(email, verify=False, smtp_timeout=10):
 	"""
 	Checks for an MX record on the given email addresses' hostname.
 
@@ -119,7 +113,7 @@ def check_mx_record(email, verify=False, smtp_timeout=10):  # noqa: C901
 	if mx_hosts is None:
 		return False
 	for mx_host in mx_hosts:
-		try:
+		with contextlib.suppress(Exception):
 			if not verify and mx_host[1] in MX_CHECK_CACHE:
 				return MX_CHECK_CACHE[mx_host[1]]
 			smtp = smtplib.SMTP(timeout=smtp_timeout)
@@ -134,19 +128,13 @@ def check_mx_record(email, verify=False, smtp_timeout=10):  # noqa: C901
 			status, _ = smtp.helo()
 			if status != 250:
 				smtp.quit()
-				log.debug("%s answer: %s - %s", mx_host[1], status, _)
 				continue
 			smtp.mail("")
 			status, _ = smtp.rcpt(email)
 			if status == 250:
 				smtp.quit()
 				return True
-			log.debug("%s answer: %s - %s", mx_host[1], status, _)
 			smtp.quit()
-		except smtplib.SMTPServerDisconnected:  # Server not permits verify user
-			log.debug("%s disconnected.", mx_host[1])
-		except smtplib.SMTPConnectError:
-			log.debug("Unable to connect to %s.", mx_host[1])
 	return None
 
 
@@ -169,8 +157,6 @@ def validate_email(email, check_mx=False, verify=False, smtp_timeout=10, **kwarg
 	:return: The validity of the given email address
 	:rtype: bool or None
 	"""
-	if "debug" in kwargs:
-		raise DeprecationWarning("The log-level should be set in your application's configuration!")
 	try:
 		if re.match(VALID_ADDRESS_REGEXP, email) is not None:
 			check_mx |= verify
@@ -178,8 +164,7 @@ def validate_email(email, check_mx=False, verify=False, smtp_timeout=10, **kwarg
 				return check_mx_record(email, verify=verify, smtp_timeout=smtp_timeout)
 		else:
 			return False
-	except Exception as e:
-		log.debug("ServerError or socket.error exception raised (%s).", e)
+	except Exception:
 		return None
 	else:
 		return True
