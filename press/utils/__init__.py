@@ -16,7 +16,6 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import frappe
-import frappe.data
 import pytz
 import requests
 import wrapt
