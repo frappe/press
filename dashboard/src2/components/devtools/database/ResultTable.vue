@@ -255,39 +255,46 @@ const downloadCSV = async () => {
 				v-if="showPagination"
 				class="flex flex-shrink-0 items-center justify-end gap-3"
 			>
-			<div class="flex flex-shrink-0 items-center justify-end gap-3">
-				<div class="flex flex-shrink-0 items-center gap-2 border-r-2 pr-3">
-					<p class="text-sm text-gray-600">Per Page</p>
-					<select class="form-select block !py-0.5 text-sm" v-model="pageSize">
-						<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-						<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-						<option value="100">100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-						<option value="200">200&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
-					</select>
-				</div>
-				<p class="tnum text-sm text-gray-600">
-					{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
-				</p>
-				<div class="flex gap-2">
-					<Button
-						variant="ghost"
-						@click="table.previousPage()"
-						:disabled="!table.getCanPreviousPage()"
-						iconLeft="arrow-left"
-					>
-						Prev
-					</Button>
-					<Button
-						variant="ghost"
-						@click="table.nextPage()"
-						:disabled="!table.getCanNextPage()"
-						iconRight="arrow-right"
-					>
-						Next
-					</Button>
+				<div class="flex flex-shrink-0 items-center justify-end gap-3">
+					<div class="flex flex-shrink-0 items-center gap-2 border-r-2 pr-3">
+						<p class="text-sm text-gray-600">Per Page</p>
+						<select
+							class="form-select block !py-0.5 text-sm"
+							v-model="pageSize"
+						>
+							<option value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+							<option value="50">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+							<option value="100">
+								100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							</option>
+							<option value="200">
+								200&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							</option>
+						</select>
+					</div>
+					<p class="tnum text-sm text-gray-600">
+						{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+					</p>
+					<div class="flex gap-2">
+						<Button
+							variant="ghost"
+							@click="table.previousPage()"
+							:disabled="!table.getCanPreviousPage()"
+							iconLeft="arrow-left"
+						>
+							Prev
+						</Button>
+						<Button
+							variant="ghost"
+							@click="table.nextPage()"
+							:disabled="!table.getCanNextPage()"
+							iconRight="arrow-right"
+						>
+							Next
+						</Button>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-	
 </template>
