@@ -72,6 +72,19 @@
 						:message="this.$resources.downloadSSLCert.error"
 					/>
 				</div>
+				<div class="pb-2 pt-5">
+					<p class="mb-2 text-base font-semibold text-gray-700">Need Help?</p>
+					<p class="text-sm">
+						Please check out the
+						<a
+							href="https://frappecloud.com/docs/database-users-and-permission-manager#faq"
+							target="_blank"
+							class="underline"
+							>documentation</a
+						>
+						to get guides on troubleshooting.
+					</p>
+				</div>
 			</div>
 		</template>
 	</Dialog>
