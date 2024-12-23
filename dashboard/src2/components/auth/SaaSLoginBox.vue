@@ -6,7 +6,12 @@
 				class="flex flex-col items-center"
 				@dblclick="redirectForFrappeioAuth"
 			>
-				<img class="inline-block h-12 w-12 rounded-md" :src="logo" />
+				<img
+					v-if="logo"
+					class="inline-block h-12 w-12 rounded-md"
+					:src="logo"
+				/>
+				<FCLogo v-else class="inline-block h-12 w-12" />
 			</div>
 			<!-- card -->
 			<div

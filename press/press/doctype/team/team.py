@@ -1046,13 +1046,14 @@ class Team(Document):
 			return "/sites"
 
 		if self.is_saas_user:
-			pending_site_request = self.get_pending_saas_site_request()
-			if pending_site_request:
-				product_trial = pending_site_request.product_trial
-			else:
-				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
-			if product_trial:
-				return f"/app-trial/setup/{product_trial}"
+			return "/start-center"
+		# 	pending_site_request = self.get_pending_saas_site_request()
+		# 	if pending_site_request:
+		# 		product_trial = pending_site_request.product_trial
+		# 	else:
+		# 		product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
+		# 	if product_trial:
+		# 		return f"/app-trial/setup/{product_trial}"
 
 		return "/welcome"
 
@@ -1094,7 +1095,9 @@ class Team(Document):
 	def get_sites_to_suspend(self):
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 

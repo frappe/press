@@ -159,6 +159,73 @@ def get_install_app_options(marketplace_app: str) -> dict:
 	}
 
 
+def site_should_be_created_on_saas_bench(apps: list[dict]) -> bool:
+	"""Check if site should be created on SaaS bench"""
+
+	ProductTrial = frappe.qb.DocType("Product Trial")
+	ProductTrialApp = frappe.qb.DocType("Product Trial App")
+	saas_apps = (
+		frappe.qb.from_(ProductTrialApp)
+		.join(ProductTrial)
+		.on(ProductTrialApp.parent == ProductTrial.name)
+		.select(ProductTrialApp.app)
+		.where(ProductTrial.published == 1)
+		.run(as_dict=True, pluck="app")
+	)
+	return all(app["app"] in saas_apps for app in apps)
+
+
+def create_site_on_saas_bench(
+	subdomain: str,
+	apps: list[dict],
+	cluster: str,
+	site_plan: str,
+	latest_stable_version: str,
+	group: str | None = None,
+	trial: bool = False,
+) -> dict:
+	"""Create site on SaaS bench"""
+
+	from press.api.product_trial import _get_active_site as get_active_site_of_product_trial
+
+	ProductTrial = frappe.qb.DocType("Product Trial")
+	ProductTrialApp = frappe.qb.DocType("Product Trial App")
+	product = (
+		frappe.qb.from_(ProductTrial)
+		.join(ProductTrialApp)
+		.on(ProductTrialApp.parent == ProductTrial.name)
+		.select(ProductTrial.name)
+		.where(ProductTrial.published == 1)
+		.distinct()
+		.run(as_dict=True, pluck="app")
+	)
+	team = frappe.local.team()
+	site = get_active_site_of_product_trial(product[0], team.name)
+
+	account_request = frappe.new_doc(
+		"Account Request",
+		email=team.user,
+		team=team.name,
+	).insert(ignore_permissions=True)
+
+	if site:
+		site_request = frappe.get_doc(
+			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
+		)
+	else:
+		# check if account request is valid
+		# is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user
+		# create a new one
+		site_request = frappe.new_doc(
+			"Product Trial Request",
+			product_trial=product[0],
+			team=team.name,
+			account_request=account_request.name,
+		).insert(ignore_permissions=True)
+
+	return site_request
+
+
 def site_should_be_created_on_public_bench(apps: list[dict]) -> bool:
 	"""Check if site should be created on public bench"""
 
@@ -317,7 +384,7 @@ def create_site_for_app(
 	subdomain: str,
 	apps: list[dict],
 	cluster: str,
-	site_plan: str,
+	site_plan: str = "$10",
 	group: str | None = None,
 	trial: bool = False,
 ):
@@ -326,6 +393,11 @@ def create_site_for_app(
 	latest_stable_version = frappe.db.get_value(
 		"Frappe Version", {"status": "Stable"}, "name", order_by="number desc"
 	)
+
+	if site_should_be_created_on_saas_bench(apps):
+		return create_site_on_saas_bench(
+			subdomain, apps, cluster, site_plan, latest_stable_version, group, trial
+		)
 
 	if site_should_be_created_on_public_bench(apps):
 		return create_site_on_public_bench(
@@ -749,8 +821,28 @@ def get_marketplace_apps_for_onboarding() -> list[dict]:
 		filters={"show_for_site_creation": True, "status": "Published"},
 	)
 	total_installs_by_app = get_total_installs_by_app()
+
+	ProductTrial = frappe.qb.DocType("Product Trial")
+	ProductTrialApp = frappe.qb.DocType("Product Trial App")
+
+	product_trials = (
+		frappe.qb.from_(ProductTrial)
+		.join(ProductTrialApp)
+		.on(ProductTrial.name == ProductTrialApp.parent)
+		.select(
+			ProductTrial.name,
+			ProductTrialApp.app,
+		)
+		.where(ProductTrial.published == 1)
+		.distinct()
+		.run(as_dict=True)
+	)
+
 	for app in apps:
 		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
+		app_with_product_id = find(product_trials, lambda x: x.app == app["name"])
+		app["product_id"] = app_with_product_id.name if app_with_product_id else None
+
 	# sort by total installs
 	apps = sorted(apps, key=lambda x: x["total_installs"], reverse=True)
 	return apps  # noqa: RET504

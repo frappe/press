@@ -93,7 +93,8 @@ export default {
 							'Deploy Candidate'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					disabled: !onboardingComplete || enforce2FA
+					condition: onboardingComplete,
+					disabled: enforce2FA
 				},
 				{
 					name: 'Servers',
@@ -102,7 +103,8 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					disabled: !onboardingComplete || enforce2FA
+					condition: onboardingComplete,
+					disabled: enforce2FA
 				},
 				{
 					name: 'Marketplace',
@@ -118,6 +120,8 @@ export default {
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
+					condition: onboardingComplete,
+					disabled: enforce2FA,
 					children: [
 						{
 							name: 'SQL Playground',
