@@ -63,10 +63,13 @@ class AccountRequest(Document):
 	# end: auto-generated types
 
 	def before_insert(self):
-		# validate email address
+		# This pre-verification is only beneficial for SaaS signup
+		# because, in general flow we already have e-mail link/otp based verification
 		if (
 			not frappe.conf.developer_mode
 			and frappe.db.get_single_value("Press Settings", "enable_email_pre_verification")
+			and self.saas
+			and not self.oauth_signup
 			and not is_valid_email_address(self.email)
 		):
 			frappe.throw(f"{self.email} is not a valid email address")
