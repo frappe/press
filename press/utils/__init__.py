@@ -856,9 +856,11 @@ def is_valid_email_address(email) -> bool:
 	try:
 		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
 		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
-		return True
+		if not is_valid:
+			log_error("Invalid email address on signup", data=email)
+		return bool(is_valid)
 	except Exception as e:
-		frappe.log_error("Email validation error on signup", data=e)
+		log_error("Email validation error on signup", data=e)
 		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
 		return False
 
