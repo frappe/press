@@ -13,6 +13,8 @@ from typing import Any
 
 import dateutil.parser
 import frappe
+import frappe.data
+import frappe.utils
 import pytz
 import requests
 from frappe import _
@@ -68,6 +70,9 @@ from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_plan.site_plan import get_plan_config
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	get_doctype_name,
+)
 from press.utils import (
 	convert,
 	fmt_timedelta,
@@ -2265,10 +2270,84 @@ class Site(Document, TagHelpers):
 		out.update_available = any([app["update_available"] for app in out.apps])
 		return out
 
-	@frappe.whitelist()
-	def optimize_tables(self):
+	def fetch_running_optimize_tables_job(self):
+		return frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Optimize Tables",
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+			},
+		)
+
+	@dashboard_whitelist()
+	def optimize_tables(self, ignore_checks: bool = False):
+		if not ignore_checks:
+			# check for running `Optimize Tables` agent job
+			if job := self.fetch_running_optimize_tables_job():
+				return {
+					"success": True,
+					"message": "Optimize Tables job is already running on this site.",
+					"job_name": job,
+				}
+			# check if `Optimize Tables` has run in last 1 hour
+			recent_agent_job_name = frappe.db.exists(
+				"Agent Job",
+				{
+					"site": self.name,
+					"job_type": "Optimize Tables",
+					"status": ["not in", ["Failure", "Delivery Failure"]],
+					"creation": [">", frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-1)],
+				},
+			)
+			if recent_agent_job_name:
+				return {
+					"success": False,
+					"message": "Optimize Tables job has already run in the last 1 hour. Try later.",
+					"job_name": None,
+				}
+
 		agent = Agent(self.server)
-		agent.optimize_tables(self)
+		job_name = agent.optimize_tables(self).name
+		return {
+			"success": True,
+			"message": "Optimize Tables has been triggered on this site.",
+			"job_name": job_name,
+		}
+
+	@dashboard_whitelist()
+	def get_database_performance_report(self):
+		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
+
+		agent = Agent(self.server)
+		result = agent.get_summarized_performance_report_of_database(self)
+		# fetch slow queries of last 7 days
+		slow_queries = get_slow_queries(
+			frappe._dict(
+				{
+					"database": self.database_name,
+					"start_datetime": frappe.utils.add_to_date(None, days=-7),
+					"stop_datetime": frappe.utils.now_datetime(),
+					"search_pattern": ".*",
+					"max_lines": 2000,
+					"normalize_queries": True,
+				}
+			)
+		)
+		# remove `parent` & `creation` indexes from unused_indexes
+		result["unused_indexes"] = [
+			index
+			for index in result.get("unused_indexes", [])
+			if index["index_name"] not in ["parent", "creation"]
+		]
+
+		# convert all the float to int
+		for query in slow_queries:
+			for key, value in query.items():
+				if isinstance(value, float):
+					query[key] = int(value)
+		result["slow_queries"] = slow_queries
+		return result
 
 	@property
 	def server_logs(self):
@@ -2625,18 +2704,65 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def fetch_database_table_schema(self, reload=False):
-		if not frappe.db.exists("Site Database Table Schema", {"site": self.name}):
-			frappe.get_doc({"doctype": "Site Database Table Schema", "site": self.name}).insert(
-				ignore_permissions=True
-			)
+		"""
+		Store dump in redis cache
+		"""
+		key_for_schema = f"database_table_schema__data:{self.name}"
+		key_for_schema_status = (
+			f"database_table_schema__status:{self.name}"  # 1 - loading, 2 - done, None - not available
+		)
 
-		doc = frappe.get_doc("Site Database Table Schema", {"site": self.name})
-		loading, data = doc.fetch(reload)
+		if reload:
+			frappe.cache().delete_value(key_for_schema)
+			frappe.cache().delete_value(key_for_schema_status)
+
+		status = frappe.utils.cint(frappe.cache().get_value(key_for_schema_status))
+		if status:
+			if status == 1:
+				return {
+					"loading": True,
+					"data": [],
+				}
+			if status == 2:
+				return {
+					"loading": False,
+					"data": json.loads(frappe.cache().get_value(key_for_schema)),
+				}
+
+		# Check if any agent job is created within 5 minutes and in pending/running condition
+		# Checks to prevent duplicate agent job creation due to race condition
+		if not frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Fetch Database Table Schema",
+				"site": self.name,
+				"status": ["in", ["Undelivered", "Pending", "Running"]],
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-5)),
+			},
+		):
+			# create the agent job and put it in loading state
+			frappe.cache().set_value(key_for_schema_status, 1, expires_in_sec=600)
+			Agent(self.server).fetch_database_table_schema(
+				self, include_index_info=True, include_table_size=True
+			)
 		return {
-			"loading": loading,
-			"data": data,
-			"last_updated": doc.last_updated,
+			"loading": True,
+			"data": [],
 		}
+
+	@dashboard_whitelist()
+	def fetch_database_processes(self):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return None
+		return agent.fetch_database_processes(self)
+
+	@dashboard_whitelist()
+	def kill_database_process(self, id):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return None
+		return agent.kill_database_process(self, id)
 
 	@dashboard_whitelist()
 	def run_sql_query_in_database(self, query: str, commit: bool):
@@ -2655,6 +2781,52 @@ class Site(Document, TagHelpers):
 		doc.is_successful = response.get("success", False)
 		doc.insert(ignore_permissions=True)
 		return response
+
+	@dashboard_whitelist()
+	def suggest_database_indexes(self):
+		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
+
+		# fetch slow queries of last 7 days
+		slow_queries = get_slow_queries(
+			frappe._dict(
+				{
+					"database": self.database_name,
+					"start_datetime": frappe.utils.add_to_date(None, days=-7),
+					"stop_datetime": frappe.utils.now_datetime(),
+					"search_pattern": ".*",
+					"max_lines": 2000,
+					"normalize_queries": True,
+				}
+			)
+		)
+		slow_queries = [{"example": x["example"], "normalized": x["query"]} for x in slow_queries]
+		agent = Agent(self.server)
+		return agent.analyze_slow_queries(self, slow_queries)
+
+	@dashboard_whitelist()
+	def add_database_index(self, table, column):
+		record = frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"status": ["in", ["Undelivered", "Running", "Pending"]],
+				"job_type": "Add Database Index",
+			},
+		)
+		if record:
+			return {
+				"success": False,
+				"message": "There is already a job running for adding database index. Please wait until finished.",
+				"job_name": record,
+			}
+		doctype = get_doctype_name(table)
+		agent = Agent(self.server)
+		job = agent.add_database_index(self, doctype=doctype, columns=[column])
+		return {
+			"success": True,
+			"message": "Database index will be added on site.",
+			"job_name": job.name,
+		}
 
 
 def site_cleanup_after_archive(site):
@@ -2687,6 +2859,52 @@ def release_name(name):
 	new_name = f"{name}.archived"
 	new_name = append_number_if_name_exists("Site", new_name, separator=".")
 	frappe.rename_doc("Site", name, new_name)
+
+
+def process_fetch_database_table_schema_job_update(job):
+	key_for_schema = f"database_table_schema__data:{job.site}"
+	key_for_schema_status = (
+		f"database_table_schema__status:{job.site}"  # 1 - loading, 2 - done, None - not available
+	)
+
+	if job.status == "Pending":
+		return
+
+	if job.status == "Success":
+		"""
+		Support old agent versions
+		Remove this once all agents are updated
+		"""
+		data = json.loads(job.data)
+		is_old_agent = False
+
+		if len(data) > 0 and isinstance(data[next(iter(data.keys()))], list):
+			is_old_agent = True
+
+		if is_old_agent:
+			data_copy = data.copy()
+			data = {}
+			for key, value in data_copy.items():
+				data[key] = {
+					"columns": value,
+					"size": {
+						"data_length": 0,
+						"index_length": 0,
+						"total_size": 0,
+					},  # old agent api doesn't have size info
+				}
+				for column in data[key]["columns"]:
+					column["index_info"] = {
+						"index_usage": {x: 0 for x in column["indexes"]},  # just fill some dummy value
+						"indexes": column["indexes"],
+						"is_indexed": len(column["indexes"]) > 0,
+					}
+
+		frappe.cache().set_value(key_for_schema, json.dumps(data), expires_in_sec=6000)
+		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
+	else:
+		frappe.cache().delete_value(key_for_schema)
+		frappe.cache().delete_value(key_for_schema_status)
 
 
 def process_new_site_job_update(job):  # noqa: C901

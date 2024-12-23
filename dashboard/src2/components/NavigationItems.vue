@@ -14,6 +14,7 @@ import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import DatabaseZap from '~icons/lucide/database-zap';
+import Activity from '~icons/lucide/activity';
 import Logs from '~icons/lucide/scroll-text';
 import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
@@ -129,9 +130,18 @@ export default {
 							icon: () => h(Logs),
 							route: '/log-browser',
 							isActive: routeName === 'Log Browser'
+						},
+						{
+							name: 'DB Analyzer',
+							icon: () => h(Activity),
+							route: '/database-analyzer',
+							isActive: routeName === 'DB Analyzer',
+							condition: this.$team.doc?.is_desk_user
 						}
-					],
-					isActive: ['SQL Playground', 'Log Browser'].includes(routeName),
+					].filter(item => item.condition ?? true),
+					isActive: ['SQL Playground', 'DB Analyzer', 'Log Browser'].includes(
+						routeName
+					),
 					disabled: enforce2FA
 				},
 				{
