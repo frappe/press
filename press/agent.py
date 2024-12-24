@@ -797,8 +797,8 @@ class Agent:
 					doc=agent_job,
 				)
 		except Exception as exc:
-			self.handle_exception(agent_job, exc)
 			self.log_request_failure(exc)
+			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -853,7 +853,7 @@ class Agent:
 
 	def handle_request_failure(self, agent_job, result: "Response"):
 		if not agent_job:
-			return
+			raise
 
 		reason = None
 		with suppress(TypeError, ValueError):
@@ -871,7 +871,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def log_failure_reason(self, agent_job=None, message=None):
 		if not agent_job:
-			return
+			raise
 
 		agent_job.traceback = message
 		agent_job.output = message
