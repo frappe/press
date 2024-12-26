@@ -193,7 +193,7 @@ def usage(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"(/opt/volumes/mariadb|/|/opt/volumes/benches)"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"(/opt/volumes/mariadb|/|/opt/volumes/benches)"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -218,7 +218,7 @@ def total_resource(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"(/opt/volumes/mariadb|/|/opt/volumes/benches)"}}) by () / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -289,7 +289,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"(/opt/volumes/mariadb|/|/opt/volumes/benches)"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"(/opt/volumes/mariadb|/|/opt/volumes/benches)"}})""",
 			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
