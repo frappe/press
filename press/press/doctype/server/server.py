@@ -515,25 +515,30 @@ class BaseServer(Document, TagHelpers):
 			log_error(f"Error removing glassfile: {e.output.decode()}")
 
 	@frappe.whitelist()
-	def extend_ec2_volume(self):
+	def extend_ec2_volume(self, device=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		restart_mariadb = (
 			self.doctype == "Database Server" and self.is_disk_full()
 		)  # check before breaking glass to ensure state of mariadb
 		self.break_glass()
+		if not device:
+			# Try the best guess. Try extending the data volume
+			mountpoint = self.guess_data_disk_mountpoint()
+			volume = self.find_mountpoint_volume(mountpoint)
+			device = self.get_device_from_volume_id(volume.volume_id)
 		try:
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
 				server=self,
-				variables={"restart_mariadb": restart_mariadb},
+				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			ansible.run()
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
-	def enqueue_extend_ec2_volume(self):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
+	def enqueue_extend_ec2_volume(self, device):
+		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
