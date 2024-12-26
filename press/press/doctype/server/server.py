@@ -96,13 +96,15 @@ class BaseServer(Document, TagHelpers):
 		return doc
 
 	@dashboard_whitelist()
-	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
+	def increase_disk_size_for_server(
+		self, server: str, increment: int, mountpoint: str | None = None
+	) -> None:
 		if server == self.name:
-			self.increase_disk_size(increment)
+			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			self.create_subscription_for_storage(increment)
 		else:
 			server_doc = frappe.get_doc("Database Server", server)
-			server_doc.increase_disk_size(increment)
+			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
 			server_doc.create_subscription_for_storage(increment)
 
 	@dashboard_whitelist()
@@ -556,7 +558,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50) -> bool:
+	def increase_disk_size(self, increment=50, mountpoint=None) -> bool:
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
@@ -564,13 +566,47 @@ class BaseServer(Document, TagHelpers):
 				f"Please wait {fmt_timedelta(self.time_to_wait_before_updating_volume)} before resizing volume",
 				VolumeResizeLimitError,
 			)
+		if not mountpoint:
+			mountpoint = self.guess_data_disk_mountpoint()
+
+		volume = self.find_mountpoint_volume(mountpoint)
+
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		# TODO: Pass correct volume_id. Right now it picks the first volume in the list.
-		virtual_machine.increase_disk_size(increment)
+		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
-			self.enqueue_extend_ec2_volume()
+			device = self.get_device_from_volume_id(volume.volume_id)
+			self.enqueue_extend_ec2_volume(device)
 		elif self.provider == "OCI":
+			# TODO: Add support for volumes on OCI
+			# Non-boot volumes might not need resize
 			self.reboot()
+
+	def guess_data_disk_mountpoint(self) -> str:
+		volumes = self.get_volume_mounts()
+		if volumes:
+			if self.doctype == "Server":
+				mountpoint = "/opt/volumes/benches"
+			elif self.doctype == "Database Server":
+				mountpoint = "/opt/volumes/mariadb"
+		else:
+			mountpoint = "/"
+		return mountpoint
+
+	def find_mountpoint_volume(self, mountpoint):
+		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		if len(machine.volumes) == 1:
+			# If there is only one volume,
+			# then all mountpoints are on the same volume
+			return machine.volumes[0]
+
+		volumes = self.get_volume_mounts()
+		volume = find(volumes, lambda x: x.mount_point == mountpoint)
+		if volume:
+			# If the volume is in `mounts`, that means it's a data volume
+			return volume
+		# Otherwise it's a root volume
+		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -1024,16 +1060,20 @@ class BaseServer(Document, TagHelpers):
 				# There's likely a better way to do this
 				# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-using-volumes.html
 				stripped_id = mount.volume_id.replace("-", "")
-				mount.source = f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{ stripped_id }"
+				mount.source = self.get_device_from_volume_id(mount.volume_id)
 				if not mount.mount_point:
 					# If we don't know where to mount, mount it in /mnt/<volume_id>
 					mount.mount_point = f"/mnt/{stripped_id}"
+
+	def get_device_from_volume_id(self, volume_id):
+		stripped_id = volume_id.replace("-", "")
+		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{ stripped_id }"
 
 	def get_mount_variables(self):
 		return {
 			"all_mounts_json": json.dumps([mount.as_dict() for mount in self.mounts], indent=4, default=str),
 			"volume_mounts_json": json.dumps(
-				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"],
+				self.get_volume_mounts(),
 				indent=4,
 				default=str,
 			),
@@ -1043,6 +1083,9 @@ class BaseServer(Document, TagHelpers):
 				default=str,
 			),
 		}
+
+	def get_volume_mounts(self):
+		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
 
 	@frappe.whitelist()
 	def mount_volumes(self):
@@ -1173,13 +1216,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			)
 		)
 
-	def calculated_increase_disk_size(self, additional: int = 0):
+	def calculated_increase_disk_size(
+		self,
+		additional: int = 0,
+		mountpoint: str | None = None,
+	):
 		telegram = Telegram("Information")
 		telegram.send(
-			f"Increasing disk on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
+			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
 		)
 		self.increase_disk_size_for_server(
-			self.name, self.size_to_increase_by_for_20_percent_available + additional
+			self.name, self.size_to_increase_by_for_20_percent_available + additional, mountpoint
 		)
 
 	def prune_docker_system(self):
