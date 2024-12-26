@@ -17,7 +17,6 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
@@ -120,13 +119,14 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def react_for_instance(self, instance) -> "PressJob":
+	def react_for_instance(self, instance) -> dict:
 		instance_type = self.guess_doctype(instance)
 		if not instance_type:
 			# Prometheus is monitoring instances we don't know about
-			return
+			return {}
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
-		rule.react(instance_type, instance)
+		job = rule.react(instance_type, instance)
+		return {"press_job_type": job.job_type, "press_job": job.name}
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
