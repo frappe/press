@@ -560,6 +560,7 @@ class BaseServer(Document, TagHelpers):
 				VolumeResizeLimitError,
 			)
 		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		# TODO: Pass correct volume_id. Right now it picks the first volume in the list.
 		virtual_machine.increase_disk_size(increment)
 		if self.provider == "AWS EC2":
 			self.enqueue_extend_ec2_volume()

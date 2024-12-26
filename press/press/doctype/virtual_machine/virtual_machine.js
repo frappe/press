@@ -324,4 +324,24 @@ frappe.ui.form.on('Virtual Machine Volume', {
 					.then((r) => frm.refresh()),
 		);
 	},
+	increase_disk_size(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.prompt(
+			{
+				fieldtype: 'Int',
+				label: 'Increment (GB)',
+				fieldname: 'increment',
+				reqd: 1,
+			},
+			({ increment }) => {
+				frm
+					.call('increase_disk_size', {
+						volume_id: row.volume_id,
+						increment,
+					})
+					.then((r) => frm.refresh());
+			},
+			__('Increase Disk Size'),
+		);
+	},
 });
