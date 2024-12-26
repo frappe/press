@@ -550,7 +550,7 @@ export default {
 							e['rows_examined'],
 							e['rows_sent'],
 							e['calls'],
-							e['example']
+							e['query']
 						];
 					})
 				}
