@@ -212,11 +212,11 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-08-07 10:54:29.752755",
+  "modified": "2024-12-26 15:12:07.658689",
   "name": "Increase Disk Size",
   "steps": [
    {
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.calculated_increase_disk_size()\n    ",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nmountpoint = arguments.labels.get(\"mountpoint\")\nserver.calculated_increase_disk_size(mountpoint)",
     "step_name": "Increase Disk Size",
     "wait_until_true": 0
    },
