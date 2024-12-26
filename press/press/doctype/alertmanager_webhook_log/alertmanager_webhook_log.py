@@ -7,6 +7,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
@@ -125,7 +126,8 @@ class AlertmanagerWebhookLog(Document):
 			# Prometheus is monitoring instances we don't know about
 			return {}
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
-		job = rule.react(instance_type, instance)
+		labels = self.get_labels_for_instance(instance)
+		job = rule.react(instance_type, instance, labels)
 		return {"press_job_type": job.job_type, "press_job": job.name}
 
 	def react(self):
@@ -138,6 +140,14 @@ class AlertmanagerWebhookLog(Document):
 		payload = json.loads(payload)
 		instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])  # sites
 		return set(instances)
+
+	def get_labels_for_instance(self, instance: str) -> dict:
+		# Find first alert that matches the instance
+		payload = json.loads(self.payload)
+		alert = find(payload["alerts"], lambda x: x["labels"]["instance"] == instance)
+		if alert:
+			return alert["labels"]
+		return {}
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
