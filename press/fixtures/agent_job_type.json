@@ -1606,5 +1606,35 @@
      "step_name": "Analyze Slow Queries"
     }
   ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 6,
+  "modified": "2023-11-06 07:28:18.587094",
+  "name": "Remove Site from Upstream",
+  "request_method": "DELETE",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
+  "steps": [
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]
