@@ -23,6 +23,9 @@
 		"tailwindcss": "^3.2"
 	},
 	"dependencies": {
+		"@commitlint/config-conventional": "^19.6.0",
+		"commitlint": "^19.6.1",
+		"cspell": "^8.17.1",
 		"dayjs": "^1.11.10",
 		"frappe-ui": "^0.1.70",
 		"fuse.js": "^6.6.2",
