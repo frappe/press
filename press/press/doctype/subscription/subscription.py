@@ -7,6 +7,7 @@ import frappe
 import rq
 from frappe.model.document import Document
 from frappe.query_builder.functions import Coalesce, Count
+from frappe.utils import cint
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_plan.site_plan import SitePlan
@@ -127,7 +128,7 @@ class Subscription(Document):
 			frappe.log_error(title="Disable Subscription Error")
 
 	@frappe.whitelist()
-	def create_usage_record(self):
+	def create_usage_record(self, date: DF.Date | None = None):
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
 			return None
@@ -151,7 +152,7 @@ class Subscription(Document):
 		if self.additional_storage:
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
-			amount = price_per_day * int(self.additional_storage)
+			amount = price_per_day * cint(self.additional_storage)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
 
@@ -163,6 +164,7 @@ class Subscription(Document):
 			plan_type=self.plan_type,
 			plan=plan.name,
 			amount=amount,
+			date=date,
 			subscription=self.name,
 			interval=self.interval,
 			site=(

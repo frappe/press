@@ -15,6 +15,7 @@ from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
+from frappe.utils import cint
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
@@ -27,7 +28,6 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import Bench
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -635,7 +635,7 @@ class BaseServer(Document, TagHelpers):
 				"Subscription",
 				existing_subscription.name,
 				"additional_storage",
-				increment + int(existing_subscription.additional_storage),
+				increment + cint(existing_subscription.additional_storage),
 			)
 		else:
 			frappe.get_doc(

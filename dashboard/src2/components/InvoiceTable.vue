@@ -69,9 +69,9 @@
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								doc.partner_email && doc.partner_email != $team.doc.user
-									? formatCurrency(0)
-									: formatCurrency(doc.total_discount_amount)
+								$team.doc.erpnext_partner
+									? formatCurrency(doc.total_discount_amount)
+									: formatCurrency(0)
 							}}
 						</td>
 					</tr>
@@ -101,9 +101,7 @@
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								doc.partner_email && doc.partner_email != $team.doc.user
-									? formatCurrency(doc.total_before_discount)
-									: formatCurrency(doc.total + doc.gst)
+								formatCurrency(doc.total + doc.gst)
 							}}
 						</td>
 					</tr>

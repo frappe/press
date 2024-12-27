@@ -2,7 +2,7 @@
 # See license.txt
 
 # import frappe
-from frappe.tests import UnitTestCase
+from frappe.tests import IntegrationTestCase, UnitTestCase
 
 # On IntegrationTestCase, the doctype test records and all
 # link-field test record depdendencies are recursively loaded
@@ -11,10 +11,19 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class TestSiteDatabaseTableSchema(UnitTestCase):
+class UnitTestVirtualMachineReplacement(UnitTestCase):
 	"""
-	Unit tests for SiteDatabaseTableSchema.
+	Unit tests for VirtualMachineReplacement.
 	Use this class for testing individual functions and methods.
+	"""
+
+	pass
+
+
+class IntegrationTestVirtualMachineReplacement(IntegrationTestCase):
+	"""
+	Integration tests for VirtualMachineReplacement.
+	Use this class for testing interactions between multiple components.
 	"""
 
 	pass

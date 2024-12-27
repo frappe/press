@@ -654,7 +654,7 @@ def get_current_cpu_usage_for_sites_on_server(server):
 			metric = row["usage"]["counter"]["top"]
 			if metric:
 				result[site] = metric[0]["metrics"]["json.request.counter"]
-		return result
+	return result
 
 
 @frappe.whitelist()

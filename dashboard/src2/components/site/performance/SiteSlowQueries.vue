@@ -16,9 +16,7 @@
 </template>
 
 <script>
-import { defineAsyncComponent, h } from 'vue';
 import AlertBanner from '../../AlertBanner.vue';
-import { renderDialog } from '../../../utils/components';
 import PerformanceReport from './PerformanceReport.vue';
 
 export default {
@@ -33,22 +31,6 @@ export default {
 				experimental: true,
 				documentation: 'https://frappecloud.com/docs/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
-				onRowClick: row => {
-					const SlowQueryDialog = defineAsyncComponent(() =>
-						import('./SiteSlowQueryDialog.vue')
-					);
-					renderDialog(
-						h(SlowQueryDialog, {
-							siteName: this.name,
-							query: row.query,
-							duration: row.duration,
-							count: row.count,
-							rows_examined: row.rows_examined,
-							rows_sent: row.rows_sent,
-							example: row.example
-						})
-					);
-				},
 				emptyStateMessage: 'No slow queries found',
 				columns: [
 					{

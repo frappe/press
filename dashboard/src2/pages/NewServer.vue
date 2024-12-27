@@ -431,9 +431,11 @@ export default {
 							"You don't have billing details added. Please add billing details from settings to continue."
 						);
 					} else if (
-						(this.$team.doc.currency == 'USD' &&
+						this.$team.doc.servers_enabled == 0 &&
+						((this.$team.doc.currency == 'USD' &&
 							this.$team.doc.balance < 200) ||
-						(this.$team.doc.currency == 'INR' && this.$team.doc.balance < 16000)
+							(this.$team.doc.currency == 'INR' &&
+								this.$team.doc.balance < 16000))
 					) {
 						throw new DashboardError(
 							'You need to have $200 worth of credits to create a server.'
