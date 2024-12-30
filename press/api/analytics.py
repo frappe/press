@@ -25,9 +25,6 @@ from press.agent import Agent
 from press.api.site import protected
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
-	convert_user_timezone_to_utc,
-)
-from press.press.report.binary_log_browser.binary_log_browser import (
 	get_data as get_binary_log_data,
 )
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
@@ -767,28 +764,19 @@ def mariadb_slow_queries(
 
 @frappe.whitelist()
 @protected("Site")
-def deadlock_report(site, start, end, max_lines=20):
-	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import (
-		post_process,
+def deadlock_report(name, start_datetime, stop_datetime, max_log_size=500):
+	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import execute
+
+	meta = frappe._dict(
+		{
+			"site": name,
+			"start_datetime": start_datetime,
+			"stop_datetime": stop_datetime,
+			"max_log_size": max_log_size,
+		}
 	)
-
-	server = frappe.db.get_value("Site", site, "server")
-	db_server_name = frappe.db.get_value("Server", server, "database_server")
-	database_server = frappe.get_doc("Database Server", db_server_name)
-	agent = Agent(database_server.name, "Database Server")
-
-	data = {
-		"private_ip": database_server.private_ip,
-		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
-		"database": database_server.name,
-		"start_datetime": convert_user_timezone_to_utc(start),
-		"stop_datetime": convert_user_timezone_to_utc(end),
-		"max_lines": max_lines,
-	}
-
-	results = agent.post("database/deadlocks", data=data)
-
-	return post_process(results)
+	columns, data = execute(filters=meta)
+	return {"columns": columns, "data": data}
 
 
 # MARKETPLACE - Plausible
