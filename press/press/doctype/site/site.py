@@ -2348,7 +2348,13 @@ class Site(Document, TagHelpers):
 					query[key] = int(value)
 		# sort the slow queries by `rows_examined`
 		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
-		result["slow_queries"] = slow_queries
+		result["is_performance_schema_enabled"] = False
+		if database_server := frappe.db.get_value("Server", self.server, "database_server"):
+			result["is_performance_schema_enabled"] = frappe.db.get_value(
+				"Database Server",
+				database_server,
+				"is_performance_schema_enabled",
+			)
 		return result
 
 	@property
