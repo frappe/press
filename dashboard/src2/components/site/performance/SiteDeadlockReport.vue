@@ -26,7 +26,37 @@ export default {
 	computed: {
 		deadlockReportOptions() {
 			return {
-				data: () => this.$resources.deadlockReport.data.data,
+				resource: () => {
+					return {
+						url: 'press.api.analytics.deadlock_report',
+						makeParams: params => {
+							// for filterControls to work
+							if (params) return params;
+
+							return {
+								name: this.name,
+								start_datetime: this.start_datetime,
+								stop_datetime: this.stop_datetime,
+								max_log_size: this.max_log_size
+							};
+						},
+						auto: true,
+						initialData: [],
+						transform: data => {
+							return data.map(record => {
+								// Handle null values
+								// because some records can be empty as well, to keep a blank line after two deadlock records
+								record.timestamp = record.timestamp
+									? this.$format.date(record.timestamp, 'YYYY-MM-DD HH:mm:ss')
+									: '';
+								record.transaction_id = record.transaction_id || '';
+								record.table = record.table || '';
+								record.query = record.query || '';
+								return record;
+							});
+						}
+					};
+				},
 				emptyStateMessage: 'No query deadlock records found',
 				columns: [
 					{
@@ -53,16 +83,7 @@ export default {
 					{
 						label: 'Query',
 						fieldname: 'query',
-						class: 'font-mono',
-						width: '600px'
-					}
-				],
-				actions: () => [
-					{
-						label: 'Refresh',
-						icon: 'refresh-ccw',
-						loading: this.$resources.deadlockReport.loading,
-						onClick: () => this.$resources.deadlockReport.reload()
+						class: 'font-mono'
 					}
 				],
 				filterControls: () => {
@@ -86,21 +107,6 @@ export default {
 						}
 					];
 				}
-			};
-		}
-	},
-	resources: {
-		deadlockReport() {
-			return {
-				url: 'press.api.analytics.deadlock_report',
-				params: {
-					name: this.name,
-					start_datetime: this.start_datetime,
-					stop_datetime: this.stop_datetime,
-					max_log_size: this.max_log_size
-				},
-				auto: true,
-				initialData: { columns: [], data: [] }
 			};
 		}
 	}

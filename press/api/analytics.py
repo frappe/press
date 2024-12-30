@@ -775,8 +775,8 @@ def deadlock_report(name, start_datetime, stop_datetime, max_log_size=500):
 			"max_log_size": max_log_size,
 		}
 	)
-	columns, data = execute(filters=meta)
-	return {"columns": columns, "data": data}
+	_, data = execute(filters=meta)
+	return data
 
 
 # MARKETPLACE - Plausible
