@@ -7,8 +7,8 @@ jobs:
     name: 'Lint'
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      contents: read
+    pull-requests: write
+    contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -27,7 +27,7 @@ jobs:
       - name: Delete Old Bot Comments
         if: always()
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Fetch all comments on the PR
           COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .id')
@@ -39,7 +39,7 @@ jobs:
       - name: Post PR Comment
         if: always()
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Initialize status messages
           STATUS_COMMITLINT="PASSED"
