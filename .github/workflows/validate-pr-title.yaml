@@ -2,13 +2,13 @@ name: Validate PR Title
 on:
   pull_request:
     types: [opened, edited, synchronize]
-permissions:
-  pull-requests: write
-  contents: read
 jobs:
   lint:
     name: 'Lint'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
