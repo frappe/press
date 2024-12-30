@@ -201,7 +201,8 @@
 							<div
 								v-if="
 									!isIndexSuggestionTriggered ||
-									this.$resources.suggestDatabaseIndexes.loading
+									this.$resources.suggestDatabaseIndexes.loading ||
+									this.fetchingDatabaseIndex
 								"
 								class="flex h-60 flex-col items-center justify-center gap-4"
 							>
@@ -213,7 +214,10 @@
 											this.$resources.suggestDatabaseIndexes.submit();
 										}
 									"
-									:loading="this.$resources.suggestDatabaseIndexes.loading"
+									:loading="
+										this.$resources.suggestDatabaseIndexes.loading ||
+										this.fetchingDatabaseIndex
+									"
 									>Suggest Indexes</Button
 								>
 								<p class="text-base text-gray-700">
@@ -313,11 +317,11 @@ export default {
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
+			fetchingDatabaseIndex: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton)
 		};
 	},
-	mounted() {},
 	watch: {
 		site(site_name) {
 			// reset state
@@ -397,6 +401,18 @@ export default {
 						dn: this.site,
 						method: 'suggest_database_indexes'
 					};
+				},
+				onSuccess: data => {
+					if (data?.message) {
+						this.fetchingDatabaseIndex =
+							this.$resources.suggestDatabaseIndexes?.data?.message?.loading ??
+							false;
+						if (this.fetchingDatabaseIndex) {
+							setTimeout(() => {
+								this.$resources.suggestDatabaseIndexes.submit();
+							}, 5000);
+						}
+					}
 				},
 				auto: false
 			};
@@ -546,12 +562,7 @@ export default {
 					label: 'Full Table Scan',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Query'],
 					data: result['top_10_queries_with_full_table_scan'].map(e => {
-						return [
-							e['rows_examined'],
-							e['rows_sent'],
-							e['calls'],
-							e['query']
-						];
+						return [e['rows_examined'], e['rows_sent'], e['calls'], e['query']];
 					})
 				}
 			];
@@ -598,8 +609,8 @@ export default {
 		},
 		suggestedDatabaseIndexes() {
 			if (!this.isRequiredInformationReceived) return [];
-			const result = this.$resources.suggestDatabaseIndexes?.data?.message;
-			if (!result) return [];
+			const result =
+				this.$resources.suggestDatabaseIndexes?.data?.message?.data ?? [];
 			let data = [];
 			for (const record of result) {
 				for (const index of record.suggested_indexes) {

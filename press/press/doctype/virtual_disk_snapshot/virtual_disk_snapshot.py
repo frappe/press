@@ -247,9 +247,9 @@ def delete_duplicate_snapshot_docs(snapshot):
 	if snapshot_count > 1:
 		frappe.db.sql(
 			"""
-				DELETE 
-				FROM `tabVirtual Disk Snapshot` 
-				WHERE snapshot_id=%s 
+				DELETE
+				FROM `tabVirtual Disk Snapshot`
+				WHERE snapshot_id=%s
 				LIMIT %s
 			""",
 			(snapshot_id, snapshot_count - 1),
