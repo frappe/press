@@ -21,7 +21,7 @@ jobs:
         if: always()
       - name: Run CSpell
         id: cspell
-        run: npx cspell --config cspell.json pr-title.txt > cspell_output.txt 2>&1
+        run: npx cspell --config .cspell.json pr-title.txt > cspell_output.txt 2>&1
         if: always()
       - name: Delete Old Bot Comments
         if: always()
