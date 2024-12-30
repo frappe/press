@@ -520,13 +520,14 @@ class BaseServer(Document, TagHelpers):
 	def extend_ec2_volume(self, device=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
-		restart_mariadb = (
-			self.doctype == "Database Server" and self.is_disk_full()
+		# Restart MariaDB if MariaDB disk is full
+		mountpoint = self.guess_data_disk_mountpoint()
+		restart_mariadb = self.doctype == "Database Server" and self.is_disk_full(
+			mountpoint
 		)  # check before breaking glass to ensure state of mariadb
 		self.break_glass()
 		if not device:
 			# Try the best guess. Try extending the data volume
-			mountpoint = self.guess_data_disk_mountpoint()
 			volume = self.find_mountpoint_volume(mountpoint)
 			device = self.get_device_from_volume_id(volume.volume_id)
 		try:
@@ -1154,12 +1155,11 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	@cached_property
-	def free_space(self):
+	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -1169,16 +1169,15 @@ class BaseServer(Document, TagHelpers):
 			return response[0]["values"][-1]
 		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
 
-	def is_disk_full(self) -> bool:
-		return self.free_space == 0
+	def is_disk_full(self, mountpoint: str) -> bool:
+		return self.free_space(mountpoint) == 0
 
-	@property
-	def space_available_in_6_hours(self):
+	def space_available_in_6_hours(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1189,12 +1188,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return -20 * 1024 * 1024 * 1024
 		return response[0]["values"][-1]
 
-	@property
-	def disk_capacity(self):
+	def disk_capacity(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
@@ -1204,14 +1202,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return response[0]["values"][-1]
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
-	@cached_property
-	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
+	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
 		return int(
 			min(
 				self.auto_add_storage_max,
 				max(
 					self.auto_add_storage_min,
-					abs(self.disk_capacity - self.space_available_in_6_hours * 5) / 4 / 1024 / 1024 / 1024,
+					abs(self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5)
+					/ 4
+					/ 1024
+					/ 1024
+					/ 1024,
 				),
 			)
 		)
@@ -1222,12 +1223,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		mountpoint: str | None = None,
 	):
 		telegram = Telegram("Information")
+		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		telegram.send(
-			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
+			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {buffer + additional}G"
 		)
-		self.increase_disk_size_for_server(
-			self.name, self.size_to_increase_by_for_20_percent_available + additional, mountpoint
-		)
+		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
