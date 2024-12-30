@@ -184,6 +184,7 @@ def sync_all_snapshots_from_aws():
 				if _should_skip_snapshot(snapshot):
 					continue
 				try:
+					delete_duplicate_snapshot_docs(snapshot)
 					if _update_snapshot_if_exists(snapshot, random_snapshot):
 						continue
 					tag_name = next(tag["Value"] for tag in snapshot["Tags"] if tag["Key"] == "Name")
@@ -236,6 +237,23 @@ def _should_skip_snapshot(snapshot):
 		return True
 
 	return False
+
+
+def delete_duplicate_snapshot_docs(snapshot):
+	# Delete all except one snapshot document
+	# It doesn't matter which one we keep
+	snapshot_id = snapshot["SnapshotId"]
+	snapshot_count = frappe.db.count("Virtual Disk Snapshot", {"snapshot_id": snapshot_id})
+	if snapshot_count > 1:
+		frappe.db.sql(
+			"""
+				DELETE
+				FROM `tabVirtual Disk Snapshot`
+				WHERE snapshot_id=%s
+				LIMIT %s
+			""",
+			(snapshot_id, snapshot_count - 1),
+		)
 
 
 def _update_snapshot_if_exists(snapshot, random_snapshot):

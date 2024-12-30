@@ -1161,13 +1161,18 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 		return apps
 
-	def fetch_database_table_schema(self, site):
+	def fetch_database_table_schema(
+		self, site, include_table_size: bool = False, include_index_info: bool = False
+	):
 		return self.create_agent_job(
 			"Fetch Database Table Schema",
 			f"benches/{site.bench}/sites/{site.name}/database/schema",
 			bench=site.bench,
 			site=site.name,
-			data={},
+			data={
+				"include_table_size": include_table_size,
+				"include_index_info": include_index_info,
+			},
 			reference_doctype="Site",
 			reference_name=site.name,
 		)
@@ -1176,6 +1181,48 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/database/query/execute",
 			data={"query": query, "commit": commit, "as_dict": False},
+		)
+
+	def get_summarized_performance_report_of_database(self, site):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/performance-report",
+			data={"mariadb_root_password": get_mariadb_root_password(site)},
+		)
+
+	def analyze_slow_queries(self, site, normalized_queries: list[dict]):
+		"""
+		normalized_queries format:
+		[
+			{
+				"example": "",
+				"normalized" : "",
+			}
+		]
+		"""
+		return self.create_agent_job(
+			"Analyze Slow Queries",
+			f"benches/{site.bench}/sites/{site.name}/database/analyze-slow-queries",
+			data={
+				"queries": normalized_queries,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+			site=site.name,
+		)
+
+	def fetch_database_processes(self, site):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/processes",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def kill_database_process(self, site, id):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
 		)
 
 

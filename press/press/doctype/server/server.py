@@ -15,6 +15,7 @@ from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
+from frappe.utils import cint
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
@@ -634,7 +635,7 @@ class BaseServer(Document, TagHelpers):
 				"Subscription",
 				existing_subscription.name,
 				"additional_storage",
-				increment + int(existing_subscription.additional_storage),
+				increment + cint(existing_subscription.additional_storage),
 			)
 		else:
 			frappe.get_doc(

@@ -2260,5 +2260,35 @@
     "step_name": "Modify Database User Permissions"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 1,
+  "modified": "2024-10-28 14:49:19.894247",
+  "name": "Fetch Database Table Schema",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/database/schema",
+  "steps": [
+   {
+    "step_name": "Fetch Database Table Schema"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-12-19 17:21:14.136650",
+  "name": "Analyze Slow Queries",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/database/analyze-slow-queries",
+  "steps": [
+    {
+     "step_name": "Analyze Slow Queries"
+    }
+  ]
  }
 ]

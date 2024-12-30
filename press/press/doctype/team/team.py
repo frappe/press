@@ -111,6 +111,7 @@ class Team(Document):
 		"is_developer",
 		"enable_performance_tuning",
 		"enable_inplace_updates",
+		"servers_enabled",
 	)
 
 	def get_doc(self, doc):
@@ -1094,7 +1095,9 @@ class Team(Document):
 	def get_sites_to_suspend(self):
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 

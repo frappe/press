@@ -22,7 +22,7 @@ export default {
 		Codemirror
 	},
 	props: ['schema'],
-	emits: ['update:query'],
+	emits: ['update:query', 'codeSelected', 'codeUnselected'],
 	computed: {
 		query: {
 			get() {
@@ -33,7 +33,7 @@ export default {
 			}
 		}
 	},
-	setup(props) {
+	setup(props, { emit }) {
 		const extensions = [
 			sql({
 				dialect: MySQL,
@@ -51,6 +51,25 @@ export default {
 		const view = shallowRef();
 		const handleReady = payload => {
 			view.value = payload.view;
+			view.value.dom.addEventListener('mouseup', handleSelectionChange);
+		};
+
+		const handleSelectionChange = () => {
+			if (!view.value) return;
+
+			const { state } = view.value;
+			const selection = state.selection.main;
+
+			// Get the selected text
+			if (!selection.empty) {
+				const selectedText = state.doc.sliceString(
+					selection.from,
+					selection.to
+				);
+				emit('codeSelected', selectedText);
+			} else {
+				emit('codeUnselected');
+			}
 		};
 		return {
 			extensions,
