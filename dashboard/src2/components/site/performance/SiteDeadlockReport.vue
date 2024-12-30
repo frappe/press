@@ -89,23 +89,6 @@ export default {
 			};
 		}
 	},
-	methods: {
-		getDateTimeRange() {
-			const formatDateTime = date => {
-				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss');
-			};
-
-			const now = new Date();
-			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-			const endDateTime = formatDateTime(now);
-			const startDateTimeFormatted = formatDateTime(startDateTime);
-
-			return {
-				startDateTime: startDateTimeFormatted,
-				endDateTime: endDateTime
-			};
-		}
-	},
 	resources: {
 		deadlockReport() {
 			return {
