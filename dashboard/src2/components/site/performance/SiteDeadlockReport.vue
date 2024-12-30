@@ -37,7 +37,7 @@ export default {
 								name: this.name,
 								start_datetime: this.start_datetime,
 								stop_datetime: this.stop_datetime,
-								max_log_size: this.max_log_size
+								max_log_size: parseInt(this.max_log_size ?? '')
 							};
 						},
 						auto: true,
@@ -102,7 +102,7 @@ export default {
 						},
 						{
 							label: 'Max Log Lines',
-							fieldname: 'max_lines',
+							fieldname: 'max_log_size',
 							default: this.max_log_size
 						}
 					];
