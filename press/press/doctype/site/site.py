@@ -2346,6 +2346,8 @@ class Site(Document, TagHelpers):
 			for key, value in query.items():
 				if isinstance(value, float):
 					query[key] = int(value)
+		# sort the slow queries by `rows_examined`
+		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
 		result["slow_queries"] = slow_queries
 		return result
 
