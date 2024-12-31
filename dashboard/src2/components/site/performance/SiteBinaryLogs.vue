@@ -94,7 +94,7 @@ export default {
 					{
 						label: 'View Logs',
 						variant: 'solid',
-						loading: true || this.$resources.binaryLogs.loading,
+						loading: this.$resources.binaryLogs.loading,
 						loadingText: 'Loading',
 						onClick: () => this.$resources.binaryLogs.reload()
 					}
