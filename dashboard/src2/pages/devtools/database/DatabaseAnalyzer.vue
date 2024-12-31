@@ -59,7 +59,6 @@
 					</div>
 				</div>
 
-				<!-- TODO: Make it a separate component to reuse it  -->
 				<!-- Slider -->
 				<div
 					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
@@ -174,7 +173,15 @@
 					v-if="queryTabs.length"
 				>
 					<template #default="{ tab }">
+						<DatabasePerformanceSchemaDisabledNotice
+							v-if="
+								(tab.label === 'Time Consuming Queries' ||
+									tab.label === 'Full Table Scan Queries') &&
+								!isPerformanceSchemaEnabled
+							"
+						/>
 						<ResultTable
+							v-else
 							:columns="tab.columns"
 							:data="tab.data"
 							:enableCSVExport="false"
@@ -197,11 +204,19 @@
 					v-if="databaseIndexesTab.length"
 				>
 					<template #default="{ tab }">
-						<div v-if="tab.label === 'Suggested Indexes'">
+						<DatabasePerformanceSchemaDisabledNotice
+							v-if="
+								(tab.label === 'Unused Indexes' ||
+									tab.label === 'Suggested Indexes') &&
+								!isPerformanceSchemaEnabled
+							"
+						/>
+						<div v-else-if="tab.label === 'Suggested Indexes'">
 							<div
 								v-if="
 									!isIndexSuggestionTriggered ||
-									this.$resources.suggestDatabaseIndexes.loading
+									this.$resources.suggestDatabaseIndexes.loading ||
+									this.fetchingDatabaseIndex
 								"
 								class="flex h-60 flex-col items-center justify-center gap-4"
 							>
@@ -213,7 +228,10 @@
 											this.$resources.suggestDatabaseIndexes.submit();
 										}
 									"
-									:loading="this.$resources.suggestDatabaseIndexes.loading"
+									:loading="
+										this.$resources.suggestDatabaseIndexes.loading ||
+										this.fetchingDatabaseIndex
+									"
 									>Suggest Indexes</Button
 								>
 								<p class="text-base text-gray-700">
@@ -288,6 +306,7 @@ import DatabaseProcessKillButton from '../../../components/devtools/database/Dat
 import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
 import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
 import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
+import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -301,7 +320,8 @@ export default {
 		ResultTable,
 		DatabaseTableSchemaDialog,
 		DatabaseTableSchemaSizeDetailsDialog,
-		DatabaseProcessKillButton
+		DatabaseProcessKillButton,
+		DatabasePerformanceSchemaDisabledNotice
 	},
 	data() {
 		return {
@@ -313,11 +333,11 @@ export default {
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
+			fetchingDatabaseIndex: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton)
 		};
 	},
-	mounted() {},
 	watch: {
 		site(site_name) {
 			// reset state
@@ -397,6 +417,18 @@ export default {
 						dn: this.site,
 						method: 'suggest_database_indexes'
 					};
+				},
+				onSuccess: data => {
+					if (data?.message) {
+						this.fetchingDatabaseIndex =
+							this.$resources.suggestDatabaseIndexes?.data?.message?.loading ??
+							false;
+						if (this.fetchingDatabaseIndex) {
+							setTimeout(() => {
+								this.$resources.suggestDatabaseIndexes.submit();
+							}, 5000);
+						}
+					}
 				},
 				auto: false
 			};
@@ -518,6 +550,11 @@ export default {
 				)
 			};
 		},
+		isPerformanceSchemaEnabled() {
+			const result = this.$resources.databasePerformanceReport?.data?.message;
+			if (!result) return false;
+			return result['is_performance_schema_enabled'];
+		},
 		queryTabs() {
 			if (!this.isRequiredInformationReceived) return [];
 			const result = this.$resources.databasePerformanceReport?.data?.message;
@@ -543,15 +580,10 @@ export default {
 					})
 				},
 				{
-					label: 'Full Table Scan',
+					label: 'Full Table Scan Queries',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Query'],
 					data: result['top_10_queries_with_full_table_scan'].map(e => {
-						return [
-							e['rows_examined'],
-							e['rows_sent'],
-							e['calls'],
-							e['example']
-						];
+						return [e['rows_examined'], e['rows_sent'], e['calls'], e['query']];
 					})
 				}
 			];
@@ -598,8 +630,8 @@ export default {
 		},
 		suggestedDatabaseIndexes() {
 			if (!this.isRequiredInformationReceived) return [];
-			const result = this.$resources.suggestDatabaseIndexes?.data?.message;
-			if (!result) return [];
+			const result =
+				this.$resources.suggestDatabaseIndexes?.data?.message?.data ?? [];
 			let data = [];
 			for (const record of result) {
 				for (const index of record.suggested_indexes) {

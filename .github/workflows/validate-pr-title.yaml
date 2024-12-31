@@ -1,0 +1,72 @@
+name: Validate PR Title
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+permissions:
+  pull-requests: write
+  contents: read
+jobs:
+  lint:
+    name: 'Lint'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+      - name: Install Commitlint and CSpell
+        run: npm install --save-dev @commitlint/{config-conventional,cli} cspell
+      - run: echo "${{ github.event.pull_request.title }}" > pr-title.txt
+      - name: Run Commitlint
+        id: commitlint
+        run: npx commitlint --edit pr-title.txt > commitlint_output.txt 2>&1
+        if: always()
+      - name: Run CSpell
+        id: cspell
+        run: npx cspell --config .cspell.json pr-title.txt > cspell_output.txt 2>&1
+        if: always()
+      - name: Delete Old Bot Comments
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch all comments on the PR
+          COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .id')
+
+          # Delete comments authored by the bot
+          for COMMENT_ID in $COMMENTS; do
+            gh api repos/${{ github.repository }}/issues/comments/$COMMENT_ID -X DELETE
+          done
+      - name: Post PR Comment
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Initialize status messages
+          STATUS_COMMITLINT="PASSED"
+          STATUS_CSPELL="PASSED"
+          COMMITLINT_OUTPUT=$(cat commitlint_output.txt)
+          CSPELL_OUTPUT=$(cat cspell_output.txt)
+          COMMENT_BODY="### Found Issues In PR Title\n"
+
+          if [ "${{ steps.commitlint.outcome }}" == "failure" ]; then
+            STATUS_COMMITLINT="FAILED"
+          fi
+
+          if [ "${{ steps.cspell.outcome }}" == "failure" ]; then
+            STATUS_CSPELL="FAILED"
+          fi
+
+          if [ "$STATUS_COMMITLINT" == "FAILED" ]; then
+            COMMENT_BODY+="**❌ Conventional Commit Format**\n"
+            COMMENT_BODY+="\n\`\`\`\n$COMMITLINT_OUTPUT\n\`\`\`\n"
+          fi
+          if [ "$STATUS_CSPELL" == "FAILED" ]; then
+            COMMENT_BODY+="**❌ Spelling Error**\n"
+            COMMENT_BODY+="\n\`\`\`\n$CSPELL_OUTPUT\n\`\`\`\n"
+            COMMENT_BODY+="\n> If you believe the spelling error is a false positive, please add the word in **cspell.json** file.\n"
+          fi
+
+          if [ "$STATUS_COMMITLINT" == "FAILED" ] || [ "$STATUS_CSPELL" == "FAILED" ]; then
+            # Post the comment
+            echo -e "$COMMENT_BODY" | gh pr comment ${{ github.event.pull_request.number }} --body-file -
+          fi
