@@ -8,7 +8,9 @@
 
 <script>
 import dayjs from '../../../utils/dayjs';
+import { DashboardError } from '../../../utils/error';
 import PerformanceReport from './PerformanceReport.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'SiteBinaryLogs',
@@ -16,9 +18,10 @@ export default {
 	components: { PerformanceReport },
 	data() {
 		return {
-			start_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-			end_time: dayjs().subtract(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
-			max_lines: 500
+			start_time: dayjs().subtract(2, 'hour').format('YYYY-MM-DD HH:mm:ss'),
+			end_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+			pattern: '.*',
+			max_lines: 50
 		};
 	},
 	resources: {
@@ -30,11 +33,32 @@ export default {
 
 					return {
 						name: this.name,
-						start_time: this.end_time,
-						end_time: this.start_time,
-						pattern: '.*',
+						start_time: this.start_time,
+						end_time: this.end_time,
+						pattern: this.pattern,
 						max_lines: this.max_lines
 					};
+				},
+				validate() {
+					if (this.max_lines < 1 || this.max_lines > 500) {
+						toast.error('Max lines should be between 1 and 500');
+						throw new DashboardError('Max lines should be between 1 and 500');
+					}
+					// check between start_time and end_time is less than 2 hours
+					const start = dayjs(this.start_time);
+					const end = dayjs(this.end_time);
+					if (end.diff(start, 'hour') > 2) {
+						toast.error('Time range should be less than 2 hours');
+						throw new DashboardError('Time range should be less than 2 hours');
+					}
+					// start_time should be less than end_time
+					if (start.isAfter(end)) {
+						toast.error('Start time should be less than end time');
+						throw new DashboardError('Start time should be less than end time');
+					}
+				},
+				onError(error) {
+					console.error(error.message);
 				},
 				auto: false,
 				pageLength: 10,
@@ -50,7 +74,10 @@ export default {
 				updateFilters: params => {
 					if (!params) return;
 					for (const [key, value] of Object.entries(params)) {
-						this[key] = value;
+						if (key === 'start_time') this.start_time = value;
+						if (key === 'end_time') this.end_time = value;
+						if (key === 'pattern') this.pattern = value;
+						if (key === 'max_lines') this.max_lines = value;
 					}
 				},
 				columns: [
@@ -81,12 +108,12 @@ export default {
 						{
 							label: 'Pattern',
 							fieldname: 'pattern',
-							default: '.*'
+							default: this.pattern
 						},
 						{
 							label: 'Max Lines',
 							fieldname: 'max_lines',
-							default: 500
+							default: this.max_lines
 						}
 					];
 				},
