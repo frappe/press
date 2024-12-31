@@ -589,7 +589,7 @@ class Site(Document, TagHelpers):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		if self.standby_for_product or self.standby_for:
-			# if standby site, rename site and create first user for trial signups
+			# if standby site, rename site and create first user for trial signup
 			create_user = self.get_user_details()
 			# update the subscription config while renaming the standby site
 			self.update_config_preview()
@@ -2380,7 +2380,7 @@ class Site(Document, TagHelpers):
 			pluck="parent",
 		)
 		today = frappe.utils.getdate()
-		today_last_month = today.replace(month=today.month - 1)
+		today_last_month = frappe.utils.add_to_date(today, months=-1)
 		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
 			"Invoice",
@@ -3385,7 +3385,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("S
 def prepare_site(site: str, subdomain: str | None = None) -> dict:
 	# prepare site details
 	doc = frappe.get_doc("Site", site)
-	sitename = subdomain if subdomain else "brt-" + doc.subdomain
+	site_name = subdomain if subdomain else "brt-" + doc.subdomain
 	app_plans = [app.app for app in doc.apps]
 	backups = frappe.get_all(
 		"Site Backup",
@@ -3405,7 +3405,7 @@ def prepare_site(site: str, subdomain: str | None = None) -> dict:
 	return {
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 		"plan": doc.plan,
-		"name": sitename,
+		"name": site_name,
 		"group": doc.group,
 		"selected_app_plans": {},
 		"apps": app_plans,
