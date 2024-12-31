@@ -894,7 +894,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
-		don't add new job until its gets comleted
+		don't add new job until its gets completed
 		"""
 
 		disable_agent_job_deduplication = frappe.db.get_single_value(

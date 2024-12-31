@@ -1,5 +1,9 @@
 <template>
-	<PerformanceReport :site="name" :reportOptions="deadlockReportOptions" />
+	<PerformanceReport
+		title="Query Deadlocks"
+		:site="name"
+		:reportOptions="deadlockReportOptions"
+	/>
 </template>
 
 <script>
@@ -14,9 +18,9 @@ export default {
 	},
 	data() {
 		return {
-			today: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-			yesterday: dayjs().subtract(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
-			max_lines: 20
+			start_datetime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+			stop_datetime: dayjs().subtract(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
+			max_log_size: 500
 		};
 	},
 	computed: {
@@ -26,20 +30,34 @@ export default {
 					return {
 						url: 'press.api.analytics.deadlock_report',
 						makeParams: params => {
-							// need to return params if it exists for filterControls to work
+							// for filterControls to work
 							if (params) return params;
 
 							return {
-								site: this.name,
-								start: this.yesterday,
-								end: this.today,
-								max_lines: this.max_lines
+								name: this.name,
+								start_datetime: this.start_datetime,
+								stop_datetime: this.stop_datetime,
+								max_log_size: parseInt(this.max_log_size ?? '')
 							};
 						},
 						auto: true,
-						initialData: []
+						initialData: [],
+						transform: data => {
+							return data.map(record => {
+								// Handle null values
+								// because some records can be empty as well, to keep a blank line after two deadlock records
+								record.timestamp = record.timestamp
+									? this.$format.date(record.timestamp, 'YYYY-MM-DD HH:mm:ss')
+									: '';
+								record.transaction_id = record.transaction_id || '';
+								record.table = record.table || '';
+								record.query = record.query || '';
+								return record;
+							});
+						}
 					};
 				},
+				emptyStateMessage: 'No query deadlock records found',
 				columns: [
 					{
 						label: 'Timestamp',
@@ -49,37 +67,43 @@ export default {
 							return this.$format.date(value, 'YYYY-MM-DD HH:mm:ss');
 						}
 					},
-					{ label: 'Query', fieldname: 'query', class: 'font-mono' }
+					{
+						label: 'Txn ID',
+						fieldname: 'transaction_id',
+						align: 'left',
+						width: '100px'
+					},
+					{
+						label: 'Table',
+						fieldname: 'table',
+						class: 'text-gray-600',
+						align: 'left',
+						width: '200px'
+					},
+					{
+						label: 'Query',
+						fieldname: 'query',
+						class: 'font-mono'
+					}
 				],
-				actions: () => {
-					return [
-						{
-							label: 'Back',
-							icon: 'arrow-left',
-							onClick: () => {
-								this.$router.push({ name: 'Site Detail Performance' });
-							}
-						}
-					];
-				},
 				filterControls: () => {
 					return [
 						{
 							type: 'datetime-local',
 							label: 'Start Time',
-							fieldname: 'start',
-							default: this.yesterday
+							fieldname: 'start_datetime',
+							default: this.start_datetime
 						},
 						{
 							type: 'datetime-local',
 							label: 'End Time',
-							fieldname: 'end',
-							default: this.today
+							fieldname: 'stop_datetime',
+							default: this.stop_datetime
 						},
 						{
-							label: 'Max Lines',
-							fieldname: 'max_lines',
-							default: this.max_lines
+							label: 'Max Log Lines',
+							fieldname: 'max_log_size',
+							default: this.max_log_size
 						}
 					];
 				}
