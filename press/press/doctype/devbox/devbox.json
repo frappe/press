@@ -165,7 +165,8 @@
    "fieldname": "docker_image",
    "fieldtype": "Link",
    "label": "Docker Image",
-   "options": "Devbox Image"
+   "options": "Devbox Image",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -176,7 +177,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2025-01-01 14:33:54.040552",
+ "modified": "2025-01-01 20:27:02.458051",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

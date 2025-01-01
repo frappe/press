@@ -32,7 +32,7 @@ class Devbox(Document):
 		codeserver_port: DF.Int
 		container_id: DF.Data | None
 		database_volume_size: DF.Data | None
-		docker_image: DF.Link | None
+		docker_image: DF.Link
 		domain: DF.Link | None
 		home_volume_size: DF.Data | None
 		initialized: DF.Check
@@ -114,10 +114,12 @@ class Devbox(Document):
 		)
 		devbox.save()
 		server_agent = Agent(server_type="Server", server=devbox.server)
+		image_reference = frappe.db.get_value("Devbox Image", devbox.docker_image, "image_reference")
 		server_agent.create_agent_job(
 			"New Devbox",
 			path="devboxes",
 			data={
+				"devbox_image_reference": image_reference,
 				"devbox_name": devbox.name,
 				"vnc_password": devbox.vnc_password,
 				"codeserver_password": devbox.codeserver_password,
@@ -141,10 +143,12 @@ class Devbox(Document):
 	def start_devbox(self):
 		devbox = self
 		server_agent = Agent(server_type="Server", server=devbox.server)
+		image_reference = frappe.db.get_value("Devbox Image", devbox.docker_image, "image_reference")
 		server_agent.create_agent_job(
 			"Start Devbox",
 			path=f"devboxes/{devbox.name}/start",
 			data={
+				"devbox_image_reference": image_reference,
 				"vnc_password": devbox.vnc_password,
 				"codeserver_password": devbox.codeserver_password,
 			},
