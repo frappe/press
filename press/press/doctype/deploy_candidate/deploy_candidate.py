@@ -539,7 +539,7 @@ class DeployCandidate(Document):
 			return tarinfo
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz") as tar:
+		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
 			tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
 
 		step.status = "Success"
