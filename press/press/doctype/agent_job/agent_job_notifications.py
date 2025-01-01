@@ -58,6 +58,7 @@ class JobErr(Enum):
 	DATA_TRUNCATED_FOR_COLUMN = auto()
 	BROKEN_PIPE_ERR = auto()
 	CANT_CONNECT_TO_MYSQL = auto()
+	GZIP_TAR_ERR = auto()
 
 
 DOC_URLS = {
@@ -66,6 +67,7 @@ DOC_URLS = {
 	JobErr.DATA_TRUNCATED_FOR_COLUMN: "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
 	JobErr.BROKEN_PIPE_ERR: None,
 	JobErr.CANT_CONNECT_TO_MYSQL: "https://frappecloud.com/docs/cant-connect-to-mysql-server",
+	JobErr.GZIP_TAR_ERR: "https://frappecloud.com/docs/sites/migrate-an-existing-site#tar-gzip-command-fails-with-unexpected-eof",
 }
 
 
@@ -96,6 +98,8 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
 		("ERROR 2002 (HY000)", update_with_cant_connect_to_mysql_err),
+		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
+		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
 	]
 
 
@@ -254,6 +258,18 @@ def update_with_cant_connect_to_mysql_err(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.CANT_CONNECT_TO_MYSQL]
+
+	return True
+
+
+def update_with_gzip_tar_err(details: Details, job: AgentJob):
+	details["title"] = "Corrupt backup file"
+
+	details["message"] = f"""<p>An error occurred when extracting the backup to {job.site}.</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.GZIP_TAR_ERR]
 
 	return True
 
