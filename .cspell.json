@@ -58,7 +58,10 @@
         "behavior",
         "inplace",
         "supectl",
-        "uncollectible"
+        "uncollectible",
+        "hset",
+        "serializability",
+        "oom"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
