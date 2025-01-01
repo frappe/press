@@ -117,7 +117,7 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
-		"devboxes_enabled"
+		"devboxes_enabled",
 	)
 
 	def get_doc(self, doc):
