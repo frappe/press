@@ -63,7 +63,8 @@
         "libsm",
         "libxext",
         "supervisord",
-        "vimrc"
+        "vimrc",
+        "uid"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
