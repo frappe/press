@@ -58,7 +58,10 @@
         "behavior",
         "inplace",
         "supectl",
-        "uncollectible"
+        "uncollectible",
+        "devbox",
+        "devboxes",
+        "websockify"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

@@ -32,6 +32,7 @@ class Devbox(Document):
 		codeserver_port: DF.Int
 		container_id: DF.Data | None
 		database_volume_size: DF.Data | None
+		docker_image: DF.Link | None
 		domain: DF.Link | None
 		home_volume_size: DF.Data | None
 		initialized: DF.Check

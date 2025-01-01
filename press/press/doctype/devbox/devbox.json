@@ -15,6 +15,7 @@
   "column_break_ydvd",
   "server",
   "team",
+  "docker_image",
   "ports_and_config_tab",
   "websockify_port",
   "codeserver_port",
@@ -92,8 +93,7 @@
   },
   {
    "fieldname": "container_id",
-   "fieldtype": "Data",
-   "label": "Container ID"
+   "fieldtype": "Data"
   },
   {
    "fieldname": "codeserver_port",
@@ -160,6 +160,12 @@
    "label": "Team",
    "options": "Team",
    "reqd": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Link",
+   "label": "Docker Image",
+   "options": "Devbox Image"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -170,7 +176,7 @@
    "link_fieldname": "devbox"
   }
  ],
- "modified": "2024-12-20 13:27:23.759545",
+ "modified": "2025-01-01 14:33:54.040552",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Devbox",

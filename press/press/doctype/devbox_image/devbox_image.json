@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-01 14:11:46.208813",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "registry_domain",
+  "namespace",
+  "image_name",
+  "column_break_dbyy",
+  "image_tag",
+  "image_id",
+  "image_reference"
+ ],
+ "fields": [
+  {
+   "default": "arunmathaisk",
+   "fieldname": "namespace",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Namespace",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_dbyy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "latest",
+   "fieldname": "image_tag",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Image Tag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "image_id",
+   "fieldtype": "Data",
+   "label": "Image ID"
+  },
+  {
+   "default": "docker.io",
+   "fieldname": "registry_domain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Registry Domain",
+   "reqd": 1
+  },
+  {
+   "default": "devbox-vanilla",
+   "fieldname": "image_name",
+   "fieldtype": "Data",
+   "label": "Image Name"
+  },
+  {
+   "fieldname": "image_reference",
+   "fieldtype": "Data",
+   "label": "Image Reference ",
+   "read_only": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-01 14:48:46.076939",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Devbox Image",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
