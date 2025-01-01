@@ -59,6 +59,7 @@ class JobErr(Enum):
 	BROKEN_PIPE_ERR = auto()
 	CANT_CONNECT_TO_MYSQL = auto()
 	GZIP_TAR_ERR = auto()
+	UNKNOWN_COMMAND_HYPHEN = auto()
 
 
 DOC_URLS = {
@@ -68,6 +69,7 @@ DOC_URLS = {
 	JobErr.BROKEN_PIPE_ERR: None,
 	JobErr.CANT_CONNECT_TO_MYSQL: "https://frappecloud.com/docs/cant-connect-to-mysql-server",
 	JobErr.GZIP_TAR_ERR: "https://frappecloud.com/docs/sites/migrate-an-existing-site#tar-gzip-command-fails-with-unexpected-eof",
+	JobErr.UNKNOWN_COMMAND_HYPHEN: "https://frappecloud.com/docs/unknown-command-",
 }
 
 
@@ -100,6 +102,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("ERROR 2002 (HY000)", update_with_cant_connect_to_mysql_err),
 		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
 		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
+		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 	]
 
 
@@ -270,6 +273,19 @@ def update_with_gzip_tar_err(details: Details, job: AgentJob):
 	"""
 
 	details["assistance_url"] = DOC_URLS[JobErr.GZIP_TAR_ERR]
+
+	return True
+
+
+def update_with_unknown_command_hyphen_err(details: Details, job: AgentJob):
+	details["title"] = "Incompatible site backup"
+
+	details["message"] = f"""<p>An error occurred when extracting the backup to {job.site}.</p>
+	<p>This happens when the backup is taken from a later version of MariaDB and restored on a older version.</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.UNKNOWN_COMMAND_HYPHEN]
 
 	return True
 
