@@ -58,7 +58,13 @@
         "behavior",
         "inplace",
         "supectl",
-        "uncollectible"
+        "uncollectible",
+        "redisearch",
+        "libsm",
+        "libxext",
+        "supervisord",
+        "vimrc",
+        "uid"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
