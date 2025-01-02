@@ -228,6 +228,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
+		self.setup_default_feature_flags()
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -1337,6 +1338,24 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def is_version_14_or_higher(self):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+
+	def setup_default_feature_flags(self):
+		DETAULT_FEATURE_FLAGS = {
+			"Version 14": {"merge_default_and_short_rq_queues": True},
+			"Version 15": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+			"Nightly": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+		}
+		flags = DETAULT_FEATURE_FLAGS[self.version]
+		for key, value in flags.items():
+			setattr(self, key, value)
 
 
 @redis_cache(ttl=60)

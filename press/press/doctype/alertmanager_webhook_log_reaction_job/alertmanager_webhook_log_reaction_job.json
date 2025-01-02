@@ -12,20 +12,24 @@
   {
    "fieldname": "press_job_type",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Press Job Type",
-   "options": "Press Job Type"
+   "options": "Press Job Type",
+   "read_only": 1
   },
   {
    "fieldname": "press_job",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Press Job",
-   "options": "Press Job"
+   "options": "Press Job",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-04-30 15:38:54.334429",
+ "modified": "2024-12-26 13:54:57.631772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Alertmanager Webhook Log Reaction Job",
