@@ -172,7 +172,22 @@ class VirtualMachine(Document):
 
 	def _provision_aws(self):
 		additional_volumes = []
-		for index, volume in enumerate(self.volumes):
+		if self.virtual_machine_image:
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if len(image.volumes) >= 2:
+				volume = image.get_data_volume()
+				additional_volumes.append(
+					{
+						"DeviceName": volume.device,
+						"Ebs": {
+							"DeleteOnTermination": True,
+							"VolumeSize": max(self.disk_size, volume.size),
+							"VolumeType": volume.volume_type,
+						},
+					}
+				)
+
+		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
 			additional_volumes.append(
 				{
