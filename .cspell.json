@@ -65,8 +65,7 @@
         "sysrq",
         "earlyoom",
         "nvme",
-        "nofail"
-
+        "nofail",
         "hset",
         "serializability",
         "oom"
