@@ -70,7 +70,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-12-06 10:58:10.573186",
+  "modified": "2025-01-02 15:33:27.252601",
   "name": "Resize Server",
   "steps": [
    {
@@ -109,7 +109,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Server Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
     "step_name": "Increase Disk Size",
     "wait_until_true": 0
    }
