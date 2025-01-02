@@ -594,8 +594,8 @@ class Site(Document, TagHelpers):
 			# update the subscription config while renaming the standby site
 			self.update_config_preview()
 			site_config = json.loads(self.config)
-			subsription_config = site_config.get("subscription", {})
-			job = agent.rename_site(self, new_name, create_user, config={"subscription": subsription_config})
+			subscription_config = site_config.get("subscription", {})
+			job = agent.rename_site(self, new_name, create_user, config={"subscription": subscription_config})
 			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
@@ -2320,7 +2320,6 @@ class Site(Document, TagHelpers):
 		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
 
 		agent = Agent(self.server)
-		result = agent.get_summarized_performance_report_of_database(self)
 		# fetch slow queries of last 7 days
 		slow_queries = get_slow_queries(
 			frappe._dict(
@@ -2334,27 +2333,40 @@ class Site(Document, TagHelpers):
 				}
 			)
 		)
-		# remove `parent` & `creation` indexes from unused_indexes
-		result["unused_indexes"] = [
-			index
-			for index in result.get("unused_indexes", [])
-			if index["index_name"] not in ["parent", "creation"]
-		]
-
 		# convert all the float to int
 		for query in slow_queries:
 			for key, value in query.items():
 				if isinstance(value, float):
 					query[key] = int(value)
-		# sort the slow queries by `rows_examined`
-		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
-		result["is_performance_schema_enabled"] = False
+		is_performance_schema_enabled = False
 		if database_server := frappe.db.get_value("Server", self.server, "database_server"):
-			result["is_performance_schema_enabled"] = frappe.db.get_value(
+			is_performance_schema_enabled = frappe.db.get_value(
 				"Database Server",
 				database_server,
 				"is_performance_schema_enabled",
 			)
+		result = None
+		if is_performance_schema_enabled:
+			with suppress(Exception):
+				# for larger table or if database has any locks, fetching perf report will be failed
+				result = agent.get_summarized_performance_report_of_database(self)
+				# remove `parent` & `creation` indexes from unused_indexes
+				result["unused_indexes"] = [
+					index
+					for index in result.get("unused_indexes", [])
+					if index["index_name"] not in ["parent", "creation"]
+				]
+
+		if not result:
+			result = {}
+			result["unused_indexes"] = []
+			result["redundant_indexes"] = []
+			result["top_10_time_consuming_queries"] = []
+			result["top_10_queries_with_full_table_scan"] = []
+
+		# sort the slow queries by `rows_examined`
+		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
+		result["is_performance_schema_enabled"] = is_performance_schema_enabled
 		return result
 
 	@property

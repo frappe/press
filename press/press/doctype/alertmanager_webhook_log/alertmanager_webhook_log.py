@@ -12,6 +12,7 @@ from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils.data import add_to_date
 
+from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
@@ -78,7 +79,9 @@ class AlertmanagerWebhookLog(Document):
 
 	def validate(self):
 		self.parsed = json.loads(self.payload)
-		self.alert = self.parsed["groupLabels"]["alertname"]
+		self.alert = self.parsed["groupLabels"].get("alertname")
+		if not self.alert:
+			raise AlertRuleNotEnabled("No alertname found in groupLabels")
 		self.status = self.parsed["status"].capitalize()
 		self.severity = self.parsed["commonLabels"]["severity"].capitalize()
 		self.group_key = self.parsed["groupKey"]

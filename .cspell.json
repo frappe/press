@@ -13,7 +13,6 @@
         "erpnext",
         "parenttype",
         "parentfield",
-        "subsription",
         "sbool",
         "binlog",
         "ifnull",
@@ -68,6 +67,9 @@
         "nvme",
         "nofail"
 
+        "hset",
+        "serializability",
+        "oom"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

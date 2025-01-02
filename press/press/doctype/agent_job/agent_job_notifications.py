@@ -57,6 +57,9 @@ class JobErr(Enum):
 	ROW_SIZE_TOO_LARGE = auto()
 	DATA_TRUNCATED_FOR_COLUMN = auto()
 	BROKEN_PIPE_ERR = auto()
+	CANT_CONNECT_TO_MYSQL = auto()
+	GZIP_TAR_ERR = auto()
+	UNKNOWN_COMMAND_HYPHEN = auto()
 
 
 DOC_URLS = {
@@ -64,6 +67,9 @@ DOC_URLS = {
 	JobErr.ROW_SIZE_TOO_LARGE: "https://frappecloud.com/docs/faq/site#row-size-too-large-error-on-migrate",
 	JobErr.DATA_TRUNCATED_FOR_COLUMN: "https://frappecloud.com/docs/faq/site#data-truncated-for-column",
 	JobErr.BROKEN_PIPE_ERR: None,
+	JobErr.CANT_CONNECT_TO_MYSQL: "https://frappecloud.com/docs/cant-connect-to-mysql-server",
+	JobErr.GZIP_TAR_ERR: "https://frappecloud.com/docs/sites/migrate-an-existing-site#tar-gzip-command-fails-with-unexpected-eof",
+	JobErr.UNKNOWN_COMMAND_HYPHEN: "https://frappecloud.com/docs/unknown-command-",
 }
 
 
@@ -88,11 +94,15 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 	Due to this order of the tuples matter.
 	"""
 	return [
-		("returned non-zero exit status 137", update_with_oom_error),
-		("returned non-zero exit status 143", update_with_oom_error),
-		("Row size too large", update_with_row_size_too_large_error),
-		("Data truncated for column", update_with_data_truncated_for_column_error),
+		("returned non-zero exit status 137", update_with_oom_err),
+		("returned non-zero exit status 143", update_with_oom_err),
+		("Row size too large", update_with_row_size_too_large_err),
+		("Data truncated for column", update_with_data_truncated_for_column_err),
 		("BrokenPipeError", update_with_broken_pipe_err),
+		("ERROR 2002 (HY000)", update_with_cant_connect_to_mysql_err),
+		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
+		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
+		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
 	]
 
 
@@ -165,7 +175,7 @@ def get_details(job: AgentJob, title: str, message: str) -> Details:
 	return details
 
 
-def update_with_oom_error(
+def update_with_oom_err(
 	details: Details,
 	job: AgentJob,
 ):
@@ -192,7 +202,7 @@ def update_with_oom_error(
 	return False
 
 
-def update_with_row_size_too_large_error(details: Details, job: AgentJob):
+def update_with_row_size_too_large_err(details: Details, job: AgentJob):
 	details["title"] = "Row size too large error"
 
 	details[
@@ -207,7 +217,7 @@ def update_with_row_size_too_large_error(details: Details, job: AgentJob):
 	return True
 
 
-def update_with_data_truncated_for_column_error(details: Details, job: AgentJob):
+def update_with_data_truncated_for_column_err(details: Details, job: AgentJob):
 	details["title"] = "Data truncated for column error"
 
 	details[
@@ -233,6 +243,49 @@ def update_with_broken_pipe_err(details: Details, job: AgentJob):
 	] = f"""<p>The ongoing job coincided with a maintenance activity on the server <b>{job.server}</b> and hence failed.</p>
 	<p>Please try again in a few minutes.</p>
 	"""
+
+	return True
+
+
+def update_with_cant_connect_to_mysql_err(details: Details, job: AgentJob):
+	details["title"] = "Can't connect to MySQL server"
+
+	suggestion = "To rectify this issue, please follow the steps mentioned in <i>Help</i>."
+	if job.on_public_server:
+		suggestion = "Please raise a support ticket if the issue persists."
+
+	details[
+		"message"
+	] = f"""<p>The server couldn't connect to MySQL server during the job. This likely happened as the mysql server restarted as it didn't have sufficient memory for the operation</p>
+	<p>{suggestion}</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.CANT_CONNECT_TO_MYSQL]
+
+	return True
+
+
+def update_with_gzip_tar_err(details: Details, job: AgentJob):
+	details["title"] = "Corrupt backup file"
+
+	details["message"] = f"""<p>An error occurred when extracting the backup to {job.site}.</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.GZIP_TAR_ERR]
+
+	return True
+
+
+def update_with_unknown_command_hyphen_err(details: Details, job: AgentJob):
+	details["title"] = "Incompatible site backup"
+
+	details["message"] = f"""<p>An error occurred when extracting the backup to {job.site}.</p>
+	<p>This happens when the backup is taken from a later version of MariaDB and restored on a older version.</p>
+	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
+	"""
+
+	details["assistance_url"] = DOC_URLS[JobErr.UNKNOWN_COMMAND_HYPHEN]
 
 	return True
 
