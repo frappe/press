@@ -86,7 +86,9 @@
         "jemalloc",
         "nofail",
         "earlyoom",
-        "sysrq"
+        "sysrq",
+        "redisearch",
+        "notin"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

@@ -223,7 +223,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_feature_flags()
 
 	def before_insert(self):
-		# to avoid ading deps while cloning a release group
+		# to avoid adding deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
@@ -258,7 +258,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
-		"""Regenerates rg.common_site_config on each rg.befor_save
+		"""Regenerates rg.common_site_config on each rg.before_save
 		from the rg.common_site_config child table data"""
 		new_config = {}
 
@@ -1340,7 +1340,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
 
 	def setup_default_feature_flags(self):
-		DETAULT_FEATURE_FLAGS = {
+		DEFAULT_FEATURE_FLAGS = {
 			"Version 14": {"merge_default_and_short_rq_queues": True},
 			"Version 15": {
 				"gunicorn_threads_per_worker": "4",
@@ -1353,7 +1353,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"use_rq_workerpool": True,
 			},
 		}
-		flags = DETAULT_FEATURE_FLAGS[self.version]
+		flags = DEFAULT_FEATURE_FLAGS.get(self.version, {})
 		for key, value in flags.items():
 			setattr(self, key, value)
 
