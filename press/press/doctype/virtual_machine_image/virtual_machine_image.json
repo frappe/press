@@ -12,6 +12,7 @@
   "snapshot_id",
   "status",
   "size",
+  "root_size",
   "column_break_5",
   "cluster",
   "region",
@@ -100,6 +101,7 @@
    "fetch_if_empty": 1,
    "fieldname": "cluster",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1
@@ -116,6 +118,7 @@
   {
    "fieldname": "image_id",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Image ID",
    "read_only": 1
   },
@@ -142,11 +145,17 @@
    "label": "Volumes",
    "options": "Virtual Machine Image Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "root_size",
+   "fieldtype": "Int",
+   "label": "Root Size",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-18 17:51:55.233635",
+ "modified": "2025-01-01 16:56:22.890845",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

@@ -95,13 +95,14 @@ class VirtualMachine(Document):
 
 	def validate(self):
 		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
-			self.machine_image = frappe.db.get_value(
-				"Virtual Machine Image", self.virtual_machine_image, "image_id"
-			)
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if len(image.volumes) in (0, 1):
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = self.disk_size
+			else:
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = max(self.root_disk_size, image.root_size)
+			self.machine_image = image.image_id
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		if not self.private_ip_address:

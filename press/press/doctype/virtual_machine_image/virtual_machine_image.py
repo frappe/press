@@ -33,6 +33,7 @@ class VirtualMachineImage(Document):
 		platform: DF.Data | None
 		public: DF.Check
 		region: DF.Link
+		root_size: DF.Int
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
 		size: DF.Int
 		snapshot_id: DF.Data | None
@@ -98,8 +99,6 @@ class VirtualMachineImage(Document):
 				self.platform = image["Architecture"]
 				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
 				# This information is not accurate for images created from multiple volumes
-				if volume and "VolumeSize" in volume["Ebs"]:
-					self.size = volume["Ebs"]["VolumeSize"]
 				if volume and "SnapshotId" in volume["Ebs"]:
 					self.snapshot_id = volume["Ebs"]["SnapshotId"]
 				for volume in image["BlockDeviceMappings"]:
@@ -128,6 +127,8 @@ class VirtualMachineImage(Document):
 								"size": size,
 							},
 						)
+				self.size = self.get_data_volume().size
+				self.root_size = self.get_data_volume().size
 			else:
 				self.status = "Unavailable"
 		elif cluster.cloud_provider == "OCI":
@@ -235,3 +236,17 @@ class VirtualMachineImage(Document):
 		if not available_images:
 			return None
 		return available_images[0].name
+
+	def get_root_volume(self):
+		# This only works for AWS
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		return find(self.volumes, lambda v: v.device == "/dev/sda1")
+
+	def get_data_volume(self):
+		# This only works for AWS
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		return find(self.volumes, lambda v: v.device != "/dev/sda1")
