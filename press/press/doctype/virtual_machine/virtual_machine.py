@@ -63,6 +63,7 @@ class VirtualMachine(Document):
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
+		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
@@ -96,13 +97,17 @@ class VirtualMachine(Document):
 	def after_insert(self):
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
-			if len(image.volumes) in (0, 1):
-				self.disk_size = max(self.disk_size, image.size)
-				self.root_disk_size = self.disk_size
-			else:
+			if image.has_data_volume:
+				# We have two separate volumes for root and data
+				# Copy their sizes correctly
 				self.disk_size = max(self.disk_size, image.size)
 				self.root_disk_size = max(self.root_disk_size, image.root_size)
+			else:
+				# We have only one volume. Both root and data are the same
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = self.disk_size
 			self.machine_image = image.image_id
+			self.has_data_volume = image.has_data_volume
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
@@ -133,6 +138,13 @@ class VirtualMachine(Document):
 		)
 		for image in images:
 			frappe.delete_doc("Virtual Machine Image", image)
+
+	def on_update(self):
+		if self.has_value_changed("has_data_volume"):
+			server = self.get_server()
+			if server:
+				server.has_data_volume = self.has_data_volume
+				server.save()
 
 	@frappe.whitelist()
 	def provision(self):
@@ -177,7 +189,7 @@ class VirtualMachine(Document):
 		additional_volumes = []
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
-			if len(image.volumes) >= 2:
+			if image.has_data_volume:
 				volume = image.get_data_volume()
 				additional_volumes.append(
 					{
@@ -689,6 +701,9 @@ class VirtualMachine(Document):
 		return frappe._dict({"size": 0})
 
 	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
 		if len(self.volumes) == 1:
 			return self.volumes[0]
 
@@ -736,6 +751,7 @@ class VirtualMachine(Document):
 				"doctype": "Virtual Machine Image",
 				"virtual_machine": self.name,
 				"public": public,
+				"has_data_volume": self.has_data_volume,
 			}
 		).insert()
 		return image.name

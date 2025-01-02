@@ -23,6 +23,7 @@
   "credentials_section",
   "mariadb_root_password",
   "section_break_acrc",
+  "has_data_volume",
   "volumes"
  ],
  "fields": [
@@ -151,11 +152,18 @@
    "fieldtype": "Int",
    "label": "Root Size",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-01 16:56:22.890845",
+ "modified": "2025-01-02 16:51:28.443140",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

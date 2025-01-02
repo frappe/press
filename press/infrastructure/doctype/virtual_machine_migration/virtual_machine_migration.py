@@ -387,6 +387,7 @@ class VirtualMachineMigration(Document):
 		machine.machine_image = None
 		machine.machine_type = self.machine_type
 		machine.root_disk_size = 10  # Default root disk size for new machines
+		machine.has_data_volume = True  # VM Migration always adds a data volume
 		machine.save()
 		return StepStatus.Success
 

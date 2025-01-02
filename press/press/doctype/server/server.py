@@ -584,6 +584,9 @@ class BaseServer(Document, TagHelpers):
 			self.reboot()
 
 	def guess_data_disk_mountpoint(self) -> str:
+		if not self.has_data_volume:
+			return "/"
+
 		volumes = self.get_volume_mounts()
 		if volumes:
 			if self.doctype == "Server":
@@ -993,7 +996,7 @@ class BaseServer(Document, TagHelpers):
 		if not self.virtual_machine:
 			return
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		if len(machine.volumes) > 1 and not self.mounts:
+		if machine.has_data_volume and len(machine.volumes) > 1 and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
 			self.set_default_mount_points()
 			self.set_mount_properties()
@@ -1300,6 +1303,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents_since: DF.Datetime | None

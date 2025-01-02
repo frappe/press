@@ -78,6 +78,7 @@
   "tags_section",
   "tags",
   "mounts_section",
+  "has_data_volume",
   "mounts"
  ],
  "fields": [
@@ -536,10 +537,18 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Server Mount"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-11-12 14:45:00.123456",
+ "modified": "2025-01-02 16:52:55.927591",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

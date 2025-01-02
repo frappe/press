@@ -27,6 +27,7 @@ class VirtualMachineImage(Document):
 
 		cluster: DF.Link
 		copied_from: DF.Link | None
+		has_data_volume: DF.Check
 		image_id: DF.Data | None
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
@@ -245,6 +246,9 @@ class VirtualMachineImage(Document):
 		return find(self.volumes, lambda v: v.device == "/dev/sda1")
 
 	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
 		# This only works for AWS
 		if len(self.volumes) == 1:
 			return self.volumes[0]

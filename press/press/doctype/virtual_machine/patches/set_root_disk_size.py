@@ -24,6 +24,8 @@ def execute():
 	)
 	for machine_name in multi_volume_machines:
 		machine = frappe.get_doc("Virtual Machine", machine_name)
+		machine.has_data_volume = True
+		machine.save()
 		disk_size = machine.get_data_volume().size
 		root_disk_size = machine.get_root_volume().size
 		frappe.db.set_value("Virtual Machine", machine.name, "disk_size", disk_size)

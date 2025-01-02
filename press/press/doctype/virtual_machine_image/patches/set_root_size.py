@@ -24,6 +24,8 @@ def execute():
 	)
 	for image_name in multi_volume_images:
 		image = frappe.get_doc("Virtual Machine Image", image_name)
+		image.has_data_volume = True
+		image.save()
 		size = image.get_data_volume().size
 		root_size = image.get_root_volume().size
 		frappe.db.set_value("Virtual Machine Image", image.name, "size", size)

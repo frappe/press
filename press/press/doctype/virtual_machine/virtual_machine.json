@@ -44,6 +44,7 @@
   "column_break_18",
   "termination_protection",
   "volumes_section",
+  "has_data_volume",
   "volumes"
  ],
  "fields": [
@@ -299,6 +300,12 @@
    "fieldtype": "Int",
    "label": "Root Disk Size",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -334,7 +341,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-01-01 16:57:22.441462",
+ "modified": "2025-01-02 16:22:58.073934",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
