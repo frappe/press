@@ -84,7 +84,9 @@ class ReleaseGroup(Document, TagHelpers):
 		from press.press.doctype.release_group_variable.release_group_variable import (
 			ReleaseGroupVariable,
 		)
-		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.resource_tag.resource_tag import (
+			ResourceTag,
+		)
 
 		apps: DF.Table[ReleaseGroupApp]
 		bench_config: DF.Code | None
@@ -111,6 +113,7 @@ class ReleaseGroup(Document, TagHelpers):
 		mounts: DF.Table[ReleaseGroupMount]
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
+		redis_cache_size: DF.Int
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -371,11 +374,16 @@ class ReleaseGroup(Document, TagHelpers):
 			else:
 				value = d.value
 			self.append("common_site_config_table", {"key": d.key, "value": value, "type": d.type})
+			# redis_cache_size is a field on release group but we want to treat it as config key
+			# TODO: add another interface for updating similar values
+			if d["key"] == "redis_cache_size":
+				self.redis_cache_size = int(d.value)
 
 		for d in bench_config:
 			if d["key"] == "http_timeout":
 				# http_timeout should be the only thing configurable in bench_config
 				self.bench_config = json.dumps({"http_timeout": int(d["value"])}, indent=4)
+
 		if bench_config == []:
 			self.bench_config = json.dumps({})
 
