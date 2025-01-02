@@ -61,7 +61,13 @@
         "uncollectible",
         "devbox",
         "devboxes",
-        "websockify"
+        "websockify",
+        "vcpu",
+        "sysrq",
+        "earlyoom",
+        "nvme",
+        "nofail"
+
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

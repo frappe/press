@@ -1662,17 +1662,23 @@ class Server(BaseServer):
 	@classmethod
 	def get_all_prod(cls, **kwargs) -> list[str]:
 		"""Active prod servers."""
-		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
+		return frappe.get_all(
+			"Server", {"status": "Active", "is_devbox_server": False}, pluck="name", **kwargs
+		)
 
 	@classmethod
 	def get_all_primary_prod(cls) -> list[str]:
 		"""Active primary prod servers."""
-		return frappe.get_all("Server", {"status": "Active", "is_primary": True}, pluck="name")
+		return frappe.get_all(
+			"Server", {"status": "Active", "is_primary": True, "is_devbox_server": False}, pluck="name"
+		)
 
 	@classmethod
 	def get_all_staging(cls, **kwargs) -> list[str]:
 		"""Active staging servers."""
-		return frappe.get_all("Server", {"status": "Active", "staging": True}, pluck="name", **kwargs)
+		return frappe.get_all(
+			"Server", {"status": "Active", "staging": True, "is_devbox_server": False}, pluck="name", **kwargs
+		)
 
 	@classmethod
 	def get_one_staging(cls) -> str:
@@ -1680,7 +1686,7 @@ class Server(BaseServer):
 
 	@classmethod
 	def get_prod_for_new_bench(cls, extra_filters=None) -> str | None:
-		filters = {"status": "Active", "use_for_new_benches": True}
+		filters = {"status": "Active", "use_for_new_benches": True, "is_devbox_server": False}
 		if extra_filters:
 			filters.update(extra_filters)
 		servers = frappe.get_all("Server", {**filters}, pluck="name", limit=1)
