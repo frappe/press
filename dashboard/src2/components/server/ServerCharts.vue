@@ -718,13 +718,13 @@ export default {
 			let iops = this.$resources.iops.data;
 			if (!iops) return;
 
-			return this.transformMultiLineChartData(iops, null, true);
+			return this.transformMultiLineChartData(iops);
 		},
 		spaceData() {
 			let space = this.$resources.space.data;
 			if (!space) return;
 
-			return this.transformMultiLineChartData(space, null, true);
+			return this.transformMultiLineChartData(space);
 		},
 		networkData() {
 			let network = this.$resources.network.data;

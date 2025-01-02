@@ -80,7 +80,8 @@
         "earlyoom",
         "sysrq",
         "redisearch",
-        "notin"
+        "notin",
+        "innodb"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
