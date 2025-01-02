@@ -24,6 +24,7 @@
   "platform",
   "column_break_hgcr",
   "disk_size",
+  "root_disk_size",
   "vcpu",
   "ram",
   "column_break_8",
@@ -43,6 +44,7 @@
   "column_break_18",
   "termination_protection",
   "volumes_section",
+  "has_data_volume",
   "volumes"
  ],
  "fields": [
@@ -76,6 +78,7 @@
   {
    "fieldname": "cluster",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1,
@@ -104,6 +107,7 @@
    "fieldname": "machine_type",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Machine Type",
    "reqd": 1
   },
@@ -170,6 +174,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nPending\nRunning\nStopped\nTerminated",
    "read_only": 1,
@@ -278,6 +283,7 @@
   {
    "fieldname": "instance_id",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Instance ID",
    "read_only": 1
   },
@@ -287,6 +293,19 @@
    "label": "Platform",
    "options": "x86_64\narm64",
    "reqd": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "root_disk_size",
+   "fieldtype": "Int",
+   "label": "Root Disk Size",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -322,7 +341,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2024-11-18 18:55:50.846189",
+ "modified": "2025-01-02 16:22:58.073934",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

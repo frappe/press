@@ -226,11 +226,12 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_feature_flags()
 
 	def before_insert(self):
-		# to avoid ading deps while cloning a release group
+		# to avoid adding deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
+		self.setup_default_feature_flags()
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -260,7 +261,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
-		"""Regenerates rg.common_site_config on each rg.befor_save
+		"""Regenerates rg.common_site_config on each rg.before_save
 		from the rg.common_site_config child table data"""
 		new_config = {}
 
@@ -1345,6 +1346,24 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def is_version_14_or_higher(self):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+
+	def setup_default_feature_flags(self):
+		DEFAULT_FEATURE_FLAGS = {
+			"Version 14": {"merge_default_and_short_rq_queues": True},
+			"Version 15": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+			"Nightly": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+		}
+		flags = DEFAULT_FEATURE_FLAGS.get(self.version, {})
+		for key, value in flags.items():
+			setattr(self, key, value)
 
 
 @redis_cache(ttl=60)

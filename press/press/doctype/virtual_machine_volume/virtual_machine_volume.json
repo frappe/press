@@ -16,7 +16,8 @@
   "section_break_frlu",
   "device",
   "column_break_buwy",
-  "detach"
+  "detach",
+  "increase_disk_size"
  ],
  "fields": [
   {
@@ -90,12 +91,17 @@
    "fieldname": "detach",
    "fieldtype": "Button",
    "label": "Detach"
+  },
+  {
+   "fieldname": "increase_disk_size",
+   "fieldtype": "Button",
+   "label": "Increase Disk Size"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-11-21 16:20:36.656076",
+ "modified": "2024-12-26 14:53:44.589461",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",
