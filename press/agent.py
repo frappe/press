@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
+from requests.exceptions import HTTPError
 
 from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
@@ -781,8 +782,17 @@ class Agent:
 			json_response = None
 			try:
 				json_response = self.response.json()
-				if raises:
-					self.response.raise_for_status()
+				if raises and self.response.status_code >= 400:
+					output = (
+						f"""{json_response.get("output")}
+
+{json_response.get("traceback")}"""
+						or json.dumps(json_response, indent=2, sort_keys=True)
+					)
+					raise HTTPError(
+						f"{self.response.status_code} {self.response.reason} {output}",
+						response=self.response,
+					)
 				return json_response
 			except Exception:
 				self.handle_request_failure(agent_job, self.response)
