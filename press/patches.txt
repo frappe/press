@@ -135,3 +135,5 @@ press.press.doctype.server.patches.set_plan_and_subscription
 press.patches.v0_7_0.move_site_db_access_users_to_site_db_perm_manager
 press.press.doctype.drip_email.patches.set_correct_field_for_html
 press.patches.v0_7_0.set_label_for_site_database_user
+press.press.doctype.virtual_machine.patches.set_root_disk_size
+press.press.doctype.virtual_machine_image.patches.set_root_size

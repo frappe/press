@@ -63,6 +63,7 @@ class VirtualMachine(Document):
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
+		has_data_volume: DF.Check
 		index: DF.Int
 		instance_id: DF.Data | None
 		machine_image: DF.Data | None
@@ -74,6 +75,7 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		region: DF.Link
+		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
 		ssh_key: DF.Link
@@ -92,17 +94,25 @@ class VirtualMachine(Document):
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
-	def validate(self):
+	def after_insert(self):
 		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
-			self.machine_image = frappe.db.get_value(
-				"Virtual Machine Image", self.virtual_machine_image, "image_id"
-			)
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if image.has_data_volume:
+				# We have two separate volumes for root and data
+				# Copy their sizes correctly
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = max(self.root_disk_size, image.root_size)
+			else:
+				# We have only one volume. Both root and data are the same
+				self.disk_size = max(self.disk_size, image.size)
+				self.root_disk_size = self.disk_size
+			self.machine_image = image.image_id
+			self.has_data_volume = image.has_data_volume
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
+		self.save()
+
+	def validate(self):
 		if not self.private_ip_address:
 			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 			index = self.index + 356
@@ -128,6 +138,13 @@ class VirtualMachine(Document):
 		)
 		for image in images:
 			frappe.delete_doc("Virtual Machine Image", image)
+
+	def on_update(self):
+		if self.has_value_changed("has_data_volume"):
+			server = self.get_server()
+			if server:
+				server.has_data_volume = self.has_data_volume
+				server.save()
 
 	@frappe.whitelist()
 	def provision(self):
@@ -170,7 +187,22 @@ class VirtualMachine(Document):
 
 	def _provision_aws(self):
 		additional_volumes = []
-		for index, volume in enumerate(self.volumes):
+		if self.virtual_machine_image:
+			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			if image.has_data_volume:
+				volume = image.get_data_volume()
+				additional_volumes.append(
+					{
+						"DeviceName": volume.device,
+						"Ebs": {
+							"DeleteOnTermination": True,
+							"VolumeSize": max(self.disk_size, volume.size),
+							"VolumeType": volume.volume_type,
+						},
+					}
+				)
+
+		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
 			additional_volumes.append(
 				{
@@ -190,7 +222,7 @@ class VirtualMachine(Document):
 						"DeviceName": "/dev/sda1",
 						"Ebs": {
 							"DeleteOnTermination": True,
-							"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
+							"VolumeSize": self.root_disk_size,  # This in GB. Fucking AWS!
 							"VolumeType": "gp3",
 						},
 					}
@@ -256,7 +288,7 @@ class VirtualMachine(Document):
 					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
 					source_details=InstanceSourceViaImageDetails(
 						image_id=self.machine_image,
-						boot_volume_size_in_gbs=max(self.disk_size, 50),
+						boot_volume_size_in_gbs=max(self.root_disk_size, 50),
 						boot_volume_vpus_per_gb=30,
 					),
 					shape="VM.Standard.E4.Flex",
@@ -423,12 +455,16 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50):
+	def increase_disk_size(self, volume_id=None, increment=50):
 		if not increment:
 			return
-		volume = self.volumes[0]
+		if not volume_id:
+			volume_id = self.volumes[0].volume_id
+
+		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 		volume.size += int(increment)
-		self.disk_size = volume.size
+		self.disk_size = self.get_data_volume().size
+		self.root_disk_size = self.get_root_volume().size
 		volume.last_updated_at = frappe.utils.now_datetime()
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
@@ -578,7 +614,8 @@ class VirtualMachine(Document):
 						volume=volume,
 					)
 			if self.volumes:
-				self.disk_size = self.volumes[0].size
+				self.disk_size = self.get_data_volume().size
+				self.root_disk_size = self.get_root_volume().size
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in available_volumes:
@@ -630,7 +667,8 @@ class VirtualMachine(Document):
 				if not existing_volume:
 					self.append("volumes", row)
 
-			self.disk_size = self._get_root_volume_size()
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in attached_volumes:
@@ -648,13 +686,36 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
-	def _get_root_volume_size(self):
-		if self.volumes:
-			volume = find(self.volumes, lambda v: v.device == "/dev/sda1")
-			if volume:
-				return volume.size
-			return self.volumes[0].size
-		return self.disk_size
+	def get_root_volume(self):
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		ROOT_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device == "/dev/sda1",
+			"OCI": lambda v: ".bootvolume." in v.volume_id,
+		}
+		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, root_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
+
+	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		DATA_VOLUME_FILTERS = {
+			"AWS EC2": lambda v: v.device != "/dev/sda1",
+			"OCI": lambda v: ".bootvolume." not in v.volume_id,
+		}
+		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
+		volume = find(self.volumes, data_volume_filter)
+		if volume:  # Un-provisioned machines might not have any volumes
+			return volume
+		return frappe._dict({"size": 0})
 
 	def update_servers(self):
 		status_map = {
@@ -690,6 +751,7 @@ class VirtualMachine(Document):
 				"doctype": "Virtual Machine Image",
 				"virtual_machine": self.name,
 				"public": public,
+				"has_data_volume": self.has_data_volume,
 			}
 		).insert()
 		return image.name

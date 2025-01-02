@@ -114,10 +114,12 @@ class PrometheusAlertRule(Document):
 
 		return routes_dict
 
-	def react(self, instance_type: str, instance: str):
-		return self.run_press_job(self.press_job_type, instance_type, instance)
+	def react(self, instance_type: str, instance: str, labels: dict | None = None):
+		return self.run_press_job(self.press_job_type, instance_type, instance, labels)
 
-	def run_press_job(self, job_name: str, server_type: str, server_name: str, arguments=None):
+	def run_press_job(
+		self, job_name: str, server_type: str, server_name: str, labels: dict | None = None, arguments=None
+	):
 		server: "Server" = frappe.get_doc(server_type, server_name)
 		if self.only_on_shared and not server.public:
 			return None
@@ -126,6 +128,11 @@ class PrometheusAlertRule(Document):
 
 		if arguments is None:
 			arguments = {}
+
+		if not labels:
+			labels = {}
+
+		arguments.update({"labels": labels})
 
 		if existing_jobs := frappe.get_all(
 			"Press Job",
