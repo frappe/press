@@ -13,7 +13,6 @@
         "erpnext",
         "parenttype",
         "parentfield",
-        "subsription",
         "sbool",
         "binlog",
         "ifnull",
@@ -72,7 +71,10 @@
         "vfat",
         "vnic",
         "vpus",
-        "webp"
+        "webp",
+        "hset",
+        "serializability",
+        "oom"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

@@ -39,3 +39,7 @@ class ConflictingCAARecord(ValidationError):
 
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
+
+
+class AlertRuleNotEnabled(ValidationError):
+	pass
