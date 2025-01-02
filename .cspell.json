@@ -58,7 +58,21 @@
         "behavior",
         "inplace",
         "supectl",
-        "uncollectible"
+        "uncollectible",
+        "cloudimg",
+        "fstype",
+        "imds",
+        "mysqld",
+        "nvme",
+        "ocpus",
+        "rootfs",
+        "uefi",
+        "vcpu",
+        "vcpus",
+        "vfat",
+        "vnic",
+        "vpus",
+        "webp"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
