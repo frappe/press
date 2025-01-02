@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/opt/cadvisor/cadvisor -listen_ip 127.0.0.1 --port 9338
+ExecStart=/opt/cadvisor/cadvisor -listen_ip 127.0.0.1 --port 9338 -housekeeping_interval=10s
 
 SyslogIdentifier=cadvisor
 Restart=always

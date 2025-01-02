@@ -133,7 +133,7 @@ class Subscription(Document):
 		if cannot_charge:
 			return None
 
-		if self.is_usage_record_created():
+		if self.is_usage_record_created(date):
 			return None
 
 		team = frappe.get_cached_doc("Team", self.team)
@@ -188,7 +188,7 @@ class Subscription(Document):
 
 		return True
 
-	def is_usage_record_created(self):
+	def is_usage_record_created(self, date=None):
 		filters = {
 			"team": self.team,
 			"document_type": self.document_type,
@@ -199,7 +199,8 @@ class Subscription(Document):
 		}
 
 		if self.interval == "Daily":
-			filters.update({"date": frappe.utils.today()})
+			date = date or frappe.utils.today()
+			filters.update({"date": date})
 
 		if self.interval == "Monthly":
 			date = frappe.utils.getdate()

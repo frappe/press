@@ -406,7 +406,8 @@ export default {
 			if (this.isLoadingTableSchemas) return [];
 			if (!this.$resources?.tableSchemas?.data?.message?.data) return [];
 			let columnSchemas =
-				this.$resources?.tableSchemas?.data?.message?.data[table];
+				this.$resources?.tableSchemas?.data?.message?.data[table]?.columns ??
+				[];
 			let columns = [];
 			columnSchemas.forEach(x => {
 				columns.push(x.column);
