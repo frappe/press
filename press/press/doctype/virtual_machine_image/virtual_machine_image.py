@@ -243,7 +243,10 @@ class VirtualMachineImage(Document):
 		if len(self.volumes) == 1:
 			return self.volumes[0]
 
-		return find(self.volumes, lambda v: v.device == "/dev/sda1")
+		volume = find(self.volumes, lambda v: v.device == "/dev/sda1")
+		if volume:
+			return volume
+		return frappe._dict({"size": 0})
 
 	def get_data_volume(self):
 		if not self.has_data_volume:
@@ -253,4 +256,7 @@ class VirtualMachineImage(Document):
 		if len(self.volumes) == 1:
 			return self.volumes[0]
 
-		return find(self.volumes, lambda v: v.device != "/dev/sda1")
+		volume = find(self.volumes, lambda v: v.device != "/dev/sda1")
+		if volume:
+			return volume
+		return frappe._dict({"size": 0})
