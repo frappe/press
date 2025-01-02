@@ -74,7 +74,11 @@
         "webp",
         "hset",
         "serializability",
-        "oom"
+        "oom",
+        "jemalloc",
+        "nofail",
+        "earlyoom",
+        "sysrq"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [

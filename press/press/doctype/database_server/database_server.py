@@ -414,7 +414,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_essentials(self):
-		"""Setup missing esessiong after server setup"""
+		"""Setup missing essentials after server setup"""
 		config = self._get_config()
 
 		try:
@@ -449,13 +449,13 @@ class DatabaseServer(BaseServer):
 
 	def process_hybrid_server_setup(self):
 		try:
-			hybird_server = frappe.db.get_value("Self Hosted Server", {"database_server": self.name}, "name")
+			hybrid_server = frappe.db.get_value("Self Hosted Server", {"database_server": self.name}, "name")
 
-			if hybird_server:
-				hybird_server = frappe.get_doc("Self Hosted Server", hybird_server)
+			if hybrid_server:
+				hybrid_server = frappe.get_doc("Self Hosted Server", hybrid_server)
 
-				if not hybird_server.different_database_server:
-					hybird_server._setup_app_server()
+				if not hybrid_server.different_database_server:
+					hybrid_server._setup_app_server()
 		except Exception:
 			log_error("Hybrid Server Setup exception", server=self.as_dict())
 
