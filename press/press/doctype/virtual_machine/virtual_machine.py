@@ -93,7 +93,7 @@ class VirtualMachine(Document):
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
-	def validate(self):
+	def after_insert(self):
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
 			if len(image.volumes) in (0, 1):
@@ -105,6 +105,9 @@ class VirtualMachine(Document):
 			self.machine_image = image.image_id
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
+		self.save()
+
+	def validate(self):
 		if not self.private_ip_address:
 			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 			index = self.index + 356
