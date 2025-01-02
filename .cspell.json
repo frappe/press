@@ -13,7 +13,6 @@
         "erpnext",
         "parenttype",
         "parentfield",
-        "subsription",
         "sbool",
         "binlog",
         "ifnull",
@@ -58,7 +57,10 @@
         "behavior",
         "inplace",
         "supectl",
-        "uncollectible"
+        "uncollectible",
+        "hset",
+        "serializability",
+        "oom"
     ],
     "allowCompoundWords": true,
     "ignorePaths": [
