@@ -100,6 +100,7 @@ class VirtualMachineImage(Document):
 				self.platform = image["Architecture"]
 				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
 				# This information is not accurate for images created from multiple volumes
+				attached_snapshots = []
 				if volume and "SnapshotId" in volume["Ebs"]:
 					self.snapshot_id = volume["Ebs"]["SnapshotId"]
 				for volume in image["BlockDeviceMappings"]:
@@ -110,6 +111,7 @@ class VirtualMachineImage(Document):
 					if not snapshot_id:
 						# We don't care about volumes without snapshots
 						continue
+					attached_snapshots.append(snapshot_id)
 					existing = find(self.volumes, lambda x: x.snapshot_id == snapshot_id)
 					device = volume["DeviceName"]
 					volume_type = volume["Ebs"]["VolumeType"]
@@ -128,6 +130,10 @@ class VirtualMachineImage(Document):
 								"size": size,
 							},
 						)
+				for volume in list(self.volumes):
+					if volume.snapshot_id not in attached_snapshots:
+						self.remove(volume)
+
 				self.size = self.get_data_volume().size
 				self.root_size = self.get_data_volume().size
 			else:
