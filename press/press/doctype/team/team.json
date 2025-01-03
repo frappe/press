@@ -64,6 +64,7 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
+  "devboxes_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -438,6 +439,12 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "devboxes_enabled",
+   "fieldtype": "Check",
+   "label": "Devboxes Enabled"
   }
  ],
  "links": [
@@ -497,7 +504,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-11-11 10:27:47.247515",
+ "modified": "2024-12-10 16:56:26.933289",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

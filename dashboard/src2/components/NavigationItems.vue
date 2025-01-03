@@ -144,6 +144,13 @@ export default {
 					disabled: enforce2FA
 				},
 				{
+					name: 'Dev Boxes',
+					icon: () => h(Package),
+					route: '/devboxes',
+					condition: this.$team.doc?.devboxes_enabled,
+					disabled: enforce2FA
+				},
+				{
 					name: 'Billing',
 					icon: () => h(WalletCards),
 					route: '/billing',
