@@ -783,12 +783,11 @@ class Agent:
 			try:
 				json_response = self.response.json()
 				if raises and self.response.status_code >= 400:
-					output = (
-						f"""{json_response.get("output")}
-
-{json_response.get("traceback")}"""
-						or json.dumps(json_response, indent=2, sort_keys=True)
+					output = "\n\n".join(
+						[json_response.get("output", ""), json_response.get("traceback", "")]
 					)
+					if output == "\n\n":
+						output = json.dumps(json_response, indent=2, sort_keys=True)
 					raise HTTPError(
 						f"{self.response.status_code} {self.response.reason} {output}",
 						response=self.response,
