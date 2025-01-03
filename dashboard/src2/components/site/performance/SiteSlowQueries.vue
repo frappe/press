@@ -16,8 +16,10 @@
 </template>
 
 <script>
+import { defineAsyncComponent, h } from 'vue';
 import AlertBanner from '../../AlertBanner.vue';
 import PerformanceReport from './PerformanceReport.vue';
+import { renderDialog } from '../../../utils/components';
 
 export default {
 	props: ['name', 'siteVersion'],
