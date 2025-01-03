@@ -200,6 +200,9 @@ class ProductTrialRequest(Document):
 	def create_site(self, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
+		if not cluster:
+			cluster = get_default_cluster()
+
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		for field in product.signup_fields:
 			if field.fieldtype == "Password" and field.fieldname in signup_values:
@@ -218,7 +221,7 @@ class ProductTrialRequest(Document):
 		self.save(ignore_permissions=True)
 		self.reload()
 		site, agent_job_name, _ = product.setup_trial_site(
-			self.team, product.trial_plan, cluster=cluster, account_request=self.account_request
+			self.team, cluster=cluster, account_request=self.account_request
 		)
 		self.agent_job = agent_job_name
 		self.site = site.name

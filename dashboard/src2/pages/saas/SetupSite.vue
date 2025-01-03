@@ -124,7 +124,7 @@ export default {
 						dn: this.$resources.siteRequest.data.name,
 						method: 'create_site',
 						args: {
-							cluster: this.closestCluster,
+							cluster: this.closestCluster ?? 'Default',
 							signup_values: this.signupValues
 						}
 					};
