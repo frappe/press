@@ -806,8 +806,8 @@ class Agent:
 					doc=agent_job,
 				)
 		except Exception as exc:
-			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
+			self.log_request_failure(exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
