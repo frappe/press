@@ -136,12 +136,14 @@
 				/>
 			</AnalyticsCard>
 		</div>
-		<div class="!mt-6 flex space-x-2">
+		<div
+			class="!mt-6 flex w-fit cursor-pointer space-x-2"
+			@click="toggleAdvancedAnalytics"
+		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 cursor-pointer text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-gray-500 hover:text-gray-700"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
-				@click="toggleAdvancedAnalytics"
 			/>
 		</div>
 
@@ -718,13 +720,13 @@ export default {
 			let iops = this.$resources.iops.data;
 			if (!iops) return;
 
-			return this.transformMultiLineChartData(iops, null, true);
+			return this.transformMultiLineChartData(iops);
 		},
 		spaceData() {
 			let space = this.$resources.space.data;
 			if (!space) return;
 
-			return this.transformMultiLineChartData(space, null, true);
+			return this.transformMultiLineChartData(space);
 		},
 		networkData() {
 			let network = this.$resources.network.data;

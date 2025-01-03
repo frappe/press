@@ -131,11 +131,15 @@ class AlertmanagerWebhookLog(Document):
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		labels = self.get_labels_for_instance(instance)
 		job = rule.react(instance_type, instance, labels)
-		return {"press_job_type": job.job_type, "press_job": job.name}
+		if job:
+			return {"press_job_type": job.job_type, "press_job": job.name}
+		return {}
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.append("reaction_jobs", self.react_for_instance(instance))
+			reaction_job = self.react_for_instance(instance)
+			if reaction_job:
+				self.append("reaction_jobs", reaction_job)
 		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
