@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Normalized Slow Query',
+			title: 'Normalized Query',
 			size: '2xl'
 		}"
 		v-model="show"
