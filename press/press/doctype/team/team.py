@@ -1416,7 +1416,7 @@ def enqueue_finalize_unpaid_for_team(team: str):
 		doc.finalize_invoice()
 
 
-def procees_partnership_fee(payment_intent):
+def process_partnership_fee(payment_intent):
 	from datetime import datetime
 
 	if isinstance(payment_intent, str):
@@ -1439,7 +1439,7 @@ def procees_partnership_fee(payment_intent):
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
-		type="Partnership Fee",
+		type="Partnership Fees",
 		status="Paid",
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		total=amount,

@@ -57,6 +57,7 @@ def get_partner_details(partner_email):
 			"partner_type",
 			"company_name",
 			"custom_ongoing_period_fc_invoice_contribution",
+			"custom_fc_invoice_contribution",
 			"partner_name",
 			"custom_number_of_certified_members",
 			"end_date",
@@ -119,7 +120,7 @@ def transfer_credits(amount, customer, partner):
 
 
 @frappe.whitelist()
-def get_partner_contribution(partner_email):
+def get_partner_contribution_list(partner_email):
 	partner_currency = frappe.db.get_value(
 		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
 	)

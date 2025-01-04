@@ -1,149 +1,125 @@
 <template>
-	<div class="flex flex-col gap-5 overflow-y-auto px-60 pt-6">
-		<div class="rounded-lg text-base text-gray-900 shadow">
-			<div class="flex flex-col gap-2.5 p-4">
-				<div class="flex items-center justify-between mb-3">
-					<h3 class="text-lg font-semibold">Revenue Contribution</h3>
-					<Button
-						label="View Details"
-						@click="showPartnerContributionDialog = true"
-					/>
-				</div>
-				<div class="grid grid-cols-2 gap-7">
-					<div>
-						<div class="text-sm text-gray-600">Current Month Contribution</div>
-						<div class="text-xl font-bold mt-2">
-							{{ currency }}
-							{{
-								partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution.toFixed(
-									2
-								) || '0.0'
-							}}
-						</div>
-					</div>
-					<div>
-						<div class="text-sm text-gray-600">Previous Month Contribution</div>
-						<div class="text-xl font-bold mt-1">
-							{{ currency }}
-							{{
-								partnerDetails.data?.custom_fc_invoice_contribution.toFixed(
-									2
-								) || '0.0'
-							}}
-						</div>
-					</div>
-				</div>
-				<div class="col-span-2">
-					<div class="flex items-center space-x-2">
-						<p class="text-sm text-gray-600">Month-over-Month Change:</p>
-						<div class="flex items-center">
-							<FeatherIcon
-								:name="revenueChangeIcon"
-								class="w-4 h-4"
-								:class="revenueChangeColor"
-							/>
-							<span class="ml-1 font-semibold" :class="revenueChangeColor">
-								{{ Math.abs(revenueChange).toFixed(1) }}%
-							</span>
-						</div>
-					</div>
-				</div>
+	<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
+		<div class="flex flex-col">
+			<div class="text-gray-500">Welcome back!</div>
+			<div>
+				<h1 class="text-3xl font-semibold">
+					{{ partnerDetails.data?.company_name }}
+				</h1>
 			</div>
 		</div>
 		<div class="rounded-lg text-base text-gray-900 shadow">
 			<div class="flex flex-col gap-2.5 p-4">
-				<div class="flex items-center mb-3">
-					<h3 class="font-semibold text-lg">Partner Details</h3>
+				<div class="flex items-center justify-between">
+					<div class="flex">
+						<FeatherIcon name="award" class="h-5 text-gray-700" />
+						<h3 class="text-xl font-semibold">
+							{{ partnerDetails.data?.partner_type }} Tier
+						</h3>
+					</div>
 				</div>
-				<!-- <div class="my-3 h-px bg-gray-100"/> -->
+				<div class="pt-2">
+					<Progress
+						size="lg"
+						:value="tierProgressValue"
+						label="Current Progress"
+						:hint="false"
+					>
+						<template #hint>
+							<span class="text-base font-medium text-gray-500">
+								{{ formatNumber(nextTierTarget) }} to reach {{ nextTier }}
+							</span>
+						</template>
+					</Progress>
+				</div>
+				<div class="my-1 h-px bg-gray-100" />
+
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<div class="text-sm text-gray-600">Name</div>
-						<div class="text-base font-medium mt-1">
-							{{ partner.partnerName }}
+						<div class="flex items-center justify-between">
+							<div class="text-sm text-gray-600">
+								Current Month Contribution
+							</div>
+							<Button
+								label="Details"
+								@click="showPartnerContributionDialog = true"
+							/>
+						</div>
+						<div class="text-xl font-semibold py-2">
+							{{
+								formatCurrency(
+									partnerDetails.data
+										?.custom_ongoing_period_fc_invoice_contribution
+								) || '0.0'
+							}}
+						</div>
+						<div class="text-sm text-gray-600">
+							<span
+								>Previous Month:
+								{{
+									formatCurrency(
+										partnerDetails.data?.custom_fc_invoice_contribution
+									) || '0.0'
+								}}</span
+							>
 						</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-600">Company Name</div>
-						<div class="text-base font-medium mt-1">
-							{{ partner.companyName }}
+						<div class="flex items-center justify-between">
+							<div class="text-sm text-gray-600">Certified Members</div>
+							<Button label="View" />
 						</div>
-					</div>
-					<div>
-						<div>
-							<div class="text-sm text-gray-600">Code</div>
-							<div class="text-base font-medium mt-1">
-								{{ partner.partnerCode }}
-							</div>
-						</div>
-					</div>
-					<div>
-						<div>
-							<div class="text-sm text-gray-600">Tier</div>
-							<div>
-								<Badge :theme="getTierVariant(partner.partnerTier)" size="lg">
-									{{ partner.partnerTier }}
-								</Badge>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="my-2 h-px bg-gray-100" />
-				<div class="bg-gray-50 p-3 rounded flex flex-col gap-3">
-					<div class="flex gap-2 justify-between">
-						<div class="flex gap-1">
-							<div>
-								<FeatherIcon name="calendar" class="h-4 text-gray-600" />
-							</div>
-							<div>
-								<p class="text-sm text-gray-600">Next Renewal Date</p>
-								<p class="text-base font-medium my-2">
-									{{ formatDate(partnerDetails.data?.end_date) }}
-								</p>
-								<p class="text-sm text-gray-500">
-									{{ daysUntilRenewal }} days remaining
-								</p>
-							</div>
-						</div>
-						<div class="flex gap-1">
-							<div>
-								<FeatherIcon name="users" class="h-4 text-gray-600" />
-							</div>
-							<div>
-								<p class="text-sm text-gray-600">Certified Members</p>
-								<p class="text-base font-medium my-2">5</p>
-							</div>
-						</div>
-						<div class="flex gap-1">
-							<div>
-								<FeatherIcon name="percent" class="h-4 text-gray-600" />
-							</div>
-							<div>
-								<p class="text-sm text-gray-600">Discount Applied</p>
-								<p class="text-base font-medium my-2">8%</p>
-							</div>
-						</div>
-					</div>
-					<div v-if="isRenewalPeriod()">
-						<div class="my-1 h-px bg-gray-300" />
-						<div
-							class="flex items-center justify-between rounded py-2 bg-gray-300 px-2"
-						>
-							<div>
-								<p>Click here to pay for Partnership Renewal Fee</p>
-							</div>
-							<div>
-								<Button
-									label="Renew Now"
-									variant="solid"
-									@click="buyPartnershipCreditsDialog = true"
-								/>
+						<div class="flex items-center">
+							<div class="text-xl font-semibold py-2">
+								{{
+									partnerDetails.data?.custom_number_of_certified_members || 5
+								}}
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<div class="flex gap-4">
+			<div class="rounded-lg text-base w-full text-gray-900 shadow">
+				<div class="flex items-center px-4 pt-4">
+					<h3 class="font-semibold text-lg">Partner Referral Code</h3>
+				</div>
+				<div class="flex flex-col p-4 gap-2">
+					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
+					<span class="text-sm text-gray-600"
+						>Share code with customers to link with your account.</span
+					>
+				</div>
+			</div>
+			<div class="rounded-lg text-base w-full text-gray-900 p-4 shadow">
+				<div class="flex h-full flex-col justify-between">
+					<div class="flex">
+						<h3 class="font-semibold text-lg">Renewal Details</h3>
+					</div>
+					<div class="flex items-center justify-between">
+						<div class="flex flex-col gap-2">
+							<span class="text-base font-medium text-gray-700">
+								{{ formatDate(partnerDetails.data?.end_date) }}
+							</span>
+						</div>
+						<div v-if="isRenewalPeriod()">
+							<Button
+								label="Renew"
+								:disabled="false"
+								:variant="'solid'"
+								@click="showPartnerCreditsDialog = true"
+							/>
+						</div>
+					</div>
+					<span class="text-sm text-gray-600"
+						>Renewal in {{ daysUntilRenewal }} days</span
+					>
+				</div>
+			</div>
+		</div>
+
 		<Dialog
 			:show="showPartnerContributionDialog"
 			v-model="showPartnerContributionDialog"
@@ -153,20 +129,37 @@
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
 			</template>
 		</Dialog>
+
+		<Dialog
+			:show="showPartnerCreditsDialog"
+			v-model="showPartnerCreditsDialog"
+			:options="{ title: 'Pay Partnership Fee' }"
+		>
+			<template #body-content>
+				<PartnerCreditsForm
+					@success="
+						() => {
+							showPartnerCreditsDialog = false;
+						}
+					"
+				/>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
 import { computed, inject, ref } from 'vue';
 import dayjs from '../../utils/dayjs';
-import { FeatherIcon, Badge, Button, createResource } from 'frappe-ui';
+import { FeatherIcon, Button, createResource, Progress } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
+import ClickToCopyField from '../ClickToCopyField.vue';
+import PartnerCreditsForm from './PartnerCreditsForm.vue';
 
 const team = inject('team');
-const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'));
 
 const showPartnerContributionDialog = ref(false);
-const buyPartnershipCreditsDialog = ref(false);
+const showPartnerCreditsDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -174,21 +167,11 @@ const partnerDetails = createResource({
 	cache: 'partnerDetails',
 	params: {
 		partner_email: team.doc.partner_email
+	},
+	onSuccess() {
+		calculateNextTier(partnerDetails.data.partner_type);
 	}
 });
-
-const partner = {
-	partnerName: partnerDetails.data?.partner_name,
-	companyName: partnerDetails.data?.company_name,
-	currentMonthRevenue:
-		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution,
-	previousMonthRevenue: partnerDetails.data?.custom_fc_invoice_contribution,
-	partnerTier: partnerDetails.data?.partner_type,
-	partnerCode: team.doc.partner_referral_code,
-	renewalDate: partnerDetails.data?.end_date,
-	certifiedMembers: partnerDetails.data?.custom_number_of_certified_members,
-	discountPercentage: 25
-};
 
 const daysUntilRenewal = computed(() => {
 	const today = new Date();
@@ -205,38 +188,63 @@ function isRenewalPeriod() {
 	return Boolean(daysDifference >= 0 && daysDifference <= 15);
 }
 
-const revenueChangeIcon = computed(() => {
-	if (revenueChange.value > 0) return 'trending-up';
-	if (revenueChange.value < 0) return 'trending-down';
-	return 'minus';
-});
+const tierProgressValue = ref(0);
+const nextTier = ref('');
+const nextTierTarget = ref(0);
 
-const revenueChangeColor = computed(() => {
-	if (revenueChange.value > 0) return 'text-green-500';
-	if (revenueChange.value < 0) return 'text-red-500';
-	return 'text-gray-500';
-});
-
-const revenueChange = computed(() => {
-	return (
-		((partner.currentMonthRevenue - partner.previousMonthRevenue) /
-			partner.previousMonthRevenue) *
-		100
+function calculateTierProgress(next_tier_value) {
+	console.log(
+		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution,
+		next_tier_value
 	);
-});
+	return Math.ceil(
+		(partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution /
+			next_tier_value) *
+			100
+	);
+}
 
-const getTierVariant = tier => {
-	switch (tier) {
-		case 'Gold':
-			return 'orange';
-		case 'Silver':
-			return 'blue';
+function calculateNextTier(tier) {
+	const target_inr = {
+		Gold: 500000,
+		Silver: 200000,
+		Bronze: 50000
+	};
+	const target_usd = {
+		Gold: 6000,
+		Silver: 2500,
+		Bronze: 600
+	};
+
+	const current_tier = partnerDetails.data?.partner_type;
+	let next_tier = '';
+	switch (current_tier) {
+		case 'Entry':
+			next_tier = 'Bronze';
+			nextTierTarget.value =
+				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze;
+			break;
 		case 'Bronze':
-			return 'red';
+			next_tier = 'Silver';
+			nextTierTarget.value =
+				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver;
+			break;
+		case 'Silver':
+			next_tier = 'Gold';
+			nextTierTarget.value =
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
+			break;
 		default:
-			return 'gray';
+			next_tier = 'Gold';
+			nextTierTarget.value =
+				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
 	}
-};
+	nextTier.value = next_tier;
+	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);
+	nextTierTarget.value =
+		nextTierTarget.value -
+		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution;
+}
 
 const formatDate = dateString => {
 	return new Date(dateString).toLocaleDateString('en-US', {
@@ -244,5 +252,20 @@ const formatDate = dateString => {
 		month: 'long',
 		day: 'numeric'
 	});
+};
+
+const formatCurrency = amount => {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: team.doc.currency,
+		maximumFractionDigits: 2
+	}).format(amount);
+};
+
+const formatNumber = value => {
+	return new Intl.NumberFormat('en-US', {
+		notation: 'compact',
+		compactDisplay: 'short'
+	}).format(value);
 };
 </script>
