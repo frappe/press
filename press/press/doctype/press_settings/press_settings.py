@@ -158,6 +158,11 @@ class PressSettings(Document):
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"partnership_fee_inr",
+		"partnership_fee_usd",
+	)
+
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
