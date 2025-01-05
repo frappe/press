@@ -67,7 +67,7 @@
 					<div>
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">Certified Members</div>
-							<Button label="View" />
+							<Button label="View" @click="showPartnerMembersDialog = true" />
 						</div>
 						<div class="flex items-center">
 							<div class="text-xl font-semibold py-2">
@@ -145,6 +145,16 @@
 				/>
 			</template>
 		</Dialog>
+
+		<Dialog
+			:show="showPartnerMembersDialog"
+			v-model="showPartnerMembersDialog"
+			:options="{ size: 'xl', title: 'Certified Members' }"
+		>
+			<template #body-content>
+				<PartnerMembers :partnerName="partnerDetails.data?.company_name" />
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -155,11 +165,13 @@ import { FeatherIcon, Button, createResource, Progress } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
 import PartnerCreditsForm from './PartnerCreditsForm.vue';
+import PartnerMembers from './PartnerMembers.vue';
 
 const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
 const showPartnerCreditsDialog = ref(false);
+const showPartnerMembersDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',

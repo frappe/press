@@ -188,6 +188,18 @@ def get_partner_customers():
 
 
 @frappe.whitelist()
+def get_partner_members(partner):
+	from press.utils.billing import get_frappe_io_connection
+
+	client = get_frappe_io_connection()
+	return client.get_list(
+		"LMS Certificate",
+		filters={"partner": partner},
+		fields=["member_name", "member_email"],
+	)
+
+
+@frappe.whitelist()
 def remove_partner():
 	team = get_current_team(get_doc=True)
 	if team.payment_mode == "Paid By Partner":
