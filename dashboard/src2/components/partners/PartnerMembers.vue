@@ -32,7 +32,7 @@ const partnerMembers = createResource({
 
 const partnerMembersList = computed(() => {
 	return {
-		data: partnerMembers.data,
+		data: partnerMembers.data || [],
 		selectable: false,
 		columns: [
 			{
