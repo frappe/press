@@ -10,6 +10,7 @@
   "payment_id",
   "order_id",
   "signature",
+  "type",
   "status",
   "failure_reason"
  ],
@@ -57,11 +58,18 @@
    "fieldtype": "Small Text",
    "label": "Failure Reason",
    "read_only": 1
+  },
+  {
+   "default": "Prepaid Credits",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Prepaid Credits\nPartnership Fee"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-20 16:34:15.352515",
+ "modified": "2025-01-05 22:06:31.980472",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Razorpay Payment Record",
@@ -82,5 +90,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "order_id"
 }

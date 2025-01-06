@@ -44,9 +44,13 @@ const props = defineProps({
 		type: Number,
 		default: 0
 	},
-	minimumAmount: {
+	maximumAmount: {
 		type: Number,
 		default: 0
+	},
+	type: {
+		type: String,
+		default: 'prepaid-credits'
 	}
 });
 
@@ -72,15 +76,19 @@ onBeforeUnmount(() => {
 	razorpayCheckoutJS.value?.remove();
 });
 
+let order_type =
+	props.type === 'prepaid-credits' ? 'Prepaid Credits' : 'Partnership Fee';
+
 const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
 	params: {
-		amount: props.amount
+		amount: props.amount,
+		type: order_type
 	},
 	onSuccess: data => processOrder(data),
 	validate: () => {
-		if (props.amount < props.minimumAmount) {
-			throw new DashboardError('Amount less than minimum amount required');
+		if (props.amount > props.maximumAmount) {
+			throw new DashboardError('Amount more than maximum amount required');
 		}
 	}
 });
