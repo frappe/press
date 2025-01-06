@@ -612,7 +612,7 @@ def team_has_balance_for_invoice(prepaid_mode_invoice):
 
 
 @frappe.whitelist()
-def create_razorpay_order(amount):
+def create_razorpay_order(amount, type=None):
 	client = get_razorpay_client()
 	team = get_current_team(get_doc=True)
 
@@ -630,10 +630,12 @@ def create_razorpay_order(amount):
 			"gst": gst_amount if team.currency == "INR" else 0,
 		},
 	}
+	if type and type == "Partnership Fee":
+		data.get("notes").update({"Type": type})
 	order = client.order.create(data=data)
 
 	payment_record = frappe.get_doc(
-		{"doctype": "Razorpay Payment Record", "order_id": order.get("id"), "team": team.name}
+		{"doctype": "Razorpay Payment Record", "order_id": order.get("id"), "team": team.name, "type": type}
 	).insert(ignore_permissions=True)
 
 	return {

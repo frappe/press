@@ -71,10 +71,11 @@
 			@cancel="show = false"
 		/>
 
-		<BuyPartnerCreditsRazorpay
+		<BuyCreditsRazorpay
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
+			type="Partnership Fee"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -82,7 +83,7 @@
 </template>
 <script setup>
 import BuyPartnerCreditsStripe from './BuyPartnerCreditsStripe.vue';
-import BuyPartnerCreditsRazorpay from './BuyPartnerCreditsRazorpay.vue';
+import BuyCreditsRazorpay from '../billing/BuyCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
 import {
@@ -92,7 +93,6 @@ import {
 	createDocumentResource
 } from 'frappe-ui';
 import { ref, computed, inject, defineEmits } from 'vue';
-import { auto } from '@popperjs/core';
 
 const emit = defineEmits(['success']);
 

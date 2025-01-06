@@ -10,8 +10,8 @@
 		</div>
 		<div class="rounded-lg text-base text-gray-900 shadow">
 			<div class="flex flex-col gap-2.5 p-4">
-				<div class="flex items-center justify-between">
-					<div class="flex">
+				<div class="flex">
+					<div class="flex items-center gap-0.5">
 						<FeatherIcon name="award" class="h-5 text-gray-700" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }} Tier
@@ -34,8 +34,8 @@
 				</div>
 				<div class="my-1 h-px bg-gray-100" />
 
-				<div class="grid grid-cols-2 gap-4">
-					<div>
+				<div class="flex justify-between gap-4">
+					<div class="flex-1">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">
 								Current Month Contribution
@@ -64,7 +64,8 @@
 							>
 						</div>
 					</div>
-					<div>
+					<div class="mx-1 w-px border-r" />
+					<div class="flex-1">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">Certified Members</div>
 							<Button label="View" @click="showPartnerMembersDialog = true" />
@@ -81,25 +82,25 @@
 			</div>
 		</div>
 
-		<div class="flex gap-4">
-			<div class="rounded-lg text-base w-full text-gray-900 shadow">
-				<div class="flex items-center px-4 pt-4">
-					<h3 class="font-semibold text-lg">Partner Referral Code</h3>
-				</div>
-				<div class="flex flex-col p-4 gap-2">
+		<div class="flex justify-between gap-4">
+			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 shadow">
+				<div class="flex h-full flex-col justify-between gap-2">
+					<div class="flex">
+						<h3 class="font-semibold text-lg">Partner Referral Code</h3>
+					</div>
 					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
 					<span class="text-sm text-gray-600"
 						>Share code with customers to link with your account.</span
 					>
 				</div>
 			</div>
-			<div class="rounded-lg text-base w-full text-gray-900 p-4 shadow">
+			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 shadow">
 				<div class="flex h-full flex-col justify-between">
 					<div class="flex">
 						<h3 class="font-semibold text-lg">Renewal Details</h3>
 					</div>
 					<div class="flex items-center justify-between">
-						<div class="flex flex-col gap-2">
+						<div class="flex">
 							<span class="text-base font-medium text-gray-700">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
