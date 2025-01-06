@@ -69,7 +69,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.site_plan.site_plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
@@ -2124,7 +2124,12 @@ class Site(Document, TagHelpers):
 		return plan
 
 	def get_plan_config(self, plan=None):
-		return get_plan_config(self.get_plan_name(plan))
+		plan = self.get_plan_name(plan)
+		config = get_plan_config(plan)
+		if plan in UNLIMITED_PLANS:
+			# PERF: do not enable usage tracking on unlimited sites.
+			config.pop("rate_limit", None)
+		return config
 
 	def set_latest_bench(self):
 		from pypika.terms import PseudoColumn

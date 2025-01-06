@@ -209,7 +209,7 @@ class PressSettings(Document):
 
 	@property
 	def boto3_offsite_backup_session(self) -> Session:
-		"""Get new preconfigured boto3 session for offisite backup provider."""
+		"""Get new preconfigured boto3 session for offsite backup provider."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
 			aws_secret_access_key=self.get_password(
