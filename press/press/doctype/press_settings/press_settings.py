@@ -115,6 +115,7 @@ class PressSettings(Document):
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
+		redis_cache_size: DF.Int
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
@@ -208,7 +209,7 @@ class PressSettings(Document):
 
 	@property
 	def boto3_offsite_backup_session(self) -> Session:
-		"""Get new preconfigured boto3 session for offisite backup provider."""
+		"""Get new preconfigured boto3 session for offsite backup provider."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
 			aws_secret_access_key=self.get_password(

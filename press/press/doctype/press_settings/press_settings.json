@@ -178,6 +178,8 @@
   "use_staging_ca",
   "ssh_section",
   "ssh_certificate_authority",
+  "bench_section",
+  "redis_cache_size",
   "monitoring_section",
   "monitor_server",
   "monitor_token",
@@ -1272,11 +1274,22 @@
    "fieldname": "enable_email_pre_verification",
    "fieldtype": "Check",
    "label": "Enable Email Pre-Verification"
+  },
+  {
+   "fieldname": "bench_section",
+   "fieldtype": "Section Break",
+   "label": "Bench"
+  },
+  {
+   "default": "512",
+   "fieldname": "redis_cache_size",
+   "fieldtype": "Int",
+   "label": "Redis Cache Size (MB)"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-12-10 15:07:57.494659",
+ "modified": "2024-12-27 11:44:09.454080",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

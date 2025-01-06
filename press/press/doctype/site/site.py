@@ -594,8 +594,8 @@ class Site(Document, TagHelpers):
 			# update the subscription config while renaming the standby site
 			self.update_config_preview()
 			site_config = json.loads(self.config)
-			subsription_config = site_config.get("subscription", {})
-			job = agent.rename_site(self, new_name, create_user, config={"subscription": subsription_config})
+			subscription_config = site_config.get("subscription", {})
+			job = agent.rename_site(self, new_name, create_user, config={"subscription": subscription_config})
 			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
@@ -783,16 +783,18 @@ class Site(Document, TagHelpers):
 		return 8 * db_size * 2  # double extracted size for binlog
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
-		if (diff := server.free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+		mountpoint = server.guess_data_disk_mountpoint()
+		free_space = server.free_space(mountpoint)
+		if (diff := free_space - space_required) <= 0:
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
 			if server.public:
-				self.try_increasing_disk(server, diff, msg)
+				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
 
-	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
+	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
-			server.calculated_increase_disk_size(diff / 1024 / 1024 // 1024)
+			server.calculated_increase_disk_size(mountpoint=mountpoint, additional=diff / 1024 / 1024 // 1024)
 		except VolumeResizeLimitError:
 			frappe.throw(
 				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",

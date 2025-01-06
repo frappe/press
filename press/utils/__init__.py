@@ -367,7 +367,7 @@ class RemoteFrappeSite:
 
 	def _handle_backups_retrieval_failure(self, response):
 		log_error(
-			"Backups Retreival Error - Magic Migration",
+			"Backups Retrieval Error - Magic Migration",
 			response=response.text,
 			remote_site=self.site,
 		)
@@ -377,7 +377,7 @@ class RemoteFrappeSite:
 			side = "Client" if 400 <= response.status_code < 500 else "Server"
 			error_msg = (
 				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
-				f" recieved from {self.site}"
+				f" received from {self.site}"
 			)
 		frappe.throw(error_msg)
 

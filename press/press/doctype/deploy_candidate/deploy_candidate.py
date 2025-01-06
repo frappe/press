@@ -118,6 +118,7 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
+		redis_cache_size: DF.Int
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]

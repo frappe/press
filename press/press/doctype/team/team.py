@@ -543,7 +543,7 @@ class Team(Document):
 	def create_new_invoice(self):
 		"""
 		After enabling partner privileges, new invoice should be created
-		to track the partner achivements
+		to track the partner achievements
 		"""
 		# check if any active user with an invoice
 		if not frappe.get_all("Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"):

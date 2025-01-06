@@ -29,6 +29,7 @@
   "column_break_14",
   "bench_config",
   "gunicorn_threads_per_worker",
+  "redis_cache_size",
   "automatic_worker_allocation_section",
   "min_gunicorn_workers",
   "min_background_workers",
@@ -367,10 +368,16 @@
    "fieldtype": "Link",
    "label": "Build Server",
    "options": "Server"
+  },
+  {
+   "default": "512",
+   "fieldname": "redis_cache_size",
+   "fieldtype": "Int",
+   "label": "Redis Cache Size (MB)"
   }
  ],
  "links": [],
- "modified": "2024-09-17 14:44:01.541194",
+ "modified": "2024-12-27 11:58:29.907938",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

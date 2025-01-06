@@ -128,7 +128,7 @@ def installations(token):
 				}
 			)
 	else:
-		frappe.throw(data.get("message") or "An error occured")
+		frappe.throw(data.get("message") or "An error Occurred")
 
 	return installations
 
@@ -174,9 +174,7 @@ def repository(owner, name, installation=None):
 	headers = {
 		"Authorization": f"token {token}",
 	}
-	repo = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}", headers=headers
-	).json()
+	repo = requests.get(f"https://api.github.com/repos/{owner}/{name}", headers=headers).json()
 
 	current_page, is_last_page = 1, False
 	branches = []

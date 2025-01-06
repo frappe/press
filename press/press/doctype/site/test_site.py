@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import typing
 import unittest
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import Mock, patch
 
 import frappe
 import responses
@@ -418,7 +418,7 @@ class TestSite(unittest.TestCase):
 		)
 
 	@patch.object(Telegram, "send", new=Mock())
-	@patch.object(BaseServer, "disk_capacity", new=PropertyMock(return_value=100))
+	@patch.object(BaseServer, "disk_capacity", new=Mock(return_value=100))
 	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	@patch.object(RemoteFile, "get_content", new=lambda _: {"a": "test"})
 	@patch.object(RemoteFile, "exists", lambda _: True)
@@ -441,11 +441,11 @@ class TestSite(unittest.TestCase):
 			"public",
 			True,
 		)
-		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=500 * 1024 * 1024 * 1024)):
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=500 * 1024 * 1024 * 1024)):
 			site.restore_site()
 		mock_increase_disk_size.assert_not_called()
 
-		with patch.object(BaseServer, "free_space", new=PropertyMock(return_value=0)):
+		with patch.object(BaseServer, "free_space", new=Mock(return_value=0)):
 			site.restore_site()
 		mock_increase_disk_size.assert_called()
 
@@ -456,7 +456,7 @@ class TestSite(unittest.TestCase):
 			"public",
 			False,
 		)
-		with patch.object(Server, "free_space", new=PropertyMock(return_value=0)):
+		with patch.object(Server, "free_space", new=Mock(return_value=0)):
 			self.assertRaises(InsufficientSpaceOnServer, site.restore_site)
 
 	def test_user_cannot_disable_auto_update_if_site_in_public_release_group(self):
