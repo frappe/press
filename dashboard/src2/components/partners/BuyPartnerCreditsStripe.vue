@@ -82,7 +82,7 @@ const createPaymentIntent = createResource({
 	url: 'press.api.billing.create_payment_intent_for_partnership_fees',
 	params: { amount: props.amount },
 	validate() {
-		if (props.amount > props.maximumAmount && !team.doc.erpnext_partner) {
+		if (props.amount > props.maximumAmount) {
 			throw new DashboardError(
 				`Amount must be lesser than or equal to ${props.maximumAmount}`
 			);

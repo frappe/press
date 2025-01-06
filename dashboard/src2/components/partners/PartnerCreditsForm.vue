@@ -3,13 +3,13 @@
 		<!-- Amount -->
 		<div>
 			<FormControl
-				:label="`Amount (Minimum Amount: ${minimumAmount})`"
+				:label="`Amount (Minimum Amount: ${maximumAmount})`"
 				class="mb-3"
 				v-model.number="creditsToBuy"
 				name="amount"
 				autocomplete="off"
 				type="number"
-				:min="minimumAmount"
+				:max="maximumAmount"
 			>
 				<template #prefix>
 					<div class="grid w-4 place-items-center text-sm text-gray-700">
