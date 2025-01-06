@@ -55,7 +55,7 @@ const props = defineProps({
 		type: Number,
 		default: 0
 	},
-	minimumAmount: {
+	maximumAmount: {
 		type: Number,
 		default: 0
 	}
@@ -82,9 +82,9 @@ const createPaymentIntent = createResource({
 	url: 'press.api.billing.create_payment_intent_for_partnership_fees',
 	params: { amount: props.amount },
 	validate() {
-		if (props.amount < props.minimumAmount && !team.doc.erpnext_partner) {
+		if (props.amount > props.maximumAmount && !team.doc.erpnext_partner) {
 			throw new DashboardError(
-				`Amount must be greater than or equal to ${props.minimumAmount}`
+				`Amount must be lesser than or equal to ${props.maximumAmount}`
 			);
 		}
 	},

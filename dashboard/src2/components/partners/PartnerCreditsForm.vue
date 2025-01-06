@@ -66,15 +66,15 @@
 		<BuyPartnerCreditsStripe
 			v-if="paymentGateway === 'Stripe'"
 			:amount="creditsToBuy"
-			:minimumAmount="minimumAmount"
+			:minimumAmount="maximumAmount"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
 
-		<BuyCreditsRazorpay
+		<BuyPartnerCreditsRazorpay
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
-			:minimumAmount="minimumAmount"
+			:maximumAmount="maximumAmount"
 			type="Partnership Fee"
 			@success="() => emit('success')"
 			@cancel="show = false"
@@ -83,15 +83,10 @@
 </template>
 <script setup>
 import BuyPartnerCreditsStripe from './BuyPartnerCreditsStripe.vue';
-import BuyCreditsRazorpay from '../billing/BuyCreditsRazorpay.vue';
+import BuyPartnerCreditsRazorpay from './BuyPartnerCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
-import {
-	FormControl,
-	Button,
-	createResource,
-	createDocumentResource
-} from 'frappe-ui';
+import { FormControl, Button, createDocumentResource } from 'frappe-ui';
 import { ref, computed, inject, defineEmits } from 'vue';
 
 const emit = defineEmits(['success']);
@@ -105,7 +100,7 @@ const pressSettings = createDocumentResource({
 	initialData: {}
 });
 
-const minimumAmount = computed(() => {
+const maximumAmount = computed(() => {
 	if (!pressSettings.doc) return 0;
 	const feeAmount =
 		team.doc?.currency == 'INR'
@@ -114,7 +109,7 @@ const minimumAmount = computed(() => {
 	return Math.ceil(feeAmount);
 });
 
-const creditsToBuy = ref(minimumAmount.value);
+const creditsToBuy = ref(maximumAmount.value);
 const paymentGateway = ref('');
 
 const totalAmount = computed(() => {
