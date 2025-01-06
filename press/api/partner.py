@@ -1,7 +1,7 @@
 import frappe
 from frappe.core.utils import find
 from frappe.utils import flt
-from frappe.utils.data import today
+from frappe.utils.data import add_days, add_months, get_first_day, get_last_day, today
 
 from press.utils import get_current_team
 
@@ -139,6 +139,101 @@ def get_partner_contribution_list(partner_email):
 		else:
 			d.update({"partner_total": d.total})
 	return invoices
+
+
+@frappe.whitelist()
+def get_total_partner_contribution(partner_email):
+	return
+
+
+@frappe.whitelist()
+def get_current_month_partner_contribution(partner_email):
+	partner_currency = frappe.db.get_value(
+		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+	)
+	month_end = frappe.utils.get_last_day(today())
+
+	invoice = frappe.qb.DocType("Invoice")
+	query = (
+		frappe.qb.from_(invoice)
+		.select(invoice.total, invoice.currency, invoice.total_before_discount)
+		.where(
+			(invoice.partner_email == partner_email)
+			& (invoice.due_date == month_end)
+			& (invoice.type == "Subscription")
+			& (invoice.status == "Draft")
+		)
+	)
+	invoices = query.run(as_dict=True)
+	total = 0
+	for d in invoices:
+		if partner_currency != d.currency:
+			if partner_currency == "USD":
+				total += flt(d.total_before_discount / 83, 2)
+			else:
+				total += flt(d.total_before_discount * 83, 2)
+		else:
+			total += d.total_before_discount
+
+	return total
+
+
+@frappe.whitelist()
+def get_prev_month_partner_contribution(partner_email):
+	partner_currency = frappe.db.get_value(
+		"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+	)
+	first_day = get_first_day(today())
+	two_weeks = add_days(first_day, 14)  # 15th day of the month
+	last_month_end = get_last_day(add_months(today(), -1))
+
+	invoice = frappe.qb.DocType("Invoice")
+	query = (
+		frappe.qb.from_(invoice)
+		.select(invoice.total, invoice.currency, invoice.total_before_discount)
+		.where(
+			(invoice.partner_email == partner_email)
+			& (invoice.due_date == last_month_end)
+			& (invoice.type == "Subscription")
+		)
+	)
+
+	if today() >= first_day and frappe.utils.getdate() <= frappe.utils.getdate(two_weeks):
+		# till 15th of the current month unpaid invoices can also be counted in contribution
+		query = query.where((invoice.status).isin(["Unpaid", "Paid"]))
+	else:
+		query = query.where(invoice.status == "Paid")
+
+	invoices = query.run(as_dict=True)
+
+	total = 0
+	for d in invoices:
+		total = 0
+		if partner_currency != d.currency:
+			if partner_currency == "USD":
+				total += flt(d.total / 83, 2)
+			else:
+				total += flt(d.total * 83, 2)
+		else:
+			total += d.total
+	return total
+
+
+@frappe.whitelist()
+def calculate_partner_tier(contribution, currency):
+	partner_tier = frappe.qb.DocType("Partner Teir")
+	query = frappe.qb.from_(partner_tier).select(partner_tier.name)
+	if currency == "INR":
+		query = query.where(partner_tier.target_in_inr <= contribution).orderby(
+			partner_tier.target_in_inr, order=frappe.qb.desc
+		)
+	else:
+		query = query.where(partner_tier.target_in_usd <= contribution).orderby(
+			partner_tier.target_in_usd, order=frappe.qb.desc
+		)
+
+	tier = query.run(as_dict=True)
+	return tier[0]
 
 
 @frappe.whitelist()
