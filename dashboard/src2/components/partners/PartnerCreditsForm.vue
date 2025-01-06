@@ -66,7 +66,7 @@
 		<BuyPartnerCreditsStripe
 			v-if="paymentGateway === 'Stripe'"
 			:amount="creditsToBuy"
-			:minimumAmount="maximumAmount"
+			:maximumAmount="maximumAmount"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
