@@ -34,7 +34,7 @@
 							</span>
 							<Tooltip text="Support included">
 								<i-lucide-badge-check
-									class="ml-1 h-4 w-4"
+									class="ml-1 h-4 w-4 text-gray-600"
 									v-if="plan.support_included"
 								/>
 							</Tooltip>
