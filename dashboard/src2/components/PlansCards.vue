@@ -22,16 +22,22 @@
 					]"
 				>
 					<div class="flex items-center justify-between">
-						<div class="text-lg">
+						<div class="flex items-center text-lg">
 							<span class="font-medium text-gray-900">
 								<template v-if="plan.label">
 									{{ plan.label }}
 								</template>
 								<template v-else>
-									{{ $format.planTitle(plan) }}
-									<span v-if="plan.price_inr" class="text-gray-700"> / mo</span>
+									{{ $format.planTitle(plan)
+									}}<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
 								</template>
 							</span>
+							<Tooltip text="Support included">
+								<i-lucide-badge-check
+									class="ml-1 h-4 w-4"
+									v-if="plan.support_included"
+								/>
+							</Tooltip>
 						</div>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
@@ -47,8 +53,7 @@
 											: plan.price_usd
 									)
 								)
-							}}
-							/ day
+							}}/day
 						</template>
 					</div>
 				</div>

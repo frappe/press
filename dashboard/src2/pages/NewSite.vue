@@ -153,15 +153,17 @@
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
-				<div class="mt-3 text-xs text-gray-700">
-					<p>
-						* <strong>Support</strong> includes only issues and bug fixes
-						related to Frappe apps, functional queries will not be entertained.
-					</p>
-					<p class="mt-1">
-						** If you face any issue while using Frappe Cloud, you can raise
-						support ticket regardless of site plan.
-					</p>
+				<div class="mt-4 text-xs text-gray-700">
+					<div
+						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
+					>
+						<i-lucide-badge-check class="h-4 w-8 text-gray-600" />
+						<span class="ml-4">
+							<strong>Support</strong> covers only issues of Frappe apps and not
+							functional queries. You can raise a support ticket for Frappe
+							Cloud issues for all plans.
+						</span>
+					</div>
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
