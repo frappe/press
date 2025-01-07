@@ -181,7 +181,7 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'Partners',
+			name: 'Partner Portal',
 			path: '/partners',
 			redirect: { name: 'PartnerOverview' },
 			component: () => import('./pages/Partners.vue'),

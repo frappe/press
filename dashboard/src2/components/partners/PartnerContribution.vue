@@ -20,7 +20,7 @@ export default {
 	resources: {
 		getPartnerContribution() {
 			return {
-				url: 'press.api.partner.get_partner_contribution',
+				url: 'press.api.partner.get_partner_contribution_list',
 				auto: true,
 				params: {
 					partner_email: this.partnerEmail
