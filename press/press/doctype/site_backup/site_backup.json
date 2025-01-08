@@ -12,9 +12,6 @@
   "team",
   "with_files",
   "offsite",
-  "database",
-  "size",
-  "url",
   "data_7",
   "database_file",
   "database_url",
@@ -66,24 +63,6 @@
    "options": "Agent Job",
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "database",
-   "fieldtype": "Data",
-   "label": "database",
-   "read_only": 1
-  },
-  {
-   "fieldname": "size",
-   "fieldtype": "Data",
-   "label": "size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "url",
-   "fieldtype": "Data",
-   "label": "url",
-   "read_only": 1
   },
   {
    "default": "0",
@@ -249,7 +228,7 @@
   }
  ],
  "links": [],
- "modified": "2024-05-15 12:20:00.892082",
+ "modified": "2025-01-08 17:11:01.339892",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

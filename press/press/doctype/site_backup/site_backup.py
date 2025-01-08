@@ -20,13 +20,14 @@ class SiteBackup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
+	from typing import TYPE_CHECKING
+
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
 		config_file: DF.Data | None
 		config_file_size: DF.Data | None
 		config_file_url: DF.Text | None
-		database: DF.Data | None
 		database_file: DF.Data | None
 		database_size: DF.Data | None
 		database_url: DF.Text | None
@@ -45,10 +46,8 @@ class SiteBackup(Document):
 		remote_private_file: DF.Link | None
 		remote_public_file: DF.Link | None
 		site: DF.Link
-		size: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		team: DF.Link | None
-		url: DF.Data | None
 		with_files: DF.Check
 	# end: auto-generated types
 
