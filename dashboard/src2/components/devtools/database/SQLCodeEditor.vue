@@ -82,6 +82,10 @@ export default {
 					selection.from,
 					selection.to
 				);
+				if ((selectedText ?? '').trim() === '') {
+					emit('codeUnselected');
+					return;
+				}
 				emit('codeSelected', selectedText);
 			} else {
 				emit('codeUnselected');
