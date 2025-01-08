@@ -38,9 +38,9 @@
 					v-model="site"
 				/>
 				<Button
-					iconLeft="refresh-ccw"
+					icon="refresh-ccw"
 					variant="subtle"
-					:loading="site && !isSQLEditorReady"
+					:loading="site && !isAutoCompletionReady"
 					:disabled="!site"
 					@click="
 						() =>
@@ -57,11 +57,16 @@
 	</Header>
 	<div class="m-5">
 		<!-- body -->
-		<div class="mt-2 flex flex-col" v-if="isSQLEditorReady">
+		<div
+			v-if="!site"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+		>
+			Select a site to get started
+		</div>
+		<div class="mt-2 flex flex-col" v-else>
 			<div class="overflow-hidden rounded border">
 				<SQLCodeEditor
 					v-model="query"
-					v-if="sqlSchemaForAutocompletion"
 					:schema="sqlSchemaForAutocompletion"
 					@codeSelected="handleCodeSelected"
 					@codeUnselected="handleCodeUnselected"
@@ -69,7 +74,10 @@
 			</div>
 			<div class="mt-2 flex flex-row items-center justify-between">
 				<div class="flex gap-2">
-					<Button iconLeft="table" @click="toggleTableSchemasDialog"
+					<Button
+						iconLeft="table"
+						@click="toggleTableSchemasDialog"
+						:disabled="!isAutoCompletionReady"
 						>Tables</Button
 					>
 					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
@@ -120,18 +128,7 @@
 				</div>
 			</div>
 		</div>
-		<div
-			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-		>
-			Select a site to get started
-		</div>
-		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
-			v-else
-		>
-			<Spinner class="w-4" /> Setting Up SQL Playground
-		</div>
+
 		<DatabaseSQLPlaygroundLog
 			v-if="this.site"
 			:site="this.site"
@@ -277,7 +274,7 @@ export default {
 				children: childrenSchemas
 			};
 		},
-		isSQLEditorReady() {
+		isAutoCompletionReady() {
 			if (this.$resources.tableSchemas.loading) return false;
 			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
 			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
@@ -373,6 +370,10 @@ Are you sure you want to run the query?
 			this.showLogsDialog = !this.showLogsDialog;
 		},
 		toggleTableSchemasDialog() {
+			if (!this.isAutoCompletionReady) {
+				toast.error('Table schemas are still loading. Please wait.');
+				return;
+			}
 			this.showTableSchemasDialog = !this.showTableSchemasDialog;
 		},
 		rerunQuery(query) {
