@@ -2290,5 +2290,38 @@
      "step_name": "Analyze Slow Queries"
     }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-09 17:07:45.359754",
+  "name": "Physical Backup Database",
+  "request_method": "POST",
+  "request_path": "/database/physical-backup",
+  "steps": [
+   {
+    "step_name": "Fetch Database Tables Information"
+   },
+   {
+    "step_name": "Flush Database Tables"
+   },
+   {
+    "step_name": "Flush Changes to Disk"
+   },
+   {
+    "step_name": "Export Table Schema"
+   },
+   {
+    "step_name": "Export Collected Metadata"
+   },
+   {
+    "step_name": "Create Database Snapshot"
+   },
+   {
+    "step_name": "Unlock Tables"
+   }
+  ]
  }
 ]
