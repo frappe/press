@@ -745,56 +745,50 @@ class Agent:
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
 
+	def _make_req(self, method, url, headers, data, files, agent_job_id):
+		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
+		if frappe.conf.developer_mode and intermediate_ca:
+			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
+			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
+		else:
+			verify = True
+		if files:
+			file_objects = {
+				key: value
+				if isinstance(value, _io.BufferedReader)
+				else frappe.get_doc("File", {"file_url": url}).get_content()
+				for key, value in files.items()
+			}
+			file_objects["json"] = json.dumps(data).encode()
+			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
+		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
+
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
-		self.response = None
-		agent_job_id = agent_job.name if agent_job else None
-		headers = None
-		url = None
-
+		response = headers = url = None
 		try:
-			url = f"https://{self.server}:{self.port}/agent/{path}"
+			agent_job_id = agent_job.name if agent_job else None
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-			intermediate_ca = frappe.db.get_value(
-				"Press Settings", "Press Settings", "backbone_intermediate_ca"
-			)
-			if frappe.conf.developer_mode and intermediate_ca:
-				root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
-				verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-			else:
-				verify = True
-			if files:
-				file_objects = {
-					key: value
-					if isinstance(value, _io.BufferedReader)
-					else frappe.get_doc("File", {"file_url": url}).get_content()
-					for key, value in files.items()
-				}
-				file_objects["json"] = json.dumps(data).encode()
-				self.response = requests.request(
-					method, url, headers=headers, files=file_objects, verify=verify
-				)
-			else:
-				self.response = requests.request(
-					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
-				)
+			url = f"https://{self.server}:{self.port}/agent/{path}"
+
+			response = self._make_req(method, url, headers, data, files, agent_job_id)
 			json_response = None
 			try:
-				json_response = self.response.json()
-				if raises and self.response.status_code >= 400:
+				json_response = response.json()
+				if raises and response.status_code >= 400:
 					output = "\n\n".join(
 						[json_response.get("output", ""), json_response.get("traceback", "")]
 					)
 					if output == "\n\n":
 						output = json.dumps(json_response, indent=2, sort_keys=True)
 					raise HTTPError(
-						f"{self.response.status_code} {self.response.reason} {output}",
-						response=self.response,
+						f"{response.status_code} {response.reason} {output}",
+						response=response,
 					)
 				return json_response
 			except Exception:
-				self.handle_request_failure(agent_job, self.response)
+				self.handle_request_failure(agent_job, response)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -802,7 +796,7 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=json_response or self.response.text,
+					result=json_response or getattr(response, "text", None),
 					doc=agent_job,
 				)
 		except Exception as exc:
