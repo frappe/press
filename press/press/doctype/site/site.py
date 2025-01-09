@@ -250,6 +250,13 @@ class Site(Document, TagHelpers):
 		doc.latest_frappe_version = frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		)
+		doc.eol_versions = frappe.db.get_all(
+			"Frappe Version",
+			filters={"status": "End of Life"},
+			fields=["name"],
+			order_by="name desc",
+			pluck="name",
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None

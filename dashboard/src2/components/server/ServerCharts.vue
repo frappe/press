@@ -42,14 +42,14 @@
 					:data="cpuData"
 					unit="%"
 					:chartTheme="[
-						$theme.colors.green[500], // idle
 						$theme.colors.red[500], // iowait
 						$theme.colors.yellow[500], // irq
 						$theme.colors.pink[500], // nice
 						$theme.colors.purple[500], // softirq
 						$theme.colors.blue[500], // steal
 						$theme.colors.teal[500], // system
-						$theme.colors.cyan[500] // user
+						$theme.colors.cyan[500], // user
+						$theme.colors.green[500] // idle
 					]"
 					:loading="$resources.cpu.loading"
 					:error="$resources.cpu.error"
@@ -707,6 +707,13 @@ export default {
 		cpuData() {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
+
+			// move idle to the end
+			cpu.datasets = cpu.datasets.sort((a, b) => {
+				if (a.name === 'idle') return 1;
+				if (b.name === 'idle') return -1;
+				return 0;
+			});
 
 			return this.transformMultiLineChartData(cpu, 'cpu', true);
 		},
