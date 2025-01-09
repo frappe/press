@@ -773,32 +773,28 @@ class Agent:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 
 			response = self._make_req(method, url, headers, data, files, agent_job_id)
-			json_response = None
-			try:
-				json_response = response.json()
-				if raises and response.status_code >= 400:
-					output = "\n\n".join(
-						[json_response.get("output", ""), json_response.get("traceback", "")]
-					)
-					if output == "\n\n":
-						output = json.dumps(json_response, indent=2, sort_keys=True)
-					raise HTTPError(
-						f"{response.status_code} {response.reason} {output}",
-						response=response,
-					)
-				return json_response
-			except Exception:
-				self.handle_request_failure(agent_job, response)
-				log_error(
-					title="Agent Request Result Exception",
-					method=method,
-					url=url,
-					data=data,
-					files=files,
-					headers=headers,
-					result=json_response or getattr(response, "text", None),
-					doc=agent_job,
+			json_response = response.json()
+			if raises and response.status_code >= 400:
+				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
+				if output == "\n\n":
+					output = json.dumps(json_response, indent=2, sort_keys=True)
+				raise HTTPError(
+					f"{response.status_code} {response.reason} {output}",
+					response=response,
 				)
+			return json_response
+		except (HTTPError, TypeError, ValueError):
+			self.handle_request_failure(agent_job, response)
+			log_error(
+				title="Agent Request Result Exception",
+				method=method,
+				url=url,
+				data=data,
+				files=files,
+				headers=headers,
+				result=json_response or getattr(response, "text", None),
+				doc=agent_job,
+			)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
@@ -854,20 +850,20 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result: "Response"):
+	def handle_request_failure(self, agent_job, result: Response | None):
 		if not agent_job:
 			raise
 
-		reason = None
+		reason = status_code = None
 		with suppress(TypeError, ValueError):
-			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {getattr(result, 'status_code', 'Unknown')}\n
+Status Code: {status_code or 'Unknown'}\n
 Response: {reason or getattr(result, 'text', 'Unknown')}
 """
 		self.log_failure_reason(agent_job, message)
-		agent_job.flags.status_code = result.status_code
+		agent_job.flags.status_code = status_code
 
 	def handle_exception(self, agent_job, exception):
 		self.log_failure_reason(agent_job, exception)
