@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-full">
-		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
+		<div class="relative z-10 mx-auto pt-8 sm:w-max sm:pt-32">
 			<!-- logo -->
 			<div
 				class="flex flex-col items-center"

@@ -1,80 +1,54 @@
 <template>
-	<div>
-		<div
-			class="flex h-screen w-screen items-center justify-center"
-			v-if="false"
-		>
+	<div class="h-full sm:bg-gray-50">
+		<div class="flex w-full items-center justify-center" v-if="false">
 			<Spinner class="mr-2 w-4" />
 			<p class="text-gray-800">Loading</p>
 		</div>
-		<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
-			<div class="w-full overflow-auto">
+		<div class="flex" v-else>
+			<div class="h-full w-full overflow-auto">
 				<SaaSLoginBox
 					:title="`Hi, ${team?.doc?.user_info?.first_name}`"
 					:subtitle="['Choose a site to log in to or visit the dashboard.']"
 				>
 					<template v-slot:default>
 						<div class="space-y-4">
-							<div class="space-y-4">
-								<FormControl
-									class="w-full"
-									type="autocomplete"
-									:options="
-										(sites.data || []).map(site => ({
-											label: site.site_label || site.name,
-											value: site.name,
-											description: site.site_label ? site.name : null
-										}))
-									"
-									v-model="selectedSite"
-									placeholder="Select a site"
-								/>
-								<div class="flex items-end gap-1">
-									<Button
-										class="w-full"
-										:disabled="!selectedSite"
-										@click="loginToSite"
-										icon-left="external-link"
-										label="Login to Site"
-										:loading="login.loading"
-									/>
-
-									<Button
-										class="w-full"
-										@click="
-											team.doc.onboarding.complete
-												? $router.push({
-														name: 'Site List'
-												  })
-												: $router.push({
-														name: 'Welcome'
-												  })
-										"
-										icon-left="tool"
-										label="Go to Dashboard"
-									/>
-								</div>
-							</div>
+							<ObjectList :options="siteListOptions" />
 						</div>
 					</template>
 				</SaaSLoginBox>
+				<div class="flex w-full items-center justify-center pb-2">
+					<Button
+						class="mt-4"
+						@click="
+							team.doc.onboarding.complete
+								? $router.push({
+										name: 'Site List'
+								  })
+								: $router.push({
+										name: 'Welcome'
+								  })
+						"
+						icon-right="arrow-right"
+						variant="ghost"
+						label="Go to Dashboard"
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
-import { computed, inject, ref } from 'vue';
+import { computed, inject } from 'vue';
 import { toast } from 'vue-sonner';
 import { createListResource, createResource } from 'frappe-ui';
 import SaaSLoginBox from '../components/auth/SaaSLoginBox.vue';
 import { getToastErrorMessage } from '../utils/toast';
-import { useRoute } from 'vue-router';
+import ObjectList from '../components/ObjectList.vue';
+import { trialDays } from '../utils/site';
+import { userCurrency } from '../utils/format';
 
 const team = inject('team');
-const route = useRoute();
-
-const selectedSite = ref('');
 
 const login = createResource({
 	url: 'press.api.client.run_doc_method',
@@ -83,37 +57,57 @@ const login = createResource({
 	}
 });
 
-const product = route.query.product;
-createListResource({
-	doctype: 'Site',
-	filters: { status: 'Active', standby_for_product: product },
-	fields: ['name', 'site_label'],
-	auto: !!product,
-	onSuccess: data => {
-		if (data.length === 1) {
-			selectedSite.value = {
-				value: data[0].name
-			};
-		}
-	}
-});
-
 const sites = createListResource({
 	doctype: 'Site',
-	filters: { status: 'Active', standby_for_product: ['is', 'set'] },
-	fields: ['name', 'site_label'],
-	auto: true,
-	onSuccess: data => {
-		if (data.length === 1) {
-			selectedSite.value = {
-				value: data[0].name
-			};
-		}
-	}
+	filters: { status: 'Active' },
+	fields: [
+		'name',
+		'site_label',
+		'trial_end_date',
+		'plan.plan_title as plan_title',
+		'plan.price_usd as price_usd',
+		'plan.price_inr as price_inr'
+	],
+	auto: true
 });
 
-function loginToSite() {
-	if (!selectedSite) {
+const siteListOptions = computed(() => {
+	return {
+		data: () => sites.data || [],
+		hideControls: true,
+		onRowClick: row => {
+			loginToSite(row.name);
+		},
+		columns: [
+			{
+				label: 'Site',
+				fieldname: 'site_label',
+				format: (_, row) => row.site_label || row.name
+			},
+			{
+				label: '',
+				fieldname: 'trial_end_date',
+				align: 'right',
+				class: ' text-sm',
+				format: (value, row) => {
+					if (value) return trialDays(value);
+					if (row.price_usd > 0) {
+						const india = team.doc?.currency === 'INR';
+						const formattedValue = userCurrency(
+							india ? row.price_inr : row.price_usd,
+							0
+						);
+						return `${formattedValue}/mo`;
+					}
+					return row.plan_title;
+				}
+			}
+		]
+	};
+});
+
+function loginToSite(siteName) {
+	if (!siteName) {
 		toast.error('Please select a site');
 		return;
 	}
@@ -121,7 +115,7 @@ function loginToSite() {
 	toast.promise(
 		login.submit({
 			dt: 'Site',
-			dn: selectedSite.value.value,
+			dn: siteName,
 			method: 'login_as_team'
 		}),
 		{

@@ -11,7 +11,10 @@
 			<SaaSLoginBox
 				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Logging in to site"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
+				:subtitle="
+					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.site
+				"
 				:logo="saasProduct?.logo"
 			>
 				<div
@@ -33,15 +36,18 @@
 			<SaaSLoginBox
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
+				:subtitle="
+					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.site
+				"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<Button variant="outline" @click="signupForCurrentProduct"
+						<!-- <Button variant="outline" @click="signupForCurrentProduct"
 							>Signup for new site</Button
 						>
-						<p class="my-4 text-gray-600">or,</p>
+						<p class="my-4 text-gray-600">or,</p> -->
 						<p class="text-center text-base leading-5 text-gray-800">
 							Contact at
 							<a href="mailto:support@frappe.io" class="underline"
@@ -55,7 +61,10 @@
 			<SaaSLoginBox
 				v-else
 				title="Building your site"
-				:subtitle="this.$resources?.siteRequest?.doc?.site"
+				:subtitle="
+					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.site
+				"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:default>
@@ -65,7 +74,6 @@
 							size="lg"
 							:value="progressCount"
 							:label="currentBuildStep"
-							:hint="true"
 						/>
 					</div>
 				</template>
