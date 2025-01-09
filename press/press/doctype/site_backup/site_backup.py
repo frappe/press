@@ -34,7 +34,9 @@ class SiteBackup(Document):
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
 		files_availability: DF.Literal["", "Available", "Unavailable"]
+		innodb_tables: DF.JSON | None
 		job: DF.Link | None
+		myisam_tables: DF.Code | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
 		physical: DF.Check
@@ -51,6 +53,7 @@ class SiteBackup(Document):
 		site: DF.Link
 		snapshot_request_key: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		table_schema: DF.Code | None
 		team: DF.Link | None
 		with_files: DF.Check
 	# end: auto-generated types
@@ -107,7 +110,10 @@ class SiteBackup(Document):
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
 		agent = Agent(site.server)
-		job = agent.backup_site(site, self)
+		if self.physical:
+			job = agent.physical_backup_database(site, self)
+		else:
+			job = agent.backup_site(site, self)
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def after_delete(self):
@@ -185,7 +191,7 @@ def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dic
 	)
 
 
-def process_backup_site_job_update(job):
+def process_backup_site_job_update(job):  # noqa: C901
 	backups = frappe.get_all("Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1)
 	if not backups:
 		return
@@ -197,48 +203,61 @@ def process_backup_site_job_update(job):
 
 		frappe.db.set_value("Site Backup", backup.name, "status", status)
 		if job.status == "Success":
-			job_data = json.loads(job.data)
-			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
-			(
-				remote_database,
-				remote_config_file,
-				remote_public,
-				remote_private,
-			) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+			if frappe.get_value("Site Backup", backup.name, "physical"):
+				site_backup: SiteBackup = frappe.get_doc("Site Backup", backup.name)
+				data = json.loads(job.data)
+				if site_backup.database_name not in data:
+					frappe.log_error("[Failure] Database name not found in the backup data", data=job.data)
+					site_backup.status = "Failure"
+				else:
+					site_backup.innodb_tables = json.dumps(data[site_backup.database_name]["innodb_tables"])
+					site_backup.myisam_tables = json.dumps(data[site_backup.database_name]["myisam_tables"])
+					site_backup.table_schema = data[site_backup.database_name]["table_schema"]
+					site_backup.status = "Success"
+				site_backup.save()
+			else:
+				job_data = json.loads(job.data)
+				backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
+				(
+					remote_database,
+					remote_config_file,
+					remote_public,
+					remote_private,
+				) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
 
-			site_backup_dict = {
-				"files_availability": "Available",
-				"database_size": backup_data["database"]["size"],
-				"database_url": backup_data["database"]["url"],
-				"database_file": backup_data["database"]["file"],
-				"remote_database_file": remote_database,
-			}
+				site_backup_dict = {
+					"files_availability": "Available",
+					"database_size": backup_data["database"]["size"],
+					"database_url": backup_data["database"]["url"],
+					"database_file": backup_data["database"]["file"],
+					"remote_database_file": remote_database,
+				}
 
-			if "site_config" in backup_data:
-				site_backup_dict.update(
-					{
-						"config_file_size": backup_data["site_config"]["size"],
-						"config_file_url": backup_data["site_config"]["url"],
-						"config_file": backup_data["site_config"]["file"],
-						"remote_config_file": remote_config_file,
-					}
-				)
+				if "site_config" in backup_data:
+					site_backup_dict.update(
+						{
+							"config_file_size": backup_data["site_config"]["size"],
+							"config_file_url": backup_data["site_config"]["url"],
+							"config_file": backup_data["site_config"]["file"],
+							"remote_config_file": remote_config_file,
+						}
+					)
 
-			if "private" in backup_data and "public" in backup_data:
-				site_backup_dict.update(
-					{
-						"private_size": backup_data["private"]["size"],
-						"private_url": backup_data["private"]["url"],
-						"private_file": backup_data["private"]["file"],
-						"remote_public_file": remote_public,
-						"public_size": backup_data["public"]["size"],
-						"public_url": backup_data["public"]["url"],
-						"public_file": backup_data["public"]["file"],
-						"remote_private_file": remote_private,
-					}
-				)
+				if "private" in backup_data and "public" in backup_data:
+					site_backup_dict.update(
+						{
+							"private_size": backup_data["private"]["size"],
+							"private_url": backup_data["private"]["url"],
+							"private_file": backup_data["private"]["file"],
+							"remote_public_file": remote_public,
+							"public_size": backup_data["public"]["size"],
+							"public_url": backup_data["public"]["url"],
+							"public_file": backup_data["public"]["file"],
+							"remote_private_file": remote_private,
+						}
+					)
 
-			frappe.db.set_value("Site Backup", backup.name, site_backup_dict)
+				frappe.db.set_value("Site Backup", backup.name, site_backup_dict)
 
 
 def get_backup_bucket(cluster, region=False):

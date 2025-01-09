@@ -964,7 +964,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
-		elif job.job_type == "Backup Site":
+		elif job.job_type in ["Backup Site", "Physical Backup Database"]:
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)

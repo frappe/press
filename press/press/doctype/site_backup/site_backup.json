@@ -39,7 +39,11 @@
   "section_break_hiaw",
   "database_snapshot",
   "column_break_hksx",
-  "snapshot_request_key"
+  "snapshot_request_key",
+  "section_break_ujrn",
+  "table_schema",
+  "innodb_tables",
+  "myisam_tables"
  ],
  "fields": [
   {
@@ -271,10 +275,31 @@
    "fieldtype": "Data",
    "label": "Database Name",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.physical == 1",
+   "fieldname": "section_break_ujrn",
+   "fieldtype": "Section Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "innodb_tables",
+   "fieldtype": "JSON",
+   "label": "InnoDB Tables"
+  },
+  {
+   "fieldname": "myisam_tables",
+   "fieldtype": "Code",
+   "label": "MyISAM Tables"
+  },
+  {
+   "fieldname": "table_schema",
+   "fieldtype": "Code",
+   "label": "Table Schema"
   }
  ],
  "links": [],
- "modified": "2025-01-09 17:12:34.856063",
+ "modified": "2025-01-09 18:19:33.379208",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

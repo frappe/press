@@ -2314,9 +2314,6 @@
     "step_name": "Export Table Schema"
    },
    {
-    "step_name": "Export Collected Metadata"
-   },
-   {
     "step_name": "Create Database Snapshot"
    },
    {
