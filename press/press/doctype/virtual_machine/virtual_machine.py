@@ -757,15 +757,24 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self):
-		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws()
-		elif self.cloud_provider == "OCI":
-			self._create_snapshots_oci()
+	def create_snapshots(self, exclude_boot_volume=False):
+		"""
+		exclude_boot_volume is applicable only for Servers with data volume
+		"""
+		if not self.has_data_volume:
+			exclude_boot_volume = False
 
-	def _create_snapshots_aws(self):
+		# Store the newly created snapshots reference in the flags
+		# So that, we can get the correct reference of snapshots created in current session
+		self.flags.created_snapshots = []
+		if self.cloud_provider == "AWS EC2":
+			self._create_snapshots_aws(exclude_boot_volume)
+		elif self.cloud_provider == "OCI":
+			self._create_snapshots_oci(exclude_boot_volume)
+
+	def _create_snapshots_aws(self, exclude_boot_volume: bool):
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id},
+			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -776,20 +785,23 @@ class VirtualMachine(Document):
 		)
 		for snapshot in response.get("Snapshots", []):
 			try:
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
-	def _create_snapshots_oci(self):
+	def _create_snapshots_oci(self, exclude_boot_volume: bool):
 		for volume in self.volumes:
 			try:
 				if ".bootvolume." in volume.volume_id:
+					if exclude_boot_volume:
+						continue
 					snapshot = (
 						self.client(BlockstorageClient)
 						.create_boot_volume_backup(
@@ -813,13 +825,14 @@ class VirtualMachine(Document):
 						)
 						.data
 					)
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot.id,
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except TransientServiceError:
 				# We've hit OCI rate limit for creating snapshots
 				# Let's try again later
