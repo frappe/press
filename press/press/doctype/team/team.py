@@ -1042,20 +1042,10 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.payment_mode:
+		sites = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
+		if sites > 5:
 			return "/sites"
-
-		if self.is_saas_user:
-			return "/start-center"
-		# 	pending_site_request = self.get_pending_saas_site_request()
-		# 	if pending_site_request:
-		# 		product_trial = pending_site_request.product_trial
-		# 	else:
-		# 		product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
-		# 	if product_trial:
-		# 		return f"/app-trial/setup/{product_trial}"
-
-		return "/welcome"
+		return "/start-center"
 
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
