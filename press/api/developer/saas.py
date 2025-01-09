@@ -125,7 +125,7 @@ It can potentially break the integrations.
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=5, seconds=60)
-def send_verification_code(domain: str):
+def send_verification_code(domain: str, route: str = ""):
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
 		frappe.throw("The domain is not active currently. Please try again.")
@@ -137,19 +137,15 @@ def send_verification_code(domain: str):
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
 		frappe.throw("Your Frappe Cloud team is disabled currently.")
-	if team_info.get("enforce_2fa"):
-		frappe.throw(
-			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
-		)
-	if (
-		team_info.get("user") == "Administrator"
-		or frappe.db.get_value("User", team_info.get("user"), "user_type") != "Website User"
-	):
-		frappe.throw("Sorry, you cannot login with this method. Please contact support for more details.")
 
-	# restrict to SaaS Site
-	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
-		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
+	check_if_user_can_login(team_info, site_info)
+
+	if is_user_logged_in(team_info.get("user")):
+		if route == "start-center":
+			redirect_to = "/dashboard/start-center"
+		elif route == "site-dashboard":
+			redirect_to = f"/dashboard/sites/{site_info.get('name')}"
+		return {"is_user_logged_in": True, "redirect_to": redirect_to}
 
 	# generate otp and set in redis with 10 min expiry
 	otp = random.randint(10000, 99999)
@@ -160,31 +156,16 @@ def send_verification_code(domain: str):
 	)
 
 	email = team_info.get("user")
-	if frappe.conf.developer_mode:
-		print("\nVerification Code for login to Frappe Cloud:")
-		print(f"\nOTP for {email}:")
-		print(otp)
-		print()
-	else:
-		frappe.sendmail(
-			recipients=email,
-			subject="Verification Code for Frappe Cloud Login",
-			template="verification_code_for_login",
-			args={
-				"full_name": frappe.get_value("User", email, "full_name"),
-				"otp": otp,
-				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
-			},
-			now=True,
-		)
+	send_email_with_verification_code(email, otp)
 
 	return {
 		"email": mask_email(email, 50),
+		"is_user_logged_in": False,
 	}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def verify_verification_code(domain: str, verification_code: str, target: str = "start-center"):
+def verify_verification_code(domain: str, verification_code: str, route: str = "start-center"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
 		frappe.throw("Invalid Code. Please try again.")
@@ -199,7 +180,7 @@ def verify_verification_code(domain: str, verification_code: str, target: str = 
 	# login and generate a login_token to store sid
 	login_token = frappe.generate_hash(length=64)
 	frappe.cache.set_value(f"saas_fc_login_token:{login_token}", user, expires_in_sec=60)
-	if target == "site-dashboard":
+	if route == "site-dashboard":
 		frappe.cache.set_value(f"saas_fc_login_site:{login_token}", domain, expires_in_sec=60)
 
 	frappe.response["login_token"] = login_token
@@ -221,3 +202,51 @@ def login_to_fc(token: str):
 		frappe.response.location = f"/dashboard/sites/{domain}"
 	else:
 		frappe.response.location = "/dashboard/start-center"
+
+
+def is_user_logged_in(user):
+	Sessions = frappe.qb.DocType("Sessions")
+
+	return bool(
+		frappe.qb.from_(Sessions)
+		.select(Sessions.user)
+		.where(Sessions.user == user)
+		.where(Sessions.status == "Active")
+		.run(as_dict=True)
+	)
+
+
+def check_if_user_can_login(team_info, site_info):
+	if team_info.get("enforce_2fa"):
+		frappe.throw(
+			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
+		)
+	if (
+		team_info.get("user") == "Administrator"
+		or frappe.db.get_value("User", team_info.get("user"), "user_type") != "Website User"
+	):
+		frappe.throw("Sorry, you cannot login with this method. Please contact support for more details.")
+
+	# restrict to SaaS Site
+	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
+		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
+
+
+def send_email_with_verification_code(email, otp):
+	if frappe.conf.developer_mode:
+		print("\nVerification Code for login to Frappe Cloud:")
+		print(f"\nOTP for {email}:")
+		print(otp)
+		print()
+	else:
+		frappe.sendmail(
+			recipients=email,
+			subject="Verification Code for Frappe Cloud Login",
+			template="verification_code_for_login",
+			args={
+				"full_name": frappe.get_value("User", email, "full_name"),
+				"otp": otp,
+				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
+			},
+			now=True,
+		)
