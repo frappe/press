@@ -29,12 +29,15 @@ class SiteBackup(Document):
 		config_file_size: DF.Data | None
 		config_file_url: DF.Text | None
 		database_file: DF.Data | None
+		database_name: DF.Data | None
 		database_size: DF.Data | None
+		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
 		files_availability: DF.Literal["", "Available", "Unavailable"]
 		job: DF.Link | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
+		physical: DF.Check
 		private_file: DF.Data | None
 		private_size: DF.Data | None
 		private_url: DF.Text | None
@@ -46,6 +49,7 @@ class SiteBackup(Document):
 		remote_private_file: DF.Link | None
 		remote_public_file: DF.Link | None
 		site: DF.Link
+		snapshot_request_key: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		team: DF.Link | None
 		with_files: DF.Check
@@ -71,6 +75,12 @@ class SiteBackup(Document):
 		"remote_config_file",
 	)
 
+	def validate(self):
+		if self.physical and self.with_files:
+			frappe.throw("Physical backups cannot be taken with files")
+		if self.physical and self.offsite:
+			frappe.throw("Physical and offsite logical backups cannot be taken together")
+
 	def before_insert(self):
 		if getattr(self, "force", False):
 			return
@@ -85,15 +95,40 @@ class SiteBackup(Document):
 		):
 			frappe.throw("Too many pending backups")
 
+		if self.physical:
+			site = frappe.get_doc("Site", self.site)
+			if not site.database_name:
+				site.sync_info()
+				site.reload()
+			if not site.database_name:
+				frappe.throw("Database name is missing in the site")
+			self.database_name = site.database_name
+
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
 		agent = Agent(site.server)
-		job = agent.backup_site(site, self.with_files, self.offsite)
+		job = agent.backup_site(site, self)
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def after_delete(self):
 		if self.job:
 			frappe.delete_doc_if_exists("Agent Job", self.job)
+
+	def create_database_snapshot(self):
+		if self.database_snapshot:
+			# Snapshot already exists, So no need to create a new one
+			return
+		server = frappe.get_value("Site", self.site, "server")
+		database_server = frappe.get_value("Server", server, "database_server")
+		virtual_machine = frappe.get_doc(
+			"Virtual Machine", frappe.get_value("Database Server", database_server, "virtual_machine")
+		)
+		virtual_machine.create_snapshots(exclude_boot_volume=True)
+		if len(virtual_machine.flags.created_snapshots) == 0:
+			frappe.throw("Failed to create a snapshot for the database server")
+		frappe.db.set_value(
+			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
+		)
 
 	@classmethod
 	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
