@@ -846,8 +846,8 @@ class Agent:
 			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {status_code or 'Unknown'}\n
-Response: {reason or getattr(result, 'text', 'Unknown')}
+Status Code: {status_code or "Unknown"}\n
+Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = status_code
