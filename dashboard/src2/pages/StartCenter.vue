@@ -75,6 +75,7 @@ const siteListOptions = computed(() => {
 	return {
 		data: () => sites.data || [],
 		hideControls: true,
+		emptyStateMessage: 'No sites found. Create a site from the dashboard.',
 		onRowClick: row => {
 			loginToSite(row.name);
 		},
