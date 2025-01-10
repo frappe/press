@@ -745,7 +745,10 @@ class Agent:
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
 
-	def _make_req(self, method, url, headers, data, files, agent_job_id):
+	def _make_req(self, method, path, data, files, agent_job_id):
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
+		url = f"https://{self.server}:{self.port}/agent/{path}"
 		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
 		if frappe.conf.developer_mode and intermediate_ca:
 			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
@@ -765,21 +768,17 @@ class Agent:
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
-		response = headers = url = None
+		response = json_response = None
 		try:
 			agent_job_id = agent_job.name if agent_job else None
-			password = get_decrypted_password(self.server_type, self.server, "agent_password")
-			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-			url = f"https://{self.server}:{self.port}/agent/{path}"
-
-			response = self._make_req(method, url, headers, data, files, agent_job_id)
+			response = self._make_req(method, path, data, files, agent_job_id)
 			json_response = response.json()
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
 				if output == "\n\n":
 					output = json.dumps(json_response, indent=2, sort_keys=True)
 				raise HTTPError(
-					f"{response.status_code} {response.reason} {output}",
+					f"{response.status_code} {response.reason}\n\n{output}",
 					response=response,
 				)
 			return json_response
@@ -787,25 +786,13 @@ class Agent:
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
-				method=method,
-				url=url,
-				data=data,
-				files=files,
-				headers=headers,
 				result=json_response or getattr(response, "text", None),
-				doc=agent_job,
 			)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
-				method=method,
-				url=url,
-				data=data,
-				files=files,
-				headers=headers,
-				doc=agent_job,
 			)
 
 	def raise_if_past_requests_have_failed(self):
