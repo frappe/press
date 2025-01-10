@@ -320,8 +320,14 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slow logs frequency"
+				title="Frequent Slow queries"
 			>
+				<template #action>
+					<TabButtons
+						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsFrequencyType"
+					/>
+				</template>
 				<BarChart
 					title="Frequent Slow queries"
 					:key="slowLogsCountData"
@@ -338,26 +344,14 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Frequent Slow queries (normalized)"
-			>
-				<BarChart
-					title="Frequent Slow queries (normalized)"
-					:key="normalizedSlowLogsCountData"
-					:data="normalizedSlowLogsCountData"
-					unit="queries"
-					:chartTheme="chartColors"
-					:loading="$resources.normalizedSlowLogsCount.loading"
-					:error="$resources.normalizedSlowLogsCount.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard>
-
-			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
-				class="sm:col-span-2"
 				title="Slowest queries"
 			>
+				<template #action>
+					<TabButtons
+						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsDurationType"
+					/>
+				</template>
 				<BarChart
 					title="Slowest queries"
 					:key="slowLogsDurationData"
@@ -366,24 +360,6 @@
 					:chartTheme="chartColors"
 					:loading="$resources.slowLogsDuration.loading"
 					:error="$resources.slowLogsDuration.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard>
-
-			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
-				class="sm:col-span-2"
-				title="Slowest queries (normalized)"
-			>
-				<BarChart
-					title="Slowest queries (normalized)"
-					:key="normalizedSlowLogsDurationData"
-					:data="normalizedSlowLogsDurationData"
-					unit="seconds"
-					:chartTheme="chartColors"
-					:loading="$resources.normalizedSlowLogsDuration.loading"
-					:error="$resources.normalizedSlowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -411,6 +387,8 @@ export default {
 			duration: '1 Hour',
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
+			slowLogsDurationType: 'Non-normalized',
+			slowLogsFrequencyType: 'Non-normalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
 			chartColors: [
@@ -542,7 +520,8 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration
+					duration: this.duration,
+					normalize: this.slowLogsFrequencyType === 'Normalized'
 				},
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
@@ -569,21 +548,8 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration
-				},
-				auto:
-					this.showAdvancedAnalytics && !this.isServerType('Application Server')
-			};
-		},
-		normalizedSlowLogsDuration() {
-			return {
-				url: 'press.api.server.get_slow_logs_by_site',
-				params: {
-					name: this.chosenServer,
-					query: 'duration',
-					timezone: this.localTimezone,
 					duration: this.duration,
-					normalize: true
+					normalize: this.slowLogsDurationType === 'Normalized'
 				},
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
@@ -761,18 +727,6 @@ export default {
 		},
 		slowLogsCountData() {
 			const slowLogs = this.$resources.slowLogsCount.data;
-			if (!slowLogs) return;
-
-			return slowLogs;
-		},
-		normalizedSlowLogsDurationData() {
-			const slowLogs = this.$resources.normalizedSlowLogsDuration.data;
-			if (!slowLogs) return;
-
-			return slowLogs;
-		},
-		normalizedSlowLogsCountData() {
-			const slowLogs = this.$resources.normalizedSlowLogsCount.data;
 			if (!slowLogs) return;
 
 			return slowLogs;
