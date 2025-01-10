@@ -276,7 +276,6 @@ import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 import { DashboardError } from '../utils/error';
 import { getCountry } from '../utils/country';
-import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	name: 'NewSite',
@@ -287,7 +286,6 @@ export default {
 		SitePlansCards,
 		Autocomplete,
 		ErrorMessage,
-		AlertBanner,
 		FormControl,
 		FeatherIcon,
 		TextInput,
