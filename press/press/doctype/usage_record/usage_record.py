@@ -124,4 +124,4 @@ def link_unlinked_usage_records():
 
 
 def on_doctype_update():
-	frappe.db.add_index("Usage Record", ["subscription", "date"])
+	frappe.db.add_unique("Usage Record", ["subscription", "date"], constraint_name="unique_usage_record")
