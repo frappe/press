@@ -121,7 +121,7 @@ const initOptions = {
 const options = ref({
 	grid: {
 		top: 20,
-		left: 40,
+		left: 50,
 		right: 20,
 		bottom: data.value.datasets.length > 1 ? 60 : 30 // if there's legend show more space for it
 	},

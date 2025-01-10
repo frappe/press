@@ -341,6 +341,10 @@ class AgentJob(Document):
 			return True
 		return False
 
+	@property
+	def on_public_server(self):
+		return bool(frappe.db.get_value(self.server_type, self.server, "public"))
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)

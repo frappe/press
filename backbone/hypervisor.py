@@ -32,7 +32,7 @@ class Hypervisor:
 		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
 	def build_cloud_init_mac(self):
-		# cloud-localds isn't availble on macOS.
+		# cloud-localds isn't available on macOS.
 		# So we do what it does ourselves
 		# user-data is the same as cloud-init.yml
 		# https://github.com/canonical/cloud-utils/blob/49e5dd7849ee3c662f3db35e857148d02e72694b/bin/cloud-localds#L168-L187

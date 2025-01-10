@@ -98,9 +98,10 @@ export default {
 	computed: {
 		autocompleteOptions() {
 			return Object.keys(this.tableSchemas).map(x => ({
-				label: `${x} (${this.bytesToMB(
-					this.tableSchemas[x].size.total_size
-				)}MB)`,
+				label:
+					this.tableSchemas[x].size.total_size > 0.01
+						? `${x} (${this.bytesToMB(this.tableSchemas[x].size.total_size)}MB)`
+						: x,
 				value: x
 			}));
 		},

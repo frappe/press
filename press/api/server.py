@@ -29,6 +29,9 @@ def poly_get_doc(doctypes, name):
 	return frappe.get_doc(doctypes[-1], name)
 
 
+MOUNTPOINT_REGEX = "(/|/opt/volumes/mariadb|/opt/volumes/benches)"
+
+
 @frappe.whitelist()
 def all(server_filter=None):  # noqa: C901
 	if server_filter is None:
@@ -193,7 +196,7 @@ def usage(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by ()/ (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -218,7 +221,7 @@ def total_resource(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
+			f"""sum(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}}) by () / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
@@ -289,7 +292,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint=~"{MOUNTPOINT_REGEX}"}})""",
 			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
@@ -549,7 +552,7 @@ def rename(name, title):
 	doc.save()
 
 
-def get_timespan_timegrain(duration: str) -> Tuple[int, int]:
+def get_timespan_timegrain(duration: str) -> tuple[int, int]:
 	timespan, timegrain = {
 		"1 Hour": (60 * 60, 2 * 60),
 		"6 Hour": (6 * 60 * 60, 5 * 60),

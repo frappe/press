@@ -69,7 +69,7 @@ from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.site_plan.site_plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
 from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 	get_doctype_name,
 )
@@ -249,6 +249,13 @@ class Site(Document, TagHelpers):
 		doc.group_public = group.public or group.central_bench
 		doc.latest_frappe_version = frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
+		)
+		doc.eol_versions = frappe.db.get_all(
+			"Frappe Version",
+			filters={"status": "End of Life"},
+			fields=["name"],
+			order_by="name desc",
+			pluck="name",
 		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
@@ -589,13 +596,13 @@ class Site(Document, TagHelpers):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		if self.standby_for_product or self.standby_for:
-			# if standby site, rename site and create first user for trial signups
+			# if standby site, rename site and create first user for trial signup
 			create_user = self.get_user_details()
 			# update the subscription config while renaming the standby site
 			self.update_config_preview()
 			site_config = json.loads(self.config)
-			subsription_config = site_config.get("subscription", {})
-			job = agent.rename_site(self, new_name, create_user, config={"subscription": subsription_config})
+			subscription_config = site_config.get("subscription", {})
+			job = agent.rename_site(self, new_name, create_user, config={"subscription": subscription_config})
 			self.flags.rename_site_agent_job_name = job.name
 		else:
 			agent.rename_site(self, new_name)
@@ -783,16 +790,18 @@ class Site(Document, TagHelpers):
 		return 8 * db_size * 2  # double extracted size for binlog
 
 	def check_and_increase_disk(self, server: "BaseServer", space_required: int):
-		if (diff := server.free_space - space_required) <= 0:
-			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(server.free_space)} (Need {human_readable(abs(diff))})."
+		mountpoint = server.guess_data_disk_mountpoint()
+		free_space = server.free_space(mountpoint)
+		if (diff := free_space - space_required) <= 0:
+			msg = f"Insufficient estimated space on {DOCTYPE_SERVER_TYPE_MAP[server.doctype]} server to create site. Required: {human_readable(space_required)}, Available: {human_readable(free_space)} (Need {human_readable(abs(diff))})."
 			if server.public:
-				self.try_increasing_disk(server, diff, msg)
+				self.try_increasing_disk(server, mountpoint, diff, msg)
 			else:
 				frappe.throw(msg, InsufficientSpaceOnServer)
 
-	def try_increasing_disk(self, server: "BaseServer", diff: int, err_msg: str):
+	def try_increasing_disk(self, server: "BaseServer", mountpoint: str, diff: int, err_msg: str):
 		try:
-			server.calculated_increase_disk_size(diff / 1024 / 1024 // 1024)
+			server.calculated_increase_disk_size(mountpoint=mountpoint, additional=diff / 1024 / 1024 // 1024)
 		except VolumeResizeLimitError:
 			frappe.throw(
 				f"{err_msg} Please wait {fmt_timedelta(server.time_to_wait_before_updating_volume)} before trying again.",
@@ -2122,7 +2131,12 @@ class Site(Document, TagHelpers):
 		return plan
 
 	def get_plan_config(self, plan=None):
-		return get_plan_config(self.get_plan_name(plan))
+		plan = self.get_plan_name(plan)
+		config = get_plan_config(plan)
+		if plan in UNLIMITED_PLANS:
+			# PERF: do not enable usage tracking on unlimited sites.
+			config.pop("rate_limit", None)
+		return config
 
 	def set_latest_bench(self):
 		from pypika.terms import PseudoColumn
@@ -2320,7 +2334,6 @@ class Site(Document, TagHelpers):
 		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
 
 		agent = Agent(self.server)
-		result = agent.get_summarized_performance_report_of_database(self)
 		# fetch slow queries of last 7 days
 		slow_queries = get_slow_queries(
 			frappe._dict(
@@ -2334,19 +2347,40 @@ class Site(Document, TagHelpers):
 				}
 			)
 		)
-		# remove `parent` & `creation` indexes from unused_indexes
-		result["unused_indexes"] = [
-			index
-			for index in result.get("unused_indexes", [])
-			if index["index_name"] not in ["parent", "creation"]
-		]
-
 		# convert all the float to int
 		for query in slow_queries:
 			for key, value in query.items():
 				if isinstance(value, float):
 					query[key] = int(value)
-		result["slow_queries"] = slow_queries
+		is_performance_schema_enabled = False
+		if database_server := frappe.db.get_value("Server", self.server, "database_server"):
+			is_performance_schema_enabled = frappe.db.get_value(
+				"Database Server",
+				database_server,
+				"is_performance_schema_enabled",
+			)
+		result = None
+		if is_performance_schema_enabled:
+			with suppress(Exception):
+				# for larger table or if database has any locks, fetching perf report will be failed
+				result = agent.get_summarized_performance_report_of_database(self)
+				# remove `parent` & `creation` indexes from unused_indexes
+				result["unused_indexes"] = [
+					index
+					for index in result.get("unused_indexes", [])
+					if index["index_name"] not in ["parent", "creation"]
+				]
+
+		if not result:
+			result = {}
+			result["unused_indexes"] = []
+			result["redundant_indexes"] = []
+			result["top_10_time_consuming_queries"] = []
+			result["top_10_queries_with_full_table_scan"] = []
+
+		# sort the slow queries by `rows_examined`
+		result["slow_queries"] = sorted(slow_queries, key=lambda x: x["rows_examined"], reverse=True)
+		result["is_performance_schema_enabled"] = is_performance_schema_enabled
 		return result
 
 	@property
@@ -2372,7 +2406,7 @@ class Site(Document, TagHelpers):
 			pluck="parent",
 		)
 		today = frappe.utils.getdate()
-		today_last_month = today.replace(month=today.month - 1)
+		today_last_month = frappe.utils.add_to_date(today, months=-1)
 		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
 			"Invoice",
@@ -2786,6 +2820,32 @@ class Site(Document, TagHelpers):
 	def suggest_database_indexes(self):
 		from press.press.report.mariadb_slow_queries.mariadb_slow_queries import get_data as get_slow_queries
 
+		existing_agent_job_name = frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"status": ("not in", ("Failure", "Delivery Failure")),
+				"job_type": "Analyze Slow Queries",
+				"creation": (
+					">",
+					frappe.utils.add_to_date(None, minutes=-30),
+				),
+				"retry_count": 0,
+			},
+		)
+
+		if existing_agent_job_name:
+			existing_agent_job = frappe.get_doc("Agent Job", existing_agent_job_name)
+			if existing_agent_job.status == "Success":
+				return {
+					"loading": False,
+					"data": json.loads(existing_agent_job.data).get("result", []),
+				}
+			return {
+				"loading": True,
+				"data": [],
+			}
+
 		# fetch slow queries of last 7 days
 		slow_queries = get_slow_queries(
 			frappe._dict(
@@ -2794,14 +2854,24 @@ class Site(Document, TagHelpers):
 					"start_datetime": frappe.utils.add_to_date(None, days=-7),
 					"stop_datetime": frappe.utils.now_datetime(),
 					"search_pattern": ".*",
-					"max_lines": 2000,
+					"max_lines": 1000,
 					"normalize_queries": True,
 				}
 			)
 		)
 		slow_queries = [{"example": x["example"], "normalized": x["query"]} for x in slow_queries]
+		if len(slow_queries) == 0:
+			return {
+				"loading": False,
+				"data": [],
+			}
 		agent = Agent(self.server)
-		return agent.analyze_slow_queries(self, slow_queries)
+		agent.analyze_slow_queries(self, slow_queries)
+
+		return {
+			"loading": True,
+			"data": [],
+		}
 
 	@dashboard_whitelist()
 	def add_database_index(self, table, column):
@@ -2867,7 +2937,9 @@ def process_fetch_database_table_schema_job_update(job):
 		f"database_table_schema__status:{job.site}"  # 1 - loading, 2 - done, None - not available
 	)
 
-	if job.status == "Pending":
+	if job.status in ["Failure", "Delivery Failure"]:
+		frappe.cache().delete_value(key_for_schema)
+		frappe.cache().delete_value(key_for_schema_status)
 		return
 
 	if job.status == "Success":
@@ -2902,9 +2974,6 @@ def process_fetch_database_table_schema_job_update(job):
 
 		frappe.cache().set_value(key_for_schema, json.dumps(data), expires_in_sec=6000)
 		frappe.cache().set_value(key_for_schema_status, 2, expires_in_sec=6000)
-	else:
-		frappe.cache().delete_value(key_for_schema)
-		frappe.cache().delete_value(key_for_schema_status)
 
 
 def process_new_site_job_update(job):  # noqa: C901
@@ -3342,7 +3411,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("S
 def prepare_site(site: str, subdomain: str | None = None) -> dict:
 	# prepare site details
 	doc = frappe.get_doc("Site", site)
-	sitename = subdomain if subdomain else "brt-" + doc.subdomain
+	site_name = subdomain if subdomain else "brt-" + doc.subdomain
 	app_plans = [app.app for app in doc.apps]
 	backups = frappe.get_all(
 		"Site Backup",
@@ -3362,7 +3431,7 @@ def prepare_site(site: str, subdomain: str | None = None) -> dict:
 	return {
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 		"plan": doc.plan,
-		"name": sitename,
+		"name": site_name,
 		"group": doc.group,
 		"selected_app_plans": {},
 		"apps": app_plans,

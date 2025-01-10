@@ -879,7 +879,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
-		don't add new job until its gets comleted
+		don't add new job until its gets completed
 		"""
 
 		disable_agent_job_deduplication = frappe.db.get_single_value(
@@ -1185,13 +1185,14 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			}
 		]
 		"""
-		# TODO move to agent job
-		return self.post(
+		return self.create_agent_job(
+			"Analyze Slow Queries",
 			f"benches/{site.bench}/sites/{site.name}/database/analyze-slow-queries",
 			data={
 				"queries": normalized_queries,
 				"mariadb_root_password": get_mariadb_root_password(site),
 			},
+			site=site.name,
 		)
 
 	def fetch_database_processes(self, site):

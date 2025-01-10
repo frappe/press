@@ -32,10 +32,38 @@ repos:
       - id: check-toml
       - id: check-yaml
 
-  
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.5
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: commitlint
+        name: check commit message format
+        entry: npx commitlint --edit .git/COMMIT_EDITMSG
+        language: system
+        stages: [commit-msg]
+        always_run: true
+
+      - id: cspell-commit-msg
+        name: check commit message spelling
+        entry: npx cspell --config .cspell.json .git/COMMIT_EDITMSG
+        language: system
+        stages: [commit-msg]
+        always_run: true
+
+      - id: cspell-modified-files
+        name: check spelling of files
+        entry: sh -c "npx cspell --no-must-find-files --config .cspell.json `git diff --cached -p --name-status | cut -c3- | tr '\n' ' '`"
+        language: system
+        stages: [pre-commit]
+
+      - id: todo-warning
+        name: check todos
+        entry: .github/hooks/todo-warning.sh
+        language: script
+        stages: [pre-commit]
+        verbose: true

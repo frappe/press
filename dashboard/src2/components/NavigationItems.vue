@@ -135,8 +135,7 @@ export default {
 							name: 'DB Analyzer',
 							icon: () => h(Activity),
 							route: '/database-analyzer',
-							isActive: routeName === 'DB Analyzer',
-							condition: this.$team.doc?.is_desk_user
+							isActive: routeName === 'DB Analyzer'
 						}
 					].filter(item => item.condition ?? true),
 					isActive: ['SQL Playground', 'DB Analyzer', 'Log Browser'].includes(
@@ -154,7 +153,7 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Partners',
+					name: 'Partner Portal',
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),

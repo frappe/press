@@ -42,14 +42,14 @@
 					:data="cpuData"
 					unit="%"
 					:chartTheme="[
-						$theme.colors.green[500], // idle
 						$theme.colors.red[500], // iowait
 						$theme.colors.yellow[500], // irq
 						$theme.colors.pink[500], // nice
 						$theme.colors.purple[500], // softirq
 						$theme.colors.blue[500], // steal
 						$theme.colors.teal[500], // system
-						$theme.colors.cyan[500] // user
+						$theme.colors.cyan[500], // user
+						$theme.colors.green[500] // idle
 					]"
 					:loading="$resources.cpu.loading"
 					:error="$resources.cpu.error"
@@ -98,7 +98,7 @@
 					:key="spaceData"
 					:data="spaceData"
 					unit="%"
-					:chartTheme="[$theme.colors.red[500]]"
+					:chartTheme="[$theme.colors.red[500], $theme.colors.yellow[400]]"
 					:loading="$resources.space.loading"
 					:error="$resources.space.error"
 					:showCard="false"
@@ -128,7 +128,7 @@
 					:key="iopsData"
 					:data="iopsData"
 					unit="I0ps"
-					:chartTheme="[$theme.colors.purple[500]]"
+					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
 					:showCard="false"
@@ -136,12 +136,14 @@
 				/>
 			</AnalyticsCard>
 		</div>
-		<div class="!mt-6 flex space-x-2">
+		<div
+			class="!mt-6 flex w-fit cursor-pointer space-x-2"
+			@click="toggleAdvancedAnalytics"
+		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 cursor-pointer text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-gray-500 hover:text-gray-700"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
-				@click="toggleAdvancedAnalytics"
 			/>
 		</div>
 
@@ -318,8 +320,14 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Slow logs frequency"
+				title="Frequent Slow queries"
 			>
+				<template #action>
+					<TabButtons
+						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsFrequencyType"
+					/>
+				</template>
 				<BarChart
 					title="Frequent Slow queries"
 					:key="slowLogsCountData"
@@ -336,26 +344,14 @@
 			<AnalyticsCard
 				v-if="!isServerType('Application Server')"
 				class="sm:col-span-2"
-				title="Frequent Slow queries (normalized)"
-			>
-				<BarChart
-					title="Frequent Slow queries (normalized)"
-					:key="normalizedSlowLogsCountData"
-					:data="normalizedSlowLogsCountData"
-					unit="queries"
-					:chartTheme="chartColors"
-					:loading="$resources.normalizedSlowLogsCount.loading"
-					:error="$resources.normalizedSlowLogsCount.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard>
-
-			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
-				class="sm:col-span-2"
 				title="Slowest queries"
 			>
+				<template #action>
+					<TabButtons
+						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						v-model="slowLogsDurationType"
+					/>
+				</template>
 				<BarChart
 					title="Slowest queries"
 					:key="slowLogsDurationData"
@@ -364,24 +360,6 @@
 					:chartTheme="chartColors"
 					:loading="$resources.slowLogsDuration.loading"
 					:error="$resources.slowLogsDuration.error"
-					:showCard="false"
-					class="h-[15.55rem] p-2 pb-3"
-				/>
-			</AnalyticsCard>
-
-			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
-				class="sm:col-span-2"
-				title="Slowest queries (normalized)"
-			>
-				<BarChart
-					title="Slowest queries (normalized)"
-					:key="normalizedSlowLogsDurationData"
-					:data="normalizedSlowLogsDurationData"
-					unit="seconds"
-					:chartTheme="chartColors"
-					:loading="$resources.normalizedSlowLogsDuration.loading"
-					:error="$resources.normalizedSlowLogsDuration.error"
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
@@ -409,6 +387,8 @@ export default {
 			duration: '1 Hour',
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
+			slowLogsDurationType: 'Non-normalized',
+			slowLogsFrequencyType: 'Non-normalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
 			chartColors: [
@@ -540,7 +520,8 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration
+					duration: this.duration,
+					normalize: this.slowLogsFrequencyType === 'Normalized'
 				},
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
@@ -567,21 +548,8 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration
-				},
-				auto:
-					this.showAdvancedAnalytics && !this.isServerType('Application Server')
-			};
-		},
-		normalizedSlowLogsDuration() {
-			return {
-				url: 'press.api.server.get_slow_logs_by_site',
-				params: {
-					name: this.chosenServer,
-					query: 'duration',
-					timezone: this.localTimezone,
 					duration: this.duration,
-					normalize: true
+					normalize: this.slowLogsDurationType === 'Normalized'
 				},
 				auto:
 					this.showAdvancedAnalytics && !this.isServerType('Application Server')
@@ -706,6 +674,13 @@ export default {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
 
+			// move idle to the end
+			cpu.datasets = cpu.datasets.sort((a, b) => {
+				if (a.name === 'idle') return 1;
+				if (b.name === 'idle') return -1;
+				return 0;
+			});
+
 			return this.transformMultiLineChartData(cpu, 'cpu', true);
 		},
 		memoryData() {
@@ -718,13 +693,13 @@ export default {
 			let iops = this.$resources.iops.data;
 			if (!iops) return;
 
-			return this.transformSingleLineChartData(iops);
+			return this.transformMultiLineChartData(iops);
 		},
 		spaceData() {
 			let space = this.$resources.space.data;
 			if (!space) return;
 
-			return this.transformSingleLineChartData(space, true);
+			return this.transformMultiLineChartData(space);
 		},
 		networkData() {
 			let network = this.$resources.network.data;
@@ -752,18 +727,6 @@ export default {
 		},
 		slowLogsCountData() {
 			const slowLogs = this.$resources.slowLogsCount.data;
-			if (!slowLogs) return;
-
-			return slowLogs;
-		},
-		normalizedSlowLogsDurationData() {
-			const slowLogs = this.$resources.normalizedSlowLogsDuration.data;
-			if (!slowLogs) return;
-
-			return slowLogs;
-		},
-		normalizedSlowLogsCountData() {
-			const slowLogs = this.$resources.normalizedSlowLogsCount.data;
 			if (!slowLogs) return;
 
 			return slowLogs;

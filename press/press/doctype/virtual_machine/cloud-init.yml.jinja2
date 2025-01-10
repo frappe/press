@@ -21,10 +21,13 @@ runcmd:
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
 {% if server.doctype == 'Database Server' %}
+- resize2fs $(findmnt /opt/volumes/mariadb --noheadings --output SOURCE)
 - systemctl daemon-reload
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 - systemctl restart deadlock_logger
+{% elif server.doctype == 'Server' %}
+- resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}
 - iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited

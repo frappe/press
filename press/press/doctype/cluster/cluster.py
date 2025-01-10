@@ -500,9 +500,9 @@ class Cluster(Document):
 		return config
 
 	def set_oci_availability_zone(self):
-		identiy_client = IdentityClient(self.get_oci_config())
-		availibility_domain = identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
-		self.availability_zone = availibility_domain
+		identity_client = IdentityClient(self.get_oci_config())
+		availability_domain = identity_client.list_availability_domains(self.oci_tenancy).data[0].name
+		self.availability_zone = availability_domain
 
 	def provision_on_oci(self):
 		vcn_client = VirtualNetworkClient(self.get_oci_config())

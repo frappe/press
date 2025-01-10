@@ -106,6 +106,8 @@ export default {
 							if (row.type == 'Subscription') {
 								let end = dayjsLocal(row.period_end);
 								return end.format('MMMM YYYY');
+							} else if (row.type == 'Partnership Fees') {
+								return 'Partnership Fees';
 							}
 							return 'Prepaid Credits';
 						},

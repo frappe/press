@@ -75,6 +75,7 @@ ALLOWED_DOCTYPES = [
 	"Press Webhook",
 	"SQL Playground Log",
 	"Site Database User",
+	"Press Settings",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
