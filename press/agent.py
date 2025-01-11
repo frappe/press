@@ -105,7 +105,7 @@ class Agent:
 			"Managed Database Service",
 			managed_database_service,
 			["database_host", "database_root_user", "port"],
-			as_dict=1,
+			as_dict=True,
 		)
 
 	def new_site(self, site, create_user: dict | None = None):
@@ -782,7 +782,7 @@ class Agent:
 					response=response,
 				)
 			return json_response
-		except (HTTPError, TypeError, ValueError):
+		except (HTTPError, TypeError, ValueError, requests.JSONDecodeError):
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
