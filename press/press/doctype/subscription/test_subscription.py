@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -92,6 +91,44 @@ class TestSubscription(unittest.TestCase):
 
 		invoice = frappe.get_doc("Invoice", {"team": self.team.name, "status": "Draft"})
 		self.assertEqual(invoice.total, desired_value)
+
+	def test_subscription_for_duplicate_usage_record(self):
+		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
+		plan = frappe.get_doc(
+			doctype="Site Plan",
+			name="Plan-10",
+			document_type="ToDo",
+			interval="Daily",
+			price_usd=30,
+			price_inr=30,
+		).insert()
+
+		subscription = frappe.get_doc(
+			doctype="Subscription",
+			team=self.team.name,
+			document_type="ToDo",
+			document_name=todo.name,
+			plan_type="Site Plan",
+			plan=plan.name,
+		).insert()
+
+		# create a usage record
+		subscription.create_usage_record()
+
+		# since create_usage_record silently skips if a record already exists
+		# check by manually creating a duplicate record
+		duplicate_usage_record = frappe.new_doc(
+			doctype="Usage Record",
+			team=self.team.name,
+			document_type="ToDo",
+			document_name=todo.name,
+			plan_type="Site Plan",
+			plan=plan.name,
+			subscription=subscription.name,
+			interval="Daily",
+		)
+		with self.assertRaises(frappe.UniqueValidationError):
+			duplicate_usage_record.insert()
 
 	def test_subscription_for_non_chargeable_document(self):
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
