@@ -477,6 +477,9 @@
 		"Troso",
 		"mccabe",
 		"vetur",
-		"Vetur"
+		"Vetur",
+    "devbox",
+    "devboxes",
+    "websockify"
 	]
 }
