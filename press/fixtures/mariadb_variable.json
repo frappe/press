@@ -394,5 +394,17 @@
   "name": "binlog_format",
   "set_on_new_servers": 0,
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2025-01-13 12:24:41.969815",
+  "name": "long_query_time",
+  "set_on_new_servers": 0,
+  "skippable": 0
  }
 ]

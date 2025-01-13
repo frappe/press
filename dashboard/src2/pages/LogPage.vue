@@ -14,15 +14,31 @@
 				</template>
 			</Button>
 			<h2 class="text-lg font-medium text-gray-900">{{ logName }}</h2>
-			<Button
-				class="!ml-auto"
-				@click="$resources.log.reload()"
-				:loading="$resources.log.loading"
-			>
-				<template #icon>
-					<i-lucide-refresh-ccw class="h-4 w-4" />
-				</template>
-			</Button>
+			<div class="!ml-auto flex gap-2">
+				<Button
+					:route="{
+						name: 'Log Browser',
+						params: {
+							mode: object.doctype === 'Site' ? 'site' : 'bench',
+							docName: name,
+							logId: logName
+						}
+					}"
+				>
+					<template #prefix>
+						<i-lucide-sparkle class="h-4 w-4" />
+					</template>
+					View in Log Browser
+				</Button>
+				<Button
+					@click="$resources.log.reload()"
+					:loading="$resources.log.loading"
+				>
+					<template #icon>
+						<i-lucide-refresh-ccw class="h-4 w-4" />
+					</template>
+				</Button>
+			</div>
 		</div>
 
 		<div class="mt-3">
