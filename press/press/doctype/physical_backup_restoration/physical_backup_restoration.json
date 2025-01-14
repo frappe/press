@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-10 13:02:39.393157",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "disk_snapshot",
+  "volume",
+  "column_break_zind",
+  "status",
+  "site_backup",
+  "section_break_pqgo",
+  "source_database",
+  "column_break_kaja",
+  "destination_database",
+  "destination_server",
+  "section_break_aqam",
+  "steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_zind",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Disk Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site_backup",
+   "fieldtype": "Link",
+   "label": "Site Backup",
+   "options": "Site Backup"
+  },
+  {
+   "fieldname": "section_break_pqgo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "source_database",
+   "fieldtype": "Data",
+   "label": "Source Database",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_kaja",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_database",
+   "fieldtype": "Data",
+   "label": " Destination Database",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_aqam",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Physical Backup Restoration Step"
+  },
+  {
+   "fieldname": "destination_server",
+   "fieldtype": "Link",
+   "label": "Destination Server",
+   "options": "Database Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "volume",
+   "fieldtype": "Data",
+   "label": "Volume",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-14 17:57:53.139957",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Backup Restoration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
