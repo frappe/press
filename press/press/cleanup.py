@@ -39,10 +39,14 @@ def reset_large_output_fields_from_ansible_tasks():
 		"RSync Backup Directory From Primary",
 		"Run MariaDB Upgrade",
 		"Run migrate on site",
-		"Start MariaBackup"
+		"Start MariaBackup",
 	]
 
-	tasks = frappe.get_all("Ansible Task", {"task": ("in", TASKS), "creation": ("<=", frappe.utils.add_days(None, -2))}, ["name"])
+	tasks = frappe.get_all(
+		"Ansible Task", {"task": ("in", TASKS), "creation": ("<=", frappe.utils.add_days(None, -2))}, ["name"]
+	)
 	for task in tasks:
-		frappe.db.set_value("Ansible Task", task.name, {"output": "", "result": "", "exception": "", "error": ""})
+		frappe.db.set_value(
+			"Ansible Task", task.name, {"output": "", "result": "", "exception": "", "error": ""}
+		)
 		frappe.db.commit()
