@@ -52,7 +52,7 @@ def get_clusters():
 	clusters = frappe.get_all("Cluster")
 	job_map = {
 		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
-		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn"],
+		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"database": ["node", "mariadb"],
 	}
 	for cluster in clusters:
