@@ -86,7 +86,7 @@ import BuyCreditsRazorpay from './BuyCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
 import { FormControl, Button, createResource } from 'frappe-ui';
-import { ref, computed, inject } from 'vue';
+import { ref, computed, inject, watch } from 'vue';
 
 const emit = defineEmits(['success']);
 
@@ -110,6 +110,10 @@ const minimumAmount = computed(() => {
 
 const creditsToBuy = ref(minimumAmount.value);
 const paymentGateway = ref('');
+
+watch(minimumAmount, () => {
+	creditsToBuy.value = minimumAmount.value;
+});
 
 const totalAmount = computed(() => {
 	const _creditsToBuy = creditsToBuy.value || 0;
