@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import { h } from 'vue';
+import LucideSparkleIcon from '~icons/lucide/sparkle';
 import { date } from '../../utils/format';
 import ObjectList from '../ObjectList.vue';
 
@@ -88,6 +90,18 @@ export default {
 						}
 					],
 					actions: () => [
+						{
+							slots: {
+								prefix: () => h(LucideSparkleIcon)
+							},
+							label: 'View in Log Browser',
+							onClick: () => {
+								this.$router.push({
+									name: 'Log Browser',
+									params: { mode: 'site', docName: this.name }
+								});
+							}
+						},
 						{
 							label: 'Refresh',
 							icon: 'refresh-ccw',
@@ -195,7 +209,10 @@ export default {
 					],
 					actions: () => [
 						{
-							label: '✨ View in Log Browser',
+							slots: {
+								prefix: () => h(LucideSparkleIcon)
+							},
+							label: 'View in Log Browser',
 							onClick: () => {
 								this.$router.push({
 									name: 'Log Browser',
