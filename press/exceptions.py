@@ -43,3 +43,11 @@ class TeamHeaderNotInRequestError(ValidationError):
 
 class AlertRuleNotEnabled(ValidationError):
 	pass
+
+
+class SiteUnderMaintenance(ValidationError):
+	pass
+
+
+class SiteAlreadyArchived(ValidationError):
+	pass

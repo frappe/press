@@ -15,6 +15,7 @@ from press.exceptions import (
 	InsufficientSpaceOnServer,
 	MissingAppsInBench,
 	OngoingAgentJob,
+	SiteAlreadyArchived,
 )
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
@@ -130,7 +131,12 @@ class SiteMigration(Document):
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
-		site.ready_for_move()
+		try:
+			site.ready_for_move()
+		except SiteAlreadyArchived:
+			self.status = "Failure"
+			self.save()
+			return
 		self.run_next_step()
 
 	@frappe.whitelist()
