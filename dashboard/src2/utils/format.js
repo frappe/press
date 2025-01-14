@@ -58,6 +58,7 @@ export function planTitle(plan) {
 
 export function userCurrency(value, fractions = 2) {
 	const $team = getTeam();
+	if (!$team.doc?.currency) return value;
 	return currency(value, $team.doc?.currency, fractions);
 }
 
