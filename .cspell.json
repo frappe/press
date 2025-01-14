@@ -14,7 +14,7 @@
 		"requirements.txt",
 		"press/utils/country_timezone.py"
 	],
-    "words": [
+  "words": [
 		"githubusercontent",
 		"commitlint",
 		"EDITMSG",
