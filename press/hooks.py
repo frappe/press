@@ -290,8 +290,9 @@ scheduler_events = {
 		"0 0 1 */3 *": ["press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"],
 		"0 8 * * *": [
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
+            "press.press.cleanup.reset_large_output_fields_from_ansible_tasks"
 		],
-		"0 18 * * *": [
+		"0 21 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
 		],

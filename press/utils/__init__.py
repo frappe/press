@@ -6,20 +6,28 @@ import contextlib
 import functools
 import json
 import re
+import socket
+import ssl
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
+from urllib.request import urlopen
 
 import frappe
 import pytz
 import requests
 import wrapt
 from babel.dates import format_timedelta
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+
+from press.utils.email_validator import validate_email
 
 
 class SupervisorProcess(TypedDict):
@@ -359,7 +367,7 @@ class RemoteFrappeSite:
 
 	def _handle_backups_retrieval_failure(self, response):
 		log_error(
-			"Backups Retreival Error - Magic Migration",
+			"Backups Retrieval Error - Magic Migration",
 			response=response.text,
 			remote_site=self.site,
 		)
@@ -369,7 +377,7 @@ class RemoteFrappeSite:
 			side = "Client" if 400 <= response.status_code < 500 else "Server"
 			error_msg = (
 				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
-				f" recieved from {self.site}"
+				f" received from {self.site}"
 			)
 		frappe.throw(error_msg)
 
@@ -840,3 +848,51 @@ def get_mariadb_root_password(site):
 		field = "mariadb_root_password"
 
 	return get_decrypted_password(doctype, name, field)
+
+
+def is_valid_email_address(email) -> bool:
+	if frappe.cache.exists(f"email_validity:{email}"):
+		return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
+	try:
+		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
+		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
+		if not is_valid:
+			log_error("Invalid email address on signup", data=email)
+		return bool(is_valid)
+	except Exception as e:
+		log_error("Email validation error on signup", data=e)
+		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
+		return False
+
+
+def get_full_chain_cert_of_domain(domain: str) -> str:
+	cert_chain = []
+
+	# Get initial certificate
+	context = ssl.create_default_context()
+	with socket.create_connection((domain, 443)) as sock:  # noqa: SIM117
+		with context.wrap_socket(sock, server_hostname=domain) as ssl_socket:
+			cert_pem = ssl.DER_cert_to_PEM_cert(ssl_socket.getpeercert(True))
+			cert = x509.load_pem_x509_certificate(cert_pem.encode(), default_backend())
+			cert_chain.append(cert_pem)
+
+	# Walk up the chain via certificate authority information access (AIA)
+	while True:
+		try:
+			aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+			for access in aia.value:
+				if access.access_method._name == "caIssuers":
+					uri = access.access_location._value
+					with urlopen(uri) as response:
+						der_cert = response.read()
+						pem_cert = ssl.DER_cert_to_PEM_cert(der_cert)
+						cert = x509.load_pem_x509_certificate(pem_cert.encode(), default_backend())
+						cert_chain.append(pem_cert)
+						break
+		except:  # noqa: E722
+			break
+
+	cert_chain_str = ""
+	for cert in cert_chain:
+		cert_chain_str += cert + "\n"
+	return cert_chain_str

@@ -84,7 +84,9 @@ class ReleaseGroup(Document, TagHelpers):
 		from press.press.doctype.release_group_variable.release_group_variable import (
 			ReleaseGroupVariable,
 		)
-		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.resource_tag.resource_tag import (
+			ResourceTag,
+		)
 
 		apps: DF.Table[ReleaseGroupApp]
 		bench_config: DF.Code | None
@@ -111,6 +113,7 @@ class ReleaseGroup(Document, TagHelpers):
 		mounts: DF.Table[ReleaseGroupMount]
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
+		redis_cache_size: DF.Int
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]
@@ -167,6 +170,13 @@ class ReleaseGroup(Document, TagHelpers):
 		doc.status = self.status
 		doc.actions = self.get_actions()
 		doc.are_builds_suspended = are_builds_suspended()
+		doc.eol_versions = frappe.db.get_all(
+			"Frappe Version",
+			filters={"status": "End of Life"},
+			fields=["name"],
+			order_by="name desc",
+			pluck="name",
+		)
 
 		if len(self.servers) == 1:
 			server = frappe.db.get_value("Server", self.servers[0].server, ["team", "title"], as_dict=True)
@@ -223,11 +233,12 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_feature_flags()
 
 	def before_insert(self):
-		# to avoid ading deps while cloning a release group
+		# to avoid adding deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
+		self.setup_default_feature_flags()
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -257,7 +268,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.update_common_site_config_preview()
 
 	def update_common_site_config_preview(self):
-		"""Regenerates rg.common_site_config on each rg.befor_save
+		"""Regenerates rg.common_site_config on each rg.before_save
 		from the rg.common_site_config child table data"""
 		new_config = {}
 
@@ -370,11 +381,16 @@ class ReleaseGroup(Document, TagHelpers):
 			else:
 				value = d.value
 			self.append("common_site_config_table", {"key": d.key, "value": value, "type": d.type})
+			# redis_cache_size is a field on release group but we want to treat it as config key
+			# TODO: add another interface for updating similar values
+			if d["key"] == "redis_cache_size":
+				self.redis_cache_size = int(d.value)
 
 		for d in bench_config:
 			if d["key"] == "http_timeout":
 				# http_timeout should be the only thing configurable in bench_config
 				self.bench_config = json.dumps({"http_timeout": int(d["value"])}, indent=4)
+
 		if bench_config == []:
 			self.bench_config = json.dumps({})
 
@@ -1337,6 +1353,24 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def is_version_14_or_higher(self):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= 14
+
+	def setup_default_feature_flags(self):
+		DEFAULT_FEATURE_FLAGS = {
+			"Version 14": {"merge_default_and_short_rq_queues": True},
+			"Version 15": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+			"Nightly": {
+				"gunicorn_threads_per_worker": "4",
+				"merge_default_and_short_rq_queues": True,
+				"use_rq_workerpool": True,
+			},
+		}
+		flags = DEFAULT_FEATURE_FLAGS.get(self.version, {})
+		for key, value in flags.items():
+			setattr(self, key, value)
 
 
 @redis_cache(ttl=60)

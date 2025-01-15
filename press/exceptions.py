@@ -39,3 +39,15 @@ class ConflictingCAARecord(ValidationError):
 
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
+
+
+class AlertRuleNotEnabled(ValidationError):
+	pass
+
+
+class SiteUnderMaintenance(ValidationError):
+	pass
+
+
+class SiteAlreadyArchived(ValidationError):
+	pass

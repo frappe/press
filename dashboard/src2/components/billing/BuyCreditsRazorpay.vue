@@ -74,7 +74,9 @@ onBeforeUnmount(() => {
 
 const createRazorpayOrder = createResource({
 	url: 'press.api.billing.create_razorpay_order',
-	params: { amount: props.amount },
+	params: {
+		amount: props.amount
+	},
 	onSuccess: data => processOrder(data),
 	validate: () => {
 		if (props.amount < props.minimumAmount) {

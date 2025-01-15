@@ -118,6 +118,7 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
+		redis_cache_size: DF.Int
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
@@ -539,8 +540,11 @@ class DeployCandidate(Document):
 			return tarinfo
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz") as tar:
-			tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
+			if frappe.conf.developer_mode:
+				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+			else:
+				tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
 		step.duration = get_duration(start_time)

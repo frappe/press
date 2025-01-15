@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestMariaDBAnalyzeQuery(FrappeTestCase):
+class TestPartnerTier(FrappeTestCase):
 	pass

@@ -64,6 +64,7 @@ class PressSettings(Document):
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_app_grouping: DF.Check
+		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
 		enable_site_pooling: DF.Check
 		enforce_storage_limits: DF.Check
@@ -103,6 +104,8 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
+		partnership_fee_inr: DF.Int
+		partnership_fee_usd: DF.Int
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
@@ -114,6 +117,7 @@ class PressSettings(Document):
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
+		redis_cache_size: DF.Int
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
@@ -153,6 +157,11 @@ class PressSettings(Document):
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"partnership_fee_inr",
+		"partnership_fee_usd",
+	)
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
@@ -207,7 +216,7 @@ class PressSettings(Document):
 
 	@property
 	def boto3_offsite_backup_session(self) -> Session:
-		"""Get new preconfigured boto3 session for offisite backup provider."""
+		"""Get new preconfigured boto3 session for offsite backup provider."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
 			aws_secret_access_key=self.get_password(

@@ -178,6 +178,8 @@
   "use_staging_ca",
   "ssh_section",
   "ssh_certificate_authority",
+  "bench_section",
+  "redis_cache_size",
   "monitoring_section",
   "monitor_server",
   "monitor_token",
@@ -193,15 +195,21 @@
   "column_break_rdlr",
   "disable_auto_retry",
   "disable_agent_job_deduplication",
+  "enable_email_pre_verification",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
-  "code_spaces_tab",
-  "spaces_domain",
+  "partner_tab",
+  "partnership_fees_section",
+  "partnership_fee_usd",
+  "column_break_yxrj",
+  "partnership_fee_inr",
   "hybrid_server_tab",
   "hybrid_cluster",
   "hybrid_domain",
-  "tls_renewal_queue_size"
+  "tls_renewal_queue_size",
+  "code_spaces_tab",
+  "spaces_domain"
  ],
  "fields": [
   {
@@ -1249,8 +1257,8 @@
    "fieldtype": "Link",
    "label": "Press Trial Plan",
    "options": "Site Plan"
-   },
-   {
+  },
+  {
    "fieldname": "section_break_jstu",
    "fieldtype": "Section Break"
   },
@@ -1265,11 +1273,52 @@
    "fieldtype": "Table",
    "label": "Default Apps",
    "options": "App Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_email_pre_verification",
+   "fieldtype": "Check",
+   "label": "Enable Email Pre-Verification"
+  },
+  {
+   "fieldname": "bench_section",
+   "fieldtype": "Section Break",
+   "label": "Bench"
+  },
+  {
+   "default": "512",
+   "fieldname": "redis_cache_size",
+   "fieldtype": "Int",
+   "label": "Redis Cache Size (MB)"
+  },
+  {
+   "fieldname": "partner_tab",
+   "fieldtype": "Tab Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "partnership_fees_section",
+   "fieldtype": "Section Break",
+   "label": "Partnership Fees"
+  },
+  {
+   "fieldname": "partnership_fee_usd",
+   "fieldtype": "Int",
+   "label": "Partnership Fee USD"
+  },
+  {
+   "fieldname": "column_break_yxrj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partnership_fee_inr",
+   "fieldtype": "Int",
+   "label": "Partnership Fee INR"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-10-14 21:02:12.948747",
+ "modified": "2024-12-27 11:44:09.454080",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
