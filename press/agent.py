@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
 
@@ -442,6 +445,27 @@ class Agent:
 			data=data,
 			bench=site.bench,
 			site=site.name,
+		)
+
+	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
+		backup: SiteBackup = frappe.get_doc("Site Backup", backup_restoration.site_backup)
+		data = {
+			"backup_db": backup_restoration.source_database,
+			"target_db": backup_restoration.destination_database,
+			"target_db_root_password": get_mariadb_root_password(site),
+			"innodb_tables": json.loads(backup.innodb_tables),
+			"myisam_tables": json.loads(backup.myisam_tables),
+			"table_schema": backup.table_schema,
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_path, "/var/lib/mysql"),
+		}
+		return self.create_agent_job(
+			"Physical Restore Database",
+			"/database/physical-restore",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+			reference_name=backup_restoration.name,
+			reference_doctype=backup_restoration.doctype,
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
