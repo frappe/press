@@ -7,7 +7,7 @@ import frappe
 import rq
 from frappe.model.document import Document
 from frappe.query_builder.functions import Coalesce, Count
-from frappe.utils import cint
+from frappe.utils import cint, flt
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_plan.site_plan import SitePlan
@@ -152,7 +152,7 @@ class Subscription(Document):
 		if self.additional_storage:
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
-			amount = price_per_day * cint(self.additional_storage)
+			amount = flt((price_per_day * cint(self.additional_storage)), 2)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
 

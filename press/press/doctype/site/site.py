@@ -38,6 +38,8 @@ from frappe.utils import (
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
+	SiteAlreadyArchived,
+	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -250,6 +252,13 @@ class Site(Document, TagHelpers):
 		doc.latest_frappe_version = frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		)
+		doc.eol_versions = frappe.db.get_all(
+			"Frappe Version",
+			filters={"status": "End of Life"},
+			fields=["name"],
+			order_by="name desc",
+			pluck="name",
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
@@ -330,7 +339,7 @@ class Site(Document, TagHelpers):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase" " characters, numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
 			)
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
@@ -1000,7 +1009,9 @@ class Site(Document, TagHelpers):
 
 	def ready_for_move(self):
 		if self.status in ["Updating", "Pending", "Installing"]:
-			frappe.throw("Site is under maintenance. Cannot Update")
+			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
+		elif self.status == "Archived":
+			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
 		self.check_move_scheduled()
 
 		self.status_before_update = self.status

@@ -19,7 +19,21 @@
 			</Button>
 		</AlertBanner>
 		<DismissableBanner
-			v-if="
+			v-if="$site.doc.eol_versions.includes($site.doc.version)"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is on an End of Life version. Upgrade to the latest version to get the latest features and security updates."
+			:id="`${$site.name}-eol`"
+		>
+			<Button
+				class="ml-auto"
+				variant="outline"
+				link="https://frappecloud.com/docs/sites/version-upgrade"
+			>
+				Upgrade Now
+			</Button>
+		</DismissableBanner>
+		<DismissableBanner
+			v-else-if="
 				$site.doc.current_plan &&
 				!$site.doc.current_plan?.private_benches &&
 				$site.doc.group_public &&
@@ -68,7 +82,12 @@
 					</div>
 				</div>
 				<div class="border-b p-5 lg:border-b-0 lg:border-r">
-					<div class="text-base text-gray-700">Compute</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Compute</span>
+						<div class="h-7"></div>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"
@@ -94,7 +113,12 @@
 					</div>
 				</div>
 				<div class="border-r p-5">
-					<div class="text-base text-gray-700">Storage</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Storage</span>
+						<div class="h-7"></div>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"
@@ -119,7 +143,22 @@
 					</div>
 				</div>
 				<div class="p-5">
-					<div class="text-base text-gray-700">Database</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Database</span>
+						<Button
+							v-if="
+								(currentPlan
+									? (currentUsage.database / currentPlan.max_database_usage) *
+									  100
+									: 0) >= 80
+							"
+							variant="ghost"
+							link="https://frappecloud.com/docs/faq/site#what-is-using-up-all-my-database-size"
+							icon="help-circle"
+						/>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"

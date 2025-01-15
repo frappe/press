@@ -87,9 +87,19 @@
 								"
 							>
 								<span class="font-medium">{{ v.name }} </span>
-								<span class="ml-1 text-gray-600">
-									{{ v.status }}
-								</span>
+								<div
+									v-if="v.status === 'Develop'"
+									class="flex items-center gap-2"
+								>
+									<Tooltip
+										text="This version is under development and may have bugs. Do not use for production sites."
+									>
+										<i-lucide-info class="h-4 w-4 text-gray-500" />
+									</Tooltip>
+									<span class="ml-1 text-gray-600">
+										{{ v.status }}
+									</span>
+								</div>
 							</button>
 						</component>
 					</div>
