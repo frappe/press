@@ -240,7 +240,7 @@ class PhysicalBackupRestoration(Document):
 	def restore_database(self):
 		"""Restore database"""
 		site = frappe.get_doc("Site", self.site)
-		agent = Agent(self.destination_server)
+		agent = Agent(self.destination_server, "Database Server")
 		agent.physical_restore_database(site, self)
 		self.update_next_step_status("Pending")
 
