@@ -6,11 +6,13 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "disk_snapshot",
-  "volume",
-  "column_break_zind",
   "status",
   "site_backup",
+  "column_break_zind",
+  "disk_snapshot",
+  "volume",
+  "device",
+  "mount_path",
   "section_break_pqgo",
   "source_database",
   "column_break_kaja",
@@ -33,11 +35,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure",
+   "options": "Pending\nWaiting For Volume\nRunning\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -95,11 +98,23 @@
    "fieldtype": "Data",
    "label": "Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "label": "Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mount_path",
+   "fieldtype": "Data",
+   "label": "Mount Path",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-14 17:57:53.139957",
+ "modified": "2025-01-15 15:08:05.524891",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",
