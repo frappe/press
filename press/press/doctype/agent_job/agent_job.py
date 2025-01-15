@@ -10,6 +10,7 @@ import traceback
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.monitor import add_data_to_monitor
 from frappe.utils import (
 	add_days,
 	cint,
@@ -30,7 +31,7 @@ from press.press.doctype.site_migration.site_migration import (
 	job_matches_site_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error
+from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -444,6 +445,27 @@ def suspend_sites():
 			agent.reload_nginx()
 
 
+@timer
+def poll_random_jobs(agent, pending_ids):
+	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
+	return agent.get_jobs_status(random_pending_ids)
+
+
+@timer
+def handle_polled_jobs(polled_jobs, pending_jobs):
+	for polled_job in polled_jobs:
+		if not polled_job:
+			continue
+		handle_polled_job(pending_jobs, polled_job)
+
+
+def add_timer_data_to_monitor(server):
+	if not hasattr(frappe.local, "timers"):
+		frappe.local.timers = {}
+
+	add_data_to_monitor(server=server, timing=frappe.local.timers)
+
+
 def poll_pending_jobs_server(server):
 	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
 		return
@@ -466,22 +488,21 @@ def poll_pending_jobs_server(server):
 
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
-	polled_jobs = agent.get_jobs_status(random_pending_ids)
+	polled_jobs = poll_random_jobs(agent, pending_ids)
 
 	if not polled_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
-	for polled_job in polled_jobs:
-		if not polled_job:
-			continue
-		handle_polled_job(pending_jobs, polled_job)
+	handle_polled_jobs(polled_jobs, pending_jobs)
 
 	retry_undelivered_jobs(server)
+	add_timer_data_to_monitor(server.server)
 
 
 def handle_polled_job(pending_jobs, polled_job):
@@ -730,6 +751,7 @@ def get_next_retry_at(job_retry_count):
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
+@timer
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
