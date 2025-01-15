@@ -56,6 +56,9 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
+			VirtualMachineTemporaryVolume,
+		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
@@ -83,6 +86,7 @@ class VirtualMachine(Document):
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
 		team: DF.Link | None
+		temporary_volumes: DF.Table[VirtualMachineTemporaryVolume]
 		termination_protection: DF.Check
 		vcpu: DF.Int
 		virtual_machine_image: DF.Link | None
@@ -707,9 +711,11 @@ class VirtualMachine(Document):
 		if len(self.volumes) == 1:
 			return self.volumes[0]
 
+		temporary_volume_devices = [x.device for x in self.temporary_volumes]
+
 		DATA_VOLUME_FILTERS = {
-			"AWS EC2": lambda v: v.device != "/dev/sda1",
-			"OCI": lambda v: ".bootvolume." not in v.volume_id,
+			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
+			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
