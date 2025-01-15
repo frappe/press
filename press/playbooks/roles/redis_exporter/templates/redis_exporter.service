@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/frappe/frappe-bench/env/bin/redis_exporter --web.listen-address 127.0.0.1:9121 --redis.addr redis://127.0.0.1:13000
+ExecStart=/opt/redis_exporter/redis_exporter --web.listen-address 127.0.0.1:9121 --redis.addr redis://127.0.0.1:13000
 SyslogIdentifier=redis_exporter
 Restart=always
 RestartSec=1
