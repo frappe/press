@@ -52,7 +52,8 @@ export default {
 					},
 					{
 						label: 'Status',
-						fieldname: 'status'
+						fieldname: 'status',
+						width: 0.5
 					},
 					{
 						label: 'Date',
@@ -63,12 +64,14 @@ export default {
 								month: 'short',
 								day: 'numeric'
 							}).format(new Date(value));
-						}
+						},
+						width: 0.8
 					},
 					{
 						label: 'Currency',
 						fieldname: 'currency',
-						width: 0.5
+						width: 0.5,
+						align: 'center'
 					},
 					{
 						label: 'Total',
@@ -78,14 +81,18 @@ export default {
 								return '';
 							}
 							return currency(value, columns.currency);
-						}
+						},
+						align: 'right',
+						width: 0.8
 					},
 					{
 						label: 'Partner Total',
 						fieldname: 'partner_total',
 						format(value) {
 							return userCurrency(value);
-						}
+						},
+						align: 'right',
+						width: 0.8
 					}
 				]
 			};

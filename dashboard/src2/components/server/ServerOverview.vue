@@ -191,7 +191,7 @@ export default {
 							  )}/mo`
 							: '',
 					type: 'header',
-					isPremium: !!currentPlan.premium,
+					isPremium: !!currentPlan?.premium,
 					help:
 						additionalStorage > 0
 							? `Server Plan: ${this.$format.userCurrency(
