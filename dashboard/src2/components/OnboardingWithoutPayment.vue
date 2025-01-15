@@ -17,6 +17,14 @@
 			</div>
 			<!-- App Chooser -->
 			<OnboardingAppSelector :apps="$resources.availableApps.data" />
+			<div class="flex w-full">
+				<Button
+					class="ml-auto"
+					label="Skip to Dashboard"
+					icon-left="tool"
+					:route="{ name: 'Site List' }"
+				/>
+			</div>
 		</div>
 	</div>
 </template>

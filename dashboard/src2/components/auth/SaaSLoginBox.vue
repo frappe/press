@@ -1,12 +1,17 @@
 <template>
 	<div class="relative h-full">
-		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
+		<div class="relative z-10 mx-auto pt-8 sm:w-max sm:pt-32">
 			<!-- logo -->
 			<div
 				class="flex flex-col items-center"
 				@dblclick="redirectForFrappeioAuth"
 			>
-				<img class="inline-block h-12 w-12 rounded-md" :src="logo" />
+				<img
+					v-if="logo"
+					class="inline-block h-12 w-12 rounded-md"
+					:src="logo"
+				/>
+				<FCLogo v-else class="inline-block h-12 w-12" />
 			</div>
 			<!-- card -->
 			<div
