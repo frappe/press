@@ -1287,7 +1287,10 @@ class VirtualMachine(Document):
 				},
 			],
 		)["VolumeId"]
-		# Wait for the volume to be available
+		self.wait_for_volume_to_be_available(volume_id)
+		self.attach_volume(volume_id)
+
+	def wait_for_volume_to_be_available(self, volume_id):
 		while (
 			self.client().describe_volumes(
 				VolumeIds=[
@@ -1297,14 +1300,22 @@ class VirtualMachine(Document):
 			!= "available"
 		):
 			time.sleep(1)
-		# First volume starts from /dev/sdf
-		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+
+	def attach_volume(self, volume_id) -> str:
+		# Attach a volume to the instance and return the device name
+		device_name = self.get_next_volume_device_name()
 		self.client().attach_volume(
-			Device=f"/dev/sd{device_name_index}",
+			Device=device_name,
 			InstanceId=self.instance_id,
 			VolumeId=volume_id,
 		)
 		self.sync()
+		return device_name
+
+	def get_next_volume_device_name(self):
+		# First volume starts from /dev/sdf
+		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+		return f"/dev/sd{device_name_index}"
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
