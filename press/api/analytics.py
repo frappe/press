@@ -781,6 +781,10 @@ def get_usage(site, type, timezone, timespan, timegrain):
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
 	buckets = []
+
+	if not response.get("aggregations"):
+		return {"datasets": [], "labels": []}
+
 	for bucket in response["aggregations"]["date_histogram"]["buckets"]:
 		buckets.append(
 			frappe._dict(
