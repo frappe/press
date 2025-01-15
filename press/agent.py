@@ -21,7 +21,11 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 
 
 class Agent:
@@ -420,12 +424,57 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site, with_files=False, offsite=False):
+	def physical_backup_database(self, site, site_backup: SiteBackup):
+		"""
+		For physical database backup, the flow :
+		- Create the agent job
+		- Agent job will lock the specific database + flush the changes to disk
+		- Take a database dump
+		- Use `fsync` to ensure the changes are written to disk
+		- Agent will send back a request to FC for taking the snapshot
+			- By calling `snapshot_create_callback` url
+		- Then, unlock the database
+		"""
+		data = {
+			"databases": [site_backup.database_name],
+			"mariadb_root_password": get_mariadb_root_password(site),
+			"snapshot_trigger_url": f"{frappe.utils.get_url()}/api/method/press.api.site_backup.create_snapshot?name={site_backup.name}&key={site_backup.snapshot_request_key}",
+		}
+		return self.create_agent_job(
+			"Physical Backup Database",
+			"/database/physical-backup",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
+		backup: SiteBackup = frappe.get_doc("Site Backup", backup_restoration.site_backup)
+		data = {
+			"backup_db": backup_restoration.source_database,
+			"target_db": backup_restoration.destination_database,
+			"target_db_root_password": get_mariadb_root_password(site),
+			"innodb_tables": json.loads(backup.innodb_tables),
+			"myisam_tables": json.loads(backup.myisam_tables),
+			"table_schema": backup.table_schema,
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_path, "/var/lib/mysql"),
+		}
+		return self.create_agent_job(
+			"Physical Restore Database",
+			"/database/physical-restore",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+			reference_name=backup_restoration.name,
+			reference_doctype=backup_restoration.doctype,
+		)
+
+	def backup_site(self, site, site_backup: SiteBackup):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {"with_files": with_files}
+		data = {"with_files": site_backup.with_files}
 
-		if offsite:
+		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
 			backup_bucket = get_backup_bucket(site.cluster, region=True)

@@ -56,6 +56,9 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
+			VirtualMachineTemporaryVolume,
+		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
@@ -83,6 +86,7 @@ class VirtualMachine(Document):
 		subnet_cidr_block: DF.Data | None
 		subnet_id: DF.Data | None
 		team: DF.Link | None
+		temporary_volumes: DF.Table[VirtualMachineTemporaryVolume]
 		termination_protection: DF.Check
 		vcpu: DF.Int
 		virtual_machine_image: DF.Link | None
@@ -707,9 +711,11 @@ class VirtualMachine(Document):
 		if len(self.volumes) == 1:
 			return self.volumes[0]
 
+		temporary_volume_devices = [x.device for x in self.temporary_volumes]
+
 		DATA_VOLUME_FILTERS = {
-			"AWS EC2": lambda v: v.device != "/dev/sda1",
-			"OCI": lambda v: ".bootvolume." not in v.volume_id,
+			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
+			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -757,15 +763,24 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self):
-		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws()
-		elif self.cloud_provider == "OCI":
-			self._create_snapshots_oci()
+	def create_snapshots(self, exclude_boot_volume=False):
+		"""
+		exclude_boot_volume is applicable only for Servers with data volume
+		"""
+		if not self.has_data_volume:
+			exclude_boot_volume = False
 
-	def _create_snapshots_aws(self):
+		# Store the newly created snapshots reference in the flags
+		# So that, we can get the correct reference of snapshots created in current session
+		self.flags.created_snapshots = []
+		if self.cloud_provider == "AWS EC2":
+			self._create_snapshots_aws(exclude_boot_volume)
+		elif self.cloud_provider == "OCI":
+			self._create_snapshots_oci(exclude_boot_volume)
+
+	def _create_snapshots_aws(self, exclude_boot_volume: bool):
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id},
+			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -776,20 +791,23 @@ class VirtualMachine(Document):
 		)
 		for snapshot in response.get("Snapshots", []):
 			try:
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
-	def _create_snapshots_oci(self):
+	def _create_snapshots_oci(self, exclude_boot_volume: bool):
 		for volume in self.volumes:
 			try:
 				if ".bootvolume." in volume.volume_id:
+					if exclude_boot_volume:
+						continue
 					snapshot = (
 						self.client(BlockstorageClient)
 						.create_boot_volume_backup(
@@ -813,13 +831,14 @@ class VirtualMachine(Document):
 						)
 						.data
 					)
-				frappe.get_doc(
+				doc = frappe.get_doc(
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot.id,
 					}
 				).insert()
+				self.flags.created_snapshots.append(doc.name)
 			except TransientServiceError:
 				# We've hit OCI rate limit for creating snapshots
 				# Let's try again later
@@ -1268,7 +1287,10 @@ class VirtualMachine(Document):
 				},
 			],
 		)["VolumeId"]
-		# Wait for the volume to be available
+		self.wait_for_volume_to_be_available(volume_id)
+		self.attach_volume(volume_id)
+
+	def wait_for_volume_to_be_available(self, volume_id):
 		while (
 			self.client().describe_volumes(
 				VolumeIds=[
@@ -1278,14 +1300,22 @@ class VirtualMachine(Document):
 			!= "available"
 		):
 			time.sleep(1)
-		# First volume starts from /dev/sdf
-		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+
+	def attach_volume(self, volume_id) -> str:
+		# Attach a volume to the instance and return the device name
+		device_name = self.get_next_volume_device_name()
 		self.client().attach_volume(
-			Device=f"/dev/sd{device_name_index}",
+			Device=device_name,
 			InstanceId=self.instance_id,
 			VolumeId=volume_id,
 		)
 		self.sync()
+		return device_name
+
+	def get_next_volume_device_name(self):
+		# First volume starts from /dev/sdf
+		device_name_index = chr(ord("f") + len(self.volumes) - 1)
+		return f"/dev/sd{device_name_index}"
 
 	@frappe.whitelist()
 	def detach(self, volume_id):

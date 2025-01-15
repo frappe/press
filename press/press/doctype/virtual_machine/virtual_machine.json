@@ -45,7 +45,8 @@
   "termination_protection",
   "volumes_section",
   "has_data_volume",
-  "volumes"
+  "volumes",
+  "temporary_volumes"
  ],
  "fields": [
   {
@@ -306,6 +307,13 @@
    "fieldname": "has_data_volume",
    "fieldtype": "Check",
    "label": "Has Data Volume"
+  },
+  {
+   "description": "Data volumes that have been temporarily attached for tasks such as Physical Backup Restoration.",
+   "fieldname": "temporary_volumes",
+   "fieldtype": "Table",
+   "label": "Temporary Volumes",
+   "options": "Virtual Machine Temporary Volume"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -341,7 +349,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-01-02 16:22:58.073934",
+ "modified": "2025-01-15 11:53:47.156275",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

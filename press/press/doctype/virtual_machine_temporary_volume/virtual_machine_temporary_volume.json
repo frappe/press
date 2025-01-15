@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-15 11:46:59.223545",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "device"
+ ],
+ "fields": [
+  {
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-15 11:48:44.056676",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Machine Temporary Volume",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

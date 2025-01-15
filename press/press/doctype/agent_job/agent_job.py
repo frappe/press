@@ -923,6 +923,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update,
 		)
 		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_job_update as process_physical_backup_restoration_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -986,7 +989,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
-		elif job.job_type == "Backup Site":
+		elif job.job_type in ["Backup Site", "Physical Backup Database"]:
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
@@ -1037,6 +1040,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			"Modify Database User Permissions",
 		]:
 			SiteDatabaseUser.process_job_update(job)
+		elif job.job_type == "Physical Restore Database":
+			process_physical_backup_restoration_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
