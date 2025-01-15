@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 import frappe
@@ -13,7 +14,7 @@ from frappe.core.utils import find
 from frappe.exceptions import DoesNotExistError
 from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.rate_limiter import rate_limit
-from frappe.utils import get_url
+from frappe.utils import cint, get_url
 from frappe.utils.data import sha256_hash
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.utils.password import get_decrypted_password
@@ -263,7 +264,7 @@ def delete_team(team):
 		"confirmed": [
 			(
 				"Confirmed",
-				f"The process for deletion of your team {team} has been initiated." " Sorry to see you go :(",
+				f"The process for deletion of your team {team} has been initiated. Sorry to see you go :(",
 			),
 			{"indicator_color": "green"},
 		],
@@ -739,11 +740,36 @@ def get_billing_information(timezone=None):
 def update_billing_information(billing_details):
 	billing_details = frappe._dict(billing_details)
 	team = get_current_team(get_doc=True)
+	validate_pincode(billing_details)
 	if (team.country != billing_details.country) and (
 		team.country == "India" or billing_details.country == "India"
 	):
 		frappe.throw("Cannot change country after registration")
 	team.update_billing_details(billing_details)
+
+
+def validate_pincode(billing_details):
+	# Taken from https://github.com/resilient-tech/india-compliance
+	if billing_details.country != "India" or not billing_details.postal_code:
+		return
+	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
+	if not PINCODE_FORMAT.match(billing_details.postal_code):
+		frappe.throw("Invalid Postal Code")
+
+	if billing_details.state not in STATE_PINCODE_MAPPING:
+		return
+
+	first_three_digits = cint(billing_details.postal_code[:3])
+	postal_code_range = STATE_PINCODE_MAPPING[billing_details.state]
+
+	if isinstance(postal_code_range[0], int):
+		postal_code_range = (postal_code_range,)
+
+	for lower_limit, upper_limit in postal_code_range:
+		if lower_limit <= int(first_three_digits) <= upper_limit:
+			return
+
+	frappe.throw(f"Postal Code {billing_details.postal_code} is not associated with {billing_details.state}")
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1150,3 +1176,42 @@ def disable_2fa(totp_code):
 		frappe.db.set_value("User 2FA", frappe.session.user, "enabled", 0)
 	else:
 		frappe.throw("Invalid TOTP code")
+
+
+# Not available for Telangana, Ladakh, and Other Territory
+STATE_PINCODE_MAPPING = {
+	"Jammu and Kashmir": (180, 194),
+	"Himachal Pradesh": (171, 177),
+	"Punjab": (140, 160),
+	"Chandigarh": ((140, 140), (160, 160)),
+	"Uttarakhand": (244, 263),
+	"Haryana": (121, 136),
+	"Delhi": (110, 110),
+	"Rajasthan": (301, 345),
+	"Uttar Pradesh": (201, 285),
+	"Bihar": (800, 855),
+	"Sikkim": (737, 737),
+	"Arunachal Pradesh": (790, 792),
+	"Nagaland": (797, 798),
+	"Manipur": (795, 795),
+	"Mizoram": (796, 796),
+	"Tripura": (799, 799),
+	"Meghalaya": (793, 794),
+	"Assam": (781, 788),
+	"West Bengal": (700, 743),
+	"Jharkhand": (813, 835),
+	"Odisha": (751, 770),
+	"Chhattisgarh": (490, 497),
+	"Madhya Pradesh": (450, 488),
+	"Gujarat": (360, 396),
+	"Dadra and Nagar Haveli and Daman and Diu": ((362, 362), (396, 396)),
+	"Maharashtra": (400, 445),
+	"Karnataka": (560, 591),
+	"Goa": (403, 403),
+	"Lakshadweep Islands": (682, 682),
+	"Kerala": (670, 695),
+	"Tamil Nadu": (600, 643),
+	"Puducherry": ((533, 533), (605, 605), (607, 607), (609, 609), (673, 673)),
+	"Andaman and Nicobar Islands": (744, 744),
+	"Andhra Pradesh": (500, 535),
+}
