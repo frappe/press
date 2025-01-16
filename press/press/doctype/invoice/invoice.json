@@ -494,7 +494,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-12-18 22:28:29.793591",
+ "modified": "2025-01-16 15:23:12.363619",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -525,6 +525,15 @@
    "role": "Press Admin",
    "submit": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Press Member"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Site Manager"
   }
  ],
  "sort_field": "modified",
