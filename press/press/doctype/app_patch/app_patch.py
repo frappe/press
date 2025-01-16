@@ -132,14 +132,7 @@ class AppPatch(Document):
 	@staticmethod
 	def process_patch_app(agent_job: "AgentJob"):
 		request_data = json.loads(agent_job.request_data)
-		app_patch = frappe.get_last_doc(
-			"App Patch",
-			{
-				"bench": agent_job.bench,
-				"patch": request_data.get("patch"),
-			},
-			for_update=True,
-		)
+		app_patch = frappe.doc("App Patch", agent_job.reference_name, for_update=True)
 
 		revert = request_data.get("revert")
 		if agent_job.status == "Failure" and revert:
