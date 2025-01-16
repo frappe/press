@@ -568,6 +568,22 @@ def populate_output_cache(polled_job, job):
 			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
 
 
+def filter_active_servers(servers):
+	# Prepare list of all_active_servers for each server_type
+	# Return servers that are in all_active_servers
+	server_types = [server.server_type for server in servers]
+	all_active_servers = {}
+	for server_type in server_types:
+		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
+
+	active_servers = []
+	for server in servers:
+		if server.server in all_active_servers[server.server_type]:
+			active_servers.append(server)
+
+	return active_servers
+
+
 def poll_pending_jobs():
 	servers = frappe.get_all(
 		"Agent Job",
@@ -578,7 +594,8 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 
-	for server in servers:
+	active_servers = filter_active_servers(servers)
+	for server in active_servers:
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
