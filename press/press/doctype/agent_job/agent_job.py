@@ -596,10 +596,16 @@ def filter_request_failures(servers):
 
 
 def poll_pending_jobs():
+	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	if random.random() > 0.1:
+		# Experimenting with fewer polls (only for backup jobs)
+		# Reduce poll frequency for Backup Site jobs
+		# TODO: Replace this with something deterministic
+		filters["job_type"] = ("!=", "Backup Site")
 	servers = frappe.get_all(
 		"Agent Job",
 		fields=["server", "server_type"],
-		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
+		filters=filters,
 		group_by="server",
 		order_by="",
 		ignore_ifnull=True,
