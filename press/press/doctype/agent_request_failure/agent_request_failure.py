@@ -35,7 +35,7 @@ class AgentRequestFailure(Document):
 
 def is_server_archived(failure):
 	# Server was archived more than an hour ago
-	server = frappe.db.get_values(failure.server_type, failure.server, ["status", "modified"], as_dict=True)
+	server = frappe.db.get_value(failure.server_type, failure.server, ["status", "modified"], as_dict=True)
 	if (server.status == "Archived") and (server.modified < frappe.utils.add_to_date(None, hours=-1)):
 		return True
 	return False
