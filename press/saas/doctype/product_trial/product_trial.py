@@ -105,7 +105,7 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, team, cluster=None, account_request=None):
+	def setup_trial_site(self, site_label, team, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
 
 		standby_site = self.get_standby_site(cluster)
@@ -119,7 +119,6 @@ class ProductTrial(Document):
 		# to bypass the site creation validation
 		frappe.set_user("Administrator")
 
-		user = frappe.db.get_value("User", current_user, ["first_name"], as_dict=1)
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
@@ -128,7 +127,7 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.site_label = f"{user.first_name}'s {self.title} site"
+			site.site_label = site_label
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
 			site.reload()
@@ -155,7 +154,7 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
-				site_label=f"{user.first_name or user.full_name}'s {self.title} site",
+				site_label=site_label,
 			)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)

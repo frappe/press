@@ -16,6 +16,12 @@
 				<template v-slot:default>
 					<form class="w-full" @submit.prevent="createSite">
 						<FormControl
+							label="Site name"
+							v-model="siteLabel"
+							variant="outline"
+							class="mb-4"
+						/>
+						<FormControl
 							label="Email address (will be your login ID)"
 							:modelValue="$team.doc.user"
 							:disabled="true"
@@ -64,6 +70,7 @@ export default {
 			findingClosestServer: false,
 			closestCluster: null,
 			signupValues: {},
+			siteLabel: '',
 			accountRequest: this.$route.query.account_request
 		};
 	},
@@ -112,7 +119,10 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true
+				auto: true,
+				onSuccess: doc => {
+					this.siteLabel = `${this.$team.doc?.user_info?.first_name}'s ${doc?.title} Site`;
+				}
 			};
 		},
 		createSite() {
@@ -124,6 +134,7 @@ export default {
 						dn: this.$resources.siteRequest.data.name,
 						method: 'create_site',
 						args: {
+							site_label: this.siteLabel,
 							cluster: this.closestCluster ?? 'Default',
 							signup_values: this.signupValues
 						}

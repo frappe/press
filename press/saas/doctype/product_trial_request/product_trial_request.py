@@ -200,7 +200,7 @@ class ProductTrialRequest(Document):
 						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
-	def create_site(self, cluster: str | None = None, signup_values: dict | None = None):
+	def create_site(self, site_label: str, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
 		if not cluster:
@@ -224,7 +224,7 @@ class ProductTrialRequest(Document):
 		self.save(ignore_permissions=True)
 		self.reload()
 		site, agent_job_name, is_standby_site = product.setup_trial_site(
-			self.team, cluster=cluster, account_request=self.account_request
+			site_label=site_label, team=self.team, cluster=cluster, account_request=self.account_request
 		)
 		self.agent_job = agent_job_name
 		self.site = site.name
