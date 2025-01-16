@@ -584,6 +584,17 @@ def filter_active_servers(servers):
 	return active_servers
 
 
+def filter_request_failures(servers):
+	request_failures = set(frappe.get_all("Agent Request Failure", pluck="server"))
+
+	alive_servers = []
+	for server in servers:
+		if server.server not in request_failures:
+			alive_servers.append(server)
+
+	return alive_servers
+
+
 def poll_pending_jobs():
 	servers = frappe.get_all(
 		"Agent Job",
@@ -595,7 +606,9 @@ def poll_pending_jobs():
 	)
 
 	active_servers = filter_active_servers(servers)
-	for server in active_servers:
+	alive_servers = filter_request_failures(active_servers)
+
+	for server in alive_servers:
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
