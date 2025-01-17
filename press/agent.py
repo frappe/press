@@ -424,7 +424,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def physical_backup_database(self, site, site_backup: SiteBackup):
+	def physical_backup_database(self, site: Site, site_backup: SiteBackup):
 		"""
 		For physical database backup, the flow :
 		- Create the agent job
@@ -435,10 +435,18 @@ class Agent:
 			- By calling `snapshot_create_callback` url
 		- Then, unlock the database
 		"""
+		url = frappe.utils.get_url()
 		data = {
 			"databases": [site_backup.database_name],
 			"mariadb_root_password": get_mariadb_root_password(site),
-			"snapshot_trigger_url": f"{frappe.utils.get_url()}/api/method/press.api.site_backup.create_snapshot?name={site_backup.name}&key={site_backup.snapshot_request_key}",
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"site_backup": {
+				"name": site_backup.name,
+				"snapshot_request_key": site_backup.snapshot_request_key,
+				"snapshot_trigger_url": f"{url}/api/method/press.api.site_backup.create_snapshot",
+			},
 		}
 		return self.create_agent_job(
 			"Physical Backup Database",
