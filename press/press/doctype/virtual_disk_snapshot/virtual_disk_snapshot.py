@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import boto3
 import frappe
+import frappe.utils
 import pytz
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
@@ -22,6 +23,7 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
+		duration: DF.Duration | None
 		mariadb_root_password: DF.Password | None
 		progress: DF.Data | None
 		region: DF.Link
@@ -51,6 +53,14 @@ class VirtualDiskSnapshot(Document):
 			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
 			if site_backup_name:
 				frappe.db.set_value("Site Backup", site_backup_name, "files_availability", "Unavailable")
+
+		if self.has_value_changed("status") and self.status == "Completed":
+			old_doc = self.get_doc_before_save()
+			if old_doc is None or old_doc.status != "Pending":
+				return
+
+			self.duration = frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			self.save()
 
 	@frappe.whitelist()
 	def sync(self):
