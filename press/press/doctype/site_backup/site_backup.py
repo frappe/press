@@ -36,7 +36,7 @@ class SiteBackup(Document):
 		files_availability: DF.Literal["", "Available", "Unavailable"]
 		innodb_tables: DF.JSON | None
 		job: DF.Link | None
-		myisam_tables: DF.Code | None
+		myisam_tables: DF.JSON | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
 		physical: DF.Check

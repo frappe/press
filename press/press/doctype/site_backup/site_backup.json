@@ -6,14 +6,15 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "files_availability",
   "site",
-  "job",
-  "team",
   "database_name",
+  "team",
+  "column_break_obsx",
+  "job",
+  "files_availability",
+  "physical",
   "with_files",
   "offsite",
-  "physical",
   "data_7",
   "database_file",
   "database_url",
@@ -41,9 +42,9 @@
   "column_break_hksx",
   "snapshot_request_key",
   "section_break_ujrn",
-  "table_schema",
   "innodb_tables",
-  "myisam_tables"
+  "myisam_tables",
+  "table_schema"
  ],
  "fields": [
   {
@@ -138,10 +139,12 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "data_7",
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "data_12",
    "fieldtype": "Section Break"
   },
@@ -159,6 +162,7 @@
    "set_only_once": 1
   },
   {
+   "depends_on": "eval: doc.physical != 1 && doc.offsite == 1",
    "fieldname": "section_break_21",
    "fieldtype": "Section Break"
   },
@@ -190,6 +194,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.physical != 1",
    "fieldname": "files_availability",
    "fieldtype": "Select",
    "in_filter": 1,
@@ -240,11 +245,12 @@
    "default": "0",
    "fieldname": "physical",
    "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Physical",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
-   "collapsible": 1,
    "collapsible_depends_on": "1",
    "depends_on": "eval: doc.physical == 1",
    "fieldname": "section_break_hiaw",
@@ -285,21 +291,29 @@
   {
    "fieldname": "innodb_tables",
    "fieldtype": "JSON",
-   "label": "InnoDB Tables"
+   "label": "InnoDB Tables",
+   "read_only": 1
   },
   {
    "fieldname": "myisam_tables",
-   "fieldtype": "Code",
-   "label": "MyISAM Tables"
+   "fieldtype": "JSON",
+   "label": "MyISAM Tables",
+   "read_only": 1
   },
   {
    "fieldname": "table_schema",
    "fieldtype": "Code",
-   "label": "Table Schema"
+   "label": "Table Schema",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_obsx",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2025-01-09 18:19:33.379208",
+ "modified": "2025-01-17 14:30:18.593375",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
