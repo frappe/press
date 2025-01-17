@@ -11,6 +11,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -78,6 +79,11 @@ class SiteBackup(Document):
 		"remote_config_file",
 	)
 
+	@property
+	def database_server(self):
+		server = frappe.get_value("Site", self.site, "server")
+		return frappe.get_value("Server", server, "database_server")
+
 	def validate(self):
 		if self.physical and self.with_files:
 			frappe.throw("Physical backups cannot be taken with files")
@@ -113,18 +119,88 @@ class SiteBackup(Document):
 			self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def after_insert(self):
-		site = frappe.get_doc("Site", self.site)
-		database_server = frappe.get_value("Server", site.server, "database_server")
-		agent = Agent(database_server, "Database Server")
 		if self.physical:
-			job = agent.physical_backup_database(site, self)
+			frappe.enqueue_doc(
+				doctype=self.doctype,
+				name=self.name,
+				method="_create_physical_backup",
+				enqueue_after_commit=True,
+			)
 		else:
+			site = frappe.get_doc("Site", self.site)
+			agent = Agent(self.database_server, "Database Server")
 			job = agent.backup_site(site, self)
-		frappe.db.set_value("Site Backup", self.name, "job", job.name)
+			frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def after_delete(self):
 		if self.job:
 			frappe.delete_doc_if_exists("Agent Job", self.job)
+
+	def on_update(self):
+		print("on_update")
+		print(self.has_value_changed("status"))
+		print(self.status)
+		print(self.physical)
+		if self.physical and self.has_value_changed("status") and self.status in ["Success", "Failure"]:
+			"""
+			Rollback the permission changes made to the database directory
+			Change it back to 770 from 700
+
+			Check `_create_physical_backup` method for more information
+			"""
+			success = self.run_ansible_command_in_database_server(
+				f"chmod 700 /var/lib/mysql/{self.database_name}"
+			)
+			print(success)
+			if not success:
+				"""
+				Don't throw an error here, Because the backup is already created
+				And keeping the permission as 770 will not cause issue in database operations
+				"""
+				frappe.log_error(
+					"Failed to rollback the permission changes of the database directory",
+					reference_doctype=self.doctype,
+					reference_name=self.name,
+				)
+
+	def _create_physical_backup(self):
+		site = frappe.get_doc("Site", self.site)
+		"""
+		Change the /var/lib/mysql/<database_name> directory's permission to 770 from 770
+		The files inside that directory will have 660 permission, So no need to change the permission of the files
+
+		`frappe` user on server is already part of `mysql` group.
+		So `frappe` user can read-write the files inside that directory
+		"""
+		success = self.run_ansible_command_in_database_server(
+			f"chmod 770 /var/lib/mysql/{self.database_name}"
+		)
+		if not success:
+			frappe.db.set_value("Site Backup", self.name, "status", "Failure")
+			return
+		agent = Agent(self.database_server, "Database Server")
+		job = agent.physical_backup_database(site, self)
+		frappe.db.set_value("Site Backup", self.name, "job", job.name)
+
+	def run_ansible_command_in_database_server(self, command: str) -> bool:
+		virtual_machine_ip = frappe.db.get_value(
+			"Virtual Machine",
+			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
+			"public_ip_address",
+		)
+		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name)[0]
+		success = result.get("status") == "Success"
+		if not success:
+			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
+			frappe.log_error(
+				"During physical backup creation, failed to execute command in database server",
+				message=pretty_result,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+			comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
+			self.add_comment(text=comment)
+		return success
 
 	def create_database_snapshot(self):
 		if self.database_snapshot:
@@ -207,7 +283,6 @@ def process_backup_site_job_update(job):  # noqa: C901
 		if job.status == "Delivery Failure":
 			status = "Failure"
 
-		frappe.db.set_value("Site Backup", backup.name, "status", status)
 		if job.status == "Success":
 			if frappe.get_value("Site Backup", backup.name, "physical"):
 				site_backup: SiteBackup = frappe.get_doc("Site Backup", backup.name)
@@ -222,6 +297,7 @@ def process_backup_site_job_update(job):  # noqa: C901
 					site_backup.status = "Success"
 				site_backup.save()
 			else:
+				frappe.db.set_value("Site Backup", backup.name, "status", status)
 				job_data = json.loads(job.data)
 				backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
 				(
