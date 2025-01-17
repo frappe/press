@@ -228,6 +228,8 @@ def get_servers(filters):
 	for server_type in server_types:
 		server_type_filters = server_filters.copy()
 		for field in server_filters:
+			if field == "name":
+				continue
 			if not frappe.get_meta(server_type).has_field(field):
 				server_type_filters.pop(field, None)
 		for server in frappe.get_all(server_type, server_type_filters):
