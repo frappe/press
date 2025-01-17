@@ -291,6 +291,7 @@ def process_backup_site_job_update(job):  # noqa: C901
 					frappe.log_error("[Failure] Database name not found in the backup data", data=job.data)
 					site_backup.status = "Failure"
 				else:
+					site_backup.files_availability = "Available"
 					site_backup.innodb_tables = json.dumps(data[site_backup.database_name]["innodb_tables"])
 					site_backup.myisam_tables = json.dumps(data[site_backup.database_name]["myisam_tables"])
 					site_backup.table_schema = data[site_backup.database_name]["table_schema"]

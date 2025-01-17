@@ -46,6 +46,12 @@ class VirtualDiskSnapshot(Document):
 				"mariadb_root_password"
 			)
 
+	def on_update(self):
+		if self.has_value_changed("status") and self.status == "Unavailable":
+			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
+			if site_backup_name:
+				frappe.db.set_value("Site Backup", site_backup_name, "files_availability", "Unavailable")
+
 	@frappe.whitelist()
 	def sync(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
