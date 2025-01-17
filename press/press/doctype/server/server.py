@@ -28,6 +28,7 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -494,6 +495,8 @@ class BaseServer(Document, TagHelpers):
 
 	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
+		if agent.should_skip_requests():
+			return
 		agent.cleanup_unused_files()
 
 	def on_trash(self):
@@ -1053,7 +1056,7 @@ class BaseServer(Document, TagHelpers):
 
 			mount_options = "defaults,nofail"  # Set default mount options
 			if mount.mount_options:
-				mount_options = f"{default_mount_options},{mount.mount_options}"
+				mount_options = f"{mount_options},{mount.mount_options}"
 
 			mount.mount_options = mount_options
 			if mount.mount_type == "Bind":

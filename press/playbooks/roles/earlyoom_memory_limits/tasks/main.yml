@@ -5,6 +5,8 @@
       - earlyoom
     state:
       present
+  retries: 5
+  delay: 120
 
 - name: Enable earlyoom
   systemd:

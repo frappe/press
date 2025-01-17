@@ -10,6 +10,7 @@ import traceback
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.monitor import add_data_to_monitor
 from frappe.utils import (
 	add_days,
 	cint,
@@ -30,7 +31,7 @@ from press.press.doctype.site_migration.site_migration import (
 	job_matches_site_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error
+from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -444,6 +445,27 @@ def suspend_sites():
 			agent.reload_nginx()
 
 
+@timer
+def poll_random_jobs(agent, pending_ids):
+	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
+	return agent.get_jobs_status(random_pending_ids)
+
+
+@timer
+def handle_polled_jobs(polled_jobs, pending_jobs):
+	for polled_job in polled_jobs:
+		if not polled_job:
+			continue
+		handle_polled_job(pending_jobs, polled_job)
+
+
+def add_timer_data_to_monitor(server):
+	if not hasattr(frappe.local, "timers"):
+		frappe.local.timers = {}
+
+	add_data_to_monitor(server=server, timing=frappe.local.timers)
+
+
 def poll_pending_jobs_server(server):
 	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
 		return
@@ -466,22 +488,21 @@ def poll_pending_jobs_server(server):
 
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
-	polled_jobs = agent.get_jobs_status(random_pending_ids)
+	polled_jobs = poll_random_jobs(agent, pending_ids)
 
 	if not polled_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
-	for polled_job in polled_jobs:
-		if not polled_job:
-			continue
-		handle_polled_job(pending_jobs, polled_job)
+	handle_polled_jobs(polled_jobs, pending_jobs)
 
 	retry_undelivered_jobs(server)
+	add_timer_data_to_monitor(server.server)
 
 
 def handle_polled_job(pending_jobs, polled_job):
@@ -547,17 +568,53 @@ def populate_output_cache(polled_job, job):
 			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
 
 
+def filter_active_servers(servers):
+	# Prepare list of all_active_servers for each server_type
+	# Return servers that are in all_active_servers
+	server_types = [server.server_type for server in servers]
+	all_active_servers = {}
+	for server_type in server_types:
+		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
+
+	active_servers = []
+	for server in servers:
+		if server.server in all_active_servers[server.server_type]:
+			active_servers.append(server)
+
+	return active_servers
+
+
+def filter_request_failures(servers):
+	request_failures = set(frappe.get_all("Agent Request Failure", pluck="server"))
+
+	alive_servers = []
+	for server in servers:
+		if server.server not in request_failures:
+			alive_servers.append(server)
+
+	return alive_servers
+
+
 def poll_pending_jobs():
+	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	if random.random() > 0.1:
+		# Experimenting with fewer polls (only for backup jobs)
+		# Reduce poll frequency for Backup Site jobs
+		# TODO: Replace this with something deterministic
+		filters["job_type"] = ("!=", "Backup Site")
 	servers = frappe.get_all(
 		"Agent Job",
 		fields=["server", "server_type"],
-		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
+		filters=filters,
 		group_by="server",
 		order_by="",
 		ignore_ifnull=True,
 	)
 
-	for server in servers:
+	active_servers = filter_active_servers(servers)
+	alive_servers = filter_request_failures(active_servers)
+
+	for server in alive_servers:
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
@@ -730,6 +787,7 @@ def get_next_retry_at(job_retry_count):
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
+@timer
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 

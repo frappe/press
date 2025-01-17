@@ -26,6 +26,8 @@
       apt:
         name: filebeat
         state: latest
+      retries: 5
+      delay: 120
 
     - name: Restart Filebeat Daemon
       systemd:
