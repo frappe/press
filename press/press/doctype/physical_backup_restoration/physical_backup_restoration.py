@@ -59,27 +59,33 @@ class PhysicalBackupRestoration(Document):
 	def migration_steps(self):
 		Wait = True
 		NoWait = False
+		IgnoreOnFailure = True
+		DoNotIgnoreOnFailure = False
+		SyncStep = True
+		AsyncStep = False
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait),
-			(self.create_volume_from_snapshot, NoWait),
-			(self.wait_for_volume_to_be_available, Wait),
-			(self.attach_volume_to_instance, NoWait),
-			(self.mount_volume_to_instance, NoWait),
-			(self.change_permission_of_database_directory, NoWait),
-			(self.restore_database, Wait),
-			(self.rollback_permission_change_of_database_directory, NoWait),
-			(self.unmount_volume_from_instance, NoWait),
-			(self.detach_volume_from_instance, NoWait),
-			(self.delete_volume, NoWait),
+			(self.wait_for_pending_snapshot_to_be_completed, Wait, DoNotIgnoreOnFailure, SyncStep),
+			(self.create_volume_from_snapshot, NoWait, DoNotIgnoreOnFailure, SyncStep),
+			(self.wait_for_volume_to_be_available, Wait, DoNotIgnoreOnFailure, SyncStep),
+			(self.attach_volume_to_instance, NoWait, DoNotIgnoreOnFailure, SyncStep),
+			(self.mount_volume_to_instance, NoWait, DoNotIgnoreOnFailure, SyncStep),
+			(self.change_permission_of_database_directory, NoWait, DoNotIgnoreOnFailure, SyncStep),
+			(self.restore_database, Wait, DoNotIgnoreOnFailure, AsyncStep),
+			(self.rollback_permission_change_of_database_directory, NoWait, IgnoreOnFailure, SyncStep),
+			(self.unmount_volume_from_instance, NoWait, IgnoreOnFailure, SyncStep),
+			(self.detach_volume_from_instance, NoWait, IgnoreOnFailure, SyncStep),
+			(self.delete_volume, NoWait, IgnoreOnFailure, SyncStep),
 		]
 
 		steps = []
-		for method, wait_for_completion in methods:
+		for method, wait_for_completion, ignore_on_failure, is_async in methods:
 			steps.append(
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
 					"wait_for_completion": wait_for_completion,
+					"ignore_on_failure": ignore_on_failure,
+					"is_async": is_async,
 				}
 			)
 		return steps
@@ -211,7 +217,8 @@ class PhysicalBackupRestoration(Document):
 		return StepStatus.Success
 
 	def change_permission_of_database_directory(self) -> StepStatus:
-		result = self.ansible_run(f"chmod 770 /var/lib/mysql/{self.database_name}")
+		"""Change permission of database directory"""
+		result = self.ansible_run(f"chmod 770 /var/lib/mysql/{self.destination_database}")
 		if result["status"] == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
@@ -231,7 +238,8 @@ class PhysicalBackupRestoration(Document):
 		return StepStatus.Failure
 
 	def rollback_permission_change_of_database_directory(self) -> StepStatus:
-		result = self.ansible_run(f"chmod 700 /var/lib/mysql/{self.database_name}")
+		"""Rollback permission change of database directory"""
+		result = self.ansible_run(f"chmod 700 /var/lib/mysql/{self.destination_database}")
 		if result["status"] == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
@@ -336,6 +344,9 @@ class PhysicalBackupRestoration(Document):
 		try:
 			result = getattr(self, step.method)()
 			step.status = result.name
+			if step.is_async and result == StepStatus.Pending:
+				self.save(ignore_version=True)
+				return
 			if step.wait_for_completion:
 				step.attempts = step.attempts + 1
 				if result == StepStatus.Pending:
@@ -377,15 +388,5 @@ def process_job_update(job):
 		return
 
 	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
-	if doc.next_step.step_title != "Restore database":
-		return
-
-	if job.status in ["Failure", "Delivery Failure"]:
-		doc.update_next_step_status("Failure")
-		doc.add_comment(text=f"Error while restoring database: {job.error}")
-	elif job.status == "Success":
-		doc.update_next_step_status("Success")
-		doc.run_next_step()
-	elif job.status == "Running":
-		if doc.next_step != "Running":
-			doc.update_next_step_status("Running")
+	if job.status in ["Success", "Failure", "Delivery Failure"]:
+		doc.next(ignore_version=True)

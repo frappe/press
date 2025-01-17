@@ -20,6 +20,7 @@ class PhysicalBackupRestorationStep(Document):
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		ignore_on_failure: DF.Check
+		is_async: DF.Check
 		method: DF.Data
 		parent: DF.Data
 		parentfield: DF.Data
