@@ -14,8 +14,9 @@
   "type",
   "acknowledged_by",
   "column_break_smnd",
-  "bench",
   "server",
+  "resource_type",
+  "resource",
   "cluster",
   "resolved_by",
   "section_break_kjey",
@@ -32,12 +33,6 @@
   "show_in_website"
  ],
  "fields": [
-  {
-   "fieldname": "bench",
-   "fieldtype": "Link",
-   "label": "Bench",
-   "options": "Bench"
-  },
   {
    "fieldname": "server",
    "fieldtype": "Link",
@@ -158,13 +153,25 @@
    "fieldtype": "Link",
    "label": "Alert",
    "options": "Prometheus Alert Rule"
+  },
+  {
+   "fieldname": "resource_type",
+   "fieldtype": "Link",
+   "label": "Resource Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "resource",
+   "fieldtype": "Dynamic Link",
+   "label": "Resource",
+   "options": "resource_type"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2024-01-19 16:54:40.322437",
+ "modified": "2025-01-16 17:48:04.948739",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",

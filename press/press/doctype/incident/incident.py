@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
@@ -15,6 +16,7 @@ from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
 
+from press.api.server import prometheus_query
 from press.telegram_utils import Telegram
 from press.utils import log_error
 
@@ -64,11 +66,12 @@ class Incident(WebsiteGenerator):
 		acknowledged_by: DF.Link | None
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
-		bench: DF.Link | None
 		cluster: DF.Link | None
 		description: DF.TextEditor | None
 		phone_call: DF.Check
 		resolved_by: DF.Link | None
+		resource: DF.DynamicLink | None
+		resource_type: DF.Link | None
 		route: DF.Data | None
 		server: DF.Link | None
 		show_in_website: DF.Check
@@ -106,6 +109,58 @@ class Incident(WebsiteGenerator):
 	def on_update(self):
 		if self.has_value_changed("status"):
 			self.send_email_notification()
+
+	def vcpu(self, server_type, server_name):
+		vm_name = frappe.db.get_value(server_type, server_name, "virtual_machine")
+		return int(frappe.db.get_value("Virtual Machine", vm_name, "vcpu"))
+
+	@cached_property
+	def database_server(self):
+		return str(frappe.db.get_value("Server", self.server, "database_server"))
+
+	@cached_property
+	def proxy_server(self):
+		return str(frappe.db.get_value("Server", self.server, "proxy_server"))
+
+	def get_load(self, name) -> float:
+		load = prometheus_query(
+			f"""node_load5{{instance="{name}", job="node"}}""",
+			lambda x: x,
+			"Asia/Kolkata",
+			30,
+			60,
+		)["datasets"]
+		if load == []:
+			return -1  # no response
+		return load[0]["values"][-1]
+
+	def check_high_load(self, resource_type: str, resource: str):
+		load = self.get_load(resource)
+		if load < 0:  # no response, likely down
+			return resource_type, resource
+		if load > 3 * self.vcpu(resource_type, resource):
+			return resource_type, resource
+		return False, False
+
+	def identify_affected_resource(self):
+		"""
+		Identify the affected resource and set the resource field
+		"""
+
+		for resource_type, resource in [
+			("Database Server", self.database_server),
+			("Server", self.server),
+			("Proxy Server", self.proxy_server),
+		]:
+			if self.check_high_load(resource_type, resource) != (False, False):
+				self.resource_type = resource_type
+				self.resource = resource
+				return
+
+	def confirm(self):
+		self.status = "Confirmed"
+		self.identify_affected_resource()  # assume 1 resource; Occam's razor
+		self.save()
 
 	@frappe.whitelist()
 	def ignore_for_server(self):
@@ -207,7 +262,7 @@ Likely due to insufficient balance or incorrect credentials""",
 			try:
 				status = str(self.wait_for_pickup(call))
 			except RetryError:
-				status = "timeout"  # not twilio's status; mostly translates to no-answer
+				status = "timeout"  # not Twilio's status; mostly translates to no-answer
 			else:
 				if status in ["in-progress", "completed"]:  # call was picked up
 					acknowledged = True
@@ -422,9 +477,8 @@ def validate_incidents():
 		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
 			seconds=get_confirmation_threshold_duration()
 		):
-			incident: Incident = frappe.get_doc("Incident", incident_dict.name)
-			incident.status = "Confirmed"
-			incident.save()
+			incident = Incident("Incident", incident_dict.name)
+			incident.confirm()
 
 
 def resolve_incidents():
@@ -436,7 +490,7 @@ def resolve_incidents():
 		pluck="name",
 	)
 	for incident_name in ongoing_incidents:
-		incident: Incident = frappe.get_doc("Incident", incident_name)
+		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()
