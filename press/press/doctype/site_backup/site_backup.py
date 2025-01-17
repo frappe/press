@@ -110,7 +110,8 @@ class SiteBackup(Document):
 
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
-		agent = Agent(site.server)
+		database_server = frappe.get_value("Server", site.server, "database_server")
+		agent = Agent(database_server, "Database Server")
 		if self.physical:
 			job = agent.physical_backup_database(site, self)
 		else:
