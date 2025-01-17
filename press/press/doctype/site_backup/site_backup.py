@@ -86,7 +86,10 @@ class SiteBackup(Document):
 
 	def before_insert(self):
 		if getattr(self, "force", False):
+			if self.physical:
+				frappe.throw("Physical backups cannot be forcefully triggered")
 			return
+		# For backups, check if there are too many pending backups
 		two_hours_ago = frappe.utils.add_to_date(None, hours=-2)
 		if frappe.db.count(
 			"Site Backup",
@@ -99,6 +102,7 @@ class SiteBackup(Document):
 			frappe.throw("Too many pending backups")
 
 		if self.physical:
+			# Set some default values
 			site = frappe.get_doc("Site", self.site)
 			if not site.database_name:
 				site.sync_info()

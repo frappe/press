@@ -940,8 +940,12 @@ class Site(Document, TagHelpers):
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
 
+	@frappe.whitelist()
+	def physical_backup(self):
+		return self.backup(physical=True)
+
 	@dashboard_whitelist()
-	def backup(self, with_files=False, offsite=False, force=False):
+	def backup(self, with_files=False, offsite=False, force=False, physical=False):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
 				"Site Activity",
@@ -971,6 +975,7 @@ class Site(Document, TagHelpers):
 				"with_files": with_files,
 				"offsite": offsite,
 				"force": force,
+				"physical": physical,
 			}
 		).insert()
 

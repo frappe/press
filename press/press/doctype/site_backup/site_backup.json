@@ -303,9 +303,7 @@
   {
    "fieldname": "table_schema",
    "fieldtype": "Code",
-   "label": "Table Schema",
-   "read_only": 1,
-   "set_only_once": 1
+   "label": "Table Schema"
   },
   {
    "fieldname": "column_break_obsx",
@@ -313,7 +311,7 @@
   }
  ],
  "links": [],
- "modified": "2025-01-17 14:30:18.593375",
+ "modified": "2025-01-17 15:37:39.133191",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
