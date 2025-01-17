@@ -106,6 +106,7 @@ class SiteBackup(Document):
 			if not site.database_name:
 				frappe.throw("Database name is missing in the site")
 			self.database_name = site.database_name
+			self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
