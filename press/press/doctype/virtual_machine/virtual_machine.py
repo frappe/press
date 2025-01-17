@@ -1291,15 +1291,13 @@ class VirtualMachine(Document):
 		self.attach_volume(volume_id)
 
 	def wait_for_volume_to_be_available(self, volume_id):
-		while (
-			self.client().describe_volumes(
-				VolumeIds=[
-					volume_id,
-				],
-			)["Volumes"][0]["State"]
-			!= "available"
-		):
+		# AWS EC2 specific
+		while self.get_status_of_volume(volume_id) != "available":
 			time.sleep(1)
+
+	def get_status_of_volume(self, volume_id):
+		# AWS EC2 specific
+		return self.client().describe_volumes(VolumeIds=[volume_id])["Volumes"][0]["State"]
 
 	def attach_volume(self, volume_id) -> str:
 		# Attach a volume to the instance and return the device name

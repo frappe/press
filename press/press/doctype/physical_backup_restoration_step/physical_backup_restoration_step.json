@@ -6,53 +6,96 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "step_title",
-  "step_job",
-  "step_play",
+  "step",
   "status",
-  "method_name"
+  "method",
+  "column_break_ahqu",
+  "start",
+  "end",
+  "duration",
+  "column_break_qtmf",
+  "wait_for_completion",
+  "attempts",
+  "section_break_vyao",
+  "ignore_on_failure",
+  "traceback"
  ],
  "fields": [
-  {
-   "fieldname": "step_title",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Step Title",
-   "reqd": 1
-  },
-  {
-   "fieldname": "step_job",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Step Job",
-   "options": "Agent Job"
-  },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped\nDelivery Failure",
+   "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
    "reqd": 1
   },
   {
-   "fieldname": "step_play",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Step Play",
-   "options": "Ansible Play"
+   "default": "0",
+   "fieldname": "wait_for_completion",
+   "fieldtype": "Check",
+   "label": "Wait For Completion"
   },
   {
-   "fieldname": "method_name",
+   "fieldname": "step",
    "fieldtype": "Data",
-   "label": "Method Name",
+   "in_list_view": 1,
+   "label": "Step",
    "reqd": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "label": "Method",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ahqu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_qtmf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts"
+  },
+  {
+   "fieldname": "section_break_vyao",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "ignore_on_failure",
+   "fieldtype": "Check",
+   "label": "Ignore On Failure"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-14 12:19:01.460560",
+ "modified": "2025-01-17 19:22:09.542366",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration Step",

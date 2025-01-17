@@ -139,12 +139,12 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
-	def create_volume(self, snapshot_id: str, availability_zone: str) -> str:
+	def create_volume(self, availability_zone: str) -> str:
 		self.sync()
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
 		response = self.client.create_volume(
-			SnapshotId=snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp2"
+			SnapshotId=self.snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp2"
 		)
 		return response["VolumeId"]
 

@@ -137,10 +137,6 @@ class SiteBackup(Document):
 			frappe.delete_doc_if_exists("Agent Job", self.job)
 
 	def on_update(self):
-		print("on_update")
-		print(self.has_value_changed("status"))
-		print(self.status)
-		print(self.physical)
 		if self.physical and self.has_value_changed("status") and self.status in ["Success", "Failure"]:
 			"""
 			Rollback the permission changes made to the database directory
@@ -151,7 +147,6 @@ class SiteBackup(Document):
 			success = self.run_ansible_command_in_database_server(
 				f"chmod 700 /var/lib/mysql/{self.database_name}"
 			)
-			print(success)
 			if not success:
 				"""
 				Don't throw an error here, Because the backup is already created

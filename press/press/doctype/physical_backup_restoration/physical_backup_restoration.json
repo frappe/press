@@ -8,11 +8,12 @@
   "site",
   "status",
   "site_backup",
-  "column_break_zind",
   "disk_snapshot",
+  "column_break_zind",
   "volume",
   "device",
   "mount_path",
+  "job",
   "section_break_pqgo",
   "source_database",
   "column_break_kaja",
@@ -40,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nWaiting For Volume\nRunning\nSuccess\nFailure",
+   "options": "Pending\nRunning\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -110,11 +111,17 @@
    "fieldtype": "Data",
    "label": "Mount Path",
    "read_only": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-15 15:08:05.524891",
+ "modified": "2025-01-17 19:24:16.834232",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

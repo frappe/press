@@ -16,14 +16,19 @@ class PhysicalBackupRestorationStep(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		method_name: DF.Data
+		attempts: DF.Int
+		duration: DF.Duration | None
+		end: DF.Datetime | None
+		ignore_on_failure: DF.Check
+		method: DF.Data
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Literal["Pending", "Running", "Success", "Failure", "Skipped", "Delivery Failure"]
-		step_job: DF.Link | None
-		step_play: DF.Link | None
-		step_title: DF.Data
+		start: DF.Datetime | None
+		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		step: DF.Data
+		traceback: DF.Code | None
+		wait_for_completion: DF.Check
 	# end: auto-generated types
 
 	pass
