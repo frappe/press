@@ -61,6 +61,7 @@ class Incident(WebsiteGenerator):
 		from frappe.types import DF
 
 		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
+		from press.press.doctype.incident_suggestion.incident_suggestion import IncidentSuggestion
 		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
 
 		acknowledged_by: DF.Link | None
@@ -68,7 +69,9 @@ class Incident(WebsiteGenerator):
 		alerts: DF.Table[IncidentAlerts]
 		cluster: DF.Link | None
 		description: DF.TextEditor | None
+		likely_cause: DF.Text | None
 		phone_call: DF.Check
+		preventive_suggestions: DF.Table[IncidentSuggestion]
 		resolved_by: DF.Link | None
 		resource: DF.DynamicLink | None
 		resource_type: DF.Link | None
@@ -86,7 +89,9 @@ class Incident(WebsiteGenerator):
 			"Press-Resolved",
 		]
 		subject: DF.Data | None
-		type: DF.Literal["Site Down", "Bench Down", "Server Down"]
+		subtype: DF.Literal["High CPU: user", "High CPU: iowait", "Disk full"]
+		suggestions: DF.Table[IncidentSuggestion]
+		type: DF.Literal["Database Down", "Server Down", "Proxy Down"]
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
 
@@ -160,7 +165,95 @@ class Incident(WebsiteGenerator):
 	def confirm(self):
 		self.status = "Confirmed"
 		self.identify_affected_resource()  # assume 1 resource; Occam's razor
+		self.identify_problem()
 		self.save()
+
+	def get_cpu_state(self, resource: str):
+		timespan = get_confirmation_threshold_duration()
+		cpu_info = prometheus_query(
+			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
+			lambda x: x["mode"],
+			"Asia/Kolkata",
+			timespan,
+			timespan + 1,
+		)["datasets"]
+		mode_cpus = {x["name"]: x["values"][-1] for x in cpu_info}
+		max_mode = max(mode_cpus, key=mode_cpus.get)
+		return max_mode, mode_cpus[max_mode]
+
+	def add_description(self, description):
+		if not self.description:
+			self.description = ""
+		self.description += "<p>" + description + "</p>"
+
+	def add_corrective_suggestion(self, suggestion):
+		self.append(
+			"corrective_suggestions",
+			{
+				"suggestion": suggestion,
+			},
+		)
+
+	def add_preventive_suggestion(self, suggestion):
+		self.append(
+			"preventive_suggestions",
+			{
+				"suggestion": suggestion,
+			},
+		)
+
+	def update_user_db_issue(self):
+		self.subtype = "High CPU: user"
+		self.likely_causes = "Likely slow queries or many queries."
+		self.add_corrective_suggestion("Kill long running queries")
+		self.add_preventive_suggestion("Contact user to reduce queries")
+
+	def update_high_io_db_issue(self):
+		self.subtype = "High CPU: iowait"
+		self.likely_causes = "Not enough memory"
+		self.add_corrective_suggestion("Reboot Server")
+		self.add_preventive_suggestion("Upgrade database server for more memory")
+
+	def categorize_db_issues(self, cpu_state):
+		self.type = "Database Down"
+		if cpu_state == "user":
+			self.update_user_db_issue()
+		elif cpu_state == "iowait":
+			self.update_high_io_db_issue()
+
+	def update_user_server_issue(self):
+		pass
+
+	def update_high_io_server_issue(self):
+		pass
+
+	def categorize_server_issues(self, cpu_state):
+		self.type = "Server Down"
+		if cpu_state == "user":
+			self.update_user_server_issue()
+		elif cpu_state == "iowait":
+			self.update_high_io_server_issue()
+
+	def identify_problem(self):
+		if not self.resource:
+			return
+			# TODO: Try random shit if resource isn't identified
+			# Eg: Check mysql up/ docker up/ container up
+			# Ping site for error code to guess more accurately
+			# 500 would mean mysql down or bug in app/config
+			# 502 would mean server/bench down
+			# 504 overloaded workers
+
+		state, percent = self.get_cpu_state(self.resource)
+		if state == "idle" or percent < 70:
+			return
+
+		if self.resource_type == "Database Server":
+			self.categorize_db_issues(state)
+		elif self.resource_type == "Server":
+			self.categorize_server_issues(state)
+
+			# TODO: categorize proxy issues #
 
 	@frappe.whitelist()
 	def ignore_for_server(self):
