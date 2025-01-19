@@ -428,7 +428,7 @@ export default {
 				},
 			];
 		},
-		runDocMethod(name, methodName) {
+		runBenchMethod(name, methodName) {
 			const method = createResource({
 				url: 'press.api.client.run_doc_method',
 			});
