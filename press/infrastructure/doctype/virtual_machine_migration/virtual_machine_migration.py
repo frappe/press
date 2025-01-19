@@ -282,6 +282,7 @@ class VirtualMachineMigration(Document):
 			(self.update_mounts, NoWait),
 			(self.update_bind_mount_permissions, NoWait),
 			(self.update_plan, NoWait),
+			(self.update_tls_certificate, NoWait),
 		]
 
 		steps = []
@@ -495,6 +496,24 @@ class VirtualMachineMigration(Document):
 			plan = frappe.get_doc("Server Plan", self.new_plan)
 			server._change_plan(plan)
 		return StepStatus.Success
+
+	def update_tls_certificate(self) -> StepStatus:
+		"Update TLS certificate"
+		server = self.machine.get_server()
+		server.update_tls_certificate()
+
+		plays = frappe.get_all(
+			"Ansible Play",
+			{"server": server.name, "play": "Setup TLS Certificates", "creation": (">", self.creation)},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if not plays:
+			return StepStatus.Failure
+		if plays[0].status == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
 
 	@frappe.whitelist()
 	def execute(self):
