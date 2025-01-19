@@ -360,6 +360,7 @@ class VirtualMachineMigration(Document):
 		if copied_machine.status == "Terminated":
 			return StepStatus.Success
 		if copied_machine.status == "Pending":
+			copied_machine.sync()
 			return StepStatus.Pending
 
 		copied_machine.disable_termination_protection()
