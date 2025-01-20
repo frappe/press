@@ -225,3 +225,52 @@ def get_request(product: str, account_request: str | None = None):
 		"product_trial": site_request.product_trial,
 		"status": site_request.status,
 	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def sync_product_site_users(**data):
+	"""
+	Sync user info from product site
+	"""
+	import json
+
+	headers = frappe.request.headers
+	site = headers.get("x-site")
+	site_token = headers.get("x-site-token")
+
+	if not frappe.db.exists("Site", site):
+		frappe.throw("Invalid site")
+
+	if not site_token:
+		frappe.throw("Invalid communication secret")
+
+	site = frappe.db.get_value("Site", site, ["saas_communication_secret", "name"], as_dict=True)
+
+	if site.saas_communication_secret != site_token:
+		frappe.throw("Invalid token")
+
+	user_info = data.get("user_info")
+
+	if not user_info:
+		frappe.throw("No user info provided")
+
+	if type(user_info) is str:
+		user_info = json.loads(user_info)
+
+	user_mail = user_info.get("email")
+	enabled = user_info.get("enabled")
+	if frappe.db.exists("Product Site User", {"site": site.name, "user": user_mail}):
+		user = frappe.db.get_value(
+			"Product Site User", {"site": site.name, "user": user_mail}, ["name", "enabled"], as_dict=True
+		)
+		if user.enabled != enabled:
+			frappe.db.set_value("Product Site User", user.name, "enabled", enabled)
+	else:
+		frappe.get_doc(
+			{
+				"doctype": "Product Site User",
+				"site": site.name,
+				"user": user_mail,
+				"enabled": enabled,
+			}
+		).insert(ignore_permissions=True)
