@@ -14,6 +14,7 @@ import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
+from press.exceptions import AgentHTTPError
 from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
 if TYPE_CHECKING:
@@ -777,7 +778,7 @@ class Agent:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
 				if output == "\n\n":
 					output = json.dumps(json_response, indent=2, sort_keys=True)
-				raise HTTPError(
+				raise AgentHTTPError(
 					f"{response.status_code} {response.reason}\n\n{output}",
 					response=response,
 				)

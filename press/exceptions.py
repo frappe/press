@@ -1,4 +1,5 @@
 from frappe.exceptions import ValidationError
+from requests import HTTPError
 
 
 class CentralServerNotSet(ValidationError):
@@ -55,3 +56,11 @@ class SiteAlreadyArchived(ValidationError):
 
 class InactiveDomains(ValidationError):
 	pass
+
+
+class AgentHTTPError(HTTPError):
+	def __init__(
+		self, *args, request=None, response=None, status_code=555
+	):  # custom status_code exception to suppress err logs
+		self.http_status_code = status_code
+		super().__init__(*args, request=request, response=response)
