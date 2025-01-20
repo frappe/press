@@ -49,6 +49,7 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -75,7 +76,8 @@
    "fieldname": "source_database",
    "fieldtype": "Data",
    "label": "Source Database",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_kaja",
@@ -85,7 +87,8 @@
    "fieldname": "destination_database",
    "fieldtype": "Data",
    "label": " Destination Database",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_aqam",
@@ -102,7 +105,8 @@
    "fieldtype": "Link",
    "label": "Destination Server",
    "options": "Database Server",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "volume",
@@ -162,7 +166,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-20 16:10:04.859419",
+ "modified": "2025-01-20 17:08:41.891041",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",
