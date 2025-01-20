@@ -6,6 +6,7 @@ frappe.ui.form.on('Physical Backup Restoration', {
 		[
 			[__('Start'), 'execute', frm.doc.status === 'Pending'],
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
+			[__('Cleanup'), 'cleanup', frm.doc.status === 'Failure'],
 			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
 		].forEach(([label, method, condition]) => {
 			if (condition) {

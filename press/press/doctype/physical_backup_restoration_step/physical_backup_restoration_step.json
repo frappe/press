@@ -17,6 +17,7 @@
   "wait_for_completion",
   "is_async",
   "attempts",
+  "is_cleanup_step",
   "section_break_vyao",
   "traceback"
  ],
@@ -90,12 +91,18 @@
    "fieldname": "is_async",
    "fieldtype": "Check",
    "label": "Is Async"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_cleanup_step",
+   "fieldtype": "Check",
+   "label": "Is Cleanup Step"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-20 15:38:21.354247",
+ "modified": "2025-01-20 16:48:34.338658",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration Step",

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
-StepStatus = Enum("StepStatus", ["Pending", "Running", "Success", "Failure"])
+StepStatus = Enum("StepStatus", ["Pending", "Running", "Skipped", "Success", "Failure"])
 
 
 class PhysicalBackupRestoration(Document):
@@ -68,32 +68,35 @@ class PhysicalBackupRestoration(Document):
 		NoWait = False
 		SyncStep = False
 		AsyncStep = True
+		GeneralStep = False
+		CleanupStep = True
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait, SyncStep),
-			(self.create_volume_from_snapshot, NoWait, SyncStep),
-			(self.wait_for_volume_to_be_available, Wait, SyncStep),
-			(self.attach_volume_to_instance, NoWait, SyncStep),
-			(self.create_mount_point, NoWait, SyncStep),
-			(self.mount_volume_to_instance, NoWait, SyncStep),
-			(self.change_permission_of_backup_directory, NoWait, SyncStep),
-			(self.change_permission_of_database_directory, NoWait, SyncStep),
-			(self.restore_database, Wait, AsyncStep),
-			(self.rollback_permission_change_of_database_directory, NoWait, SyncStep),
-			(self.unmount_volume_from_instance, NoWait, SyncStep),
-			(self.delete_mount_point, NoWait, SyncStep),
-			(self.detach_volume_from_instance, NoWait, SyncStep),
-			(self.wait_for_volume_to_be_detached, Wait, SyncStep),
-			(self.delete_volume, NoWait, SyncStep),
+			(self.wait_for_pending_snapshot_to_be_completed, Wait, SyncStep, GeneralStep),
+			(self.create_volume_from_snapshot, NoWait, SyncStep, GeneralStep),
+			(self.wait_for_volume_to_be_available, Wait, SyncStep, GeneralStep),
+			(self.attach_volume_to_instance, NoWait, SyncStep, GeneralStep),
+			(self.create_mount_point, NoWait, SyncStep, GeneralStep),
+			(self.mount_volume_to_instance, NoWait, SyncStep, GeneralStep),
+			(self.change_permission_of_backup_directory, NoWait, SyncStep, GeneralStep),
+			(self.change_permission_of_database_directory, NoWait, SyncStep, GeneralStep),
+			(self.restore_database, Wait, AsyncStep, GeneralStep),
+			(self.rollback_permission_of_database_directory, NoWait, SyncStep, CleanupStep),
+			(self.unmount_volume_from_instance, NoWait, SyncStep, CleanupStep),
+			(self.delete_mount_point, NoWait, SyncStep, CleanupStep),
+			(self.detach_volume_from_instance, NoWait, SyncStep, CleanupStep),
+			(self.wait_for_volume_to_be_detached, Wait, SyncStep, CleanupStep),
+			(self.delete_volume, NoWait, SyncStep, CleanupStep),
 		]
 
 		steps = []
-		for method, wait_for_completion, is_async in methods:
+		for method, wait_for_completion, is_async, is_cleanup_step in methods:
 			steps.append(
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
 					"wait_for_completion": wait_for_completion,
 					"is_async": is_async,
+					"is_cleanup_step": is_cleanup_step,
 				}
 			)
 		return steps
@@ -294,7 +297,7 @@ class PhysicalBackupRestoration(Document):
 			return StepStatus.Success
 		return StepStatus.Failure
 
-	def rollback_permission_change_of_database_directory(self) -> StepStatus:
+	def rollback_permission_of_database_directory(self) -> StepStatus:
 		"""Rollback permission of database directory"""
 
 		# Docs > https://mariadb.com/kb/en/specifying-permissions-for-schema-data-directories-and-tables/
@@ -309,7 +312,7 @@ class PhysicalBackupRestoration(Document):
 
 	def unmount_volume_from_instance(self) -> StepStatus:
 		"""Unmount volume from instance"""
-		if self.get_step_status(self.mount_volume_to_instance) != StepStatus.Success:
+		if self.get_step_status(self.mount_volume_to_instance) != StepStatus.Success.name:
 			return StepStatus.Success
 		response = self.ansible_run(f"umount {self.mount_point}")
 		if response["status"] != "Success":
@@ -353,7 +356,10 @@ class PhysicalBackupRestoration(Document):
 
 	def delete_volume(self) -> StepStatus:
 		"""Delete volume"""
-		if not self.volume or self.get_step_status(self.create_volume_from_snapshot) != StepStatus.Success:
+		if (
+			not self.volume
+			or self.get_step_status(self.create_volume_from_snapshot) != StepStatus.Success.name
+		):
 			return StepStatus.Success
 		state = self.virtual_machine.get_state_of_volume(self.volume)
 		if state in ["deleting", "deleted"]:
@@ -385,9 +391,14 @@ class PhysicalBackupRestoration(Document):
 		self.end = frappe.utils.now_datetime()
 		self.duration = (self.end - self.start).total_seconds()
 		self.save()
+		self.cleanup()
 
-	def succeed(self) -> None:
+	def finish(self) -> None:
 		self.status = "Success"
+		# If any step is failed, then mark the job as failed
+		for step in self.steps:
+			if step.status == "Failure":
+				self.status = "Failure"
 		self.end = frappe.utils.now_datetime()
 		self.duration = (self.end - self.start).total_seconds()
 		self.save()
@@ -400,7 +411,7 @@ class PhysicalBackupRestoration(Document):
 
 		if not next_step:
 			# We've executed everything
-			self.succeed()
+			self.finish()
 			return
 
 		frappe.enqueue_doc(
@@ -411,6 +422,22 @@ class PhysicalBackupRestoration(Document):
 			enqueue_after_commit=True,
 			at_front=True,
 		)
+
+	@frappe.whitelist()
+	def cleanup(self):
+		is_cleanup_required = False
+		for step in self.steps:
+			# Mark the pending non-cleanup steps as skipped
+			if not step.is_cleanup_step and step.status == "Pending":
+				step.status = "Skipped"
+
+			# Mark the cleanup steps with non-failure status as pending
+			if step.is_cleanup_step and step.status != "Failure":
+				step.status = "Pending"
+				is_cleanup_required = True
+
+		if is_cleanup_required:
+			self.next()
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
