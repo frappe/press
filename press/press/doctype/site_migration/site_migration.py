@@ -126,7 +126,7 @@ class SiteMigration(Document):
 			)
 
 	def check_for_inactive_domains(self):
-		if domains := frappe.db.exists(
+		if domains := frappe.db.get_all(
 			"Site Domain", {"site": self.site, "status": ("!=", "Active")}, pluck="name"
 		):
 			frappe.throw(
