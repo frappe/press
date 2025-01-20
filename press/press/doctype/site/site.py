@@ -1444,6 +1444,15 @@ class Site(Document, TagHelpers):
 			try:
 				agent = Agent(self.server)
 				sid = agent.get_site_sid(self, user)
+			except requests.HTTPError as e:
+				if "validate_ip_address" in str(e):
+					frappe.throw(
+						f"Login with {user}'s credentials is IP restricted. Please remove the same and try again.",
+						frappe.ValidationError,
+					)
+				elif f"User {user} does not exist" in str(e):
+					frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+				raise e
 			except AgentRequestSkippedException:
 				frappe.throw(
 					"Server is unresponsive. Please try again in some time.",
