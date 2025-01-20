@@ -77,6 +77,7 @@ class SiteMigration(Document):
 	def before_insert(self):
 		self.validate_apps()
 		self.validate_bench()
+		self.check_for_inactive_domains()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
