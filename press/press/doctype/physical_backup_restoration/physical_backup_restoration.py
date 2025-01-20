@@ -216,7 +216,6 @@ class PhysicalBackupRestoration(Document):
 		"""
 		result = self.ansible_run("lsblk --json -o name,fstype,type,label")
 		if result["status"] != "Success":
-			self.add_comment(text=f"Error getting disks info: {result}")
 			return StepStatus.Failure
 
 		devices_info_str: str = result["output"]
@@ -264,7 +263,6 @@ class PhysicalBackupRestoration(Document):
 
 		mount_response = self.ansible_run(f"mount {disk_partition_to_mount} {self.mount_point}")
 		if mount_response["status"] != "Success":
-			self.add_comment(text=f"Error mounting disk: {mount_response}")
 			return StepStatus.Failure
 		return StepStatus.Success
 
@@ -337,7 +335,6 @@ class PhysicalBackupRestoration(Document):
 		if not self.volume or self.get_step_status(self.attach_volume_to_instance) != "Success":
 			return StepStatus.Success
 		state = self.virtual_machine.get_state_of_volume(self.volume)
-		self.add_comment(text=f"Volume state: {state}")
 		if state != "in-use":
 			return StepStatus.Success
 		self.virtual_machine.detach(self.volume)
@@ -517,7 +514,8 @@ class PhysicalBackupRestoration(Document):
 	def ansible_run(self, command):
 		inventory = f"{self.virtual_machine.public_ip_address},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
-		self.add_command(command, result)
+		if result["status"] != "Success":
+			self.add_command(command, result)
 		return result
 
 	def add_command(self, command, result):
