@@ -12,6 +12,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.exceptions import (
 	CannotChangePlan,
+	InactiveDomains,
 	InsufficientSpaceOnServer,
 	MissingAppsInBench,
 	OngoingAgentJob,
@@ -123,11 +124,21 @@ class SiteMigration(Document):
 				MissingAppsInBench,
 			)
 
+	def check_for_inactive_domains(self):
+		if domains := frappe.db.exists(
+			"Site Domain", {"site": self.site, "status": ("!=", "Active")}, pluck="name"
+		):
+			frappe.throw(
+				f"Inactive custom domains exist: {','.join(domains)}. Please remove or fix the same.",
+				InactiveDomains,
+			)
+
 	@frappe.whitelist()
 	def start(self):
 		self.status = "Pending"
 		self.save()
 		self.check_for_ongoing_agent_jobs()
+		self.check_for_inactive_domains()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
 		site: Site = frappe.get_doc("Site", self.site)
@@ -683,10 +694,12 @@ def run_scheduled_migrations():
 		try:
 			site_migration.start()
 		except OngoingAgentJob:
-			pass
+			pass  # ongoing jobs will finish in some time
 		except MissingAppsInBench as e:
 			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except InsufficientSpaceOnServer as e:
+			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
+		except InactiveDomains as e:
 			site_migration.cleanup_and_fail(reason=str(e), force_activate=True)
 		except Exception as e:
 			log_error("Site Migration Start Error", exception=e)
