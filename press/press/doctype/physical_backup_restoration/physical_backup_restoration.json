@@ -57,8 +57,7 @@
    "fieldtype": "Link",
    "label": "Disk Snapshot",
    "options": "Virtual Disk Snapshot",
-   "reqd": 1,
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "site_backup",
@@ -166,7 +165,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-20 17:08:41.891041",
+ "modified": "2025-01-20 18:19:42.081729",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

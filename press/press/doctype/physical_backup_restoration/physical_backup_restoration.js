@@ -3,12 +3,21 @@
 
 frappe.ui.form.on('Physical Backup Restoration', {
 	refresh(frm) {
+		if (frm.is_new()) {
+			return;
+		}
+
 		[
-			[__('Start'), 'execute', frm.doc.status === 'Pending'],
-			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
-			[__('Cleanup'), 'cleanup', frm.doc.status === 'Failure'],
-			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
-		].forEach(([label, method, condition]) => {
+			[__('Start'), 'execute', frm.doc.status === 'Pending', false],
+			[
+				__('Force Continue'),
+				'force_continue',
+				frm.doc.status === 'Failure',
+				true,
+			],
+			[__('Cleanup'), 'cleanup', frm.doc.status === 'Failure', true],
+			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running', false],
+		].forEach(([label, method, condition, grouped]) => {
 			if (condition) {
 				frm.add_custom_button(
 					label,
@@ -18,7 +27,7 @@ frappe.ui.form.on('Physical Backup Restoration', {
 							() => frm.call(method).then(() => frm.refresh()),
 						);
 					},
-					__('Actions'),
+					grouped ? __('Actions') : null,
 				);
 			}
 		});

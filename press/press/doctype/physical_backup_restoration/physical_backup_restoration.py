@@ -41,7 +41,7 @@ class PhysicalBackupRestoration(Document):
 		destination_database: DF.Data
 		destination_server: DF.Link
 		device: DF.Data | None
-		disk_snapshot: DF.Link
+		disk_snapshot: DF.Link | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job: DF.Link | None
@@ -103,6 +103,7 @@ class PhysicalBackupRestoration(Document):
 
 	def before_insert(self):
 		self.validate_aws_only()
+		self.set_disk_snapshot()
 		self.validate_snapshot_region()
 		self.validate_snapshot_status()
 
@@ -115,6 +116,12 @@ class PhysicalBackupRestoration(Document):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
 			frappe.throw("Only AWS provider is supported currently.")
+
+	def set_disk_snapshot(self):
+		if not self.disk_snapshot:
+			self.disk_snapshot = frappe.get_value("Site Backup", self.site_backup, "database_snapshot")
+			if not self.disk_snapshot:
+				frappe.throw("Disk Snapshot is not available in site backup")
 
 	def validate_snapshot_region(self):
 		snapshot_region = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "region")
