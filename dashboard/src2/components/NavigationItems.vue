@@ -94,7 +94,7 @@ export default {
 							'Deploy Candidate'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					condition: !onboardingComplete && !isProductTrialUser,
+					condition: onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA
 				},
 				{
@@ -104,7 +104,7 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					condition: !onboardingComplete && !isProductTrialUser,
+					condition: onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA
 				},
 				{
@@ -121,7 +121,7 @@ export default {
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
-					condition: !onboardingComplete && !isProductTrialUser,
+					condition: onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA,
 					children: [
 						{
