@@ -22,6 +22,7 @@
   "free_account",
   "via_erpnext",
   "enforce_2fa",
+  "is_product_trial_user",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -438,6 +439,13 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "default": "0",
+   "description": "Product Trial user sees a simplified version of the dashboard",
+   "fieldname": "is_product_trial_user",
+   "fieldtype": "Check",
+   "label": "Is Product Trial User"
   }
  ],
  "links": [
@@ -497,7 +505,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-11-11 10:27:47.247515",
+ "modified": "2025-01-20 10:36:36.336391",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -63,6 +63,7 @@ class Team(Document):
 		github_access_token: DF.Data | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
+		is_product_trial_user: DF.Check
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
@@ -111,6 +112,7 @@ class Team(Document):
 		"is_developer",
 		"enable_performance_tuning",
 		"enable_inplace_updates",
+		"is_product_trial_user",
 	)
 
 	def get_doc(self, doc):
@@ -283,6 +285,7 @@ class Team(Document):
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
+		is_product_trial_user: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
 		team: "Team" = frappe.get_doc(
@@ -294,6 +297,7 @@ class Team(Document):
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
 				"account_request": account_request.name,
+				"is_product_trial_user": is_product_trial_user,
 			}
 		)
 
@@ -1042,6 +1046,7 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
+		return "/sites"
 		sites = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
 		if sites > 5:
 			return "/sites"

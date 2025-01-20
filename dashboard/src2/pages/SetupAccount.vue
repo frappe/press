@@ -170,6 +170,7 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
+					is_product_trial_user: this.saasProduct ? true : false,
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
