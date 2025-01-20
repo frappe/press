@@ -41,6 +41,8 @@
       - mariadb-client
       - libmariadbclient18
     state: latest
+  register: result
+  until: result.rc == 0
   retries: 5
   delay: 120
 
