@@ -28,6 +28,7 @@ export default {
 
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
+			const isProductTrialUser = this.$team.doc.is_product_trial_user;
 			const enforce2FA = Boolean(
 				!this.$team.doc.is_desk_user &&
 					this.$team.doc.enforce_2fa &&
@@ -40,13 +41,14 @@ export default {
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !this.$team.doc.onboarding.complete
+					condition: !onboardingComplete
 				},
 				{
 					name: 'Notifications',
 					icon: () => h(Notification),
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
+					condition: !onboardingComplete && !isProductTrialUser,
 					badge: () => {
 						if (unreadNotificationsCount.data > 0) {
 							return h(
@@ -92,7 +94,7 @@ export default {
 							'Deploy Candidate'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					condition: onboardingComplete,
+					condition: !onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA
 				},
 				{
@@ -102,7 +104,7 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					condition: onboardingComplete,
+					condition: !onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA
 				},
 				{
@@ -119,7 +121,7 @@ export default {
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
-					condition: onboardingComplete,
+					condition: !onboardingComplete && !isProductTrialUser,
 					disabled: enforce2FA,
 					children: [
 						{
