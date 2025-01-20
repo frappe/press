@@ -36,4 +36,4 @@ class MpesaPaymentRecord(Document):
 		transaction_type: DF.Literal["", "Mpesa Express", "Mpesa C2B"]
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = ("name", "posting_date", "trans_amount", "default_currency", "local_invoice")
