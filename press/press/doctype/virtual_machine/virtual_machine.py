@@ -1292,12 +1292,17 @@ class VirtualMachine(Document):
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
-		while self.get_status_of_volume(volume_id) != "available":
+		while self.get_state_of_volume(volume_id) != "available":
 			time.sleep(1)
 
-	def get_status_of_volume(self, volume_id):
-		# AWS EC2 specific
-		return self.client().describe_volumes(VolumeIds=[volume_id])["Volumes"][0]["State"]
+	def get_state_of_volume(self, volume_id):
+		try:
+			# AWS EC2 specific
+			# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-volumes.html
+			return self.client().describe_volumes(VolumeIds=[volume_id])["Volumes"][0]["State"]
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "InvalidVolume.NotFound":
+				return "deleted"
 
 	def attach_volume(self, volume_id) -> str:
 		# Attach a volume to the instance and return the device name
@@ -1318,6 +1323,8 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def detach(self, volume_id):
 		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
+		if not volume:
+			return
 		self.client().detach_volume(
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)

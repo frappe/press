@@ -10,15 +10,21 @@
   "site_backup",
   "disk_snapshot",
   "column_break_zind",
+  "job",
   "volume",
   "device",
-  "mount_path",
-  "job",
+  "mount_point",
   "section_break_pqgo",
   "source_database",
   "column_break_kaja",
   "destination_database",
   "destination_server",
+  "section_break_swxv",
+  "start",
+  "column_break_xqdd",
+  "end",
+  "column_break_qosz",
+  "duration",
   "section_break_aqam",
   "steps"
  ],
@@ -29,7 +35,8 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_zind",
@@ -49,13 +56,16 @@
    "fieldtype": "Link",
    "label": "Disk Snapshot",
    "options": "Virtual Disk Snapshot",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "site_backup",
    "fieldtype": "Link",
    "label": "Site Backup",
-   "options": "Site Backup"
+   "options": "Site Backup",
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_pqgo",
@@ -107,21 +117,49 @@
    "read_only": 1
   },
   {
-   "fieldname": "mount_path",
-   "fieldtype": "Data",
-   "label": "Mount Path",
-   "read_only": 1
-  },
-  {
    "fieldname": "job",
    "fieldtype": "Link",
    "label": "Job",
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_swxv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start"
+  },
+  {
+   "fieldname": "column_break_xqdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End"
+  },
+  {
+   "fieldname": "column_break_qosz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "mount_point",
+   "fieldtype": "Data",
+   "label": "Mount Point",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-17 19:24:16.834232",
+ "modified": "2025-01-19 22:52:07.459910",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

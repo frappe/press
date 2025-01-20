@@ -128,7 +128,7 @@ class SiteBackup(Document):
 			)
 		else:
 			site = frappe.get_doc("Site", self.site)
-			agent = Agent(self.database_server, "Database Server")
+			agent = Agent(site.server)
 			job = agent.backup_site(site, self)
 			frappe.db.set_value("Site Backup", self.name, "job", job.name)
 

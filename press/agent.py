@@ -435,7 +435,7 @@ class Agent:
 			- By calling `snapshot_create_callback` url
 		- Then, unlock the database
 		"""
-		url = frappe.utils.get_url()
+		press_public_base_url = frappe.utils.get_url()
 		data = {
 			"databases": [site_backup.database_name],
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -445,7 +445,7 @@ class Agent:
 			"site_backup": {
 				"name": site_backup.name,
 				"snapshot_request_key": site_backup.snapshot_request_key,
-				"snapshot_trigger_url": f"{url}/api/method/press.api.site_backup.create_snapshot",
+				"snapshot_trigger_url": f"{press_public_base_url}/api/method/press.api.site_backup.create_snapshot",
 			},
 		}
 		return self.create_agent_job(
@@ -462,10 +462,13 @@ class Agent:
 			"backup_db": backup_restoration.source_database,
 			"target_db": backup_restoration.destination_database,
 			"target_db_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
 			"innodb_tables": json.loads(backup.innodb_tables),
 			"myisam_tables": json.loads(backup.myisam_tables),
 			"table_schema": backup.table_schema,
-			"backup_db_base_directory": os.path.join(backup_restoration.mount_path, "/var/lib/mysql"),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",

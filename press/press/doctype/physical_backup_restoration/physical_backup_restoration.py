@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import frappe
 from frappe.model.document import Document
@@ -15,6 +16,9 @@ from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
+	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
+		PhysicalBackupRestorationStep,
+	)
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -38,11 +42,14 @@ class PhysicalBackupRestoration(Document):
 		destination_server: DF.Link
 		device: DF.Data | None
 		disk_snapshot: DF.Link
+		duration: DF.Duration | None
+		end: DF.Datetime | None
 		job: DF.Link | None
-		mount_path: DF.Data | None
+		mount_point: DF.Data | None
 		site: DF.Link
-		site_backup: DF.Link | None
+		site_backup: DF.Link
 		source_database: DF.Data
+		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[PhysicalBackupRestorationStep]
 		volume: DF.Data | None
@@ -59,32 +66,33 @@ class PhysicalBackupRestoration(Document):
 	def migration_steps(self):
 		Wait = True
 		NoWait = False
-		IgnoreOnFailure = True
-		DoNotIgnoreOnFailure = False
-		SyncStep = True
-		AsyncStep = False
+		SyncStep = False
+		AsyncStep = True
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait, DoNotIgnoreOnFailure, SyncStep),
-			(self.create_volume_from_snapshot, NoWait, DoNotIgnoreOnFailure, SyncStep),
-			(self.wait_for_volume_to_be_available, Wait, DoNotIgnoreOnFailure, SyncStep),
-			(self.attach_volume_to_instance, NoWait, DoNotIgnoreOnFailure, SyncStep),
-			(self.mount_volume_to_instance, NoWait, DoNotIgnoreOnFailure, SyncStep),
-			(self.change_permission_of_database_directory, NoWait, DoNotIgnoreOnFailure, SyncStep),
-			(self.restore_database, Wait, DoNotIgnoreOnFailure, AsyncStep),
-			(self.rollback_permission_change_of_database_directory, NoWait, IgnoreOnFailure, SyncStep),
-			(self.unmount_volume_from_instance, NoWait, IgnoreOnFailure, SyncStep),
-			(self.detach_volume_from_instance, NoWait, IgnoreOnFailure, SyncStep),
-			(self.delete_volume, NoWait, IgnoreOnFailure, SyncStep),
+			(self.wait_for_pending_snapshot_to_be_completed, Wait, SyncStep),
+			(self.create_volume_from_snapshot, NoWait, SyncStep),
+			(self.wait_for_volume_to_be_available, Wait, SyncStep),
+			(self.attach_volume_to_instance, NoWait, SyncStep),
+			(self.create_mount_point, NoWait, SyncStep),
+			(self.mount_volume_to_instance, NoWait, SyncStep),
+			(self.change_permission_of_backup_directory, NoWait, SyncStep),
+			(self.change_permission_of_database_directory, NoWait, SyncStep),
+			(self.restore_database, Wait, AsyncStep),
+			(self.rollback_permission_change_of_database_directory, NoWait, SyncStep),
+			(self.unmount_volume_from_instance, NoWait, SyncStep),
+			(self.delete_mount_point, NoWait, SyncStep),
+			(self.detach_volume_from_instance, NoWait, SyncStep),
+			(self.wait_for_volume_to_be_detached, Wait, SyncStep),
+			(self.delete_volume, NoWait, SyncStep),
 		]
 
 		steps = []
-		for method, wait_for_completion, ignore_on_failure, is_async in methods:
+		for method, wait_for_completion, is_async in methods:
 			steps.append(
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
 					"wait_for_completion": wait_for_completion,
-					"ignore_on_failure": ignore_on_failure,
 					"is_async": is_async,
 				}
 			)
@@ -96,7 +104,9 @@ class PhysicalBackupRestoration(Document):
 		self.validate_snapshot_status()
 
 	def after_insert(self):
+		self.set_mount_point()
 		self.add_steps()
+		self.save()
 
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
@@ -112,6 +122,9 @@ class PhysicalBackupRestoration(Document):
 		snapshot_status = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "status")
 		if snapshot_status not in ("Pending", "Completed"):
 			frappe.throw("Snapshot status should be Pending or Completed.")
+
+	def set_mount_point(self):
+		self.mount_point = f"/mnt/{self.name}"
 
 	def wait_for_pending_snapshot_to_be_completed(self) -> StepStatus:
 		"""Wait for pending snapshot to be completed"""
@@ -132,7 +145,7 @@ class PhysicalBackupRestoration(Document):
 
 	def wait_for_volume_to_be_available(self) -> StepStatus:
 		"""Wait for volume to be available"""
-		status = self.virtual_machine.get_status_of_volume(self.volume)
+		status = self.virtual_machine.get_state_of_volume(self.volume)
 		# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-volumes.html
 		if status == "available":
 			return StepStatus.Success
@@ -145,58 +158,95 @@ class PhysicalBackupRestoration(Document):
 		self.device = self.virtual_machine.attach_volume(self.volume)
 		return StepStatus.Success
 
+	def create_mount_point(self) -> StepStatus:
+		"""Create mount point"""
+		result = self.ansible_run(f"mkdir -p {self.mount_point}")
+		if result["status"] == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
+
 	def mount_volume_to_instance(self) -> StepStatus:  # noqa: C901
 		"""Mount volume to instance"""
 
 		"""
-		Find out the disk name
+		> Find out the disk name
 
 		If the disk name is /dev/sdg, it might be renamed to /dev/xvdg in the instance.
 
-		Next, If the volume was created from a snapshot of root volume, the volume will have multiple partitions like -
+		Next, If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
 
-		> Volume created from snapshot of root volume
-		> lsblk -n -l -o NAME,FSTYPE,LABEL -f /dev/xvdg
-		xvdg
-		xvdg1  ext4   cloudimg-rootfs
-		xvdg14
-		xvdg15 vfat   UEFI
-		xvdg16 ext4   BOOT
+		> lsblk --json -o name,fstype,type,label
 
-		> Volume created from snapshot of data volume
-		> sudo lsblk -n -l -o NAME,FSTYPE,LABEL -f /dev/xvdf
-		xvdf ext4
+		{
+			"blockdevices":[
+				{ "name":"loop0", "fstype":null, "type": "loop", "label": null },
+				{ "name":"loop1", "fstype":null, "type": "loop", "label": null },
+				{ "name":"loop2", "fstype":null, "type": "loop", "label": null },
+				{ "name":"loop3", "fstype":null, "type": "loop", "label": null },
+				{ "name":"loop4", "fstype":null, "type": "loop", "label": null },
+				{
+					"name":"xvda","fstype":null, "type": "disk", "label": null,
+					"children":[
+						{
+							"name":"xvda1",
+							"fstype":"ext4",
+							"type":"part",
+							"label":"cloudimg-rootfs"
+						},
+						{
+							"name":"xvda14",
+							"fstype":null,
+							"type":"part",
+							"label":null
+						},
+						{
+							"name":"xvda15",
+							"fstype":"vfat",
+							"type":"part",
+							"label":"UEFI"
+						}
+					]
+				}
+			]
+		}
+
 		"""
-		disks_info_response = self.ansible_run(
-			'lsblk -n -l -o NAME,FSTYPE,LABEL |  awk \'{print $1 "," $2 "," $3}\''
-		)[0]
-		if disks_info_response["status"] != "Success":
-			self.add_comment(text=f"Error getting disks info: {disks_info_response}")
+		result = self.ansible_run("lsblk --json -o name,fstype,type,label")
+		if result["status"] != "Success":
+			self.add_comment(text=f"Error getting disks info: {result}")
 			return StepStatus.Failure
 
-		disks_info_str: str = disks_info_response["output"]
-		disks_info = [x.split(",") for x in disks_info_str.split("\n")]  # [<name>, <fstype>, <label>]
+		devices_info_str: str = result["output"]
+		devices_info = json.loads(devices_info_str)["blockdevices"]
 
-		disk_name = self.device.split("/")[-1]
+		disk_name = self.device.split("/")[-1]  # /dev/sdf -> sdf
 
 		# If disk name is sdf, it might be possible mounted as xvdf
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
-		possible_disks = [disk_name, "xvd{}".format(disk_name.split("sd"))]
+		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
 
 		disk_partition_to_mount = None
 		for device in possible_disks:
-			for disk_info in disks_info:
+			for device_info in devices_info:
+				if device_info["type"] not in ["disk", "part"]:
+					continue
+
 				# If the volume was created from a snapshot of data volume, the volume will have only one partition.
-				if disk_info[0] == device and disk_info[1] == "ext4":
-					disk_partition_to_mount = f"/dev/{device}"
-				# When the volume is created from a snapshot of root volume, the volume will have multiple partitions.
-				elif (
-					disk_info[0] != device
-					and disk_info[0].startswith(device)
-					and disk_info[1] == "ext4"
-					and disk_info[2] == "cloudimg-rootfs"
+				if device_info["type"] == "part" and device_info["name"] == device:
+					disk_partition_to_mount = "/dev/{}".format(device_info["name"])
+
+				# If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
+				if (
+					device_info["type"] == "disk"
+					and device_info["name"].startswith(device)
+					and device_info.get("children")
 				):
-					disk_partition_to_mount = f"/dev/{device}1"
+					children = device_info["children"]
+					# try to find the partition with label cloudimg-rootfs
+					for child in children:
+						if child["label"] == "cloudimg-rootfs":
+							disk_partition_to_mount = "/dev/{}".format(child["name"])
+
 				if disk_partition_to_mount:
 					break
 			if disk_partition_to_mount:
@@ -209,12 +259,19 @@ class PhysicalBackupRestoration(Document):
 			)
 			return StepStatus.Failure
 
-		self.mount_path = "/mnt/{}".format(self.volume.split("-")[-1])
-		mount_response = self.ansible_run(f"mount {disk_partition_to_mount} {self.mount_path}")[0]
+		mount_response = self.ansible_run(f"mount {disk_partition_to_mount} {self.mount_point}")
 		if mount_response["status"] != "Success":
 			self.add_comment(text=f"Error mounting disk: {mount_response}")
 			return StepStatus.Failure
 		return StepStatus.Success
+
+	def change_permission_of_backup_directory(self) -> StepStatus:
+		"""Change permission of backup files"""
+		path = os.path.join(self.mount_point, "var/lib/mysql")
+		result = self.ansible_run(f"chmod -R 770 {path}")
+		if result["status"] == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
 
 	def change_permission_of_database_directory(self) -> StepStatus:
 		"""Change permission of database directory"""
@@ -225,7 +282,7 @@ class PhysicalBackupRestoration(Document):
 
 	def restore_database(self) -> StepStatus:
 		"""Restore database"""
-		if not self.site:
+		if not self.job:
 			site = frappe.get_doc("Site", self.site)
 			agent = Agent(self.destination_server, "Database Server")
 			self.job = agent.physical_restore_database(site, self)
@@ -238,30 +295,75 @@ class PhysicalBackupRestoration(Document):
 		return StepStatus.Failure
 
 	def rollback_permission_change_of_database_directory(self) -> StepStatus:
-		"""Rollback permission change of database directory"""
-		result = self.ansible_run(f"chmod 700 /var/lib/mysql/{self.destination_database}")
+		"""Rollback permission of database directory"""
+
+		# Docs > https://mariadb.com/kb/en/specifying-permissions-for-schema-data-directories-and-tables/
+		# Directory > 700 and File > 660
+
+		result = self.ansible_run(
+			f"chmod -R 660 /var/lib/mysql/{self.destination_database} && chmod 700 /var/lib/mysql/{self.destination_database} && chown -R mysql:mysql /var/lib/mysql/{self.destination_database}"
+		)
 		if result["status"] == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
 
 	def unmount_volume_from_instance(self) -> StepStatus:
 		"""Unmount volume from instance"""
-		response = self.ansible_run(f"umount {self.mount_path}")[0]
+		if self.get_step_status(self.mount_volume_to_instance) != StepStatus.Success:
+			return StepStatus.Success
+		response = self.ansible_run(f"umount {self.mount_point}")
+		if response["status"] != "Success":
+			return StepStatus.Failure
+		return StepStatus.Success
+
+	def delete_mount_point(self) -> StepStatus:
+		"""Delete mount point"""
+		if not self.mount_point or not self.mount_point.startswith("/mnt"):
+			frappe.throw("Mount point is not valid.")
+		# check if mount point was created
+		if self.get_step_status(self.create_mount_point) != "Success":
+			return StepStatus.Success
+		response = self.ansible_run(f"rm -rf {self.mount_point}")
 		if response["status"] != "Success":
 			return StepStatus.Failure
 		return StepStatus.Success
 
 	def detach_volume_from_instance(self) -> StepStatus:
 		"""Detach volume from instance"""
-		response = self.virtual_machine.detach(self.volume)
-		if response["status"] != "Success":
-			return StepStatus.Failure
+		# check if volume was attached
+		if not self.volume or self.get_step_status(self.attach_volume_to_instance) != "Success":
+			return StepStatus.Success
+		state = self.virtual_machine.get_state_of_volume(self.volume)
+		self.add_comment(text=f"Volume state: {state}")
+		if state != "in-use":
+			return StepStatus.Success
+		self.virtual_machine.detach(self.volume)
 		return StepStatus.Success
+
+	def wait_for_volume_to_be_detached(self) -> StepStatus:
+		"""Wait for volume to be detached"""
+		if not self.volume:
+			return StepStatus.Success
+		state = self.virtual_machine.get_state_of_volume(self.volume)
+		if state in ["available", "deleting", "deleted"]:
+			return StepStatus.Success
+		if state == "error":
+			return StepStatus.Failure
+		return StepStatus.Pending
 
 	def delete_volume(self) -> StepStatus:
 		"""Delete volume"""
-		self.virtual_machine.client.delete_volume(VolumeId=self.volume)
+		if not self.volume or self.get_step_status(self.create_volume_from_snapshot) != StepStatus.Success:
+			return StepStatus.Success
+		state = self.virtual_machine.get_state_of_volume(self.volume)
+		if state in ["deleting", "deleted"]:
+			return StepStatus.Success
+		self.virtual_machine.client().delete_volume(VolumeId=self.volume)
 		return StepStatus.Success
+
+	def get_step_status(self, step_method: Callable) -> str:
+		step = self.get_step_by_method(step_method.__name__)
+		return step.status if step else "Pending"
 
 	def add_steps(self):
 		for step in self.migration_steps:
@@ -312,10 +414,17 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
+		first_failed_step: PhysicalBackupRestorationStep = None
 		# Mark all failed and skipped steps as pending
 		for step in self.steps:
 			if step.status in ("Failure", "Skipped"):
+				if not first_failed_step:
+					first_failed_step = step
 				step.status = "Pending"
+
+		# If the job was failed in Restore Database step, then reset the job
+		if first_failed_step and first_failed_step.method == self.restore_database.__name__:
+			self.job = None
 		self.next()
 
 	@frappe.whitelist()
@@ -325,6 +434,7 @@ class PhysicalBackupRestoration(Document):
 			if step.status == "Pending":
 				step.status = "Failure"
 		self.status = "Failure"
+		self.save()
 
 	@property
 	def next_step(self) -> PhysicalBackupRestorationStep | None:
@@ -360,7 +470,7 @@ class PhysicalBackupRestoration(Document):
 		step.end = frappe.utils.now_datetime()
 		step.duration = (step.end - step.start).total_seconds()
 
-		if step.status == "Failure" and not step.ignore_on_failure:
+		if step.status == "Failure":
 			self.fail()
 		else:
 			self.next(ignore_version_while_saving)
@@ -368,6 +478,12 @@ class PhysicalBackupRestoration(Document):
 	def get_step(self, step_name) -> PhysicalBackupRestorationStep | None:
 		for step in self.steps:
 			if step.name == step_name:
+				return step
+		return None
+
+	def get_step_by_method(self, method_name) -> PhysicalBackupRestorationStep | None:
+		for step in self.steps:
+			if step.method == method_name:
 				return step
 		return None
 
