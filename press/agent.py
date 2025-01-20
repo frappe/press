@@ -1024,6 +1024,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def get_job_status(self, id):
 		return self.get(f"jobs/{id}")
 
+	def cancel_job(self, id):
+		return self.post(f"jobs/{id}/cancel")
+
 	def get_site_sid(self, site, user=None):
 		if user:
 			data = {"user": user}

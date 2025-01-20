@@ -307,6 +307,11 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
+	@frappe.whitelist()
+	def cancel_job(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		agent.cancel_job(self.job_id)
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:

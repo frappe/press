@@ -15,6 +15,8 @@
 
 - name: Extend Partition
   command: 'growpart {{ device }} 1'
+  register: result
+  until: result.rc == 0
   retries: 10
   delay: 10
   when: partitioned_disk
