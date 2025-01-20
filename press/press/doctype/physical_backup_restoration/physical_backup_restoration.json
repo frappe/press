@@ -130,7 +130,8 @@
   {
    "fieldname": "start",
    "fieldtype": "Datetime",
-   "label": "Start"
+   "label": "Start",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_xqdd",
@@ -139,7 +140,8 @@
   {
    "fieldname": "end",
    "fieldtype": "Datetime",
-   "label": "End"
+   "label": "End",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_qosz",
@@ -148,7 +150,8 @@
   {
    "fieldname": "duration",
    "fieldtype": "Duration",
-   "label": "Duration"
+   "label": "Duration",
+   "read_only": 1
   },
   {
    "fieldname": "mount_point",
@@ -159,7 +162,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-19 22:52:07.459910",
+ "modified": "2025-01-20 16:10:04.859419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",
