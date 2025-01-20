@@ -206,7 +206,7 @@ def get_razorpay_client():
 
 		if not (key_id and key_secret):
 			frappe.throw(
-				"Setup razorpay via Press Settings before using" " press.api.billing.get_razorpay_client"
+				"Setup razorpay via Press Settings before using press.api.billing.get_razorpay_client"
 			)
 
 		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
@@ -231,3 +231,28 @@ def process_micro_debit_test_charge(stripe_event):
 		).insert(ignore_permissions=True)
 	except Exception:
 		log_error("Error Processing Stripe Micro Debit Charge", body=stripe_event)
+
+
+# Get partners external connection
+def get_partner_external_connection(mpesa_setup):
+	# check if connection is already established
+	if hasattr(frappe.local, "_external_conn"):
+		return frappe.local.press_external_conn
+	from frappe.frappeclient import FrappeClient
+
+	# Fetch API from gateway
+	payment_gateway = frappe.get_all(
+		"Payment Gateway",
+		filters={"gateway_controller": mpesa_setup, "gatway_setting": "Mpesa Setup"},
+		fields=["name", "url", "api_key", "api_secret"],
+	)
+	if not payment_gateway:
+		frappe.throw("Mpesa Setup not set up in Payment Gateway")
+	# Fetch API key and secret
+	api_key = payment_gateway[0].api_key
+	api_secret = payment_gateway[0].api_secret
+	url = payment_gateway[0].url
+
+	# Establish connection
+	frappe.local._external_conn = FrappeClient(url, api_key=api_key, api_secret=api_secret)
+	return frappe.local._external_conn

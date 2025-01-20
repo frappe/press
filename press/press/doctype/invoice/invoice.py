@@ -12,7 +12,11 @@ from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
 from press.api.client import dashboard_whitelist
 from press.utils import log_error
-from press.utils.billing import convert_stripe_money, get_frappe_io_connection
+from press.utils.billing import (
+	convert_stripe_money,
+	get_frappe_io_connection,
+	get_partner_external_connection,
+)
 
 
 class Invoice(Document):
@@ -1058,3 +1062,80 @@ def has_permission(doc, ptype, user):
 	if doc.team == team.name or team.user in team_members:
 		return True
 	return False
+
+
+# M-pesa external site for webhook
+def create_sales_invoice_on_external_site(transaction_response):
+	client = get_partner_external_connection()
+	try:
+		# Define the necessary data for the Sales Invoice creation
+		data = {
+			"customer": transaction_response.get("team"),
+			"posting_date": frappe.utils.nowdate(),
+			"due_date": frappe.utils.add_days(frappe.utils.nowdate(), 30),
+			"items": [
+				{
+					"item_code": "Frappe Cloud Payment",
+					"qty": 1,
+					"rate": transaction_response.get("Amount"),
+					"description": "Payment for Mpesa transaction",
+				}
+			],
+			"paid_amount": transaction_response.get("Amount"),
+			"status": "Paid",
+		}
+
+		# Post to the external site's sales invoice creation API
+		response = client.session.post(
+			f"{client.url}/api/method/frappe.client.insert",
+			headers=client.headers,
+			json={"doc": data},
+		)
+
+		if response.ok:
+			res = response.json()
+			sales_invoice = res.get("message")
+			if sales_invoice:
+				frappe.msgprint(_("Sales Invoice created successfully on external site."))
+				return sales_invoice
+		else:
+			frappe.throw(_("Failed to create Sales Invoice on external site."))
+	except Exception as e:
+		frappe.log_error(str(e), "Error creating Sales Invoice on external site")
+
+
+def fetch_sales_invoice_pdf_on_external_site(sales_invoice_name):
+	client = get_partner_external_connection()
+	try:
+		print_format = "Default"
+		from urllib.parse import urlencode
+
+		params = urlencode(
+			{
+				"doctype": "Sales Invoice",
+				"name": sales_invoice_name,
+				"format": print_format,
+				"no_letterhead": 0,
+			}
+		)
+		url = f"{client.url}/api/method/frappe.utils.print_format.download_pdf?{params}"
+
+		with client.session.get(url, headers=client.headers, stream=True) as r:
+			r.raise_for_status()
+			file_doc = frappe.get_doc(
+				{
+					"doctype": "File",
+					"attached_to_doctype": "Sales Invoice",
+					"attached_to_name": sales_invoice_name,
+					"attached_to_field": "invoice_pdf",
+					"folder": "Home/Attachments",
+					"file_name": sales_invoice_name + ".pdf",
+					"is_private": 1,
+					"content": r.content,
+				}
+			)
+			file_doc.save(ignore_permissions=True)
+			return file_doc.file_url
+
+	except Exception as e:
+		frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")

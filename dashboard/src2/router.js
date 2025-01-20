@@ -13,41 +13,41 @@ let router = createRouter({
 				next({
 					name: 'Welcome',
 					query: {
-						is_redirect: true
-					}
+						is_redirect: true,
+					},
 				});
-			}
+			},
 		},
 		{
 			path: '/welcome',
 			name: 'Welcome',
-			component: () => import('./pages/Welcome.vue')
+			component: () => import('./pages/Welcome.vue'),
 		},
 		{
 			path: '/login',
 			name: 'Login',
 			component: () => import('./pages/LoginSignup.vue'),
-			meta: { isLoginPage: true }
+			meta: { isLoginPage: true },
 		},
 		{
 			path: '/signup',
 			name: 'Signup',
 			component: () => import('./pages/LoginSignup.vue'),
-			meta: { isLoginPage: true }
+			meta: { isLoginPage: true },
 		},
 		{
 			path: '/setup-account/:requestKey/:joinRequest?',
 			name: 'Setup Account',
 			component: () => import('./pages/SetupAccount.vue'),
 			props: true,
-			meta: { isLoginPage: true }
+			meta: { isLoginPage: true },
 		},
 		{
 			path: '/reset-password/:requestKey',
 			name: 'Reset Password',
 			component: () => import('./pages/ResetPassword.vue'),
 			props: true,
-			meta: { isLoginPage: true }
+			meta: { isLoginPage: true },
 		},
 		{
 			path: '/checkout/:secretKey',
@@ -55,8 +55,8 @@ let router = createRouter({
 			component: () => import('../src/views/checkout/Checkout.vue'),
 			props: true,
 			meta: {
-				isLoginPage: true
-			}
+				isLoginPage: true,
+			},
 		},
 		{
 			path: '/subscription/:site?',
@@ -64,8 +64,8 @@ let router = createRouter({
 			component: () => import('../src/views/checkout/Subscription.vue'),
 			props: true,
 			meta: {
-				hideSidebar: true
-			}
+				hideSidebar: true,
+			},
 		},
 		{
 			name: 'Enable2FA',
@@ -73,35 +73,35 @@ let router = createRouter({
 			component: () => import('./pages/Enable2FA.vue'),
 			props: true,
 			meta: {
-				hideSidebar: true
-			}
+				hideSidebar: true,
+			},
 		},
 		{
 			name: 'New Site',
 			path: '/sites/new',
-			component: () => import('./pages/NewSite.vue')
+			component: () => import('./pages/NewSite.vue'),
 		},
 		{
 			name: 'Release Group New Site',
 			path: '/groups/:bench/sites/new',
 			component: () => import('./pages/NewSite.vue'),
-			props: true
+			props: true,
 		},
 		{
 			name: 'New Release Group',
 			path: '/groups/new',
-			component: () => import('./pages/NewReleaseGroup.vue')
+			component: () => import('./pages/NewReleaseGroup.vue'),
 		},
 		{
 			name: 'Server New Release Group',
 			path: '/servers/:server/groups/new',
 			component: () => import('./pages/NewReleaseGroup.vue'),
-			props: true
+			props: true,
 		},
 		{
 			name: 'New Server',
 			path: '/servers/new',
-			component: () => import('./pages/NewServer.vue')
+			component: () => import('./pages/NewServer.vue'),
 		},
 		{
 			name: 'Billing',
@@ -111,29 +111,34 @@ let router = createRouter({
 				{
 					name: 'BillingOverview',
 					path: '',
-					component: () => import('./pages/BillingOverview.vue')
+					component: () => import('./pages/BillingOverview.vue'),
 				},
 				{
 					name: 'BillingInvoices',
 					path: 'invoices',
-					component: () => import('./pages/BillingInvoices.vue')
+					component: () => import('./pages/BillingInvoices.vue'),
 				},
 				{
 					name: 'BillingBalances',
 					path: 'balances',
-					component: () => import('./pages/BillingBalances.vue')
+					component: () => import('./pages/BillingBalances.vue'),
 				},
 				{
 					name: 'BillingPaymentMethods',
 					path: 'payment-methods',
-					component: () => import('./pages/BillingPaymentMethods.vue')
+					component: () => import('./pages/BillingPaymentMethods.vue'),
 				},
 				{
 					name: 'BillingMarketplacePayouts',
 					path: 'payouts',
-					component: () => import('./pages/BillingMarketplacePayouts.vue')
-				}
-			]
+					component: () => import('./pages/BillingMarketplacePayouts.vue'),
+				},
+				{
+					name: 'BillingMpesaInvoices',
+					path: 'mpesa-invoices',
+					component: () => import('./pages/BillingMpesaInvoices.vue'),
+				},
+			],
 		},
 		{
 			path: '/settings',
@@ -145,17 +150,18 @@ let router = createRouter({
 					name: 'SettingsProfile',
 					path: 'profile',
 					component: () =>
-						import('./components/settings/profile/ProfileSettings.vue')
+						import('./components/settings/profile/ProfileSettings.vue'),
 				},
 				{
 					name: 'SettingsTeam',
 					path: 'team',
-					component: () => import('./components/settings/TeamSettings.vue')
+					component: () => import('./components/settings/TeamSettings.vue'),
 				},
 				{
 					name: 'SettingsDeveloper',
 					path: 'developer',
-					component: () => import('./components/settings/DeveloperSettings.vue')
+					component: () =>
+						import('./components/settings/DeveloperSettings.vue'),
 				},
 				{
 					name: 'SettingsPermission',
@@ -167,18 +173,18 @@ let router = createRouter({
 						{
 							path: 'roles',
 							name: 'SettingsPermissionRoles',
-							component: () => import('./components/settings/RoleList.vue')
+							component: () => import('./components/settings/RoleList.vue'),
 						},
 						{
 							name: 'SettingsPermissionRolePermissions',
 							path: 'roles/:roleId',
 							component: () =>
 								import('./components/settings/RolePermissions.vue'),
-							props: true
-						}
-					]
-				}
-			]
+							props: true,
+						},
+					],
+				},
+			],
 		},
 		{
 			name: 'Partner Portal',
@@ -189,20 +195,26 @@ let router = createRouter({
 				{
 					name: 'PartnerOverview',
 					path: 'overview',
-					component: () => import('./components/partners/PartnerOverview.vue')
+					component: () => import('./components/partners/PartnerOverview.vue'),
 				},
 				{
 					name: 'PartnerCustomers',
 					path: 'customers',
-					component: () => import('./components/partners/PartnerCustomers.vue')
+					component: () => import('./components/partners/PartnerCustomers.vue'),
 				},
 				{
 					name: 'PartnerApprovalRequests',
 					path: 'approval-requests',
 					component: () =>
-						import('./components/partners/PartnerApprovalRequests.vue')
-				}
-			]
+						import('./components/partners/PartnerApprovalRequests.vue'),
+				},
+				{
+					name: 'LocalPaymentSetup',
+					path: 'local-payment-setup',
+					component: () =>
+						import('./components/partners/PartnerLocalPaymentSetup.vue'),
+				},
+			],
 		},
 		{
 			name: 'SaaS',
@@ -215,107 +227,107 @@ let router = createRouter({
 					component: () => import('./pages/saas/Login.vue'),
 					props: true,
 					meta: {
-						isLoginPage: true
-					}
+						isLoginPage: true,
+					},
 				},
 				{
 					name: 'SaaSSignup',
 					path: ':productId/signup',
 					component: () => import('./pages/saas/Signup.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true },
 				},
 				{
 					name: 'SaaSSignupVerifyEmail',
 					path: ':productId/verify-email',
 					component: () => import('./pages/saas/VerifyEmail.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true },
 				},
 				{
 					name: 'SaaSSignupOAuthSetupAccount',
 					path: ':productId/oauth',
 					component: () => import('./pages/saas/OAuthSetupAccount.vue'),
 					props: true,
-					meta: { isLoginPage: true }
+					meta: { isLoginPage: true },
 				},
 				{
 					name: 'SaaSSignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),
-					props: true
+					props: true,
 				},
 				{
 					name: 'SaaSSignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
-					props: true
-				}
-			]
+					props: true,
+				},
+			],
 		},
 		{
 			name: 'Impersonate',
 			path: '/impersonate/:teamId',
 			component: () => import('./pages/Impersonate.vue'),
-			props: true
+			props: true,
 		},
 		{
 			name: 'InstallApp',
 			path: '/install-app/:app',
 			component: () => import('./pages/InstallApp.vue'),
-			props: true
+			props: true,
 		},
 		{
 			name: 'CreateSiteForMarketplaceApp',
 			path: '/create-site/:app',
 			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
-			props: true
+			props: true,
 		},
 		{
 			path: '/user-review/:marketplaceApp',
 			name: 'ReviewMarketplaceApp',
 			component: () =>
 				import('./components/marketplace/ReviewMarketplaceApp.vue'),
-			props: true
+			props: true,
 		},
 		{
 			path: '/developer-reply/:marketplaceApp/:reviewId',
 			name: 'ReplyMarketplaceApp',
 			component: () =>
 				import('./components/marketplace/ReplyMarketplaceApp.vue'),
-			props: true
+			props: true,
 		},
 		{
 			path: '/sql-playground',
 			name: 'SQL Playground',
 			component: () =>
-				import('./pages/devtools/database/DatabaseSQLPlayground.vue')
+				import('./pages/devtools/database/DatabaseSQLPlayground.vue'),
 		},
 		{
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
-			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue')
+			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
 		},
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',
 			name: 'Log Browser',
 			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
-			props: true
+			props: true,
 		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',
 			name: '404',
-			component: () => import('../src/views/general/404.vue')
-		}
-	]
+			component: () => import('../src/views/general/404.vue'),
+		},
+	],
 });
 
 router.beforeEach(async (to, from, next) => {
 	let isLoggedIn =
 		document.cookie.includes('user_id') &&
 		!document.cookie.includes('user_id=Guest');
-	let goingToLoginPage = to.matched.some(record => record.meta.isLoginPage);
+	let goingToLoginPage = to.matched.some((record) => record.meta.isLoginPage);
 
 	// if user is trying to access saas login page, allow irrespective of login status
 	if (
@@ -323,7 +335,7 @@ router.beforeEach(async (to, from, next) => {
 			'SaaSLogin',
 			'SaaSSignup',
 			'SaaSSignupVerifyEmail',
-			'SaaSSignupOAuthSetupAccount'
+			'SaaSSignupOAuthSetupAccount',
 		].includes(to.name)
 	) {
 		next();
@@ -341,7 +353,7 @@ router.beforeEach(async (to, from, next) => {
 		if (window.posthog?.__loaded) {
 			try {
 				window.posthog.identify($team.doc.user, {
-					app: 'frappe_cloud'
+					app: 'frappe_cloud',
 				});
 			} catch (e) {
 				console.error(e);
@@ -386,7 +398,7 @@ router.beforeEach(async (to, from, next) => {
 			if (to.name == 'SaaSSignupSetup') {
 				next({
 					name: 'SaaSSignup',
-					params: to.params
+					params: to.params,
 				});
 			} else {
 				next({ name: 'Login' });
@@ -396,7 +408,7 @@ router.beforeEach(async (to, from, next) => {
 });
 
 function waitUntilTeamLoaded() {
-	return new Promise(resolve => {
+	return new Promise((resolve) => {
 		let interval = setInterval(() => {
 			let team = getTeam();
 			if (team?.doc) {

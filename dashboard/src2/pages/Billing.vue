@@ -29,7 +29,7 @@ export default {
 		Header,
 		FBreadcrumbs: Breadcrumbs,
 		FTabs: Tabs,
-		TabsWithRouter
+		TabsWithRouter,
 	},
 	data() {
 		return {
@@ -41,10 +41,14 @@ export default {
 				{ label: 'Payment Methods', route: { name: 'BillingPaymentMethods' } },
 				{
 					label: 'Marketplace Payouts',
-					route: { name: 'BillingMarketplacePayouts' }
-				}
-			]
+					route: { name: 'BillingMarketplacePayouts' },
+				},
+				{
+					label: 'Mpesa Invoices',
+					route: { name: 'BillingMpesaInvoices' },
+				},
+			],
 		};
-	}
+	},
 };
 </script>

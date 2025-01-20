@@ -3,7 +3,7 @@
 		<Header>
 			<FBreadcrumbs
 				:items="[
-					{ label: 'Partner Portal', route: { name: 'Partner Portal' } }
+					{ label: 'Partner Portal', route: { name: 'Partner Portal' } },
 				]"
 			/>
 		</Header>
@@ -36,7 +36,7 @@ export default {
 		Header,
 		FBreadcrumbs: Breadcrumbs,
 		FTabs: Tabs,
-		TabsWithRouter
+		TabsWithRouter,
 	},
 	data() {
 		return {
@@ -46,10 +46,11 @@ export default {
 				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
 				{
 					label: 'Approval Requests',
-					route: { name: 'PartnerApprovalRequests' }
-				}
-			]
+					route: { name: 'PartnerApprovalRequests' },
+				},
+				{ label: 'Local Payment Setup', route: { name: 'LocalPaymentSetup' } },
+			],
 		};
-	}
+	},
 };
 </script>
