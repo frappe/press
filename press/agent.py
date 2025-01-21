@@ -328,6 +328,26 @@ class Agent:
 			site=site.name,
 		)
 
+	def activate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Activate Site",
+			f"benches/{site.bench}/sites/{site.name}/activate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def deactivate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Deactivate Site",
+			f"benches/{site.bench}/sites/{site.name}/deactivate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,

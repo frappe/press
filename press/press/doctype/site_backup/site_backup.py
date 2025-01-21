@@ -292,6 +292,13 @@ def process_backup_site_job_update(job):  # noqa: C901
 					site_backup.table_schema = data[site_backup.database_name]["table_schema"]
 					site_backup.status = "Success"
 				site_backup.save()
+				site_backup.reload()
+				# If site backup was trigerred for Site Update,
+				# Then, trigger Site Update to proceed with the next steps
+				site_update_doc_name = frappe.db.exists("Site Update", {"site_backup": site_backup.name})
+				if site_update_doc_name:
+					site_update = frappe.get_doc("Site Update", site_update_doc_name)
+					site_update.create_update_site_agent_request()
 			else:
 				frappe.db.set_value("Site Backup", backup.name, "status", status)
 				job_data = json.loads(job.data)

@@ -992,6 +992,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
+			process_activate_site_job_update,
+			process_deactivate_site_job_update,
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
@@ -1083,6 +1085,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			SiteDatabaseUser.process_job_update(job)
 		elif job.job_type == "Physical Restore Database":
 			process_physical_backup_restoration_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Update":
+			process_deactivate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
+			process_activate_site_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

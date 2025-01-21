@@ -21,12 +21,16 @@
   "difference",
   "difference_deploy_type",
   "deploy_type",
+  "backup_type",
+  "site_backup",
+  "skipped_backups",
+  "skipped_failing_patches",
   "column_break_14",
+  "activate_site_job",
   "update_job",
   "recover_job",
-  "cause_of_failure_is_resolved",
-  "skipped_failing_patches",
-  "skipped_backups"
+  "deactivate_site_job",
+  "cause_of_failure_is_resolved"
  ],
  "fields": [
   {
@@ -147,6 +151,7 @@
    "label": "Update Job",
    "no_copy": 1,
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -172,6 +177,7 @@
    "label": "Recover Job",
    "no_copy": 1,
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -202,7 +208,8 @@
    "fieldname": "skipped_backups",
    "fieldtype": "Check",
    "label": "Skipped Backups",
-   "no_copy": 1
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fieldname": "scheduled_time",
@@ -215,11 +222,44 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "default": "Logical",
+   "fieldname": "backup_type",
+   "fieldtype": "Select",
+   "label": "Backup Type",
+   "options": "Logical\nPhysical",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.backup_type == \"Physical\"",
+   "fieldname": "site_backup",
+   "fieldtype": "Link",
+   "label": "Site Backup",
+   "options": "Site Backup",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "activate_site_job",
+   "fieldtype": "Link",
+   "label": "Activate Site Job",
+   "options": "Agent Job",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "deactivate_site_job",
+   "fieldtype": "Link",
+   "label": "Deactivate Site Job",
+   "options": "Agent Job",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-13 12:07:32.752226",
+ "modified": "2025-01-21 16:00:55.579835",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

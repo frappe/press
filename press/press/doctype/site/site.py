@@ -1029,6 +1029,7 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
+		physical_backup: bool = False,
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
@@ -1037,6 +1038,7 @@ class Site(Document, TagHelpers):
 			{
 				"doctype": "Site Update",
 				"site": self.name,
+				"backup_type": "Physical" if physical_backup else "Logical",
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",

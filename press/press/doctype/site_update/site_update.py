@@ -32,7 +32,10 @@ class SiteUpdate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		activate_site_job: DF.Link | None
+		backup_type: DF.Literal["Logical", "Physical"]
 		cause_of_failure_is_resolved: DF.Check
+		deactivate_site_job: DF.Link | None
 		deploy_type: DF.Literal["", "Pull", "Migrate"]
 		destination_bench: DF.Link | None
 		destination_candidate: DF.Link | None
@@ -44,6 +47,7 @@ class SiteUpdate(Document):
 		scheduled_time: DF.Datetime | None
 		server: DF.Link | None
 		site: DF.Link | None
+		site_backup: DF.Link | None
 		skipped_backups: DF.Check
 		skipped_failing_patches: DF.Check
 		source_bench: DF.Link | None
@@ -152,6 +156,10 @@ class SiteUpdate(Document):
 	def triggered_by_user(self):
 		return frappe.session.user != "Administrator"
 
+	@property
+	def use_physical_backup(self):
+		return self.backup_type == "Physical" and not self.skipped_backups
+
 	def validate_past_failed_updates(self):
 		if getattr(self, "ignore_past_failures", False):
 			return
@@ -190,7 +198,10 @@ class SiteUpdate(Document):
 		self.save()
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.ready_for_move()
-		self.create_agent_request()
+		if self.use_physical_backup:
+			self.deactivate_site(save=True)
+		else:
+			self.create_update_site_agent_request()
 
 	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
@@ -212,7 +223,7 @@ class SiteUpdate(Document):
 		version = frappe.get_cached_value("Release Group", self.destination_group, "version")
 		return frappe.get_cached_value("Frappe Version", version, "number") > 12
 
-	def create_agent_request(self):
+	def create_update_site_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
 		job = agent.update_site(
@@ -220,13 +231,14 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
-			skip_backups=self.skipped_backups,
+			skip_backups=self.skipped_backups
+			or self.use_physical_backup,  # Agent dont need to perform backups if we are doing physical backup
 			before_migrate_scripts=self.get_before_migrate_scripts(),
 			skip_search_index=self.is_destination_above_v12,
 		)
-		self.set_job_value(job)
+		self.set_update_job_value(job)
 
-	def set_job_value(self, job):
+	def set_update_job_value(self, job):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 		site_activity = frappe.db.get_value(
 			"Site Activity",
@@ -239,6 +251,29 @@ class SiteUpdate(Document):
 		)
 		if site_activity:
 			frappe.db.set_value("Site Activity", site_activity, "job", job.name)
+
+	def activate_site(self, save=True):
+		agent = Agent(self.server)
+		job = agent.activate_site(
+			frappe.get_doc("Site", self.site), reference_doctype="Site Update", reference_name=self.name
+		)
+		self.activate_site_job = job.name
+		if save:
+			self.save()
+
+	def deactivate_site(self, save=True):
+		agent = Agent(self.server)
+		job = agent.deactivate_site(
+			frappe.get_doc("Site", self.site), reference_doctype="Site Update", reference_name=self.name
+		)
+		self.deactivate_site_job = job.name
+		if save:
+			self.save()
+
+	def create_physical_backup(self):
+		site = frappe.get_doc("Site", self.site)
+		self.site_backup = site.physical_backup().name
+		self.save()
 
 	def have_past_updates_failed(self):
 		return frappe.db.exists(
@@ -348,8 +383,8 @@ def benches_with_available_update(site=None, server=None):
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
-		{'AND sb.name = %(site_bench)s' if site else ''}
-		{'AND sb.server = %(server)s' if server else ''}
+		{"AND sb.name = %(site_bench)s" if site else ""}
+		{"AND sb.server = %(server)s" if server else ""}
 		""",
 		values=values,
 		as_dict=True,
@@ -506,6 +541,33 @@ def is_site_in_deploy_hours(site):
 	if site_time.hour in deploy_hours:
 		return True
 	return False
+
+
+def process_activate_site_job_update(job):
+	if job.reference_doctype != "Site Update":
+		return
+	if job.status == "Success":
+		# Mark the site as active
+		frappe.db.set_value("Site", job.site, "status", "Active")
+	elif job.status == "Failure":
+		# Mark the site as broken
+		frappe.db.set_value("Site", job.site, "status", "Broken")
+		frappe.db.set_value("Site Update", job.reference_name, "status", "Fatal")
+
+
+def process_deactivate_site_job_update(job):
+	if job.reference_doctype != "Site Update":
+		return
+	if job.status == "Success":
+		# proceed to backup stage
+		site_update = frappe.get_doc("Site Update", job.reference_name)
+		site_update.create_physical_backup()
+	elif job.status == "Failure":
+		# mark Site Update as Fatal
+		frappe.set_value("Site Update", job.reference_name, "status", "Fatal")
+		# Run the activate site to ensure site is active
+		site_update = frappe.get_doc("Site Update", job.reference_name)
+		site_update.activate_site()
 
 
 def process_update_site_job_update(job: AgentJob):  # noqa: C901
