@@ -287,14 +287,14 @@ class ProductTrial(Document):
 		return active_standby_sites + recent_pending_standby_sites
 
 	def get_unique_site_name(self):
-		subdomain = generate_random_name()
+		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
 			"subdomain": subdomain,
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = generate_random_name()
+			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
 
 
