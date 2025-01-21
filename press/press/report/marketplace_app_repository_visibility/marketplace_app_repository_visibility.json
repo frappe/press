@@ -9,7 +9,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-01-21 17:39:50.447643",
+ "modified": "2025-01-21 18:45:27.927560",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App Repository Visibility",
@@ -27,5 +27,5 @@
    "role": "Press Admin"
   }
  ],
- "timeout": 0
+ "timeout": 3000
 }
