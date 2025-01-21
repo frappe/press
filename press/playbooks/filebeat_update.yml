@@ -26,7 +26,7 @@
       apt:
         name: filebeat
         state: latest
-      result: result
+      register: result
       until: result.rc == 0
       retries: 5
       delay: 120
