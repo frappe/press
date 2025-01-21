@@ -289,6 +289,7 @@ export default {
 		columns() {
 			let columns = [];
 			for (let column of this.options.columns || []) {
+				if (column.condition && !column.condition(this.context)) continue;
 				columns.push({
 					...column,
 					label: column.label,
