@@ -20,6 +20,9 @@ from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
 
 
@@ -341,6 +344,35 @@ class SiteUpdate(Document):
 		job = None
 		if site.bench == self.destination_bench:
 			# The site is already on destination bench
+
+			if not self.skipped_backups and self.backup_type == "Physical":
+				if (
+					self.physical_backup_restoration
+					and frappe.get_value(
+						"Physical Backup Restoration", self.physical_backup_restoration, "status"
+					)
+					!= "Success"
+				):
+					# TODO: Failover to logical backup during experimentation
+					return
+
+				# Perform Physical Backup Restoration
+				doc: PhysicalBackupRestoration = frappe.get_doc(
+					{
+						"doctype": "Physical Backup Restoration",
+						"site": self.site,
+						"status": "Pending",
+						"site_backup": self.site_backup,
+						"source_database": site.database_name,
+						"destination_database": site.database_name,
+						"destination_server": site.server,
+					}
+				)
+				doc.insert(ignore_permissions=True)
+				self.physical_backup_restoration = doc.name
+				doc.execute()
+				return
+
 			# Attempt to move site to source bench
 
 			# Disable maintenance mode for active sites
@@ -538,6 +570,25 @@ def is_site_in_deploy_hours(site):
 	if site_time.hour in deploy_hours:
 		return True
 	return False
+
+
+def process_physical_backup_restoration_status_update(name: str):
+	site_backup_name = frappe.db.exists(
+		"Site Update",
+		{
+			"physical_backup_restoration": name,
+		},
+	)
+	if site_backup_name:
+		site_update: SiteUpdate = frappe.get_doc("Site Update", site_backup_name)
+		physical_backup_restoration: PhysicalBackupRestoration = frappe.get_doc(
+			"Physical Backup Restoration", name
+		)
+		if physical_backup_restoration.status == "Success":
+			site_update.trigger_recovery_job()
+		elif physical_backup_restoration.status == "Failure":
+			site_update.status = "Fatal"
+			site_update.save()
 
 
 def process_activate_site_job_update(job):
