@@ -27,7 +27,7 @@
         name: filebeat
         state: latest
       register: result
-      until: result.rc == 0
+      until: result.failed == false
       retries: 5
       delay: 120
 
