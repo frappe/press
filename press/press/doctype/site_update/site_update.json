@@ -22,14 +22,17 @@
   "difference_deploy_type",
   "deploy_type",
   "backup_type",
+  "column_break_14",
   "site_backup",
   "skipped_backups",
   "skipped_failing_patches",
-  "column_break_14",
-  "activate_site_job",
-  "update_job",
-  "recover_job",
+  "section_break_luvm",
   "deactivate_site_job",
+  "update_job",
+  "activate_site_job",
+  "column_break_rcyp",
+  "physical_backup_restoration",
+  "recover_job",
   "cause_of_failure_is_resolved"
  ],
  "fields": [
@@ -255,11 +258,26 @@
    "options": "Agent Job",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "section_break_luvm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rcyp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "physical_backup_restoration",
+   "fieldtype": "Link",
+   "label": "Physical Backup Restoration",
+   "options": "Physical Backup Restoration",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-21 16:00:55.579835",
+ "modified": "2025-01-21 18:11:17.745500",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

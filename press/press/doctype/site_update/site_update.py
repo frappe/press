@@ -43,6 +43,7 @@ class SiteUpdate(Document):
 		difference: DF.Link | None
 		difference_deploy_type: DF.Literal["", "Pull", "Migrate"]
 		group: DF.Link | None
+		physical_backup_restoration: DF.Link | None
 		recover_job: DF.Link | None
 		scheduled_time: DF.Datetime | None
 		server: DF.Link | None
@@ -333,41 +334,37 @@ class SiteUpdate(Document):
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):
-		trigger_recovery_job(self.name)
+		if self.recover_job:
+			return
+		agent = Agent(self.server)
+		site: "Site" = frappe.get_doc("Site", self.site)
+		job = None
+		if site.bench == self.destination_bench:
+			# The site is already on destination bench
+			# Attempt to move site to source bench
 
-
-def trigger_recovery_job(site_update_name):
-	site_update: "SiteUpdate" = frappe.get_doc("Site Update", site_update_name)
-	if site_update.recover_job:
-		return
-	agent = Agent(site_update.server)
-	site: "Site" = frappe.get_doc("Site", site_update.site)
-	job = None
-	if site.bench == site_update.destination_bench:
-		# The site is already on destination bench
-		# Attempt to move site to source bench
-
-		# Disable maintenance mode for active sites
-		activate = site.status_before_update == "Active"
-		job = agent.update_site_recover_move(
-			site,
-			site_update.source_bench,
-			site_update.deploy_type,
-			activate,
-			rollback_scripts=site_update.get_before_migrate_scripts(rollback=True),
-		)
-	else:
-		# Site is already on the source bench
-
-		if site.status_before_update == "Active":
 			# Disable maintenance mode for active sites
-			job = agent.update_site_recover(site)
+			activate = site.status_before_update == "Active"
+			job = agent.update_site_recover_move(
+				site,
+				self.source_bench,
+				self.deploy_type,
+				activate,
+				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
+			)
 		else:
-			# Site is already on source bench and maintenance mode is on
-			# No need to do anything
-			site.reset_previous_status()
-	if job:
-		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
+			# Site is already on the source bench
+
+			if site.status_before_update == "Active":
+				# Disable maintenance mode for active sites
+				job = agent.update_site_recover(site)
+			else:
+				# Site is already on source bench and maintenance mode is on
+				# No need to do anything
+				site.reset_previous_status()
+		if job:
+			self.recover_job = job.name
+			self.save()
 
 
 @site_cache(ttl=60)
@@ -615,7 +612,8 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 				job.failed_because_of_agent_update,
 			)
 			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
-				trigger_recovery_job(site_update.name)
+				doc = frappe.get_doc("Site Update", site_update.name)
+				doc.trigger_recovery_job()
 			else:
 				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
 				SiteUpdate("Site Update", site_update.name).reallocate_workers()
