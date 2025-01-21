@@ -14,7 +14,7 @@
  "module": "Press",
  "name": "Marketplace App Repository Visibility",
  "owner": "Administrator",
- "prepared_report": 0,
+ "prepared_report": 1,
  "query": "SELECT \n    ma.name AS app_name,\n    mav.version AS version,\n    mav.source AS source,\n    asrc.repository_url AS repository_url,\n    asrc.branch AS branch\nFROM \n    `tabMarketplace App` ma\nJOIN \n    `tabMarketplace App Version` mav ON ma.name = mav.parent\nJOIN \n    `tabApp Source` asrc ON mav.source = asrc.name\n",
  "ref_doctype": "Marketplace App",
  "report_name": "Marketplace App Repository Visibility",
