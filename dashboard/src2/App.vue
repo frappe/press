@@ -13,7 +13,12 @@
 						v-if="!isSaaSFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
 					<div
-						v-if="!isSaaSFlow && !$session.user && !$route.meta.isLoginPage"
+						v-if="
+							!isSaaSFlow &&
+							!isProductLogin &&
+							!$session.user &&
+							!$route.meta.isLoginPage
+						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
@@ -48,8 +53,12 @@ const route = useRoute();
 const team = getTeam();
 
 const isHideSidebar = computed(() => {
-	const alwaysHideSidebarRoutes = ['Start Center'];
-	const alwaysHideSidebarPaths = ['/dashboard/start-center'];
+	const alwaysHideSidebarRoutes = [
+		'Product Login',
+		'SaaSSignupLoginToSite',
+		'SaaSSignupSetup'
+	];
+	const alwaysHideSidebarPaths = ['/dashboard/product-login'];
 
 	if (!session.user) return false;
 	if (
@@ -64,6 +73,7 @@ const isHideSidebar = computed(() => {
 });
 
 const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
+const isProductLogin = ref(window.location.pathname.endsWith('/product-login'));
 
 watch(
 	() => route.name,
