@@ -64,7 +64,17 @@ def execute(filters=None):
 		as_dict=True,
 	)
 	personal_access_token = frappe.db.get_value("Press Settings", "None", "github_pat_token")
+
+	visibility_cache = {}
 	for row in data:
-		visibility_status = check_repository_visibility(row["repository_url"], personal_access_token)
-		row["visibility"] = visibility_status
+		repo_url = row["repository_url"]
+		# Check if the visibility status is already cached for this repository URL
+		if repo_url in visibility_cache:
+			row["visibility"] = visibility_cache[repo_url]
+		else:
+			# Check visibility status and cache it
+			visibility_status = check_repository_visibility(repo_url, personal_access_token)
+			row["visibility"] = visibility_status
+			# Store the result in the cache for future reference
+			visibility_cache[repo_url] = visibility_status
 	return columns, data
