@@ -23,8 +23,8 @@ def check_repository_visibility(repository_url, personal_access_token):
 				return "Private"
 			return "Public"
 		if response.status_code == 404:
-			return "Error"
-		return "Error"
+			return "Private"
+		return "Private"
 	except Exception:
 		return "Error"
 
