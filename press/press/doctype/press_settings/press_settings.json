@@ -55,9 +55,8 @@
   "backups_tab",
   "offsite_backups_section",
   "backup_region",
-  "offsite_backups_provider",
   "aws_s3_bucket",
-  "data_40",
+  "offsite_backups_endpoint",
   "backup_rotation_scheme",
   "column_break_35",
   "offsite_backups_access_key_id",
@@ -90,10 +89,12 @@
   "auto_update_queue_size",
   "remote_files_section",
   "remote_uploads_bucket",
-  "remote_link_expiry",
+  "remote_uploads_region",
+  "remote_uploads_endpoint",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
+  "remote_link_expiry",
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
@@ -417,20 +418,9 @@
    "label": "Backup Region"
   },
   {
-   "default": "AWS S3",
-   "fieldname": "offsite_backups_provider",
-   "fieldtype": "Select",
-   "label": "Backup Provider",
-   "options": "AWS S3"
-  },
-  {
    "fieldname": "aws_s3_bucket",
    "fieldtype": "Data",
    "label": "Bucket Name"
-  },
-  {
-   "fieldname": "data_40",
-   "fieldtype": "Data"
   },
   {
    "fieldname": "backup_rotation_scheme",
@@ -1314,11 +1304,26 @@
    "fieldname": "partnership_fee_inr",
    "fieldtype": "Int",
    "label": "Partnership Fee INR"
+  },
+  {
+   "fieldname": "remote_uploads_region",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Region"
+  },
+  {
+   "fieldname": "remote_uploads_endpoint",
+   "fieldtype": "Data",
+   "label": "Uploads Bucket Endpoint"
+  },
+  {
+   "fieldname": "offsite_backups_endpoint",
+   "fieldtype": "Data",
+   "label": "Bucket Endpoint"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-12-27 11:44:09.454080",
+ "modified": "2025-01-17 16:54:05.764594",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

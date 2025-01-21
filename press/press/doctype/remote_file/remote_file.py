@@ -5,12 +5,16 @@
 
 import json
 import pprint
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
 from boto3 import client, resource
 from frappe.model.document import Document
-from frappe.utils.password import get_decrypted_password
+
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 def get_remote_key(file):
@@ -27,34 +31,30 @@ def get_remote_key(file):
 
 
 def poll_file_statuses():
-	aws_access_key = frappe.db.get_single_value(
-		"Press Settings", "offsite_backups_access_key_id"
-	)
-	aws_secret_key = get_decrypted_password(
-		"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-	)
-	default_region = frappe.db.get_single_value("Press Settings", "backup_region")
+	press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
+
+	aws_access_key = press_settings.offsite_backups_access_key_id
+	aws_secret_key = press_settings.offsite_backups_secret_access_key
+	default_region = press_settings.backup_region
+
 	buckets = [
 		{
-			"name": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"name": press_settings.aws_s3_bucket,
 			"region": default_region,
 			"access_key_id": aws_access_key,
 			"secret_access_key": aws_secret_key,
+			"endpoint_url": press_settings.offsite_backups_endpoint,
 		},
 		{
-			"name": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
-			"region": default_region,
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "remote_access_key_id"
-			),
-			"secret_access_key": get_decrypted_password(
-				"Press Settings", "Press Settings", "remote_secret_access_key"
-			),
+			"name": press_settings.remote_uploads_bucket,
+			"region": press_settings.get("remote_uploads_region") or "ap-south-1",
+			"access_key_id": press_settings.remote_access_key_id,
+			"secret_access_key": press_settings.get_password("remote_secret_access_key"),
+			"endpoint_url": press_settings.get("remote_uploads_endpoint") or None,
 		},
 	]
 
 	for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster", "region"]):
-
 		buckets.append(
 			{
 				"name": b["bucket_name"],
@@ -83,6 +83,7 @@ def poll_file_statuses_from_bucket(bucket):
 		aws_access_key_id=bucket["access_key_id"],
 		aws_secret_access_key=bucket["secret_access_key"],
 		region_name=bucket["region"],
+		endpoint_url=bucket.get("endpoint_url") or None,
 	)
 
 	available_files = set()
@@ -174,31 +175,32 @@ class RemoteFile(Document):
 		if not self.bucket:
 			return None
 
-		elif self.bucket == frappe.db.get_single_value(
-			"Press Settings", "remote_uploads_bucket"
-		):
-			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
-			secret_access_key = get_decrypted_password(
-				"Press Settings", "Press Settings", "remote_secret_access_key"
-			)
+		press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
 
-		elif self.bucket:
-			access_key_id = frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			)
-			secret_access_key = get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			)
-
+		if self.bucket == press_settings.remote_uploads_bucket:
+			access_key_id = press_settings.remote_access_key_id
+			secret_access_key = press_settings.get_password("remote_secret_access_key")
+			region_name = press_settings.get("remote_uploads_region") or "ap-south-1"
+			endpoint_url = press_settings.get("remote_uploads_endpoint") or None
 		else:
-			return None
+			access_key_id = press_settings.offsite_backups_access_key_id
+			secret_access_key = press_settings.get_password("offsite_backups_secret_access_key")
+			region_name = (
+				frappe.db.get_value("Backup Bucket", self.bucket, "region")
+				or press_settings.backup_region
+			)
+			endpoint_url = (
+				frappe.db.get_value("Backup Bucket", self.bucket, "endpoint_url")
+				or press_settings.get("offsite_backups_endpoint")
+				or None
+			)
 
 		return client(
 			"s3",
 			aws_access_key_id=access_key_id,
 			aws_secret_access_key=secret_access_key,
-			region_name=frappe.db.get_value("Backup Bucket", self.bucket, "region")
-			or frappe.db.get_single_value("Press Settings", "backup_region"),
+			region_name=region_name,
+			endpoint_url=endpoint_url or None,
 		)
 
 	@property
@@ -270,16 +272,36 @@ def delete_s3_files(buckets):
 
 	from press.utils import chunk
 
-	press_settings = frappe.get_single("Press Settings")
+	press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
 	for bucket_name in buckets.keys():
+		if bucket_name == press_settings.aws_s3_bucket:
+			endpoint_url = press_settings.offsite_backups_endpoint
+			region_name = press_settings.backup_region
+			aws_access_key_id = press_settings.offsite_backups_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"offsite_backups_secret_access_key", raise_exception=False
+			)
+		elif bucket_name == press_settings.remote_uploads_bucket:
+			endpoint_url = press_settings.remote_uploads_endpoint
+			region_name = press_settings.remote_uploads_region
+			aws_access_key_id = press_settings.remote_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"remote_secret_access_key", raise_exception=False
+			)
+		else:
+			endpoint_url = frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
+			region_name = frappe.db.get_value("Backup Bucket", bucket_name, "region")
+			aws_access_key_id = press_settings.offsite_backups_access_key_id
+			aws_secret_access_key = press_settings.get_password(
+				"offsite_backups_secret_access_key", raise_exception=False
+			)
+
 		s3 = resource(
 			"s3",
-			aws_access_key_id=press_settings.offsite_backups_access_key_id,
-			aws_secret_access_key=press_settings.get_password(
-				"offsite_backups_secret_access_key", raise_exception=False
-			),
-			endpoint_url=frappe.db.get_value("Backup Bucket", bucket_name, "endpoint_url")
-			or "https://s3.amazonaws.com",
+			aws_access_key_id=aws_access_key_id,
+			aws_secret_access_key=aws_secret_access_key,
+			region_name=region_name or "ap-south-1",
+			endpoint_url=endpoint_url or "https://s3.amazonaws.com",
 		)
 		bucket = s3.Bucket(bucket_name)
 		for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):

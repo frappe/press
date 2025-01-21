@@ -14,6 +14,7 @@ from press.agent import Agent
 
 if TYPE_CHECKING:
 	from datetime import datetime
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class SiteBackup(Document):
@@ -208,12 +209,23 @@ def process_backup_site_job_update(job):
 
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
-	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	bucket_for_cluster = frappe.get_all(
+		"Backup Bucket", {"cluster": cluster}, ["name", "region", "endpoint_url"], limit=1
+	)
+
+	if not bucket_for_cluster:
+		press_settings: "PressSettings" = frappe.get_single("Press Settings")  # type: ignore
+		bucket_for_cluster = [
+			{
+				"name": press_settings.aws_s3_bucket,
+				"region": press_settings.backup_region,
+				"endpoint_url": press_settings.offsite_backups_endpoint,
+			}
+		]
 
 	if region:
-		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
-	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+		return bucket_for_cluster[0]
+	return bucket_for_cluster[0]["name"]
 
 
 def on_doctype_update():
