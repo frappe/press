@@ -206,8 +206,6 @@ export default {
 				privacy_policy: '',
 				description: '',
 				long_description: '',
-				github_repository_url: '',
-				is_public_repo: false,
 			},
 		};
 	},
