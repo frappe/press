@@ -99,18 +99,6 @@ const team = inject('team');
 const route = useRoute();
 const productName = route.params.product;
 
-// const email = defineModel({
-// 	default: '',
-// 	type: String
-// });
-// const otp = defineModel({
-// 	default: '',
-// 	type: String
-// });
-// const showOTPDialog = defineModel({
-// 	default: false,
-// 	type: Boolean
-// });
 const email = ref('');
 const otp = ref('');
 const showOTPDialog = ref(false);

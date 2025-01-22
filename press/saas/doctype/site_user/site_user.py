@@ -17,8 +17,9 @@ class SiteUser(Document):
 
 		enabled: DF.Check
 		otp: DF.Data | None
-		site: DF.Link | None
-		user: DF.Data | None
+		otp_verified_time: DF.Datetime | None
+		site: DF.Link
+		user: DF.Data
 	# end: auto-generated types
 
 	def send_otp(self):
@@ -65,6 +66,7 @@ class SiteUser(Document):
 		if self.otp != otp:
 			return frappe.throw("Invalid OTP")
 		self.otp = None
+		self.otp_verified_time = frappe.utils.now_datetime()
 		self.save()
 		return True
 
@@ -72,6 +74,10 @@ class SiteUser(Document):
 		"""Login to the site."""
 		if not self.enabled:
 			frappe.throw("User is disabled")
+
+		# don't allow login if user is not verified with OTP within 5 minutes
+		if not self.otp_verified_time or (frappe.utils.now_datetime() - self.otp_verified_time).seconds > 300:
+			frappe.throw("OTP is not verified. Please verify OTP first.")
 
 		# Get the site
 		site = frappe.get_doc("Site", self.site)

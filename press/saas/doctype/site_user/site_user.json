@@ -8,19 +8,24 @@
   "user",
   "site",
   "enabled",
-  "otp"
+  "otp",
+  "otp_verified_time"
  ],
  "fields": [
   {
    "fieldname": "user",
    "fieldtype": "Data",
-   "label": "User"
+   "in_list_view": 1,
+   "label": "User",
+   "reqd": 1
   },
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "reqd": 1
   },
   {
    "default": "0",
@@ -33,11 +38,17 @@
    "fieldtype": "Data",
    "label": "OTP",
    "read_only": 1
+  },
+  {
+   "fieldname": "otp_verified_time",
+   "fieldtype": "Datetime",
+   "label": "OTP verified time",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-22 12:22:34.939963",
+ "modified": "2025-01-22 14:48:28.399731",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Site User",
