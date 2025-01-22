@@ -112,6 +112,14 @@ class PhysicalBackupRestoration(Document):
 		self.add_steps()
 		self.save()
 
+	def on_update(self):
+		if self.has_value_changed("status") and self.status == "Success":
+			from press.press.doctype.site_update.site_update import (
+				process_physical_backup_restoration_status_update,
+			)
+
+			process_physical_backup_restoration_status_update(self.name)
+
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":

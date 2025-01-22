@@ -31,9 +31,9 @@
   "update_job",
   "activate_site_job",
   "column_break_rcyp",
-  "physical_backup_restoration",
   "recover_job",
-  "cause_of_failure_is_resolved"
+  "cause_of_failure_is_resolved",
+  "physical_backup_restoration"
  ],
  "fields": [
   {
@@ -272,12 +272,13 @@
    "fieldtype": "Link",
    "label": "Physical Backup Restoration",
    "options": "Physical Backup Restoration",
+   "read_only": 1,
    "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-21 18:11:17.745500",
+ "modified": "2025-01-22 17:40:16.784948",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
