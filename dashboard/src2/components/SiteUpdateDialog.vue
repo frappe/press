@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			title: dialogTitle,
-			size: '2xl'
+			size: '2xl',
 		}"
 	>
 		<template #body-content>
@@ -21,6 +21,12 @@
 							label="Skip taking backup for this update (If the update fails, rollback will not occur)"
 							type="checkbox"
 							v-model="skipBackups"
+						/>
+						<FormControl
+							label="Perform physical backup (This will reduce the time taken for backup) [EXPERIMENTAL]"
+							type="checkbox"
+							v-model="physicalBackup"
+							v-if="!skipBackups"
 						/>
 					</div>
 				</div>
@@ -63,20 +69,21 @@ export default {
 	props: {
 		site: {
 			type: String,
-			required: true
+			required: true,
 		},
-		existingUpdate: String
+		existingUpdate: String,
 	},
 	components: {
 		GenericList,
-		DateTimeControl
+		DateTimeControl,
 	},
 	data() {
 		return {
 			show: true,
 			skipFailingPatches: false,
 			scheduledTime: '',
-			skipBackups: false
+			skipBackups: false,
+			physicalBackup: false,
 		};
 	},
 	resources: {
@@ -87,14 +94,14 @@ export default {
 				url: 'press.api.client.get',
 				params: {
 					doctype: 'Site Update',
-					name: this.existingUpdate
+					name: this.existingUpdate,
 				},
 				auto: !!this.existingUpdate,
-				onSuccess: doc => {
+				onSuccess: (doc) => {
 					this.initializeValues(doc);
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		scheduledTimeInIST() {
@@ -107,7 +114,7 @@ export default {
 		listOptions() {
 			return {
 				data: this.updatableApps.filter(
-					app => app.current_hash !== app.next_hash
+					(app) => app.current_hash !== app.next_hash,
 				),
 				columns: [
 					{
@@ -115,7 +122,7 @@ export default {
 						fieldname: 'app',
 						format(value, row) {
 							return row.title || value;
-						}
+						},
 					},
 					{
 						label: 'Current Version',
@@ -135,7 +142,7 @@ export default {
 							if (row.current_hash) {
 								return `${row.repository_url}/commit/${row.current_hash}`;
 							}
-						}
+						},
 					},
 					{
 						label: 'Next Version',
@@ -155,18 +162,18 @@ export default {
 							if (row.next_hash) {
 								return `${row.repository_url}/commit/${row.next_hash}`;
 							}
-						}
-					}
-				]
+						},
+					},
+				],
 			};
 		},
 		updatableApps() {
 			if (!this.$site.doc.update_information.update_available) return [];
 			let installedApps = this.$site.doc.update_information.installed_apps.map(
-				d => d.app
+				(d) => d.app,
 			);
-			return this.$site.doc.update_information.apps.filter(app =>
-				installedApps.includes(app.app)
+			return this.$site.doc.update_information.apps.filter((app) =>
+				installedApps.includes(app.app),
 			);
 		},
 		$site() {
@@ -178,7 +185,7 @@ export default {
 		dialogTitle() {
 			if (this.existingUpdate) return 'Edit Scheduled Update';
 			else return 'Updates Available';
-		}
+		},
 	},
 	methods: {
 		scheduleUpdate() {
@@ -186,15 +193,16 @@ export default {
 				{
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
-					scheduled_time: this.scheduledTimeInIST
+					physical_backup: !this.skipBackups && this.physicalBackup,
+					scheduled_time: this.scheduledTimeInIST,
 				},
 				{
 					onSuccess: () => {
 						this.$site.reload();
 						this.show = false;
 						this.$router.push({ name: 'Site Detail Updates' });
-					}
-				}
+					},
+				},
 			);
 		},
 		editUpdate() {
@@ -203,7 +211,7 @@ export default {
 					name: this.existingUpdate,
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
-					scheduled_time: this.scheduledTimeInIST
+					scheduled_time: this.scheduledTimeInIST,
 				}),
 				{
 					loading: 'Editing scheduled update...',
@@ -213,19 +221,21 @@ export default {
 						this.siteUpdate.reload();
 						return 'Scheduled update edited successfully';
 					},
-					error: err => {
+					error: (err) => {
 						return err.messages.length
 							? err.messages[0]
 							: err.message || 'Failed to edit scheduled update';
-					}
-				}
+					},
+				},
 			);
 		},
 		initializeValues(doc) {
 			this.skipFailingPatches = doc.skipped_failing_patches;
 			this.skipBackups = doc.skipped_backups;
 			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm');
-		}
-	}
+			this.physicalBackup =
+				!doc.skipped_backups && doc.backup_type === 'Physical';
+		},
+	},
 };
 </script>
