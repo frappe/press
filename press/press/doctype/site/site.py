@@ -1632,6 +1632,44 @@ class Site(Document, TagHelpers):
 		if analytics:
 			create_site_analytics(self.name, analytics)
 
+	def create_sync_user_webhook(self):
+		"""
+		Create 2 webhook records in the site to sync the user with press
+		- One for user record creation
+		- One for user record update
+		"""
+		conn = self.get_connection_as_admin()
+		doctype_data = {
+			"doctype": "Webhook",
+			"webhook_doctype": "User",
+			"enabled": 1,
+			"request_url": "https://frappecloud.com/api/method/press.api.product_trial.sync_product_site_users",
+			"request_method": "POST",
+			"request_structure": "JSON",
+			"webhook_json": """{ "user_info": { "email": "{{doc.email}}", "enabled": "{{doc.enabled}}" } }""",
+			"webhook_headers": [
+				{"key": "x-site", "value": self.name},
+				{"key": "Content-Type", "value": "application/json"},
+				{"key": "x-site-token", "value": self.saas_communication_secret},
+			],
+		}
+
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on create",
+				"webhook_docevent": "after_insert",
+			}
+		)
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on update",
+				"webhook_docevent": "on_update",
+				"condition": """doc.has_value_changed("enabled")""",
+			}
+		)
+
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
