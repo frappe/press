@@ -187,7 +187,7 @@
 								required
 							/>
 							<FormControl
-								label="Verification Code"
+								label="Verification code"
 								type="text"
 								class="mt-4"
 								placeholder="5 digit verification code"
@@ -213,7 +213,7 @@
 								:loading="$resources.resendOTP.loading"
 								@click="$resources.resendOTP.submit()"
 							>
-								Didn't receive OTP? Resend
+								Didn't receive verification code? Resend
 							</Button>
 						</form>
 						<div class="mt-6 text-center">
@@ -315,7 +315,7 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.accountRequestCreated = true;
-					toast.success('OTP sent to your email');
+					toast.success('Verification code sent to your email');
 				},
 				onError: this.onSignupError.bind(this)
 			};
@@ -340,7 +340,7 @@ export default {
 				},
 				onSuccess() {
 					this.otp = '';
-					toast.success('Resent OTP to your email');
+					toast.success('Verification code sent to your email');
 				}
 			};
 		},
@@ -479,9 +479,6 @@ export default {
 				{
 					onSuccess: res => {
 						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-						if (this.$route.query.product) {
-							loginRoute = `/dashboard/start-center?product=${this.$route.query.product}`;
-						}
 						localStorage.setItem('login_email', this.email);
 						window.location.href = loginRoute;
 					},
