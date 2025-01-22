@@ -37,9 +37,9 @@ let router = createRouter({
 			meta: { isLoginPage: true }
 		},
 		{
-			path: '/start-center',
-			name: 'Start Center',
-			component: () => import('./pages/StartCenter.vue'),
+			path: '/product-login',
+			name: 'Product Login',
+			component: () => import('./pages/ProductSiteLogin.vue'),
 			meta: { hideSidebar: true }
 		},
 		{
@@ -331,7 +331,7 @@ router.beforeEach(async (to, from, next) => {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
 		let onboardingComplete = $team.doc.onboarding.complete;
-		let defaultRoute = 'Start Center';
+		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
 
 		// identify user in posthog
@@ -380,7 +380,9 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			if (to.name == 'SaaSSignupSetup') {
+			if (to.name == 'Product Login') {
+				next();
+			} else if (to.name == 'SaaSSignupSetup') {
 				next({
 					name: 'SaaSSignup',
 					params: to.params
