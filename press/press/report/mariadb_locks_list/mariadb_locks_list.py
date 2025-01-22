@@ -7,7 +7,7 @@ from press.agent import Agent
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(("System Manager", "Support Team"))
 	data = get_data(filters)
 	return get_columns(), data
 
@@ -20,8 +20,7 @@ def get_data(filters):
 		"private_ip": server.private_ip,
 		"mariadb_root_password": server.get_password("mariadb_root_password"),
 	}
-	rows = agent.post("database/locks", data=data)
-	return rows
+	return agent.post("database/locks", data=data)
 
 
 def get_columns():

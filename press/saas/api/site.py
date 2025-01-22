@@ -44,7 +44,7 @@ def get_plans():
 		filtered_plans.append(plan)
 
 	"""
-	plans `site_api.get_site_plans()` doesn't include trial plan, as we don't have any roles specfied for trial plan
+	plans `site_api.get_site_plans()` doesn't include trial plan, as we don't have any roles specified for trial plan
 	because from backend only we set the trial plan, end-user can't subscribe to trial plan directly
 	If the site is on a trial plan, add it to the starting of the list
 	"""

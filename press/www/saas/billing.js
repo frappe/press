@@ -143,7 +143,7 @@ function requestLoginToFC(freezing_msg) {
 			domain: window.location.hostname,
 		},
 		freeze: true,
-		freeze_message: freezing_msg || 'Initating login to Frappe Cloud',
+		freeze_message: freezing_msg || 'Initiating login to Frappe Cloud',
 		success: function (r) {
 			showFCLogindialog(r.message.email);
 			setErrorMessage('');

@@ -129,7 +129,7 @@ ROI Percentage: {cint(self.roi_percentage)} %"""
 			},
 		):
 			frappe.throw(
-				"AWS Savings Plan Recommendation witht this timestamp already exists",
+				"AWS Savings Plan Recommendation without this timestamp already exists",
 				frappe.DuplicateEntryError,
 			)
 

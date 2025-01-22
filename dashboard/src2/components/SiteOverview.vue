@@ -19,7 +19,21 @@
 			</Button>
 		</AlertBanner>
 		<DismissableBanner
-			v-if="
+			v-if="$site.doc.eol_versions.includes($site.doc.version)"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is on an End of Life version. Upgrade to the latest version to get the latest features and security updates."
+			:id="`${$site.name}-eol`"
+		>
+			<Button
+				class="ml-auto"
+				variant="outline"
+				link="https://frappecloud.com/docs/sites/version-upgrade"
+			>
+				Upgrade Now
+			</Button>
+		</DismissableBanner>
+		<DismissableBanner
+			v-else-if="
 				$site.doc.current_plan &&
 				!$site.doc.current_plan?.private_benches &&
 				$site.doc.group_public &&
@@ -36,32 +50,30 @@
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="flex items-center justify-between">
+					<div class="flex h-full items-center justify-between">
 						<div>
 							<div class="text-base text-gray-700">Current Plan</div>
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
-										<span class="text-base text-gray-900">
+										<span class="flex items-center text-base text-gray-900">
 											<template v-if="$site.doc.trial_end_date">
 												{{ trialDays($site.doc.trial_end_date) }}
 											</template>
 											<template v-else-if="currentPlan">
 												{{ $format.planTitle(currentPlan) }}
-												<span v-if="currentPlan.price_inr">/ month</span>
+												<span v-if="currentPlan.price_inr">/month</span>
 											</template>
 											<template v-else> No plan set </template>
+											<div
+												class="ml-2 text-sm leading-3 text-gray-600"
+												v-if="currentPlan && currentPlan.support_included"
+											>
+												<Tooltip text="Support included">
+													<i-lucide-badge-check class="h-4 w-4" />
+												</Tooltip>
+											</div>
 										</span>
-									</div>
-									<div
-										class="mt-1 text-sm leading-3 text-gray-600"
-										v-if="currentPlan"
-									>
-										{{
-											currentPlan.support_included
-												? 'Support included'
-												: 'Support not included'
-										}}
 									</div>
 								</div>
 							</div>
@@ -70,7 +82,12 @@
 					</div>
 				</div>
 				<div class="border-b p-5 lg:border-b-0 lg:border-r">
-					<div class="text-base text-gray-700">Compute</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Compute</span>
+						<div class="h-7"></div>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"
@@ -96,7 +113,12 @@
 					</div>
 				</div>
 				<div class="border-r p-5">
-					<div class="text-base text-gray-700">Storage</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Storage</span>
+						<div class="h-7"></div>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"
@@ -121,7 +143,22 @@
 					</div>
 				</div>
 				<div class="p-5">
-					<div class="text-base text-gray-700">Database</div>
+					<div
+						class="flex items-center justify-between text-base text-gray-700"
+					>
+						<span>Database</span>
+						<Button
+							v-if="
+								(currentPlan
+									? (currentUsage.database / currentPlan.max_database_usage) *
+									  100
+									: 0) >= 80
+							"
+							variant="ghost"
+							link="https://frappecloud.com/docs/faq/site#what-is-using-up-all-my-database-size"
+							icon="help-circle"
+						/>
+					</div>
 					<div class="mt-2">
 						<Progress
 							size="md"

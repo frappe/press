@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
 
@@ -270,7 +271,7 @@ class SelfHostedServer(Document):
 		try:
 			for app in task_result:
 				branches.append(app["branch"])
-				if not frappe.db.exists("App Source", {"app": app["app"], "branch": app["branch"]}):
+				if not frappe.db.exists("App Source", {"app": app["app"], "branch": app["branch"]}):  # noqa: SIM102
 					if not frappe.db.exists("App", {"_newname": app["app"]}):
 						app_doc = frappe.get_doc(
 							{
@@ -324,10 +325,9 @@ class SelfHostedServer(Document):
 		if self.database_plan:
 			return
 
-		if not self.different_database_server:
-			if not frappe.db.exists("Server Plan", "Unlimited"):
-				self._create_server_plan("Unlimited")
-				self.database_plan = "Unlimited"
+		if not self.different_database_server and not frappe.db.exists("Server Plan", "Unlimited"):
+			self._create_server_plan("Unlimited")
+			self.database_plan = "Unlimited"
 
 	def _create_server_plan(self, plan_name):
 		plan = frappe.new_doc("Server Plan")
@@ -359,7 +359,7 @@ class SelfHostedServer(Document):
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
 					"cluster": self.cluster,
 					"agent_password": self.get_password("agent_password"),
-					"is_server_setup": False if self.new_server else True,
+					"is_server_setup": not self.new_server,
 					"plan": self.database_plan,
 				},
 			).insert()
@@ -375,7 +375,7 @@ class SelfHostedServer(Document):
 
 			frappe.db.commit()
 
-			frappe.msgprint(f"Databse server record {db_server.name} created")
+			frappe.msgprint(f"Database server record {db_server.name} created")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
 			self.status = "Broken"
@@ -393,10 +393,7 @@ class SelfHostedServer(Document):
 				"output",
 			)
 			task_result = json.loads(
-				ansible_task_op.replace("'", '"')
-				.replace('"{', "{")
-				.replace('}"', "}")
-				.replace("\\n", "")
+				ansible_task_op.replace("'", '"').replace('"{', "{").replace('}"', "}").replace("\\n", "")
 			)
 			self.status = "Pending"
 			for site in task_result:
@@ -502,9 +499,7 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def restore_files(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_restore_files", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_restore_files", queue="long", timeout=2400)
 
 	def _restore_files(self):
 		"""
@@ -617,9 +612,7 @@ class SelfHostedServer(Document):
 				port=server.ssh_port or "22",
 				variables={
 					"domain": self.name,
-					"press_domain": frappe.db.get_single_value(
-						"Press Settings", "domain"
-					),  # for ssl renewal
+					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),  # for ssl renewal
 				},
 			)
 			play = ansible.run()
@@ -636,13 +629,9 @@ class SelfHostedServer(Document):
 		)
 
 		try:
-			cert = frappe.get_last_doc(
-				"TLS Certificate", {"domain": self.server, "status": "Active"}
-			)
+			cert = frappe.get_last_doc("TLS Certificate", {"domain": self.server, "status": "Active"})
 		except frappe.DoesNotExistError:
-			cert = frappe.get_last_doc(
-				"TLS Certificate", {"domain": self.name, "status": "Active"}
-			)
+			cert = frappe.get_last_doc("TLS Certificate", {"domain": self.name, "status": "Active"})
 
 		update_server_tls_certifcate(self, cert)
 
@@ -679,20 +668,14 @@ class SelfHostedServer(Document):
 
 	def _get_play_id(self):
 		try:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.server, "play": "Ping Server"}
-			).name
+			play_id = frappe.get_last_doc("Ansible Play", {"server": self.server, "play": "Ping Server"}).name
 		except frappe.DoesNotExistError:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.name, "play": "Ping Server"}
-			).name
+			play_id = frappe.get_last_doc("Ansible Play", {"server": self.name, "play": "Ping Server"}).name
 
 		return play_id
 
 	def _get_play(self, play_id):
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
+		play = frappe.get_doc("Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"})
 
 		return json.loads(play.result)
 
@@ -736,9 +719,7 @@ class SelfHostedServer(Document):
 			public_ip = self.mariadb_ip
 
 		if private_ip not in all_ipv4_addresses:
-			frappe.throw(
-				f"Private IP {private_ip} is not associated with server having IP {public_ip} "
-			)
+			frappe.throw(f"Private IP {private_ip} is not associated with server having IP {public_ip} ")
 
 	@frappe.whitelist()
 	def fetch_private_ip(self, play_id=None, server_type="app"):
@@ -808,12 +789,10 @@ class SelfHostedServer(Document):
 		"""
 
 		if round(int(self.ram), -3) < 4000:  # Round to nearest thousand
-			frappe.throw(
-				f"Minimum RAM requirement not met, Minumum is 4GB and available is {self.ram} MB"
-			)
+			frappe.throw(f"Minimum RAM requirement not met, Minimum is 4GB and available is {self.ram} MB")
 		if int(self.vcpus) < 2:
 			frappe.throw(
-				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
+				f"Minimum vCPU requirement not met, Minimum is 2 Cores and available is {self.vcpus}"
 			)
 
 		self._validate_disk()
@@ -827,12 +806,11 @@ class SelfHostedServer(Document):
 		if disk_storage_unit.upper() == "TB":
 			return True
 
-		if (
-			disk_storage_unit.upper() in ["GB", "MB"] and round(int(float(disk_size)), -1) < 40
-		):
+		if disk_storage_unit.upper() in ["GB", "MB"] and round(int(float(disk_size)), -1) < 40:
 			frappe.throw(
-				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
+				f"Minimum Storage requirement not met, Minimum is 50GB and available is {self.total_storage}"
 			)
+		return None
 
 
 def fetch_private_ip_based_on_vendor(play_result: dict):

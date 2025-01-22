@@ -7,17 +7,18 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils.data import add_to_date
 
+from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
@@ -78,7 +79,9 @@ class AlertmanagerWebhookLog(Document):
 
 	def validate(self):
 		self.parsed = json.loads(self.payload)
-		self.alert = self.parsed["groupLabels"]["alertname"]
+		self.alert = self.parsed["groupLabels"].get("alertname")
+		if not self.alert:
+			raise AlertRuleNotEnabled("No alertname found in groupLabels")
 		self.status = self.parsed["status"].capitalize()
 		self.severity = self.parsed["commonLabels"]["severity"].capitalize()
 		self.group_key = self.parsed["groupKey"]
@@ -120,17 +123,23 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def react_for_instance(self, instance) -> "PressJob":
+	def react_for_instance(self, instance) -> dict:
 		instance_type = self.guess_doctype(instance)
 		if not instance_type:
 			# Prometheus is monitoring instances we don't know about
-			return
+			return {}
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
-		rule.react(instance_type, instance)
+		labels = self.get_labels_for_instance(instance)
+		job = rule.react(instance_type, instance, labels)
+		if job:
+			return {"press_job_type": job.job_type, "press_job": job.name}
+		return {}
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.append("reaction_jobs", self.react_for_instance(instance))
+			reaction_job = self.react_for_instance(instance)
+			if reaction_job:
+				self.append("reaction_jobs", reaction_job)
 		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
@@ -138,6 +147,14 @@ class AlertmanagerWebhookLog(Document):
 		payload = json.loads(payload)
 		instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])  # sites
 		return set(instances)
+
+	def get_labels_for_instance(self, instance: str) -> dict:
+		# Find first alert that matches the instance
+		payload = json.loads(self.payload)
+		alert = find(payload["alerts"], lambda x: x["labels"]["instance"] == instance)
+		if alert:
+			return alert["labels"]
+		return {}
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(

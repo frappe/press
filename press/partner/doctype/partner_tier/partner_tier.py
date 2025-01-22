@@ -1,11 +1,12 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 # import frappe
 from frappe.model.document import Document
 
 
-class MariaDBAnalyzeQueryTables(Document):
+class PartnerTier(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,13 +15,10 @@ class MariaDBAnalyzeQueryTables(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		column_statistics: DF.Code | None
-		parent: DF.Data
-		parentfield: DF.Data
-		parenttype: DF.Data
-		status: DF.Data | None
-		table: DF.Data | None
-		table_statistics: DF.Code | None
+		enabled: DF.Check
+		target_in_inr: DF.Float
+		target_in_usd: DF.Float
+		title: DF.Data | None
 	# end: auto-generated types
 
 	pass

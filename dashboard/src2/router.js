@@ -188,7 +188,7 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'Partners',
+			name: 'Partner Portal',
 			path: '/partners',
 			redirect: { name: 'PartnerOverview' },
 			component: () => import('./pages/Partners.vue'),
@@ -292,6 +292,11 @@ let router = createRouter({
 			name: 'SQL Playground',
 			component: () =>
 				import('./pages/devtools/database/DatabaseSQLPlayground.vue')
+		},
+		{
+			path: '/database-analyzer',
+			name: 'DB Analyzer',
+			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue')
 		},
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',

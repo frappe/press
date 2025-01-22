@@ -41,6 +41,12 @@ frappe.ui.form.on('Proxy Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Show Agent Password'),
+				'show_agent_password',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				false,

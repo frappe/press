@@ -82,7 +82,7 @@ class Invoice(Document):
 		transaction_fee: DF.Currency
 		transaction_fee_details: DF.Table[InvoiceTransactionFee]
 		transaction_net: DF.Currency
-		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary", "Partnership Fees"]
 		write_off_amount: DF.Float
 	# end: auto-generated types
 
@@ -256,12 +256,22 @@ class Invoice(Document):
 			self.status = "Paid"
 
 		if self.status == "Paid" and self.stripe_invoice_id and self.amount_paid == 0:
-			self.change_stripe_invoice_status("Void")
-			self.add_comment(
-				text=(
-					f"Stripe Invoice {self.stripe_invoice_id} voided because" " payment is done via credits."
+			stripe = get_stripe()
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+			if payment_intent.status == "processing":
+				# mark the fc invoice as Paid
+				# if the payment intent is processing, it means the invoice cannot be voided yet
+				# wait for invoice to be updated and then mark it as void if payment failed
+				# or issue a refund if succeeded
+				self.save()  # status is already Paid, so no need to set again
+			else:
+				self.change_stripe_invoice_status("Void")
+				self.add_comment(
+					text=(
+						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
+					)
 				)
-			)
 
 		self.save()
 
@@ -506,11 +516,23 @@ class Invoice(Document):
 
 	def update_item_descriptions(self):
 		for item in self.items:
-			if not item.description and item.document_type == "Site" and item.plan:
-				site_name = item.document_name.split(".archived")[0]
-				plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
+			if not item.description:
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
-				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
+				if item.document_type == "Site" and item.plan:
+					site_name = item.document_name.split(".archived")[0]
+					plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
+					item.description = f"{site_name} active for {how_many_days} on {plan} plan"
+				elif item.document_type in ["Server", "Database Server"]:
+					server_title = frappe.get_cached_value(item.document_type, item.document_name, "title")
+					if item.plan == "Add-on Storage plan":
+						item.description = f"{server_title} Storage Add-on for {how_many_days}"
+					else:
+						item.description = f"{server_title} active for {how_many_days}"
+				elif item.document_type == "Marketplace App":
+					app_title = frappe.get_cached_value("Marketplace App", item.document_name, "title")
+					item.description = f"Marketplace app {app_title} active for {how_many_days}"
+				else:
+					item.description = "Prepaid Credits"
 
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":

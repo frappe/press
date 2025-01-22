@@ -5,16 +5,32 @@
 - name: Show Block Devices
   command: lsblk
 
+- name: Show Partitions
+  command: 'lsblk --noheadings --output PTTYPE {{ device }}'
+  register: lsblk_output
+
+- name: Set Partition Status
+  set_fact:
+    partitioned_disk: '{{ lsblk_output.stdout.strip() != "" }}'
+
 - name: Extend Partition
-  command: growpart /dev/nvme0n1 1
+  command: 'growpart {{ device }} 1'
+  register: result
+  until: result.rc == 0
   retries: 10
   delay: 10
+  when: partitioned_disk
 
 - name: Show Modified Block Devices
   command: lsblk
 
-- name: Extend Filesystem
-  command: resize2fs /dev/nvme0n1p1
+- name: Extend Partitioned Filesystem
+  command: 'resize2fs {{ device }}-part1'
+  when: partitioned_disk
+
+- name: Extend Un-partitioned Filesystem
+  command: 'resize2fs {{ device }}'
+  when: not partitioned_disk
 
 - name: Add Glass file back
   command: fallocate -l 250M /root/glass
