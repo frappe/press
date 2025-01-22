@@ -1398,6 +1398,22 @@ class Site(Document, TagHelpers):
 		frappe.throw("No additional system user created for this site")
 		return None
 
+	@site_action(["Active"])
+	def login_as_user(self, user_email, reason=None):
+		try:
+			sid = self.get_login_sid(user=user_email)
+			print(f"sid: {sid}")
+			if self.standby_for_product:
+				redirect_route = (
+					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
+					or "/desk"
+				)
+			else:
+				redirect_route = "/desk"
+			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
+		except Exception as e:
+			frappe.throw(str(e))
+
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)

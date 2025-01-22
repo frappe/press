@@ -373,3 +373,44 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		args=args,
 		now=True,
 	)
+
+
+def sync_product_site_users():
+	"""Fetch and sync users from product sites, so that they can be used for login to the site from FC."""
+
+	product_groups = frappe.db.get_all(
+		"Product Trial", {"published": 1}, ["release_group"], pluck="release_group"
+	)
+	product_benches = frappe.get_all(
+		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
+	)
+	# print(f"Syncing users for {product_benches}")
+	# _sync_product_site_users(product_benches)
+	frappe.enqueue(
+		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
+		queue="short",
+		product_benches=product_benches,
+		job_id="sync_product_site_users",
+		deduplicate=True,
+		enqueue_after_commit=True,
+	)
+	frappe.db.commit()
+
+
+def _sync_product_site_users(product_benches):
+	for bench_name in product_benches:
+		bench = frappe.get_doc("Bench", bench_name)
+		# Skip syncing analytics for benches that have been archived (after the job was enqueued)
+		if bench.status != "Active":
+			return
+		try:
+			bench.sync_product_site_users()
+			frappe.db.commit()
+		except Exception:
+			log_error(
+				"Bench Analytics Sync Error",
+				bench=bench.name,
+				reference_doctype="Bench",
+				reference_name=bench.name,
+			)
+			frappe.db.rollback()

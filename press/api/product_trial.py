@@ -259,18 +259,95 @@ def sync_product_site_users(**data):
 
 	user_mail = user_info.get("email")
 	enabled = user_info.get("enabled")
-	if frappe.db.exists("Product Site User", {"site": site.name, "user": user_mail}):
+	if frappe.db.exists("Site User", {"site": site.name, "user": user_mail}):
 		user = frappe.db.get_value(
-			"Product Site User", {"site": site.name, "user": user_mail}, ["name", "enabled"], as_dict=True
+			"Site User", {"site": site.name, "user": user_mail}, ["name", "enabled"], as_dict=True
 		)
 		if user.enabled != enabled:
-			frappe.db.set_value("Product Site User", user.name, "enabled", enabled)
+			frappe.db.set_value("Site User", user.name, "enabled", enabled)
 	else:
 		frappe.get_doc(
 			{
-				"doctype": "Product Site User",
+				"doctype": "Site User",
 				"site": site.name,
 				"user": user_mail,
 				"enabled": enabled,
 			}
 		).insert(ignore_permissions=True)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60)
+def get_product_sites_of_user(user: str):
+	"""
+	Get all product sites of a user
+	"""
+	if not frappe.db.exists("Site User", {"user": user}):
+		return []
+
+	sites = frappe.db.get_all(
+		"Site User", filters={"user": user, "enabled": 1}, fields=["site"], pluck="site"
+	)
+
+	return frappe.db.get_all(
+		"Site",
+		filters={"name": ["in", sites], "status": "Active"},
+		fields=[
+			"name",
+			"site_label",
+			"trial_end_date",
+			"plan.plan_title as plan_title",
+			"plan.price_usd as price_usd",
+			"plan.price_inr as price_inr",
+		],
+	)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def send_otp(email: str, site: str):
+	"""
+	Send OTP to the user trying to login to the product site from /product-login page
+	"""
+
+	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
+	if not site_user_name:
+		return frappe.throw(f"User {email} not found in site {site}")
+	site_user = frappe.get_doc("Site User", site_user_name)
+	if not site_user.enabled:
+		frappe.throw(_(f"User is disabled for the site {site}"))
+
+	return site_user.send_otp()
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def verify_otp(email: str, site: str, otp: str):
+	"""
+	Verify OTP
+	"""
+
+	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
+	if not site_user_name:
+		return frappe.throw(f"User {email} not found in site {site}")
+	site_user = frappe.get_doc("Site User", site_user_name)
+	if not site_user.enabled:
+		frappe.throw(_(f"User is disabled for the site {site}"))
+
+	return site_user.verify_otp(otp)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def login_to_site(email: str, site: str):
+	"""
+	Login to the product site
+	"""
+	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
+	if not site_user_name:
+		return frappe.throw(f"User {email} not found in site {site}")
+	site_user = frappe.get_doc("Site User", site_user_name)
+	if not site_user.enabled:
+		frappe.throw(_(f"User is disabled for the site {site}"))
+
+	return site_user.login_to_site()
