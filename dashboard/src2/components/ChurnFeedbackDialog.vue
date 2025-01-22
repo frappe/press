@@ -68,7 +68,7 @@ export default {
 			route: '',
 			note: '',
 			show: true,
-			rating: 5
+			rating: 0
 		};
 	},
 	resources: {
@@ -87,6 +87,10 @@ export default {
 				validate() {
 					if (!this.feedback) {
 						throw new DashboardError('Please select a reason');
+					}
+
+					if (this.rating == 0) {
+						throw new DashboardError('Please rate your experience');
 					}
 
 					if (
