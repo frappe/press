@@ -1036,7 +1036,7 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_bench_transfer(key):
+def confirm_bench_transfer(key: str):
 	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
 		team_change.transfer_completed = True
