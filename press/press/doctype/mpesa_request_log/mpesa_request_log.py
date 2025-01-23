@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-import frappe
 from frappe.integrations.utils import json_handler
 from frappe.model.document import Document
 
@@ -36,13 +35,6 @@ class MpesaRequestLog(Document):
 		if self.flags._name:
 			self.name = self.flags._name
 
-	def clear_old_logs(days=30):
-		from frappe.query_builder import Interval
-		from frappe.query_builder.functions import Now
-
-		table = frappe.qb.DocType("Mpesa Request Log")
-		frappe.db.delete(table, filters=(table.modified < (Now() - Interval(days=days))))
-
 	def update_status(self, params, status):
 		data = json.loads(self.data)
 		data.update(params)
@@ -50,7 +42,6 @@ class MpesaRequestLog(Document):
 		self.data = json.dumps(data)
 		self.status = status
 		self.save(ignore_permissions=True)
-		frappe.db.commit()
 
 	def handle_success(self, response):
 		"""update the output field with the response along with the relevant status"""

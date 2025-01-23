@@ -116,6 +116,8 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"mpesa_tax_id",
+		"mpesa_phone_number",
 	)
 
 	def get_doc(self, doc):

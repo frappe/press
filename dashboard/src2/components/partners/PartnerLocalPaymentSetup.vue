@@ -1,48 +1,42 @@
 <template>
-	<div class="p-5">
+	<div class="px-60 py-6">
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<!-- Add Paymob Details -->
-			<!-- <div v-if="$team.doc.country === 'Egypt'" class="flex flex-col gap-2 rounded-md border p-4">
-				<div class="flex justify-between items-center text-sm text-gray-700">
-				<div>Add Paymob Credentials</div>
-				<Button @click="showAddPaymobDialog = true">Add</Button>
-				</div>
-				<div class="overflow-hidden text-ellipsis text-base font-medium">
-				<span class="font-normal text-gray-600">Not set</span>
-				</div>
-			</div> -->
-
-			<!-- <AddPaymobCredentials v-model="showAddPaymobDialog" @closeDialog="showAddPaymobDialog = false" /> -->
-
 			<!-- Adding Mpesa Details -->
-
 			<div
 				v-if="$team.doc.country === 'Kenya'"
-				class="flex flex-col gap-2 rounded-md border p-4"
+				class="flex flex-col gap-2 rounded-md border p-4 shadow"
 			>
 				<div class="flex justify-between items-center text-sm text-gray-700">
-					<div>Add M-Pesa Express Credentials</div>
-					<Button @click="showAddMpesaDialog = true">Add</Button>
+					<div>M-Pesa Express Credentials</div>
+					<Button @click="showAddMpesaDialog = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">Not set</span>
+					<span class="font-normal text-gray-600">{{
+						mpesaSetupId || 'Not Set'
+					}}</span>
 				</div>
 			</div>
-			<!-- End of M-Pesa Adding -->
 
 			<AddMpesaCredentials
 				v-model="showAddMpesaDialog"
 				@closeDialog="showAddMpesaDialog = false"
 			/>
+			<!-- End of M-Pesa Adding -->
 
 			<!-- Add Payment Gateway -->
-			<div class="flex flex-col gap-2 rounded-md border p-4">
+			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
 				<div class="flex justify-between items-center text-sm text-gray-700">
-					<div>Add Payment Gateway</div>
-					<Button @click="showAddPaymentGatewayDialog = true">Add</Button>
+					<div>Payment Gateway</div>
+					<Button
+						@click="showAddPaymentGatewayDialog = true"
+						:disabled="!Boolean(mpesaSetupId)"
+						>Edit</Button
+					>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">Not set</span>
+					<span class="font-normal text-gray-600">{{
+						paymentGatewayID || 'Not set'
+					}}</span>
 				</div>
 			</div>
 			<!-- End of Payment Gateway Adding -->
@@ -53,13 +47,19 @@
 			/>
 
 			<!--Add currency exchange-->
-			<div class="flex flex-col gap-2 rounded-md border p-4">
+			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
 				<div class="flex justify-between items-center text-sm text-gray-700">
-					<div>Add Exchange Rate</div>
-					<Button @click="showExchangeRateDialog = true">Add</Button>
+					<div>Exchange Rate</div>
+					<Button
+						@click="showExchangeRateDialog = true"
+						:disabled="!Boolean(paymentGatewayID)"
+						>Edit</Button
+					>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">Not set</span>
+					<span class="font-normal text-gray-600">{{
+						exchangeRate || 'Not set'
+					}}</span>
 				</div>
 			</div>
 			<!--End of Currency exchange-->
@@ -71,10 +71,10 @@
 			/>
 
 			<!--Submit Payment Transaction To Frappe-->
-			<div class="flex flex-col gap-2 rounded-md border p-4">
+			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
 				<div class="flex justify-between items-center text-sm text-gray-700">
 					<div>Partner Payment Payout</div>
-					<Button @click="showPartnerPaymentPayout = true">Add</Button>
+					<Button @click="showPartnerPaymentPayout = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
 					<span class="font-normal text-gray-600">Not set</span>
@@ -106,9 +106,6 @@ export default {
 		AddExchangeRate: defineAsyncComponent(
 			() => import('../billing/AddExchangeRate.vue'),
 		),
-		// AddPaymobCredentials: defineAsyncComponent(() =>
-		//     import('../AddPaymobCredentials.vue')
-		//   ),
 		PartnerPaymentPayout: defineAsyncComponent(
 			() => import('../billing/mpesa/PartnerPaymentPayout.vue'),
 		),
@@ -120,7 +117,23 @@ export default {
 			showAddPaymentGatewayDialog: false,
 			showExchangeRateDialog: false,
 			showPartnerPaymentPayout: false,
+			mpesaSetupId: '',
+			paymentGatewayID: '',
+			exchangeRate: '',
 		};
+	},
+	resources: {
+		fetchLocalPaymentSetupDetails() {
+			return {
+				url: 'press.api.partner.get_local_payment_setup',
+				onSuccess(data) {
+					console.log(data);
+					this.mpesaSetupId = data.mpesa_setup;
+					this.paymentGatewayID = data.payment_gateway;
+				},
+				auto: true,
+			};
+		},
 	},
 };
 </script>
