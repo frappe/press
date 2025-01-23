@@ -1313,13 +1313,24 @@ class VirtualMachine(Document):
 			InstanceId=self.instance_id,
 			VolumeId=volume_id,
 		)
+		# add the volume to the list of temporary volumes
+		self.append("temporary_volumes", {"device": device_name})
+		self.save()
+		# sync
 		self.sync()
 		return device_name
 
 	def get_next_volume_device_name(self):
+		# Hold the lock, so that we dont allocate same device name to multiple volumes
+		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
 		# First volume starts from /dev/sdf
-		device_name_index = chr(ord("f") + len(self.volumes) - 1)
-		return f"/dev/sd{device_name_index}"
+		used_devices = {v.device for v in self.volumes} | {v.device for v in self.temporary_volumes}
+		for i in range(5, 26):  # 'f' to 'z'
+			device_name = f"/dev/sd{chr(ord('a') + i)}"
+			if device_name not in used_devices:
+				return device_name
+		frappe.throw("No device name available for new volume")
+		return None
 
 	@frappe.whitelist()
 	def detach(self, volume_id):
@@ -1330,6 +1341,10 @@ class VirtualMachine(Document):
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)
 		self.sync()
+		# If volume device id is in temporary volumes, remove it
+		for temp_volume in list(self.temporary_volumes):
+			if temp_volume.device == volume.device:
+				self.remove(temp_volume)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
