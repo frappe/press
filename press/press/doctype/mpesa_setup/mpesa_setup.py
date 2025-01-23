@@ -17,15 +17,15 @@ class MpesaSetup(Document):
 
 		api_type: DF.Literal["Mpesa Express", "Mpesa C2B"]
 		business_shortcode: DF.Data | None
-		consumer_key: DF.Data | None
-		consumer_secret: DF.Password | None
+		consumer_key: DF.Data
+		consumer_secret: DF.Password
 		initiator_name: DF.Data | None
-		passkey: DF.Password | None
-		payment_gateway_name: DF.Data | None
+		mpesa_setup_id: DF.Data
+		pass_key: DF.Password
 		sandbox: DF.Check
-		secret_credentials: DF.SmallText | None
-		team: DF.Link | None
-		till_number: DF.Data | None
+		security_credential: DF.SmallText
+		team: DF.Link
+		till_number: DF.Data
 		transaction_limit: DF.Float
 	# end: auto-generated types
 

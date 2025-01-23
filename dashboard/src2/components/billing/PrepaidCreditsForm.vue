@@ -34,6 +34,21 @@
 					</div>
 				</template>
 			</FormControl>
+			<FormControl
+				v-if="team.doc.country === 'Kenya' && paymentGateway === 'M-Pesa'"
+				label="Amount in KES"
+				disabled
+				:modelValue="amountInKES"
+				name="amount_in_kes"
+				autocomplete="off"
+				type="number"
+			>
+				<template #prefix>
+					<div class="grid w-4 place-items-center text-sm text-gray-700">
+						{{ 'Ksh' }}
+					</div>
+				</template>
+			</FormControl>
 		</div>
 
 		<!-- Payment Gateway -->
@@ -44,7 +59,7 @@
 					v-if="team.doc.currency === 'INR' || team.doc.razorpay_enabled"
 					size="lg"
 					:class="{
-						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay'
+						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay',
 					}"
 					@click="paymentGateway = 'Razorpay'"
 				>
@@ -53,11 +68,25 @@
 				<Button
 					size="lg"
 					:class="{
-						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe'
+						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
 					}"
 					@click="paymentGateway = 'Stripe'"
 				>
 					<StripeLogo class="h-7 w-24" />
+				</Button>
+				<Button
+					v-if="team.doc.country === 'Kenya'"
+					size="lg"
+					:class="{
+						'border-[1.5px] border-gray-700': paymentGateway === 'M-Pesa',
+					}"
+					@click="paymentGateway = 'M-Pesa'"
+				>
+					<img
+						class="h-14 w-24"
+						:src="`/assets/press/images/mpesa-logo.svg`"
+						alt="M-pesa Logo"
+					/>
 				</Button>
 			</div>
 		</div>
@@ -78,6 +107,15 @@
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
+
+		<BuyPrepaidCreditsMpesa
+			v-if="paymentGateway === 'M-Pesa'"
+			:amount="creditsToBuy"
+			:amountKES="amountInKES"
+			:minimumAmount="minimumAmount"
+			@success="() => emit('success')"
+			@cancel="show = false"
+		/>
 	</div>
 </template>
 <script setup>
@@ -85,6 +123,7 @@ import BuyCreditsStripe from './BuyCreditsStripe.vue';
 import BuyCreditsRazorpay from './BuyCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
+import BuyPrepaidCreditsMpesa from './mpesa/BuyPrepaidCreditsMpesa.vue';
 import { FormControl, Button, createResource } from 'frappe-ui';
 import { ref, computed, inject, watch } from 'vue';
 
@@ -95,7 +134,7 @@ const team = inject('team');
 const totalUnpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
 	cache: 'totalUnpaidAmount',
-	auto: true
+	auto: true,
 });
 
 const minimumAmount = computed(() => {
@@ -104,7 +143,7 @@ const minimumAmount = computed(() => {
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
 
 	return Math.ceil(
-		unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault
+		unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault,
 	);
 });
 
@@ -126,5 +165,44 @@ const totalAmount = computed(() => {
 	} else {
 		return _creditsToBuy;
 	}
+});
+
+const amountInKES = ref(1300);
+const exchangeRate = ref(1);
+
+watch(creditsToBuy, () => {
+	let _amountInKES = creditsToBuy.value * exchangeRate.value;
+	if (
+		paymentGateway.value === 'M-Pesa' &&
+		_amountInKES !== creditsToBuy.value
+	) {
+		amountInKES.value = _amountInKES;
+	}
+});
+
+watch(amountInKES, () => {
+	let data = amountInKES.value / exchangeRate.value;
+	if (paymentGateway.value === 'M-Pesa' && data !== creditsToBuy.value) {
+		creditsToBuy.value = data;
+	}
+});
+
+// watch(paymentGateway, () => {
+// 	if (paymentGateway.value === 'M-Pesa') {
+// 		fetchExchangeRate();
+// 	}
+// });
+
+const fetchExchangeRate = createResource({
+	url: 'press.api.regional_payments.mpesa.utils.get_exchange_rate',
+	params: {
+		from_currency: 'USD',
+		to_currency: 'KES',
+	},
+	cache: 'exchangeRate',
+	auto: true,
+	onSuccess(data) {
+		exchangeRate.value = data;
+	},
 });
 </script>

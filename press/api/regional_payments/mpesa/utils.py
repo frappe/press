@@ -11,7 +11,7 @@ from press.utils import get_current_team
 supported_mpesa_currencies = ["KES"]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_mpesa_setup(**kwargs):
 	"""Create Mpesa Settings for the team."""
 	team = get_current_team()
@@ -21,13 +21,13 @@ def create_mpesa_setup(**kwargs):
 			{
 				"doctype": "Mpesa Setup",
 				"team": team,
-				"payment_gateway_name": kwargs.get("payment_gateway_name"),
+				"mpesa_setup_id": kwargs.get("mpesa_setup_id"),
 				"api_type": "Mpesa Express",
 				"consumer_key": kwargs.get("consumer_key"),
 				"consumer_secret": kwargs.get("consumer_secret"),
 				"business_shortcode": kwargs.get("short_code"),
 				"till_number": kwargs.get("till_number"),
-				"online_passkey": kwargs.get("pass_key"),
+				"pass_key": kwargs.get("pass_key"),
 				"security_credential": kwargs.get("security_credential"),
 				"sandbox": 1 if kwargs.get("sandbox") else 0,
 			}
@@ -43,23 +43,42 @@ def create_mpesa_setup(**kwargs):
 		return None
 
 
-@frappe.whitelist(allow_guest=True)
-def get_tax_id():
-	"""Get the tax ID for the team."""
+@frappe.whitelist()
+def fetch_mpesa_setup():
 	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.tax_id if team_doc.tax_id else ""
+	if frappe.db.exists("Mpesa Setup", {"team": team}):
+		mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team})
+		return {
+			"mpesa_setup_id": mpesa_setup.mpesa_setup_id,
+			"consumer_key": mpesa_setup.consumer_key,
+			"consumer_secret": mpesa_setup.consumer_secret,
+			"business_shortcode": mpesa_setup.business_shortcode,
+			"till_number": mpesa_setup.till_number,
+			"pass_key": mpesa_setup.pass_key,
+			"initiator_name": mpesa_setup.initiator_name,
+			"security_credential": mpesa_setup.security_credential,
+			"api_type": mpesa_setup.api_type,
+		}
+	return None
 
 
-@frappe.whitelist(allow_guest=True)
-def get_phone_no():
-	"""Get the phone number for the team."""
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	return team_doc.phone_number if team_doc.phone_number else ""
+# @frappe.whitelist()
+# def get_tax_id():
+# 	"""Get the tax ID for the team."""
+# 	team = get_current_team()
+# 	team_doc = frappe.get_doc("Team", team)
+# 	return team_doc.tax_id if team_doc.tax_id else ""
 
 
-@frappe.whitelist(allow_guest=True)
+# @frappe.whitelist()
+# def get_phone_no():
+# 	"""Get the phone number for the team."""
+# 	team = get_current_team()
+# 	team_doc = frappe.get_doc("Team", team)
+# 	return team_doc.phone_number if team_doc.phone_number else ""
+
+
+@frappe.whitelist()
 def display_invoices_by_partner():
 	"""Display the list of invoices by partner."""
 	team = get_current_team()
@@ -71,7 +90,7 @@ def display_invoices_by_partner():
 	return invoices  # noqa: RET504
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_exchange_rate(from_currency, to_currency):
 	"""Get the latest exchange rate for the given currencies."""
 	exchange_rate = frappe.db.get_value(
@@ -83,7 +102,7 @@ def get_exchange_rate(from_currency, to_currency):
 	return exchange_rate  # noqa: RET504
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_payment_gateway_settings(**kwargs):
 	"""Create Payment Gateway Settings for the team."""
 	team = get_current_team()
@@ -117,28 +136,14 @@ def create_payment_gateway_settings(**kwargs):
 		return None
 
 
-@frappe.whitelist(allow_guest=True)
-def get_currency_options():
-	"""Get the list of currencies supported by the system."""
-	currencies = frappe.get_all("Currency", fields=["name"])
-	return [currency["name"] for currency in currencies]
-
-
-@frappe.whitelist(allow_guest=True)
-def get_gateway_settings():
-	"""Get the list of doctypes supported by the system."""
-	doctypes = frappe.get_all("DocType", fields=["name"])
-	return [doc["name"] for doc in doctypes]
-
-
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_gateway_controllers(gateway_setting):
 	"""Get the list of controllers for the given doctype."""
 	controllers = frappe.get_all(gateway_setting, fields=["name"])
 	return [doc["name"] for doc in controllers]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_tax_percentage(payment_partner):
 	team_doc = frappe.get_doc("Team", {"user": payment_partner})
 	mpesa_setups = frappe.get_all(
@@ -162,15 +167,15 @@ def update_tax_id_or_phone_no(team, tax_id, phone_number):
 	team_doc = frappe.get_doc("Team", doc_name)
 
 	# Check if updates are needed
-	tax_id_needs_update = tax_id and team_doc.tax_id != tax_id
-	phone_number_needs_update = phone_number and team_doc.phone_number != phone_number
+	tax_id_needs_update = tax_id and team_doc.mpesa_tax_id != tax_id
+	phone_number_needs_update = phone_number and team_doc.mpesa_phone_number != phone_number
 
 	# Update only if at least one value needs updating
 	if tax_id_needs_update or phone_number_needs_update:
 		if tax_id_needs_update:
-			team_doc.tax_id = tax_id
+			team_doc.mpesa_tax_id = tax_id
 		if phone_number_needs_update:
-			team_doc.phone_number = phone_number
+			team_doc.mpesa_phone_number = phone_number
 		team_doc.save()
 
 
@@ -183,7 +188,7 @@ def convert(from_currency, to_currency, amount):
 	return converted_amount, exchange_rate
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def display_mpesa_payment_partners():
 	"""Display the list of partners in the system with Mpesa integration enabled."""
 
@@ -203,7 +208,7 @@ def display_mpesa_payment_partners():
 	return [partner["user"] for partner in mpesa_partners]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def display_payment_partners():
 	"""Display the list of partners in the system."""
 	Team = DocType("Team")
@@ -214,7 +219,7 @@ def display_payment_partners():
 	return [partner["user"] for partner in partners]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def display_payment_gateway():
 	"""Display the payment gateway for the partner."""
 	gateways = frappe.get_all("Payment Gateway", filters={}, fields=["gateway"])
@@ -264,27 +269,18 @@ def get_payment_gateway(partner_value):
 def get_mpesa_setup_for_team(team_name):
 	"""Fetch Mpesa setup for a given team."""
 
-	mpesa_setup = frappe.get_all("Mpesa Setup", filters={"team": team_name}, pluck="name")
+	mpesa_setup = frappe.get_all("Mpesa Setup", {"team": team_name}, pluck="name")
 	if not mpesa_setup:
-		frappe.throw(_("Mpesa Setup not configured for this team"), title=_("Mpesa Express Error"))
+		frappe.throw(
+			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
+		)
 	return frappe.get_doc("Mpesa Setup", mpesa_setup[0])
 
 
-"""ensures number take the right format"""
-
-
 def sanitize_mobile_number(number):
+	"""ensures number take the right format"""
 	"""Add country code and strip leading zeroes from the phone number."""
 	return "254" + str(number).lstrip("0")
-
-
-def validate_mpesa_transaction_currency(currency):
-	if currency not in supported_mpesa_currencies:
-		frappe.throw(
-			_(
-				"Please select another payment method. Mpesa does not support transactions in currency '{0}'"
-			).format(currency)
-		)
 
 
 def split_request_amount_according_to_transaction_limit(amount, transaction_limit):
@@ -313,14 +309,13 @@ def fetch_param_value(response, key, key_field):
 	return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_exchange_rate(**kwargs):
 	"""Create a new exchange rate record."""
 	try:
 		from_currency = kwargs.get("from_currency", {}).get("value")
 		to_currency = kwargs.get("to_currency", {}).get("value")
 		exchange_rate = kwargs.get("exchange_rate")
-		date = kwargs.get("date")
 
 		if not from_currency or not to_currency or not exchange_rate:
 			raise ValueError("Missing required fields.")
@@ -331,7 +326,7 @@ def create_exchange_rate(**kwargs):
 				"from_currency": from_currency,
 				"to_currency": to_currency,
 				"exchange_rate": exchange_rate,
-				"date": date,
+				"date": frappe.utils.today(),
 			}
 		)
 
@@ -339,8 +334,8 @@ def create_exchange_rate(**kwargs):
 		return exchange_rate_doc.name
 
 	except Exception as e:
-		print(f"Error: {e}")
-		return None
+		frappe.log_error("Error creating exchange rate")
+		raise e
 
 
 def create_payment_partner_transaction(
@@ -359,19 +354,19 @@ def create_payment_partner_transaction(
 			"payment_transaction_details": payload,
 		}
 	)
-	transaction_doc.insert()
+	transaction_doc.insert(ignore_permissions=True)
 	transaction_doc.submit()
 	return transaction_doc.name
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def fetch_currencies():
 	"""Fetch the list of currencies supported by the system."""
 	currencies = frappe.get_all("Currency", fields=["name"])
 	return [currency["name"] for currency in currencies]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def fetch_payments(payment_gateway, partner, from_date, to_date):
 	print("fetching payments", payment_gateway)
 	partner = frappe.get_value("Team", {"user": partner}, "name")
@@ -392,7 +387,7 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 	return partner_payments
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_partner, payments):
 	"""Create a Payment Partner Payout record."""
 	partner_commission = frappe.get_value("Team", {"user": payment_partner}, "partner_commission")
@@ -427,7 +422,7 @@ def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_p
 	return payout_doc.name
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_invoice_partner_site(data, gateway_controller):
 	gateway = frappe.get_doc("Payment Gateway", gateway_controller)
 	api_url_ = gateway.url

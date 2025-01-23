@@ -5,51 +5,37 @@
 				<FormControl
 					label="From Currency"
 					v-model="fromCurrency"
-					type="autocomplete"
 					variant="subtle"
-					:disabled="false"
-					:options="currencySymbols"
+					:options="['USD']"
 					name="from_currency"
+					type="select"
 					class="mb-5"
-					required
 				/>
 
 				<FormControl
 					label="To Currency"
 					v-model="toCurrency"
 					name="to_currency"
-					type="autocomplete"
 					variant="subtle"
-					:disabled="false"
-					:options="currencySymbols"
+					:options="['KES']"
+					type="select"
 					class="mb-5"
-					required
 				/>
 
 				<FormControl
 					label="Exchange Rate"
 					v-model="exchangeRate"
 					name="exchange_rate"
-					autocomplete="off"
 					class="mb-5"
 					type="number"
 					required
-				/>
-
-				<DatePicker
-					v-model="date"
-					variant="subtle"
-					name="date"
-					placeholder="Placeholder"
-					:disabled="false"
-					label="Date"
 				/>
 			</div>
 
 			<div class="mt-4 flex w-full items-center justify-center">
 				<Button
 					@click="saveExchangeRate"
-					class="justify-center w-full font-bold"
+					class="justify-center w-full"
 					variant="solid"
 					type="primary"
 					>Add Currency Exchange</Button
@@ -62,22 +48,16 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import { frappeRequest } from 'frappe-ui';
-import { DashboardError } from '../../utils/error';
 import FormControl from 'frappe-ui/src/components/FormControl.vue';
-import DatePicker from 'frappe-ui/src/components/DatePicker.vue';
 import ErrorMessage from 'frappe-ui/src/components/ErrorMessage.vue';
 
 export default {
 	name: 'AddExchangeRate',
-	components: { DatePicker },
 	data() {
 		return {
-			fromCurrency: '',
-			toCurrency: '',
-			date: '',
+			fromCurrency: 'USD',
+			toCurrency: 'KES',
 			exchangeRate: '',
-			currencySymbols: [],
 		};
 	},
 
@@ -89,15 +69,9 @@ export default {
 					from_currency: this.fromCurrency,
 					to_currency: this.toCurrency,
 					exchange_rate: this.exchangeRate,
-					date: this.date,
 				},
 				validate() {
-					if (
-						!this.fromCurrency ||
-						!this.toCurrency ||
-						!this.exchangeRate ||
-						!this.date
-					) {
+					if (!this.fromCurrency || !this.toCurrency || !this.exchangeRate) {
 						toast.error('All fields are required');
 						return false;
 					}
@@ -123,7 +97,6 @@ export default {
 					this.fromCurrency = '';
 					this.toCurrency = '';
 					this.exchangeRate = '';
-					this.date = '';
 				}
 				this.$emit('closeDialog');
 			} catch (error) {
@@ -131,25 +104,6 @@ export default {
 				this.$toast.error(`Error adding currency exchange: ${error.message}`);
 			}
 		},
-
-		async fetchCurrencySymbols() {
-			try {
-				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.fetch_currencies',
-					method: 'GET',
-				});
-				if (Array.isArray(response)) {
-					this.currencySymbols = response;
-				} else {
-					this.ErrorMessage = 'No currency symbols found';
-				}
-			} catch (error) {
-				this.ErrorMessage = `Error fetching currency symbols: ${error.message}`;
-			}
-		},
-	},
-	mounted() {
-		this.fetchCurrencySymbols();
 	},
 };
 </script>
