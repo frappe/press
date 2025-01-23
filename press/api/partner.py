@@ -86,10 +86,8 @@ def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
-	partner_level, legacy_contract = partner_doc.get_partner_level()
-	# no discount for partners on legacy contract
-	# TODO: remove legacy contract check
-	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
+	partner_level, certificates = partner_doc.get_partner_level()
+	discount_percent = DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
 		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
@@ -221,7 +219,7 @@ def get_prev_month_partner_contribution(partner_email):
 
 @frappe.whitelist()
 def calculate_partner_tier(contribution, currency):
-	partner_tier = frappe.qb.DocType("Partner Teir")
+	partner_tier = frappe.qb.DocType("Partner Tier")
 	query = frappe.qb.from_(partner_tier).select(partner_tier.name)
 	if currency == "INR":
 		query = query.where(partner_tier.target_in_inr <= contribution).orderby(
