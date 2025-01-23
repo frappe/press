@@ -22,6 +22,8 @@
   "agent_section",
   "agent_password",
   "grafana_section",
+  "grafana_username",
+  "column_break_ilpd",
   "grafana_password",
   "ssh_section",
   "frappe_user_password",
@@ -204,6 +206,15 @@
    "fieldname": "prometheus_data_directory",
    "fieldtype": "Data",
    "label": "Prometheus Data Directory"
+  },
+  {
+   "fieldname": "grafana_username",
+   "fieldtype": "Data",
+   "label": "Grafana Username"
+  },
+  {
+   "fieldname": "column_break_ilpd",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -212,7 +223,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2024-02-05 20:07:19.024804",
+ "modified": "2025-01-23 20:05:36.835000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

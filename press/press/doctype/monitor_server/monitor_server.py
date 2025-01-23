@@ -26,6 +26,7 @@ class MonitorServer(BaseServer):
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		grafana_password: DF.Password | None
+		grafana_username: DF.Data | None
 		hostname: DF.Data
 		ip: DF.Data | None
 		is_server_setup: DF.Check
