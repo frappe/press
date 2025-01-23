@@ -102,7 +102,7 @@
 							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
 							:to="{
 								name: 'SaaSSignup',
-								params: $route.params
+								params: $route.params,
 							}"
 						>
 							New member? Create a new account.
@@ -125,34 +125,20 @@ export default {
 	components: {
 		LoginBox,
 		Spinner,
-		GoogleIconSolid
+		GoogleIconSolid,
 	},
 	data() {
 		return {
 			email: '',
 			code: '',
 			isLoginWithEmail: false,
-			isRedirecting: false
+			isRedirecting: false,
 		};
 	},
 	watch: {
 		email() {
 			this.isLoginWithEmail = false;
-		}
-	},
-	mounted() {
-		setTimeout(() => {
-			if (window.posthog?.__loaded) {
-				window.posthog.identify(window.posthog.get_distinct_id(), {
-					app: 'frappe_cloud',
-					action: 'saas_login',
-					saas_app: this.productId
-				});
-				if (!window.posthog.sessionRecordingStarted()) {
-					window.posthog.startSessionRecording();
-				}
-			}
-		}, 3000);
+		},
 	},
 	computed: {
 		saasProduct() {
@@ -160,7 +146,7 @@ export default {
 		},
 		isGoogleOAuthEnabled() {
 			return this.$resources.signupSettings.data?.enable_google_oauth || false;
-		}
+		},
 	},
 	resources: {
 		signupSettings() {
@@ -171,14 +157,14 @@ export default {
 					fetch_countries: true,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
 						this.country = res.country;
 					}
-				}
+				},
 			};
 		},
 		sendVerificationCodeForLogin() {
@@ -186,13 +172,13 @@ export default {
 				url: 'press.api.product_trial.send_verification_code_for_login',
 				params: {
 					email: this.email,
-					product: this.productId
+					product: this.productId,
 				},
 				auto: false,
 				onSuccess() {
 					this.isLoginWithEmail = true;
 					toast.success('Verification code sent to your email');
-				}
+				},
 			};
 		},
 		loginUsingCode() {
@@ -201,26 +187,26 @@ export default {
 				params: {
 					email: this.email,
 					product: this.productId,
-					code: this.code
+					code: this.code,
 				},
 				auto: false,
-				onSuccess: data => {
+				onSuccess: (data) => {
 					this.moveToSiteLoginPage(data);
-				}
+				},
 			};
 		},
 		signupWithOAuth() {
 			return {
 				url: 'press.api.google.login',
 				params: {
-					product: this.productId
+					product: this.productId,
 				},
 				auto: false,
 				onSuccess(url) {
 					window.location.href = url;
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		loginWithEmail() {
@@ -231,13 +217,13 @@ export default {
 			window.location.href = this.$router.resolve({
 				name: 'SaaSSignupLoginToSite',
 				params: {
-					productId: this.productId
+					productId: this.productId,
 				},
 				query: {
-					product_trial_request
-				}
+					product_trial_request,
+				},
 			}).href;
-		}
-	}
+		},
+	},
 };
 </script>
