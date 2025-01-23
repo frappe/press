@@ -26,6 +26,10 @@ class SiteBackup(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.physical_backup_file_metadata.physical_backup_file_metadata import (
+			PhysicalBackupFileMetadata,
+		)
+
 		config_file: DF.Data | None
 		config_file_size: DF.Data | None
 		config_file_url: DF.Text | None
@@ -35,6 +39,7 @@ class SiteBackup(Document):
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
 		files_availability: DF.Literal["", "Available", "Unavailable"]
+		files_metadata: DF.Table[PhysicalBackupFileMetadata]
 		innodb_tables: DF.JSON | None
 		job: DF.Link | None
 		myisam_tables: DF.JSON | None
@@ -290,6 +295,16 @@ def process_backup_site_job_update(job):  # noqa: C901
 					site_backup.innodb_tables = json.dumps(data[site_backup.database_name]["innodb_tables"])
 					site_backup.myisam_tables = json.dumps(data[site_backup.database_name]["myisam_tables"])
 					site_backup.table_schema = data[site_backup.database_name]["table_schema"]
+					files_metadata = data[site_backup.database_name]["files_metadata"]
+					for x in files_metadata:
+						site_backup.append(
+							"files_metadata",
+							{
+								"file": x,
+								"size": files_metadata[x]["size"],
+								"checksum": files_metadata[x]["checksum"],
+							},
+						)
 					site_backup.status = "Success"
 				site_backup.save()
 				site_backup.reload()
@@ -343,6 +358,10 @@ def process_backup_site_job_update(job):  # noqa: C901
 					)
 
 				frappe.db.set_value("Site Backup", backup.name, site_backup_dict)
+		else:
+			site_backup: SiteBackup = frappe.get_doc("Site Backup", backup.name)
+			site_backup.status = status
+			site_backup.save()
 
 
 def get_backup_bucket(cluster, region=False):
