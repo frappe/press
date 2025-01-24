@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
    "actions": [],
    "creation": "2021-03-30 16:42:06.785344",
    "doctype": "DocType",
@@ -215,8 +216,7 @@
          "label": "Prometheus Data Directory"
       },
       {
-<<<<<<< HEAD
-   "fieldname": "grafana_username",
+         "fieldname": "grafana_username",
          "fieldtype": "Data",
          "label": "Grafana Username"
       },

@@ -172,6 +172,7 @@ class Ansible:
 			start_at_task=None,
 			syntax=False,
 			verbosity=1,
+			ssh_common_args=self._get_ssh_proxy_commad(server),
 		)
 
 		self.loader = DataLoader()
@@ -185,6 +186,16 @@ class Ansible:
 		self.display = Display()
 		self.display.verbosity = 1
 		self.create_ansible_play()
+
+	def _get_ssh_proxy_commad(self, server):
+		proxy_command = None
+
+		if self.server.bastion_host:
+			proxy_command = f'-o ProxyCommand="ssh -W %h:%p \
+					{server.bastion_host.ssh_user}@{server.bastion_host.ip} \
+						-p {server.bastion_host.ssh_port}"'
+
+		return proxy_command
 
 	def patch(self):
 		def modified_action_module_run(*args, **kwargs):
