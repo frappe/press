@@ -506,6 +506,8 @@ class Agent:
 			"myisam_tables": json.loads(backup.myisam_tables),
 			"table_schema": backup.table_schema,
 			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"restore_specific_tables": backup_restoration.restore_specific_tables,
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",

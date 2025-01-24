@@ -19,6 +19,9 @@
   "column_break_kaja",
   "destination_database",
   "destination_server",
+  "section_break_gthb",
+  "restore_specific_tables",
+  "tables_to_restore",
   "section_break_swxv",
   "start",
   "column_break_xqdd",
@@ -161,11 +164,27 @@
    "fieldtype": "Data",
    "label": "Mount Point",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_gthb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.restore_specific_tables",
+   "fieldname": "tables_to_restore",
+   "fieldtype": "JSON",
+   "label": "Tables To Restore"
+  },
+  {
+   "default": "0",
+   "fieldname": "restore_specific_tables",
+   "fieldtype": "Check",
+   "label": "Restore Specific Tables"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-20 18:19:42.081729",
+ "modified": "2025-01-24 19:48:40.696658",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

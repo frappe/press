@@ -46,12 +46,14 @@ class PhysicalBackupRestoration(Document):
 		end: DF.Datetime | None
 		job: DF.Link | None
 		mount_point: DF.Data | None
+		restore_specific_tables: DF.Check
 		site: DF.Link
 		site_backup: DF.Link
 		source_database: DF.Data
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[PhysicalBackupRestorationStep]
+		tables_to_restore: DF.JSON | None
 		volume: DF.Data | None
 	# end: auto-generated types
 
@@ -106,6 +108,13 @@ class PhysicalBackupRestoration(Document):
 		self.set_disk_snapshot()
 		self.validate_snapshot_region()
 		self.validate_snapshot_status()
+
+		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
+		if self.restore_specific_tables and not self.tables_to_restore:
+			frappe.throw("You must provide at least one table to restore.")
+
+		if not self.restore_specific_tables:
+			self.tables_to_restore = "[]"
 
 	def after_insert(self):
 		self.set_mount_point()

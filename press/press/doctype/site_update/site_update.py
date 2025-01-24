@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import random
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
@@ -331,6 +332,13 @@ class SiteUpdate(Document):
 			at_front=True,
 		)
 
+	@property
+	def touched_tables_list(self):
+		try:
+			return json.loads(self.touched_tables)
+		except Exception:
+			return []
+
 	@frappe.whitelist()
 	def trigger_recovery_job(self):  # noqa: C901
 		if self.recover_job:
@@ -353,6 +361,8 @@ class SiteUpdate(Document):
 						"source_database": site.database_name,
 						"destination_database": site.database_name,
 						"destination_server": frappe.get_value("Server", site.server, "database_server"),
+						"restore_specific_tables": len(self.touched_tables_list) > 0,
+						"tables_to_restore": self.touched_tables_list,
 					}
 				)
 				doc.insert(ignore_permissions=True)
