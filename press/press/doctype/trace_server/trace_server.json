@@ -24,6 +24,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_19",
+  "bastion_server",
   "root_public_key",
   "monitoring_section",
   "monitoring_password",
@@ -259,6 +260,12 @@
   {
    "fieldname": "column_break_33",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [
@@ -267,7 +274,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-12-13 15:09:34.499141",
+ "modified": "2025-01-24 15:14:49.164810",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Trace Server",

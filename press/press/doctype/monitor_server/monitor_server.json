@@ -28,9 +28,12 @@
   "grafana_password",
   "node_exporter_dashboard_path",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
+  "bastion_server",
   "root_public_key",
   "monitoring_section",
   "monitoring_password",
@@ -210,6 +213,7 @@
    "label": "Prometheus Data Directory"
   },
   {
+<<<<<<< HEAD
    "fieldname": "grafana_username",
    "fieldtype": "Data",
    "label": "Grafana Username"
@@ -229,6 +233,22 @@
    "fieldname": "node_exporter_dashboard_path",
    "fieldtype": "Data",
    "label": "Node Exporter Dashboard Path"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [
@@ -237,7 +257,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-01-24 00:35:26.093683",
+ "modified": "2025-01-24 15:02:32.710284",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
