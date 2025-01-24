@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
-from typing import Dict, List
 from unittest.mock import Mock, patch
 
 import frappe
@@ -17,6 +16,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
+from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 from press.utils.test import foreground_enqueue_doc
 
 
@@ -25,11 +25,13 @@ from press.utils.test import foreground_enqueue_doc
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
-	domains: List[Dict[str, str]] = [{"domain": "fc.dev"}],
+	domains: list[dict[str, str]] | None = None,
 	cluster: str = "Default",
 	is_primary: bool = True,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
+	if domains is None:
+		domains = [{"domain": "fc.dev"}]
 	create_test_press_settings()
 	server = frappe.get_doc(
 		{
@@ -42,6 +44,7 @@ def create_test_proxy_server(
 			"domain": domain,
 			"domains": domains,
 			"is_primary": is_primary,
+			"virtual_machine": create_test_virtual_machine().name,
 		}
 	).insert(ignore_if_duplicate=True)
 	server.reload()
@@ -83,9 +86,7 @@ class TestProxyServer(FrappeTestCase):
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
-		update_dns_records_for_sites.assert_called_once_with(
-			root_domain, [site1.name], proxy2.name
-		)
+		update_dns_records_for_sites.assert_called_once_with(root_domain, [site1.name], proxy2.name)
 		proxy2.reload()
 		proxy1.reload()
 		self.assertTrue(proxy2.is_primary)
