@@ -311,7 +311,7 @@ class Incident(WebsiteGenerator):
 		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
 			return
 		with sync_playwright() as p:
-			browser = p.chromium.launch(headless=True)
+			browser = p.chromium.launch(headless=True, channel="chromium")
 			page = browser.new_page()
 			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
 
