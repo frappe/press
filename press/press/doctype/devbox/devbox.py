@@ -12,6 +12,7 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -28,6 +29,7 @@ class Devbox(Document):
 
 		add_site_to_upstream: DF.Check
 		browser_port: DF.Int
+		cluster: DF.Data
 		codeserver_password: DF.Data | None
 		codeserver_port: DF.Int
 		container_id: DF.Data | None
@@ -115,6 +117,7 @@ class Devbox(Document):
 		devbox.save()
 		server_agent = Agent(server_type="Server", server=devbox.server)
 		image_reference = frappe.db.get_value("Devbox Image", devbox.docker_image, "image_reference")
+		create_dns_record(doc=self, record_name=self.name)
 		server_agent.create_agent_job(
 			"New Devbox",
 			path="devboxes",
