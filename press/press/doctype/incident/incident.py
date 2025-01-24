@@ -143,8 +143,9 @@ class Incident(WebsiteGenerator):
 		)["datasets"]
 		if load == []:
 			ret = -1  # no response
-		ret = load[0]["values"][-1]
-		self.add_description(f"Load avg(5m): {ret}")
+		else:
+			ret = load[0]["values"][-1]
+		self.add_description(f"Load avg(5m): {ret if ret != -1 else 'No data'}")
 		return ret
 
 	def check_high_load(self, resource_type: str, resource: str):
@@ -193,7 +194,7 @@ class Incident(WebsiteGenerator):
 			"iowait": None,
 		}  # no info;
 		max_mode = max(mode_cpus, key=mode_cpus.get)
-		self.add_description(f"CPU Usage: {max_mode} {mode_cpus[max_mode]}%")
+		self.add_description(f"CPU Usage: {max_mode} {mode_cpus[max_mode] or 'No data'}%")
 		return max_mode, mode_cpus[max_mode]
 
 	def add_description(self, description):
