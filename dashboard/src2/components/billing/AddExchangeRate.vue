@@ -55,8 +55,8 @@ export default {
 	name: 'AddExchangeRate',
 	data() {
 		return {
-			fromCurrency: 'USD',
-			toCurrency: 'KES',
+			fromCurrency: 'KES',
+			toCurrency: 'USD',
 			exchangeRate: '',
 		};
 	},

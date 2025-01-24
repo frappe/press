@@ -22,7 +22,7 @@
 		<div class="flex gap-5 col-2">
 			<FormControl
 				label="M-Pesa Phone Number"
-				v-model="$team.doc.mpesa_phone_number"
+				v-model="this.taxIdInput"
 				name="phone_number"
 				autocomplete="off"
 				class="mb-5"
@@ -32,7 +32,7 @@
 
 			<FormControl
 				label="Tax ID"
-				v-model="$team.doc.mpesa_tax_id"
+				v-model="this.taxIdInput"
 				name="tax_id"
 				autocomplete="off"
 				class="mb-5"
@@ -95,8 +95,8 @@ export default {
 			errorMessage: null,
 			paymentInProgress: false,
 			partnerInput: '',
-			phoneNumberInput: '',
-			taxIdInput: '',
+			phoneNumberInput: this.$team.doc.mpesa_phone_number || '',
+			taxIdInput: this.$team.doc.mpesa_tax_id || '',
 			teams: [],
 			taxPercentage: 1,
 			amountWithTax: 0,
@@ -122,7 +122,6 @@ export default {
 							`Amount is less than the minimum allowed: ${this.minimumAmount}`,
 						);
 					}
-					this.phoneNumberInput = this.$team.doc.mpesa_phone_number;
 					if (!this.partnerInput.value || !this.phoneNumberInput) {
 						throw new DashboardError(
 							'Both partner and phone number are required for payment.',
@@ -182,36 +181,6 @@ export default {
 				this.errorMessage = `Failed to fetch teams ${error.message}`;
 			}
 		},
-		async fetchTaxId() {
-			try {
-				const taxId = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_tax_id',
-					method: 'GET',
-				});
-				if (taxId) {
-					this.taxIdInput = taxId;
-				} else {
-					this.taxIdInput = '';
-				}
-			} catch (error) {
-				this.errorMessage = `Failed to fetch tax ID: ${error.message}`;
-			}
-		},
-		async fetchPhoneNo() {
-			try {
-				const phoneNo = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_phone_no',
-					method: 'GET',
-				});
-				if (phoneNo) {
-					this.phoneNumberInput = phoneNo;
-				} else {
-					this.phoneNumberInput = '';
-				}
-			} catch (error) {
-				this.errorMessage = `Failed to fetch tax ID: ${error.message}`;
-			}
-		},
 		async fetchTaxPercentage() {
 			try {
 				const taxPercentage = await frappeRequest({
@@ -262,8 +231,6 @@ export default {
 	},
 	mounted() {
 		this.fetchTeams();
-		this.fetchTaxId();
-		this.fetchPhoneNo();
 	},
 };
 </script>

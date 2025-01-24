@@ -46,6 +46,7 @@ export default {
 				{
 					label: 'Mpesa Invoices',
 					route: { name: 'BillingMpesaInvoices' },
+					condition: () => Boolean(this.$team.doc.country === 'Kenya'),
 				},
 			],
 		};
