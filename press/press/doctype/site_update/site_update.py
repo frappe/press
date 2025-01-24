@@ -236,8 +236,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
-			skip_backups=self.skipped_backups
-			or self.use_physical_backup,  # Agent dont need to perform backups if we are doing physical backup
+			skip_backups=self.skipped_backups,  # In physical backup also take logical backup for failover case
 			before_migrate_scripts=self.get_before_migrate_scripts(),
 			skip_search_index=self.is_destination_above_v12,
 		)
@@ -332,7 +331,7 @@ class SiteUpdate(Document):
 		)
 
 	@frappe.whitelist()
-	def trigger_recovery_job(self):
+	def trigger_recovery_job(self):  # noqa: C901
 		if self.recover_job:
 			return
 		agent = Agent(self.server)
@@ -342,36 +341,43 @@ class SiteUpdate(Document):
 			# The site is already on destination bench
 
 			# If physical backup is enabled, we need to first perform physical backup restoration
-			if self.use_physical_backup:
+			if self.use_physical_backup and not self.physical_backup_restoration:
 				# Perform Physical Backup Restoration if not already done
-				if not self.physical_backup_restoration:
-					doc: PhysicalBackupRestoration = frappe.get_doc(
-						{
-							"doctype": "Physical Backup Restoration",
-							"site": self.site,
-							"status": "Pending",
-							"site_backup": self.site_backup,
-							"source_database": site.database_name,
-							"destination_database": site.database_name,
-							"destination_server": frappe.get_value("Server", site.server, "database_server"),
-						}
-					)
-					doc.insert(ignore_permissions=True)
-					frappe.db.set_value(self.doctype, self.name, "physical_backup_restoration", doc.name)
-					doc.execute()
-					# After physical backup restoration, that will trigger recovery job again
-					# via site_update.process_physical_backup_restoration_status_update(...) method
-					return
+				doc: PhysicalBackupRestoration = frappe.get_doc(
+					{
+						"doctype": "Physical Backup Restoration",
+						"site": self.site,
+						"status": "Pending",
+						"site_backup": self.site_backup,
+						"source_database": site.database_name,
+						"destination_database": site.database_name,
+						"destination_server": frappe.get_value("Server", site.server, "database_server"),
+					}
+				)
+				doc.insert(ignore_permissions=True)
+				frappe.db.set_value(self.doctype, self.name, "physical_backup_restoration", doc.name)
+				doc.execute()
+				# After physical backup restoration, that will trigger recovery job again
+				# via site_update.process_physical_backup_restoration_status_update(...) method
+				return
 
-				# Check if restoration is successful
-				if (
-					frappe.get_value(
-						"Physical Backup Restoration", self.physical_backup_restoration, "status"
-					)
-					!= "Success"
-				):
-					return
-					# If restoration is successful, we can proceed with recovery job
+			restore_touched_tables = not self.skipped_backups
+			restore_all_tables = False
+			if not self.skipped_backups and self.physical_backup_restoration:
+				physical_backup_restoration: PhysicalBackupRestoration = frappe.get_doc(
+					"Physical Backup Restoration", self.physical_backup_restoration
+				)
+				if physical_backup_restoration.status == "Success":
+					restore_touched_tables = False
+					restore_all_tables = False
+				elif physical_backup_restoration.status == "Failure":
+					#  if restoration failed before Restore Job or in validations, we should do just restore touched tables
+					if physical_backup_restoration.is_db_files_modified_during_failed_restoration():
+						restore_touched_tables = False
+						restore_all_tables = True
+					else:
+						restore_touched_tables = False
+						restore_all_tables = True
 
 			# Attempt to move site to source bench
 
@@ -383,7 +389,8 @@ class SiteUpdate(Document):
 				self.deploy_type,
 				activate,
 				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
-				restore_touched_tables=self.backup_type == "Logical" and not self.skipped_backups,
+				restore_touched_tables=restore_touched_tables,
+				restore_all_tables=restore_all_tables,
 			)
 		else:
 			# Site is already on the source bench
@@ -584,10 +591,8 @@ def process_physical_backup_restoration_status_update(name: str):
 		physical_backup_restoration: PhysicalBackupRestoration = frappe.get_doc(
 			"Physical Backup Restoration", name
 		)
-		if physical_backup_restoration.status == "Success":
+		if physical_backup_restoration.status in ["Success", "Failure"]:
 			site_update.trigger_recovery_job()
-		elif physical_backup_restoration.status == "Failure":
-			frappe.db.set_value("Site Update", site_backup_name, "status", "Fatal")
 
 
 def process_activate_site_job_update(job):

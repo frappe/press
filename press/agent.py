@@ -387,13 +387,21 @@ class Agent:
 		)
 
 	def update_site_recover_move(
-		self, site, target, deploy_type, activate, rollback_scripts=None, restore_touched_tables=True
+		self,
+		site,
+		target,
+		deploy_type,
+		activate,
+		rollback_scripts=None,
+		restore_touched_tables=True,
+		restore_all_tables=False,
 	):
 		data = {
 			"target": target,
 			"activate": activate,
 			"rollback_scripts": rollback_scripts,
 			"restore_touched_tables": restore_touched_tables,
+			"restore_all_tables": restore_all_tables,
 		}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
@@ -487,7 +495,7 @@ class Agent:
 		backup: SiteBackup = frappe.get_doc("Site Backup", backup_restoration.site_backup)
 		files_metadata = {}
 		for item in backup.files_metadata:
-			files_metadata[item.name] = {"size": item.size, "checksum": item.checksum}
+			files_metadata[item.file] = {"size": item.size, "checksum": item.checksum}
 		data = {
 			"backup_db": backup_restoration.source_database,
 			"target_db": backup_restoration.destination_database,

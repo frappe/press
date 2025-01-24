@@ -379,6 +379,59 @@ class PhysicalBackupRestoration(Document):
 		self.virtual_machine.client().delete_volume(VolumeId=self.volume)
 		return StepStatus.Success
 
+	def is_db_files_modified_during_failed_restoration(self):
+		if self.status != "Failure":
+			return False
+		# Check if Restore Database job has created
+		if not self.job:
+			return False
+		# Check if Restore Database job has failed
+		job_status = frappe.db.get_value("Agent Job", self.job, "status")
+		if job_status == "Failure":
+			job_steps = frappe.get_all(
+				"Agent Job Step",
+				filters={
+					"agent_job": self.job,
+				},
+				fields=["step_name", "status"],
+				order_by="creation asc",
+			)
+			"""
+			[
+				{'step_name': 'Validate Backup Files', 'status': 'Success'},
+				{'step_name': 'Validate Connection to Target Database', 'status': 'Success'},
+				{'step_name': 'Warmup MyISAM Files', 'status': 'Success'},
+				{'step_name': 'Check and Fix MyISAM Table Files', 'status': 'Success'},
+				{'step_name': 'Warmup InnoDB Files', 'status': 'Success'},
+				{'step_name': 'Prepare Database for Restoration', 'status': 'Success'},
+				{'step_name': 'Create Tables from Table Schema', 'status': 'Success'},
+				{'step_name': 'Discard InnoDB Tablespaces', 'status': 'Success'},
+				{'step_name': 'Copying InnoDB Table Files', 'status': 'Success'},
+				{'step_name': 'Import InnoDB Tablespaces', 'status': 'Success'},
+				{'step_name': 'Hold Write Lock on MyISAM Tables', 'status': 'Success'},
+				{'step_name': 'Copying MyISAM Table Files', 'status': 'Success'},
+				{'step_name': 'Unlock All Tables', 'status': 'Success'}
+			]
+			"""
+			# Check on which step the job has failed
+			# Anything on after `Prepare Database for Restoration` is considered as full restoration required
+			first_failed_step = None
+			for step in job_steps:
+				if step["status"] == "Failure":
+					first_failed_step = step
+					break
+			if first_failed_step and first_failed_step["step_name"] in [
+				"Create Tables from Table Schema",
+				"Discard InnoDB Tablespaces",
+				"Copying InnoDB Table Files",
+				"Import InnoDB Tablespaces",
+				"Hold Write Lock on MyISAM Tables",
+				"Copying MyISAM Table Files",
+				"Unlock All Tables",
+			]:
+				return True
+		return False
+
 	def get_step_status(self, step_method: Callable) -> str:
 		step = self.get_step_by_method(step_method.__name__)
 		return step.status if step else "Pending"
