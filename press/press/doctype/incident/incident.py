@@ -142,10 +142,10 @@ class Incident(WebsiteGenerator):
 			timespan + 1,
 		)["datasets"]
 		if load == []:
-			load = -1  # no response
-		load = load[0]["values"][-1]
-		self.add_description(f"Load avg(5m): {load}")
-		return load
+			ret = -1  # no response
+		ret = load[0]["values"][-1]
+		self.add_description(f"Load avg(5m): {ret}")
+		return ret
 
 	def check_high_load(self, resource_type: str, resource: str):
 		load = self.get_load(resource)
