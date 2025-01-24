@@ -120,7 +120,9 @@ class Incident(WebsiteGenerator):
 
 	def vcpu(self, server_type, server_name):
 		vm_name = frappe.db.get_value(server_type, server_name, "virtual_machine")
-		return int(frappe.db.get_value("Virtual Machine", vm_name, "vcpu"))
+		return int(
+			frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16
+		)  # 16 as DO and scaleway servers have high CPU; Add a CPU field everywhere later
 
 	@cached_property
 	def database_server(self):
@@ -131,16 +133,19 @@ class Incident(WebsiteGenerator):
 		return str(frappe.db.get_value("Server", self.server, "proxy_server"))
 
 	def get_load(self, name) -> float:
+		timespan = get_confirmation_threshold_duration()
 		load = prometheus_query(
-			f"""node_load5{{instance="{name}", job="node"}}""",
+			f"""avg_over_time(node_load5{{instance="{name}", job="node"}}[{timespan}s])""",
 			lambda x: x,
 			"Asia/Kolkata",
-			30,
-			60,
+			timespan,
+			timespan + 1,
 		)["datasets"]
 		if load == []:
-			return -1  # no response
-		return load[0]["values"][-1]
+			load = -1  # no response
+		load = load[0]["values"][-1]
+		self.add_description(f"Load avg(5m): {load}")
+		return load
 
 	def check_high_load(self, resource_type: str, resource: str):
 		load = self.get_load(resource)
@@ -181,8 +186,14 @@ class Incident(WebsiteGenerator):
 			timespan,
 			timespan + 1,
 		)["datasets"]
-		mode_cpus = {x["name"]: x["values"][-1] for x in cpu_info}
+		mode_cpus = {x["name"]: x["values"][-1] for x in cpu_info} or {
+			"user": None,
+			"idle": None,
+			"softirq": None,
+			"iowait": None,
+		}  # no info;
 		max_mode = max(mode_cpus, key=mode_cpus.get)
+		self.add_description(f"CPU Usage: {max_mode} {mode_cpus[max_mode]}%")
 		return max_mode, mode_cpus[max_mode]
 
 	def add_description(self, description):
@@ -296,11 +307,11 @@ class Incident(WebsiteGenerator):
 		if not frappe.get_value("Incident Settings", None, "grafana_screenshots", for_update=True):
 			return
 		with sync_playwright() as p:
-			browser = p.chromium.launch(headless=False)
+			browser = p.chromium.launch(headless=True)
 			page = browser.new_page()
 			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
 
-			self.add_node_exporter_screenshot(page, self.resource)
+			self.add_node_exporter_screenshot(page, self.resource or self.server)
 			self.add_node_exporter_screenshot(page, self.other_resource)
 
 		self.save()
