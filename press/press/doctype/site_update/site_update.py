@@ -362,22 +362,17 @@ class SiteUpdate(Document):
 				return
 
 			restore_touched_tables = not self.skipped_backups
-			restore_all_tables = False
 			if not self.skipped_backups and self.physical_backup_restoration:
-				physical_backup_restoration: PhysicalBackupRestoration = frappe.get_doc(
-					"Physical Backup Restoration", self.physical_backup_restoration
+				physical_backup_restoration_status = frappe.get_value(
+					"Physical Backup Restoration", self.physical_backup_restoration, "status"
 				)
-				if physical_backup_restoration.status == "Success":
+				if physical_backup_restoration_status == "Success":
 					restore_touched_tables = False
-					restore_all_tables = False
-				elif physical_backup_restoration.status == "Failure":
-					#  if restoration failed before Restore Job or in validations, we should do just restore touched tables
-					if physical_backup_restoration.is_db_files_modified_during_failed_restoration():
-						restore_touched_tables = False
-						restore_all_tables = True
-					else:
-						restore_touched_tables = False
-						restore_all_tables = True
+				elif physical_backup_restoration_status == "Failure":
+					restore_touched_tables = True
+				else:
+					# just to be safe
+					frappe.throw("Physical Backup Restoration is still in progress")
 
 			# Attempt to move site to source bench
 
@@ -390,7 +385,6 @@ class SiteUpdate(Document):
 				activate,
 				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
 				restore_touched_tables=restore_touched_tables,
-				restore_all_tables=restore_all_tables,
 			)
 		else:
 			# Site is already on the source bench

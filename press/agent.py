@@ -394,14 +394,12 @@ class Agent:
 		activate,
 		rollback_scripts=None,
 		restore_touched_tables=True,
-		restore_all_tables=False,
 	):
 		data = {
 			"target": target,
 			"activate": activate,
 			"rollback_scripts": rollback_scripts,
 			"restore_touched_tables": restore_touched_tables,
-			"restore_all_tables": restore_all_tables,
 		}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
