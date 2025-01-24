@@ -22,6 +22,7 @@ class MonitorServer(BaseServer):
 
 		agent_password: DF.Password | None
 		cluster: DF.Link | None
+		default_server: DF.Data | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -31,6 +32,7 @@ class MonitorServer(BaseServer):
 		ip: DF.Data | None
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
+		node_exporter_dashboard_path: DF.Data | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None

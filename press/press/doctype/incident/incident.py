@@ -6,7 +6,6 @@ from __future__ import annotations
 from base64 import b64encode
 from datetime import timedelta
 from functools import cached_property
-from time import sleep
 from typing import TYPE_CHECKING
 
 import frappe
@@ -14,7 +13,7 @@ from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Page, sync_playwright
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
 from twilio.base.exceptions import TwilioRestException
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.incident_settings_user.incident_settings_user import (
 		IncidentSettingsUser,
 	)
+	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
@@ -258,33 +258,49 @@ class Incident(WebsiteGenerator):
 
 			# TODO: categorize proxy issues #
 
-	def take_grafana_screenshot(self):
+	@property
+	def other_resource(self):
+		if self.resource_type == "Database Server":
+			return str(self.server)
+		if self.resource_type == "Server":
+			return str(frappe.db.get_value("Server", self.resource, "database_server"))
+		return None
+
+	def add_node_exporter_screenshot(self, page: Page, instance: str | None):
+		if not instance:
+			return
+
+		page.goto(
+			f"https://{self.monitor_server.name}{self.monitor_server.node_exporter_dashboard_path}&refresh=5m&var-DS_PROMETHEUS=Prometheus&var-job=node&var-node={instance}&from=now-1h&to=now"
+		)
+		page.wait_for_load_state("networkidle")
+
+		image = b64encode(page.screenshot()).decode("ascii")
+		self.add_description(f'<img src="data:image/png;base64,{image}" alt="grafana-image">')
+
+	@cached_property
+	def monitor_server(self) -> MonitorServer:
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		if not (monitor_url := press_settings.monitor_server):
-			return
-		monitor_server = frappe.get_cached_doc("Monitor Server", monitor_url)
+			frappe.throw("Monitor Server not set in Press Settings")
+		return frappe.get_cached_doc("Monitor Server", monitor_url)
 
-		grafana_username = str(monitor_server.grafana_username)
-		grafana_password = str(monitor_server.get_password("grafana_password"))
+	def get_grafana_auth_header(self):
+		username = str(self.monitor_server.grafana_username)
+		password = str(self.monitor_server.get_password("grafana_password"))
+		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
+		return f"Basic {token}"
 
-		def get_basic_auth_header(username, password):
-			token = b64encode(f"{username}:{password}".encode()).decode("ascii")
-			return f"Basic {token}"
-
+	def take_grafana_screenshot(self):
 		with sync_playwright() as p:
 			browser = p.chromium.launch(headless=False)
 			page = browser.new_page()
-			page.set_extra_http_headers(
-				{"Authorization": get_basic_auth_header(grafana_username, grafana_password)}
-			)
-			page.goto(f"https://{monitor_url}/grafana/d/abc/node-exporter?orgId=1&refresh=5m")
-			sleep(5)
-			image = b64encode(page.screenshot()).decode("ascii")
-			self.add_description(f'<img src="data:image/png;base64,{image}" alt="grafana-image">')
-		self.save()
+			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
 
-		# TODO:  grafana path as field somewhere
-		# TODO: input server name
+			self.add_node_exporter_screenshot(page, self.resource)
+			self.add_node_exporter_screenshot(page, self.other_resource)
+
+		self.save()
 
 	@frappe.whitelist()
 	def ignore_for_server(self):
