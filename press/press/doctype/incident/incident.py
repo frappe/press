@@ -146,7 +146,7 @@ class Incident(WebsiteGenerator):
 			ret = -1  # no response
 		else:
 			ret = load[0]["values"][-1]
-		self.add_description(f"Load avg(5m): {ret if ret != -1 else 'No data'}")
+		self.add_description(f"{name} load avg(5m): {ret if ret != -1 else 'No data'}")
 		return ret
 
 	def check_high_load(self, resource_type: str, resource: str):
