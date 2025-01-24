@@ -770,7 +770,6 @@ def verify_m_pesa_transaction(**kwargs):
 	"""Verify the transaction result received via callback from STK."""
 	transaction_response, integration_request = parse_transaction_response(kwargs)
 	handle_transaction_result(transaction_response, integration_request)
-	# save_integration_request(integration_request)
 	integration_request.save(ignore_permissions=True)
 	print("Response coming ----", transaction_response)
 	return {"status": integration_request.status, "ResultDesc": transaction_response.get("ResultDesc")}
@@ -820,12 +819,6 @@ def handle_transaction_result(transaction_response, integration_request):
 		integration_request.handle_failure(transaction_response)
 		integration_request.status = "Failed"
 		frappe.log_error(f"Mpesa: Transaction failed with ResultCode {result_code}")
-
-
-def save_integration_request(integration_request):
-	"""Save and commit the changes to the Mpesa Request Log."""
-	integration_request.save(ignore_permissions=True)
-	# frappe.db.commit()
 
 
 def get_completed_integration_requests_info(reference_doctype, reference_docname, checkout_id):

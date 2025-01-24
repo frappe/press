@@ -36,7 +36,17 @@ class MpesaPaymentRecord(Document):
 		transaction_type: DF.Literal["", "Mpesa Express", "Mpesa C2B"]
 	# end: auto-generated types
 
-	dashboard_fields = ("name", "posting_date", "amount", "default_currency", "local_invoice")
+	dashboard_fields = (
+		"name",
+		"posting_date",
+		"amount",
+		"default_currency",
+		"local_invoice",
+		"amount_usd",
+		"payment_partner",
+		"exchange_rate",
+		"grand_total",
+	)
 
 	def before_insert(self):
 		self.validate_duplicate()

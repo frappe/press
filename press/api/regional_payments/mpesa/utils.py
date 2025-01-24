@@ -85,7 +85,15 @@ def display_invoices_by_partner():
 	invoices = frappe.get_all(
 		"Mpesa Payment Record",
 		filters={"team": team},
-		fields=["name", "posting_date", "amount", "default_currency", "local_invoice"],
+		fields=[
+			"name",
+			"posting_date",
+			"amount",
+			"local_invoice",
+			"payment_partner",
+			"amount_usd",
+			"exchange_rate",
+		],
 	)
 	return invoices  # noqa: RET504
 
