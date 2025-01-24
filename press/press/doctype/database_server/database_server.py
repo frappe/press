@@ -48,6 +48,7 @@ class DatabaseServer(BaseServer):
 		auto_increase_storage: DF.Check
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check

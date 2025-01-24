@@ -19,6 +19,7 @@ class LogServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None

@@ -25,6 +25,7 @@ class RegistryServer(BaseServer):
 		bucket_name: DF.Data | None
 		container_registry_config_path: DF.Data | None
 		docker_data_mountpoint: DF.Data | None
+		bastion_server: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None

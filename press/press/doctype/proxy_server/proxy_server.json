@@ -1,466 +1,475 @@
 {
- "actions": [],
- "creation": "2022-01-28 20:07:40.294840",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "status",
-  "hostname",
-  "hostname_abbreviation",
-  "domain",
-  "self_hosted_server_domain",
-  "tls_certificate_renewal_failed",
-  "column_break_3",
-  "cluster",
-  "provider",
-  "virtual_machine",
-  "is_server_setup",
-  "is_self_hosted",
-  "team",
-  "public",
-  "halt_agent_jobs",
-  "storage_section",
-  "auto_add_storage_min",
-  "auto_add_storage_max",
-  "section_break_8",
-  "ip",
-  "enabled_default_routing",
-  "column_break_10",
-  "private_ip",
-  "private_mac_address",
-  "private_vlan_id",
-  "agent_section",
-  "agent_password",
-  "column_break_mznm",
-  "disable_agent_job_auto_retry",
-  "replica_section",
-  "is_primary",
-  "primary",
-  "is_replication_setup",
-  "ssh_section",
-  "ssh_user",
-  "ssh_port",
-  "frappe_user_password",
-  "frappe_public_key",
-  "column_break_18",
-  "root_public_key",
-  "section_break_21",
-  "domains",
-  "ssh_proxy_section",
-  "ssh_certificate_authority",
-  "column_break_26",
-  "is_ssh_proxy_setup",
-  "proxysql_section",
-  "proxysql_admin_password",
-  "proxysql_monitor_password",
-  "is_proxysql_setup",
-  "vpn_tab",
-  "wireguard_network",
-  "wireguard_network_ip",
-  "wireguard_port",
-  "is_wireguard_setup",
-  "column_break_dapz",
-  "wireguard_private_key",
-  "wireguard_public_key",
-  "private_ip_interface_id",
-  "wireguard_interface_id"
- ],
- "fields": [
-  {
-   "fetch_from": "virtual_machine.public_ip_address",
-   "fieldname": "ip",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "IP"
-  },
-  {
-   "fetch_from": "virtual_machine.private_ip_address",
-   "fieldname": "private_ip",
-   "fieldtype": "Data",
-   "label": "Private IP"
-  },
-  {
-   "fieldname": "agent_password",
-   "fieldtype": "Password",
-   "label": "Agent Password",
-   "read_only": 1
-  },
-  {
-   "default": "Pending",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_server_setup",
-   "fieldtype": "Check",
-   "label": "Server Setup",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "agent_section",
-   "fieldtype": "Section Break",
-   "label": "Agent"
-  },
-  {
-   "fieldname": "ssh_section",
-   "fieldtype": "Section Break",
-   "label": "SSH"
-  },
-  {
-   "fieldname": "root_public_key",
-   "fieldtype": "Code",
-   "label": "Root Public Key",
-   "read_only": 1
-  },
-  {
-   "fieldname": "frappe_public_key",
-   "fieldtype": "Code",
-   "label": "Frappe Public Key",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_10",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Cluster",
-   "options": "Cluster",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "hostname",
-   "fieldtype": "Data",
-   "label": "Hostname",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "domain",
-   "fieldtype": "Link",
-   "label": "Domain",
-   "options": "Root Domain",
-   "read_only": 1,
-   "set_only_once": 1
-  },
-  {
-   "default": "Generic",
-   "fieldname": "provider",
-   "fieldtype": "Select",
-   "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "section_break_8",
-   "fieldtype": "Section Break",
-   "label": "Networking"
-  },
-  {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
-   "fieldname": "private_mac_address",
-   "fieldtype": "Data",
-   "label": "Private Mac Address",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
-   "set_only_once": 1
-  },
-  {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
-   "fieldname": "private_vlan_id",
-   "fieldtype": "Data",
-   "label": "Private VLAN ID",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "column_break_18",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "frappe_user_password",
-   "fieldtype": "Password",
-   "label": "Frappe User Password",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "section_break_21",
-   "fieldtype": "Section Break",
-   "label": "Nginx"
-  },
-  {
-   "fieldname": "domains",
-   "fieldtype": "Table",
-   "label": "Domains",
-   "options": "Proxy Server Domain"
-  },
-  {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
-   "fieldname": "virtual_machine",
-   "fieldtype": "Link",
-   "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
-   "options": "Virtual Machine"
-  },
-  {
-   "fieldname": "ssh_proxy_section",
-   "fieldtype": "Section Break",
-   "label": "SSH Proxy"
-  },
-  {
-   "fieldname": "ssh_certificate_authority",
-   "fieldtype": "Link",
-   "label": "SSH Certificate Authority",
-   "options": "SSH Certificate Authority"
-  },
-  {
-   "fieldname": "column_break_26",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_ssh_proxy_setup",
-   "fieldtype": "Check",
-   "label": "Is SSH Proxy Setup",
-   "read_only": 1
-  },
-  {
-   "fieldname": "proxysql_section",
-   "fieldtype": "Section Break",
-   "label": "ProxySQL"
-  },
-  {
-   "fieldname": "proxysql_admin_password",
-   "fieldtype": "Password",
-   "label": "ProxySQL Admin Password",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_proxysql_setup",
-   "fieldtype": "Check",
-   "label": "Is ProxySQL Setup",
-   "read_only": 1
-  },
-  {
-   "fieldname": "proxysql_monitor_password",
-   "fieldtype": "Password",
-   "label": "ProxySQL Monitor Password",
-   "read_only": 1
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
-  },
-  {
-   "fieldname": "replica_section",
-   "fieldtype": "Section Break",
-   "label": "Replica"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_primary",
-   "fieldtype": "Check",
-   "label": "Is Primary"
-  },
-  {
-   "depends_on": "eval: doc.is_primary != 1",
-   "fieldname": "primary",
-   "fieldtype": "Link",
-   "label": "Primary",
-   "mandatory_depends_on": "eval: doc.is_primary != 1",
-   "options": "Proxy Server"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.is_primary != 1",
-   "fieldname": "is_replication_setup",
-   "fieldtype": "Check",
-   "label": "Is Replication Setup"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_self_hosted",
-   "fieldtype": "Check",
-   "label": "Is Self Hosted"
-  },
-  {
-   "default": "root",
-   "depends_on": "eval:doc.is_self_hosted",
-   "fetch_if_empty": 1,
-   "fieldname": "ssh_user",
-   "fieldtype": "Data",
-   "label": "SSH User"
-  },
-  {
-   "default": "22",
-   "fieldname": "ssh_port",
-   "fieldtype": "Int",
-   "label": "SSH Port"
-  },
-  {
-   "default": "self.frappe.dev",
-   "depends_on": "eval:doc.is_self_hosted",
-   "fieldname": "self_hosted_server_domain",
-   "fieldtype": "Data",
-   "label": "Self Hosted Server Domain"
-  },
-  {
-   "fieldname": "vpn_tab",
-   "fieldtype": "Tab Break",
-   "label": "VPN"
-  },
-  {
-   "default": "51820",
-   "fieldname": "wireguard_port",
-   "fieldtype": "Int",
-   "label": "Wireguard Port"
-  },
-  {
-   "fieldname": "wireguard_private_key",
-   "fieldtype": "Password",
-   "label": "Wireguard Private Key"
-  },
-  {
-   "fieldname": "wireguard_public_key",
-   "fieldtype": "Password",
-   "label": "Wireguard Public Key"
-  },
-  {
-   "default": "wg0",
-   "fieldname": "wireguard_interface_id",
-   "fieldtype": "Data",
-   "label": "Wireguard Interface ID"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_wireguard_setup",
-   "fieldtype": "Check",
-   "label": "Is Wireguard Setup"
-  },
-  {
-   "fieldname": "private_ip_interface_id",
-   "fieldtype": "Data",
-   "label": "Private IP Interface ID"
-  },
-  {
-   "fieldname": "wireguard_network",
-   "fieldtype": "Data",
-   "label": "Wireguard Network"
-  },
-  {
-   "fieldname": "wireguard_network_ip",
-   "fieldtype": "Data",
-   "label": "Wireguard Network IP"
-  },
-  {
-   "fieldname": "column_break_dapz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "hostname_abbreviation",
-   "fieldtype": "Data",
-   "label": "Hostname Abbreviation"
-  },
-  {
-   "default": "0",
-   "description": "Wildcard routing eg. *.root-domain",
-   "fieldname": "enabled_default_routing",
-   "fieldtype": "Check",
-   "label": "Enabled Default Routing",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_mznm",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "1",
-   "fieldname": "disable_agent_job_auto_retry",
-   "fieldtype": "Check",
-   "label": "Disable Agent Job Auto Retry"
-  },
-  {
-   "default": "0",
-   "fieldname": "public",
-   "fieldtype": "Check",
-   "label": "Public"
-  },
-  {
-   "fieldname": "storage_section",
-   "fieldtype": "Section Break",
-   "label": "Storage"
-  },
-  {
-   "default": "10",
-   "description": "Minimum storage to add automatically each time",
-   "fieldname": "auto_add_storage_min",
-   "fieldtype": "Int",
-   "label": "Auto Add Storage Min",
-   "non_negative": 1
-  },
-  {
-   "default": "50",
-   "description": "Maximum storage to add automatically each time",
-   "fieldname": "auto_add_storage_max",
-   "fieldtype": "Int",
-   "label": "Auto Add Storage Max",
-   "non_negative": 1
-  },
-  {
-   "default": "0",
-   "description": "Stop polling and queuing agent jobs",
-   "fieldname": "halt_agent_jobs",
-   "fieldtype": "Check",
-   "label": "Halt Agent Jobs"
-  },
-  {
-   "default": "0",
-   "fieldname": "tls_certificate_renewal_failed",
-   "fieldtype": "Check",
-   "label": "TLS Certificate Renewal Failed",
-   "read_only": 1
-  }
- ],
- "links": [],
- "modified": "2025-09-23 18:36:53.814704",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Proxy Server",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+    "actions": [],
+    "creation": "2022-01-28 20:07:40.294840",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "status",
+        "hostname",
+        "hostname_abbreviation",
+        "domain",
+        "self_hosted_server_domain",
+        "tls_certificate_renewal_failed",
+        "column_break_3",
+        "cluster",
+        "provider",
+        "virtual_machine",
+        "is_server_setup",
+        "is_self_hosted",
+        "team",
+        "public",
+        "halt_agent_jobs",
+        "storage_section",
+        "auto_add_storage_min",
+        "auto_add_storage_max",
+        "section_break_8",
+        "ip",
+        "enabled_default_routing",
+        "column_break_10",
+        "private_ip",
+        "private_mac_address",
+        "private_vlan_id",
+        "agent_section",
+        "agent_password",
+        "column_break_mznm",
+        "disable_agent_job_auto_retry",
+        "replica_section",
+        "is_primary",
+        "primary",
+        "is_replication_setup",
+        "ssh_section",
+        "ssh_user",
+        "ssh_port",
+        "frappe_user_password",
+        "frappe_public_key",
+        "column_break_18",
+        "bastion_server",
+        "root_public_key",
+        "section_break_21",
+        "domains",
+        "ssh_proxy_section",
+        "ssh_certificate_authority",
+        "column_break_26",
+        "is_ssh_proxy_setup",
+        "proxysql_section",
+        "proxysql_admin_password",
+        "proxysql_monitor_password",
+        "is_proxysql_setup",
+        "vpn_tab",
+        "wireguard_network",
+        "wireguard_network_ip",
+        "wireguard_port",
+        "is_wireguard_setup",
+        "column_break_dapz",
+        "wireguard_private_key",
+        "wireguard_public_key",
+        "private_ip_interface_id",
+        "wireguard_interface_id"
+    ],
+    "fields": [
+        {
+            "fetch_from": "virtual_machine.public_ip_address",
+            "fieldname": "ip",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "IP",
+            "read_only": 1
+        },
+        {
+            "fetch_from": "virtual_machine.private_ip_address",
+            "fieldname": "private_ip",
+            "fieldtype": "Data",
+            "label": "Private IP",
+            "read_only": 1
+        },
+        {
+            "fieldname": "agent_password",
+            "fieldtype": "Password",
+            "label": "Agent Password",
+            "read_only": 1
+        },
+        {
+            "default": "Pending",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Status",
+            "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+            "read_only": 1,
+            "reqd": 1
+        },
+        {
+            "default": "0",
+            "fieldname": "is_server_setup",
+            "fieldtype": "Check",
+            "label": "Server Setup",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_3",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "agent_section",
+            "fieldtype": "Section Break",
+            "label": "Agent"
+        },
+        {
+            "fieldname": "ssh_section",
+            "fieldtype": "Section Break",
+            "label": "SSH"
+        },
+        {
+            "fieldname": "root_public_key",
+            "fieldtype": "Code",
+            "label": "Root Public Key",
+            "read_only": 1
+        },
+        {
+            "fieldname": "frappe_public_key",
+            "fieldtype": "Code",
+            "label": "Frappe Public Key",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_10",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "cluster",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Cluster",
+            "options": "Cluster",
+            "set_only_once": 1
+        },
+        {
+            "fieldname": "hostname",
+            "fieldtype": "Data",
+            "label": "Hostname",
+            "reqd": 1,
+            "set_only_once": 1
+        },
+        {
+            "fieldname": "domain",
+            "fieldtype": "Link",
+            "label": "Domain",
+            "options": "Root Domain",
+            "read_only": 1,
+            "set_only_once": 1
+        },
+        {
+            "default": "Generic",
+            "fieldname": "provider",
+            "fieldtype": "Select",
+            "label": "Provider",
+            "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+            "set_only_once": 1
+        },
+        {
+            "fieldname": "section_break_8",
+            "fieldtype": "Section Break",
+            "label": "Networking"
+        },
+        {
+            "depends_on": "eval: doc.provider === \"Scaleway\"",
+            "fieldname": "private_mac_address",
+            "fieldtype": "Data",
+            "label": "Private Mac Address",
+            "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+            "set_only_once": 1
+        },
+        {
+            "depends_on": "eval: doc.provider === \"Scaleway\"",
+            "fieldname": "private_vlan_id",
+            "fieldtype": "Data",
+            "label": "Private VLAN ID",
+            "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+            "set_only_once": 1
+        },
+        {
+            "fieldname": "column_break_18",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "frappe_user_password",
+            "fieldtype": "Password",
+            "label": "Frappe User Password",
+            "set_only_once": 1
+        },
+        {
+            "fieldname": "section_break_21",
+            "fieldtype": "Section Break",
+            "label": "Nginx"
+        },
+        {
+            "fieldname": "domains",
+            "fieldtype": "Table",
+            "label": "Domains",
+            "options": "Proxy Server Domain"
+        },
+        {
+            "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+            "fieldname": "virtual_machine",
+            "fieldtype": "Link",
+            "label": "Virtual Machine",
+            "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
+            "options": "Virtual Machine"
+        },
+        {
+            "fieldname": "ssh_proxy_section",
+            "fieldtype": "Section Break",
+            "label": "SSH Proxy"
+        },
+        {
+            "fieldname": "ssh_certificate_authority",
+            "fieldtype": "Link",
+            "label": "SSH Certificate Authority",
+            "options": "SSH Certificate Authority"
+        },
+        {
+            "fieldname": "column_break_26",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_ssh_proxy_setup",
+            "fieldtype": "Check",
+            "label": "Is SSH Proxy Setup",
+            "read_only": 1
+        },
+        {
+            "fieldname": "proxysql_section",
+            "fieldtype": "Section Break",
+            "label": "ProxySQL"
+        },
+        {
+            "fieldname": "proxysql_admin_password",
+            "fieldtype": "Password",
+            "label": "ProxySQL Admin Password",
+            "read_only": 1
+        },
+        {
+            "default": "0",
+            "fieldname": "is_proxysql_setup",
+            "fieldtype": "Check",
+            "label": "Is ProxySQL Setup",
+            "read_only": 1
+        },
+        {
+            "fieldname": "proxysql_monitor_password",
+            "fieldtype": "Password",
+            "label": "ProxySQL Monitor Password",
+            "read_only": 1
+        },
+        {
+            "fieldname": "team",
+            "fieldtype": "Link",
+            "label": "Team",
+            "options": "Team"
+        },
+        {
+            "fieldname": "replica_section",
+            "fieldtype": "Section Break",
+            "label": "Replica"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_primary",
+            "fieldtype": "Check",
+            "label": "Is Primary"
+        },
+        {
+            "depends_on": "eval: doc.is_primary != 1",
+            "fieldname": "primary",
+            "fieldtype": "Link",
+            "label": "Primary",
+            "mandatory_depends_on": "eval: doc.is_primary != 1",
+            "options": "Proxy Server"
+        },
+        {
+            "default": "0",
+            "depends_on": "eval: doc.is_primary != 1",
+            "fieldname": "is_replication_setup",
+            "fieldtype": "Check",
+            "label": "Is Replication Setup"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_self_hosted",
+            "fieldtype": "Check",
+            "label": "Is Self Hosted"
+        },
+        {
+            "default": "root",
+            "depends_on": "eval:doc.is_self_hosted",
+            "fetch_if_empty": 1,
+            "fieldname": "ssh_user",
+            "fieldtype": "Data",
+            "label": "SSH User"
+        },
+        {
+            "default": "22",
+            "fieldname": "ssh_port",
+            "fieldtype": "Int",
+            "label": "SSH Port"
+        },
+        {
+            "default": "self.frappe.dev",
+            "depends_on": "eval:doc.is_self_hosted",
+            "fieldname": "self_hosted_server_domain",
+            "fieldtype": "Data",
+            "label": "Self Hosted Server Domain"
+        },
+        {
+            "fieldname": "vpn_tab",
+            "fieldtype": "Tab Break",
+            "label": "VPN"
+        },
+        {
+            "default": "51820",
+            "fieldname": "wireguard_port",
+            "fieldtype": "Int",
+            "label": "Wireguard Port"
+        },
+        {
+            "fieldname": "wireguard_private_key",
+            "fieldtype": "Password",
+            "label": "Wireguard Private Key"
+        },
+        {
+            "fieldname": "wireguard_public_key",
+            "fieldtype": "Password",
+            "label": "Wireguard Public Key"
+        },
+        {
+            "default": "wg0",
+            "fieldname": "wireguard_interface_id",
+            "fieldtype": "Data",
+            "label": "Wireguard Interface ID"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_wireguard_setup",
+            "fieldtype": "Check",
+            "label": "Is Wireguard Setup"
+        },
+        {
+            "fieldname": "private_ip_interface_id",
+            "fieldtype": "Data",
+            "label": "Private IP Interface ID"
+        },
+        {
+            "fieldname": "wireguard_network",
+            "fieldtype": "Data",
+            "label": "Wireguard Network"
+        },
+        {
+            "fieldname": "wireguard_network_ip",
+            "fieldtype": "Data",
+            "label": "Wireguard Network IP"
+        },
+        {
+            "fieldname": "column_break_dapz",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "hostname_abbreviation",
+            "fieldtype": "Data",
+            "label": "Hostname Abbreviation"
+        },
+        {
+            "default": "0",
+            "description": "Wildcard routing eg. *.root-domain",
+            "fieldname": "enabled_default_routing",
+            "fieldtype": "Check",
+            "label": "Enabled Default Routing",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_mznm",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "1",
+            "fieldname": "disable_agent_job_auto_retry",
+            "fieldtype": "Check",
+            "label": "Disable Agent Job Auto Retry"
+        },
+        {
+            "default": "0",
+            "fieldname": "public",
+            "fieldtype": "Check",
+            "label": "Public"
+        },
+        {
+            "fieldname": "storage_section",
+            "fieldtype": "Section Break",
+            "label": "Storage"
+        },
+        {
+            "default": "10",
+            "description": "Minimum storage to add automatically each time",
+            "fieldname": "auto_add_storage_min",
+            "fieldtype": "Int",
+            "label": "Auto Add Storage Min",
+            "non_negative": 1
+        },
+        {
+            "default": "50",
+            "description": "Maximum storage to add automatically each time",
+            "fieldname": "auto_add_storage_max",
+            "fieldtype": "Int",
+            "label": "Auto Add Storage Max",
+            "non_negative": 1
+        },
+        {
+            "default": "0",
+            "description": "Stop polling and queuing agent jobs",
+            "fieldname": "halt_agent_jobs",
+            "fieldtype": "Check",
+            "label": "Halt Agent Jobs"
+        },
+        {
+            "default": "0",
+            "fieldname": "tls_certificate_renewal_failed",
+            "fieldtype": "Check",
+            "label": "TLS Certificate Renewal Failed",
+            "read_only": 1
+        },
+        {
+            "fieldname": "bastion_server",
+            "fieldtype": "Link",
+            "label": "Bastion Server",
+            "options": "Bastion Server"
+        }
+    ],
+    "links": [],
+    "modified": "2025-09-02 16:42:27.412427",
+    "modified_by": "Administrator",
+    "module": "Press",
+    "name": "Proxy Server",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "row_format": "Dynamic",
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": [],
+    "track_changes": 1
 }

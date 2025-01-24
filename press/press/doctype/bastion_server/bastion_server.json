@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "creation": "2025-01-24 12:35:13.401524",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "hostname",
+  "hostname_abbreviation",
+  "domain",
+  "title",
+  "column_break_wogn",
+  "cluster",
+  "provider",
+  "virtual_machine",
+  "is_default",
+  "networking_section",
+  "ip",
+  "ssh_section",
+  "ssh_user",
+  "frappe_public_key",
+  "column_break_zqzx",
+  "ssh_port",
+  "root_public_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nArchived"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname"
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "column_break_wogn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI"
+  },
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key"
+  },
+  {
+   "fieldname": "column_break_zqzx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key"
+  },
+  {
+   "fieldname": "ssh_port",
+   "fieldtype": "Data",
+   "label": "SSH Port"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-24 14:47:31.736094",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bastion Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
