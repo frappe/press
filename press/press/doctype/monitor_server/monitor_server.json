@@ -213,7 +213,6 @@
    "label": "Prometheus Data Directory"
   },
   {
-<<<<<<< HEAD
    "fieldname": "grafana_username",
    "fieldtype": "Data",
    "label": "Grafana Username"
