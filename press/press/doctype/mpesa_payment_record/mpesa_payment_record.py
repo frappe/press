@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -16,6 +16,7 @@ class MpesaPaymentRecord(Document):
 		from frappe.types import DF
 
 		amended_from: DF.Link | None
+		amount: DF.Float
 		amount_usd: DF.Float
 		balance_transaction: DF.Link | None
 		bill_ref_number: DF.Data | None
@@ -30,10 +31,19 @@ class MpesaPaymentRecord(Document):
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
 		team: DF.Link | None
-		trans_amount: DF.Float
-		trans_id: DF.Data | None
-		trans_time: DF.Data | None
+		transaction_id: DF.Data | None
+		transaction_time: DF.Data | None
 		transaction_type: DF.Literal["", "Mpesa Express", "Mpesa C2B"]
 	# end: auto-generated types
 
-	dashboard_fields = ("name", "posting_date", "trans_amount", "default_currency", "local_invoice")
+	dashboard_fields = ("name", "posting_date", "amount", "default_currency", "local_invoice")
+
+	def before_insert(self):
+		self.validate_duplicate()
+
+	def validate_duplicate(self):
+		if frappe.db.exists(
+			"Mpesa Payment Record",
+			{"merchant_request_id": self.merchant_request_id, "name": ("!=", self.name), "docstatus": 1},
+		):
+			frappe.throw(f"Mpesa Payment Record for request {self.merchant_request_id} already exists")

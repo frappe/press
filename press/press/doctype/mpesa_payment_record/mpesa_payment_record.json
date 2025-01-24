@@ -11,11 +11,11 @@
  "field_order": [
   "team",
   "merchant_request_id",
-  "trans_id",
+  "transaction_id",
   "transaction_type",
-  "trans_time",
+  "transaction_time",
   "grand_total",
-  "trans_amount",
+  "amount",
   "amount_usd",
   "bill_ref_number",
   "exchange_rate",
@@ -47,44 +47,20 @@
    "read_only": 1
   },
   {
-   "fieldname": "trans_id",
-   "fieldtype": "Data",
-   "label": "Trans ID",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
    "fieldname": "transaction_type",
    "fieldtype": "Select",
    "label": "Transaction Type",
    "options": "\nMpesa Express\nMpesa C2B"
   },
   {
-   "fieldname": "trans_time",
-   "fieldtype": "Data",
-   "label": "Trans Time",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
    "fieldname": "grand_total",
    "fieldtype": "Currency",
-   "label": "Grand Total(Ksh)"
-  },
-  {
-   "fieldname": "trans_amount",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "Trans Amount(Ksh)",
-   "no_copy": 1,
-   "read_only": 1
+   "label": "Grand Total (Ksh)"
   },
   {
    "fieldname": "amount_usd",
    "fieldtype": "Float",
-   "label": "Amount(USD)"
+   "label": "Amount (USD)"
   },
   {
    "fieldname": "bill_ref_number",
@@ -173,13 +149,37 @@
    "fieldname": "local_invoice",
    "fieldtype": "Small Text",
    "label": "Local Invoice"
+  },
+  {
+   "fieldname": "transaction_id",
+   "fieldtype": "Data",
+   "label": "Transaction ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_time",
+   "fieldtype": "Data",
+   "label": "Transaction Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Amount (Ksh)",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-18 10:49:30.186896",
+ "modified": "2025-01-24 16:13:58.779387",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",
@@ -214,6 +214,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "trans_id",
+ "title_field": "transaction_id",
  "track_changes": 1
 }

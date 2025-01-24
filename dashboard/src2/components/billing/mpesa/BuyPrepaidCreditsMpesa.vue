@@ -181,6 +181,13 @@ export default {
 				this.errorMessage = `Failed to fetch teams ${error.message}`;
 			}
 		},
+		totalAmountWithTax() {
+			const amountWithTax =
+				this.amountKES + (this.amountKES * this.taxPercentage) / 100;
+			this.amountWithTax = Math.round(amountWithTax);
+		},
+	},
+	computed: {
 		async fetchTaxPercentage() {
 			try {
 				const taxPercentage = await frappeRequest({
@@ -194,11 +201,6 @@ export default {
 			} catch (error) {
 				this.errorMessage = `Failed to fetch tax percentage ${error.message}`;
 			}
-		},
-		totalAmountWithTax() {
-			const amountWithTax =
-				this.amountKES + (this.amountKES * this.taxPercentage) / 100;
-			this.amountWithTax = Math.round(amountWithTax);
 		},
 		async fetchExchangeRate() {
 			try {

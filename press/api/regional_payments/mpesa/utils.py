@@ -85,7 +85,7 @@ def display_invoices_by_partner():
 	invoices = frappe.get_all(
 		"Mpesa Payment Record",
 		filters={"team": team},
-		fields=["name", "posting_date", "trans_amount", "default_currency", "local_invoice"],
+		fields=["name", "posting_date", "amount", "default_currency", "local_invoice"],
 	)
 	return invoices  # noqa: RET504
 
@@ -145,36 +145,35 @@ def get_gateway_controllers(gateway_setting):
 
 @frappe.whitelist()
 def get_tax_percentage(payment_partner):
-	team_doc = frappe.get_doc("Team", {"user": payment_partner})
+	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
 	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team_doc.name}, fields=["name"]
+		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
 	)
-	for mpesa_setting in mpesa_setups:
+	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
 			"Payment Gateway",
-			filters={"gateway_settings": "Mpesa Setup", "gateway_controller": mpesa_setting},
+			filters={"gateway_settings": "Mpesa Setup", "gateway_controller": mpesa_setup},
 			fields=["taxes_and_charges"],
 		)
 		if payment_gateways:
 			taxes_and_charges = payment_gateways[0].taxes_and_charges
+			break  # we don't need the loop entirely
 	return taxes_and_charges
 
 
 def update_tax_id_or_phone_no(team, tax_id, phone_number):
 	"""Update the tax ID or phone number for the team, only if they are different from existing values."""
-
-	doc_name = frappe.get_value("Team", {"user": team}, "name")
-	team_doc = frappe.get_doc("Team", doc_name)
+	team_doc = frappe.get_doc("Team", {"user": team, "enabled": 1})
 
 	# Check if updates are needed
-	tax_id_needs_update = tax_id and team_doc.mpesa_tax_id != tax_id
-	phone_number_needs_update = phone_number and team_doc.mpesa_phone_number != phone_number
+	new_tax_id = tax_id and team_doc.mpesa_tax_id != tax_id
+	new_phone_number = phone_number and team_doc.mpesa_phone_number != phone_number
 
 	# Update only if at least one value needs updating
-	if tax_id_needs_update or phone_number_needs_update:
-		if tax_id_needs_update:
+	if new_tax_id or new_phone_number:
+		if tax_id:
 			team_doc.mpesa_tax_id = tax_id
-		if phone_number_needs_update:
+		if phone_number:
 			team_doc.mpesa_phone_number = phone_number
 		team_doc.save()
 
@@ -430,13 +429,13 @@ def create_invoice_partner_site(data, gateway_controller):
 	api_secret = get_decrypted_password("Payment Gateway", gateway.name, fieldname="api_secret")
 
 	transaction_id = data.get("transaction_id")
-	trans_amount = data.get("trans_amount")
+	amount = data.get("amount")
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	rate = data.get("rate")
 
 	# Validate the necessary fields
-	if not transaction_id or not trans_amount:
+	if not transaction_id or not amount:
 		frappe.throw(_("Invalid transaction data received"))
 
 	api_url = api_url_
@@ -447,7 +446,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	# Define the payload to send with the POST request
 	payload = {
 		"transaction_id": transaction_id,
-		"trans_amount": trans_amount,
+		"amount": amount,
 		"team": team,
 		"default_currency": default_currency,
 		"rate": rate,

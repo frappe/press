@@ -724,13 +724,12 @@ def generate_stk_push(**kwargs):
 	partner_value = args.partner
 
 	# Fetch the team document based on the extracted partner value
-	partner_ = frappe.get_all("Team", filters={"user": partner_value}, pluck="name")
-	if not partner_:
-		frappe.throw(_("Partner not found"), title=_("Mpesa Express Error"))
-	partner = frappe.get_doc("Team", partner_[0])
+	partner = frappe.get_all("Team", filters={"user": partner_value, "erpnext_partner": 1}, pluck="name")
+	if not partner:
+		frappe.throw(_(f"Partner team {partner_value} not found"), title=_("Mpesa Express Error"))
 
 	# Get Mpesa settings for the partner's team
-	mpesa_setup = get_mpesa_setup_for_team(partner.name)
+	mpesa_setup = get_mpesa_setup_for_team(partner[0])
 	try:
 		callback_url = (
 			get_request_site_address(True) + "/api/method/press.api.billing.verify_mpesa_transaction"
@@ -771,7 +770,8 @@ def verify_m_pesa_transaction(**kwargs):
 	"""Verify the transaction result received via callback from STK."""
 	transaction_response, integration_request = parse_transaction_response(kwargs)
 	handle_transaction_result(transaction_response, integration_request)
-	save_integration_request(integration_request)
+	# save_integration_request(integration_request)
+	integration_request.save(ignore_permissions=True)
 	print("Response coming ----", transaction_response)
 	return {"status": integration_request.status, "ResultDesc": transaction_response.get("ResultDesc")}
 
@@ -896,20 +896,21 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 
 def create_mpesa_payment_record(transaction_response):
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
+	print(transaction_response)
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
 	transaction_id = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
-	trans_time = fetch_param_value(item_response, "TransactionDate", "Name")
+	transaction_time = fetch_param_value(item_response, "TransactionDate", "Name")
 	msisdn = fetch_param_value(item_response, "PhoneNumber", "Name")
 	transaction_id = transaction_response.get("CheckoutRequestID")
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	request_id = transaction_response.get("MerchantRequestID")
 	team, partner, requested_amount = get_team_and_partner_from_integration_request(transaction_id)
-	amount_usd, exchange_rate = convert("USD", "KES", requested_amount)
+	amount_usd, exchange_rate = convert("KES", "USD", requested_amount)
 	gateway_name = get_payment_gateway(partner)
 	# Create a new entry in M-Pesa Payment Record
 	data = {
 		"transaction_id": transaction_id,
-		"trans_amount": amount,
+		"amount": amount,
 		"team": frappe.get_value("Team", team, "user"),
 		"default_currency": "KES",
 		"rate": requested_amount,
@@ -918,11 +919,11 @@ def create_mpesa_payment_record(transaction_response):
 		{
 			"doctype": "Mpesa Payment Record",
 			"transaction_id": transaction_id,
-			"trans_time": trans_time,
+			"transaction_time": transaction_time,
 			"transaction_type": "Mpesa Express",
 			"team": team,
 			"msisdn": str(msisdn),
-			"trans_amount": requested_amount,
+			"amount": requested_amount,
 			"grand_total": amount,
 			"merchant_request_id": request_id,
 			"payment_partner": partner,
