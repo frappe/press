@@ -12,6 +12,7 @@ import frappe
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
+from frappe.utils.synchronization import filelock
 from frappe.website.website_generator import WebsiteGenerator
 from playwright.sync_api import Page, sync_playwright
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
@@ -305,8 +306,9 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
+	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
 	def take_grafana_screenshots(self):
-		if not frappe.get_value("Incident Settings", None, "grafana_screenshots", for_update=True):
+		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
 			return
 		with sync_playwright() as p:
 			browser = p.chromium.launch(headless=True)
