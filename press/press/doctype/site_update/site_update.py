@@ -58,6 +58,7 @@ class SiteUpdate(Document):
 		source_candidate: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
 		team: DF.Link | None
+		touched_tables: DF.Code | None
 		update_job: DF.Link | None
 	# end: auto-generated types
 
@@ -642,10 +643,20 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 			{"step_name": "Disable Maintenance Mode", "agent_job": job.name},
 			"status",
 		)
+		log_touched_tables_step = frappe.db.get_value(
+			"Agent Job Step",
+			{"step_name": "Log Touched Tables", "agent_job": job.name},
+			["status", "data"],
+			as_dict=True,
+		)
 		if site_enable_step_status == "Success":
 			SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
+		if log_touched_tables_step and log_touched_tables_step.status == "Success":
+			frappe.db.set_value(
+				"Site Update", site_update.name, "touched_tables", log_touched_tables_step.data
+			)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":

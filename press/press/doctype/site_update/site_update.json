@@ -33,7 +33,9 @@
   "column_break_rcyp",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "physical_backup_restoration"
+  "physical_backup_restoration",
+  "section_break_tpap",
+  "touched_tables"
  ],
  "fields": [
   {
@@ -274,11 +276,21 @@
    "options": "Physical Backup Restoration",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "section_break_tpap",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "touched_tables",
+   "fieldtype": "Code",
+   "label": "Touched Tables",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-22 17:40:16.784948",
+ "modified": "2025-01-24 19:20:46.157178",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
