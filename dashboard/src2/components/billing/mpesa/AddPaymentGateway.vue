@@ -46,13 +46,13 @@
 				/>
 
 				<FormControl
-					label="Your site URL"
+					label="Enter endpoint URL"
 					v-model="URL"
 					name="url"
 					autocomplete="off"
 					class="mb-5"
 					type="text"
-					placeholder="Enter API URL"
+					placeholder="https://xyz.com/api/method/<endpoint>"
 					required
 				/>
 
@@ -103,16 +103,15 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import { frappeRequest } from 'frappe-ui';
 export default {
 	name: 'AddPaymentGateway',
 	data() {
 		return {
-			currencyOptions: [],
+			currencyOptions: ['KES', 'USD'],
 			currencyInput: '',
 			gatewayName: '',
 			integrationLogo: null,
-			gatewayOptions: [],
+			gatewayOptions: ['Payment Gateway'],
 			gatewayInput: '',
 			controllerOptions: [],
 			controllerInput: '',
@@ -150,22 +149,26 @@ export default {
 					}
 				},
 				async onSuccess(data) {
-					console.log(
-						'params',
-						this.currencyInput,
-						this.gatewayName,
-						this.integrationLogo,
-						this.gatewayInput,
-						this.controllerInput,
-						this.URL,
-						this.apiKey,
-						this.apiSecret,
-						this.taxesAndCharges,
-					);
 					if (data) {
 						toast.success('Payment Gateway settings saved', data);
 					} else {
 						toast.error('Error saving Payment Gateway settings');
+					}
+				},
+			};
+		},
+		fetchGatewayControllers(gatewaySetting) {
+			return {
+				url: 'press.api.regional_payments.mpesa.utils.get_gateway_controllers',
+				method: 'GET',
+				params: {
+					gateway_setting: gatewaySetting,
+				},
+				onSuccess: (response) => {
+					if (Array.isArray(response)) {
+						this.controllerOptions = response;
+					} else {
+						this.$toast.error('No Controllers found');
 					}
 				},
 			};
@@ -178,8 +181,7 @@ export default {
 
 		async savePaymentGateway() {
 			try {
-				const response =
-					await this.$resources.createPaymentGatewaySettings.submit();
+				await this.$resources.createPaymentGatewaySettings.submit();
 				this.$emit('closeDialog');
 			} catch (error) {
 				this.$toast.error(
@@ -187,65 +189,12 @@ export default {
 				);
 			}
 		},
-		async fetchCurrencyOptions() {
-			try {
-				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_currency_options',
-					method: 'GET',
-				});
-				if (Array.isArray(response)) {
-					this.currencyOptions = response;
-				} else {
-					this.$toast.error('No currencies found');
-				}
-			} catch (error) {
-				this.$toast.error(`Error fetching currency options: ${error.message}`);
-			}
-		},
-		async fetchGatewaySettings() {
-			try {
-				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_gateway_settings',
-					method: 'GET',
-				});
-				if (Array.isArray(response)) {
-					this.gatewayOptions = response;
-				} else {
-					this.$toast.error('No Gateways found');
-				}
-			} catch (error) {
-				this.$toast.error(`Error fetching gateway settings: ${error.message}`);
-			}
-		},
-		async fetchGatewayControllers(gatewaySetting) {
-			try {
-				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_gateway_controllers',
-					method: 'GET',
-					params: {
-						gateway_setting: gatewaySetting,
-					},
-				});
-
-				if (Array.isArray(response)) {
-					this.controllerOptions = response;
-				} else {
-					this.$toast.error('No Controllers found');
-				}
-			} catch (error) {
-				this.$toast.error(
-					`Error fetching gateway controllers: ${error.message}`,
-				);
-			}
-		},
-	},
-	mounted() {
-		this.fetchGatewaySettings();
-		this.fetchCurrencyOptions();
 	},
 	watch: {
 		gatewayInput: function () {
-			this.fetchGatewayControllers(this.gatewayInput);
+			this.$resources.fetchGatewayControllers.submit({
+				gateway_setting: this.gatewayInput,
+			});
 		},
 		integrationLogo: function () {
 			this.handleFileUpload();

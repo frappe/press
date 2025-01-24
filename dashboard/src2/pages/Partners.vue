@@ -48,7 +48,11 @@ export default {
 					label: 'Approval Requests',
 					route: { name: 'PartnerApprovalRequests' },
 				},
-				{ label: 'Local Payment Setup', route: { name: 'LocalPaymentSetup' } },
+				{
+					label: 'Local Payment Setup',
+					route: { name: 'LocalPaymentSetup' },
+					condition: () => Boolean(this.$team.doc.country === 'Kenya'),
+				},
 			],
 		};
 	},

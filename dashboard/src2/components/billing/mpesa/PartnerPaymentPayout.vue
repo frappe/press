@@ -49,7 +49,7 @@
 				<Button
 					@click="fetchPayments"
 					variant="solid"
-					class="justify-center col-span-2 font-bold"
+					class="justify-center col-span-2"
 				>
 					Fetch Payments
 				</Button>
@@ -83,9 +83,9 @@
 			>
 				No payments found.
 			</div>
-			<div class="mt-4 flex w-full justify-end">
+			<div v-if="payments.length != 0" class="mt-4 flex w-full justify-end">
 				<Button
-					variant="solid"
+					variant="outline"
 					@click="createAndSubmitPayout"
 					:loading="paymentInProgress"
 				>
@@ -151,7 +151,7 @@ export default {
 			try {
 				this.fetchAttempted = true;
 				const response = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.fetch_payments',
+					url: 'press.api.regional_payments.mpesa.utils.fetch_payments',
 					method: 'GET',
 					params: {
 						payment_gateway: this.paymentGateway.value,

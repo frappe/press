@@ -750,7 +750,7 @@ def generate_stk_push(**kwargs):
 		response = connector.stk_push(
 			business_shortcode=business_shortcode,
 			amount=args.amount_with_tax,
-			passcode=mpesa_setup.get_password("online_passkey"),
+			passcode=mpesa_setup.get_password("pass_key"),
 			callback_url=callback_url,
 			reference_code=mpesa_setup.till_number,
 			phone_number=mobile_number,
@@ -767,7 +767,7 @@ def generate_stk_push(**kwargs):
 
 
 @frappe.whitelist(allow_guest=True)
-def verify_mpesa_transaction(**kwargs):
+def verify_m_pesa_transaction(**kwargs):
 	"""Verify the transaction result received via callback from STK."""
 	transaction_response, integration_request = parse_transaction_response(kwargs)
 	handle_transaction_result(transaction_response, integration_request)
@@ -825,7 +825,7 @@ def handle_transaction_result(transaction_response, integration_request):
 def save_integration_request(integration_request):
 	"""Save and commit the changes to the Mpesa Request Log."""
 	integration_request.save(ignore_permissions=True)
-	frappe.db.commit()
+	# frappe.db.commit()
 
 
 def get_completed_integration_requests_info(reference_doctype, reference_docname, checkout_id):
@@ -854,20 +854,22 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 	return mpesa_receipts, completed_payments
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def request_for_payment(**kwargs):
 	"""request for payments"""
-	team = frappe.get_doc("Team", get_current_team()).user
+	_team = get_current_team()
+	user = frappe.db.get_value("Team", _team, "user")
 	# TODO get the team and transaction from mpesa setting doctype
 	kwargs.setdefault("transaction_limit", 150000)
-	kwargs.setdefault("team", team)
+	kwargs.setdefault("team", user)
+	# transaction_limit = 150000
 	args = frappe._dict(kwargs)
 	update_tax_id_or_phone_no(args.team, args.tax_id, args.phone_number)
 	request_amounts = split_request_amount_according_to_transaction_limit(
 		args.request_amount, args.transaction_limit
 	)
 	for _i, amount in enumerate(request_amounts):
-		args.request_amount = amount
+		args.request_amount = frappe.utils.cint(amount)
 		response = frappe._dict(generate_stk_push(**args))
 
 		handle_api_mpesa_response("CheckoutRequestID", args, response)

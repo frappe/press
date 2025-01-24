@@ -3,13 +3,13 @@
 		<template #body-content>
 			<div class="grid grid-cols-2 gap-4">
 				<FormControl
-					label="Payment Gatway Name"
-					v-model="paymentGatewayName"
-					name="consumer_key"
+					label="Mpesa Setup ID"
+					v-model="mpesaSetupId"
+					name="mpesa_setup_id"
 					autocomplete="off"
 					class="mb-5"
 					type="text"
-					placeholder="Enter Mpesa setting Name"
+					placeholder="Enter Mpesa Setup ID"
 					required
 				/>
 
@@ -90,19 +90,20 @@
 					required
 				/>
 
-				<div class="flex items-center">
+				<!-- <div class="flex items-center">
 					<input v-model="sandBox" type="checkbox" class="mr-2" />
 					<label class="text-sm font-medium text-gray-700">Sandbox Mode</label>
-				</div>
+				</div> -->
 			</div>
 
 			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
 				<Button
 					@click="saveMpesaCredentials"
 					variant="solid"
-					class="justify-center w-full font-bold"
-					>Save</Button
+					class="justify-center w-full"
 				>
+					Save
+				</Button>
 			</div>
 		</template>
 	</Dialog>
@@ -110,21 +111,20 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import { DashboardError } from '../../../utils/error';
-import { ErrorMessage } from 'frappe-ui';
 export default {
 	name: 'AddMpesaCredentials',
 	data() {
 		return {
 			consumerKey: '',
-			paymentGatewayName: '',
+			mpesaSetupId: '',
 			consumerSecret: '',
 			passKey: '',
 			shortCode: '',
 			initiatorName: '',
 			securityCredential: '',
 			tillNumber: '',
-			sandBox: false,
+			apiType: '',
+			// sandBox: false,
 		};
 	},
 	resources: {
@@ -132,7 +132,7 @@ export default {
 			return {
 				url: 'press.api.regional_payments.mpesa.utils.create_mpesa_setup',
 				params: {
-					payment_gateway_name: this.paymentGatewayName,
+					mpesa_setup_id: this.mpesaSetupId,
 					consumer_key: this.consumerKey,
 					consumer_secret: this.consumerSecret,
 					pass_key: this.passKey,
@@ -140,11 +140,11 @@ export default {
 					initiator_name: this.initiatorName,
 					security_credential: this.securityCredential,
 					till_number: this.tillNumber,
-					sandbox: this.sandBox,
+					// sandbox: this.sandBox,
 				},
 				validate() {
 					if (
-						!this.paymentGatewayName ||
+						!this.mpesaSetupId ||
 						!this.consumerKey ||
 						!this.consumerSecret ||
 						!this.passKey ||
@@ -155,7 +155,7 @@ export default {
 						return 'All fields are required';
 					}
 				},
-				async onSuccess(data) {
+				onSuccess(data) {
 					if (data) {
 						toast.success('M-Pesa credentials saved', data);
 					} else {
@@ -164,15 +164,29 @@ export default {
 				},
 			};
 		},
+		fetchMpesaSetup() {
+			return {
+				url: 'press.api.regional_payments.mpesa.utils.fetch_mpesa_setup',
+				onSuccess(data) {
+					console.log('data', data);
+					this.mpesaSetupId = data.mpesa_setup_id;
+					this.consumerKey = data.consumer_key;
+					this.consumerSecret = data.consumer_secret;
+					this.securityCredential = data.security_credential;
+					this.passKey = data.pass_key;
+					this.shortCode = data.business_shortcode;
+					this.tillNumber = data.till_number;
+					this.initiatorName = data.initiator_name;
+					this.apiType = data.api_type;
+				},
+				auto: true,
+			};
+		},
 	},
 	methods: {
-		async saveMpesaCredentials() {
-			try {
-				const response = await this.$resources.createMpesaSetup.submit();
-				this.$emit('closeDialog');
-			} catch (error) {
-				this.$toast.error(`Error saving M-Pesa credentials: ${error.message}`);
-			}
+		saveMpesaCredentials() {
+			this.$resources.createMpesaSetup.submit();
+			this.$emit('closeDialog');
 		},
 	},
 };

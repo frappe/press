@@ -1,6 +1,4 @@
-<template
-	v-if="$team.doc.country === 'Kenya' && $team.doc.erpnext_partner === 1"
->
+<template>
 	<div>
 		<label class="block mt-4">
 			<span class="text-sm leading-4 text-gray-700"> </span>
@@ -21,41 +19,42 @@
 			class="mb-5"
 		/>
 
-		<FormControl
-			label="M-Pesa Phone Number"
-			v-model.number="phoneNumberInput"
-			name="phone_number"
-			autocomplete="off"
-			class="mb-5"
-			type="tel"
-			placeholder="Enter phone number"
-		/>
+		<div class="flex gap-5 col-2">
+			<FormControl
+				label="M-Pesa Phone Number"
+				v-model="$team.doc.mpesa_phone_number"
+				name="phone_number"
+				autocomplete="off"
+				class="mb-5"
+				type="number"
+				placeholder="e.g 123456789"
+			/>
 
-		<FormControl
-			label="Tax ID"
-			v-model="taxIdInput"
-			name="tax_id"
-			autocomplete="off"
-			class="mb-5"
-			type="string"
-			placeholder="Enter company's Tax ID"
-		/>
-
+			<FormControl
+				label="Tax ID"
+				v-model="$team.doc.mpesa_tax_id"
+				name="tax_id"
+				autocomplete="off"
+				class="mb-5"
+				type="string"
+				placeholder="e.g 78346"
+			/>
+		</div>
 		<!-- Show amount after tax -->
-		<div v-if="showTaxInfo">
-			<div class="mt-4">
-				<p class="text-sm leading-4 text-gray-700">Tax(%):</p>
-				<p class="text-md text-black-100 bg-gray-100 rounded-sm">
-					{{ taxPercentage }}%
-				</p>
-			</div>
+		<div v-if="showTaxInfo" class="flex col-2 gap-5">
+			<FormControl
+				label="Tax(%)"
+				disabled
+				:modelValue="taxPercentage"
+				type="number"
+			/>
 
-			<div class="mt-4">
-				<p class="text-sm leading-4 text-gray-700">Total Amount With Tax:</p>
-				<p class="text-md text-black-100 bg-gray-100 rounded-sm">
-					Ksh. {{ amountWithTax }}
-				</p>
-			</div>
+			<FormControl
+				label="Total Amount With Tax"
+				disabled
+				:modelValue="amountWithTax.toFixed(2)"
+				type="number"
+			/>
 		</div>
 
 		<div class="mt-4 flex w-full justify-end">
@@ -70,9 +69,8 @@
 
 <script>
 import { toast } from 'vue-sonner';
-import { DashboardError } from '../utils/error';
-import { ErrorMessage } from 'frappe-ui';
-import { frappeRequest } from 'frappe-ui';
+import { DashboardError } from '../../../utils/error';
+import { frappeRequest, ErrorMessage } from 'frappe-ui';
 export default {
 	name: 'BuyPrepaidCreditsMpesa',
 	props: {
@@ -124,7 +122,8 @@ export default {
 							`Amount is less than the minimum allowed: ${this.minimumAmount}`,
 						);
 					}
-					if (!this.partnerInput || !this.phoneNumberInput) {
+					this.phoneNumberInput = this.$team.doc.mpesa_phone_number;
+					if (!this.partnerInput.value || !this.phoneNumberInput) {
 						throw new DashboardError(
 							'Both partner and phone number are required for payment.',
 						);
@@ -230,7 +229,7 @@ export default {
 		totalAmountWithTax() {
 			const amountWithTax =
 				this.amountKES + (this.amountKES * this.taxPercentage) / 100;
-			this.amountWithTax = amountWithTax;
+			this.amountWithTax = Math.round(amountWithTax);
 		},
 		async fetchExchangeRate() {
 			try {
