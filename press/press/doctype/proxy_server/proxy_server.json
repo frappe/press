@@ -16,6 +16,7 @@
   "virtual_machine",
   "is_server_setup",
   "is_self_hosted",
+  "is_devbox_proxy",
   "team",
   "public",
   "storage_section",
@@ -421,10 +422,16 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_devbox_proxy",
+   "fieldtype": "Check",
+   "label": "Is Devbox Proxy"
   }
  ],
  "links": [],
- "modified": "2024-12-26 13:20:05.120010",
+ "modified": "2025-01-23 10:47:34.384269",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

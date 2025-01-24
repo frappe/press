@@ -41,6 +41,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_devbox_proxy: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -160,6 +161,7 @@ class ProxyServer(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"press_url": frappe.utils.get_url(),
+					"is_devbox_proxy": self.is_devbox_proxy,
 				},
 			)
 			play = ansible.run()
