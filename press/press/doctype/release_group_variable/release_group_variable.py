@@ -9,7 +9,7 @@ class ReleaseGroupVariable(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING, ClassVar
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -19,10 +19,10 @@ class ReleaseGroupVariable(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		value: DF.Data
+		value: DF.Text
 	# end: auto-generated types
 
-	dashboard_fields = ["key", "value"]
+	dashboard_fields: ClassVar = ["key", "value"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -30,5 +30,4 @@ class ReleaseGroupVariable(Document):
 		query = query.where(environmentVariable.internal == 0).orderby(
 			environmentVariable.key, order=frappe.qb.asc
 		)
-		configs = query.run(as_dict=True)
-		return configs
+		return query.run(as_dict=True)

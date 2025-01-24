@@ -38,6 +38,12 @@ output.elasticsearch:
   ssl.verification_mode: strict
   ssl.supported_protocols: [TLSv1.3]
 
+  {% if server_type is defined and server_type == "Database Server" %}
+
+  bulk_max_size: 10
+
+  {% endif %}
+
 # ================================== Logging ===================================
 
 logging.to_files: true

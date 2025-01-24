@@ -5,6 +5,8 @@
       - earlyoom
     state:
       present
+  register: result
+  until: result.failed == false
   retries: 5
   delay: 120
 

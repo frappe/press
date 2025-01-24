@@ -145,7 +145,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': isAutomatedBilling
+									'bg-gray-100': isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = true"
 							>
@@ -154,7 +154,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': !isAutomatedBilling
+									'bg-gray-100': !isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = false"
 							>
@@ -243,46 +243,32 @@ import TextInsideCircle from './TextInsideCircle.vue';
 export default {
 	name: 'Onboarding',
 	components: {
-		StripeCard2: defineAsyncComponent(() =>
-			import('../components/StripeCard.vue')
+		StripeCard2: defineAsyncComponent(
+			() => import('../components/StripeCard.vue'),
 		),
-		UpdateBillingDetailsForm: defineAsyncComponent(() =>
-			import('./UpdateBillingDetailsForm.vue')
+		UpdateBillingDetailsForm: defineAsyncComponent(
+			() => import('./UpdateBillingDetailsForm.vue'),
 		),
-		CardWithDetails: defineAsyncComponent(() =>
-			import('../../src/components/CardWithDetails.vue')
+		CardWithDetails: defineAsyncComponent(
+			() => import('../../src/components/CardWithDetails.vue'),
 		),
-		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
-			import('./BuyPrepaidCreditsForm.vue')
+		BuyPrepaidCreditsForm: defineAsyncComponent(
+			() => import('./BuyPrepaidCreditsForm.vue'),
 		),
-		OnboardingAppSelector: defineAsyncComponent(() =>
-			import('./OnboardingAppSelector.vue')
+		OnboardingAppSelector: defineAsyncComponent(
+			() => import('./OnboardingAppSelector.vue'),
 		),
 		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
-		TextInsideCircle
-	},
-	mounted() {
-		if (window.posthog?.__loaded) {
-			window.posthog.identify(this.$team.doc.user, {
-				app: 'frappe_cloud',
-				action: 'onboarding'
-			});
-			window.posthog.startSessionRecording();
-		}
-	},
-	unmounted() {
-		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
-			window.posthog.stopSessionRecording();
-		}
+		TextInsideCircle,
 	},
 	data() {
 		return {
 			billingInformation: {
 				cardHolderName: '',
 				country: '',
-				gstin: ''
+				gstin: '',
 			},
-			isAutomatedBilling: true
+			isAutomatedBilling: true,
 		};
 	},
 	methods: {
@@ -294,7 +280,7 @@ export default {
 		},
 		onBillingAddresUpdateSuccess() {
 			this.$team.reload();
-		}
+		},
 	},
 	computed: {
 		isBillingDetailsSet() {
@@ -308,15 +294,15 @@ export default {
 		},
 		trialSite() {
 			return this.$team.doc.trial_sites?.[0];
-		}
+		},
 	},
 	resources: {
 		availableApps() {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
-				auto: true
+				auto: true,
 			};
-		}
-	}
+		},
+	},
 };
 </script>

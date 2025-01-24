@@ -51,3 +51,7 @@ class SiteUnderMaintenance(ValidationError):
 
 class SiteAlreadyArchived(ValidationError):
 	pass
+
+
+class InactiveDomains(ValidationError):
+	pass

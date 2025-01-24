@@ -26,6 +26,8 @@
       apt:
         name: filebeat
         state: latest
+      register: result
+      until: result.failed == false
       retries: 5
       delay: 120
 

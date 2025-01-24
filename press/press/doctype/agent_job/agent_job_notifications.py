@@ -181,15 +181,9 @@ def update_with_oom_err(
 ):
 	details["title"] = "Server out of memory error"
 
-	job_type = ""
-	if job.job_type == "Update Site Migrate":
-		job_type = "Site Migrate"
-	elif job.job_type == "Update Site Pull":
-		job_type = "Site Update"
-
 	details[
 		"message"
-	] = f"""<p>The server ran out of memory while {job_type} job was running and was killed by the system.</p>
+	] = f"""<p>The server ran out of memory while {job.job_type} job was running and was killed by the system.</p>
 	<p>It is recommended to increase the memory available for the server <a class="underline" href="/dashboard/servers/{job.server}">{job.server}</a>.</p>
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	"""

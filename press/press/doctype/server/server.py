@@ -398,6 +398,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"server_type": self.doctype,
 					"server": self.name,
 					"log_server": log_server,
 					"kibana_password": kibana_password,

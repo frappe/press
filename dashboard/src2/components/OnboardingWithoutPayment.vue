@@ -26,24 +26,15 @@ import OnboardingAppSelector from './OnboardingAppSelector.vue';
 export default {
 	name: 'Onboarding',
 	components: {
-		OnboardingAppSelector
-	},
-	mounted() {
-		if (window.posthog?.__loaded) {
-			window.posthog.identify(this.$team.doc.user, {
-				app: 'frappe_cloud',
-				action: 'onboarding'
-			});
-			window.posthog.startSessionRecording();
-		}
+		OnboardingAppSelector,
 	},
 	resources: {
 		availableApps() {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
-				auto: true
+				auto: true,
 			};
-		}
-	}
+		},
+	},
 };
 </script>

@@ -335,6 +335,7 @@ class VirtualMachine(Document):
 			"filebeat_config": frappe.render_template(
 				"press/playbooks/roles/filebeat/templates/filebeat.yml",
 				{
+					"server_type": server.doctype,
 					"server": self.name,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
