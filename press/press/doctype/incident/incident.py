@@ -188,13 +188,14 @@ class Incident(WebsiteGenerator):
 			timespan + 1,
 		)["datasets"]
 		mode_cpus = {x["name"]: x["values"][-1] for x in cpu_info} or {
-			"user": None,
-			"idle": None,
-			"softirq": None,
-			"iowait": None,
+			"user": -1,
+			"idle": -1,
+			"softirq": -1,
+			"iowait": -1,
 		}  # no info;
 		max_mode = max(mode_cpus, key=mode_cpus.get)
-		self.add_description(f"CPU Usage: {max_mode} {mode_cpus[max_mode] or 'No data'}%")
+		max_cpu = mode_cpus[max_mode]
+		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
 		return max_mode, mode_cpus[max_mode]
 
 	def add_description(self, description):
