@@ -58,6 +58,10 @@ class Invoice(Document):
 		invoice_pdf: DF.Attach | None
 		items: DF.Table[InvoiceItem]
 		marketplace: DF.Check
+		mpesa_merchant_id: DF.Data | None
+		mpesa_payment_record: DF.Data | None
+		mpesa_receipt_number: DF.Data | None
+		mpesa_request_id: DF.Data | None
 		next_payment_attempt_date: DF.Date | None
 		partner_email: DF.Data | None
 		payment_attempt_count: DF.Int
@@ -744,7 +748,7 @@ class Invoice(Document):
 			return None
 		if self.amount_paid == 0:
 			return None
-		if self.frappe_invoice or self.frappe_partner_order:
+		if self.frappe_invoice or self.frappe_partner_order or self.mpesa_receipt_number:
 			return None
 
 		try:

@@ -891,12 +891,12 @@ def create_mpesa_payment_record(transaction_response):
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
 	print(transaction_response)
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
-	transaction_id = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
+	mpesa_receipt_number = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
 	transaction_time = fetch_param_value(item_response, "TransactionDate", "Name")
 	msisdn = fetch_param_value(item_response, "PhoneNumber", "Name")
 	transaction_id = transaction_response.get("CheckoutRequestID")
 	amount = fetch_param_value(item_response, "Amount", "Name")
-	request_id = transaction_response.get("MerchantRequestID")
+	merchant_request_id = transaction_response.get("MerchantRequestID")
 	team, partner, requested_amount = get_team_and_partner_from_integration_request(transaction_id)
 	amount_usd, exchange_rate = convert("KES", "USD", requested_amount)
 	gateway_name = get_payment_gateway(partner)
@@ -908,28 +908,85 @@ def create_mpesa_payment_record(transaction_response):
 		"default_currency": "KES",
 		"rate": requested_amount,
 	}
-	new_entry = frappe.get_doc(
+	payment_record = frappe.get_doc(
 		{
 			"doctype": "Mpesa Payment Record",
 			"transaction_id": transaction_id,
-			"transaction_time": transaction_time,
+			"transaction_time": parse_datetime(transaction_time),
 			"transaction_type": "Mpesa Express",
 			"team": team,
 			"msisdn": str(msisdn),
 			"amount": requested_amount,
 			"grand_total": amount,
-			"merchant_request_id": request_id,
+			"merchant_request_id": merchant_request_id,
 			"payment_partner": partner,
 			"amount_usd": amount_usd,
 			"exchange_rate": exchange_rate,
 			"local_invoice": create_invoice_partner_site(data, gateway_name),
+			"mpesa_receipt_number": mpesa_receipt_number,
 		}
 	)
-	new_entry.insert(ignore_permissions=True)
-	new_entry.submit()
+	payment_record.insert(ignore_permissions=True)
+	payment_record.submit()
 	"""create payment partner transaction which will then create balance transaction"""
 	create_payment_partner_transaction(
 		team, partner, exchange_rate, amount_usd, requested_amount, gateway_name
 	)
+	mpesa_details = {
+		"mpesa_receipt_number": mpesa_receipt_number,
+		"mpesa_merchant_id": merchant_request_id,
+		"mpesa_payment_record": payment_record.name,
+		"mpesa_request_id": transaction_id,
+	}
+	create_balance_transaction_and_invoice(team, amount_usd, mpesa_details)
 
 	frappe.msgprint(_("Mpesa Payment Record entry created successfully"))
+
+
+def create_balance_transaction_and_invoice(team, amount, mpesa_details):
+	balance_transaction = frappe.get_doc(
+		doctype="Balance Transaction",
+		team=team,
+		source="Prepaid Credits",
+		type="Adjustment",
+		amount=amount,
+		description=mpesa_details.get("mpesa_payment_record"),
+		paid_via_local_pg=1,
+	)
+	balance_transaction.insert(ignore_permissions=True)
+	balance_transaction.submit()
+
+	invoice = frappe.get_doc(
+		doctype="Invoice",
+		team=team,
+		type="Prepaid Credits",
+		status="Paid",
+		total=amount,
+		amount_due=amount,
+		amount_paid=amount,
+		amount_due_with_tax=amount,
+		due_date=frappe.utils.nowdate(),
+		mpesa_merchant_id=mpesa_details.get("mpesa_merchant_id", ""),
+		mpesa_receipt_number=mpesa_details.get("mpesa_receipt_number", ""),
+		mpesa_request_id=mpesa_details.get("mpesa_request_id", ""),
+		mpesa_payment_record=mpesa_details.get("mpesa_payment_record", ""),
+	)
+	invoice.append(
+		"items",
+		{
+			"description": "Prepaid Credits",
+			"document_type": "Balance Transaction",
+			"document_name": balance_transaction.name,
+			"quantity": 1,
+			"rate": amount,
+		},
+	)
+	invoice.insert(ignore_permissions=True)
+	invoice.submit()
+
+
+def parse_datetime(date):
+	from datetime import datetime
+
+	_date = datetime.strptime(str(date), "%Y%m%d%H%M%S")
+	return frappe.utils.format_datetime(_date)

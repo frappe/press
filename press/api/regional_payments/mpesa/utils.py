@@ -237,22 +237,20 @@ def get_team_and_partner_from_integration_request(transaction_id):
 	"""Get the team and partner associated with the Mpesa Request Log."""
 	integration_request = frappe.get_doc("Mpesa Request Log", transaction_id)
 	request_data = integration_request.data
+	team = partner = None
 	# Parse the request_data as a dictionary
 	if request_data:
 		try:
 			request_data_dict = json.loads(request_data)
 			team_ = request_data_dict.get("team")
-			team = frappe.get_value("Team", {"user": team_}, "name")
+			team = frappe.get_value("Team", {"user": team_, "enabled": 1}, "name")
 			partner_ = request_data_dict.get("partner")
-			partner = frappe.get_value("Team", {"user": partner_}, "name")
+			partner = frappe.get_value("Team", {"user": partner_, "erpnext_partner": 1, "enabled": 1}, "name")
 			requested_amount = request_data_dict.get("request_amount")
 		except json.JSONDecodeError:
 			frappe.throw(_("Invalid JSON format in request_data"))
 			team = None
 			partner = None
-	else:
-		team = None
-		partner = None
 
 	return team, partner, requested_amount
 

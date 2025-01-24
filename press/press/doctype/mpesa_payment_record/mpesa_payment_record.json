@@ -17,7 +17,7 @@
   "grand_total",
   "amount",
   "amount_usd",
-  "bill_ref_number",
+  "mpesa_receipt_number",
   "exchange_rate",
   "column_break_14",
   "msisdn",
@@ -61,13 +61,6 @@
    "fieldname": "amount_usd",
    "fieldtype": "Float",
    "label": "Amount (USD)"
-  },
-  {
-   "fieldname": "bill_ref_number",
-   "fieldtype": "Data",
-   "label": "Bill Ref Number",
-   "no_copy": 1,
-   "read_only": 1
   },
   {
    "fieldname": "exchange_rate",
@@ -159,7 +152,7 @@
   },
   {
    "fieldname": "transaction_time",
-   "fieldtype": "Data",
+   "fieldtype": "Datetime",
    "label": "Transaction Time",
    "no_copy": 1,
    "read_only": 1
@@ -173,13 +166,20 @@
    "label": "Amount (Ksh)",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "mpesa_receipt_number",
+   "fieldtype": "Data",
+   "label": "Mpesa Receipt Number",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-24 16:13:58.779387",
+ "modified": "2025-01-24 20:54:35.324213",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",

@@ -19,20 +19,20 @@ class MpesaPaymentRecord(Document):
 		amount: DF.Float
 		amount_usd: DF.Float
 		balance_transaction: DF.Link | None
-		bill_ref_number: DF.Data | None
 		default_currency: DF.Data | None
 		exchange_rate: DF.Float
 		grand_total: DF.Currency
 		invoice_number: DF.Data | None
 		local_invoice: DF.SmallText | None
 		merchant_request_id: DF.Data | None
+		mpesa_receipt_number: DF.Data | None
 		msisdn: DF.Data | None
 		payment_partner: DF.Link | None
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
 		team: DF.Link | None
 		transaction_id: DF.Data | None
-		transaction_time: DF.Data | None
+		transaction_time: DF.Datetime | None
 		transaction_type: DF.Literal["", "Mpesa Express", "Mpesa C2B"]
 	# end: auto-generated types
 
