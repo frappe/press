@@ -169,6 +169,7 @@ class Incident(WebsiteGenerator):
 		self.status = "Confirmed"
 		self.identify_affected_resource()  # assume 1 resource; Occam's razor
 		self.identify_problem()
+		self.take_grafana_screenshots()
 		self.save()
 
 	def get_cpu_state(self, resource: str):
@@ -291,7 +292,9 @@ class Incident(WebsiteGenerator):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
-	def take_grafana_screenshot(self):
+	def take_grafana_screenshots(self):
+		if not frappe.get_value("Incident Settings", None, "grafana_screenshots", for_update=True):
+			return
 		with sync_playwright() as p:
 			browser = p.chromium.launch(headless=False)
 			page = browser.new_page()

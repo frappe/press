@@ -29,6 +29,7 @@ class IncidentSettings(Document):
 		confirmation_threshold_night: DF.Duration | None
 		email_alerts: DF.Check
 		enable_incident_detection: DF.Check
+		grafana_screenshots: DF.Check
 		phone_call_alerts: DF.Check
 		self_hosted_users: DF.Table[IncidentSettingsSelfHostedUser]
 		users: DF.Table[IncidentSettingsUser]
