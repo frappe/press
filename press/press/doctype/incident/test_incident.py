@@ -432,14 +432,14 @@ class TestIncident(FrappeTestCase):
 				self.get_5_min_load_avg_prometheus_response(2.0),
 			],
 		):
-			incident.confirm()
+			incident.identify_affected_resource()
 		self.assertEqual(incident.resource, incident.server)
 		self.assertEqual(incident.resource_type, "Server")
 
 	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
 		create_test_alertmanager_webhook_log()
 		incident: Incident = frappe.get_last_doc("Incident")
-		incident.confirm()
+		incident.identify_affected_resource()
 		self.assertEqual(
 			incident.resource, frappe.get_value("Server", incident.server, "database_server")
 		)  # database is checked first because history
