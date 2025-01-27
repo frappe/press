@@ -22,12 +22,6 @@
 							type="checkbox"
 							v-model="skipBackups"
 						/>
-						<FormControl
-							label="Perform physical backup (This will reduce the time taken for backup) [EXPERIMENTAL]"
-							type="checkbox"
-							v-model="physicalBackup"
-							v-if="!skipBackups"
-						/>
 					</div>
 				</div>
 			</template>
@@ -83,7 +77,6 @@ export default {
 			skipFailingPatches: false,
 			scheduledTime: '',
 			skipBackups: false,
-			physicalBackup: false,
 		};
 	},
 	resources: {
@@ -193,7 +186,6 @@ export default {
 				{
 					skip_failing_patches: this.skipFailingPatches,
 					skip_backups: this.skipBackups,
-					physical_backup: !this.skipBackups && this.physicalBackup,
 					scheduled_time: this.scheduledTimeInIST,
 				},
 				{
@@ -233,8 +225,6 @@ export default {
 			this.skipFailingPatches = doc.skipped_failing_patches;
 			this.skipBackups = doc.skipped_backups;
 			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm');
-			this.physicalBackup =
-				!doc.skipped_backups && doc.backup_type === 'Physical';
 		},
 	},
 };
