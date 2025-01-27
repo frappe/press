@@ -82,12 +82,18 @@ class SiteBackup(Document):
 		"remote_public_file",
 		"remote_private_file",
 		"remote_config_file",
+		"physical",
 	)
 
 	@property
 	def database_server(self):
 		server = frappe.get_value("Site", self.site, "server")
 		return frappe.get_value("Server", server, "database_server")
+
+	@staticmethod
+	def get_list_query(query):
+		results = query.run(as_dict=True)
+		return [result for result in results if not result.get("physical")]
 
 	def validate(self):
 		if self.physical and self.with_files:

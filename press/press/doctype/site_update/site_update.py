@@ -18,6 +18,9 @@ from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+	get_physical_backup_restoration_steps,
+)
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -61,7 +64,10 @@ class SiteUpdate(Document):
 		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
 		team: DF.Link | None
 		touched_tables: DF.Code | None
+		update_duration: DF.Duration | None
+		update_end: DF.Datetime | None
 		update_job: DF.Link | None
+		update_start: DF.Datetime | None
 	# end: auto-generated types
 
 	dashboard_fields: ClassVar = [
@@ -71,12 +77,19 @@ class SiteUpdate(Document):
 		"source_bench",
 		"deploy_type",
 		"difference",
-		"update_job",
 		"scheduled_time",
 		"creation",
 		"skipped_backups",
 		"skipped_failing_patches",
 		"backup_type",
+		"physical_backup_restoration",
+		"activate_site_job",
+		"deactivate_site_job",
+		"update_job",
+		"recover_job",
+		"update_start",
+		"update_end",
+		"update_duration",
 	]
 
 	@staticmethod
@@ -87,6 +100,10 @@ class SiteUpdate(Document):
 				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(tzinfo=None)
 
 		return results
+
+	def get_doc(self, doc):
+		doc.steps = self.get_steps()
+		return doc
 
 	def validate(self):
 		if not self.is_new():
@@ -241,6 +258,7 @@ class SiteUpdate(Document):
 	@dashboard_whitelist()
 	def start(self):
 		self.status = "Pending"
+		self.update_start = frappe.utils.now()
 		self.save()
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.ready_for_move()
@@ -449,6 +467,67 @@ class SiteUpdate(Document):
 		if job:
 			frappe.db.set_value("Site Update", self.name, "recover_job", job.name)
 
+	@dashboard_whitelist()
+	def get_steps(self):
+		"""
+		{
+			"title": "Step Name",
+			"status": "Success",
+			"output": "Output",
+		}
+		TODO > Add duration of each step
+
+		Expand the steps of job
+		- Steps of Deactivate Job [if exists]
+		- Steps of Physical Backup Job [Site Backup] [if exists]
+		- Steps of Update Job
+		- Steps of Physical Restore Job [if exists]
+		- Steps of Recovery Job [if exists]
+		- Steps of Activate Job [if exists]
+		"""
+		steps = []
+		if self.deactivate_site_job:
+			steps.extend(self.get_job_steps(self.deactivate_site_job, "Deactivate Site"))
+		if self.backup_type == "Physical" and self.site_backup:
+			agent_job = frappe.get_value("Site Backup", self.site_backup, "job")
+			steps.extend(self.get_job_steps(agent_job, "Backup Site"))
+		if self.update_job:
+			steps.extend(self.get_job_steps(self.update_job, "Update Site"))
+		if self.physical_backup_restoration:
+			steps.extend(get_physical_backup_restoration_steps(self.physical_backup_restoration))
+		if self.recover_job:
+			steps.extend(self.get_job_steps(self.recover_job, "Recover Site"))
+		if self.activate_site_job:
+			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
+		return steps
+
+	def get_job_steps(self, job: str, stage: str):
+		agent_steps = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": job},
+			fields=["output", "step_name", "status", "name"],
+			order_by="creation asc",
+		)
+		return [
+			{
+				"name": step.get("name"),
+				"title": step.get("step_name"),
+				"status": step.get("status"),
+				"output": step.get("output"),
+				"stage": stage,
+			}
+			for step in agent_steps
+		]
+
+
+def update_status(name, status):
+	frappe.db.set_value("Site Update", name, "status", status)
+	if status in ("Success", "Failure", "Fatal", "Recovered"):
+		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
+		update_start = frappe.db.get_value("Site Update", name, "update_start")
+		if update_start:
+			frappe.db.set_value("Site Update", name, "update_duration", frappe.utils.now() - update_start)
+
 
 @site_cache(ttl=60)
 def benches_with_available_update(site=None, server=None):
@@ -648,7 +727,7 @@ def process_activate_site_job_update(job):
 	elif job.status == "Failure":
 		# Mark the site as broken
 		frappe.db.set_value("Site", job.site, "status", "Broken")
-		frappe.db.set_value("Site Update", job.reference_name, "status", "Fatal")
+		update_status(job.reference_name, "Fatal")
 
 
 def process_deactivate_site_job_update(job):
@@ -660,7 +739,7 @@ def process_deactivate_site_job_update(job):
 		site_update.create_physical_backup()
 	elif job.status == "Failure":
 		# mark Site Update as Fatal
-		frappe.set_value("Site Update", job.reference_name, "status", "Fatal")
+		update_status(job.reference_name, "Fatal")
 		# Run the activate site to ensure site is active
 		site_update = frappe.get_doc("Site Update", job.reference_name)
 		site_update.activate_site()
@@ -701,7 +780,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 		if site_enable_step_status == "Success":
 			SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
-		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
+		update_status(site_update.name, updated_status)
 		if log_touched_tables_step and log_touched_tables_step.status == "Success":
 			frappe.db.set_value(
 				"Site Update", site_update.name, "touched_tables", log_touched_tables_step.data
@@ -724,7 +803,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 				doc = frappe.get_doc("Site Update", site_update.name)
 				doc.trigger_recovery_job()
 			else:
-				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
+				update_status(site_update.name, "Fatal")
 				SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
 
@@ -750,11 +829,11 @@ def process_update_site_recover_job_update(job):
 			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
 			frappe.db.set_value("Site", job.site, "group", site_update.group)
 
-		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
+		update_status(site_update.name, updated_status)
 		if updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
-			frappe.db.set_value("Site", job.site, "status", "Broken")
+			update_status(site_update.name, "Fatal")
 
 
 def mark_stuck_updates_as_fatal():

@@ -581,6 +581,7 @@ export default {
 						'remote_public_file',
 						'remote_private_file',
 						'remote_config_file',
+						'physical',
 					],
 					columns: [
 						{
@@ -1026,13 +1027,20 @@ export default {
 				route: 'updates',
 				type: 'list',
 				condition: (site) => site.doc?.status !== 'Archived',
+				childrenRoutes: ['Site Update'],
 				list: {
 					doctype: 'Site Update',
 					filters: (site) => {
 						return { site: site.doc?.name };
 					},
 					orderBy: 'creation',
-					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
+					fields: [
+						'difference',
+						'update_job.end as updated_on',
+						'update_job',
+						'backup_type',
+						'recover_job',
+					],
 					columns: [
 						{
 							label: 'Type',
@@ -1044,6 +1052,22 @@ export default {
 							fieldname: 'status',
 							type: 'Badge',
 							width: 0.5,
+						},
+						{
+							label: 'Backup',
+							width: 0.4,
+							type: 'Component',
+							component({ row }) {
+								return h(
+									'div',
+									{
+										class: 'truncate text-base',
+									},
+									row.skipped_backups
+										? 'Skipped'
+										: row.backup_type || 'Logical',
+								);
+							},
 						},
 						{
 							label: 'Created By',
@@ -1111,8 +1135,8 @@ export default {
 								condition: () => row.status !== 'Scheduled',
 								onClick() {
 									router.push({
-										name: 'Site Job',
-										params: { name: site.name, id: row.update_job },
+										name: 'Site Update',
+										params: { id: row.name },
 									});
 								},
 							},
@@ -1569,4 +1593,12 @@ export default {
 			];
 		},
 	},
+
+	routes: [
+		{
+			name: 'Site Update',
+			path: 'updates/:id',
+			component: () => import('../pages/SiteUpdate.vue'),
+		},
+	],
 };

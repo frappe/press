@@ -468,7 +468,8 @@ class Agent:
 			- By calling `snapshot_create_callback` url
 		- Then, unlock the database
 		"""
-		press_public_base_url = frappe.utils.get_url()
+		# press_public_base_url = frappe.utils.get_url()
+		press_public_base_url = "https://devfc2.tanmoysrt.xyz"
 		data = {
 			"databases": [site_backup.database_name],
 			"mariadb_root_password": get_mariadb_root_password(site),

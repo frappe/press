@@ -608,3 +608,58 @@ def process_job_update(job):
 	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
 	if job.status in ["Success", "Failure", "Delivery Failure"]:
 		doc.next(ignore_version=True)
+
+
+def get_physical_backup_restoration_steps(name: str) -> list[dict]:
+	"""
+	{
+		"title": "Step Name",
+		"status": "Success",
+		"output": "Output",
+		"stage": "Restore Backup"
+	}
+	"""
+	steps = frappe.get_all(
+		"Physical Backup Restoration Step", filters={"parent": name}, fields=["step", "status", "name"]
+	)
+	job_name = frappe.db.get_value("Physical Backup Restoration", name, "job")
+	steps = [
+		{
+			"title": step["step"],
+			"status": step["status"],
+			"output": "",
+			"stage": "Restore Backup",
+			"name": step["name"],
+		}
+		for step in steps
+	]
+	job_steps = []
+	if job_name:
+		job_steps = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": job_name},
+			fields=["output", "step_name", "status", "name"],
+			order_by="creation asc",
+		)
+	if job_steps:
+		index_of_restore_database_step = None
+		for index, step in enumerate(job_steps):
+			if step["step_name"] == "Restore Database":
+				index_of_restore_database_step = index
+				break
+		if index_of_restore_database_step is not None:
+			job_steps = [
+				{
+					"title": step.get("step_name"),
+					"status": step.get("status"),
+					"output": step.get("output"),
+					"stage": "Restore Backup",
+				}
+				for step in job_steps
+			]
+			steps = (
+				steps[:index_of_restore_database_step]
+				+ job_steps
+				+ steps[index_of_restore_database_step + 1 :]
+			)
+	return steps

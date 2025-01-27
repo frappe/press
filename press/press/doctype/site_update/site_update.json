@@ -34,6 +34,12 @@
   "recover_job",
   "cause_of_failure_is_resolved",
   "physical_backup_restoration",
+  "section_break_gmrz",
+  "update_start",
+  "column_break_jtqs",
+  "update_end",
+  "column_break_ellx",
+  "update_duration",
   "section_break_tpap",
   "touched_tables"
  ],
@@ -286,11 +292,41 @@
    "fieldtype": "Code",
    "label": "Touched Tables",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_gmrz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "update_start",
+   "fieldtype": "Datetime",
+   "label": "Update Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_jtqs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "update_end",
+   "fieldtype": "Datetime",
+   "label": "Update End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ellx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "update_duration",
+   "fieldtype": "Duration",
+   "label": "Update Duration",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-24 19:20:46.157178",
+ "modified": "2025-01-27 17:11:18.080521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
