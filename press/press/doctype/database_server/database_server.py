@@ -38,6 +38,7 @@ class DatabaseServer(BaseServer):
 		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
 		domain: DF.Link | None
+		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		has_data_volume: DF.Check

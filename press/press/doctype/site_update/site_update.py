@@ -14,6 +14,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
+from frappe.utils.data import cint
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
@@ -192,12 +193,50 @@ class SiteUpdate(Document):
 			)
 
 	def before_insert(self):
+		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
+		self.set_physical_backup_mode_if_eligible()
 
 	def after_insert(self):
 		if not self.scheduled_time:
 			self.start()
+
+	def set_physical_backup_mode_if_eligible(self):
+		if self.skipped_backups:
+			return
+
+		# Check if physical backup is disabled globally from Press Settings
+		if frappe.get_value("Press Settings", None, "disable_physical_backup"):
+			return
+
+		database_server = frappe.get_value("Server", self.server, "database_server")
+		if not database_server:
+			# It might be the case of configured RDS server and no self hosted database server
+			return
+
+		# Check if physical backup is enabled on the database server
+		enable_physical_backup = frappe.get_value(
+			"Database Server", database_server, "enable_physical_backup"
+		)
+		if not enable_physical_backup:
+			return
+
+		# Check for last logical backup
+		last_logical_site_backups = frappe.db.get_list(
+			"Site Backup",
+			filters={"site": self.site, "physical": False},
+			pluck="database_size",
+			limit=1,
+		)
+		db_backup_size = 0
+		if len(last_logical_site_backups) > 0:
+			db_backup_size = cint(last_logical_site_backups[0])
+
+		# If last logical backup size is greater than 200MB and less than 1.5GB
+		# Then only take physical backup
+		if db_backup_size > 209715200 and db_backup_size < 1610612736:
+			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
 	def start(self):
