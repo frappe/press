@@ -988,5 +988,4 @@ def create_balance_transaction_and_invoice(team, amount, mpesa_details):
 def parse_datetime(date):
 	from datetime import datetime
 
-	_date = datetime.strptime(str(date), "%Y%m%d%H%M%S")
-	return frappe.utils.format_datetime(_date)
+	return datetime.strptime(str(date), "%Y%m%d%H%M%S")

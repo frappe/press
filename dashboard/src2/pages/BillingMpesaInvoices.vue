@@ -7,6 +7,7 @@
 <script>
 import { frappeRequest } from 'frappe-ui';
 import ObjectList from '../components/ObjectList.vue';
+import { icon } from '../utils/components';
 
 export default {
 	name: 'BillingMpesaInvoices',

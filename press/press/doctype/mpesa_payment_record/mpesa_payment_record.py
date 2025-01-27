@@ -54,6 +54,6 @@ class MpesaPaymentRecord(Document):
 	def validate_duplicate(self):
 		if frappe.db.exists(
 			"Mpesa Payment Record",
-			{"merchant_request_id": self.merchant_request_id, "name": ("!=", self.name), "docstatus": 1},
+			{"transaction_id": self.transaction_id, "docstatus": 1},
 		):
-			frappe.throw(f"Mpesa Payment Record for request {self.merchant_request_id} already exists")
+			frappe.throw(f"Mpesa Payment Record for transaction {self.transaction_id} already exists")
