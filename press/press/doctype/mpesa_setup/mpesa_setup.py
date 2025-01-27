@@ -19,6 +19,7 @@ class MpesaSetup(Document):
 		business_shortcode: DF.Data | None
 		consumer_key: DF.Data
 		consumer_secret: DF.Password
+		enabled: DF.Check
 		initiator_name: DF.Data | None
 		mpesa_setup_id: DF.Data
 		pass_key: DF.Password

@@ -30,6 +30,7 @@ def create_mpesa_setup(**kwargs):
 				"pass_key": kwargs.get("pass_key"),
 				"security_credential": kwargs.get("security_credential"),
 				"sandbox": 1 if kwargs.get("sandbox") else 0,
+				"enabled": 1,
 			}
 		)
 
@@ -46,8 +47,8 @@ def create_mpesa_setup(**kwargs):
 @frappe.whitelist()
 def fetch_mpesa_setup():
 	team = get_current_team()
-	if frappe.db.exists("Mpesa Setup", {"team": team}):
-		mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team})
+	if frappe.db.exists("Mpesa Setup", {"team": team, "enabled": 1}):
+		mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team, "enabled": 1})
 		return {
 			"mpesa_setup_id": mpesa_setup.mpesa_setup_id,
 			"consumer_key": mpesa_setup.consumer_key,
@@ -155,7 +156,7 @@ def get_gateway_controllers(gateway_setting):
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
 	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
+		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team, "enabled": 1}, fields=["name"]
 	)
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
@@ -207,7 +208,7 @@ def display_mpesa_payment_partners():
 		.join(MpesaSetup)
 		.on(Team.name == MpesaSetup.team)
 		.select(Team.user)
-		.where(Team.country == "Kenya")  # (MpesaSetup.sandbox == 1)
+		.where(Team.country == "Kenya" & MpesaSetup.enabled == 1)  # (MpesaSetup.sandbox == 1)
 	)
 
 	mpesa_partners = query.run(as_dict=True)
@@ -274,7 +275,7 @@ def get_payment_gateway(partner_value):
 def get_mpesa_setup_for_team(team_name):
 	"""Fetch Mpesa setup for a given team."""
 
-	mpesa_setup = frappe.get_all("Mpesa Setup", {"team": team_name}, pluck="name")
+	mpesa_setup = frappe.get_all("Mpesa Setup", {"team": team_name, "enabled": 1}, pluck="name")
 	if not mpesa_setup:
 		frappe.throw(
 			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
