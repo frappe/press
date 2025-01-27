@@ -354,6 +354,7 @@ class DatabaseServer(BaseServer):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 				variables={
+					"server_type": self.doctype,
 					"server": self.name,
 					"workers": "2",
 					"agent_password": config.agent_password,
@@ -833,6 +834,7 @@ class DatabaseServer(BaseServer):
 				playbook="database_rename.yml",
 				server=self,
 				variables={
+					"server_type": self.doctype,
 					"server": self.name,
 					"workers": "2",
 					"agent_password": agent_password,

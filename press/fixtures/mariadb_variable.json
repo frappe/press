@@ -406,5 +406,17 @@
   "name": "long_query_time",
   "set_on_new_servers": 0,
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2025-01-24 15:40:01.244238",
+  "name": "tmpdir",
+  "set_on_new_servers": 0,
+  "skippable": 0
  }
 ]

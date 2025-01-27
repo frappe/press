@@ -87,6 +87,7 @@ class PressSettings(Document):
 		github_app_id: DF.Data | None
 		github_app_private_key: DF.Code | None
 		github_app_public_link: DF.Data | None
+		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
 		hetzner_api_token: DF.Password | None

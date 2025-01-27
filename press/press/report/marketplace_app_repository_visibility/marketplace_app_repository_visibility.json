@@ -1,0 +1,31 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2025-01-21 17:35:11.471086",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-01-21 20:53:27.388232",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace App Repository Visibility",
+ "owner": "Administrator",
+ "prepared_report": 1,
+ "query": "SELECT \n    ma.name AS app_name,\n    mav.version AS version,\n    mav.source AS source,\n    asrc.repository_url AS repository_url,\n    asrc.branch AS branch\nFROM \n    `tabMarketplace App` ma\nJOIN \n    `tabMarketplace App Version` mav ON ma.name = mav.parent\nJOIN \n    `tabApp Source` asrc ON mav.source = asrc.name\n",
+ "ref_doctype": "Marketplace App",
+ "report_name": "Marketplace App Repository Visibility",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Press Admin"
+  }
+ ],
+ "timeout": 3000
+}

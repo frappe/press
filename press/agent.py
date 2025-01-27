@@ -783,12 +783,19 @@ class Agent:
 					response=response,
 				)
 			return json_response
-		except (HTTPError, TypeError, ValueError, requests.JSONDecodeError):
+		except (HTTPError, TypeError, ValueError):
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
 				result=json_response or getattr(response, "text", None),
 			)
+		except requests.JSONDecodeError as exc:
+			if response and response.status_code >= 500:
+				self.log_request_failure(exc)
+				self.handle_exception(agent_job, exc)
+				log_error(
+					title="Agent Request Exception",
+				)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)
