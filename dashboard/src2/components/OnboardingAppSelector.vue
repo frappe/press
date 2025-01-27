@@ -35,26 +35,14 @@ export default {
 	name: 'OnboardingAppSelector',
 	props: ['apps'],
 	components: {
-		DownloadIcon
+		DownloadIcon,
 	},
 	resources: {
-		// TODO: if only saas app use account_request
-		// TODO: handle the same for apps that aren't saas-ified (either make em all saas or handle case for it)
 		productTrialSignup() {
 			return {
-				url: 'press.api.product_trial.signup'
-
-				// onSuccess(account_request) {
-				// 	this.$router.push({
-				// 		name: 'SaaSSignupVerifyEmail',
-				// 		query: {
-				// 			email: this.email,
-				// 			account_request: account_request
-				// 		}
-				// 	});
-				// }
+				url: 'press.api.product_trial.signup',
 			};
-		}
+		},
 	},
 	methods: {
 		openInstallAppPage(app) {
@@ -65,18 +53,18 @@ export default {
 					last_name: this.$team.doc.user_info.last_name,
 					country: this.$team.doc.country,
 					product: app.product_id,
-					terms_accepted: true
+					terms_accepted: true,
 				})
-				.then(account_request =>
+				.then((account_request) =>
 					this.$router.push({
 						name: 'SaaSSignupSetup',
 						params: { productId: app.product_id },
 						query: {
-							account_request: account_request
-						}
-					})
+							account_request: account_request,
+						},
+					}),
 				);
-		}
-	}
+		},
+	},
 };
 </script>

@@ -24,11 +24,6 @@ class SiteUser(Document):
 		if not self.enabled:
 			frappe.throw("User is disabled")
 
-		# don't allow login if user is not verified with OTP within 5 minutes
-		# if not self.otp_verified_time or (frappe.utils.now_datetime() - self.otp_verified_time).seconds > 300:
-		# 	frappe.throw("OTP is not verified. Please verify OTP first.")
-
-		# Get the site
 		site = frappe.get_doc("Site", self.site)
 		return site.login_as_user(self.user)
 
