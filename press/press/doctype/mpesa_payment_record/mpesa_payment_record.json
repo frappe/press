@@ -20,7 +20,7 @@
   "mpesa_receipt_number",
   "exchange_rate",
   "column_break_14",
-  "msisdn",
+  "phone_number",
   "payment_partner",
   "invoice_number",
   "posting_date",
@@ -71,17 +71,6 @@
   {
    "fieldname": "column_break_14",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "msisdn",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "MSISDN",
-   "no_copy": 1,
-   "options": "Phone",
-   "read_only": 1
   },
   {
    "fieldname": "payment_partner",
@@ -173,13 +162,23 @@
    "label": "Mpesa Receipt Number",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Phone Number",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-24 20:54:35.324213",
+ "modified": "2025-01-27 11:19:55.822633",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Payment Record",

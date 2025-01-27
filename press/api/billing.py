@@ -893,7 +893,7 @@ def create_mpesa_payment_record(transaction_response):
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
 	mpesa_receipt_number = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
 	transaction_time = fetch_param_value(item_response, "TransactionDate", "Name")
-	msisdn = fetch_param_value(item_response, "PhoneNumber", "Name")
+	phone_number = fetch_param_value(item_response, "PhoneNumber", "Name")
 	transaction_id = transaction_response.get("CheckoutRequestID")
 	amount = fetch_param_value(item_response, "Amount", "Name")
 	merchant_request_id = transaction_response.get("MerchantRequestID")
@@ -915,7 +915,7 @@ def create_mpesa_payment_record(transaction_response):
 			"transaction_time": parse_datetime(transaction_time),
 			"transaction_type": "Mpesa Express",
 			"team": team,
-			"msisdn": str(msisdn),
+			"phone_number": str(phone_number),
 			"amount": requested_amount,
 			"grand_total": amount,
 			"merchant_request_id": merchant_request_id,

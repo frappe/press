@@ -26,8 +26,8 @@ class MpesaPaymentRecord(Document):
 		local_invoice: DF.SmallText | None
 		merchant_request_id: DF.Data | None
 		mpesa_receipt_number: DF.Data | None
-		msisdn: DF.Data | None
 		payment_partner: DF.Link | None
+		phone_number: DF.Data | None
 		posting_date: DF.Date | None
 		posting_time: DF.Time | None
 		team: DF.Link | None
