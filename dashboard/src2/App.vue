@@ -42,11 +42,11 @@ import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
 
-const AppSidebar = defineAsyncComponent(() =>
-	import('./components/AppSidebar.vue')
+const AppSidebar = defineAsyncComponent(
+	() => import('./components/AppSidebar.vue'),
 );
-const MobileNav = defineAsyncComponent(() =>
-	import('./components/MobileNav.vue')
+const MobileNav = defineAsyncComponent(
+	() => import('./components/MobileNav.vue'),
 );
 
 const route = useRoute();
@@ -54,11 +54,11 @@ const team = getTeam();
 
 const isHideSidebar = computed(() => {
 	const alwaysHideSidebarRoutes = [
-		'Product Login',
+		'Site Login',
 		'SaaSSignupLoginToSite',
-		'SaaSSignupSetup'
+		'SaaSSignupSetup',
 	];
-	const alwaysHideSidebarPaths = ['/dashboard/product-login'];
+	const alwaysHideSidebarPaths = ['/dashboard/site-login'];
 
 	if (!session.user) return false;
 	if (
@@ -73,16 +73,17 @@ const isHideSidebar = computed(() => {
 });
 
 const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
-const isProductLogin = ref(window.location.pathname.endsWith('/product-login'));
+const isProductLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
 	() => {
 		isSaaSFlow.value = window.location.pathname.startsWith('/dashboard/saas');
-	}
+	},
 );
 
 provide('team', team);
+provide('session', session);
 </script>
 
 <style src="../src/assets/style.css"></style>

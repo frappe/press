@@ -1,43 +1,37 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-01-16 15:02:28.939437",
+ "creation": "2025-01-26 21:54:39.279966",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "site",
-  "enabled"
+  "session_id",
+  "otp"
  ],
  "fields": [
   {
    "fieldname": "user",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "User",
-   "reqd": 1
+   "label": "User"
   },
   {
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Site",
-   "options": "Site",
-   "reqd": 1
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP"
   },
   {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-26 21:54:22.337478",
+ "modified": "2025-01-27 11:12:35.535294",
  "modified_by": "Administrator",
- "module": "SaaS",
- "name": "Site User",
+ "module": "Press",
+ "name": "Site User Session",
  "owner": "Administrator",
  "permissions": [
   {
@@ -54,19 +48,17 @@
   },
   {
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Press Member",
+   "role": "Guest",
    "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -77,12 +69,13 @@
    "write": 1
   },
   {
+   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Guest",
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
