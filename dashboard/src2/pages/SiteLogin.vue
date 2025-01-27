@@ -96,11 +96,7 @@
 						"
 						icon-right="arrow-right"
 						variant="ghost"
-						:label="
-							$session.user
-								? 'Go to Frappe Cloud Dashboard'
-								: 'Login to Frappe Cloud Dashboard'
-						"
+						label="Go to Frappe Cloud dashboard"
 					/>
 					<Button
 						v-if="sites.fetched"
