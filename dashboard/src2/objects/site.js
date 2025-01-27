@@ -1053,22 +1053,22 @@ export default {
 							type: 'Badge',
 							width: 0.5,
 						},
-						{
-							label: 'Backup',
-							width: 0.4,
-							type: 'Component',
-							component({ row }) {
-								return h(
-									'div',
-									{
-										class: 'truncate text-base',
-									},
-									row.skipped_backups
-										? 'Skipped'
-										: row.backup_type || 'Logical',
-								);
-							},
-						},
+						// {
+						// 	label: 'Backup',
+						// 	width: 0.4,
+						// 	type: 'Component',
+						// 	component({ row }) {
+						// 		return h(
+						// 			'div',
+						// 			{
+						// 				class: 'truncate text-base',
+						// 			},
+						// 			row.skipped_backups
+						// 				? 'Skipped'
+						// 				: row.backup_type || 'Logical',
+						// 		);
+						// 	},
+						// },
 						{
 							label: 'Created By',
 							fieldname: 'owner',
