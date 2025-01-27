@@ -1297,6 +1297,8 @@ class VirtualMachine(Document):
 			time.sleep(1)
 
 	def get_state_of_volume(self, volume_id):
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
 		try:
 			# AWS EC2 specific
 			# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-volumes.html
@@ -1306,6 +1308,8 @@ class VirtualMachine(Document):
 				return "deleted"
 
 	def attach_volume(self, volume_id) -> str:
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
 		# Attach a volume to the instance and return the device name
 		device_name = self.get_next_volume_device_name()
 		self.client().attach_volume(
