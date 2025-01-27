@@ -9,8 +9,8 @@
 				<SaaSLoginBox
 					title="Welcome to Frappe Cloud"
 					:subtitle="[
-						$session.user || sites.fetched
-							? 'Pick a site to login to'
+						sites.fetched
+							? `Pick a site to login to as ${email || $session.user}`
 							: 'Enter your email and verification code to access your site',
 					]"
 				>
