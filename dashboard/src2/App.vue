@@ -15,7 +15,7 @@
 					<div
 						v-if="
 							!isSaaSFlow &&
-							!isProductLogin &&
+							!isSiteLogin &&
 							!$session.user &&
 							!$route.meta.isLoginPage
 						"
@@ -73,7 +73,7 @@ const isHideSidebar = computed(() => {
 });
 
 const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
-const isProductLogin = ref(window.location.pathname.endsWith('/site-login'));
+const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
