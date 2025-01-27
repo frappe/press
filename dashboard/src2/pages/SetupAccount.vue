@@ -105,7 +105,7 @@ export default {
 	components: {
 		LoginBox,
 		Link,
-		Form
+		Form,
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -126,7 +126,7 @@ export default {
 			invitedByParentTeam: false,
 			countries: [],
 			saasProduct: null,
-			signupValues: {}
+			signupValues: {},
 		};
 	},
 	resources: {
@@ -137,7 +137,7 @@ export default {
 					key: this.requestKey,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
@@ -156,7 +156,7 @@ export default {
 						this.countries = res.countries;
 						this.saasProduct = res.product_trial;
 					}
-				}
+				},
 			};
 		},
 		setupAccount() {
@@ -174,7 +174,7 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
-					oauth_domain: this.oauthDomain
+					oauth_domain: this.oauthDomain,
 				},
 				onSuccess(account_request) {
 					let path = '/dashboard';
@@ -182,18 +182,9 @@ export default {
 						path = `/dashboard/create-site/${this.saasProduct}/setup?account_request=${account_request}`;
 					}
 					window.location.href = path;
-					// if (this.saasProduct) {
-					// 	this.$router.push({
-					// 		name: 'SaaSSignupSetup',
-					// 		params: { productId: this.saasProduct },
-					// 		query: {
-					// 			account_request: account_request
-					// 		}
-					// 	});
-					// } else this.$router.push({ name: 'Home' });
-				}
+				},
 			};
-		}
-	}
+		},
+	},
 };
 </script>
