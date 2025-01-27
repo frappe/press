@@ -7,7 +7,7 @@
 		<div class="flex" v-else>
 			<div class="h-full w-full overflow-auto">
 				<SaaSLoginBox
-					title="Welcome to Frappe Cloud"
+					title="Login to your site on Frappe Cloud"
 					:subtitle="[
 						sites.fetched
 							? `Pick a site to login to as ${email || $session.user}`
