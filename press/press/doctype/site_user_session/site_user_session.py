@@ -68,5 +68,7 @@ class SiteUserSession(Document):
 		self.save()
 
 		expires = datetime.datetime.now() + datetime.timedelta(days=5)
-		frappe.local.cookie_manager.set_cookie("site_session_id", self.session_id, expires=expires)
+		frappe.local.cookie_manager.set_cookie(
+			"site_user_sid", self.session_id, expires=expires, httponly=True
+		)
 		return self.session_id

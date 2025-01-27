@@ -11,6 +11,8 @@ from frappe.rate_limiter import rate_limit
 def sync_product_site_users(**data):
 	"""
 	Sync user info from product site
+
+	Warning: Do not change the function name since it is used in production sites to sync user info
 	"""
 	import json
 
@@ -137,7 +139,7 @@ def check_session_id():
 	Check if the session id is valid
 	"""
 
-	session_id = frappe.local.request.cookies.get("site_session_id")
+	session_id = frappe.local.request.cookies.get("site_user_sid")
 	if not session_id or not isinstance(session_id, str):
 		return False
 

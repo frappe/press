@@ -87,7 +87,7 @@
 					class="flex w-full flex-col items-center justify-center space-y-2 pb-8"
 				>
 					<Button
-						v-if="$session.user"
+						v-if="$session.user && !sites.fetched"
 						class="mt-4"
 						@click="
 							$router.push({
@@ -162,7 +162,7 @@ const goBack = () => {
 
 const isCookieValid = createResource({
 	url: 'press.api.site_login.check_session_id',
-	auto: !!getCookie('site_session_id'),
+	auto: !!getCookie('site_user_sid'),
 	onSuccess: (session_user_email) => {
 		if (session_user_email) {
 			email.value = session_user_email;
@@ -170,7 +170,7 @@ const isCookieValid = createResource({
 				user: session_user_email,
 			});
 		} else {
-			deleteCookie('site_session_id');
+			deleteCookie('site_user_sid');
 		}
 	},
 });
