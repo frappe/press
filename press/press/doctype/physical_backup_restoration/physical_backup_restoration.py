@@ -641,10 +641,10 @@ def get_physical_backup_restoration_steps(name: str) -> list[dict]:
 			fields=["output", "step_name", "status", "name"],
 			order_by="creation asc",
 		)
-	if job_steps:
+	if steps:
 		index_of_restore_database_step = None
-		for index, step in enumerate(job_steps):
-			if step["step_name"] == "Restore Database":
+		for index, step in enumerate(steps):
+			if step["title"] == "Restore database":
 				index_of_restore_database_step = index
 				break
 		if index_of_restore_database_step is not None:
