@@ -652,6 +652,7 @@ class VirtualMachine(Document):
 			self.platform = instance.get("Architecture", "x86_64")
 
 			attached_volumes = []
+			attached_devices = []
 			for volume_index, volume in enumerate(self.get_volumes(), start=1):  # idx starts from 1
 				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
@@ -664,6 +665,7 @@ class VirtualMachine(Document):
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
 				row.device = volume["Attachments"][0]["Device"]
+				attached_devices.append(row.device)
 
 				if "Throughput" in volume:
 					row.throughput = volume["Throughput"]
@@ -677,6 +679,10 @@ class VirtualMachine(Document):
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in attached_volumes:
+					self.remove(volume)
+
+			for volume in list(self.temporary_volumes):
+				if volume.device not in attached_devices:
 					self.remove(volume)
 
 			self.termination_protection = self.client().describe_instance_attribute(
@@ -1346,10 +1352,6 @@ class VirtualMachine(Document):
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)
 		self.sync()
-		# If volume device id is in temporary volumes, remove it
-		for temp_volume in list(self.temporary_volumes):
-			if temp_volume.device == volume.device:
-				self.remove(temp_volume)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
