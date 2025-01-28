@@ -202,7 +202,7 @@ class PhysicalBackupRestoration(Document):
 
 		Next, If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
 
-		> lsblk --json -o name,fstype,type,label
+		> lsblk --json -o name,fstype,type,label,serial
 
 		{
 			"blockdevices":[
@@ -233,12 +233,19 @@ class PhysicalBackupRestoration(Document):
 							"label":"UEFI"
 						}
 					]
+				},
+				{"name":"nvme0n1", "fstype":null, "type":"disk", "label":null, "serial":"vol0784b4423604486ea",
+					"children": [
+						{"name":"nvme0n1p1", "fstype":"ext4", "type":"part", "label":"cloudimg-rootfs", "serial":null},
+						{"name":"nvme0n1p14", "fstype":null, "type":"part", "label":null, "serial":null},
+						{"name":"nvme0n1p15", "fstype":"vfat", "type":"part", "label":"UEFI", "serial":null}
+					]
 				}
 			]
 		}
 
 		"""
-		result = self.ansible_run("lsblk --json -o name,fstype,type,label")
+		result = self.ansible_run("lsblk --json -o name,fstype,type,label,serial")
 		if result["status"] != "Success":
 			return StepStatus.Failure
 
@@ -251,7 +258,38 @@ class PhysicalBackupRestoration(Document):
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
 
+		disk_serial = self.volume.replace("vol", "")
+
 		disk_partition_to_mount = None
+		# Check nvme disks
+		for device_info in devices_info:
+			if device_info["type"] not in ["disk", "part"]:
+				continue
+
+			if not device_info["name"].startswith("nvme"):
+				continue
+
+			if device_info.get("serial") != disk_serial:
+				continue
+
+			# If the volume was created from a snapshot of data volume, the volume will have only one partition.
+			if device_info["type"] == "part":
+				disk_partition_to_mount = "/dev/{}".format(device_info["name"])
+				break
+
+			# If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
+			if device_info["type"] == "disk" and device_info.get("children"):
+				children = device_info["children"]
+				# try to find the partition with label cloudimg-rootfs
+				for child in children:
+					if child["label"] == "cloudimg-rootfs":
+						disk_partition_to_mount = "/dev/{}".format(child["name"])
+						break
+
+			if disk_partition_to_mount:
+				break
+
+		# Check normal disks
 		for device in possible_disks:
 			for device_info in devices_info:
 				if device_info["type"] not in ["disk", "part"]:
@@ -272,6 +310,7 @@ class PhysicalBackupRestoration(Document):
 					for child in children:
 						if child["label"] == "cloudimg-rootfs":
 							disk_partition_to_mount = "/dev/{}".format(child["name"])
+							break
 
 				if disk_partition_to_mount:
 					break
