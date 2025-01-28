@@ -468,6 +468,12 @@ class SiteUpdate(Document):
 		if job:
 			frappe.db.set_value("Site Update", self.name, "recover_job", job.name)
 
+	def delete_backup_snapshot(self):
+		if self.site_backup:
+			snapshot = frappe.get_value("Site Backup", self.site_backup, "database_snapshot")
+			if snapshot:
+				frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
+
 	@dashboard_whitelist()
 	def get_steps(self):
 		"""
@@ -533,6 +539,14 @@ def update_status(name, status):
 				"update_duration",
 				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
 			)
+	if status in ["Success", "Recovered"]:
+		# Remove the snapshot
+		frappe.enqueue_doc(
+			"Site Update",
+			name,
+			"delete_backup_snapshot",
+			enqueue_after_commit=True,
+		)
 
 
 @site_cache(ttl=60)
