@@ -257,27 +257,36 @@ class PhysicalBackupRestoration(Document):
 		# If disk name is sdf, it might be possible mounted as xvdf
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
-
 		disk_serial = self.volume.replace("-", "").lower()
-
 		disk_partition_to_mount = None
-		# Check nvme disks
+
 		for device_info in devices_info:
 			if device_info["type"] not in ["disk", "part"]:
 				continue
 
-			if not device_info["name"].startswith("nvme"):
+			# Check for nvme disks
+			is_disk_found = (
+				device_info["name"].startswith("nvme") and device_info.get("serial") == disk_serial
+			)
+			# check for normal disks
+			if not is_disk_found:
+				for possible_disk in possible_disks:
+					if device_info["name"] == possible_disk:
+						is_disk_found = True
+						break
+
+			# If disk is not found, then continue to next disk
+			if not is_disk_found:
 				continue
 
-			if device_info.get("serial") != disk_serial:
-				continue
-
-			# If the volume was created from a snapshot of data volume, the volume will have only one partition.
+			# If the volume was created from a snapshot of data volume
+			# the volume will have only one partition.
 			if device_info["type"] == "part":
 				disk_partition_to_mount = "/dev/{}".format(device_info["name"])
 				break
 
-			# If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
+			# If the volume was created from a snapshot of root volume
+			# the volume will have multiple partitions.
 			if device_info["type"] == "disk" and device_info.get("children"):
 				children = device_info["children"]
 				# try to find the partition with label cloudimg-rootfs
@@ -286,34 +295,6 @@ class PhysicalBackupRestoration(Document):
 						disk_partition_to_mount = "/dev/{}".format(child["name"])
 						break
 
-			if disk_partition_to_mount:
-				break
-
-		# Check normal disks
-		for device in possible_disks:
-			for device_info in devices_info:
-				if device_info["type"] not in ["disk", "part"]:
-					continue
-
-				# If the volume was created from a snapshot of data volume, the volume will have only one partition.
-				if device_info["type"] == "part" and device_info["name"] == device:
-					disk_partition_to_mount = "/dev/{}".format(device_info["name"])
-
-				# If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
-				if (
-					device_info["type"] == "disk"
-					and device_info["name"].startswith(device)
-					and device_info.get("children")
-				):
-					children = device_info["children"]
-					# try to find the partition with label cloudimg-rootfs
-					for child in children:
-						if child["label"] == "cloudimg-rootfs":
-							disk_partition_to_mount = "/dev/{}".format(child["name"])
-							break
-
-				if disk_partition_to_mount:
-					break
 			if disk_partition_to_mount:
 				break
 
