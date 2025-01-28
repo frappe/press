@@ -217,7 +217,7 @@ class SiteBackup(Document):
 		virtual_machine = frappe.get_doc(
 			"Virtual Machine", frappe.get_value("Database Server", database_server, "virtual_machine")
 		)
-		virtual_machine.create_snapshots(exclude_boot_volume=True)
+		virtual_machine.create_snapshots(exclude_boot_volume=True, created_for_site_update=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
 			frappe.throw("Failed to create a snapshot for the database server")
 		frappe.db.set_value(
