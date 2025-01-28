@@ -115,6 +115,13 @@ export default {
 						};
 					});
 				},
+				onSuccess: (data) => {
+					if (data.status != 'Success') {
+						setTimeout(() => {
+							this.$resources.siteUpdate.reload();
+						}, 5000);
+					}
+				},
 			};
 		},
 	},
