@@ -543,13 +543,15 @@ def update_status(name, status):
 				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
 			)
 	if status in ["Success", "Recovered"]:
-		# Remove the snapshot
-		frappe.enqueue_doc(
-			"Site Update",
-			name,
-			"delete_backup_snapshot",
-			enqueue_after_commit=True,
-		)
+		backup_type = frappe.db.get_value("Site Update", name, "backup_type")
+		if backup_type == "Physical":
+			# Remove the snapshot
+			frappe.enqueue_doc(
+				"Site Update",
+				name,
+				"delete_backup_snapshot",
+				enqueue_after_commit=True,
+			)
 
 
 @site_cache(ttl=60)
