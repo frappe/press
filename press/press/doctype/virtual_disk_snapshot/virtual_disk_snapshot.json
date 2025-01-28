@@ -13,11 +13,13 @@
   "cluster",
   "region",
   "volume_id",
+  "created_for_site_update",
   "section_break_41e4",
   "size",
   "start_time",
   "column_break_7lcz",
   "progress",
+  "duration",
   "section_break_12",
   "mariadb_root_password"
  ],
@@ -118,11 +120,28 @@
    "fieldtype": "Data",
    "label": "Volume ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "created_for_site_update",
+   "fieldtype": "Check",
+   "label": "Created For Site Update"
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-11-14 13:59:01.305897",
+ "links": [
+  {
+   "link_doctype": "Site Backup",
+   "link_fieldname": "database_snapshot"
+  }
+ ],
+ "modified": "2025-01-28 15:28:24.912058",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

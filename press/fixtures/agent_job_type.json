@@ -2290,5 +2290,116 @@
      "step_name": "Analyze Slow Queries"
     }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-09 17:07:45.359754",
+  "name": "Physical Backup Database",
+  "request_method": "POST",
+  "request_path": "/database/physical-backup",
+  "steps": [
+   {
+    "step_name": "Fetch Database Tables Information"
+   },
+   {
+    "step_name": "Flush Database Tables"
+   },
+   {
+    "step_name": "Flush Changes to Disk"
+   },
+   {
+    "step_name": "Export Table Schema"
+   },
+   {
+    "step_name": "Create Database Snapshot"
+   },
+   {
+    "step_name": "Unlock Tables"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-19 22:57:23.072792",
+  "name": "Physical Restore Database",
+  "request_method": "POST",
+  "request_path": "/database/physical-restore",
+  "steps": [
+   {
+    "step_name": "Validate Connection to Target Database"
+   },
+   {
+    "step_name": "Warmup MyISAM Files"
+   },
+   {
+    "step_name": "Check and Fix MyISAM Table Files"
+   },
+   {
+    "step_name": "Warmup InnoDB Files"
+   },
+   {
+    "step_name": "Prepare Database for Restoration"
+   },
+   {
+    "step_name": "Create Tables from Table Schema"
+   },
+   {
+    "step_name": "Discard InnoDB Tablespaces"
+   },
+   {
+    "step_name": "Copying InnoDB Table Files"
+   },
+   {
+    "step_name": "Import InnoDB Tablespaces"
+   },
+   {
+    "step_name": "Hold Write Lock on MyISAM Tables"
+   },
+   {
+    "step_name": "Copying MyISAM Table Files"
+   },
+   {
+    "step_name": "Unlock All Tables"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-21 15:31:19.602466",
+  "name": "Activate Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/activate",
+  "steps": [
+   {
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-21 15:32:21.823510",
+  "name": "Deactivate Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/deactivate",
+  "steps": [
+   {
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "step_name": "Wait for Enqueued Jobs"
+   }
+  ]
  }
 ]
