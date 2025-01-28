@@ -258,7 +258,7 @@ class PhysicalBackupRestoration(Document):
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
 
-		disk_serial = self.volume.replace("vol", "")
+		disk_serial = self.volume.replace("-", "").lower()
 
 		disk_partition_to_mount = None
 		# Check nvme disks
