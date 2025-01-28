@@ -611,8 +611,8 @@ class PhysicalBackupRestoration(Document):
 	def ansible_run(self, command):
 		inventory = f"{self.virtual_machine.public_ip_address},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
-		# if result["status"] != "Success":
-		self.add_command(command, result)
+		if result["status"] != "Success":
+			self.add_command(command, result)
 		return result
 
 	def add_command(self, command, result):
