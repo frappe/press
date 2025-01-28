@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 import frappe
+import frappe.utils
 import pytz
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -526,7 +527,12 @@ def update_status(name, status):
 		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
 		update_start = frappe.db.get_value("Site Update", name, "update_start")
 		if update_start:
-			frappe.db.set_value("Site Update", name, "update_duration", frappe.utils.now() - update_start)
+			frappe.db.set_value(
+				"Site Update",
+				name,
+				"update_duration",
+				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
+			)
 
 
 @site_cache(ttl=60)

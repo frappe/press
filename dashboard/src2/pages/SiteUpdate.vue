@@ -52,7 +52,7 @@
 						<div class="mt-2 text-sm text-gray-900">
 							{{
 								siteUpdate.update_end
-									? $format.duration(siteUpdate.update_duration)
+									? this.$dayjs(siteUpdate.update_duration).format('m[m] s[s]')
 									: '-'
 							}}
 						</div>
