@@ -1323,7 +1323,7 @@
    "label": "Github PAT Token"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "disable_physical_backup",
    "fieldtype": "Check",
    "label": "Disable Physical Backup"
@@ -1331,7 +1331,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-27 10:56:55.326772",
+ "modified": "2025-01-28 14:41:49.332529",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
