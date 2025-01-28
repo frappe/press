@@ -3,7 +3,7 @@ import {
 	setConfig,
 	frappeRequest,
 	pageMetaPlugin,
-	resourcesPlugin
+	resourcesPlugin,
 } from 'frappe-ui';
 import App from './App.vue';
 import router from './router';
@@ -15,7 +15,7 @@ import { session } from './data/session.js';
 import { unreadNotificationsCount } from './data/notifications.js';
 import './vendor/posthog.js';
 
-const request = options => {
+const request = (options) => {
 	const _options = options || {};
 	_options.headers = options.headers || {};
 	const currentTeam =
@@ -60,7 +60,7 @@ getInitialData().then(() => {
 				Sentry.browserTracingIntegration({ router }),
 				Sentry.replayIntegration({
 					maskAllText: false,
-					blockAllMedia: false
+					blockAllMedia: false,
 				}),
 				Sentry.thirdPartyErrorFilterIntegration({
 					// Specify the application keys that you specified in the Sentry bundler plugin
@@ -72,8 +72,8 @@ getInitialData().then(() => {
 					// - 'drop-error-if-exclusively-contains-third-party-frames'
 					// - 'apply-tag-if-contains-third-party-frames'
 					// - 'apply-tag-if-exclusively-contains-third-party-frames'
-					behaviour: 'apply-tag-if-contains-third-party-frames'
-				})
+					behaviour: 'apply-tag-if-contains-third-party-frames',
+				}),
 			],
 			replaysSessionSampleRate: 0.1,
 			replaysOnErrorSampleRate: 1.0,
@@ -86,8 +86,13 @@ getInitialData().then(() => {
 					/Load failed/,
 					/frappe is not defined/,
 					/Cannot read properties of undefined \(reading 'exc_type'\)/,
-					/InvalidStateError: Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing/,
-					/Importing a module script failed./
+					/Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing/,
+					/Importing a module script failed./,
+					/o is undefined/,
+					/undefined is not an object \(evaluating 'o.exc_type'\)/,
+					/e is not defined/,
+					/Cannot set property ethereum of #<Window> which has only a getter/,
+					/Can't find variable: ResizeObserver/,
 				];
 				const ignoreErrorTypes = [
 					'BuildValidationError',
@@ -97,21 +102,21 @@ getInitialData().then(() => {
 					'AAAARecordExists',
 					'AuthenticationError',
 					'RateLimitExceededError',
-					'InsufficientSpaceOnServer'
+					'InsufficientSpaceOnServer',
 				];
 				const error = hint.originalException;
 
 				if (
 					error?.name === 'DashboardError' ||
 					ignoreErrorTypes.includes(error?.exc_type) ||
-					(error?.message && ignoreErrors.some(re => re.test(error.message)))
+					(error?.message && ignoreErrors.some((re) => re.test(error.message)))
 				) {
 					return null;
 				}
 
 				return event;
 			},
-			logErrors: true
+			logErrors: true,
 		});
 
 		Sentry.setTag('team', localStorage.getItem('current_team'));
@@ -128,8 +133,8 @@ getInitialData().then(() => {
 			autocapture: false,
 			disable_session_recording: true,
 			session_recording: {
-				maskAllInputs: true
-			}
+				maskAllInputs: true,
+			},
 		});
 	} else {
 		// unset posthog if not configured
@@ -144,15 +149,15 @@ getInitialData().then(() => {
 function getInitialData() {
 	if (import.meta.env.DEV) {
 		return frappeRequest({
-			url: '/api/method/press.www.dashboard.get_context_for_dev'
-		}).then(values => Object.assign(window, values));
+			url: '/api/method/press.www.dashboard.get_context_for_dev',
+		}).then((values) => Object.assign(window, values));
 	} else {
 		return Promise.resolve();
 	}
 }
 
 function importGlobals() {
-	return import('./globals.ts').then(globals => {
+	return import('./globals.ts').then((globals) => {
 		app.use(globals.default);
 	});
 }
