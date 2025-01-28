@@ -2368,5 +2368,38 @@
     "step_name": "Unlock All Tables"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-21 15:31:19.602466",
+  "name": "Activate Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/activate",
+  "steps": [
+   {
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-01-21 15:32:21.823510",
+  "name": "Deactivate Site",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/deactivate",
+  "steps": [
+   {
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "step_name": "Wait for Enqueued Jobs"
+   }
+  ]
  }
 ]
