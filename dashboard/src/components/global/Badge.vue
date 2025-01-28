@@ -24,6 +24,7 @@ export default {
 			if (this.theme) return this.theme;
 			return {
 				Approved: 'green',
+				Recovering: 'orange',
 				Recovered: 'blue',
 				Broken: 'red',
 				Installing: 'orange',

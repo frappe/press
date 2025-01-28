@@ -78,7 +78,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal\nScheduled"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled"
   },
   {
    "fieldname": "destination_bench",
@@ -326,7 +326,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-27 17:11:18.080521",
+ "modified": "2025-01-28 14:12:55.667576",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

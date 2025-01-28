@@ -62,7 +62,9 @@ class SiteUpdate(Document):
 		skipped_failing_patches: DF.Check
 		source_bench: DF.Link | None
 		source_candidate: DF.Link | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"]
+		status: DF.Literal[
+			"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+		]
 		team: DF.Link | None
 		touched_tables: DF.Code | None
 		update_duration: DF.Duration | None
@@ -406,6 +408,7 @@ class SiteUpdate(Document):
 		job = None
 		if site.bench == self.destination_bench:
 			# The site is already on destination bench
+			update_status(self.name, "Recovering")
 
 			# If physical backup is enabled, we need to first perform physical backup restoration
 			if self.use_physical_backup and not self.physical_backup_restoration:
