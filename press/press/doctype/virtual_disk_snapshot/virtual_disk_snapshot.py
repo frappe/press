@@ -145,7 +145,7 @@ class VirtualDiskSnapshot(Document):
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
 		response = self.client.create_volume(
-			SnapshotId=self.snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp2"
+			SnapshotId=self.snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp3"
 		)
 		return response["VolumeId"]
 
