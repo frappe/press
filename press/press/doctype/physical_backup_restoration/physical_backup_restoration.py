@@ -620,7 +620,10 @@ def get_physical_backup_restoration_steps(name: str) -> list[dict]:
 	}
 	"""
 	steps = frappe.get_all(
-		"Physical Backup Restoration Step", filters={"parent": name}, fields=["step", "status", "name"]
+		"Physical Backup Restoration Step",
+		filters={"parent": name},
+		fields=["step", "status", "name", "creation"],
+		order_by="idx asc",
 	)
 	job_name = frappe.db.get_value("Physical Backup Restoration", name, "job")
 	steps = [
