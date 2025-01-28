@@ -7,10 +7,10 @@ export function showErrorToast(error) {
 }
 
 export function getToastErrorMessage(e, fallbackMessage = 'An error occurred') {
-	const errorMessage = e.messages.length
+	const errorMessage = e.messages?.length
 		? e.messages.join('<br>')
 		: e.message || fallbackMessage;
 	return h('div', {
-		innerHTML: errorMessage
+		innerHTML: errorMessage,
 	});
 }
