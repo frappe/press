@@ -51,8 +51,8 @@
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
 							{{
-								siteUpdate.update_end
-									? this.$dayjs(siteUpdate.update_duration).format('m[m] s[s]')
+								siteUpdate.update_duration
+									? this.format_seconds(siteUpdate.update_duration)
 									: '-'
 							}}
 						</div>
@@ -146,6 +146,19 @@ export default {
 					},
 				},
 			].filter((option) => option.condition?.() ?? true);
+		},
+	},
+	methods: {
+		format_seconds(seconds) {
+			if (seconds === null) {
+				return '-';
+			}
+			if (seconds < 60) {
+				return `${Math.ceil(seconds)}s`;
+			}
+			const minutes = Math.floor(seconds / 60);
+			const remainingSeconds = Math.ceil(seconds % 60);
+			return `${minutes}m ${remainingSeconds}s`;
 		},
 	},
 };
