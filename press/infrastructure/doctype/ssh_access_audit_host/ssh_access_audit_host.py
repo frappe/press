@@ -7,7 +7,7 @@ from __future__ import annotations
 from frappe.model.document import Document
 
 
-class SSHAccessAuditCommand(Document):
+class SSHAccessAuditHost(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -17,16 +17,13 @@ class SSHAccessAuditCommand(Document):
 		from frappe.types import DF
 
 
-		duration: DF.Time | None
-		exception: DF.Code | None
-		exit_code: DF.Int
-		host: DF.Data | None
+		host: DF.Data
 		name: DF.Int | None
-		output: DF.Code | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		status: DF.Data | None
+		status: DF.Literal["Pending", "Completed", "Unreachable"]
+		users: DF.Code | None
 	# end: auto-generated types
 
 	pass
