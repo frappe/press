@@ -1156,8 +1156,8 @@ export default {
 										loading: 'Updating site...',
 										success: () => {
 											router.push({
-												name: 'Site Jobs',
-												params: { name: site.name },
+												name: 'Site Update',
+												params: { id: row.name },
 											});
 
 											return 'Site update started';
