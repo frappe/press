@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "autoincrement",
  "creation": "2025-01-29 15:13:17.999712",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -15,8 +15,10 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -29,21 +31,24 @@
    "fieldname": "commands",
    "fieldtype": "Table",
    "label": "Commands",
-   "options": "SSH Access Audit Command"
+   "options": "SSH Access Audit Command",
+   "read_only": 1
   },
   {
    "fieldname": "violations",
    "fieldtype": "Table",
    "label": "Violations",
-   "options": "SSH Access Audit Violation"
+   "options": "SSH Access Audit Violation",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-29 15:58:20.674049",
+ "modified": "2025-01-29 16:18:06.945927",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "SSH Access Audit",
+ "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {
