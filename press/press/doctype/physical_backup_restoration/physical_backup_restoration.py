@@ -122,7 +122,7 @@ class PhysicalBackupRestoration(Document):
 		self.save()
 
 	def on_update(self):
-		if self.has_value_changed("status") and self.status == "Success":
+		if self.has_value_changed("status") and self.status in ["Success", "Failure"]:
 			from press.press.doctype.site_update.site_update import (
 				process_physical_backup_restoration_status_update,
 			)
