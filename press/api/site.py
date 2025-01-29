@@ -18,7 +18,7 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.exceptions import AAAARecordExists, ConflictingCAARecord
+from press.exceptions import AAAARecordExists, ConflictingCAARecord, ConflictingDNSRecord
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1617,7 +1617,7 @@ def check_domain_allows_letsencrypt_certs(domain):
 
 
 def check_dns_cname(name, domain):
-	result = {"type": "CNAME", "matched": False, "answer": ""}
+	result = {"type": "CNAME", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
@@ -1626,6 +1626,9 @@ def check_dns_cname(name, domain):
 		result["answer"] = answer.rrset.to_text()
 		if mapped_domain == name:
 			result["matched"] = True
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1635,7 +1638,7 @@ def check_dns_cname(name, domain):
 
 
 def check_dns_a(name, domain):
-	result = {"type": "A", "matched": False, "answer": ""}
+	result = {"type": "A", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
@@ -1656,6 +1659,9 @@ def check_dns_a(name, domain):
 			)
 			if domain_ip in secondary_ips:
 				result["matched"] = True
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1693,12 +1699,21 @@ def check_dns_cname_a(name, domain):
 	result = {"CNAME": cname}
 	result.update(cname)
 
-	if result["matched"]:
-		return result
-
 	a = check_dns_a(name, domain)
-	result.update({"A": a})
-	result.update(a)
+	if a["matched"]:
+		result.update({"A": a})
+		result.update(a)
+
+	if cname["matched"] and a["exists"] and not a["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct CNAME record, but also an A record that points to a different IP address. Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
+	if a["matched"] and cname["exists"] and not cname["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct A record, but also a CNAME record that points to a different domain. Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
 
 	return result
 
