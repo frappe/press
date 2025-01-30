@@ -485,6 +485,19 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		# If restore_specific_tables was provided, but no tables are there to restore, then skip the restore
+		if self.restore_specific_tables:
+			try:
+				restorable_tables = json.loads(self.tables_to_restore)
+			except Exception:
+				restorable_tables = []
+			if len(restorable_tables) == 0:
+				self.status = "Success"
+				for step in self.steps:
+					step.status = "Skipped"
+				self.save()
+				return
+		# Else, continue with the restoration
 		self.status = "Running"
 		self.start = frappe.utils.now_datetime()
 		self.save()
