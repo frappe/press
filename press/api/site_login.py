@@ -8,7 +8,7 @@ from frappe.rate_limiter import rate_limit
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def sync_product_site_users(**data):
+def sync_product_site_user(**data):
 	"""
 	Sync user info from product site
 
@@ -92,12 +92,7 @@ def send_otp(email: str):
 	Send OTP to the user trying to login to the product site from /site-login page
 	"""
 
-	session_name = frappe.db.get_value("Site User Session", {"user": email}, "name")
-	if session_name:
-		session = frappe.get_doc("Site User Session", session_name)
-	else:
-		session = frappe.get_doc({"doctype": "Site User Session", "user": email}).insert()
-
+	session = frappe.get_doc({"doctype": "Site User Session", "user": email}).insert()
 	return session.send_otp()
 
 
@@ -122,6 +117,10 @@ def login_to_site(email: str, site: str):
 	"""
 	Login to the product site
 	"""
+	session_id = frappe.local.request.cookies.get("site_user_sid")
+	if not session_id or not isinstance(session_id, str):
+		return frappe.throw("Invalid session")
+
 	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
 	if not site_user_name:
 		return frappe.throw(f"User {email} not found in site {site}")
