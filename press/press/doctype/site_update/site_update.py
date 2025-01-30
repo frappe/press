@@ -423,7 +423,7 @@ class SiteUpdate(Document):
 						"destination_database": site.database_name,
 						"destination_server": frappe.get_value("Server", site.server, "database_server"),
 						"restore_specific_tables": len(self.touched_tables_list) > 0,
-						"tables_to_restore": self.touched_tables_list,
+						"tables_to_restore": json.dumps(self.touched_tables_list),
 					}
 				)
 				doc.insert(ignore_permissions=True)
