@@ -341,3 +341,9 @@ def _extract_key_from_key_string(key_string):
 		return f"{key_type} {key}"
 	except Exception:
 		return key_string
+
+
+def run():
+	audit = frappe.new_doc("SSH Access Audit")
+	audit.insert()
+	audit.run()
