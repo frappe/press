@@ -312,10 +312,12 @@ class AnsibleCallback(CallbackBase):
 					"user": row["item"].split(":")[0],
 					"command": row["cmd"],
 					"keys": [],
+					"raw_keys": [],
 				}
 				for key in row["stdout_lines"]:
 					stripped_key = key.strip()
 					if stripped_key and not stripped_key.startswith("#"):
+						user["raw_keys"].append(key)
 						user["keys"].append(_extract_key_from_key_string(stripped_key))
 
 				users.append(user)
