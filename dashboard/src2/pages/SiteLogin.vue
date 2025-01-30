@@ -17,7 +17,9 @@
 					<template v-slot:default>
 						<div class="space-y-4">
 							<div
-								v-if="$session.loading || isCookieValid.loading"
+								v-if="
+									$session.loading || isCookieValid.loading || sites.loading
+								"
 								class="mx-auto flex items-center justify-center space-x-2 text-base"
 							>
 								<LoadingText />
@@ -137,24 +139,6 @@ get('product_site_user').then((e) => {
 	}
 });
 
-const getCookie = (name) => {
-	const value = `; ${document.cookie}`;
-	const parts = value.split(`; ${name}=`);
-
-	if (parts.length === 2) return parts.pop().split(';').shift();
-};
-
-const setCookie = (name, value, days) => {
-	const date = new Date();
-	date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000); // 24 hours
-	const expires = `expires=${date.toUTCString()}`;
-	document.cookie = `${name}=${value};${expires};path=/`;
-};
-
-const deleteCookie = (name) => {
-	document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-};
-
 const goBack = () => {
 	sites.reset();
 	showOTPField.value = false;
@@ -162,15 +146,13 @@ const goBack = () => {
 
 const isCookieValid = createResource({
 	url: 'press.api.site_login.check_session_id',
-	auto: !!getCookie('site_user_sid'),
+	auto: true,
 	onSuccess: (session_user_email) => {
 		if (session_user_email) {
 			email.value = session_user_email;
 			sites.submit({
 				user: session_user_email,
 			});
-		} else {
-			deleteCookie('site_user_sid');
 		}
 	},
 });
