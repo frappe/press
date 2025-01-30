@@ -92,15 +92,14 @@ def get_data(filters):
 		int(filters.max_lines) or 100,
 	)
 	for row in rows:
-		row["query"] = format_query(row["query"])
 		row["timestamp"] = convert_utc_to_timezone(
 			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
 			get_system_timezone(),
 		)
 
 	# Filter out queries starting with `SET`
-	dql_stmt = ["SELECT", "UPDATE", "DELETE", "INSERT"]
-	rows = [x for x in rows if any(x["query"].startswith(stmt) for stmt in dql_stmt)]
+	dql_stmt = ("select", "update", "delete", "insert")
+	rows = [x for x in rows if x["query"].lower().lstrip().startswith(dql_stmt)]
 
 	if filters.normalize_queries:
 		rows = summarize_by_query(rows)
