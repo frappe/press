@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-01-29 15:13:17.999712",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "total_hosts",
+  "reachable_hosts",
+  "column_break_knsp",
+  "total_violations",
+  "user_violations",
+  "inventory",
+  "section_break_sqln",
+  "violations",
+  "suspicious_users",
+  "hosts"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "inventory",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Inventory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "violations",
+   "fieldtype": "Table",
+   "label": "Violations",
+   "options": "SSH Access Audit Violation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hosts",
+   "fieldtype": "Table",
+   "label": "Hosts",
+   "options": "SSH Access Audit Host",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_knsp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_hosts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Hosts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_violations",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Violations",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_violations",
+   "fieldtype": "Int",
+   "label": "User Violations",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sqln",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.suspicious_users !== \"[]\"",
+   "fieldname": "suspicious_users",
+   "fieldtype": "Code",
+   "label": "Suspicious Users",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reachable_hosts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Reachable Hosts",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-30 18:16:46.869475",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "SSH Access Audit",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
