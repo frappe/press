@@ -1,7 +1,10 @@
 <template>
 	<div class="relative h-full">
 		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
-			<div class="flex flex-col items-center" @dblclick="redirectForFrappeioAuth">
+			<div
+				class="flex flex-col items-center"
+				@dblclick="redirectForFrappeioAuth"
+			>
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
 						<FCLogo class="inline-block h-7 w-7" />
@@ -23,6 +26,18 @@
 						{{ title }}
 					</span>
 				</div>
+				<p
+					class="mb-6 break-words text-center text-base font-normal leading-[21px] text-gray-700"
+					v-if="subtitle"
+				>
+					<template
+						v-if="typeof subtitle === 'object'"
+						v-for="line in subtitle"
+					>
+						{{ line }}<br />
+					</template>
+					<template v-else>{{ subtitle }}</template>
+				</p>
 				<slot></slot>
 			</div>
 		</div>
@@ -33,32 +48,28 @@
 </template>
 
 <script>
+import { toast } from 'vue-sonner';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
-import { notify } from '@/utils/toast';
 
 export default {
 	name: 'LoginBox',
-	props: ['title', 'logo'],
+	props: ['title', 'logo', 'subtitle'],
 	components: {
 		FCLogo,
-		FrappeLogo
+		FrappeLogo,
 	},
 	mounted() {
 		const params = new URLSearchParams(window.location.search);
 
 		if (params.get('showRemoteLoginError')) {
-			notify({
-				title: 'Token Invalid or Expired',
-				color: 'red',
-				icon: 'x'
-			});
+			toast.error('Token Invalid or Expired');
 		}
 	},
 	methods: {
 		redirectForFrappeioAuth() {
 			window.location = '/f-login';
-		}
-	}
+		},
+	},
 };
 </script>

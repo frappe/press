@@ -5,6 +5,19 @@
 	>
 		<div class="w-full overflow-auto">
 			<LoginBox>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<div
 					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 				>
@@ -60,15 +73,13 @@
 							v-model="country"
 							required
 						/>
-						<div class="mt-4 flex items-center gap-2">
+						<div class="mt-4 flex gap-2">
 							<FormControl type="checkbox" v-model="termsAccepted" />
-							<label class="text-base text-gray-900">
-								By clicking on
-								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
-								>, you accept our
-								<Link href="https://frappecloud.com/policies" target="_blank"
-									>Terms and Policies</Link
-								>
+							<label class="text-base text-gray-700">
+								I accept the
+								<Link href="https://frappecloud.com/policies" target="_blank">
+									Terms and Policies
+								</Link>
 							</label>
 						</div>
 					</div>
@@ -179,7 +190,7 @@ export default {
 				onSuccess(account_request) {
 					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard/create-site/${this.saasProduct}/setup?account_request=${account_request}`;
+						path = `/dashboard/create-site/${this.saasProduct.name}/setup?account_request=${account_request}`;
 					}
 					window.location.href = path;
 				},

@@ -8,15 +8,27 @@
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
-			<SaaSLoginBox
+			<LoginBox
 				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Logging in to site"
 				:subtitle="
 					this.$resources?.siteRequest?.doc?.site_label ||
 					this.$resources?.siteRequest?.doc?.site
 				"
-				:logo="saasProduct?.logo"
 			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<div
 					class="flex h-40 items-center justify-center"
 					v-if="
@@ -32,16 +44,28 @@
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
-			</SaaSLoginBox>
-			<SaaSLoginBox
+			</LoginBox>
+			<LoginBox
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
 				:subtitle="
 					this.$resources?.siteRequest?.doc?.site_label ||
 					this.$resources?.siteRequest?.doc?.site
 				"
-				:logo="saasProduct?.logo"
 			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col items-center justify-center px-10">
 						<!-- <Button variant="outline" @click="signupForCurrentProduct"
@@ -57,16 +81,28 @@
 						</p>
 					</div>
 				</template>
-			</SaaSLoginBox>
-			<SaaSLoginBox
+			</LoginBox>
+			<LoginBox
 				v-else
 				title="Building your site"
 				:subtitle="
 					this.$resources?.siteRequest?.doc?.site_label ||
 					this.$resources?.siteRequest?.doc?.site
 				"
-				:logo="saasProduct?.logo"
 			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<template v-slot:default>
 					<div class="flex h-40 items-center justify-center">
 						<Progress
@@ -77,27 +113,27 @@
 						/>
 					</div>
 				</template>
-			</SaaSLoginBox>
+			</LoginBox>
 		</div>
 	</div>
 </template>
 <script>
-import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
+import LoginBox from '../../components/auth/LoginBox.vue';
 import { Progress } from 'frappe-ui';
 
 export default {
 	name: 'SaaSSignupLoginToSite',
 	props: ['productId'],
 	components: {
-		SaaSLoginBox,
-		Progress
+		LoginBox,
+		Progress,
 	},
 	data() {
 		return {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			isRedirectingToSite: false,
-			currentBuildStep: 'Preparing for build'
+			currentBuildStep: 'Preparing for build',
 		};
 	},
 	resources: {
@@ -106,7 +142,7 @@ export default {
 				type: 'document',
 				doctype: 'Product Trial',
 				name: this.productId,
-				auto: true
+				auto: true,
 			};
 		},
 		siteRequest() {
@@ -134,10 +170,10 @@ export default {
 						makeParams() {
 							return {
 								current_progress:
-									this.$resources.siteRequest.getProgress.data?.progress || 0
+									this.$resources.siteRequest.getProgress.data?.progress || 0,
 							};
 						},
-						onSuccess: data => {
+						onSuccess: (data) => {
 							this.currentBuildStep =
 								data.current_step || this.currentBuildStep;
 							this.progressCount += 1;
@@ -154,7 +190,7 @@ export default {
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
 							}
-						}
+						},
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
@@ -166,16 +202,16 @@ export default {
 							let loginURL = `https://${this.$resources.siteRequest.doc.site}${redirectRoute}?sid=${sid}`;
 							this.isRedirectingToSite = true;
 							window.open(loginURL, '_self');
-						}
-					}
-				}
+						},
+					},
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
-		}
+		},
 	},
 	methods: {
 		loginToSite() {
@@ -184,9 +220,9 @@ export default {
 		signupForCurrentProduct() {
 			this.$router.push({
 				name: 'SaaSSignupSetup',
-				params: { productId: this.productId }
+				params: { productId: this.productId },
 			});
-		}
-	}
+		},
+	},
 };
 </script>

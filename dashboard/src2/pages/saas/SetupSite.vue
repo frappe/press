@@ -8,15 +8,28 @@
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
-			<SaaSLoginBox
+			<LoginBox
 				title="Let’s set up your site"
 				subtitle="Setup your default settings for your site"
 				:logo="saasProduct?.logo"
 			>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<template v-slot:default>
 					<form class="w-full" @submit.prevent="createSite">
 						<FormControl
-							label="Site name"
+							label="Site name (will be used to access your site)"
 							v-model="siteLabel"
 							variant="outline"
 							class="mb-4"
@@ -48,21 +61,21 @@
 						</Button>
 					</form>
 				</template>
-			</SaaSLoginBox>
+			</LoginBox>
 		</div>
 	</div>
 </template>
 <script>
 import { toast } from 'vue-sonner';
-import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
+import LoginBox from '../../components/auth/LoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 
 export default {
 	name: 'SaaSSignupSetup',
 	props: ['productId'],
 	components: {
-		SaaSLoginBox,
-		SaaSSignupFields
+		LoginBox,
+		SaaSSignupFields,
 	},
 	data() {
 		return {
@@ -71,7 +84,7 @@ export default {
 			closestCluster: null,
 			signupValues: {},
 			siteLabel: '',
-			accountRequest: this.$route.query.account_request
+			accountRequest: this.$route.query.account_request,
 		};
 	},
 	mounted() {
@@ -95,23 +108,23 @@ export default {
 				url: 'press.api.product_trial.get_request',
 				params: {
 					product: this.productId,
-					account_request: this.accountRequest
+					account_request: this.accountRequest,
 				},
 				initialData: {},
-				onSuccess: data => {
+				onSuccess: (data) => {
 					if (data?.status !== 'Pending') {
 						this.$router.push({
 							name: 'SaaSSignupLoginToSite',
 							params: { productId: this.productId },
 							query: {
-								product_trial_request: data.name
-							}
+								product_trial_request: data.name,
+							},
 						});
 					}
 				},
 				onError(error) {
 					toast.error(error.messages.join('\n'));
-				}
+				},
 			};
 		},
 		saasProduct() {
@@ -120,9 +133,9 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-				onSuccess: doc => {
+				onSuccess: (doc) => {
 					this.siteLabel = `${this.$team.doc?.user_info?.first_name}'s ${doc?.title} Site`;
-				}
+				},
 			};
 		},
 		createSite() {
@@ -136,22 +149,22 @@ export default {
 						args: {
 							site_label: this.siteLabel,
 							cluster: this.closestCluster ?? 'Default',
-							signup_values: this.signupValues
-						}
+							signup_values: this.signupValues,
+						},
 					};
 				},
 				auto: false,
-				onSuccess: data => {
+				onSuccess: (data) => {
 					this.$router.push({
 						name: 'SaaSSignupLoginToSite',
 						params: { productId: this.productId },
 						query: {
-							product_trial_request: this.$resources.siteRequest.data.name
-						}
+							product_trial_request: this.$resources.siteRequest.data.name,
+						},
 					});
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		saasProduct() {
@@ -159,7 +172,7 @@ export default {
 		},
 		saasProductSignupFields() {
 			return this.saasProduct?.signup_fields ?? [];
-		}
+		},
 	},
 	methods: {
 		async createSite() {
@@ -171,10 +184,10 @@ export default {
 			let proxyServers = Object.keys(this.saasProduct.proxy_servers);
 			if (proxyServers.length > 0) {
 				this.findingClosestServer = true;
-				let promises = proxyServers.map(server => this.getPingTime(server));
+				let promises = proxyServers.map((server) => this.getPingTime(server));
 				let results = await Promise.allSettled(promises);
 				let fastestServer = results.reduce((a, b) =>
-					a.value.pingTime < b.value.pingTime ? a : b
+					a.value.pingTime < b.value.pingTime ? a : b,
 				);
 				let closestServer = fastestServer.value.server;
 				let closestCluster = this.saasProduct.proxy_servers[closestServer];
@@ -201,10 +214,10 @@ export default {
 			this.$router.push({
 				name: 'SaaSSignup',
 				params: {
-					productId: this.productId
-				}
+					productId: this.productId,
+				},
 			});
-		}
-	}
+		},
+	},
 };
 </script>
