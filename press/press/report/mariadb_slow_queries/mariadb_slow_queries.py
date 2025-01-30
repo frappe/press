@@ -92,8 +92,7 @@ def get_data(filters):
 		int(filters.max_lines) or 100,
 	)
 	for row in rows:
-		if filters.format_queries:
-			row["query"] = format_query(row["query"])
+		row["query"] = format_query(row["query"])
 		row["timestamp"] = convert_utc_to_timezone(
 			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
 			get_system_timezone(),
