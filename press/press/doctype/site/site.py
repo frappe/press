@@ -1678,6 +1678,16 @@ class Site(Document, TagHelpers):
 			}
 		)
 
+	def sync_users_to_product_site(self, analytics=None):
+		from press.press.doctype.site_user.site_user import create_user_for_product_site
+
+		if self.is_standby:
+			return
+		if not analytics:
+			analytics = self.fetch_analytics()
+		if analytics:
+			create_user_for_product_site(self.name, analytics)
+
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:

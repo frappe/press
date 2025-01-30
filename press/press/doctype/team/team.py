@@ -1048,10 +1048,12 @@ class Team(Document):
 
 	def get_route_on_login(self):
 		return "/sites"
-		sites = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
-		if sites > 5:
-			return "/sites"
-		return "/start-center"
+		# TODO: route user to site creation if product trial user and site creation isn't complete
+
+		# sites = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
+		# if sites > 5:
+		# 	return "/sites"
+		# return "/start-center"
 
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
@@ -1190,9 +1192,7 @@ class Team(Document):
 	def send_telegram_alert_for_failed_payment(self, invoice):
 		team_url = get_url_to_form("Team", self.name)
 		invoice_url = get_url_to_form("Invoice", invoice)
-		message = (
-			f"Failed Invoice Payment [{invoice}]({invoice_url}) of" f" Partner: [{self.name}]({team_url})"
-		)
+		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
 	@frappe.whitelist()

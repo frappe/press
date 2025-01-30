@@ -216,6 +216,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
+		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 	],
 	"all": [
 		"press.auth.flush",
