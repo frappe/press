@@ -1,99 +1,84 @@
 <template>
 	<Dialog :options="{ title: 'Add M-Pesa Credentials', size: 'lg' }">
 		<template #body-content>
-			<div class="grid grid-cols-2 gap-4">
+			<div class="flex flex-col-2 flex-wrap gap-3">
 				<FormControl
 					label="Mpesa Setup ID"
-					v-model="mpesaSetupId"
+					v-model="mpesaSetupDetails.mpesa_setup_id"
 					name="mpesa_setup_id"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
-					placeholder="Enter Mpesa Setup ID"
-					required
+					placeholder="Test Mpesa"
 				/>
 
 				<FormControl
 					label="Consumer Key"
-					v-model="consumerKey"
+					v-model="mpesaSetupDetails.consumer_key"
 					name="consumer_key"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
 					placeholder="Enter Consumer Key"
-					required
 				/>
 
 				<FormControl
 					label="Consumer Secret"
-					v-model="consumerSecret"
+					v-model="mpesaSetupDetails.consumer_secret"
 					name="consumer_secret"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
 					placeholder="Enter Consumer Secret"
-					required
 				/>
 
 				<FormControl
 					label="Pass Key"
-					v-model="passKey"
+					v-model="mpesaSetupDetails.pass_key"
 					name="pass_key"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
 					placeholder="Enter Pass Key"
-					required
 				/>
 
 				<FormControl
-					label="Short Code"
-					v-model="shortCode"
+					label="Business Short Code"
+					v-model="mpesaSetupDetails.short_code"
 					name="short_code"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
 					placeholder="Enter Short Code"
-					required
 				/>
 
 				<FormControl
 					label="Initiator Name"
-					v-model="initiatorName"
+					v-model="mpesaSetupDetails.initiator_name"
 					name="initiator_name"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
-					placeholder="Enter Initiator Name"
-					required
+					placeholder="e.g John Doe"
 				/>
 
 				<FormControl
 					label="Security Credential"
-					v-model="securityCredential"
+					v-model="mpesaSetupDetails.security_credential"
 					name="security_credential"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
 					placeholder="Enter Security Credential"
-					required
 				/>
 
 				<FormControl
 					label="Till Number"
-					v-model="tillNumber"
+					v-model="mpesaSetupDetails.till_number"
 					name="till_number"
-					autocomplete="off"
-					class="mb-5"
+					class="mb-3"
 					type="text"
-					placeholder="Enter Till Number"
-					required
+					placeholder="1234567"
 				/>
 
 				<!-- <div class="flex items-center">
 					<input v-model="sandBox" type="checkbox" class="mr-2" />
 					<label class="text-sm font-medium text-gray-700">Sandbox Mode</label>
 				</div> -->
+				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</div>
 
 			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
@@ -111,48 +96,42 @@
 
 <script>
 import { toast } from 'vue-sonner';
+import { DashboardError } from '../../../utils/error';
+import { ErrorMessage } from 'frappe-ui';
 export default {
 	name: 'AddMpesaCredentials',
 	data() {
 		return {
-			consumerKey: '',
-			mpesaSetupId: '',
-			consumerSecret: '',
-			passKey: '',
-			shortCode: '',
-			initiatorName: '',
-			securityCredential: '',
-			tillNumber: '',
-			apiType: '',
-			// sandBox: false,
+			mpesaSetupDetails: {
+				consumer_key: '',
+				mpesa_setup_id: '',
+				consumer_secret: '',
+				pass_key: '',
+				short_code: '',
+				initiator_name: '',
+				security_credential: '',
+				till_number: '',
+				api_type: '',
+				// sandBox: false,
+			},
+			errorMessage: '',
 		};
 	},
 	resources: {
 		createMpesaSetup() {
 			return {
-				url: 'press.api.regional_payments.mpesa.utils.create_mpesa_setup',
-				params: {
-					mpesa_setup_id: this.mpesaSetupId,
-					consumer_key: this.consumerKey,
-					consumer_secret: this.consumerSecret,
-					pass_key: this.passKey,
-					short_code: this.shortCode,
-					initiator_name: this.initiatorName,
-					security_credential: this.securityCredential,
-					till_number: this.tillNumber,
-					// sandbox: this.sandBox,
+				url: 'press.api.regional_payments.mpesa.utils.update_mpesa_setup',
+				makeParams() {
+					return {
+						mpesa_details: this.mpesaSetupDetails,
+					};
 				},
 				validate() {
-					if (
-						!this.mpesaSetupId ||
-						!this.consumerKey ||
-						!this.consumerSecret ||
-						!this.passKey ||
-						!this.shortCode ||
-						!this.initiatorName ||
-						!this.securityCredential
-					) {
-						return 'All fields are required';
+					let fields = Object.values(this.mpesaSetupDetails);
+					if (fields.includes('')) {
+						this.errorMessage = 'Please fill required values';
+						return 'Please fill required values';
+						// throw new DashboardError('Please fill required values');
 					}
 				},
 				onSuccess(data) {
@@ -161,6 +140,7 @@ export default {
 					} else {
 						toast.error('Error saving M-Pesa credentials');
 					}
+					this.$emit('closeDialog');
 				},
 			};
 		},
@@ -168,16 +148,17 @@ export default {
 			return {
 				url: 'press.api.regional_payments.mpesa.utils.fetch_mpesa_setup',
 				onSuccess(data) {
-					console.log('data', data);
-					this.mpesaSetupId = data.mpesa_setup_id;
-					this.consumerKey = data.consumer_key;
-					this.consumerSecret = data.consumer_secret;
-					this.securityCredential = data.security_credential;
-					this.passKey = data.pass_key;
-					this.shortCode = data.business_shortcode;
-					this.tillNumber = data.till_number;
-					this.initiatorName = data.initiator_name;
-					this.apiType = data.api_type;
+					Object.assign(this.mpesaSetupDetails, {
+						mpesa_setup_id: data.mpesa_setup_id,
+						consumer_key: data.consumer_key,
+						consumer_secret: data.consumer_secret,
+						security_credential: data.security_credential,
+						pass_key: data.pass_key,
+						short_code: data.business_shortcode,
+						till_number: data.till_number,
+						initiator_name: data.initiator_name,
+						api_type: data.api_type,
+					});
 				},
 				auto: true,
 			};
@@ -186,7 +167,6 @@ export default {
 	methods: {
 		saveMpesaCredentials() {
 			this.$resources.createMpesaSetup.submit();
-			this.$emit('closeDialog');
 		},
 	},
 };

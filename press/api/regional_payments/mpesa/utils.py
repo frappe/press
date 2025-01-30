@@ -12,29 +12,42 @@ supported_mpesa_currencies = ["KES"]
 
 
 @frappe.whitelist()
-def create_mpesa_setup(**kwargs):
+def update_mpesa_setup(mpesa_details):
 	"""Create Mpesa Settings for the team."""
+	mpesa_info = frappe._dict(mpesa_details)
 	team = get_current_team()
-
 	try:
-		mpesa_setup = frappe.get_doc(
-			{
-				"doctype": "Mpesa Setup",
-				"team": team,
-				"mpesa_setup_id": kwargs.get("mpesa_setup_id"),
-				"api_type": "Mpesa Express",
-				"consumer_key": kwargs.get("consumer_key"),
-				"consumer_secret": kwargs.get("consumer_secret"),
-				"business_shortcode": kwargs.get("short_code"),
-				"till_number": kwargs.get("till_number"),
-				"pass_key": kwargs.get("pass_key"),
-				"security_credential": kwargs.get("security_credential"),
-				"sandbox": 1 if kwargs.get("sandbox") else 0,
-				"enabled": 1,
-			}
-		)
+		if not frappe.db.exists("Mpesa Setup", {"team": team}):
+			mpesa_setup = frappe.get_doc(
+				{
+					"doctype": "Mpesa Setup",
+					"team": team,
+					"mpesa_setup_id": mpesa_info.mpesa_setup_id,
+					"api_type": "Mpesa Express",
+					"consumer_key": mpesa_info.consumer_key,
+					"consumer_secret": mpesa_info.consumer_secret,
+					"business_shortcode": mpesa_info.short_code,
+					"till_number": mpesa_info.till_number,
+					"pass_key": mpesa_info.pass_key,
+					"security_credential": mpesa_info.security_credential,
+					"initiator_name": mpesa_info.initiator_name,
+					"sandbox": 1 if mpesa_info.sandbox else 0,
+				}
+			)
 
-		mpesa_setup.insert(ignore_permissions=True)
+			mpesa_setup.insert(ignore_permissions=True)
+		else:
+			mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team})
+			mpesa_setup.consumer_key = mpesa_info.consumer_key
+			mpesa_setup.consumer_secret = mpesa_info.consumer_secret
+			mpesa_setup.business_shortcode = mpesa_info.short_code
+			mpesa_setup.till_number = mpesa_info.till_number
+			mpesa_setup.pass_key = mpesa_info.pass_key
+			mpesa_setup.security_credential = mpesa_info.security_credential
+			mpesa_setup.initiator_name = mpesa_info.initiator_name
+			mpesa_setup.sandbox = 1 if mpesa_info.sandbox else 0
+			mpesa_setup.save()
+			mpesa_setup.reload()
 
 		return mpesa_setup.name
 	except Exception as e:
@@ -47,8 +60,8 @@ def create_mpesa_setup(**kwargs):
 @frappe.whitelist()
 def fetch_mpesa_setup():
 	team = get_current_team()
-	if frappe.db.exists("Mpesa Setup", {"team": team, "enabled": 1}):
-		mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team, "enabled": 1})
+	if frappe.db.exists("Mpesa Setup", {"team": team}):
+		mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team})
 		return {
 			"mpesa_setup_id": mpesa_setup.mpesa_setup_id,
 			"consumer_key": mpesa_setup.consumer_key,
@@ -61,22 +74,6 @@ def fetch_mpesa_setup():
 			"api_type": mpesa_setup.api_type,
 		}
 	return None
-
-
-# @frappe.whitelist()
-# def get_tax_id():
-# 	"""Get the tax ID for the team."""
-# 	team = get_current_team()
-# 	team_doc = frappe.get_doc("Team", team)
-# 	return team_doc.tax_id if team_doc.tax_id else ""
-
-
-# @frappe.whitelist()
-# def get_phone_no():
-# 	"""Get the phone number for the team."""
-# 	team = get_current_team()
-# 	team_doc = frappe.get_doc("Team", team)
-# 	return team_doc.phone_number if team_doc.phone_number else ""
 
 
 @frappe.whitelist()
@@ -156,7 +153,7 @@ def get_gateway_controllers(gateway_setting):
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
 	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team, "enabled": 1}, fields=["name"]
+		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
 	)
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
@@ -208,7 +205,7 @@ def display_mpesa_payment_partners():
 		.join(MpesaSetup)
 		.on(Team.name == MpesaSetup.team)
 		.select(Team.user)
-		.where(Team.country == "Kenya" & MpesaSetup.enabled == 1)  # (MpesaSetup.sandbox == 1)
+		.where(Team.country == "Kenya")  # (MpesaSetup.sandbox == 1)
 	)
 
 	mpesa_partners = query.run(as_dict=True)
@@ -275,7 +272,7 @@ def get_payment_gateway(partner_value):
 def get_mpesa_setup_for_team(team_name):
 	"""Fetch Mpesa setup for a given team."""
 
-	mpesa_setup = frappe.get_all("Mpesa Setup", {"team": team_name, "enabled": 1}, pluck="name")
+	mpesa_setup = frappe.get_all("Mpesa Setup", {"team": team_name}, pluck="name")
 	if not mpesa_setup:
 		frappe.throw(
 			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
