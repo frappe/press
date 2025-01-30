@@ -107,6 +107,11 @@ class ProductTrialRequest(Document):
 			elif self.status == "Site Created":
 				self.capture_posthog_event("product_trial_request_site_created")
 
+				# this is to create a webhook record in the site
+				# so that the user records can be synced with press
+				site = frappe.get_doc("Site", self.site)
+				site.create_sync_user_webhook()
+
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
 		data = frappe.get_value(
@@ -230,6 +235,16 @@ class ProductTrialRequest(Document):
 
 		if is_standby_site and product.setup_wizard_completion_mode == "auto":
 			self.complete_setup_wizard()
+
+		user_mail = frappe.db.get_value("Team", self.team, "user")
+		frappe.get_doc(
+			{
+				"doctype": "Site User",
+				"site": site.name,
+				"user": user_mail,
+				"enabled": 1,
+			}
+		).insert()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
