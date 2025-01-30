@@ -483,7 +483,7 @@ class PhysicalBackupRestoration(Document):
 			if step.status == "Pending":
 				step.status = "Skipped"
 		self.end = frappe.utils.now_datetime()
-		self.duration = (self.end - self.start).total_seconds()
+		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 		self.save()
 		self.cleanup()
 
@@ -494,7 +494,7 @@ class PhysicalBackupRestoration(Document):
 			if step.status == "Failure":
 				self.status = "Failure"
 		self.end = frappe.utils.now_datetime()
-		self.duration = (self.end - self.start).total_seconds()
+		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 		self.save()
 
 	@frappe.whitelist()

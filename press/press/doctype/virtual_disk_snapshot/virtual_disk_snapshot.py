@@ -60,7 +60,9 @@ class VirtualDiskSnapshot(Document):
 			if old_doc is None or old_doc.status != "Pending":
 				return
 
-			self.duration = frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			self.duration = frappe.utils.cint(
+				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			)
 			self.save()
 
 	@frappe.whitelist()

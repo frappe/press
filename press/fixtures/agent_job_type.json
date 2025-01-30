@@ -313,6 +313,12 @@
     "parent": "Update Site Migrate",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
+    "step_name": "Log Touched Tables"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
     "step_name": "Disable Maintenance Mode"
    },
    {
