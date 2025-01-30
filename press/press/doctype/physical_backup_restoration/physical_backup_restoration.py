@@ -108,13 +108,7 @@ class PhysicalBackupRestoration(Document):
 		self.set_disk_snapshot()
 		self.validate_snapshot_region()
 		self.validate_snapshot_status()
-
-		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
-		if self.restore_specific_tables and not self.tables_to_restore:
-			frappe.throw("You must provide at least one table to restore.")
-
-		if not self.restore_specific_tables:
-			self.tables_to_restore = "[]"
+		self.cleanup_restorable_tables()
 
 	def after_insert(self):
 		self.set_mount_point()
@@ -149,6 +143,25 @@ class PhysicalBackupRestoration(Document):
 		snapshot_status = frappe.db.get_value("Virtual Disk Snapshot", self.disk_snapshot, "status")
 		if snapshot_status not in ("Pending", "Completed"):
 			frappe.throw("Snapshot status should be Pending or Completed.")
+
+	def cleanup_restorable_tables(self):
+		if not self.restore_specific_tables:
+			self.tables_to_restore = "[]"
+			return
+
+		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
+		if not self.tables_to_restore:
+			frappe.throw("You must provide at least one table to restore.")
+
+		tables_to_restore_list = json.loads(self.tables_to_restore)
+		site_backup = frappe.get_doc("Site Backup", self.site_backup)
+		existing_tables_in_backup = set(
+			json.loads(site_backup.innodb_tables) + json.loads(site_backup.myisam_tables)
+		)
+		filtered_tables_to_restore_list = [
+			table for table in tables_to_restore_list if table in existing_tables_in_backup
+		]
+		self.tables_to_restore = json.dumps(filtered_tables_to_restore_list)
 
 	def set_mount_point(self):
 		self.mount_point = f"/mnt/{self.name}"
