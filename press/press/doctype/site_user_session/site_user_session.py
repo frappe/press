@@ -28,6 +28,8 @@ class SiteUserSession(Document):
 
 		self.otp = random.randint(100000, 999999)
 		self.session_id = frappe.generate_hash()
+		if frappe.conf.developer_mode:
+			self.otp = 111111
 		self.save()
 
 		if frappe.conf.developer_mode:
@@ -57,7 +59,6 @@ class SiteUserSession(Document):
 
 	def verify_otp(self, otp):
 		"""Verify OTP for site login."""
-		import datetime
 
 		if not self.otp:
 			return frappe.throw("OTP is not set")
@@ -67,8 +68,8 @@ class SiteUserSession(Document):
 		self.otp_verified_time = frappe.utils.now_datetime()
 		self.save()
 
-		expires = datetime.datetime.now() + datetime.timedelta(days=5)
+		five_days_in_seconds = 5 * 24 * 60 * 60
 		frappe.local.cookie_manager.set_cookie(
-			"site_user_sid", self.session_id, expires=expires, httponly=True
+			"site_user_sid", self.session_id, max_age=five_days_in_seconds, httponly=True
 		)
 		return self.session_id
