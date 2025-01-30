@@ -7,7 +7,8 @@
  "field_order": [
   "user",
   "session_id",
-  "otp"
+  "otp",
+  "verified"
  ],
  "fields": [
   {
@@ -24,11 +25,17 @@
    "fieldname": "session_id",
    "fieldtype": "Data",
    "label": "Session ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "verified",
+   "fieldtype": "Check",
+   "label": "Verified"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-27 11:12:35.535294",
+ "modified": "2025-01-30 17:47:29.743114",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site User Session",

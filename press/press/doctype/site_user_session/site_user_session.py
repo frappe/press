@@ -19,6 +19,7 @@ class SiteUserSession(Document):
 		otp: DF.Data | None
 		session_id: DF.Data | None
 		user: DF.Data | None
+		verified: DF.Check
 	# end: auto-generated types
 
 	def send_otp(self):
@@ -65,7 +66,7 @@ class SiteUserSession(Document):
 		if self.otp != otp:
 			return frappe.throw("Invalid OTP")
 		self.otp = None
-		self.otp_verified_time = frappe.utils.now_datetime()
+		self.verified = 1
 		self.save()
 
 		five_days_in_seconds = 5 * 24 * 60 * 60
