@@ -423,7 +423,7 @@ class SiteUpdate(Document):
 						"destination_database": site.database_name,
 						"destination_server": frappe.get_value("Server", site.server, "database_server"),
 						"restore_specific_tables": len(self.touched_tables_list) > 0,
-						"tables_to_restore": self.touched_tables_list,
+						"tables_to_restore": json.dumps(self.touched_tables_list),
 					}
 				)
 				doc.insert(ignore_permissions=True)
@@ -540,7 +540,9 @@ def update_status(name, status):
 				"Site Update",
 				name,
 				"update_duration",
-				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
+				frappe.utils.cint(
+					frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start)
+				),
 			)
 	if status in ["Success", "Recovered"]:
 		backup_type = frappe.db.get_value("Site Update", name, "backup_type")

@@ -60,7 +60,9 @@ class VirtualDiskSnapshot(Document):
 			if old_doc is None or old_doc.status != "Pending":
 				return
 
-			self.duration = frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			self.duration = frappe.utils.cint(
+				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			)
 			self.save()
 
 	@frappe.whitelist()
@@ -165,7 +167,9 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending"})
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "created_for_site_update": ["!=", 1]}
+	)
 	for snapshot in snapshots:
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
