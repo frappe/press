@@ -1643,7 +1643,7 @@ class Site(Document, TagHelpers):
 			"doctype": "Webhook",
 			"webhook_doctype": "User",
 			"enabled": 1,
-			"request_url": "https://frappecloud.com/api/method/press.api.product_trial.sync_product_site_users",
+			"request_url": "https://frappecloud.com/api/method/press.api.site_login.sync_product_site_user",
 			"request_method": "POST",
 			"request_structure": "JSON",
 			"webhook_json": """{ "user_info": { "email": "{{doc.email}}", "enabled": "{{doc.enabled}}" } }""",
@@ -1667,6 +1667,14 @@ class Site(Document, TagHelpers):
 				"name": "Sync User records with Frappe Cloud on update",
 				"webhook_docevent": "on_update",
 				"condition": """doc.has_value_changed("enabled")""",
+			}
+		)
+
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on delete",
+				"webhook_docevent": "on_trash",
 			}
 		)
 
