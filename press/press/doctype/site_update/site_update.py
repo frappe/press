@@ -540,7 +540,9 @@ def update_status(name, status):
 				"Site Update",
 				name,
 				"update_duration",
-				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
+				frappe.utils.cint(
+					frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start)
+				),
 			)
 	if status in ["Success", "Recovered"]:
 		backup_type = frappe.db.get_value("Site Update", name, "backup_type")
