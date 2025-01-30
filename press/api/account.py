@@ -106,6 +106,7 @@ def setup_account(  # noqa: C901
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
+	is_product_trial_user=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -151,6 +152,7 @@ def setup_account(  # noqa: C901
 			last_name=last_name,
 			password=password,
 			country=country,
+			is_product_trial_user=is_product_trial_user,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
@@ -325,7 +327,9 @@ def validate_request_key(key, timezone=None):
 			"oauth_domain": frappe.db.exists(
 				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
 			),
-			"product_trial": account_request.product_trial,
+			"product_trial": frappe.db.get_value(
+				"Product Trial", account_request.product_trial, ["logo", "title", "name"], as_dict=1
+			),
 		}
 	return None
 
