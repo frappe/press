@@ -167,7 +167,9 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending"})
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "created_for_site_update": ["!=", 1]}
+	)
 	for snapshot in snapshots:
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
