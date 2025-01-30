@@ -141,8 +141,8 @@ def send_verification_code(domain: str, route: str = ""):
 	check_if_user_can_login(team_info, site_info)
 
 	if is_user_logged_in(team_info.get("user")):
-		if route == "start-center":
-			redirect_to = "/dashboard/start-center"
+		if route == "dashboard":
+			redirect_to = "/dashboard/"
 		elif route == "site-dashboard":
 			redirect_to = f"/dashboard/sites/{site_info.get('name')}"
 		return {"is_user_logged_in": True, "redirect_to": redirect_to}
@@ -165,7 +165,7 @@ def send_verification_code(domain: str, route: str = ""):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def verify_verification_code(domain: str, verification_code: str, route: str = "start-center"):
+def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
 		frappe.throw("Invalid Code. Please try again.")
@@ -201,7 +201,7 @@ def login_to_fc(token: str):
 		frappe.cache.delete_value(domain_cache_key)
 		frappe.response.location = f"/dashboard/sites/{domain}"
 	else:
-		frappe.response.location = "/dashboard/start-center"
+		frappe.response.location = "/dashboard/"
 
 
 def is_user_logged_in(user):
