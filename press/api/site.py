@@ -18,7 +18,7 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.exceptions import AAAARecordExists, ConflictingCAARecord
+from press.exceptions import AAAARecordExists, ConflictingCAARecord, ConflictingDNSRecord
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1618,7 +1618,7 @@ def check_domain_allows_letsencrypt_certs(domain):
 
 
 def check_dns_cname(name, domain):
-	result = {"type": "CNAME", "matched": False, "answer": ""}
+	result = {"type": "CNAME", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
@@ -1627,6 +1627,9 @@ def check_dns_cname(name, domain):
 		result["answer"] = answer.rrset.to_text()
 		if mapped_domain == name:
 			result["matched"] = True
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1636,7 +1639,7 @@ def check_dns_cname(name, domain):
 
 
 def check_dns_a(name, domain):
-	result = {"type": "A", "matched": False, "answer": ""}
+	result = {"type": "A", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
@@ -1657,6 +1660,9 @@ def check_dns_a(name, domain):
 			)
 			if domain_ip in secondary_ips:
 				result["matched"] = True
+	except dns.resolver.NoAnswer as e:
+		result["exists"] = False
+		result["answer"] = str(e)
 	except dns.exception.DNSException as e:
 		result["answer"] = str(e)
 	except Exception as e:
@@ -1694,12 +1700,21 @@ def check_dns_cname_a(name, domain):
 	result = {"CNAME": cname}
 	result.update(cname)
 
-	if result["matched"]:
-		return result
-
 	a = check_dns_a(name, domain)
-	result.update({"A": a})
-	result.update(a)
+	if a["matched"]:
+		result.update({"A": a})
+		result.update(a)
+
+	if cname["matched"] and a["exists"] and not a["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct CNAME record, but also an A record that points to a different IP address. Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
+	if a["matched"] and cname["exists"] and not cname["matched"]:
+		frappe.throw(
+			f"Domain {domain} has correct A record, but also a CNAME record that points to a different domain. Please remove the same or update the record.",
+			ConflictingDNSRecord,
+		)
 
 	return result
 
@@ -1982,24 +1997,54 @@ def send_change_team_request(name, team_mail_id, reason):
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_site_transfer(key):
+def confirm_site_transfer(key: str):
+	from frappe import _
+
+	if frappe.session.user == "Guest":
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("You need to be logged in to confirm the site transfer."),
+			http_status_code=403,
+			indicator_color="red",
+			primary_action="/dashboard/login",
+			primary_label=_("Login"),
+		)
+
+	if not isinstance(key, str):
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
 	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
+		to_team = team_change.to_team
+		if not frappe.db.get_value(
+			"Team Member", {"user": frappe.session.user, "parent": to_team, "parenttype": "Team"}
+		):
+			return frappe.respond_as_web_page(
+				_("Not Permitted"),
+				_("You are not a member of the team to which the site is being transferred."),
+				http_status_code=403,
+				indicator_color="red",
+			)
+
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
 		frappe.response.type = "redirect"
 		frappe.response.location = f"/dashboard/sites/{team_change.document_name}"
-	else:
-		from frappe import _
+		return None
 
-		frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("The link you are using is invalid or expired."),
-			http_status_code=403,
-			indicator_color="red",
-		)
+	return frappe.respond_as_web_page(
+		_("Not Permitted"),
+		_("The link you are using is invalid or expired."),
+		http_status_code=403,
+		indicator_color="red",
+	)
 
 
 @frappe.whitelist()

@@ -160,7 +160,7 @@ export default {
 					disabled: enforce2FA
 				},
 				{
-					name: 'Partners',
+					name: 'Partner Portal',
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),

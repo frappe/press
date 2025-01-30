@@ -291,8 +291,9 @@ scheduler_events = {
 		"0 0 1 */3 *": ["press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"],
 		"0 8 * * *": [
 			"press.press.doctype.aws_savings_plan_recommendation.aws_savings_plan_recommendation.create",
+			"press.press.cleanup.reset_large_output_fields_from_ansible_tasks",
 		],
-		"0 18 * * *": [
+		"0 21 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
 		],
@@ -356,3 +357,61 @@ auth_hooks = ["press.auth.hook"]
 page_renderer = ["press.metrics.MetricsRenderer"]
 
 export_python_type_annotations = True
+
+
+# These are used for some business logic, they should be manually evicted.
+__persistent_cache_keys = [
+	"agent-jobs",
+	"monitor-transactions",
+	"google_oauth_flow*",
+	"fc_oauth_state*",
+	"one_time_login_key*",
+	"press-auth-logs",
+]
+
+# `frappe.rename_doc` erases all caches, this hook preserves some of them.
+# Note:
+# - These are only "most used" cache keys. This lessens the impact of renames but doesn't eliminate them.
+# - Adding more keys here will slow down `frappe.clear_cache` but it's "rare" enough.
+# - This also means that other "valid" frappe.clear_cache() usage won't clear these keys!
+# - Use frappe.cache.flushall() instead.
+persistent_cache_keys = [
+	*__persistent_cache_keys,
+	"agent_job_step_output",
+	"all_apps",
+	"app_hooks",
+	"assets_json",
+	"assignment_rule_map",
+	"bootinfo",
+	"builder.builder*",  # path resolution, it has its own cache eviction.
+	"db_tables",
+	"defaults",
+	"doctype_form_meta",
+	"doctype_meta",
+	"doctypes_with_web_view",
+	"document_cache::*",
+	"document_naming_rule_map",
+	"domain_restricted_doctypes",
+	"domain_restricted_pages",
+	"energy_point_rule_map",
+	"frappe.utils.scheduler.schedule_jobs_based_on_activity*",  # dormant checks
+	"frappe.website.page_renderers*",  # FW's routing
+	"home_page",
+	"information_schema:counts",
+	"installed_app_modules",
+	"ip_country_map",
+	"is_table",
+	"languages",
+	"last_db_session_update",
+	"marketplace_apps",
+	"merged_translations",
+	"metadata_version",
+	"server_script_map",  # Routing and actual server scripts
+	"session",
+	"table_columns",
+	"website_page",
+	"website_route_rules",
+]
+
+before_migrate = ["press.overrides.before_after_migrate"]
+after_migrate = ["press.overrides.before_after_migrate"]

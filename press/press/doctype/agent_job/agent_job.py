@@ -10,6 +10,7 @@ import traceback
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.monitor import add_data_to_monitor
 from frappe.utils import (
 	add_days,
 	cint,
@@ -31,7 +32,7 @@ from press.press.doctype.site_migration.site_migration import (
 	job_matches_site_migration,
 	process_site_migration_job_update,
 )
-from press.utils import has_role, log_error
+from press.utils import has_role, log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
 
@@ -308,6 +309,11 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
+	@frappe.whitelist()
+	def cancel_job(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		agent.cancel_job(self.job_id)
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
@@ -446,6 +452,27 @@ def suspend_sites():
 			agent.reload_nginx()
 
 
+@timer
+def poll_random_jobs(agent, pending_ids):
+	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
+	return agent.get_jobs_status(random_pending_ids)
+
+
+@timer
+def handle_polled_jobs(polled_jobs, pending_jobs):
+	for polled_job in polled_jobs:
+		if not polled_job:
+			continue
+		handle_polled_job(pending_jobs, polled_job)
+
+
+def add_timer_data_to_monitor(server):
+	if not hasattr(frappe.local, "timers"):
+		frappe.local.timers = {}
+
+	add_data_to_monitor(server=server, timing=frappe.local.timers)
+
+
 def poll_pending_jobs_server(server):
 	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
 		return
@@ -468,22 +495,21 @@ def poll_pending_jobs_server(server):
 
 	if not pending_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
-	polled_jobs = agent.get_jobs_status(random_pending_ids)
+	polled_jobs = poll_random_jobs(agent, pending_ids)
 
 	if not polled_jobs:
 		retry_undelivered_jobs(server)
+		add_timer_data_to_monitor(server.server)
 		return
 
-	for polled_job in polled_jobs:
-		if not polled_job:
-			continue
-		handle_polled_job(pending_jobs, polled_job)
+	handle_polled_jobs(polled_jobs, pending_jobs)
 
 	retry_undelivered_jobs(server)
+	add_timer_data_to_monitor(server.server)
 
 
 def handle_polled_job(pending_jobs, polled_job):
@@ -549,17 +575,53 @@ def populate_output_cache(polled_job, job):
 			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
 
 
+def filter_active_servers(servers):
+	# Prepare list of all_active_servers for each server_type
+	# Return servers that are in all_active_servers
+	server_types = [server.server_type for server in servers]
+	all_active_servers = {}
+	for server_type in server_types:
+		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
+
+	active_servers = []
+	for server in servers:
+		if server.server in all_active_servers[server.server_type]:
+			active_servers.append(server)
+
+	return active_servers
+
+
+def filter_request_failures(servers):
+	request_failures = set(frappe.get_all("Agent Request Failure", pluck="server"))
+
+	alive_servers = []
+	for server in servers:
+		if server.server not in request_failures:
+			alive_servers.append(server)
+
+	return alive_servers
+
+
 def poll_pending_jobs():
+	filters = {"status": ("in", ["Pending", "Running", "Undelivered"])}
+	if random.random() > 0.1:
+		# Experimenting with fewer polls (only for backup jobs)
+		# Reduce poll frequency for Backup Site jobs
+		# TODO: Replace this with something deterministic
+		filters["job_type"] = ("!=", "Backup Site")
 	servers = frappe.get_all(
 		"Agent Job",
 		fields=["server", "server_type"],
-		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
+		filters=filters,
 		group_by="server",
 		order_by="",
 		ignore_ifnull=True,
 	)
 
-	for server in servers:
+	active_servers = filter_active_servers(servers)
+	alive_servers = filter_request_failures(active_servers)
+
+	for server in alive_servers:
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
@@ -732,6 +794,7 @@ def get_next_retry_at(job_retry_count):
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
+@timer
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
@@ -903,6 +966,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update,
 		)
 		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_job_update as process_physical_backup_restoration_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -928,6 +994,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
+			process_activate_site_job_update,
+			process_deactivate_site_job_update,
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
@@ -969,7 +1037,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
-		elif job.job_type == "Backup Site":
+		elif job.job_type in ["Backup Site", "Physical Backup Database"]:
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
@@ -1022,6 +1090,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			"Modify Database User Permissions",
 		]:
 			SiteDatabaseUser.process_job_update(job)
+		elif job.job_type == "Physical Restore Database":
+			process_physical_backup_restoration_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Update":
+			process_deactivate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
+			process_activate_site_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

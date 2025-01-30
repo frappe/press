@@ -532,6 +532,8 @@ class DeployCandidate(Document):
 		step = self.get_step("package", "context") or frappe._dict()
 		step.status = "Running"
 		start_time = now()
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
 		# make sure to set ownership of build_directory and its contents to 1000:1000
 		def fix_content_permission(tarinfo):
@@ -540,17 +542,24 @@ class DeployCandidate(Document):
 			return tarinfo
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz") as tar:
-			tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
+			if frappe.conf.developer_mode:
+				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+			else:
+				tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
 		step.duration = get_duration(start_time)
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 		return tmp_file_path
 
 	def _upload_build_context(self, context_filepath: str, build_server: str):
 		step = self.get_step("upload", "context") or frappe._dict()
 		step.status = "Running"
 		start_time = now()
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
 		try:
 			upload_filename = self.upload_build_context_for_docker_build(
@@ -947,6 +956,8 @@ class DeployCandidate(Document):
 		step.duration = get_duration(start_time)
 		step.output = "Pre-build validations passed"
 		step.status = "Success"
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
 	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
 		"""

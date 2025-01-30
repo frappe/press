@@ -17,18 +17,21 @@ export default {
 	name: 'Badge',
 	props: ['label', 'theme', 'size'],
 	components: {
-		FrappeUIBadge
+		FrappeUIBadge,
 	},
 	computed: {
 		_color() {
 			if (this.theme) return this.theme;
 			return {
 				Approved: 'green',
+				Recovering: 'orange',
+				Recovered: 'blue',
 				Broken: 'red',
 				Installing: 'orange',
 				Running: 'blue',
 				Pending: 'orange',
 				Failure: 'red',
+				Fatal: 'red',
 				Failed: 'red',
 				'Update Available': 'blue',
 				Enabled: 'blue',
@@ -53,9 +56,9 @@ export default {
 				'Not Deployed': 'orange',
 				'Action Required': 'red',
 				'First Deploy': 'green',
-				'Will be Uninstalled': 'red'
+				'Will be Uninstalled': 'red',
 			}[this.label];
-		}
-	}
+		},
+	},
 };
 </script>

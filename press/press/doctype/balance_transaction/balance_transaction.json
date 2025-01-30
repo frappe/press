@@ -33,7 +33,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Adjustment\nApplied To Invoice"
+   "options": "Adjustment\nApplied To Invoice\nPartnership Fee"
   },
   {
    "fetch_from": "team.currency",
@@ -104,7 +104,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-04 22:28:44.740627",
+ "modified": "2024-12-19 13:06:26.343005",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",

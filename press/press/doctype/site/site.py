@@ -38,6 +38,8 @@ from frappe.utils import (
 from press.exceptions import (
 	CannotChangePlan,
 	InsufficientSpaceOnServer,
+	SiteAlreadyArchived,
+	SiteUnderMaintenance,
 	VolumeResizeLimitError,
 )
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -250,6 +252,13 @@ class Site(Document, TagHelpers):
 		doc.latest_frappe_version = frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		)
+		doc.eol_versions = frappe.db.get_all(
+			"Frappe Version",
+			filters={"status": "End of Life"},
+			fields=["name"],
+			order_by="name desc",
+			pluck="name",
+		)
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
@@ -330,7 +339,7 @@ class Site(Document, TagHelpers):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase" " characters, numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
 			)
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
@@ -931,8 +940,12 @@ class Site(Document, TagHelpers):
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
 
+	@frappe.whitelist()
+	def physical_backup(self):
+		return self.backup(physical=True)
+
 	@dashboard_whitelist()
-	def backup(self, with_files=False, offsite=False, force=False):
+	def backup(self, with_files=False, offsite=False, force=False, physical=False):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
 				"Site Activity",
@@ -962,6 +975,7 @@ class Site(Document, TagHelpers):
 				"with_files": with_files,
 				"offsite": offsite,
 				"force": force,
+				"physical": physical,
 			}
 		).insert()
 
@@ -1000,7 +1014,9 @@ class Site(Document, TagHelpers):
 
 	def ready_for_move(self):
 		if self.status in ["Updating", "Pending", "Installing"]:
-			frappe.throw("Site is under maintenance. Cannot Update")
+			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
+		elif self.status == "Archived":
+			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
 		self.check_move_scheduled()
 
 		self.status_before_update = self.status
@@ -1013,6 +1029,7 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
+		physical_backup: bool = False,
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
@@ -1021,6 +1038,7 @@ class Site(Document, TagHelpers):
 			{
 				"doctype": "Site Update",
 				"site": self.name,
+				"backup_type": "Physical" if physical_backup else "Logical",
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",
@@ -1380,7 +1398,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
@@ -1433,6 +1451,15 @@ class Site(Document, TagHelpers):
 			try:
 				agent = Agent(self.server)
 				sid = agent.get_site_sid(self, user)
+			except requests.HTTPError as e:
+				if "validate_ip_address" in str(e):
+					frappe.throw(
+						f"Login with {user}'s credentials is IP restricted. Please remove the same and try again.",
+						frappe.ValidationError,
+					)
+				elif f"User {user} does not exist" in str(e):
+					frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+				raise e
 			except AgentRequestSkippedException:
 				frappe.throw(
 					"Server is unresponsive. Please try again in some time.",

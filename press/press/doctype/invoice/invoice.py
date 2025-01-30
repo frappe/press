@@ -82,7 +82,7 @@ class Invoice(Document):
 		transaction_fee: DF.Currency
 		transaction_fee_details: DF.Table[InvoiceTransactionFee]
 		transaction_net: DF.Currency
-		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary", "Partnership Fees"]
 		write_off_amount: DF.Float
 	# end: auto-generated types
 
@@ -256,12 +256,22 @@ class Invoice(Document):
 			self.status = "Paid"
 
 		if self.status == "Paid" and self.stripe_invoice_id and self.amount_paid == 0:
-			self.change_stripe_invoice_status("Void")
-			self.add_comment(
-				text=(
-					f"Stripe Invoice {self.stripe_invoice_id} voided because" " payment is done via credits."
+			stripe = get_stripe()
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+			if payment_intent.status == "processing":
+				# mark the fc invoice as Paid
+				# if the payment intent is processing, it means the invoice cannot be voided yet
+				# wait for invoice to be updated and then mark it as void if payment failed
+				# or issue a refund if succeeded
+				self.save()  # status is already Paid, so no need to set again
+			else:
+				self.change_stripe_invoice_status("Void")
+				self.add_comment(
+					text=(
+						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
+					)
 				)
-			)
 
 		self.save()
 
@@ -611,19 +621,6 @@ class Invoice(Document):
 
 	def compute_free_credits(self):
 		self.free_credits = sum([d.amount for d in self.credit_allocations if d.source == "Free Credits"])
-
-	def apply_partner_discount(self):
-		if self.flags.on_partner_conversion:
-			return
-
-		team = frappe.get_cached_doc("Team", self.team)
-		partner_level, legacy_contract = team.get_partner_level()
-		PartnerDiscounts = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
-		discount_percent = 0.1 if legacy_contract == 1 else PartnerDiscounts.get(partner_level)
-		self.discount_note = "New Partner Discount"
-		for item in self.items:
-			if item.document_type in ("Site", "Server", "Database Server"):
-				item.discount_percentage = discount_percent
 
 	def calculate_discounts(self):
 		for item in self.items:

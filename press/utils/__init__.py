@@ -10,6 +10,7 @@ import socket
 import ssl
 import time
 from datetime import datetime, timedelta
+from functools import wraps
 from pathlib import Path
 from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
@@ -410,7 +411,7 @@ class RemoteFrappeSite:
 		if missing_files:
 			missing_config = "site config and " if not self.backup_links.get("config") else ""
 			missing_backups = (
-				f"Missing {missing_config}backup files:" f" {', '.join([x.title() for x in missing_files])}"
+				f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
 			)
 			frappe.throw(missing_backups)
 
@@ -896,3 +897,18 @@ def get_full_chain_cert_of_domain(domain: str) -> str:
 	for cert in cert_chain:
 		cert_chain_str += cert + "\n"
 	return cert_chain_str
+
+
+def timer(f):
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		start_timestamp = time.time()
+		result = f(*args, **kwargs)
+		end_timestamp = time.time()
+		duration = end_timestamp - start_timestamp
+		if not hasattr(frappe.local, "timers"):
+			frappe.local.timers = {}
+		frappe.local.timers[f.__name__] = frappe.utils.rounded(duration, precision=3)
+		return result
+
+	return wrap

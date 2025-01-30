@@ -21,12 +21,27 @@
   "difference",
   "difference_deploy_type",
   "deploy_type",
+  "backup_type",
   "column_break_14",
+  "site_backup",
+  "skipped_backups",
+  "skipped_failing_patches",
+  "section_break_luvm",
+  "deactivate_site_job",
   "update_job",
+  "activate_site_job",
+  "column_break_rcyp",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "skipped_failing_patches",
-  "skipped_backups"
+  "physical_backup_restoration",
+  "section_break_gmrz",
+  "update_start",
+  "column_break_jtqs",
+  "update_end",
+  "column_break_ellx",
+  "update_duration",
+  "section_break_tpap",
+  "touched_tables"
  ],
  "fields": [
   {
@@ -63,7 +78,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal\nScheduled"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal\nScheduled"
   },
   {
    "fieldname": "destination_bench",
@@ -147,6 +162,7 @@
    "label": "Update Job",
    "no_copy": 1,
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -172,6 +188,7 @@
    "label": "Recover Job",
    "no_copy": 1,
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -202,7 +219,8 @@
    "fieldname": "skipped_backups",
    "fieldtype": "Check",
    "label": "Skipped Backups",
-   "no_copy": 1
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fieldname": "scheduled_time",
@@ -215,11 +233,100 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "default": "Logical",
+   "fieldname": "backup_type",
+   "fieldtype": "Select",
+   "label": "Backup Type",
+   "options": "Logical\nPhysical",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.backup_type == \"Physical\"",
+   "fieldname": "site_backup",
+   "fieldtype": "Link",
+   "label": "Site Backup",
+   "options": "Site Backup",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "activate_site_job",
+   "fieldtype": "Link",
+   "label": "Activate Site Job",
+   "options": "Agent Job",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "deactivate_site_job",
+   "fieldtype": "Link",
+   "label": "Deactivate Site Job",
+   "options": "Agent Job",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_luvm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rcyp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "physical_backup_restoration",
+   "fieldtype": "Link",
+   "label": "Physical Backup Restoration",
+   "options": "Physical Backup Restoration",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_tpap",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "touched_tables",
+   "fieldtype": "Code",
+   "label": "Touched Tables",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_gmrz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "update_start",
+   "fieldtype": "Datetime",
+   "label": "Update Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_jtqs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "update_end",
+   "fieldtype": "Datetime",
+   "label": "Update End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ellx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "update_duration",
+   "fieldtype": "Duration",
+   "label": "Update Duration",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-13 12:07:32.752226",
+ "modified": "2025-01-28 14:12:55.667576",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

@@ -37,9 +37,25 @@ class ConflictingCAARecord(ValidationError):
 	pass
 
 
+class ConflictingDNSRecord(ValidationError):
+	pass
+
+
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
 
 
 class AlertRuleNotEnabled(ValidationError):
+	pass
+
+
+class SiteUnderMaintenance(ValidationError):
+	pass
+
+
+class SiteAlreadyArchived(ValidationError):
+	pass
+
+
+class InactiveDomains(ValidationError):
 	pass

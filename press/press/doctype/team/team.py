@@ -533,7 +533,7 @@ class Team(Document):
 
 	def create_partner_referral_code(self):
 		if not self.partner_referral_code:
-			self.partner_referral_code = random_string(10)
+			self.partner_referral_code = random_string(10).upper()
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
@@ -817,11 +817,11 @@ class Team(Document):
 					invoice.stripe_link_expired = True
 		return invoices
 
-	def allocate_credit_amount(self, amount, source, remark=None):
+	def allocate_credit_amount(self, amount, source, remark=None, type="Adjustment"):
 		doc = frappe.get_doc(
 			doctype="Balance Transaction",
 			team=self.name,
-			type="Adjustment",
+			type=type,
 			source=source,
 			amount=amount,
 			description=remark,
@@ -892,7 +892,7 @@ class Team(Document):
 	def get_balance(self):
 		res = frappe.get_all(
 			"Balance Transaction",
-			filters={"team": self.name, "docstatus": 1},
+			filters={"team": self.name, "docstatus": 1, "type": ("!=", "Partnership Fee")},
 			order_by="creation desc",
 			limit=1,
 			pluck="ending_balance",
@@ -1005,9 +1005,9 @@ class Team(Document):
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
-			legacy_contract = res.get("legacy_contract")
+			certificate_count = res.get("certificates")
 			if partner_level:
-				return partner_level, legacy_contract
+				return partner_level, certificate_count
 			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
@@ -1200,9 +1200,7 @@ class Team(Document):
 	def send_telegram_alert_for_failed_payment(self, invoice):
 		team_url = get_url_to_form("Team", self.name)
 		invoice_url = get_url_to_form("Invoice", invoice)
-		message = (
-			f"Failed Invoice Payment [{invoice}]({invoice_url}) of" f" Partner: [{self.name}]({team_url})"
-		)
+		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
 	@frappe.whitelist()
@@ -1319,6 +1317,10 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
+	if payment_for and payment_for == "partnership_fee":
+		process_partnership_fee(payment_intent)
+		return
+
 	handle_payment_intent_succeeded(payment_intent)
 
 
@@ -1416,6 +1418,64 @@ def enqueue_finalize_unpaid_for_team(team: str):
 	for invoice in invoices:
 		doc = frappe.get_doc("Invoice", invoice)
 		doc.finalize_invoice()
+
+
+def process_partnership_fee(payment_intent):
+	from datetime import datetime
+
+	if isinstance(payment_intent, str):
+		stripe = get_stripe()
+		payment_intent = stripe.PaymentIntent.retrieve(payment_intent)
+
+	metadata = payment_intent.get("metadata")
+	if frappe.db.exists("Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}):
+		# ignore creating duplicate partnership fee invoice
+		return
+
+	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	amount_with_tax = payment_intent["amount"] / 100
+	gst = float(metadata.get("gst", 0))
+	amount = amount_with_tax - gst
+	balance_transaction = team.allocate_credit_amount(
+		amount, source="Prepaid Credits", remark=payment_intent["id"], type="Partnership Fee"
+	)
+
+	invoice = frappe.get_doc(
+		doctype="Invoice",
+		team=team.name,
+		type="Partnership Fees",
+		status="Paid",
+		due_date=datetime.fromtimestamp(payment_intent["created"]),
+		total=amount,
+		amount_due=amount,
+		gst=gst or 0,
+		amount_due_with_tax=amount_with_tax,
+		amount_paid=amount_with_tax,
+		stripe_payment_intent_id=payment_intent["id"],
+	)
+	invoice.append(
+		"items",
+		{
+			"description": "Partnership Fee",
+			"document_type": "Balance Transaction",
+			"document_name": balance_transaction.name,
+			"quantity": 1,
+			"rate": amount,
+		},
+	)
+	invoice.insert()
+	invoice.reload()
+
+	# latest stripe API sets charge id in latest_charge
+	charge = payment_intent.get("latest_charge")
+	if not charge:
+		# older stripe API sets charge id in charges.data
+		charges = payment_intent.get("charges", {}).get("data", [])
+		charge = charges[0]["id"] if charges else None
+	if charge:
+		# update transaction amount, fee and exchange rate
+		invoice.update_transaction_details(charge)
+		invoice.submit()
 
 
 def get_permission_query_conditions(user):

@@ -57,6 +57,7 @@ class PressSettings(Document):
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_physical_backup: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
@@ -87,6 +88,7 @@ class PressSettings(Document):
 		github_app_id: DF.Data | None
 		github_app_private_key: DF.Code | None
 		github_app_public_link: DF.Data | None
+		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
 		hetzner_api_token: DF.Password | None
@@ -104,6 +106,8 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
+		partnership_fee_inr: DF.Int
+		partnership_fee_usd: DF.Int
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
@@ -155,6 +159,11 @@ class PressSettings(Document):
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"partnership_fee_inr",
+		"partnership_fee_usd",
+	)
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

@@ -66,8 +66,8 @@
 									? `This version is not available for the ${$format.plural(
 											versionAppsMap[v.name].length,
 											'app',
-											'apps'
-									  )} ${$format.commaAnd(versionAppsMap[v.name])}`
+											'apps',
+										)} ${$format.commaAnd(versionAppsMap[v.name])}`
 									: ''
 							"
 						>
@@ -77,7 +77,7 @@
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'bg-white text-gray-900  hover:bg-gray-50',
 									v.disabled && 'opacity-50 hover:cursor-default',
-									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
+									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
 								]"
 								@click="
 									() => {
@@ -87,9 +87,19 @@
 								"
 							>
 								<span class="font-medium">{{ v.name }} </span>
-								<span class="ml-1 text-gray-600">
-									{{ v.status }}
-								</span>
+								<div
+									v-if="v.status === 'Develop'"
+									class="flex items-center gap-2"
+								>
+									<Tooltip
+										text="This version is under development and may have bugs. Do not use for production sites."
+									>
+										<i-lucide-info class="h-4 w-4 text-gray-500" />
+									</Tooltip>
+									<span class="ml-1 text-gray-600">
+										{{ v.status }}
+									</span>
+								</div>
 							</button>
 						</component>
 					</div>
@@ -112,7 +122,7 @@
 								cluster === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 									: 'bg-white text-gray-900  hover:bg-gray-50',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
@@ -153,15 +163,17 @@
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
-				<div class="mt-3 text-xs text-gray-700">
-					<p>
-						* <strong>Support</strong> includes only issues and bug fixes
-						related to Frappe apps, functional queries will not be entertained.
-					</p>
-					<p class="mt-1">
-						** If you face any issue while using Frappe Cloud, you can raise
-						support ticket regardless of site plan.
-					</p>
+				<div class="mt-4 text-xs text-gray-700">
+					<div
+						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
+					>
+						<i-lucide-badge-check class="h-4 w-8 text-gray-600" />
+						<span class="ml-4">
+							<strong>Support</strong> covers only issues of Frappe apps and not
+							functional queries. You can raise a support ticket for Frappe
+							Cloud issues for all plans.
+						</span>
+					</div>
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
@@ -224,7 +236,7 @@
 					class="checkbox"
 					type="checkbox"
 					label="I am okay if my details are shared with local partner"
-					@change="val => (shareDetailsConsent = val.target.checked)"
+					@change="(val) => (shareDetailsConsent = val.target.checked)"
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 			</div>
@@ -253,7 +265,7 @@ import {
 	Tooltip,
 	debounce,
 	Breadcrumbs,
-	getCachedDocumentResource
+	getCachedDocumentResource,
 } from 'frappe-ui';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import { validateSubdomain } from '../utils/site';
@@ -279,23 +291,7 @@ export default {
 		TextInput,
 		Tooltip,
 		Summary,
-		Header
-	},
-	mounted() {
-		if (!this.$team.doc.onboarding.site_created && window.posthog?.__loaded) {
-			window.posthog.identify(this.$team.doc.user, {
-				app: 'frappe_cloud',
-				action: 'first_new_site_creation'
-			});
-			if (!window.posthog.sessionRecordingStarted()) {
-				window.posthog.startSessionRecording();
-			}
-		}
-	},
-	unmounted() {
-		if (window.posthog?.__loaded && window.posthog.sessionRecordingStarted()) {
-			window.posthog.stopSessionRecording();
-		}
+		Header,
 	},
 	data() {
 		return {
@@ -311,7 +307,7 @@ export default {
 			showLocalisationOption: false,
 			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
-			agreedToRegionConsent: false
+			agreedToRegionConsent: false,
 		};
 	},
 	watch: {
@@ -323,7 +319,7 @@ export default {
 		showLocalisationOption() {
 			if (this.showLocalisationOption) {
 				const localisationAppCountries = this.localisationAppCountries.map(
-					c => c.value
+					(c) => c.value,
 				);
 
 				if (
@@ -352,11 +348,11 @@ export default {
 				if (!invalidMessage) {
 					this.$resources.subdomainExists.submit();
 				}
-			}, 500)
+			}, 500),
 		},
 		closestCluster() {
 			this.cluster = this.closestCluster;
-		}
+		},
 	},
 	resources: {
 		options() {
@@ -370,7 +366,7 @@ export default {
 						this.version = this.options.versions[0].name;
 					}
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		subdomainExists() {
@@ -379,7 +375,7 @@ export default {
 				makeParams() {
 					return {
 						domain: this.options?.domain,
-						subdomain: this.subdomain
+						subdomain: this.subdomain,
 					};
 				},
 				validate() {
@@ -390,7 +386,7 @@ export default {
 				},
 				transform(data) {
 					return !Boolean(data);
-				}
+				},
 			};
 		},
 		newSite() {
@@ -415,8 +411,8 @@ export default {
 								apps: [
 									{ app: 'frappe' },
 									...this.apps
-										.filter(app => app.app)
-										.map(app => ({ app: app.app }))
+										.filter((app) => app.app)
+										.map((app) => ({ app: app.app })),
 								],
 								app_plans: appPlans,
 								cluster: this.cluster,
@@ -424,8 +420,8 @@ export default {
 								group: this.selectedVersion.group.name,
 								domain: this.options.domain,
 								subscription_plan: this.plan.name,
-								share_details_consent: this.shareDetailsConsent
-							}
+								share_details_consent: this.shareDetailsConsent,
+							},
 						};
 					},
 					validate() {
@@ -435,16 +431,16 @@ export default {
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
-								'Please agree to the above consent to create site'
+								'Please agree to the above consent to create site',
 							);
 						}
 					},
-					onSuccess: site => {
+					onSuccess: (site) => {
 						router.push({
 							name: 'Site Jobs',
-							params: { name: site.name }
+							params: { name: site.name },
 						});
-					}
+					},
 				};
 			} else {
 				return {
@@ -460,7 +456,7 @@ export default {
 						return {
 							site: {
 								name: this.subdomain,
-								apps: ['frappe', ...this.apps.map(app => app.app)],
+								apps: ['frappe', ...this.apps.map((app) => app.app)],
 								localisation_country: this.showLocalisationSelector
 									? this.selectedLocalisationCountry?.value
 									: null,
@@ -469,10 +465,10 @@ export default {
 								cluster: this.cluster,
 								plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
-								selected_app_plans: appPlans
+								selected_app_plans: appPlans,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
-							}
+							},
 						};
 					},
 					validate() {
@@ -482,36 +478,36 @@ export default {
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
-								'Please agree to the above consent to create site'
+								'Please agree to the above consent to create site',
 							);
 						}
 					},
-					onSuccess: site => {
+					onSuccess: (site) => {
 						router.push({
 							name: 'Site Job',
-							params: { name: site.site, id: site.job }
+							params: { name: site.site, id: site.job },
 						});
-					}
+					},
 				};
 			}
-		}
+		},
 	},
 	computed: {
 		options() {
 			return this.$resources.options.data;
 		},
 		selectedVersion() {
-			return this.options?.versions.find(v => v.name === this.version);
+			return this.options?.versions.find((v) => v.name === this.version);
 		},
 		availableVersions() {
 			if (!this.apps.length || this.bench)
 				return this.options.versions.sort((a, b) =>
-					b.name.localeCompare(a.name)
+					b.name.localeCompare(a.name),
 				);
 
 			let commonVersions = this.apps.reduce((acc, app) => {
-				if (!acc) return app.sources.map(s => s.version);
-				return acc.filter(v => app.sources.map(s => s.version).includes(v));
+				if (!acc) return app.sources.map((s) => s.version);
+				return acc.filter((v) => app.sources.map((s) => s.version).includes(v));
 			}, null);
 
 			if (this.selectedLocalisationCountry) {
@@ -521,14 +517,14 @@ export default {
 				this.version = 'Version 15';
 			}
 
-			return this.options.versions.map(v => ({
+			return this.options.versions.map((v) => ({
 				...v,
-				disabled: !commonVersions.includes(v.name)
+				disabled: !commonVersions.includes(v.name),
 			}));
 		},
 		selectedClusterTitle() {
 			return this.selectedVersion?.group?.clusters?.find(
-				c => c.name === this.cluster
+				(c) => c.name === this.cluster,
 			)?.title;
 		},
 		selectedVersionApps() {
@@ -538,23 +534,26 @@ export default {
 				apps = this.options.app_source_details.sort((a, b) =>
 					a.total_installs !== b.total_installs
 						? b.total_installs - a.total_installs
-						: a.app.localeCompare(b.app)
+						: a.app.localeCompare(b.app),
 				);
 			else if (!this.selectedVersion?.group?.bench_app_sources) apps = [];
 			else
-				apps = this.selectedVersion.group.bench_app_sources.map(app_source => {
-					let app_source_details = this.options.app_source_details[app_source];
+				apps = this.selectedVersion.group.bench_app_sources.map(
+					(app_source) => {
+						let app_source_details =
+							this.options.app_source_details[app_source];
 
-					let marketplace_details = app_source_details
-						? this.options.marketplace_details[app_source_details.app]
-						: {};
+						let marketplace_details = app_source_details
+							? this.options.marketplace_details[app_source_details.app]
+							: {};
 
-					return {
-						app_title: app_source,
-						...app_source_details,
-						...marketplace_details
-					};
-				});
+						return {
+							app_title: app_source,
+							...app_source_details,
+							...marketplace_details,
+						};
+					},
+				);
 
 			// sorted by total installs and then by name
 			return apps.sort((a, b) => {
@@ -569,7 +568,7 @@ export default {
 		},
 		selectedVersionAppOptions() {
 			return this.selectedVersionApps.filter(
-				app => !this.localisationAppNames.includes(app.app)
+				(app) => !this.localisationAppNames.includes(app.app),
 			);
 		},
 		showLocalisationSelector() {
@@ -581,12 +580,12 @@ export default {
 				return false;
 
 			const appsThatNeedLocalisation = this.selectedVersionApps.filter(
-				app => app.localisation_apps.length
+				(app) => app.localisation_apps.length,
 			);
 
 			if (
-				appsThatNeedLocalisation.some(app =>
-					this.apps.map(a => a.app).includes(app.app)
+				appsThatNeedLocalisation.some((app) =>
+					this.apps.map((a) => a.app).includes(app.app),
 				)
 			)
 				return true;
@@ -596,35 +595,35 @@ export default {
 		localisationAppNames() {
 			if (!this.selectedVersionApps) return [];
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
-				app => app.localisation_apps
+				(app) => app.localisation_apps,
 			);
 
 			return localisationAppDetails
-				.map(app => app?.marketplace_app)
+				.map((app) => app?.marketplace_app)
 				.filter(Boolean);
 		},
 		localisationAppCountries() {
 			if (!this.selectedVersionApps) return [];
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
-				app => app.localisation_apps
+				(app) => app.localisation_apps,
 			);
-			return localisationAppDetails.map(app => ({
+			return localisationAppDetails.map((app) => ({
 				label: app?.country,
-				value: app?.country
+				value: app?.country,
 			}));
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
-			return plans.data.find(p => p.name === this.plan.name);
+			return plans.data.find((p) => p.name === this.plan.name);
 		},
 		versionAppsMap() {
-			const versions = this.availableVersions.map(v => v.name);
+			const versions = this.availableVersions.map((v) => v.name);
 			let problemAppVersions = {};
 			if (!this.bench)
 				for (let app of this.apps) {
-					const appVersions = app.sources.map(s => s.version);
+					const appVersions = app.sources.map((s) => s.version);
 					const problemVersions = versions.filter(
-						version => !appVersions.includes(version)
+						(version) => !appVersions.includes(version),
 					);
 					for (let version of problemVersions) {
 						if (!problemAppVersions[version]) {
@@ -644,21 +643,21 @@ export default {
 						label: group ? group.doc.title : this.bench,
 						route: {
 							name: 'Release Group Detail',
-							params: { name: this.bench }
-						}
+							params: { name: this.bench },
+						},
 					},
 					{
 						label: 'New Site',
 						route: {
 							name: 'Release Group New Site',
-							params: { bench: this.bench }
-						}
-					}
+							params: { bench: this.bench },
+						},
+					},
 				];
 			}
 			return [
 				{ label: 'Sites', route: '/sites' },
-				{ label: 'New Site', route: '/sites/new' }
+				{ label: 'New Site', route: '/sites/new' },
 			];
 		},
 		_totalPerMonth() {
@@ -667,7 +666,7 @@ export default {
 					? this.selectedPlan.price_inr
 					: this.selectedPlan.price_usd;
 
-			for (let app of this.apps.filter(app => app.plan)) {
+			for (let app of this.apps.filter((app) => app.plan)) {
 				total +=
 					this.$team.doc.currency == 'INR'
 						? app.plan.price_inr
@@ -681,81 +680,81 @@ export default {
 		},
 		totalPerDay() {
 			return this.$format.userCurrency(
-				this.$format.pricePerDay(this._totalPerMonth)
+				this.$format.pricePerDay(this._totalPerMonth),
 			);
 		},
 		siteSummaryOptions() {
 			let appPlans = [];
 			for (let app of this.apps) {
 				appPlans.push(
-					`${this.selectedVersionApps.find(a => a.app === app.app).app_title} ${
+					`${this.selectedVersionApps.find((a) => a.app === app.app).app_title} ${
 						app.plan?.price_inr
 							? `- <span class="text-gray-600">${this.$format.userCurrency(
 									this.$team.doc.currency == 'INR'
 										? app.plan.price_inr
-										: app.plan.price_usd
-							  )} per month</span>`
+										: app.plan.price_usd,
+								)} per month</span>`
 							: ''
-					}`
+					}`,
 				);
 			}
 
 			return [
 				{
 					label: 'Frappe Framework Version',
-					value: this.selectedVersion?.name
+					value: this.selectedVersion?.name,
 				},
 				{
 					label: 'Region',
-					value: this.selectedClusterTitle
+					value: this.selectedClusterTitle,
 				},
 				{
 					label: 'Site URL',
-					value: `${this.subdomain}.${this.options?.domain}`
+					value: `${this.subdomain}.${this.options?.domain}`,
 				},
 				{
 					label: 'Site Plan',
 					value: `${this.$format.userCurrency(
 						this.$team.doc.currency == 'INR'
 							? this.selectedPlan.price_inr
-							: this.selectedPlan.price_usd
-					)} per month`
+							: this.selectedPlan.price_usd,
+					)} per month`,
 				},
 				{
 					label: 'Product Warranty',
 					value: this.selectedPlan.support_included
 						? 'Included'
-						: 'Not Included'
+						: 'Not Included',
 				},
 				{
 					label: 'Apps',
-					value: this.apps.length ? appPlans.join('<br>') : 'No apps selected'
+					value: this.apps.length ? appPlans.join('<br>') : 'No apps selected',
 				},
 				{
 					label: 'Total',
 					value: `${this.totalPerMonth} per month <div class="text-gray-600">${this.totalPerDay} per day</div>`,
-					condition: () => this._totalPerMonth
-				}
+					condition: () => this._totalPerMonth,
+				},
 			];
-		}
+		},
 	},
 	methods: {
 		async getClosestCluster() {
 			if (this.closestCluster) return this.closestCluster;
 			let proxyServers = this.selectedVersion?.group?.clusters
-				.flatMap(c => c.proxy_server || [])
-				.map(server => server.name);
+				.flatMap((c) => c.proxy_server || [])
+				.map((server) => server.name);
 
 			if (proxyServers.length > 0) {
 				this.findingClosestServer = true;
-				let promises = proxyServers.map(server => this.getPingTime(server));
+				let promises = proxyServers.map((server) => this.getPingTime(server));
 				let results = await Promise.allSettled(promises);
 				let fastestServer = results.reduce((a, b) =>
-					a.value.pingTime < b.value.pingTime ? a : b
+					a.value.pingTime < b.value.pingTime ? a : b,
 				);
 				let closestServer = fastestServer.value.server;
 				let closestCluster = this.selectedVersion?.group?.clusters.find(
-					c => c.proxy_server?.name === closestServer
+					(c) => c.proxy_server?.name === closestServer,
 				);
 				if (!this.closestCluster) {
 					this.closestCluster = closestCluster.name;
@@ -783,9 +782,9 @@ export default {
 
 			return this.availableVersions
 				.sort((a, b) => b.name.localeCompare(a.name))
-				.find(v => !v.disabled)?.name;
-		}
-	}
+				.find((v) => !v.disabled)?.name;
+		},
+	},
 };
 </script>
 <style scoped>

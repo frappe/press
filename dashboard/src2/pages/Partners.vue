@@ -2,7 +2,9 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<FBreadcrumbs
-				:items="[{ label: 'Partners', route: { name: 'Partners' } }]"
+				:items="[
+					{ label: 'Partner Portal', route: { name: 'Partner Portal' } }
+				]"
 			/>
 		</Header>
 		<TabsWithRouter

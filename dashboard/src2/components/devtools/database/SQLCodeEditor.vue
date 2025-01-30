@@ -31,22 +31,38 @@ export default {
 			set(value) {
 				this.$emit('update:query', value);
 			}
+		},
+		extensions() {
+			if (!this.schema) {
+				return [
+					sql({
+						dialect: MySQL,
+						upperCaseKeywords: true
+					}),
+					autocompletion({
+						activateOnTyping: true,
+						closeOnBlur: false,
+						maxRenderedOptions: 10,
+						icons: false
+					})
+				];
+			}
+			return [
+				sql({
+					dialect: MySQL,
+					upperCaseKeywords: true,
+					schema: this.schema
+				}),
+				autocompletion({
+					activateOnTyping: true,
+					closeOnBlur: false,
+					maxRenderedOptions: 10,
+					icons: false
+				})
+			];
 		}
 	},
 	setup(props, { emit }) {
-		const extensions = [
-			sql({
-				dialect: MySQL,
-				upperCaseKeywords: true,
-				schema: props.schema
-			}),
-			autocompletion({
-				activateOnTyping: true,
-				closeOnBlur: false,
-				maxRenderedOptions: 10,
-				icons: false
-			})
-		];
 		// Codemirror EditorView instance ref
 		const view = shallowRef();
 		const handleReady = payload => {
@@ -66,13 +82,16 @@ export default {
 					selection.from,
 					selection.to
 				);
+				if ((selectedText ?? '').trim() === '') {
+					emit('codeUnselected');
+					return;
+				}
 				emit('codeSelected', selectedText);
 			} else {
 				emit('codeUnselected');
 			}
 		};
 		return {
-			extensions,
 			handleReady
 		};
 	}

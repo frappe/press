@@ -339,6 +339,7 @@ class BillingAudit(Audit):
 			"Sites active after trial": self.free_sites_after_trial,
 			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
 			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
+			"Subscriptions with duplicate usage records created": self.subscriptions_with_duplicate_usage_records,
 		}
 
 		log = {a: [] for a in audits}
@@ -365,6 +366,29 @@ class BillingAudit(Audit):
 			},
 			pluck="name",
 		)
+
+	def subscriptions_with_duplicate_usage_records(self):
+		data = frappe.db.sql(
+			"""
+			SELECT subscription, Count(name) as count
+			FROM `tabUsage Record` as UR
+			WHERE UR.date = CURDATE()
+			AND UR.docstatus = 1
+			AND UR.plan NOT LIKE '%Marketplace%'
+			GROUP BY UR.document_name, UR.plan, UR.team
+			HAVING count > 1
+			ORDER BY count DESC
+		""",
+			as_dict=True,
+		)
+
+		if not data:
+			return data
+
+		result = []
+		for d in data:
+			result.append(d.subscription)
+		return result
 
 	def disabled_teams_with_active_sites(self):
 		return frappe.get_all(

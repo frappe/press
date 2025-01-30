@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import boto3
 import frappe
+import frappe.utils
 import pytz
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
@@ -22,6 +23,8 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
+		created_for_site_update: DF.Check
+		duration: DF.Duration | None
 		mariadb_root_password: DF.Password | None
 		progress: DF.Data | None
 		region: DF.Link
@@ -45,6 +48,20 @@ class VirtualDiskSnapshot(Document):
 			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
 				"mariadb_root_password"
 			)
+
+	def on_update(self):
+		if self.has_value_changed("status") and self.status == "Unavailable":
+			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
+			if site_backup_name:
+				frappe.db.set_value("Site Backup", site_backup_name, "files_availability", "Unavailable")
+
+		if self.has_value_changed("status") and self.status == "Completed":
+			old_doc = self.get_doc_before_save()
+			if old_doc is None or old_doc.status != "Pending":
+				return
+
+			self.duration = frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
+			self.save()
 
 	@frappe.whitelist()
 	def sync(self):
@@ -123,6 +140,15 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
+	def create_volume(self, availability_zone: str) -> str:
+		self.sync()
+		if self.status != "Completed":
+			raise Exception("Snapshot is unavailable")
+		response = self.client.create_volume(
+			SnapshotId=self.snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp3"
+		)
+		return response["VolumeId"]
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -152,7 +178,11 @@ def sync_snapshots():
 def delete_old_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Completed", "creation": ("<=", frappe.utils.add_days(None, -2))},
+		{
+			"status": "Completed",
+			"creation": ("<=", frappe.utils.add_days(None, -2)),
+			"created_for_site_update": 0,
+		},
 		pluck="name",
 		order_by="creation asc",
 		limit=500,

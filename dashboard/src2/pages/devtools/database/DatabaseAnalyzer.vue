@@ -162,7 +162,7 @@
 
 			<!-- Queries Information -->
 			<ToggleContent
-				class="mt-5"
+				class="mt-3"
 				label="SQL Query Analysis"
 				subLabel="Check the concerning queries that might be affecting your database performance"
 			>
