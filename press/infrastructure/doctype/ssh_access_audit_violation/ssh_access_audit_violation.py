@@ -16,7 +16,6 @@ class SSHAccessAuditViolation(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-
 		host: DF.Data | None
 		key: DF.Code | None
 		key_doctype: DF.Link | None

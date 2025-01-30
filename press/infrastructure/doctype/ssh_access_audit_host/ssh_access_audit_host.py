@@ -16,7 +16,6 @@ class SSHAccessAuditHost(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-
 		host: DF.Data
 		name: DF.Int | None
 		parent: DF.Data
