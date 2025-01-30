@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from functools import cached_property
 
 import frappe
 from ansible import constants, context
@@ -18,6 +19,17 @@ from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 
 from press.utils import reconnect_on_failure
+
+SERVER_TYPES = [
+	"Proxy Server",
+	"Server",
+	"Database Server",
+	"Analytics Server",
+	"Log Server",
+	"Monitor Server",
+	"Registry Server",
+	"Trace Server",
+]
 
 
 class SSHAccessAudit(Document):
@@ -39,7 +51,12 @@ class SSHAccessAudit(Document):
 		hosts: DF.Table[SSHAccessAuditHost]
 		inventory: DF.Code | None
 		name: DF.Int | None
+		reachable_hosts: DF.Int
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		suspicious_users: DF.Code | None
+		total_hosts: DF.Int
+		total_violations: DF.Int
+		user_violations: DF.Int
 		violations: DF.Table[SSHAccessAuditViolation]
 	# end: auto-generated types
 
@@ -49,30 +66,36 @@ class SSHAccessAudit(Document):
 	@frappe.whitelist()
 	def run(self):
 		frappe.only_for("System Manager")
+		self.status = "Running"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_run", queue="long", timeout=3600, enqueue_after_commit=True
+		)
+
+	def _run(self):
+		self.fetch_keys_from_servers()
+		self.check_key_violations()
+		self.check_user_violations()
+		self.set_statistics()
+		self.set_status()
+		self.save()
+
+	def fetch_keys_from_servers(self):
 		try:
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
-			for host in ad_hoc.run():
+			hosts = ad_hoc.run()
+			sorted_hosts = sorted(hosts, key=lambda host: self.inventory.index(host["host"]))
+			for host in sorted_hosts:
 				self.append("hosts", host)
 		except Exception:
 			import traceback
 
 			traceback.print_exc()
-		self.save()
 
 	def set_inventory(self):
-		server_types = [
-			"Proxy Server",
-			"Server",
-			"Database Server",
-			"Analytics Server",
-			"Log Server",
-			"Monitor Server",
-			"Registry Server",
-			"Trace Server",
-		]
 		all_servers = []
 		domain = frappe.db.get_value("Press Settings", None, "domain")
-		for server_type in server_types:
+		for server_type in SERVER_TYPES:
 			# Skip self-hosted servers
 			filters = {"status": "Active", "domain": domain}
 			meta = frappe.get_meta(server_type)
@@ -94,6 +117,111 @@ class SSHAccessAudit(Document):
 		if frappe.conf.replica_host:
 			servers.append(f"db2.{frappe.local.site}")
 		return servers
+
+	def get_acceptable_key_fields(self):
+		fields = []
+		for server_type in SERVER_TYPES:
+			meta = frappe.get_meta(server_type)
+			for key_field in ["root_public_key", "frappe_public_key"]:
+				if meta.has_field(key_field):
+					fields.append([server_type, key_field])
+
+		fields.append(["SSH Key", "public_key"])
+		return fields
+
+	def get_known_key_fields(self):
+		fields = self.get_acceptable_key_fields()
+		fields.append(["User SSH Key", "ssh_public_key"])
+		return fields
+
+	@cached_property
+	def acceptable_keys(self):
+		keys = {}
+		domain = frappe.db.get_value("Press Settings", None, "domain")
+		fields = self.get_acceptable_key_fields()
+		for doctype, field in fields:
+			filters = {}
+			if doctype.endswith("Server"):  # Skip self-hosted servers
+				filters = {"status": "Active", "domain": domain}
+
+				meta = frappe.get_meta(doctype)
+				if meta.has_field("cluster"):
+					filters["cluster"] = ("!=", "Hybrid")
+
+				if meta.has_field("is_self_hosted"):
+					filters["is_self_hosted"] = False
+
+			documents = frappe.get_all(doctype, filters=filters, fields=["name", field])
+			for document in documents:
+				key_string = document.get(field)
+				if not key_string:
+					continue
+				key = _extract_key_from_key_string(key_string)
+				keys[key] = {
+					"key_doctype": doctype,
+					"key_document": document.name,
+					"key_field": field,
+				}
+		return keys
+
+	@cached_property
+	def known_keys(self):
+		keys = {}
+		fields = self.get_known_key_fields()
+		for doctype, field in fields:
+			documents = frappe.get_all(doctype, fields=["name", field])
+			for document in documents:
+				key_string = document.get(field)
+				if not key_string:
+					continue
+				key = _extract_key_from_key_string(key_string)
+				keys[key] = {
+					"key_doctype": doctype,
+					"key_document": document.name,
+					"key_field": field,
+				}
+		return keys
+
+	def check_key_violations(self):
+		known_keys = self.known_keys
+		acceptable_keys = self.acceptable_keys
+		for host in self.hosts:
+			if not host.users:
+				continue
+			users = json.loads(host.users)
+			for user in users:
+				for key in user["keys"]:
+					if key in acceptable_keys:
+						continue
+					violation = {"host": host.host, "user": user["user"], "key": key}
+					if key in known_keys:
+						violation.update(known_keys[key])
+					self.append("violations", violation)
+
+	def check_user_violations(self):
+		suspicious_users = []
+		acceptable_users = set(["frappe", "root"])
+		for host in self.hosts:
+			if not host.users:
+				continue
+			users = json.loads(host.users)
+			for user in users:
+				if user["user"] not in acceptable_users:
+					suspicious_users.append((host.host, user["user"]))
+
+		self.suspicious_users = json.dumps(suspicious_users, indent=1, sort_keys=True)
+
+	def set_statistics(self):
+		self.total_hosts = len(self.hosts)
+		self.reachable_hosts = len([host for host in self.hosts if host.status == "Completed"])
+		self.total_violations = len(self.violations)
+		self.user_violations = len(json.loads(self.suspicious_users))
+
+	def set_status(self):
+		if self.violations or self.user_violations:
+			self.status = "Failure"
+		else:
+			self.status = "Success"
 
 
 class AnsibleAdHoc:
@@ -186,8 +314,9 @@ class AnsibleCallback(CallbackBase):
 					"keys": [],
 				}
 				for key in row["stdout_lines"]:
-					if key.strip() and not key.strip().startswith("#"):
-						user["keys"].append(key)
+					stripped_key = key.strip()
+					if stripped_key and not stripped_key.startswith("#"):
+						user["keys"].append(_extract_key_from_key_string(stripped_key))
 
 				users.append(user)
 
@@ -204,3 +333,11 @@ class AnsibleCallback(CallbackBase):
 		host = result._host.get_name()
 		_result = result._result
 		return host, _result.get("results")
+
+
+def _extract_key_from_key_string(key_string):
+	try:
+		key_type, key, *_ = key_string.split()
+		return f"{key_type} {key}"
+	except Exception:
+		return key_string

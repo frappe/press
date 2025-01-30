@@ -6,9 +6,16 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "total_hosts",
+  "reachable_hosts",
+  "column_break_knsp",
+  "total_violations",
+  "user_violations",
   "inventory",
-  "hosts",
-  "violations"
+  "section_break_sqln",
+  "violations",
+  "suspicious_users",
+  "hosts"
  ],
  "fields": [
   {
@@ -24,6 +31,7 @@
   {
    "fieldname": "inventory",
    "fieldtype": "Code",
+   "hidden": 1,
    "label": "Inventory",
    "read_only": 1
   },
@@ -40,11 +48,54 @@
    "label": "Hosts",
    "options": "SSH Access Audit Host",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_knsp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_hosts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Hosts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_violations",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Violations",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_violations",
+   "fieldtype": "Int",
+   "label": "User Violations",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sqln",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.suspicious_users !== \"[]\"",
+   "fieldname": "suspicious_users",
+   "fieldtype": "Code",
+   "label": "Suspicious Users",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reachable_hosts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Reachable Hosts",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-29 17:23:21.712993",
+ "modified": "2025-01-30 18:16:46.869475",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "SSH Access Audit",

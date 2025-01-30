@@ -20,7 +20,8 @@ class SSHAccessAuditViolation(Document):
 		host: DF.Data | None
 		key: DF.Code | None
 		key_doctype: DF.Link | None
-		key_owner: DF.DynamicLink | None
+		key_document: DF.DynamicLink | None
+		key_field: DF.Data | None
 		name: DF.Int | None
 		parent: DF.Data
 		parentfield: DF.Data
