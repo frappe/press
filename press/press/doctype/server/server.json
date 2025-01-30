@@ -317,7 +317,7 @@
    "options": "Virtual Machine"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "new_worker_allocation",
    "fieldtype": "Check",
    "label": "New Worker Allocation"
