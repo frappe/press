@@ -62,7 +62,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Bare Metal"]
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -158,7 +158,64 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "Bare Metal":
+			return self._provision_bare_metal()
 		return None
+
+	def _provision_bare_metal(self):
+		"""Provision a VM on a bare metal host"""
+		# Find available bare metal host with sufficient resources
+		hosts = frappe.get_all(
+			"Bare Metal Host",
+			filters={
+				"status": "Active",
+				"cluster": self.cluster,
+				"available_cpu": (">=", self.vcpu),
+				"available_memory": (">=", self.memory),
+				"available_disk": (">=", self.disk_size),
+			},
+			order_by="available_cpu desc",
+			limit=1,
+		)
+
+		if not hosts:
+			frappe.throw("No suitable bare metal host found with required resources")
+
+		host = frappe.get_doc("Bare Metal Host", hosts[0].name)
+
+		try:
+			# Allocate resources on host
+			host.allocate_resources(self.vcpu, self.memory, self.disk_size)
+
+			# Get agent instance for the host
+			agent = host.get_agent()
+
+			# Create VM using agent
+			response = agent.create_vm({
+				"name": self.name,
+				"vcpu": self.vcpu,
+				"memory": self.memory,
+				"disk": self.disk_size,
+				"image": self.virtual_machine_image,
+				"network": {
+					"cluster": self.cluster,
+					"private_ip": True
+				}
+			})
+
+			# Update VM details
+			self.private_ip_address = response.get("private_ip")
+			self.public_ip_address = response.get("public_ip")
+			self.status = "Running"
+			self.bare_metal_host = host.name
+			self.save()
+
+		except Exception as e:
+			# Deallocate resources on failure
+			host.deallocate_resources(self.vcpu, self.memory, self.disk_size)
+			frappe.throw(f"Failed to provision VM on bare metal: {str(e)}")
+
+		return response
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -952,7 +1009,6 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "OCI":
 			volume = self.volumes[0]
 			return ((volume.iops / volume.size) - 45) / 1.5
-		return None
 
 	@frappe.whitelist()
 	def update_oci_volume_performance(self, vpus):
@@ -1353,6 +1409,168 @@ class VirtualMachine(Document):
 		)
 		self.sync()
 
+	def get_bare_metal_status_map(self):
+		"""Map bare metal VM statuses to internal statuses"""
+		return {
+			"creating": "Pending",
+			"starting": "Pending",
+			"running": "Running",
+			"stopping": "Pending",
+			"stopped": "Stopped",
+			"deleting": "Terminating",
+			"deleted": "Terminated",
+			"error": "Error"
+		}
+
+	def _sync_bare_metal(self):
+		"""Sync VM status and details from bare metal host"""
+		if not self.bare_metal_host:
+			return
+
+		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+		agent = host.get_agent()
+
+		try:
+			response = agent.get_vm(self.name)
+			if not response:
+				self.status = "Terminated"
+				return
+
+			# Update VM details
+			self.status = self.get_bare_metal_status_map().get(
+				response.get("status", "error").lower(), "Error"
+			)
+			self.private_ip_address = response.get("private_ip")
+			self.public_ip_address = response.get("public_ip")
+			self.save()
+
+		except Exception as e:
+			frappe.log_error(f"Failed to sync bare metal VM {self.name}: {str(e)}")
+			self.status = "Error"
+			self.save()
+
+	def _start_bare_metal(self):
+		"""Start VM on bare metal host"""
+		if not self.bare_metal_host:
+			frappe.throw("VM not associated with a bare metal host")
+
+		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+		agent = host.get_agent()
+
+		try:
+			response = agent.start_vm(self.name)
+			self.status = "Pending"
+			self.save()
+			return response
+		except Exception as e:
+			frappe.throw(f"Failed to start VM: {str(e)}")
+
+	def _stop_bare_metal(self, force=False):
+		"""Stop VM on bare metal host"""
+		if not self.bare_metal_host:
+			frappe.throw("VM not associated with a bare metal host")
+
+		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+		agent = host.get_agent()
+
+		try:
+			response = agent.stop_vm(self.name, force=force)
+			self.status = "Pending"
+			self.save()
+			return response
+		except Exception as e:
+			frappe.throw(f"Failed to stop VM: {str(e)}")
+
+	def _reboot_bare_metal(self):
+		"""Reboot VM on bare metal host"""
+		if not self.bare_metal_host:
+			frappe.throw("VM not associated with a bare metal host")
+
+		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+		agent = host.get_agent()
+
+		try:
+			response = agent.reboot_vm(self.name)
+			self.status = "Pending"
+			self.save()
+			return response
+		except Exception as e:
+			frappe.throw(f"Failed to reboot VM: {str(e)}")
+
+	def _terminate_bare_metal(self):
+		"""Terminate VM on bare metal host"""
+		if not self.bare_metal_host:
+			frappe.throw("VM not associated with a bare metal host")
+
+		if self.status == "Terminated":
+			return
+
+		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+		agent = host.get_agent()
+
+		try:
+			# Stop VM first if running
+			if self.status == "Running":
+				try:
+					agent.stop_vm(self.name, force=True)
+				except Exception:
+					frappe.log_error("Failed to stop VM before termination")
+
+			# Delete the VM
+			try:
+				agent.delete_vm(self.name)
+			except Exception as e:
+				frappe.log_error(f"Failed to delete VM: {str(e)}")
+
+			# Always try to release resources
+			host.deallocate_resources(self.vcpu, self.memory, self.disk_size)
+			
+			self.status = "Terminated"
+			self.bare_metal_host = None
+			self.private_ip_address = None
+			self.public_ip_address = None
+			self.save()
+
+		except Exception as e:
+			frappe.log_error(f"Failed to terminate VM {self.name}: {str(e)}")
+			frappe.throw(f"Failed to terminate VM: {str(e)}")
+
+	@classmethod
+	def bulk_sync_bare_metal(cls):
+		"""Bulk sync all bare metal VMs"""
+		clusters = frappe.get_all(
+			"Cluster",
+			filters={"cloud_provider": "Bare Metal", "status": "Active"},
+			pluck="name"
+		)
+
+		for cluster in clusters:
+			try:
+				cls.bulk_sync_bare_metal_cluster(cluster)
+			except Exception:
+				frappe.log_error(f"Failed to sync bare metal cluster {cluster}")
+
+	def bulk_sync_bare_metal_cluster(self, cluster):
+		"""Sync all VMs in a bare metal cluster"""
+		machines = frappe.get_all(
+			"Virtual Machine",
+			filters={
+				"cluster": cluster,
+				"cloud_provider": "Bare Metal",
+				"status": ("!=", "Terminated"),
+			},
+			pluck="name",
+		)
+
+		for machine in machines:
+			try:
+				vm = frappe.get_doc("Virtual Machine", machine)
+				vm._sync_bare_metal()
+				frappe.db.commit()
+			except Exception:
+				frappe.db.rollback()
+				frappe.log_error(f"Failed to sync bare metal VM {machine}")
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
@@ -1361,6 +1579,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("V
 def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
+	VirtualMachine.bulk_sync_bare_metal()
 
 
 def snapshot_virtual_machines():

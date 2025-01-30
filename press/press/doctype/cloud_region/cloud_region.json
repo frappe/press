@@ -23,7 +23,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "AWS EC2\nOCI\nHetzner",
+   "options": "AWS EC2\nOCI\nHetzner\nBare Metal",
    "reqd": 1
   }
  ],

@@ -57,7 +57,7 @@ class Cluster(Document):
 		aws_secret_access_key: DF.Password | None
 		beta: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "Bare Metal"]
 		description: DF.Data | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
@@ -168,6 +168,8 @@ class Cluster(Document):
 			self.provision_on_oci()
 		elif self.cloud_provider == "Hetzner":
 			self.provision_on_hetzner()
+		elif self.cloud_provider == "Bare Metal":
+			self.provision_on_bare_metal()
 
 	def provision_on_hetzner(self):
 		try:
@@ -846,3 +848,30 @@ class Cluster(Document):
 			filters={**filters, **extra_filters},
 			fields=["name", "title", "image", "beta"],
 		)
+
+	def provision_on_bare_metal(self):
+		try:
+			# Define the network configuration
+			subnets = [{
+				"type": "bare_metal",
+				"ip_range": self.subnet_cidr_block,
+				"network_zone": self.availability_zone,
+			}]
+
+			# Get agent credentials from Press Settings
+			settings = frappe.get_single("Press Settings")
+			agent_password = settings.get_password("bare_metal_agent_password")
+
+			# Create the network using agent
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			network = host.setup_network(
+				name=f"Frappe Cloud - {self.name}",
+				ip_range=self.cidr_block,
+				subnets=subnets
+			)
+			
+			self.vpc_id = network.id
+			self.save()
+
+		except Exception as e:
+			frappe.throw(f"Failed to provision network on bare metal: {str(e)}")

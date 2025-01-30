@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-27 14:13:57.152010",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "host_name",
+  "ip_address",
+  "resources_section",
+  "total_cpu",
+  "total_memory",
+  "total_disk",
+  "col_break_1",
+  "available_cpu",
+  "available_memory",
+  "available_disk",
+  "section_break_1",
+  "status",
+  "cluster"
+ ],
+ "fields": [
+  {
+   "fieldname": "host_name",
+   "fieldtype": "Data",
+   "label": "Host Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resources_section",
+   "fieldtype": "Section Break",
+   "label": "Resources"
+  },
+  {
+   "fieldname": "total_cpu",
+   "fieldtype": "Int",
+   "label": "Total CPU",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_memory",
+   "fieldtype": "Int",
+   "label": "Total Memory (GB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_disk",
+   "fieldtype": "Int",
+   "label": "Total Disk (GB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "available_cpu",
+   "fieldtype": "Int",
+   "label": "Available CPU"
+  },
+  {
+   "fieldname": "available_memory",
+   "fieldtype": "Int",
+   "label": "Available Memory (GB)"
+  },
+  {
+   "fieldname": "available_disk",
+   "fieldtype": "Int",
+   "label": "Available Disk (GB)"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nMaintenance\nOffline",
+   "default": "Active"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-23 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal Host",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 

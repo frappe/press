@@ -211,7 +211,10 @@
   "hybrid_domain",
   "tls_renewal_queue_size",
   "code_spaces_tab",
-  "spaces_domain"
+  "spaces_domain",
+  "bare_metal_section",
+  "bare_metal_agent_password",
+  "bare_metal_api_key"
  ],
  "fields": [
   {
@@ -1327,11 +1330,26 @@
    "fieldname": "disable_physical_backup",
    "fieldtype": "Check",
    "label": "Disable Physical Backup"
+  },
+  {
+   "fieldname": "bare_metal_section",
+   "fieldtype": "Section Break",
+   "label": "Bare Metal Settings"
+  },
+  {
+   "fieldname": "bare_metal_agent_password",
+   "fieldtype": "Password",
+   "label": "Bare Metal Agent Password"
+  },
+  {
+   "fieldname": "bare_metal_api_key",
+   "fieldtype": "Password",
+   "label": "Bare Metal API Key"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-28 14:41:49.332529",
+ "modified": "2024-10-14 21:02:12.948747",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
