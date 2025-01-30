@@ -13,6 +13,7 @@
   "public",
   "beta",
   "hybrid",
+  "devbox_cluster",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -283,6 +284,12 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "devbox_cluster",
+   "fieldtype": "Check",
+   "label": "Devbox Cluster"
   }
  ],
  "image_field": "image",
@@ -319,7 +326,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-09-14 13:52:58.308402",
+ "modified": "2025-01-24 19:54:24.858992",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
