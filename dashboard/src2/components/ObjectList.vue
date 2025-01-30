@@ -82,16 +82,16 @@
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
-						? row => this.options.onRowClick(row, context)
+						? (row) => this.options.onRowClick(row, context)
 						: null,
 					getRowRoute: this.options.route
-						? row => this.options.route(row)
+						? (row) => this.options.route(row)
 						: null,
 					rowHeight: this.options.rowHeight,
-					emptyState: {}
+					emptyState: {},
 				}"
 				row-key="name"
-				@update:selections="e => this.$emit('update:selections', e)"
+				@update:selections="(e) => this.$emit('update:selections', e)"
 			>
 				<template v-if="options.groupHeader" #group-header="{ group }">
 					<component :is="options.groupHeader({ ...context, group })" />
@@ -99,7 +99,7 @@
 				<template #cell="{ item, row, column }">
 					<ObjectListCell
 						:class="[
-							column == columns[0] ? ' text-gray-900' : ' text-gray-700'
+							column == columns[0] ? ' text-gray-900' : ' text-gray-700',
 						]"
 						:row="row"
 						:column="column"
@@ -148,7 +148,7 @@ import {
 	TextInput,
 	FeatherIcon,
 	Tooltip,
-	ErrorMessage
+	ErrorMessage,
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -169,11 +169,11 @@ export default {
 		TextInput,
 		FeatherIcon,
 		Tooltip,
-		ErrorMessage
+		ErrorMessage,
 	},
 	data() {
 		return {
-			searchQuery: ''
+			searchQuery: '',
 		};
 	},
 	watch: {
@@ -183,24 +183,24 @@ export default {
 					this.$list.update({
 						filters: {
 							...this.$list.filters,
-							[this.options.searchField]: ['like', `%${value.toLowerCase()}%`]
+							[this.options.searchField]: ['like', `%${value.toLowerCase()}%`],
 						},
 						start: 0,
-						pageLength: this.options.pageLength || 20
+						pageLength: this.options.pageLength || 20,
 					});
 				} else {
 					this.$list.update({
 						filters: {
 							...this.$list.filters,
-							[this.options.searchField]: undefined
+							[this.options.searchField]: undefined,
 						},
 						start: 0,
-						pageLength: this.options.pageLength || 20
+						pageLength: this.options.pageLength || 20,
 					});
 				}
 				this.$list.reload();
 			}
-		}
+		},
 	},
 	resources: {
 		list() {
@@ -214,7 +214,7 @@ export default {
 				cache: [
 					'ObjectList',
 					this.options.doctype || this.options.url,
-					this.options.filters
+					this.options.filters,
 				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
@@ -222,18 +222,18 @@ export default {
 				fields: [
 					'name',
 					...(this.options.fields || []),
-					...this.options.columns.map(column => column.fieldname)
+					...this.options.columns.map((column) => column.fieldname),
 				],
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
 				auto: true,
-				onError: e => {
+				onError: (e) => {
 					if (this.$list.data) {
 						this.$list.data = [];
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	beforeUpdate() {
 		if (this.$list?.list) {
@@ -260,8 +260,8 @@ export default {
 			subscribed[doctype] = true;
 
 			const throttledReload = throttle(this.$list.reload, 5000);
-			this.$socket.on('list_update', data => {
-				const names = (this.$list.data || []).map(d => d.name);
+			this.$socket.on('list_update', (data) => {
+				const names = (this.$list.data || []).map((d) => d.name);
 				if (data.doctype === doctype && names.includes(data.name)) {
 					throttledReload();
 				}
@@ -294,7 +294,7 @@ export default {
 					...column,
 					label: column.label,
 					key: column.fieldname,
-					align: column.align || 'left'
+					align: column.align || 'left',
 				});
 			}
 			if (this.options.rowActions) {
@@ -304,7 +304,7 @@ export default {
 					type: 'Actions',
 					width: '100px',
 					align: 'right',
-					actions: row => this.options.rowActions({ ...this.context, row })
+					actions: (row) => this.options.rowActions({ ...this.context, row }),
 				});
 			}
 			return columns;
@@ -320,17 +320,17 @@ export default {
 			let query = this.searchQuery.toLowerCase();
 
 			return this.rows
-				.map(row => {
+				.map((row) => {
 					if (row.rows && row.group) {
 						// group
-						let filteredRows = row.rows.filter(row =>
-							this.filterRow(query, row)
+						let filteredRows = row.rows.filter((row) =>
+							this.filterRow(query, row),
 						);
 
 						if (filteredRows.length) {
 							return {
 								...row,
-								rows: row.rows.filter(row => this.filterRow(query, row))
+								rows: row.rows.filter((row) => this.filterRow(query, row)),
 							};
 						}
 					}
@@ -350,11 +350,11 @@ export default {
 			} else if (this.filteredRows[0].rows) {
 				let total = this.rows.reduce(
 					(acc, group) => acc + group.rows.length,
-					0
+					0,
 				);
 				let filtered = this.filteredRows.reduce(
 					(acc, group) => acc + group.rows.length,
-					0
+					0,
 				);
 				summary = `${filtered} of ${total}`;
 			} else {
@@ -366,15 +366,15 @@ export default {
 			if (!this.options.filterControls) return [];
 			let controls = this.options.filterControls(this.context);
 			return controls
-				.filter(control => control.fieldname)
-				.map(control => {
+				.filter((control) => control.fieldname)
+				.map((control) => {
 					return reactive({ ...control, value: control.default || undefined });
 				});
 		},
 		actions() {
 			if (!this.options.actions) return [];
 			let actions = this.options.actions(this.context);
-			return actions.filter(action => {
+			return actions.filter((action) => {
 				if (action.condition) {
 					return action.condition(this.context);
 				}
@@ -396,7 +396,7 @@ export default {
 		context() {
 			return {
 				...this.options.context,
-				listResource: this.$list
+				listResource: this.$list,
 			};
 		},
 		isLoading() {
@@ -418,13 +418,13 @@ export default {
 			if (this.options.banner) {
 				return this.options.banner(this.context);
 			}
-		}
+		},
 	},
 	methods: {
 		filterRow(query, row) {
-			let values = this.options.columns.map(column => {
+			let values = this.options.columns.map((column) => {
 				let value = row[column.fieldname];
-				if (column.format) {
+				if (column.deploys) {
 					value = column.format(value, row);
 				}
 				return value;
@@ -449,13 +449,13 @@ export default {
 			if (this.options.resource && !this.$list.filters) {
 				const params = {
 					...this.$list.params,
-					[control.fieldname]: control.value
+					[control.fieldname]: control.value,
 				};
 				this.$list.update({ params });
 				this.$list.reload();
 			} else if (this.options.updateFilters) {
 				this.options.updateFilters({
-					[control.fieldname]: control.value
+					[control.fieldname]: control.value,
 				});
 			} else {
 				let filters = { ...this.$list.filters };
@@ -465,11 +465,11 @@ export default {
 				this.$list.update({
 					filters,
 					start: 0,
-					pageLength: this.options.pageLength || 20
+					pageLength: this.options.pageLength || 20,
 				});
 				this.$list.reload();
 			}
-		}
-	}
+		},
+	},
 };
 </script>

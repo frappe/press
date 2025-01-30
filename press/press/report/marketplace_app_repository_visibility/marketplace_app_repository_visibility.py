@@ -34,6 +34,7 @@ def execute(filters=None):
 
 	columns = [
 		{"fieldname": "app_name", "label": "Application Name", "fieldtype": "Data", "width": 200},
+		{"fieldname": "team", "label": "Team", "fieldtype": "Data", "width": 200},
 		{"fieldname": "version", "label": "Version", "fieldtype": "Data", "width": 100},
 		{"fieldname": "source", "label": "Source", "fieldtype": "Data", "width": 100},
 		{"fieldname": "repository_url", "label": "Repository URL", "fieldtype": "Data", "width": 300},
@@ -50,6 +51,7 @@ def execute(filters=None):
 		"""
         SELECT
             ma.name AS app_name,
+			t.user AS team,
             mav.version AS version,
             mav.source AS source,
             asrc.repository_url AS repository_url,
@@ -60,6 +62,8 @@ def execute(filters=None):
             `tabMarketplace App Version` mav ON ma.name = mav.parent
         JOIN
             `tabApp Source` asrc ON mav.source = asrc.name
+		JOIN
+			`tabTeam` t ON ma.team = t.name
         """,
 		as_dict=True,
 	)

@@ -13,6 +13,7 @@
   "enable_incident_detection",
   "phone_call_alerts",
   "email_alerts",
+  "grafana_screenshots",
   "column_break_ehby",
   "confirmation_threshold_day",
   "call_threshold_day",
@@ -100,12 +101,18 @@
    "fieldname": "email_alerts",
    "fieldtype": "Check",
    "label": "Email Alerts"
+  },
+  {
+   "default": "0",
+   "fieldname": "grafana_screenshots",
+   "fieldtype": "Check",
+   "label": "Grafana Screenshots"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-14 20:01:15.585340",
+ "modified": "2025-01-24 11:07:55.944210",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

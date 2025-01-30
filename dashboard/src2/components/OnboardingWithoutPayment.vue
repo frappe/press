@@ -49,14 +49,6 @@ export default {
 		SaaSLoginBox,
 		OnboardingAppSelector,
 	},
-	mounted() {
-		if (window.posthog?.__loaded) {
-			window.posthog.identify(this.$team.doc.user, {
-				app: 'frappe_cloud',
-				action: 'onboarding',
-			});
-			window.posthog.startSessionRecording();
-		}
 	},
 	resources: {
 		availableApps() {

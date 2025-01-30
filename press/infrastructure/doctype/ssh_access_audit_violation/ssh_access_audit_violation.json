@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-01-29 15:54:00.575633",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "host",
+  "user",
+  "key",
+  "column_break_sigr",
+  "key_doctype",
+  "key_document",
+  "key_field"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Host",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sigr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "key",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Key",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "key_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Key DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "key_document",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Key Document",
+   "options": "key_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_field",
+   "fieldtype": "Data",
+   "label": "Key Field",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-30 17:37:44.830485",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "SSH Access Audit Violation",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

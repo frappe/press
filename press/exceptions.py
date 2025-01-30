@@ -37,6 +37,10 @@ class ConflictingCAARecord(ValidationError):
 	pass
 
 
+class ConflictingDNSRecord(ValidationError):
+	pass
+
+
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
 

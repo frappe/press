@@ -1288,7 +1288,7 @@ def get_discount_percent(plan, discount=0.0):
 
 
 @frappe.whitelist(allow_guest=True)
-def login_via_token(token, team, site):
+def login_via_token(token: str, team: str, site: str):
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
 

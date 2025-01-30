@@ -21,7 +21,11 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 
 
 class Agent:
@@ -324,6 +328,26 @@ class Agent:
 			site=site.name,
 		)
 
+	def activate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Activate Site",
+			f"benches/{site.bench}/sites/{site.name}/activate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def deactivate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Deactivate Site",
+			f"benches/{site.bench}/sites/{site.name}/deactivate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,
@@ -362,8 +386,21 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover_move(self, site, target, deploy_type, activate, rollback_scripts=None):
-		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
+	def update_site_recover_move(
+		self,
+		site,
+		target,
+		deploy_type,
+		activate,
+		rollback_scripts=None,
+		restore_touched_tables=True,
+	):
+		data = {
+			"target": target,
+			"activate": activate,
+			"rollback_scripts": rollback_scripts,
+			"restore_touched_tables": restore_touched_tables,
+		}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
@@ -420,12 +457,74 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site, with_files=False, offsite=False):
+	def physical_backup_database(self, site: Site, site_backup: SiteBackup):
+		"""
+		For physical database backup, the flow :
+		- Create the agent job
+		- Agent job will lock the specific database + flush the changes to disk
+		- Take a database dump
+		- Use `fsync` to ensure the changes are written to disk
+		- Agent will send back a request to FC for taking the snapshot
+			- By calling `snapshot_create_callback` url
+		- Then, unlock the database
+		"""
+		press_public_base_url = frappe.utils.get_url()
+		data = {
+			"databases": [site_backup.database_name],
+			"mariadb_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"site_backup": {
+				"name": site_backup.name,
+				"snapshot_request_key": site_backup.snapshot_request_key,
+				"snapshot_trigger_url": f"{press_public_base_url}/api/method/press.api.site_backup.create_snapshot",
+			},
+		}
+		return self.create_agent_job(
+			"Physical Backup Database",
+			"/database/physical-backup",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
+		backup: SiteBackup = frappe.get_doc("Site Backup", backup_restoration.site_backup)
+		files_metadata = {}
+		for item in backup.files_metadata:
+			files_metadata[item.file] = {"size": item.size, "checksum": item.checksum}
+		data = {
+			"backup_db": backup_restoration.source_database,
+			"target_db": backup_restoration.destination_database,
+			"target_db_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"files_metadata": files_metadata,
+			"innodb_tables": json.loads(backup.innodb_tables),
+			"myisam_tables": json.loads(backup.myisam_tables),
+			"table_schema": backup.table_schema,
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"restore_specific_tables": backup_restoration.restore_specific_tables,
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+		}
+		return self.create_agent_job(
+			"Physical Restore Database",
+			"/database/physical-restore",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+			reference_name=backup_restoration.name,
+			reference_doctype=backup_restoration.doctype,
+		)
+
+	def backup_site(self, site, site_backup: SiteBackup):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {"with_files": with_files}
+		data = {"with_files": site_backup.with_files}
 
-		if offsite:
+		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
 			backup_bucket = get_backup_bucket(site.cluster, region=True)
@@ -782,12 +881,19 @@ class Agent:
 					response=response,
 				)
 			return json_response
-		except (HTTPError, TypeError, ValueError, requests.JSONDecodeError):
+		except (HTTPError, TypeError, ValueError):
 			self.handle_request_failure(agent_job, response)
 			log_error(
 				title="Agent Request Result Exception",
 				result=json_response or getattr(response, "text", None),
 			)
+		except requests.JSONDecodeError as exc:
+			if response and response.status_code >= 500:
+				self.log_request_failure(exc)
+				self.handle_exception(agent_job, exc)
+				log_error(
+					title="Agent Request Exception",
+				)
 		except Exception as exc:
 			self.log_request_failure(exc)
 			self.handle_exception(agent_job, exc)

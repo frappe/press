@@ -2,10 +2,11 @@
 # See license.txt
 
 from contextlib import suppress
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import zoneinfo
 from frappe.tests.utils import FrappeTestCase
 from twilio.base.exceptions import TwilioRestException
 
@@ -20,6 +21,7 @@ from press.press.doctype.incident.incident import (
 	CALL_REPEAT_INTERVAL_NIGHT,
 	CALL_THRESHOLD_SECONDS_NIGHT,
 	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
+	Incident,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -400,3 +402,45 @@ class TestIncident(FrappeTestCase):
 		), suppress(TwilioRestException):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
+
+	def get_5_min_load_avg_prometheus_response(self, load_avg: float):
+		return {
+			"datasets": [
+				{
+					"name": {
+						"__name__": "node_load5",
+						"cluster": "Default",
+						"instance": "n1.local.frappe.dev",
+						"job": "node",
+					},
+					"values": [load_avg],
+				}
+			],
+			"labels": [
+				datetime(2025, 1, 17, 12, 40, 41, 241000, tzinfo=zoneinfo.ZoneInfo(key="Asia/Kolkata")),
+			],
+		}
+
+	def test_high_load_avg_on_resource_makes_it_affected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		with patch(
+			"press.press.doctype.incident.incident.prometheus_query",
+			side_effect=[
+				self.get_5_min_load_avg_prometheus_response(2.0),
+				self.get_5_min_load_avg_prometheus_response(32.0),
+				self.get_5_min_load_avg_prometheus_response(2.0),
+			],
+		):
+			incident.identify_affected_resource()
+		self.assertEqual(incident.resource, incident.server)
+		self.assertEqual(incident.resource_type, "Server")
+
+	def test_no_response_from_monitor_on_resource_makes_it_affected(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		incident.identify_affected_resource()
+		self.assertEqual(
+			incident.resource, frappe.get_value("Server", incident.server, "database_server")
+		)  # database is checked first because history
+		self.assertEqual(incident.resource_type, "Database Server")
