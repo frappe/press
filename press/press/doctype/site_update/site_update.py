@@ -216,7 +216,8 @@ class SiteUpdate(Document):
 		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
-		self.set_physical_backup_mode_if_eligible()
+		if self.deploy_type == "Migrate":
+			self.set_physical_backup_mode_if_eligible()
 
 	def after_insert(self):
 		if not self.scheduled_time:
