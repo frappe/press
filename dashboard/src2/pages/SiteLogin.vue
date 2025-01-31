@@ -3,13 +3,15 @@
 		<LoginBox
 			title="Log in to your site on Frappe Cloud"
 			:subtitle="[
-				sites.fetched
+				sites.fetched && sites.data.length !== 0
 					? `Pick a site to login to as ${email || $session.user}`
-					: 'Enter your email and verification code to access your site',
+					: !sites.fetched
+						? 'Enter your email and verification code to access your site'
+						: '',
 			]"
 		>
 			<template v-slot:default>
-				<div class="space-y-4">
+				<div>
 					<div
 						v-if="$session.loading || isCookieValid.loading || sites.loading"
 						class="mx-auto flex items-center justify-center space-x-2 text-base"
@@ -64,8 +66,36 @@
 							@click="sendOTP"
 						/>
 					</form>
-					<div v-else>
-						<ObjectList :options="siteListOptions" />
+					<div v-else class="mt-10">
+						<div v-if="sites.data.length === 0">
+							<div class="text-center text-base leading-6 text-gray-700">
+								<div>No sites found for {{ email }}</div>
+								<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new
+								site
+							</div>
+						</div>
+						<div class="space-y-2" v-else>
+							<div
+								v-for="site in sites.data"
+								:key="site.name"
+								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-gray-100"
+								@click="loginToSite(site.name)"
+							>
+								<div
+									class="flex min-h-[40px] w-full items-center justify-between"
+								>
+									<div class="space-y-2">
+										<div class="text-base text-gray-800">
+											{{ site.site_label || site.name }}
+										</div>
+										<div v-if="site.site_label" class="text-sm text-gray-600">
+											{{ site.name }}
+										</div>
+									</div>
+									<FeatherIcon name="external-link" class="h-4 w-4" />
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<ErrorMessage
@@ -112,7 +142,6 @@ import { get, set } from 'idb-keyval';
 import { createResource } from 'frappe-ui';
 import LoginBox from '../components/auth/LoginBox.vue';
 import { getToastErrorMessage } from '../utils/toast';
-import ObjectList from '../components/ObjectList.vue';
 import { trialDays } from '../utils/site';
 import { userCurrency } from '../utils/format';
 
@@ -155,45 +184,6 @@ const sites = createResource({
 	params: {
 		user: email.value || session.user,
 	},
-});
-
-const siteListOptions = computed(() => {
-	return {
-		data: () => sites.data || [],
-		hideControls: true,
-		emptyStateMessage: sites.loading
-			? 'Fetching sites...'
-			: `No sites found for ${sites?.params?.user}.`,
-		onRowClick: (row) => {
-			loginToSite(row.name);
-			selectedSite.value = row;
-		},
-		columns: [
-			{
-				label: 'Site',
-				fieldname: 'site_label',
-				format: (_, row) => row.site_label || row.name,
-			},
-			{
-				label: '',
-				fieldname: 'trial_end_date',
-				align: 'right',
-				class: ' text-sm',
-				format: (value, row) => {
-					if (value) return trialDays(value);
-					if (row.price_usd > 0 && team) {
-						const india = team?.doc?.currency === 'INR';
-						const formattedValue = userCurrency(
-							india ? row.price_inr : row.price_usd,
-							0,
-						);
-						return `${formattedValue}/mo`;
-					}
-					return row.plan_title;
-				},
-			},
-		],
-	};
 });
 
 const login = createResource({
@@ -277,5 +267,18 @@ function verifyOTP() {
 			error: (e) => getToastErrorMessage(e),
 		},
 	);
+}
+
+function planTitle(site) {
+	if (site.trial_end_date) return trialDays(site.trial_end_date);
+	if (site.price_usd > 0 && team) {
+		const india = team?.doc?.currency === 'INR';
+		const formattedValue = userCurrency(
+			india ? site.price_inr : site.price_usd,
+			0,
+		);
+		return `${formattedValue}/mo`;
+	}
+	return site.plan_title;
 }
 </script>
