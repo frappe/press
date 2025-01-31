@@ -111,7 +111,6 @@ export default {
 				initiator_name: '',
 				security_credential: '',
 				till_number: '',
-				api_type: '',
 				// sandBox: false,
 			},
 			errorMessage: '',
@@ -157,7 +156,6 @@ export default {
 						short_code: data.business_shortcode,
 						till_number: data.till_number,
 						initiator_name: data.initiator_name,
-						api_type: data.api_type,
 					});
 				},
 				auto: true,

@@ -4,32 +4,14 @@
 			<div class="flex flex-col gap-4">
 				<FormControl
 					label="Gateway Name"
-					v-model="payment_gateway_details.gateway"
+					v-model="paymentGatewayDetails.gateway_name"
 					name="gateway_name"
 					type="text"
 					placeholder="Enter Gateway Name"
 				/>
-				<!-- <FormControl
-        label="Gateway Setting"
-        v-model="payment_gateway_details.gateway_settings"
-        name="gateway_setting"
-        class="mb-5"
-        type="select"
-        :options="payment_gateway_details.gateway_options"
-				/>
-        
-				<FormControl
-        label="Gateway Controller"
-        v-model="controllerInput"
-        name="gateway_controller"
-        class="mb-5"
-        type="select"
-        :options="controllerOptions"
-				/> -->
-
 				<FormControl
 					label="Enter endpoint URL"
-					v-model="payment_gateway_details.url"
+					v-model="paymentGatewayDetails.url"
 					name="url"
 					type="text"
 					placeholder="https://xyz.com/api/method/<endpoint>"
@@ -37,7 +19,7 @@
 				<div class="flex gap-4">
 					<FormControl
 						label="API Key"
-						v-model="payment_gateway_details.api_key"
+						v-model="paymentGatewayDetails.api_key"
 						name="api_key"
 						type="text"
 						placeholder="Enter API Key"
@@ -45,7 +27,7 @@
 
 					<FormControl
 						label="API Secret"
-						v-model="payment_gateway_details.api_secret"
+						v-model="paymentGatewayDetails.api_secret"
 						name="api_secret"
 						type="text"
 						placeholder="Enter API Secret"
@@ -55,14 +37,14 @@
 				<div class="flex gap-4">
 					<FormControl
 						label="Currency"
-						v-model="payment_gateway_details.currency"
+						v-model="paymentGatewayDetails.currency"
 						name="currency"
 						type="text"
 						placeholder="e.g KES"
 					/>
 					<FormControl
 						label="Taxes and Charges(%)"
-						v-model="payment_gateway_details.taxes_and_charges"
+						v-model="paymentGatewayDetails.taxes_and_charges"
 						name="taxes_and_charges"
 						type="text"
 						placeholder="Enter Taxes and Charges"
@@ -88,10 +70,10 @@ export default {
 	name: 'AddPaymentGateway',
 	data() {
 		return {
-			payment_gateway_details: {
+			paymentGatewayDetails: {
 				currency: 'KES',
 				gateway_name: '',
-				gateway_setting: 'Payment Gateway',
+				gateway_setting: 'Mpesa Setup',
 				gateway_controller: '',
 				url: '',
 				api_key: '',
@@ -106,7 +88,14 @@ export default {
 			return {
 				url: 'press.api.regional_payments.mpesa.utils.get_payment_gateway_details',
 				onSuccess(data) {
-					this.payment_gateway_details = data;
+					Object.assign(this.paymentGatewayDetails, {
+						currency: data.currency,
+						gateway_name: data.gateway_name,
+						url: data.url,
+						api_key: data.api_key,
+						api_secret: data.api_secret,
+						taxes_and_charges: data.taxes_and_charges,
+					});
 				},
 				auto: true,
 			};
@@ -116,11 +105,11 @@ export default {
 				url: 'press.api.regional_payments.mpesa.utils.update_payment_gateway_settings',
 				makeParams() {
 					return {
-						gateway_details: this.payment_gateway_details,
+						gateway_details: this.paymentGatewayDetails,
 					};
 				},
 				validate() {
-					let fields = Object.values(this.payment_gateway_details);
+					let fields = Object.values(this.paymentGatewayDetails);
 					if (fields.includes('')) {
 						this.errorMessage = 'Please fill required values';
 						return 'Please fill required values';
@@ -136,13 +125,15 @@ export default {
 				},
 			};
 		},
-		fetchGatewayControllers() {
+		fetchGatewayController() {
 			return {
 				url: 'press.api.regional_payments.mpesa.utils.get_gateway_controller',
 				method: 'GET',
 				auto: true,
-				onSuccess: (response) => {
-					this.payment_gateway_details.gateway_controller = response;
+				onSuccess: (res) => {
+					Object.assign(this.paymentGatewayDetails, {
+						gateway_controller: res,
+					});
 				},
 			};
 		},

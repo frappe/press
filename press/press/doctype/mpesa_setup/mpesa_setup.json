@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{payment_gateway_name}-{api_type}",
+ "autoname": "format:{mpesa_setup_id}-{api_type}",
  "creation": "2025-01-17 14:42:39.157512",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -99,12 +99,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Mpesa Setup ID",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-31 14:51:23.310597",
+ "modified": "2025-01-31 22:35:54.537908",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Setup",

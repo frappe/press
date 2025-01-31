@@ -46,30 +46,6 @@
 				@closeDialog="showAddPaymentGatewayDialog = false"
 			/>
 
-			<!--Add currency exchange-->
-			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
-				<div class="flex justify-between items-center text-sm text-gray-700">
-					<div>Exchange Rate</div>
-					<Button
-						@click="showExchangeRateDialog = true"
-						:disabled="!Boolean(paymentGatewayID)"
-						>Edit</Button
-					>
-				</div>
-				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">{{
-						exchangeRate || 'Not set'
-					}}</span>
-				</div>
-			</div>
-			<!--End of Currency exchange-->
-
-			<!-- Parent Component -->
-			<AddExchangeRate
-				v-model="showExchangeRateDialog"
-				@closeDialog="showExchangeRateDialog = false"
-			/>
-
 			<!--Submit Payment Transaction To Frappe-->
 			<div class="flex flex-col gap-2 rounded-md border p-4 shadow">
 				<div class="flex justify-between items-center text-sm text-gray-700">
@@ -103,9 +79,6 @@ export default {
 		AddPaymentGateway: defineAsyncComponent(
 			() => import('../billing/mpesa/AddPaymentGateway.vue'),
 		),
-		AddExchangeRate: defineAsyncComponent(
-			() => import('../billing/AddExchangeRate.vue'),
-		),
 		PartnerPaymentPayout: defineAsyncComponent(
 			() => import('../billing/mpesa/PartnerPaymentPayout.vue'),
 		),
@@ -115,11 +88,9 @@ export default {
 			showAddMpesaDialog: false,
 			showAddPaymobDialog: false,
 			showAddPaymentGatewayDialog: false,
-			showExchangeRateDialog: false,
 			showPartnerPaymentPayout: false,
 			mpesaSetupId: '',
 			paymentGatewayID: '',
-			exchangeRate: '',
 		};
 	},
 	resources: {
@@ -127,7 +98,6 @@ export default {
 			return {
 				url: 'press.api.partner.get_local_payment_setup',
 				onSuccess(data) {
-					console.log(data);
 					this.mpesaSetupId = data.mpesa_setup;
 					this.paymentGatewayID = data.payment_gateway;
 				},

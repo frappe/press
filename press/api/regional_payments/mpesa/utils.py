@@ -38,6 +38,7 @@ def update_mpesa_setup(mpesa_details):
 			mpesa_setup.insert(ignore_permissions=True)
 		else:
 			mpesa_setup = frappe.get_doc("Mpesa Setup", {"team": team})
+			mpesa_setup.mpesa_setup_id = mpesa_info.mpesa_setup_id
 			mpesa_setup.consumer_key = mpesa_info.consumer_key
 			mpesa_setup.consumer_secret = mpesa_info.consumer_secret
 			mpesa_setup.business_shortcode = mpesa_info.short_code
@@ -161,7 +162,7 @@ def get_payment_gateway_details():
 	if frappe.db.exists("Payment Gateway", {"team": team}):
 		payment_gateway = frappe.get_doc("Payment Gateway", {"team": team})
 		return {
-			"gateway": payment_gateway.gateway,
+			"gateway_name": payment_gateway.gateway,
 			"currency": payment_gateway.currency,
 			"gateway_settings": payment_gateway.gateway_settings,
 			"gateway_controller": payment_gateway.gateway_controller,

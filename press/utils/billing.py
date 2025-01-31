@@ -238,12 +238,13 @@ def get_partner_external_connection(mpesa_setup):
 	# check if connection is already established
 	if hasattr(frappe.local, "_external_conn"):
 		return frappe.local.press_external_conn
+
 	from frappe.frappeclient import FrappeClient
 
 	# Fetch API from gateway
 	payment_gateway = frappe.get_all(
 		"Payment Gateway",
-		filters={"gateway_controller": mpesa_setup, "gatway_setting": "Mpesa Setup"},
+		filters={"gateway_controller": mpesa_setup, "gateway_setting": "Mpesa Setup"},
 		fields=["name", "url", "api_key", "api_secret"],
 	)
 	if not payment_gateway:
