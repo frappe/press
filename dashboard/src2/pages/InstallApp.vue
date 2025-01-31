@@ -348,14 +348,6 @@ export default {
 							params: { app: this.app },
 							query: { siteGroupDeployName: doc.name }
 						});
-					} else if (doc.doctype === 'Product Trial Request') {
-						this.$router.push({
-							name: 'SaaSSignupSetup',
-							params: { productId: doc.product_trial },
-							query: {
-								account_request: doc.account_request
-							}
-						});
 					}
 				}
 			};
