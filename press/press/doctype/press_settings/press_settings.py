@@ -57,6 +57,7 @@ class PressSettings(Document):
 		default_outgoing_pass: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_physical_backup: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
@@ -87,6 +88,7 @@ class PressSettings(Document):
 		github_app_id: DF.Data | None
 		github_app_private_key: DF.Code | None
 		github_app_public_link: DF.Data | None
+		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
 		hetzner_api_token: DF.Password | None

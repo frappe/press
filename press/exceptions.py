@@ -37,6 +37,18 @@ class ConflictingCAARecord(ValidationError):
 	pass
 
 
+class ConflictingDNSRecord(ValidationError):
+	pass
+
+
+class MultipleARecords(ValidationError):
+	pass
+
+
+class MultipleCNAMERecords(ValidationError):
+	pass
+
+
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
 
@@ -50,4 +62,8 @@ class SiteUnderMaintenance(ValidationError):
 
 
 class SiteAlreadyArchived(ValidationError):
+	pass
+
+
+class InactiveDomains(ValidationError):
 	pass

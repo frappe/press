@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-23 19:06:50.174314",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "file",
+  "size",
+  "checksum"
+ ],
+ "fields": [
+  {
+   "fieldname": "checksum",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Checksum",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Size",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "File",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-23 19:23:33.543343",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Backup File Metadata",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

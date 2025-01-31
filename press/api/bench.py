@@ -1036,21 +1036,51 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_bench_transfer(key):
+def confirm_bench_transfer(key: str):
+	from frappe import _
+
+	if frappe.session.user == "Guest":
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("You need to be logged in to confirm the bench group transfer."),
+			http_status_code=403,
+			indicator_color="red",
+			primary_action="/dashboard/login",
+			primary_label=_("Login"),
+		)
+
+	if not isinstance(key, str):
+		return frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
 	if team_change := frappe.db.get_value("Team Change", {"key": key}):
 		team_change = frappe.get_doc("Team Change", team_change)
+		to_team = team_change.to_team
+		if not frappe.db.get_value(
+			"Team Member", {"user": frappe.session.user, "parent": to_team, "parenttype": "Team"}
+		):
+			return frappe.respond_as_web_page(
+				_("Not Permitted"),
+				_("You are not a member of the team to which the site is being transferred."),
+				http_status_code=403,
+				indicator_color="red",
+			)
+
 		team_change.transfer_completed = True
 		team_change.save()
 		frappe.db.commit()
 
 		frappe.response.type = "redirect"
 		frappe.response.location = f"/dashboard/groups/{team_change.document_name}"
-	else:
-		from frappe import _
+		return None
 
-		frappe.respond_as_web_page(
-			_("Not Permitted"),
-			_("The link you are using is invalid or expired."),
-			http_status_code=403,
-			indicator_color="red",
-		)
+	return frappe.respond_as_web_page(
+		_("Not Permitted"),
+		_("The link you are using is invalid or expired."),
+		http_status_code=403,
+		indicator_color="red",
+	)

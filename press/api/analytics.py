@@ -965,23 +965,12 @@ def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int 
 @protected("Site")
 def mariadb_processlist(site):
 	site = frappe.get_doc("Site", site)
-	dbserver = frappe.db.get_value("Server", site.server, "database_server")
-	db_doc = frappe.get_doc("Database Server", dbserver)
-	agent = Agent(db_doc.name, "Database Server")
-
-	data = {
-		"private_ip": db_doc.private_ip,
-		"mariadb_root_password": db_doc.get_password("mariadb_root_password"),
-	}
-	rows = agent.post("database/processes", data=data)
-
-	out = []
+	agent = Agent(site.server)
+	rows = agent.fetch_database_processes(site)
 	for row in rows:
-		row["Info"] = sqlparse.format((row["Info"] or "").strip(), keyword_case="upper", reindent=True)
-		if row["db"] == site.database_name:
-			out.append(row)
-
-	return out
+		row["state"] = row["state"].capitalize()
+		row["query"] = sqlparse.format((row["query"] or "").strip(), keyword_case="upper", reindent=True)
+	return rows
 
 
 @frappe.whitelist()

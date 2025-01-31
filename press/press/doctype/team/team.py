@@ -944,7 +944,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.billing_team:
+		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
 		return bool(
@@ -999,9 +999,9 @@ class Team(Document):
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
-			legacy_contract = res.get("legacy_contract")
+			certificate_count = res.get("certificates")
 			if partner_level:
-				return partner_level, legacy_contract
+				return partner_level, certificate_count
 			return None
 
 		self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
@@ -1194,9 +1194,7 @@ class Team(Document):
 	def send_telegram_alert_for_failed_payment(self, invoice):
 		team_url = get_url_to_form("Team", self.name)
 		invoice_url = get_url_to_form("Invoice", invoice)
-		message = (
-			f"Failed Invoice Payment [{invoice}]({invoice_url}) of" f" Partner: [{self.name}]({team_url})"
-		)
+		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
 	@frappe.whitelist()

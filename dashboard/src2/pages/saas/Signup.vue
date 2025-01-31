@@ -117,7 +117,7 @@
 							class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
 							:to="{
 								name: 'SaaSLogin',
-								params: $route.params
+								params: $route.params,
 							}"
 						>
 							Already have an account? Log in.
@@ -139,7 +139,7 @@ export default {
 	components: {
 		LoginBox,
 		Spinner,
-		GoogleIconSolid
+		GoogleIconSolid,
 	},
 	data() {
 		return {
@@ -147,22 +147,8 @@ export default {
 			first_name: '',
 			last_name: '',
 			country: null,
-			terms_accepted: false
+			terms_accepted: false,
 		};
-	},
-	mounted() {
-		setTimeout(() => {
-			if (window.posthog?.__loaded) {
-				window.posthog.identify(window.posthog.get_distinct_id(), {
-					app: 'frappe_cloud',
-					action: 'saas_signup',
-					saas_app: this.productId
-				});
-				if (!window.posthog.sessionRecordingStarted()) {
-					window.posthog.startSessionRecording();
-				}
-			}
-		}, 3000);
 	},
 	computed: {
 		saasProduct() {
@@ -173,7 +159,7 @@ export default {
 		},
 		isGoogleOAuthEnabled() {
 			return this.$resources.signupSettings.data?.enable_google_oauth || false;
-		}
+		},
 	},
 	resources: {
 		signup() {
@@ -186,7 +172,7 @@ export default {
 					country: this.country,
 					product: this.productId,
 					referrer: this.getReferrerIfAny(),
-					terms_accepted: this.terms_accepted
+					terms_accepted: this.terms_accepted,
 				},
 				validate() {
 					if (!this.terms_accepted) {
@@ -198,10 +184,10 @@ export default {
 						name: 'SaaSSignupVerifyEmail',
 						query: {
 							email: this.email,
-							account_request: account_request
-						}
+							account_request: account_request,
+						},
 					});
-				}
+				},
 			};
 		},
 		signupSettings() {
@@ -212,35 +198,35 @@ export default {
 					fetch_countries: true,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
 						this.country = res.country;
 					}
-				}
+				},
 			};
 		},
 		signupWithOAuth() {
 			return {
 				url: 'press.api.google.login',
 				params: {
-					product: this.productId
+					product: this.productId,
 				},
 				auto: false,
 				onSuccess(url) {
 					window.location.href = url;
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		getReferrerIfAny() {
 			const params = location.search;
 			const searchParams = new URLSearchParams(params);
 			return searchParams.get('referrer');
-		}
-	}
+		},
+	},
 };
 </script>

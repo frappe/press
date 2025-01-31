@@ -15,6 +15,8 @@
 
 - name: Extend Partition
   command: 'growpart {{ device }} 1'
+  register: result
+  until: result.rc == 0
   retries: 10
   delay: 10
   when: partitioned_disk
@@ -31,7 +33,7 @@
   when: not partitioned_disk
 
 - name: Add Glass file back
-  command: fallocate -l 250M /root/glass
+  command: fallocate -l 200M /root/glass
 
 - name: Show Modified Volumes
   command: df -h
