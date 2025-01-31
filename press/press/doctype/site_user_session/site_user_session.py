@@ -63,6 +63,10 @@ class SiteUserSession(Document):
 
 		if not self.otp:
 			return frappe.throw("OTP is not set")
+
+		if (frappe.utils.now_datetime() - self.creation).seconds > 300:
+			return frappe.throw("OTP is expired")
+
 		if self.otp != otp:
 			return frappe.throw("Invalid OTP")
 		self.otp = None
