@@ -53,7 +53,6 @@ def create_request_log(
 		integration_request.flags._name = name
 
 	integration_request.insert(ignore_permissions=True)
-	frappe.db.commit()
 
 	return integration_request
 

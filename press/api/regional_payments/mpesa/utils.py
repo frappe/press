@@ -113,7 +113,6 @@ def update_payment_gateway_settings(gateway_details):
 	"""Create Payment Gateway Settings for the team."""
 	team = get_current_team()
 	gateway_data = frappe._dict(gateway_details)
-	print(gateway_data)
 
 	try:
 		if frappe.db.exists("Payment Gateway", {"team": team}):
@@ -190,6 +189,7 @@ def get_tax_percentage(payment_partner):
 	mpesa_setups = frappe.get_all(
 		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
 	)
+	taxes_and_charges = 0
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
 			"Payment Gateway",
