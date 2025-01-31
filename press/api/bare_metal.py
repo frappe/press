@@ -1,6 +1,6 @@
 import frappe
 from press.utils import get_current_team
-from frappe.utils import cint
+from frappe.utils import cint, get_url
 
 @frappe.whitelist()
 def provision_bare_metal_vm(cluster, vcpu, memory, disk_size, image=None):
@@ -114,4 +114,35 @@ def terminate_bare_metal_vm(vm):
     if vm_doc.cloud_provider != "Bare Metal":
         frappe.throw("Invalid VM type")
 
-    return vm_doc._terminate_bare_metal() 
+    return vm_doc._terminate_bare_metal()
+
+@frappe.whitelist()
+def get_hosts():
+    """Get all bare metal hosts for current team"""
+    team = get_current_team()
+    return frappe.get_all(
+        "Bare Metal Host",
+        filters={"cluster": ["in", frappe.get_all("Cluster", {"team": team}, pluck="name")]},
+        fields=["name", "host_name", "ip_address", "status", "cluster",
+                "total_cpu", "total_memory", "total_disk",
+                "available_cpu", "available_memory", "available_disk"]
+    )
+
+@frappe.whitelist()
+def get_host(name):
+    """Get specific bare metal host details"""
+    team = get_current_team()
+    host = frappe.get_doc("Bare Metal Host", name)
+    if host.cluster not in frappe.get_all("Cluster", {"team": team}, pluck="name"):
+        frappe.throw("Not allowed to access this host")
+    return host
+
+@frappe.whitelist()
+def get_vm_api_status():
+    """Check if VM API is accessible"""
+    try:
+        host = frappe.new_doc("Bare Metal Host")
+        host.check_api_connection()
+        return {"status": "success", "message": "VM API is accessible"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)} 
