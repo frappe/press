@@ -1,7 +1,7 @@
 <template>
-	<Dialog :options="{ title: 'Add M-Pesa Credentials', size: 'lg' }">
+	<Dialog :options="{ title: 'Add M-Pesa Credentials', size: 'xl' }">
 		<template #body-content>
-			<div class="flex flex-col-2 flex-wrap gap-3">
+			<div class="grid grid-cols-2 gap-5">
 				<FormControl
 					label="Mpesa Setup ID"
 					v-model="mpesaSetupDetails.mpesa_setup_id"

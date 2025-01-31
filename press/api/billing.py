@@ -889,7 +889,6 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 
 def create_mpesa_payment_record(transaction_response):
 	"""Create a new entry in the Mpesa Payment Record for a successful transaction."""
-	print(transaction_response)
 	item_response = transaction_response.get("CallbackMetadata", {}).get("Item", [])
 	mpesa_receipt_number = fetch_param_value(item_response, "MpesaReceiptNumber", "Name")
 	transaction_time = fetch_param_value(item_response, "TransactionDate", "Name")
@@ -908,6 +907,7 @@ def create_mpesa_payment_record(transaction_response):
 		"default_currency": "KES",
 		"rate": requested_amount,
 	}
+	mpesa_invoice = create_invoice_partner_site(data, gateway_name)
 	payment_record = frappe.get_doc(
 		{
 			"doctype": "Mpesa Payment Record",
@@ -922,7 +922,7 @@ def create_mpesa_payment_record(transaction_response):
 			"payment_partner": partner,
 			"amount_usd": amount_usd,
 			"exchange_rate": exchange_rate,
-			"local_invoice": create_invoice_partner_site(data, gateway_name),
+			"local_invoice": mpesa_invoice,
 			"mpesa_receipt_number": mpesa_receipt_number,
 		}
 	)
@@ -937,6 +937,7 @@ def create_mpesa_payment_record(transaction_response):
 		"mpesa_merchant_id": merchant_request_id,
 		"mpesa_payment_record": payment_record.name,
 		"mpesa_request_id": transaction_id,
+		"mpesa_invoice": mpesa_invoice,
 	}
 	create_balance_transaction_and_invoice(team, amount_usd, mpesa_details)
 
@@ -970,6 +971,7 @@ def create_balance_transaction_and_invoice(team, amount, mpesa_details):
 		mpesa_receipt_number=mpesa_details.get("mpesa_receipt_number", ""),
 		mpesa_request_id=mpesa_details.get("mpesa_request_id", ""),
 		mpesa_payment_record=mpesa_details.get("mpesa_payment_record", ""),
+		mpesa_invoice=mpesa_details.get("mpesa_invoice", ""),
 	)
 	invoice.append(
 		"items",

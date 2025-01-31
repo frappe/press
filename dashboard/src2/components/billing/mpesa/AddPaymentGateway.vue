@@ -1,92 +1,73 @@
 <template>
 	<Dialog :options="{ title: 'Add Payment Gateway', size: 'lg' }">
 		<template #body-content>
-			<div class="grid grid-cols-2 gap-4">
-				<FormControl
-					label="Currency"
-					:options="currencyOptions"
-					v-model="currencyInput"
-					name="currency"
-					autocomplete="off"
-					class="mb-5"
-					type="select"
-					placeholder="Choose Currency"
-					required
-				/>
-
+			<div class="flex flex-col gap-4">
 				<FormControl
 					label="Gateway Name"
-					v-model="gatewayName"
+					v-model="payment_gateway_details.gateway"
 					name="gateway_name"
-					autocomplete="off"
-					class="mb-5"
 					type="text"
 					placeholder="Enter Gateway Name"
-					required
 				/>
-
+				<!-- <FormControl
+        label="Gateway Setting"
+        v-model="payment_gateway_details.gateway_settings"
+        name="gateway_setting"
+        class="mb-5"
+        type="select"
+        :options="payment_gateway_details.gateway_options"
+				/>
+        
 				<FormControl
-					label="Gateway Setting"
-					v-model="gatewayInput"
-					name="gateway_setting"
-					class="mb-5"
-					type="select"
-					:options="gatewayOptions"
-					required
-				/>
-
-				<FormControl
-					label="Gateway Controller"
-					v-model="controllerInput"
-					name="gateway_controller"
-					class="mb-5"
-					type="select"
-					:options="controllerOptions"
-					required
-				/>
+        label="Gateway Controller"
+        v-model="controllerInput"
+        name="gateway_controller"
+        class="mb-5"
+        type="select"
+        :options="controllerOptions"
+				/> -->
 
 				<FormControl
 					label="Enter endpoint URL"
-					v-model="URL"
+					v-model="payment_gateway_details.url"
 					name="url"
-					autocomplete="off"
-					class="mb-5"
 					type="text"
 					placeholder="https://xyz.com/api/method/<endpoint>"
-					required
 				/>
+				<div class="flex gap-4">
+					<FormControl
+						label="API Key"
+						v-model="payment_gateway_details.api_key"
+						name="api_key"
+						type="text"
+						placeholder="Enter API Key"
+					/>
 
-				<FormControl
-					label="API Key"
-					v-model="apiKey"
-					name="api_key"
-					autocomplete="off"
-					class="mb-5"
-					type="text"
-					placeholder="Enter API Key"
-					required
-				/>
+					<FormControl
+						label="API Secret"
+						v-model="payment_gateway_details.api_secret"
+						name="api_secret"
+						type="text"
+						placeholder="Enter API Secret"
+					/>
+				</div>
 
-				<FormControl
-					label="API Secret"
-					v-model="apiSecret"
-					name="api_secret"
-					autocomplete="off"
-					class="mb-5"
-					type="text"
-					placeholder="Enter API Secret"
-					required
-				/>
-
-				<FormControl
-					label="Taxes and Charges(%)"
-					v-model="taxesAndCharges"
-					name="taxes_and_charges"
-					autocomplete="off"
-					class="mb-5"
-					type="text"
-					placeholder="Enter Taxes and Charges"
-				/>
+				<div class="flex gap-4">
+					<FormControl
+						label="Currency"
+						v-model="payment_gateway_details.currency"
+						name="currency"
+						type="text"
+						placeholder="e.g KES"
+					/>
+					<FormControl
+						label="Taxes and Charges(%)"
+						v-model="payment_gateway_details.taxes_and_charges"
+						name="taxes_and_charges"
+						type="text"
+						placeholder="Enter Taxes and Charges"
+					/>
+				</div>
 			</div>
 
 			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
@@ -107,45 +88,43 @@ export default {
 	name: 'AddPaymentGateway',
 	data() {
 		return {
-			currencyOptions: ['KES', 'USD'],
-			currencyInput: '',
-			gatewayName: '',
+			payment_gateway_details: {
+				currency: 'KES',
+				gateway_name: '',
+				gateway_setting: 'Payment Gateway',
+				gateway_controller: '',
+				url: '',
+				api_key: '',
+				api_secret: '',
+				taxes_and_charges: '',
+			},
 			integrationLogo: null,
-			gatewayOptions: ['Payment Gateway'],
-			gatewayInput: '',
-			controllerOptions: [],
-			controllerInput: '',
-			URL: '',
-			apiKey: '',
-			apiSecret: '',
-			taxesAndCharges: '',
 		};
 	},
 	resources: {
+		getPaymentGatewayDetails() {
+			return {
+				url: 'press.api.regional_payments.mpesa.utils.get_payment_gateway_details',
+				onSuccess(data) {
+					this.payment_gateway_details = data;
+				},
+				auto: true,
+			};
+		},
 		createPaymentGatewaySettings() {
 			return {
-				url: 'press.api.regional_payments.mpesa.utils.create_payment_gateway_settings',
-				params: {
-					currency: this.currencyInput,
-					gateway_name: this.gatewayName,
-					gateway_setting: this.gatewayInput,
-					gateway_controller: this.controllerInput,
-					url: this.URL,
-					api_key: this.apiKey,
-					api_secret: this.apiSecret,
-					taxes_and_charges: this.taxesAndCharges,
+				url: 'press.api.regional_payments.mpesa.utils.update_payment_gateway_settings',
+				makeParams() {
+					return {
+						gateway_details: this.payment_gateway_details,
+					};
 				},
 				validate() {
-					const missingFields = [];
-					if (!this.currencyInput) missingFields.push('Currency');
-					if (!this.gatewayName) missingFields.push('Gateway Name');
-					if (!this.gatewayInput) missingFields.push('Gateway Setting');
-					if (!this.controllerInput) missingFields.push('Gateway Controller');
-					if (!this.URL) missingFields.push('Your site URL');
-					if (!this.apiKey) missingFields.push('API Key');
-					if (!this.apiSecret) missingFields.push('API Secret');
-					if (missingFields.length > 0) {
-						return `The following fields are missing: ${missingFields.join(', ')}`;
+					let fields = Object.values(this.payment_gateway_details);
+					if (fields.includes('')) {
+						this.errorMessage = 'Please fill required values';
+						return 'Please fill required values';
+						// throw new DashboardError('Please fill required values');
 					}
 				},
 				async onSuccess(data) {
@@ -157,19 +136,13 @@ export default {
 				},
 			};
 		},
-		fetchGatewayControllers(gatewaySetting) {
+		fetchGatewayControllers() {
 			return {
-				url: 'press.api.regional_payments.mpesa.utils.get_gateway_controllers',
+				url: 'press.api.regional_payments.mpesa.utils.get_gateway_controller',
 				method: 'GET',
-				params: {
-					gateway_setting: gatewaySetting,
-				},
+				auto: true,
 				onSuccess: (response) => {
-					if (Array.isArray(response)) {
-						this.controllerOptions = response;
-					} else {
-						this.$toast.error('No Controllers found');
-					}
+					this.payment_gateway_details.gateway_controller = response;
 				},
 			};
 		},
@@ -191,11 +164,6 @@ export default {
 		},
 	},
 	watch: {
-		gatewayInput: function () {
-			this.$resources.fetchGatewayControllers.submit({
-				gateway_setting: this.gatewayInput,
-			});
-		},
 		integrationLogo: function () {
 			this.handleFileUpload();
 		},

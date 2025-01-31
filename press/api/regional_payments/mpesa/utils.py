@@ -109,31 +109,45 @@ def get_exchange_rate(from_currency, to_currency):
 
 
 @frappe.whitelist()
-def create_payment_gateway_settings(**kwargs):
+def update_payment_gateway_settings(gateway_details):
 	"""Create Payment Gateway Settings for the team."""
 	team = get_current_team()
-	args = frappe._dict(kwargs)
+	gateway_data = frappe._dict(gateway_details)
+	print(gateway_data)
 
 	try:
+		if frappe.db.exists("Payment Gateway", {"team": team}):
+			payment_gateway = frappe.get_doc("Payment Gateway", {"team": team})
+			payment_gateway.update(
+				{
+					"gateway": gateway_data.gateway_name,
+					"currency": gateway_data.currency,
+					"gateway_settings": gateway_data.gateway_setting,
+					"gateway_controller": gateway_data.gateway_controller,
+					"url": gateway_data.url,
+					"api_key": gateway_data.api_key,
+					"api_secret": gateway_data.api_secret,
+					"taxes_and_charges": gateway_data.taxes_and_charges,
+				}
+			)
+			return payment_gateway.save().name
 		payment_gateway_settings = frappe.get_doc(
 			{
 				"doctype": "Payment Gateway",
 				"team": team,
-				"gateway": args.get("gateway_name"),
-				"currency": args.get("currency"),
-				"gateway_settings": args.get("gateway_setting"),
-				"gateway_controller": args.get("gateway_controller"),
-				"url": args.get("url"),
-				"api_key": args.get("api_key"),
-				"api_secret": args.get("api_secret"),
-				"taxes_and_charges": args.get("taxes_and_charges"),
+				"gateway": gateway_data.gateway_name,
+				"currency": gateway_data.currency,
+				"gateway_settings": gateway_data.gateway_setting,
+				"gateway_controller": gateway_data.gateway_controller,
+				"url": gateway_data.url,
+				"api_key": gateway_data.api_key,
+				"api_secret": gateway_data.api_secret,
+				"taxes_and_charges": gateway_data.taxes_and_charges,
 			}
 		)
 
 		payment_gateway_settings.insert(ignore_permissions=True)
-		frappe.db.commit()
-
-		return payment_gateway_settings.name
+		return payment_gateway_settings
 	except Exception as e:
 		frappe.log_error(
 			message=f"Error creating Payment Gateway Settings: {e!s}",
@@ -143,10 +157,31 @@ def create_payment_gateway_settings(**kwargs):
 
 
 @frappe.whitelist()
-def get_gateway_controllers(gateway_setting):
-	"""Get the list of controllers for the given doctype."""
-	controllers = frappe.get_all(gateway_setting, fields=["name"])
-	return [doc["name"] for doc in controllers]
+def get_payment_gateway_details():
+	team = get_current_team()
+	if frappe.db.exists("Payment Gateway", {"team": team}):
+		payment_gateway = frappe.get_doc("Payment Gateway", {"team": team})
+		return {
+			"gateway": payment_gateway.gateway,
+			"currency": payment_gateway.currency,
+			"gateway_settings": payment_gateway.gateway_settings,
+			"gateway_controller": payment_gateway.gateway_controller,
+			"url": payment_gateway.url,
+			"api_key": payment_gateway.api_key,
+			"api_secret": payment_gateway.api_secret,
+			"taxes_and_charges": payment_gateway.taxes_and_charges,
+		}
+	return None
+
+
+@frappe.whitelist()
+def get_gateway_controller():
+	# """Get the list of controllers for the given doctype."""
+	team = get_current_team(get_doc=True)
+	gateway_setting = "Mpesa Setup" if team.country == "Kenya" else ""
+	if gateway_setting:
+		return frappe.db.get_value(gateway_setting, {"team": team.name}, "name")
+	return None
 
 
 @frappe.whitelist()
@@ -186,8 +221,11 @@ def update_tax_id_or_phone_no(team, tax_id, phone_number):
 
 def convert(from_currency, to_currency, amount):
 	"""Convert the given amount from one currency to another."""
-	exchange_rate = frappe.get_value(
-		"Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate"
+	exchange_rate = (
+		frappe.get_value(
+			"Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate"
+		)
+		or 129
 	)
 	converted_amount = amount / exchange_rate
 	return converted_amount, exchange_rate

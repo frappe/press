@@ -6,7 +6,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "enabled",
   "team",
   "mpesa_setup_id",
   "consumer_key",
@@ -101,17 +100,11 @@
    "in_list_view": 1,
    "label": "Mpesa Setup ID",
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-27 11:22:18.138140",
+ "modified": "2025-01-31 14:51:23.310597",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mpesa Setup",

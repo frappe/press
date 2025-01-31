@@ -58,6 +58,8 @@ class Invoice(Document):
 		invoice_pdf: DF.Attach | None
 		items: DF.Table[InvoiceItem]
 		marketplace: DF.Check
+		mpesa_invoice: DF.Data | None
+		mpesa_invoice_pdf: DF.Attach | None
 		mpesa_merchant_id: DF.Data | None
 		mpesa_payment_record: DF.Data | None
 		mpesa_receipt_number: DF.Data | None
@@ -345,9 +347,11 @@ class Invoice(Document):
 
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
+		self.fetch_mpesa_invoice_pdf()
 
 	def on_update_after_submit(self):
 		self.create_invoice_on_frappeio()
+		self.fetch_mpesa_invoice_pdf()
 
 	def after_insert(self):
 		if self.get("amended_from"):
@@ -892,6 +896,10 @@ class Invoice(Document):
 			)
 
 		self.save()
+
+	def fetch_mpesa_invoice_pdf(self):
+		if not self.mpesa_receipt_number and not self.mpesa_invoice:
+			return
 
 	@frappe.whitelist()
 	def refund(self, reason):

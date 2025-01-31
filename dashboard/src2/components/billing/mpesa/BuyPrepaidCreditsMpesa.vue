@@ -12,9 +12,9 @@
 			:options="teams"
 			size="sm"
 			variant="subtle"
-			placeholder="Select a partner"
+			placeholder="Payment Partner"
 			:disabled="false"
-			label="Select Partner"
+			label="Select Payment Partner"
 			v-model="partnerInput"
 			class="mb-5"
 		/>
@@ -22,7 +22,7 @@
 		<div class="flex gap-5 col-2">
 			<FormControl
 				label="M-Pesa Phone Number"
-				v-model="this.taxIdInput"
+				v-model="this.phoneNumberInput"
 				name="phone_number"
 				autocomplete="off"
 				class="mb-5"
@@ -186,8 +186,6 @@ export default {
 				this.amountKES + (this.amountKES * this.taxPercentage) / 100;
 			this.amountWithTax = Math.round(amountWithTax);
 		},
-	},
-	computed: {
 		async fetchTaxPercentage() {
 			try {
 				const taxPercentage = await frappeRequest({
@@ -200,21 +198,6 @@ export default {
 				this.taxPercentage = taxPercentage;
 			} catch (error) {
 				this.errorMessage = `Failed to fetch tax percentage ${error.message}`;
-			}
-		},
-		async fetchExchangeRate() {
-			try {
-				const exchangeRate = await frappeRequest({
-					url: '/api/method/press.api.regional_payments.mpesa.utils.get_exchange_rate',
-					method: 'GET',
-					params: {
-						from_currency: 'KES',
-						to_currency: 'USD',
-					},
-				});
-				this.exchangeRate = exchangeRate;
-			} catch (error) {
-				this.errorMessage = `Failed to fetch exchange rate ${error.message}`;
 			}
 		},
 	},

@@ -7,7 +7,6 @@
 				class="mb-3"
 				v-model.number="creditsToBuy"
 				name="amount"
-				autocomplete="off"
 				type="number"
 				:min="minimumAmount"
 			>
@@ -25,7 +24,6 @@
 				disabled
 				:modelValue="totalAmount"
 				name="total"
-				autocomplete="off"
 				type="number"
 			>
 				<template #prefix>
@@ -36,15 +34,14 @@
 			</FormControl>
 			<FormControl
 				v-if="team.doc.country === 'Kenya' && paymentGateway === 'M-Pesa'"
-				label="Amount in KES"
+				:label="`Amount in KES (Exchange Rate: ${Math.round(exchangeRate)} against 1 USD)`"
 				disabled
 				:modelValue="amountInKES"
 				name="amount_in_kes"
-				autocomplete="off"
 				type="number"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-gray-700 -ml-1">
 						{{ 'Ksh' }}
 					</div>
 				</template>
@@ -125,7 +122,7 @@ import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
 import BuyPrepaidCreditsMpesa from './mpesa/BuyPrepaidCreditsMpesa.vue';
 import { FormControl, Button, createResource } from 'frappe-ui';
-import { ref, computed, inject, watch } from 'vue';
+import { ref, computed, inject, watch, onMounted } from 'vue';
 
 const emit = defineEmits(['success']);
 
@@ -167,8 +164,8 @@ const totalAmount = computed(() => {
 	}
 });
 
-const amountInKES = ref(1300);
-const exchangeRate = ref(1);
+const amountInKES = ref();
+const exchangeRate = ref(0);
 
 watch(creditsToBuy, () => {
 	let _amountInKES = creditsToBuy.value * exchangeRate.value;
@@ -187,22 +184,28 @@ watch(amountInKES, () => {
 	}
 });
 
-// watch(paymentGateway, () => {
-// 	if (paymentGateway.value === 'M-Pesa') {
-// 		fetchExchangeRate();
-// 	}
-// });
+watch(paymentGateway, () => {
+	if (paymentGateway.value === 'M-Pesa') {
+		amountInKES.value = creditsToBuy.value * exchangeRate.value;
+	}
+});
 
-const fetchExchangeRate = createResource({
-	url: 'press.api.regional_payments.mpesa.utils.get_exchange_rate',
-	params: {
-		from_currency: 'USD',
-		to_currency: 'KES',
-	},
-	cache: 'exchangeRate',
-	auto: true,
-	onSuccess(data) {
-		exchangeRate.value = data;
-	},
+const fetchExchangeRate = async () => {
+	try {
+		const fromCurrency = 'usd';
+		const toCurrency = 'kes';
+		const baseURL = `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies`;
+		const URL = `${baseURL}/${fromCurrency}.json`;
+		let response = await fetch(URL);
+		let responseJSON = await response.json();
+		let rate = responseJSON[fromCurrency][toCurrency];
+		exchangeRate.value = Math.round(rate);
+	} catch (error) {
+		console.error(error);
+	}
+};
+
+onMounted(() => {
+	fetchExchangeRate();
 });
 </script>

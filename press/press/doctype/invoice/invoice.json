@@ -70,6 +70,8 @@
   "mpesa_billing_section",
   "mpesa_payment_record",
   "mpesa_receipt_number",
+  "mpesa_invoice",
+  "mpesa_invoice_pdf",
   "column_break_ouox",
   "mpesa_request_id",
   "mpesa_merchant_id",
@@ -504,6 +506,16 @@
    "fieldname": "mpesa_merchant_id",
    "fieldtype": "Data",
    "label": "Mpesa Merchant ID"
+  },
+  {
+   "fieldname": "mpesa_invoice",
+   "fieldtype": "Data",
+   "label": "Mpesa Invoice"
+  },
+  {
+   "fieldname": "mpesa_invoice_pdf",
+   "fieldtype": "Attach",
+   "label": "Mpesa Invoice PDF"
   }
  ],
  "is_submittable": 1,
@@ -529,7 +541,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-01-24 20:10:34.004949",
+ "modified": "2025-01-27 12:53:44.997655",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
