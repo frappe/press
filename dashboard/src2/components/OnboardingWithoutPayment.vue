@@ -49,7 +49,6 @@ export default {
 		SaaSLoginBox,
 		OnboardingAppSelector,
 	},
-	},
 	resources: {
 		availableApps() {
 			return {
