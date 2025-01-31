@@ -41,6 +41,14 @@ class ConflictingDNSRecord(ValidationError):
 	pass
 
 
+class MultipleARecords(ValidationError):
+	pass
+
+
+class MultipleCNAMERecords(ValidationError):
+	pass
+
+
 class TeamHeaderNotInRequestError(ValidationError):
 	pass
 

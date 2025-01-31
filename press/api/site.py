@@ -18,7 +18,13 @@ from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
-from press.exceptions import AAAARecordExists, ConflictingCAARecord, ConflictingDNSRecord
+from press.exceptions import (
+	AAAARecordExists,
+	ConflictingCAARecord,
+	ConflictingDNSRecord,
+	MultipleARecords,
+	MultipleCNAMERecords,
+)
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -1622,10 +1628,18 @@ def check_dns_cname(name, domain):
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
 		answer = resolver.query(domain, "CNAME")
+		if len(answer) > 1:
+			raise MultipleCNAMERecords
 		mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 		result["answer"] = answer.rrset.to_text()
 		if mapped_domain == name:
 			result["matched"] = True
+	except MultipleCNAMERecords:
+		multiple_domains = ", ".join(part.to_text() for part in answer)
+		frappe.throw(
+			f"Domain {domain} has multiple CNAME records: {multiple_domains}.Please keep only one.",
+			MultipleCNAMERecords,
+		)
 	except dns.resolver.NoAnswer as e:
 		result["exists"] = False
 		result["answer"] = str(e)
@@ -1637,28 +1651,41 @@ def check_dns_cname(name, domain):
 	return result
 
 
+def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | None):
+	if domain_ip == site_ip:
+		return True
+	if site_ip:
+		# We can issue certificates even if the domain points to the secondary proxies
+		server = frappe.db.get_value("Site", site_name, "server")
+		proxy = frappe.db.get_value("Server", server, "proxy_server")
+		secondary_ips = frappe.get_all(
+			"Proxy Server",
+			{"status": "Active", "primary": proxy, "is_replication_setup": True},
+			pluck="ip",
+		)
+		if domain_ip in secondary_ips:
+			return True
+	return False
+
+
 def check_dns_a(name, domain):
 	result = {"type": "A", "exists": True, "matched": False, "answer": ""}
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
 		answer = resolver.query(domain, "A")
+		if len(answer) > 1:
+			raise MultipleARecords
 		domain_ip = answer[0].to_text()
 		site_ip = resolver.query(name, "A")[0].to_text()
 		result["answer"] = answer.rrset.to_text()
-		if domain_ip == site_ip:
-			result["matched"] = True
-		elif site_ip:
-			# We can issue certificates even if the domain points to the secondary proxies
-			server = frappe.db.get_value("Site", name, "server")
-			proxy = frappe.db.get_value("Server", server, "proxy_server")
-			secondary_ips = frappe.get_all(
-				"Proxy Server",
-				{"status": "Active", "primary": proxy, "is_replication_setup": True},
-				pluck="ip",
-			)
-			if domain_ip in secondary_ips:
-				result["matched"] = True
+		result["matched"] = check_for_ip_match(name, site_ip, domain_ip)
+	except MultipleARecords:
+		multiple_ips = ", ".join(part.to_text() for part in answer)
+		frappe.throw(
+			f"Domain {domain} has multiple A records: {multiple_ips}.Please keep only one.",
+			MultipleARecords,
+		)
 	except dns.resolver.NoAnswer as e:
 		result["exists"] = False
 		result["answer"] = str(e)
@@ -1689,7 +1716,7 @@ def ensure_dns_aaaa_record_doesnt_exist(domain: str):
 	except dns.resolver.NoAnswer:
 		pass
 	except dns.exception.DNSException:
-		pass  # We have other probems
+		pass  # We have other problems
 
 
 def check_dns_cname_a(name, domain):
