@@ -204,7 +204,7 @@ def get_tax_percentage(payment_partner):
 
 def update_tax_id_or_phone_no(team, tax_id, phone_number):
 	"""Update the tax ID or phone number for the team, only if they are different from existing values."""
-	team_doc = frappe.get_doc("Team", {"user": team, "enabled": 1})
+	team_doc = frappe.get_doc("Team", team)
 
 	# Check if updates are needed
 	new_tax_id = tax_id and team_doc.mpesa_tax_id != tax_id
@@ -322,24 +322,6 @@ def sanitize_mobile_number(number):
 	"""ensures number take the right format"""
 	"""Add country code and strip leading zeroes from the phone number."""
 	return "254" + str(number).lstrip("0")
-
-
-def split_request_amount_according_to_transaction_limit(amount, transaction_limit):
-	"""split amount if it exceeds 150,000"""
-	request_amount = amount
-	if request_amount > transaction_limit:
-		# make multiple requests
-		request_amounts = []
-		requests_to_be_made = frappe.utils.ceil(request_amount / transaction_limit)  # 480/150 = ceil(3.2) = 4
-		for i in range(requests_to_be_made):
-			amount = transaction_limit
-			if i == requests_to_be_made - 1:
-				amount = request_amount - (transaction_limit * i)  # for 4th request, 480 - (150 * 3) = 30
-			request_amounts.append(amount)
-	else:
-		request_amounts = [request_amount]
-
-	return request_amounts
 
 
 def fetch_param_value(response, key, key_field):

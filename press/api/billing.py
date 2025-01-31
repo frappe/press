@@ -19,7 +19,6 @@ from press.api.regional_payments.mpesa.utils import (
 	get_payment_gateway,
 	get_team_and_partner_from_integration_request,
 	sanitize_mobile_number,
-	split_request_amount_according_to_transaction_limit,
 	update_tax_id_or_phone_no,
 )
 from press.press.doctype.mpesa_setup.mpesa_connector import MpesaConnector
@@ -850,22 +849,16 @@ def get_completed_integration_requests_info(reference_doctype, reference_docname
 @frappe.whitelist()
 def request_for_payment(**kwargs):
 	"""request for payments"""
-	_team = get_current_team()
-	user = frappe.db.get_value("Team", _team, "user")
-	# TODO get the team and transaction from mpesa setting doctype
-	kwargs.setdefault("transaction_limit", 150000)
-	kwargs.setdefault("team", user)
-	# transaction_limit = 150000
-	args = frappe._dict(kwargs)
-	update_tax_id_or_phone_no(args.team, args.tax_id, args.phone_number)
-	request_amounts = split_request_amount_according_to_transaction_limit(
-		args.request_amount, args.transaction_limit
-	)
-	for _i, amount in enumerate(request_amounts):
-		args.request_amount = frappe.utils.cint(amount)
-		response = frappe._dict(generate_stk_push(**args))
+	team = get_current_team()
 
-		handle_api_mpesa_response("CheckoutRequestID", args, response)
+	args = frappe._dict(kwargs)
+	update_tax_id_or_phone_no(team, args.tax_id, args.phone_number)
+
+	amount = args.request_amount
+	args.request_amount = frappe.utils.rounded(amount, 2)
+	response = frappe._dict(generate_stk_push(**args))
+	handle_api_mpesa_response("CheckoutRequestID", args, response)
+
 	return response
 
 

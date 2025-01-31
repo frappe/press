@@ -102,6 +102,7 @@ export default {
 			amountWithTax: 0,
 			showTaxInfo: false,
 			exchangeRate: 0,
+			maximumAmount: 150000,
 		};
 	},
 	resources: {
@@ -120,6 +121,11 @@ export default {
 					if (this.amount < this.minimumAmount) {
 						throw new DashboardError(
 							`Amount is less than the minimum allowed: ${this.minimumAmount}`,
+						);
+					}
+					if (this.amount > this.maximumAmount) {
+						throw new DashboardError(
+							`Amount is more than the maximum allowed: ${this.maximumAmount}`,
 						);
 					}
 					if (!this.partnerInput.value || !this.phoneNumberInput) {
