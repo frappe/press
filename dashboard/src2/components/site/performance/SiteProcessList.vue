@@ -15,7 +15,7 @@
 			:state="selectedRow?.state ?? ''"
 			:command="selectedRow?.command ?? ''"
 			:site="name"
-			@process-killed="show = false"
+			@process-killed="processKilledCallback"
 		/>
 	</div>
 </template>
@@ -37,19 +37,23 @@ export default {
 			selectedRow: null,
 		};
 	},
+	resources: {
+		processList() {
+			if (!this.name) return;
+			return {
+				url: 'press.api.analytics.mariadb_processlist',
+				params: {
+					site: this.name,
+				},
+				auto: true,
+				initialData: [],
+			};
+		},
+	},
 	computed: {
 		processListOptions() {
 			return {
-				resource: () => {
-					return {
-						url: 'press.api.analytics.mariadb_processlist',
-						params: {
-							site: this.name,
-						},
-						auto: true,
-						initialData: [],
-					};
-				},
+				data: () => this.$resources.processList.data,
 				columns: [
 					{
 						label: 'ID',
@@ -82,6 +86,14 @@ export default {
 					this.selectedRow = row;
 					this.show = true;
 				},
+				secondaryAction: () => {
+					return {
+						label: 'Refresh',
+						icon: 'refresh-ccw',
+						loading: this.$resources.processList.loading,
+						onClick: () => this.$resources.processList.reload(),
+					};
+				},
 			};
 		},
 	},
@@ -89,6 +101,7 @@ export default {
 		processKilledCallback() {
 			toast.success('Database Process Killed');
 			this.show = false;
+			this.$resources.processList.reload();
 		},
 	},
 };

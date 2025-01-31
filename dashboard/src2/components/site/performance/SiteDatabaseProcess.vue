@@ -5,6 +5,7 @@
 			size: 'xl',
 		}"
 		v-model="show"
+		:modelValue="true"
 	>
 		<template #body-content>
 			<div class="flex flex-col gap-1">
@@ -22,6 +23,10 @@
 						>{{ query }}</pre
 					>
 				</div>
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.killDatabaseProcess.error"
+				/>
 				<div class="mt-2 flex text-sm">
 					<Button
 						variant="solid"
@@ -33,7 +38,6 @@
 					>
 						Kill Database Process
 					</Button>
-					<!-- <span class="ml-auto">Duration: {{ duration.toFixed(2) }} seconds</span> -->
 				</div>
 			</div>
 		</template>
@@ -44,7 +48,12 @@
 export default {
 	name: 'SiteDatabaseProcess',
 	props: ['id', 'query', 'user', 'host', 'state', 'command', 'site'],
-	emits: ['update:modelValue', 'process-killed'],
+	emits: ['process-killed'],
+	data() {
+		return {
+			show: true,
+		};
+	},
 	resources: {
 		killDatabaseProcess() {
 			return {
