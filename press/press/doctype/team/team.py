@@ -63,7 +63,6 @@ class Team(Document):
 		github_access_token: DF.Data | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
-		is_product_trial_user: DF.Check
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
@@ -113,7 +112,6 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
-		"is_product_trial_user",
 	)
 
 	def get_doc(self, doc):
@@ -154,13 +152,6 @@ class Team(Document):
 				"stripe_mandate_id",
 			],
 			as_dict=True,
-		)
-		doc.hide_sidebar = (
-			not self.parent_team
-			and not doc.onboarding.site_created
-			and len(doc.valid_teams) == 1
-			and not self.is_payment_mode_set()
-			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
 		)
 
 	def onload(self):
@@ -286,7 +277,6 @@ class Team(Document):
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
-		is_product_trial_user: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
 		team: "Team" = frappe.get_doc(
@@ -298,7 +288,6 @@ class Team(Document):
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
 				"account_request": account_request.name,
-				"is_product_trial_user": is_product_trial_user,
 			}
 		)
 
@@ -1047,13 +1036,19 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		return "/sites"
-		# TODO: route user to site creation if product trial user and site creation isn't complete
+		if self.payment_mode:
+			return "/sites"
 
-		# sites = frappe.db.count("Site", {"team": self.name, "status": ("!=", "Archived")})
-		# if sites > 5:
-		# 	return "/sites"
-		# return "/start-center"
+		if self.is_saas_user:
+			pending_site_request = self.get_pending_saas_site_request()
+			if pending_site_request:
+				product_trial = pending_site_request.product_trial
+			else:
+				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
+			if product_trial:
+				return f"/create-site/{product_trial}/setup"
+
+		return "/welcome"
 
 	def get_pending_saas_site_request(self):
 		return frappe.db.get_value(
@@ -1062,7 +1057,7 @@ class Team(Document):
 				"team": self.name,
 				"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard", "Error"]),
 			},
-			["name", "product_trial", "product_trial.title", "status"],
+			["name", "product_trial", "product_trial.title", "status", "account_request"],
 			order_by="creation desc",
 			as_dict=True,
 		)

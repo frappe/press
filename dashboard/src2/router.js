@@ -213,49 +213,55 @@ let router = createRouter({
 			],
 		},
 		{
-			name: 'SaaS',
+			name: 'Signup Create Site',
 			path: '/create-site',
 			redirect: { name: 'Home' },
 			children: [
+				// {
+				// 	name: 'SaaSLogin',
+				// 	path: ':productId/login',
+				// 	component: () => import('./pages/saas/Login.vue'),
+				// 	props: true,
+				// 	meta: {
+				// 		isLoginPage: true,
+				// 	},
+				// },
+				// {
+				// 	name: 'SaaSSignup',
+				// 	path: ':productId/signup',
+				// 	component: () => import('./pages/saas/Signup.vue'),
+				// 	props: true,
+				// 	meta: { isLoginPage: true },
+				// },
+				// {
+				// 	name: 'SaaSSignupVerifyEmail',
+				// 	path: ':productId/verify-email',
+				// 	component: () => import('./pages/saas/VerifyEmail.vue'),
+				// 	props: true,
+				// 	meta: { isLoginPage: true },
+				// },
+				// {
+				// 	name: 'SaaSSignupOAuthSetupAccount',
+				// 	path: ':productId/oauth',
+				// 	component: () => import('./pages/saas/OAuthSetupAccount.vue'),
+				// 	props: true,
+				// 	meta: { isLoginPage: true },
+				// },
 				{
-					name: 'SaaSLogin',
-					path: ':productId/login',
-					component: () => import('./pages/saas/Login.vue'),
-					props: true,
-					meta: {
-						isLoginPage: true,
-					},
+					name: 'SignupAppSelector',
+					path: 'app-selector',
+					component: () => import('./pages/saas/AppSelector.vue'),
+					meta: { hideSidebar: true },
 				},
 				{
-					name: 'SaaSSignup',
-					path: ':productId/signup',
-					component: () => import('./pages/saas/Signup.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupVerifyEmail',
-					path: ':productId/verify-email',
-					component: () => import('./pages/saas/VerifyEmail.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupOAuthSetupAccount',
-					path: ':productId/oauth',
-					component: () => import('./pages/saas/OAuthSetupAccount.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupSetup',
+					name: 'SignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),
 					props: true,
 					meta: { hideSidebar: true },
 				},
 				{
-					name: 'SaaSSignupLoginToSite',
+					name: 'SignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
 					props: true,
@@ -388,7 +394,7 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			if (to.name == 'Site Login') {
 				next();
-			} else if (to.name == 'SaaSSignupSetup') {
+			} else if (to.name == 'SignupSetup') {
 				next({
 					name: 'SaaSSignup',
 					params: to.params,

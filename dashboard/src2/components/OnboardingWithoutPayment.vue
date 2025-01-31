@@ -14,11 +14,8 @@
 			>
 				<!-- title -->
 				<div class="mb-7.5 text-center">
-					<p class="mb-2 text-2xl font-semibold leading-6 text-gray-900">
-						Welcome to Frappe Cloud
-					</p>
 					<p
-						class="break-words text-base font-normal leading-[21px] text-gray-700"
+						class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 					>
 						Choose an app below to create your first site.
 					</p>
@@ -38,15 +35,11 @@
 	</div>
 </template>
 <script>
-import ObjectList from './ObjectList.vue';
 import OnboardingAppSelector from './OnboardingAppSelector.vue';
-import SaaSLoginBox from './auth/SaaSLoginBox.vue';
 
 export default {
 	name: 'Onboarding',
 	components: {
-		ObjectList,
-		SaaSLoginBox,
 		OnboardingAppSelector,
 	},
 	resources: {

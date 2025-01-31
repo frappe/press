@@ -3,18 +3,18 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!isSaaSFlow && !$isMobile && !isHideSidebar"
+					v-if="!isSignupFlow && !$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar v-if="$session.user" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="!isSaaSFlow && $isMobile && !isHideSidebar && $session.user"
+						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
 					<div
 						v-if="
-							!isSaaSFlow &&
+							!isSignupFlow &&
 							!isSiteLogin &&
 							!$session.user &&
 							!$route.meta.isLoginPage
@@ -55,8 +55,8 @@ const team = getTeam();
 const isHideSidebar = computed(() => {
 	const alwaysHideSidebarRoutes = [
 		'Site Login',
-		'SaaSSignupLoginToSite',
-		'SaaSSignupSetup',
+		'SignupLoginToSite',
+		'SignupSetup',
 	];
 	const alwaysHideSidebarPaths = ['/dashboard/site-login'];
 
@@ -72,13 +72,17 @@ const isHideSidebar = computed(() => {
 	);
 });
 
-const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
+const isSignupFlow = ref(
+	window.location.pathname.startsWith('/dashboard/create-site'),
+);
 const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
 	() => {
-		isSaaSFlow.value = window.location.pathname.startsWith('/dashboard/saas');
+		isSignupFlow.value = window.location.pathname.startsWith(
+			'/dashboard/create-site',
+		);
 	},
 );
 

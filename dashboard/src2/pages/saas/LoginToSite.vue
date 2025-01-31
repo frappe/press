@@ -122,7 +122,7 @@ import LoginBox from '../../components/auth/LoginBox.vue';
 import { Progress } from 'frappe-ui';
 
 export default {
-	name: 'SaaSSignupLoginToSite',
+	name: 'SignupLoginToSite',
 	props: ['productId'],
 	components: {
 		LoginBox,
@@ -219,7 +219,7 @@ export default {
 		},
 		signupForCurrentProduct() {
 			this.$router.push({
-				name: 'SaaSSignupSetup',
+				name: 'SignupSetup',
 				params: { productId: this.productId },
 			});
 		},

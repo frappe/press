@@ -181,14 +181,13 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
-					is_product_trial_user: this.saasProduct ? true : false,
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
 				},
 				onSuccess(account_request) {
-					let path = '/dashboard';
+					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
 						path = `/dashboard/create-site/${this.saasProduct.name}/setup?account_request=${account_request}`;
 					}

@@ -29,11 +29,11 @@ export default {
 
 			const routeName = this.$route?.name || '';
 			const onboardingComplete = this.$team.doc.onboarding.complete;
-			const isProductTrialUser = this.$team.doc.is_product_trial_user;
+			const isSaasUser = this.$team.doc.is_saas_user;
 			const enforce2FA = Boolean(
 				!this.$team.doc.is_desk_user &&
 					this.$team.doc.enforce_2fa &&
-					!this.$team.doc.user_info?.is_2fa_enabled
+					!this.$team.doc.user_info?.is_2fa_enabled,
 			);
 
 			return [
@@ -42,28 +42,28 @@ export default {
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !onboardingComplete
+					condition: !onboardingComplete,
 				},
 				{
 					name: 'Notifications',
 					icon: () => h(Notification),
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
-					condition: !onboardingComplete && !isProductTrialUser,
+					condition: !onboardingComplete && !isSaasUser,
 					badge: () => {
 						if (unreadNotificationsCount.data > 0) {
 							return h(
 								'span',
 								{
-									class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600'
+									class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600',
 								},
 								unreadNotificationsCount.data > 99
 									? '99+'
-									: unreadNotificationsCount.data
+									: unreadNotificationsCount.data,
 							);
 						}
 					},
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Sites',
@@ -72,7 +72,7 @@ export default {
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Benches',
@@ -80,7 +80,7 @@ export default {
 					route: '/benches',
 					isActive: routeName.startsWith('Bench'),
 					condition: this.$team.doc?.is_desk_user,
-					disabled: !onboardingComplete || enforce2FA
+					disabled: !onboardingComplete || enforce2FA,
 				},
 				{
 					name: 'Bench Groups',
@@ -92,11 +92,11 @@ export default {
 							'Release Group Detail',
 							'New Release Group',
 							'Release Group New Site',
-							'Deploy Candidate'
+							'Deploy Candidate',
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
-					condition: onboardingComplete && !isProductTrialUser,
-					disabled: enforce2FA
+					condition: onboardingComplete && !isSaasUser,
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Servers',
@@ -105,8 +105,8 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
-					condition: onboardingComplete && !isProductTrialUser,
-					disabled: enforce2FA
+					condition: onboardingComplete && !isSaasUser,
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Marketplace',
@@ -116,38 +116,38 @@ export default {
 					condition:
 						this.$team.doc?.is_desk_user ||
 						(!!this.$team.doc.is_developer && this.$session.hasAppsAccess),
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Dev Tools',
 					icon: () => h(Code),
 					route: '/devtools',
-					condition: onboardingComplete && !isProductTrialUser,
+					condition: onboardingComplete && !isSaasUser,
 					disabled: enforce2FA,
 					children: [
 						{
 							name: 'SQL Playground',
 							icon: () => h(DatabaseZap),
 							route: '/sql-playground',
-							isActive: routeName === 'SQL Playground'
+							isActive: routeName === 'SQL Playground',
 						},
 						{
 							name: 'Log Browser',
 							icon: () => h(Logs),
 							route: '/log-browser',
-							isActive: routeName === 'Log Browser'
+							isActive: routeName === 'Log Browser',
 						},
 						{
 							name: 'DB Analyzer',
 							icon: () => h(Activity),
 							route: '/database-analyzer',
-							isActive: routeName === 'DB Analyzer'
-						}
-					].filter(item => item.condition ?? true),
+							isActive: routeName === 'DB Analyzer',
+						},
+					].filter((item) => item.condition ?? true),
 					isActive: ['SQL Playground', 'DB Analyzer', 'Log Browser'].includes(
-						routeName
+						routeName,
 					),
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Billing',
@@ -156,7 +156,7 @@ export default {
 					isActive: routeName.startsWith('Billing'),
 					condition:
 						this.$team.doc?.is_desk_user || this.$session.hasBillingAccess,
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Partner Portal',
@@ -164,28 +164,28 @@ export default {
 					route: '/partners',
 					isActive: routeName.startsWith('Partner'),
 					condition: Boolean(this.$team.doc.erpnext_partner),
-					disabled: enforce2FA
+					disabled: enforce2FA,
 				},
 				{
 					name: 'Settings',
 					icon: () => h(Settings),
 					route: '/settings',
 					isActive: routeName.startsWith('Settings'),
-					disabled: enforce2FA
-				}
-			].filter(item => item.condition ?? true);
-		}
+					disabled: enforce2FA,
+				},
+			].filter((item) => item.condition ?? true);
+		},
 	},
 	mounted() {
 		this.$socket.emit('doctype_subscribe', 'Press Notification');
-		this.$socket.on('press_notification', data => {
+		this.$socket.on('press_notification', (data) => {
 			if (data.team === this.$team.doc.name) {
-				unreadNotificationsCount.setData(data => data + 1);
+				unreadNotificationsCount.setData((data) => data + 1);
 			}
 		});
 	},
 	unmounted() {
 		this.$socket.off('press_notification');
-	}
+	},
 };
 </script>

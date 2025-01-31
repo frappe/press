@@ -1,17 +1,24 @@
 <template>
-	<div class="px-5 py-10" v-if="$team?.doc">
-		<Onboarding />
+	<div
+		class="px-5 py-10"
+		v-if="$team?.doc"
+		:class="{
+			'h-full sm:bg-gray-50':
+				!$team.doc.onboarding.is_saas_user && !$team.doc.onboarding.site_created
+		}"
+	>
+		<OnboardingWithoutPayment />
 	</div>
 </template>
 <script>
-import { getTeam } from '../data/team';
-import Onboarding from '../components/Onboarding.vue';
-import OnboardingWithoutPayment from '../components/OnboardingWithoutPayment.vue';
+import { getTeam } from '../../data/team';
+import Onboarding from '../../components/Onboarding.vue';
+import OnboardingWithoutPayment from '../../components/OnboardingWithoutPayment.vue';
 export default {
 	name: 'Welcome',
 	components: {
 		Onboarding,
-		OnboardingWithoutPayment,
+		OnboardingWithoutPayment
 	},
 	beforeRouteEnter(to, from, next) {
 		let $team = getTeam();
@@ -23,6 +30,6 @@ export default {
 		} else {
 			next();
 		}
-	},
+	}
 };
 </script>

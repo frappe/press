@@ -71,7 +71,7 @@ import LoginBox from '../../components/auth/LoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 
 export default {
-	name: 'SaaSSignupSetup',
+	name: 'SignupSetup',
 	props: ['productId'],
 	components: {
 		LoginBox,
@@ -114,7 +114,7 @@ export default {
 				onSuccess: (data) => {
 					if (data?.status !== 'Pending') {
 						this.$router.push({
-							name: 'SaaSSignupLoginToSite',
+							name: 'SignupLoginToSite',
 							params: { productId: this.productId },
 							query: {
 								product_trial_request: data.name,
@@ -156,7 +156,7 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					this.$router.push({
-						name: 'SaaSSignupLoginToSite',
+						name: 'SignupLoginToSite',
 						params: { productId: this.productId },
 						query: {
 							product_trial_request: this.$resources.siteRequest.data.name,

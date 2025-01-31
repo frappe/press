@@ -106,7 +106,6 @@ def setup_account(  # noqa: C901
 	invited_by_parent_team=False,
 	oauth_signup=False,
 	oauth_domain=False,
-	is_product_trial_user=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -152,7 +151,6 @@ def setup_account(  # noqa: C901
 			last_name=last_name,
 			password=password,
 			country=country,
-			is_product_trial_user=is_product_trial_user,
 			user_exists=bool(user_exists),
 		)
 		if invited_by_parent_team:
@@ -1118,7 +1116,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60 * 60)
+# @rate_limit(limit=5, seconds=60 * 60)
 def is_2fa_enabled(user):
 	return frappe.db.get_value("User 2FA", user, "enabled")
 

@@ -80,8 +80,8 @@ export default {
 		searchField: 'host_name',
 		filterControls() {
 			const team = getTeam();
-			const isProductTrialUser = team.doc.is_product_trial_user;
-			if (isProductTrialUser) {
+			const isSaasUser = team.doc.is_saas_user;
+			if (isSaasUser) {
 				return [
 					{
 						type: 'select',
@@ -93,9 +93,9 @@ export default {
 							'Inactive',
 							'Suspended',
 							'Broken',
-							'Archived'
-						]
-					}
+							'Archived',
+						],
+					},
 				];
 			} else {
 				return [
@@ -109,30 +109,30 @@ export default {
 							'Inactive',
 							'Suspended',
 							'Broken',
-							'Archived'
-						]
+							'Archived',
+						],
 					},
 					{
 						type: 'link',
 						label: 'Version',
 						fieldname: 'group.version',
 						options: {
-							doctype: 'Frappe Version'
-						}
+							doctype: 'Frappe Version',
+						},
 					},
 					{
 						type: 'link',
 						label: 'Bench Group',
 						fieldname: 'group',
 						options: {
-							doctype: 'Release Group'
-						}
+							doctype: 'Release Group',
+						},
 					},
 					{
 						type: 'select',
 						label: 'Region',
 						fieldname: 'cluster',
-						options: clusterOptions
+						options: clusterOptions,
 					},
 					{
 						type: 'link',
@@ -141,10 +141,10 @@ export default {
 						options: {
 							doctype: 'Press Tag',
 							filters: {
-								doctype_name: 'Site'
-							}
-						}
-					}
+								doctype_name: 'Site',
+							},
+						},
+					},
 				];
 			}
 		},
@@ -156,8 +156,8 @@ export default {
 				class: 'font-medium',
 				format(value, row) {
 					const team = getTeam();
-					const isProductTrialUser = team.doc.is_product_trial_user;
-					if (isProductTrialUser) return row.site_label || value || row.name;
+					const isSaasUser = team.doc.is_saas_user;
+					if (isSaasUser) return row.site_label || value || row.name;
 
 					return value || row.name;
 				},
@@ -166,7 +166,7 @@ export default {
 				label: 'Status',
 				fieldname: 'status',
 				type: 'Badge',
-				width: '140px'
+				width: '140px',
 			},
 			{
 				label: 'Plan',
@@ -197,7 +197,7 @@ export default {
 				},
 				condition(row) {
 					const team = getTeam();
-					return !team.doc.is_product_trial_user;
+					return !team.doc.is_saas_user;
 				},
 				prefix(row) {
 					return h('img', {
@@ -213,7 +213,7 @@ export default {
 				width: '15rem',
 				condition(row) {
 					const team = getTeam();
-					return !team.doc.is_product_trial_user;
+					return !team.doc.is_saas_user;
 				},
 				format(value, row) {
 					return row.group_public ? 'Shared' : row.group_title || value;
@@ -225,8 +225,8 @@ export default {
 				width: 0.5,
 				condition(row) {
 					const team = getTeam();
-					return !team.doc.is_product_trial_user;
-				}
+					return !team.doc.is_saas_user;
+				},
 			},
 			{
 				label: '',
@@ -235,7 +235,7 @@ export default {
 				align: 'right',
 				condition(row) {
 					const team = getTeam();
-					return !!team.doc.is_product_trial_user;
+					return !!team.doc.is_saas_user;
 				},
 				Button({ row }) {
 					return {
@@ -249,21 +249,21 @@ export default {
 								params: {
 									dt: 'Site',
 									dn: row.name,
-									method: 'login_as_team'
+									method: 'login_as_team',
 								},
-								onSuccess: url => {
+								onSuccess: (url) => {
 									window.open(url.message, '_blank');
-								}
+								},
 							});
 							toast.promise(loginAsTeam.submit(), {
 								success: 'Logged in successfully',
 								loading: 'Logging in...',
-								error: 'Failed to login'
+								error: 'Failed to login',
 							});
-						}
+						},
 					};
-				}
-			}
+				},
+			},
 		],
 		primaryAction({ listResource: sites }) {
 			return {
