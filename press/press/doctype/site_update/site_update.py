@@ -227,7 +227,7 @@ class SiteUpdate(Document):
 			return
 
 		# Check if physical backup is disabled globally from Press Settings
-		if frappe.get_value("Press Settings", None, "disable_physical_backup"):
+		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
 			return
 
 		database_server = frappe.get_value("Server", self.server, "database_server")
@@ -248,6 +248,7 @@ class SiteUpdate(Document):
 			filters={"site": self.site, "physical": False},
 			pluck="database_size",
 			limit=1,
+			order_by="creation desc",
 		)
 		db_backup_size = 0
 		if len(last_logical_site_backups) > 0:
