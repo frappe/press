@@ -2816,6 +2816,16 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
 			return None
+		processes = agent.fetch_database_processes(self)
+		if not processes:
+			return None
+		isFoundPid = True
+		for process in processes:
+			if str(process["id"]) == str(id):
+				isFoundPid = True
+				break
+		if not isFoundPid:
+			return None
 		return agent.kill_database_process(self, id)
 
 	@dashboard_whitelist()
