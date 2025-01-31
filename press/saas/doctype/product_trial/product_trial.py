@@ -116,7 +116,7 @@ class ProductTrial(Document):
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
 
-		if frappe.db.exists("Site", {"site_label": site_label, "status": ("!=", "Archived")}):
+		if frappe.db.exists("Site", {"site_label": site_label, "status": ("!=", "Archived"), "team": team}):
 			frappe.throw(f"Site with label {site_label} already exists")
 
 		if standby_site:
@@ -298,11 +298,13 @@ class ProductTrial(Document):
 
 	def get_prefilled_site_label(self):
 		def get_site_label(count=1):
+			from press.utils import get_current_team
+
 			user_first_name = frappe.db.get_value("User", frappe.session.user, "first_name")
 			site_label = f"{user_first_name}'s {self.title} Site"
 			if count > 1:
 				site_label = f"{site_label} {count}"
-			if frappe.db.exists("Site", {"site_label": site_label}):
+			if frappe.db.exists("Site", {"site_label": site_label, "team": get_current_team()}):
 				return get_site_label(count + 1)
 			return site_label
 
