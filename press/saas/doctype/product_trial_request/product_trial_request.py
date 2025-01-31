@@ -325,7 +325,7 @@ def get_app_trial_page_url():
 			# Check site status
 			# site_status = frappe.db.get_value("Site", site, "status")
 			# if site_status in ("Active", "Inactive", "Suspended"):
-			return f"/dashboard/app-trial/signup/{product_trial_name}"
+			return f"/dashboard/signup?product={product_trial_name}"
 	except Exception:
 		frappe.log_error(title="App Trial Page URL Error")
 		return None
