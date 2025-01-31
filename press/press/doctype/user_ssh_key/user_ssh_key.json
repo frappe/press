@@ -59,7 +59,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-12 18:36:59.347443",
+ "modified": "2025-01-30 17:39:14.574515",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Key",
@@ -94,6 +94,7 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

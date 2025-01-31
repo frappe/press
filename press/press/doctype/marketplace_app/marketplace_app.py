@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import re
 from base64 import b64decode
 from typing import TYPE_CHECKING, ClassVar
 
@@ -547,9 +546,6 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def listing_details(self):
-		github_repository_url = frappe.get_value(
-			"App Source", {"app": self.app, "team": self.team, "public": True}, "repository_url"
-		)
 		return {
 			"support": self.support,
 			"website": self.website,
@@ -559,8 +555,6 @@ class MarketplaceApp(WebsiteGenerator):
 			"description": self.description,
 			"long_description": self.long_description,
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
-			"github_repository_url": github_repository_url,
-			"is_public_repo": is_public_github_repository(github_repository_url),
 		}
 
 	@dashboard_whitelist()
@@ -682,35 +676,3 @@ def get_total_installs_by_app():
 		order_by=None,
 	)
 	return {installs["app"]: installs["count"] for installs in total_installs}
-
-
-def is_public_github_repository(github_url):
-	if not isinstance(github_url, str):
-		return False
-
-	# Match the GitHub URL pattern to extract owner and repository
-	match = re.search(r"github\.com/([^/]+)/([^/]+)", github_url)
-
-	if not match:
-		return False
-
-	owner, repo = match.groups()
-
-	api_url = f"https://api.github.com/repos/{owner}/{repo}"
-
-	try:
-		response = requests.get(api_url)
-
-	except Exception:
-		return False
-
-	if response.status_code != 200:
-		return False
-
-	try:
-		data = response.json()
-	except Exception:
-		return False
-
-	# Check if the repository is public
-	return data.get("private") is False

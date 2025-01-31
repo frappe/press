@@ -307,6 +307,11 @@ class AgentJob(Document):
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
+	@frappe.whitelist()
+	def cancel_job(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		agent.cancel_job(self.job_id)
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
@@ -959,6 +964,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update,
 		)
 		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_job_update as process_physical_backup_restoration_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -984,6 +992,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
+			process_activate_site_job_update,
+			process_deactivate_site_job_update,
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
@@ -1022,7 +1032,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server" or job.job_type == "Remove Code Server from Upstream":
 			process_archive_code_server_job_update(job)
-		elif job.job_type == "Backup Site":
+		elif job.job_type in ["Backup Site", "Physical Backup Database"]:
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site" or job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
@@ -1073,6 +1083,12 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			"Modify Database User Permissions",
 		]:
 			SiteDatabaseUser.process_job_update(job)
+		elif job.job_type == "Physical Restore Database":
+			process_physical_backup_restoration_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Update":
+			process_deactivate_site_job_update(job)
+		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
+			process_activate_site_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

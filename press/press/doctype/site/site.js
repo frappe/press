@@ -84,6 +84,7 @@ frappe.ui.form.on('Site', {
 
 		[
 			[__('Backup'), 'backup'],
+			[__('Physical Backup'), 'physical_backup'],
 			[__('Sync Info'), 'sync_info'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(

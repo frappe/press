@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-01-29 17:22:44.021043",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "host",
+  "status",
+  "users"
+ ],
+ "fields": [
+  {
+   "columns": 7,
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Host",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nCompleted\nUnreachable",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 6,
+   "fieldname": "users",
+   "fieldtype": "Code",
+   "label": "Users",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-29 17:58:47.917689",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "SSH Access Audit Host",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

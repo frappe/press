@@ -940,8 +940,12 @@ class Site(Document, TagHelpers):
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
 
+	@frappe.whitelist()
+	def physical_backup(self):
+		return self.backup(physical=True)
+
 	@dashboard_whitelist()
-	def backup(self, with_files=False, offsite=False, force=False):
+	def backup(self, with_files=False, offsite=False, force=False, physical=False):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
 				"Site Activity",
@@ -971,6 +975,7 @@ class Site(Document, TagHelpers):
 				"with_files": with_files,
 				"offsite": offsite,
 				"force": force,
+				"physical": physical,
 			}
 		).insert()
 
@@ -1024,6 +1029,7 @@ class Site(Document, TagHelpers):
 		self,
 		skip_failing_patches: bool = False,
 		skip_backups: bool = False,
+		physical_backup: bool = False,
 		scheduled_time: str | None = None,
 	):
 		log_site_activity(self.name, "Update")
@@ -1032,6 +1038,7 @@ class Site(Document, TagHelpers):
 			{
 				"doctype": "Site Update",
 				"site": self.name,
+				"backup_type": "Physical" if physical_backup else "Logical",
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
 				"status": "Scheduled" if scheduled_time else "Pending",
@@ -1391,7 +1398,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@dashboard_whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
@@ -1444,6 +1451,15 @@ class Site(Document, TagHelpers):
 			try:
 				agent = Agent(self.server)
 				sid = agent.get_site_sid(self, user)
+			except requests.HTTPError as e:
+				if "validate_ip_address" in str(e):
+					frappe.throw(
+						f"Login with {user}'s credentials is IP restricted. Please remove the same and try again.",
+						frappe.ValidationError,
+					)
+				elif f"User {user} does not exist" in str(e):
+					frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+				raise e
 			except AgentRequestSkippedException:
 				frappe.throw(
 					"Server is unresponsive. Please try again in some time.",

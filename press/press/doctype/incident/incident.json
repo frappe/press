@@ -12,15 +12,22 @@
   "alert",
   "status",
   "type",
+  "subtype",
   "acknowledged_by",
   "column_break_smnd",
-  "bench",
   "server",
+  "resource_type",
+  "resource",
   "cluster",
   "resolved_by",
   "section_break_kjey",
   "subject",
   "description",
+  "preliminary_investigation_section",
+  "likely_cause",
+  "column_break_jrzi",
+  "suggestions",
+  "preventive_suggestions",
   "section_break_bjjy",
   "updates",
   "updates_tab",
@@ -32,12 +39,6 @@
   "show_in_website"
  ],
  "fields": [
-  {
-   "fieldname": "bench",
-   "fieldtype": "Link",
-   "label": "Bench",
-   "options": "Bench"
-  },
   {
    "fieldname": "server",
    "fieldtype": "Link",
@@ -62,11 +63,11 @@
    "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
   },
   {
-   "default": "Site Down",
+   "default": "Database Down",
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Site Down\nBench Down\nServer Down"
+   "options": "Database Down\nServer Down\nProxy Down"
   },
   {
    "fieldname": "section_break_bjjy",
@@ -158,13 +159,57 @@
    "fieldtype": "Link",
    "label": "Alert",
    "options": "Prometheus Alert Rule"
+  },
+  {
+   "fieldname": "resource_type",
+   "fieldtype": "Link",
+   "label": "Resource Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "resource",
+   "fieldtype": "Dynamic Link",
+   "label": "Resource",
+   "options": "resource_type"
+  },
+  {
+   "fieldname": "subtype",
+   "fieldtype": "Select",
+   "label": "Subtype",
+   "options": "High CPU: user\nHigh CPU: iowait\nDisk full"
+  },
+  {
+   "fieldname": "preliminary_investigation_section",
+   "fieldtype": "Section Break",
+   "label": "Preliminary Investigation"
+  },
+  {
+   "fieldname": "likely_cause",
+   "fieldtype": "Text",
+   "label": "Likely Causes"
+  },
+  {
+   "fieldname": "column_break_jrzi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "suggestions",
+   "fieldtype": "Table",
+   "label": "Corrective Suggestions",
+   "options": "Incident Suggestion"
+  },
+  {
+   "fieldname": "preventive_suggestions",
+   "fieldtype": "Table",
+   "label": "Preventive Suggestions",
+   "options": "Incident Suggestion"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2024-01-19 16:54:40.322437",
+ "modified": "2025-01-17 18:37:16.040363",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
