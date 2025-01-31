@@ -134,7 +134,7 @@ export default {
 				name: this.productId,
 				auto: true,
 				onSuccess: (doc) => {
-					this.siteLabel = `${this.$team.doc?.user_info?.first_name}'s ${doc?.title} Site`;
+					this.siteLabel = doc.prefilled_site_label;
 				},
 			};
 		},

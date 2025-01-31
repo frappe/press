@@ -86,6 +86,7 @@ class ProductTrial(Document):
 			for field in self.signup_fields
 		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
+		doc.prefilled_site_label = self.get_prefilled_site_label()
 		return doc
 
 	def validate(self):
@@ -114,6 +115,9 @@ class ProductTrial(Document):
 		agent_job_name = None
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
+
+		if frappe.db.exists("Site", {"site_label": site_label, "status": ("!=", "Archived")}):
+			frappe.throw(f"Site with label {site_label} already exists")
 
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
@@ -291,6 +295,18 @@ class ProductTrial(Document):
 		while frappe.db.exists("Site", filters):
 			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
+
+	def get_prefilled_site_label(self):
+		def get_site_label(count=1):
+			user_first_name = frappe.db.get_value("User", frappe.session.user, "first_name")
+			site_label = f"{user_first_name}'s {self.title} Site"
+			if count > 1:
+				site_label = f"{site_label} {count}"
+			if frappe.db.exists("Site", {"site_label": site_label}):
+				return get_site_label(count + 1)
+			return site_label
+
+		return get_site_label()
 
 
 def get_app_subscriptions_site_config(apps: list[str]):
