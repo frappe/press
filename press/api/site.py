@@ -1700,9 +1700,8 @@ def check_dns_cname_a(name, domain):
 	result.update(cname)
 
 	a = check_dns_a(name, domain)
-	if a["matched"]:
-		result.update({"A": a})
-		result.update(a)
+	result.update({"A": a})
+	result.update(a)
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(
