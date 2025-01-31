@@ -4,7 +4,7 @@
 			title="Log in to your site on Frappe Cloud"
 			:subtitle="[
 				sites.fetched && sites.data.length !== 0
-					? `Pick a site to login to as ${email || $session.user}`
+					? `Pick a site to log in to as ${email || $session.user}`
 					: !sites.fetched
 						? 'Enter your email and verification code to access your site'
 						: '',
