@@ -1964,7 +1964,9 @@ def process_new_server_job_update(job):
 
 
 def cleanup_unused_files():
-	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
+	servers = frappe.get_all(
+		"Server", fields=["name"], filters={"status": "Active", "is_devbox_server": False}
+	)
 	for server in servers:
 		try:
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
