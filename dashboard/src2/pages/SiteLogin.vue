@@ -1,90 +1,81 @@
 <template>
-	<div class="h-full sm:bg-gray-50">
-		<div class="flex w-full items-center justify-center" v-if="false">
-			<Spinner class="mr-2 w-4" />
-			<p class="text-gray-800">Loading</p>
-		</div>
-		<div class="flex" v-else>
-			<div class="h-full w-full overflow-auto">
-				<SaaSLoginBox
-					title="Login to your site on Frappe Cloud"
-					:subtitle="[
-						sites.fetched
-							? `Pick a site to login to as ${email || $session.user}`
-							: 'Enter your email and verification code to access your site',
-					]"
-				>
-					<template v-slot:default>
-						<div class="space-y-4">
-							<div
-								v-if="
-									$session.loading || isCookieValid.loading || sites.loading
+	<div class="h-screen overflow-hidden sm:bg-gray-50">
+		<LoginBox
+			title="Log in to your site on Frappe Cloud"
+			:subtitle="[
+				sites.fetched
+					? `Pick a site to login to as ${email || $session.user}`
+					: 'Enter your email and verification code to access your site',
+			]"
+		>
+			<template v-slot:default>
+				<div class="space-y-4">
+					<div
+						v-if="$session.loading || isCookieValid.loading || sites.loading"
+						class="mx-auto flex items-center justify-center space-x-2 text-base"
+					>
+						<LoadingText />
+					</div>
+					<form v-else-if="!sites.fetched">
+						<FormControl
+							label="Email"
+							class="w-full"
+							v-model="email"
+							placeholder="johndoe@mail.com"
+						/>
+						<FormControl
+							v-if="showOTPField"
+							label="Verification Code"
+							v-model="otp"
+							class="mt-2"
+						/>
+						<div v-if="showOTPField">
+							<Button
+								label="Verify"
+								:disabled="otp.length !== 6"
+								:loading="
+									sites.loading ||
+									sendOTPMethod.loading ||
+									verifyOTPMethod.loading
 								"
-								class="mx-auto flex items-center justify-center space-x-2 text-base"
-							>
-								<LoadingText />
-							</div>
-							<form v-else-if="!sites.fetched">
-								<FormControl
-									label="Email"
-									class="w-full"
-									v-model="email"
-									variant="outline"
-								/>
-								<FormControl
-									v-if="showOTPField"
-									label="Verification Code"
-									v-model="otp"
-									variant="outline"
-									class="mt-2"
-								/>
-								<div v-if="showOTPField">
-									<Button
-										label="Verify"
-										:disabled="otp.length !== 6"
-										:loading="
-											sites.loading ||
-											sendOTPMethod.loading ||
-											verifyOTPMethod.loading
-										"
-										variant="solid"
-										class="mt-4 w-full"
-										@click="verifyOTP"
-									/>
-									<Button
-										label="Resend Verification Code"
-										variant="outline"
-										class="mt-2 w-full"
-										@click="sendOTP()"
-										:loading="sendOTPMethod.loading"
-									/>
-								</div>
-								<Button
-									v-else
-									label="Submit"
-									:disabled="email.length === 0"
-									:loading="
-										sites.loading ||
-										sendOTPMethod.loading ||
-										verifyOTPMethod.loading
-									"
-									variant="solid"
-									class="mt-4 w-full"
-									@click="sendOTP"
-								/>
-							</form>
-							<div v-else>
-								<ObjectList :options="siteListOptions" />
-							</div>
-
-							<ErrorMessage
-								:message="
-									sites.error || sendOTPMethod.error || verifyOTPMethod.error
-								"
+								variant="solid"
+								class="mt-4 w-full"
+								@click="verifyOTP"
+							/>
+							<Button
+								label="Resend Verification Code"
+								variant="outline"
+								class="mt-2 w-full"
+								@click="sendOTP()"
+								:loading="sendOTPMethod.loading"
 							/>
 						</div>
-					</template>
-				</SaaSLoginBox>
+						<Button
+							v-else
+							label="Submit"
+							:disabled="email.length === 0"
+							:loading="
+								sites.loading ||
+								sendOTPMethod.loading ||
+								verifyOTPMethod.loading
+							"
+							variant="solid"
+							class="mt-4 w-full"
+							@click="sendOTP"
+						/>
+					</form>
+					<div v-else>
+						<ObjectList :options="siteListOptions" />
+					</div>
+
+					<ErrorMessage
+						:message="
+							sites.error || sendOTPMethod.error || verifyOTPMethod.error
+						"
+					/>
+				</div>
+			</template>
+			<template v-slot:footer>
 				<div
 					class="flex w-full flex-col items-center justify-center space-y-2 pb-8"
 				>
@@ -109,8 +100,8 @@
 						label="Login from another account"
 					/>
 				</div>
-			</div>
-		</div>
+			</template>
+		</LoginBox>
 	</div>
 </template>
 
@@ -119,7 +110,7 @@ import { computed, inject, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { get, set } from 'idb-keyval';
 import { createResource } from 'frappe-ui';
-import SaaSLoginBox from '../components/auth/SaaSLoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue';
 import { getToastErrorMessage } from '../utils/toast';
 import ObjectList from '../components/ObjectList.vue';
 import { trialDays } from '../utils/site';
