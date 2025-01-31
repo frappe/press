@@ -73,7 +73,7 @@
 							v-model="country"
 							required
 						/>
-						<div class="mt-4 flex gap-2">
+						<div class="!mt-6 flex gap-2">
 							<FormControl type="checkbox" v-model="termsAccepted" />
 							<label class="text-base text-gray-700">
 								I accept the
