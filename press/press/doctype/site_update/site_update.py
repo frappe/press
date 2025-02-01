@@ -243,6 +243,11 @@ class SiteUpdate(Document):
 		if not enable_physical_backup:
 			return
 
+		# Sanity check - Provider should be AWS EC2
+		provider = frappe.get_value("Database Server", database_server, "provider")
+		if provider != "AWS EC2":
+			return
+
 		# Check for last logical backup
 		last_logical_site_backups = frappe.db.get_list(
 			"Site Backup",
@@ -255,9 +260,9 @@ class SiteUpdate(Document):
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 200MB and less than 1.5GB
+		# If last logical backup size is greater than 150MB and less than 5000MB
 		# Then only take physical backup
-		if db_backup_size > 209715200 and db_backup_size < 1610612736:
+		if db_backup_size > 157286400 and db_backup_size < 5242880000:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
