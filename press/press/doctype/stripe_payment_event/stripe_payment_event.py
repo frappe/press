@@ -37,6 +37,8 @@ class StripePaymentEvent(Document):
 
 	def handle_finalized(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
+		if invoice.status == "Paid":
+			return
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)
 
 		invoice.update(
