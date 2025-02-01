@@ -260,9 +260,9 @@ class SiteUpdate(Document):
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 150MB and less than 5000MB
+		# If last logical backup size is greater than 100MB and less than 5000MB
 		# Then only take physical backup
-		if db_backup_size > 157286400 and db_backup_size < 5242880000:
+		if db_backup_size > 104857600 and db_backup_size < 5242880000:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
