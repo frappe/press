@@ -88,6 +88,11 @@ export default {
 			required: true,
 			default: 10,
 		},
+		exchangeRate: {
+			type: Number,
+			required: true,
+			default: 129,
+		},
 	},
 	data() {
 		return {
@@ -101,7 +106,6 @@ export default {
 			taxPercentage: 1,
 			amountWithTax: 0,
 			showTaxInfo: false,
-			exchangeRate: 0,
 			maximumAmount: 150000,
 		};
 	},
@@ -116,6 +120,8 @@ export default {
 					tax_id: this.taxIdInput,
 					amount_with_tax: this.amountWithTax,
 					phone_number: this.phoneNumberInput,
+					amount_usd: this.amount,
+					exchange_rate: this.exchangeRate,
 				},
 				validate() {
 					if (this.amount < this.minimumAmount) {

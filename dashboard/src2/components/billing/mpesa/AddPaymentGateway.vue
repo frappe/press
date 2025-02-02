@@ -10,7 +10,7 @@
 					placeholder="Enter Gateway Name"
 				/>
 				<FormControl
-					label="Enter endpoint URL"
+					label="Endpoint URL"
 					v-model="paymentGatewayDetails.url"
 					name="url"
 					type="text"
@@ -50,6 +50,13 @@
 						placeholder="Enter Taxes and Charges"
 					/>
 				</div>
+				<FormControl
+					label="Print Format"
+					v-model="paymentGatewayDetails.print_format"
+					name="print_format"
+					type="text"
+					placeholder="Default"
+				/>
 			</div>
 
 			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
@@ -79,6 +86,7 @@ export default {
 				api_key: '',
 				api_secret: '',
 				taxes_and_charges: '',
+				print_format: '',
 			},
 			integrationLogo: null,
 		};
@@ -95,6 +103,7 @@ export default {
 						api_key: data.api_key,
 						api_secret: data.api_secret,
 						taxes_and_charges: data.taxes_and_charges,
+						print_format: data.print_format,
 					});
 				},
 				auto: true,

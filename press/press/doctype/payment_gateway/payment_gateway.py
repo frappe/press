@@ -22,6 +22,7 @@ class PaymentGateway(Document):
 		gateway_controller: DF.DynamicLink | None
 		gateway_settings: DF.Link | None
 		integration_logo: DF.AttachImage | None
+		print_format: DF.Data | None
 		taxes_and_charges: DF.Percent
 		team: DF.Link | None
 		team_name: DF.Data | None

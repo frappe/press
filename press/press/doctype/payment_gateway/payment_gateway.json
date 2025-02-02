@@ -20,6 +20,7 @@
   "gateway_controller",
   "partner_integration_section",
   "url",
+  "print_format",
   "column_break_oefu",
   "api_key",
   "column_break_slwm",
@@ -130,11 +131,16 @@
    "fieldname": "taxes_and_charges",
    "fieldtype": "Percent",
    "label": "Taxes and Charges"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Data",
+   "label": "Print Format"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-18 10:45:52.966302",
+ "modified": "2025-02-02 19:51:36.821998",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Gateway",

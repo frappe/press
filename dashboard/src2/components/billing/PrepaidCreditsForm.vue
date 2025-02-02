@@ -110,6 +110,7 @@
 			:amount="creditsToBuy"
 			:amountKES="amountInKES"
 			:minimumAmount="minimumAmount"
+			:exchangeRate="exchangeRate"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
