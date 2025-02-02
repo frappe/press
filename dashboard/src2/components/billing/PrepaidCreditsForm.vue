@@ -72,7 +72,7 @@
 					<StripeLogo class="h-7 w-24" />
 				</Button>
 				<Button
-					v-if="team.doc.country === 'Kenya'"
+					v-if="team.doc.country === 'Kenya' && team.doc.mpesa_enabled"
 					size="lg"
 					:class="{
 						'border-[1.5px] border-gray-700': paymentGateway === 'M-Pesa',

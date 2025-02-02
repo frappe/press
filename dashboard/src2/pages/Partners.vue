@@ -51,7 +51,11 @@ export default {
 				{
 					label: 'Local Payment Setup',
 					route: { name: 'LocalPaymentSetup' },
-					condition: () => Boolean(this.$team.doc.country === 'Kenya'),
+					condition: () =>
+						Boolean(
+							this.$team.doc.country === 'Kenya' &&
+								this.$team.doc.mpesa_enabled,
+						),
 				},
 			],
 		};
