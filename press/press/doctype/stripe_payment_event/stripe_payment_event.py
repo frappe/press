@@ -110,6 +110,11 @@ class StripePaymentEvent(Document):
 
 		if invoice.status == "Paid":
 			if invoice.amount_paid == 0:
+				# check if invoice is already voided
+				stripe = get_stripe()
+				inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
+				if inv.status == "Void":
+					return
 				# if the fc invoice is already paid via credits and the stripe payment failed
 				# mark the stripe invoice as void
 				invoice.change_stripe_invoice_status("Void")
