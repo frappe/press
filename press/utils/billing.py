@@ -233,6 +233,13 @@ def process_micro_debit_test_charge(stripe_event):
 		log_error("Error Processing Stripe Micro Debit Charge", body=stripe_event)
 
 
+def get_gateway_details(payment_record):
+	partner_team = frappe.db.get_value("Mpesa Payment Record", payment_record, "payment_partner")
+	return frappe.db.get_value(
+		"Payment Gateway", {"team": partner_team}, ["gateway_controller", "print_format"]
+	)
+
+
 # Get partners external connection
 def get_partner_external_connection(mpesa_setup):
 	# check if connection is already established
@@ -244,7 +251,7 @@ def get_partner_external_connection(mpesa_setup):
 	# Fetch API from gateway
 	payment_gateway = frappe.get_all(
 		"Payment Gateway",
-		filters={"gateway_controller": mpesa_setup, "gateway_setting": "Mpesa Setup"},
+		filters={"gateway_controller": mpesa_setup, "gateway_settings": "Mpesa Setup"},
 		fields=["name", "url", "api_key", "api_secret"],
 	)
 	if not payment_gateway:
@@ -254,6 +261,7 @@ def get_partner_external_connection(mpesa_setup):
 	api_secret = payment_gateway[0].api_secret
 	url = payment_gateway[0].url
 
+	site_name = url.split("/api/method")[0]
 	# Establish connection
-	frappe.local._external_conn = FrappeClient(url, api_key=api_key, api_secret=api_secret)
+	frappe.local._external_conn = FrappeClient(site_name, api_key=api_key, api_secret=api_secret)
 	return frappe.local._external_conn

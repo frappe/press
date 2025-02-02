@@ -2,9 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import json
-
-from frappe.integrations.utils import json_handler
 from frappe.model.document import Document
 
 
@@ -22,8 +19,6 @@ class MpesaRequestLog(Document):
 		integration_request_service: DF.Data | None
 		is_remote_request: DF.Check
 		output: DF.Code | None
-		reference_docname: DF.DynamicLink | None
-		reference_doctype: DF.Link | None
 		request_description: DF.Data | None
 		request_headers: DF.Code | None
 		request_id: DF.Data | None
@@ -31,28 +26,4 @@ class MpesaRequestLog(Document):
 		url: DF.SmallText | None
 	# end: auto-generated types
 
-	def autoname(self):
-		if self.flags._name:
-			self.name = self.flags._name
-
-	def update_status(self, params, status):
-		data = json.loads(self.data)
-		data.update(params)
-
-		self.data = json.dumps(data)
-		self.status = status
-		self.save(ignore_permissions=True)
-
-	def handle_success(self, response):
-		"""update the output field with the response along with the relevant status"""
-		if isinstance(response, str):
-			response = json.loads(response)
-		self.db_set("status", "Completed")
-		self.db_set("output", json.dumps(response, default=json_handler))
-
-	def handle_failure(self, response):
-		"""update the error field with the response along with the relevant status"""
-		if isinstance(response, str):
-			response = json.loads(response)
-		self.db_set("status", "Failed")
-		self.db_set("error", json.dumps(response, default=json_handler))
+	pass

@@ -170,6 +170,7 @@ def get_payment_gateway_details():
 			"api_key": payment_gateway.api_key,
 			"api_secret": payment_gateway.api_secret,
 			"taxes_and_charges": payment_gateway.taxes_and_charges,
+			"print_format": payment_gateway.print_format,
 		}
 	return None
 
@@ -220,18 +221,6 @@ def update_tax_id_or_phone_no(team, tax_id, phone_number):
 		team_doc.save()
 
 
-def convert(from_currency, to_currency, amount):
-	"""Convert the given amount from one currency to another."""
-	exchange_rate = (
-		frappe.get_value(
-			"Currency Exchange", {"from_currency": from_currency, "to_currency": to_currency}, "exchange_rate"
-		)
-		or 129
-	)
-	converted_amount = amount / exchange_rate
-	return converted_amount, exchange_rate
-
-
 @frappe.whitelist()
 def display_mpesa_payment_partners():
 	"""Display the list of partners in the system with Mpesa integration enabled."""
@@ -270,32 +259,40 @@ def display_payment_gateway():
 	return [gateway["gateway"] for gateway in gateways]
 
 
-def get_team_and_partner_from_integration_request(transaction_id):
+def get_details_from_request_log(transaction_id):
 	"""Get the team and partner associated with the Mpesa Request Log."""
-	integration_request = frappe.get_doc("Mpesa Request Log", transaction_id)
-	request_data = integration_request.data
+	request_log = frappe.get_doc("Mpesa Request Log", {"request_id": transaction_id, "status": "Queued"})
+	request_data = request_log.data
 	team = partner = None
 	# Parse the request_data as a dictionary
 	if request_data:
 		try:
 			request_data_dict = json.loads(request_data)
-			team_ = request_data_dict.get("team")
-			team = frappe.get_value("Team", {"user": team_, "enabled": 1}, "name")
+			team = request_data_dict.get("team")
 			partner_ = request_data_dict.get("partner")
 			partner = frappe.get_value("Team", {"user": partner_, "erpnext_partner": 1, "enabled": 1}, "name")
 			requested_amount = request_data_dict.get("request_amount")
+			amount_usd = request_data_dict.get("amount_usd")
+			exchange_rate = request_data_dict.get("exchange_rate")
 		except json.JSONDecodeError:
 			frappe.throw(_("Invalid JSON format in request_data"))
 			team = None
 			partner = None
 
-	return team, partner, requested_amount
+	return frappe._dict(
+		{
+			"team": team,
+			"partner": partner,
+			"requested_amount": requested_amount,
+			"amount_usd": amount_usd,
+			"exchange_rate": exchange_rate,
+		}
+	)
 
 
 def get_payment_gateway(partner_value):
 	"""Get the payment gateway for the partner."""
 	partner = frappe.get_doc("Team", partner_value)
-	# Get Mpesa settings for the partner's team
 	mpesa_setup = get_mpesa_setup_for_team(partner.name)
 	payment_gateway = frappe.get_all(
 		"Payment Gateway",
@@ -381,13 +378,6 @@ def create_payment_partner_transaction(
 	transaction_doc.insert(ignore_permissions=True)
 	transaction_doc.submit()
 	return transaction_doc.name
-
-
-@frappe.whitelist()
-def fetch_currencies():
-	"""Fetch the list of currencies supported by the system."""
-	currencies = frappe.get_all("Currency", fields=["name"])
-	return [currency["name"] for currency in currencies]
 
 
 @frappe.whitelist()

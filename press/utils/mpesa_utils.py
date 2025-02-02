@@ -7,12 +7,13 @@ import json
 import frappe
 
 
-def create_request_log(
+def create_mpesa_request_log(
 	data,
 	integration_type=None,
 	service_name=None,
 	name=None,
 	error=None,
+	status="Queued",
 	request_headers=None,
 	output=None,
 	**kwargs,
@@ -27,15 +28,10 @@ def create_request_log(
 	elif integration_type == "Subscription Notification":
 		kwargs["request_description"] = integration_type
 
-	reference_doctype = reference_docname = None
-	if "reference_doctype" not in kwargs:
-		if isinstance(data, str):
-			data = json.loads(data)
+	if isinstance(data, str):
+		data = json.loads(data)
 
-		reference_doctype = data.get("reference_doctype")
-		reference_docname = data.get("reference_docname")
-
-	integration_request = frappe.get_doc(
+	request_log = frappe.get_doc(
 		{
 			"doctype": "Mpesa Request Log",
 			"integration_request_service": service_name,
@@ -43,18 +39,13 @@ def create_request_log(
 			"data": get_json(data),
 			"output": get_json(output),
 			"error": get_json(error),
-			"reference_doctype": reference_doctype,
-			"reference_docname": reference_docname,
-			**kwargs,
+			"request_id": name,
+			"status": status,
 		}
 	)
+	request_log.insert(ignore_permissions=True)
 
-	if name:
-		integration_request.flags._name = name
-
-	integration_request.insert(ignore_permissions=True)
-
-	return integration_request
+	return request_log
 
 
 def get_json(obj):
