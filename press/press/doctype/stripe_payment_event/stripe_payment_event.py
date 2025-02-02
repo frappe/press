@@ -58,7 +58,7 @@ class StripePaymentEvent(Document):
 			# check if invoice is already refunded
 			stripe = get_stripe()
 			inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
-			payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+			payment_intent = stripe.PaymentIntent.retrieve(inv.payment_intent)
 			is_refunded = payment_intent["charges"]["data"][0]["refunded"]
 			if is_refunded:
 				return
