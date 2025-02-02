@@ -898,8 +898,44 @@ class Invoice(Document):
 		self.save()
 
 	def fetch_mpesa_invoice_pdf(self):
-		if not self.mpesa_receipt_number and not self.mpesa_invoice:
+		if not (self.mpesa_payment_record and self.mpesa_invoice):
 			return
+		gateway_info = get_gateway_details(self.mpesa_payment_record)
+		client = get_partner_external_connection(gateway_info[0])
+		try:
+			print_format = gateway_info[1]
+			from urllib.parse import urlencode
+
+			params = urlencode(
+				{
+					"doctype": "Sales Invoice",
+					"name": self.mpesa_invoice,
+					"format": print_format,
+					"no_letterhead": 0,
+				}
+			)
+			url = f"{client.url}/api/method/frappe.utils.print_format.download_pdf?{params}"
+
+			with client.session.get(url, headers=client.headers, stream=True) as r:
+				r.raise_for_status()
+				file_doc = frappe.get_doc(
+					{
+						"doctype": "File",
+						"attached_to_doctype": "Invoice",
+						"attached_to_name": self.name,
+						"attached_to_field": "mpesa_invoice_pdf",
+						"folder": "Home/Attachments",
+						"file_name": self.mpesa_invoice + ".pdf",
+						"is_private": 1,
+						"content": r.content,
+					}
+				)
+				file_doc.save(ignore_permissions=True)
+				self.mpesa_invoice_pdf = file_doc.file_url
+				self.save(ignore_permissions=True)
+
+		except Exception as e:
+			frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")
 
 	@frappe.whitelist()
 	def refund(self, reason):
@@ -1114,40 +1150,3 @@ def create_sales_invoice_on_external_site(transaction_response):
 			frappe.throw(_("Failed to create Sales Invoice on external site."))
 	except Exception as e:
 		frappe.log_error(str(e), "Error creating Sales Invoice on external site")
-
-
-def fetch_sales_invoice_pdf_on_external_site(sales_invoice_name):
-	client = get_partner_external_connection()
-	try:
-		print_format = "Default"
-		from urllib.parse import urlencode
-
-		params = urlencode(
-			{
-				"doctype": "Sales Invoice",
-				"name": sales_invoice_name,
-				"format": print_format,
-				"no_letterhead": 0,
-			}
-		)
-		url = f"{client.url}/api/method/frappe.utils.print_format.download_pdf?{params}"
-
-		with client.session.get(url, headers=client.headers, stream=True) as r:
-			r.raise_for_status()
-			file_doc = frappe.get_doc(
-				{
-					"doctype": "File",
-					"attached_to_doctype": "Sales Invoice",
-					"attached_to_name": sales_invoice_name,
-					"attached_to_field": "invoice_pdf",
-					"folder": "Home/Attachments",
-					"file_name": sales_invoice_name + ".pdf",
-					"is_private": 1,
-					"content": r.content,
-				}
-			)
-			file_doc.save(ignore_permissions=True)
-			return file_doc.file_url
-
-	except Exception as e:
-		frappe.log_error(str(e), "Error fetching Sales Invoice PDF on external site")

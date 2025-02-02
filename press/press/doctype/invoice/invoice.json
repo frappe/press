@@ -513,6 +513,7 @@
    "label": "Mpesa Invoice"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "mpesa_invoice_pdf",
    "fieldtype": "Attach",
    "label": "Mpesa Invoice PDF"
@@ -541,7 +542,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-01-27 12:53:44.997655",
+ "modified": "2025-02-02 19:05:05.300386",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

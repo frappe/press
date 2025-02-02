@@ -728,7 +728,7 @@ def generate_stk_push(**kwargs):
 	mpesa_setup = get_mpesa_setup_for_team(partner[0])
 	try:
 		callback_url = (
-			get_request_site_address(True) + "/api/method/press.api.billing.verify_mpesa_transaction"
+			get_request_site_address(True) + "/api/method/press.api.billing.verify_m_pesa_transaction"
 		)
 		env = "production" if not mpesa_setup.sandbox else "sandbox"
 		# for sandbox, business shortcode is same as till number
