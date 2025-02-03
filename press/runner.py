@@ -190,7 +190,7 @@ class Ansible:
 	def _get_ssh_proxy_commad(self, server):
 		proxy_command = None
 
-		if self.server.bastion_host:
+		if hasattr(self.server, "bastion_host") and self.server.bastion_host:
 			proxy_command = f'-o ProxyCommand="ssh -W %h:%p \
 					{server.bastion_host.ssh_user}@{server.bastion_host.ip} \
 						-p {server.bastion_host.ssh_port}"'
