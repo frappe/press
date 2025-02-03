@@ -30,13 +30,7 @@
 					class="mb-6 break-words text-center text-base font-normal leading-[21px] text-gray-700"
 					v-if="subtitle"
 				>
-					<template
-						v-if="typeof subtitle === 'object'"
-						v-for="line in subtitle"
-					>
-						{{ line }}<br />
-					</template>
-					<template v-else>{{ subtitle }}</template>
+					<template>{{ subtitle }}</template>
 				</p>
 				<slot></slot>
 			</div>
