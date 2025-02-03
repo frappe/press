@@ -1313,6 +1313,7 @@ class Server(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
+		is_devbox_server: DF.Check
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -1331,7 +1332,7 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -1513,6 +1514,7 @@ class Server(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					"is_devbox_server": self.is_devbox_server,
 					**self.get_mount_variables(),
 				},
 			)
@@ -1722,17 +1724,23 @@ class Server(BaseServer):
 	@classmethod
 	def get_all_prod(cls, **kwargs) -> list[str]:
 		"""Active prod servers."""
-		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
+		return frappe.get_all(
+			"Server", {"status": "Active", "is_devbox_server": False}, pluck="name", **kwargs
+		)
 
 	@classmethod
 	def get_all_primary_prod(cls) -> list[str]:
 		"""Active primary prod servers."""
-		return frappe.get_all("Server", {"status": "Active", "is_primary": True}, pluck="name")
+		return frappe.get_all(
+			"Server", {"status": "Active", "is_primary": True, "is_devbox_server": False}, pluck="name"
+		)
 
 	@classmethod
 	def get_all_staging(cls, **kwargs) -> list[str]:
 		"""Active staging servers."""
-		return frappe.get_all("Server", {"status": "Active", "staging": True}, pluck="name", **kwargs)
+		return frappe.get_all(
+			"Server", {"status": "Active", "staging": True, "is_devbox_server": False}, pluck="name", **kwargs
+		)
 
 	@classmethod
 	def get_one_staging(cls) -> str:
@@ -1740,7 +1748,7 @@ class Server(BaseServer):
 
 	@classmethod
 	def get_prod_for_new_bench(cls, extra_filters=None) -> str | None:
-		filters = {"status": "Active", "use_for_new_benches": True}
+		filters = {"status": "Active", "use_for_new_benches": True, "is_devbox_server": False}
 		if extra_filters:
 			filters.update(extra_filters)
 		servers = frappe.get_all("Server", {**filters}, pluck="name", limit=1)
@@ -1957,7 +1965,9 @@ def process_new_server_job_update(job):
 
 
 def cleanup_unused_files():
-	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
+	servers = frappe.get_all(
+		"Server", fields=["name"], filters={"status": "Active", "is_devbox_server": False}
+	)
 	for server in servers:
 		try:
 			frappe.get_doc("Server", server.name).cleanup_unused_files()

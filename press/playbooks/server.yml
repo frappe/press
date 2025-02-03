@@ -10,7 +10,6 @@
     - role: nginx
     - role: agent
     - role: mount
-    - role: bench
     - role: docker
     - role: node_exporter
     - role: cadvisor
@@ -26,3 +25,14 @@
     - role: pam
     - role: user_ssh_certificate
     - role: earlyoom_memory_limits
+
+  tasks:
+    - name: Include devbox role if is_devbox is true (i.e., devbox should run only if bench does not)
+      include_role:
+        name: devbox
+      when: is_devbox_server | default(false)
+
+    - name: Include bench role if is_devbox is false 
+      include_role:
+        name: bench
+      when: not (is_devbox_server | default(false))
