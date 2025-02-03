@@ -43,15 +43,6 @@ export default {
 					label: 'Marketplace Payouts',
 					route: { name: 'BillingMarketplacePayouts' },
 				},
-				{
-					label: 'Mpesa Invoices',
-					route: { name: 'BillingMpesaInvoices' },
-					condition: () =>
-						Boolean(
-							this.$team.doc.country === 'Kenya' &&
-								this.$team.doc.mpesa_enabled,
-						),
-				},
 			],
 		};
 	},
