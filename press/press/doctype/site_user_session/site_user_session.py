@@ -29,7 +29,7 @@ class SiteUserSession(Document):
 
 		self.otp = random.randint(100000, 999999)
 		self.session_id = frappe.generate_hash()
-		if frappe.conf.developer_mode:
+		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
 		self.save()
 

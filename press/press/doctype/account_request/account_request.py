@@ -82,7 +82,7 @@ class AccountRequest(Document):
 
 		if not self.otp:
 			self.otp = random.randint(10000, 99999)
-			if frappe.conf.developer_mode:
+			if frappe.conf.developer_mode and frappe.local.dev_server:
 				self.otp = 11111
 
 		self.ip_address = frappe.local.request_ip
