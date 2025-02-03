@@ -94,7 +94,7 @@
 				</form>
 				<template #footer v-if="saasProduct">
 					<div
-						class="mt-2 flex w-full items-center justify-center text-sm text-gray-700"
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
 					>
 						Powered by Frappe Cloud
 					</div>
