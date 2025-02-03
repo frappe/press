@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "creation": "2025-02-03 17:11:48.125840",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "protocol",
+  "from_port",
+  "to_port",
+  "source",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "protocol",
+   "fieldtype": "Select",
+   "label": "Protocol",
+   "options": "tcp\nudp\nicmp\nall",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_port",
+   "fieldtype": "Int",
+   "label": "From Port",
+   "depends_on": "eval:doc.protocol !== 'icmp'"
+  },
+  {
+   "fieldname": "to_port",
+   "fieldtype": "Int",
+   "label": "To Port",
+   "depends_on": "eval:doc.protocol !== 'icmp'"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source/Destination",
+   "description": "CIDR block (e.g. 0.0.0.0/0 for anywhere)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
+  }
+ ],
+ "istable": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-03 16:48:19.923456",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal Firewall Rule",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 

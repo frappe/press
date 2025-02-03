@@ -17,7 +17,9 @@
   "available_disk",
   "section_break_1",
   "status",
-  "cluster"
+  "cluster",
+  "api_settings_section",
+  "vm_api_url"
  ],
  "fields": [
   {
@@ -92,11 +94,23 @@
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1
+  },
+  {
+   "fieldname": "api_settings_section",
+   "fieldtype": "Section Break",
+   "label": "API Settings"
+  },
+  {
+   "default": "http://127.0.0.1:5000",
+   "fieldname": "vm_api_url",
+   "fieldtype": "Data",
+   "label": "VM API URL",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-23 12:00:00.000000",
+ "modified": "2025-02-03 19:27:54.198765",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bare Metal Host",

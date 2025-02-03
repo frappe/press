@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-03 14:13:57.152010",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "name",
+  "cidr",
+  "status",
+  "used_ips_section",
+  "used_private_ips",
+  "used_public_ips",
+  "host_section",
+  "bare_metal_host",
+  "firewall_section",
+  "inbound_rules",
+  "outbound_rules"
+ ],
+ "fields": [
+  {
+   "fieldname": "name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "10.0.0.0/24",
+   "fieldname": "cidr",
+   "fieldtype": "Data",
+   "label": "CIDR Block",
+   "reqd": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nDeleted",
+   "reqd": 1
+  },
+  {
+   "fieldname": "used_ips_section",
+   "fieldtype": "Section Break",
+   "label": "Used IPs"
+  },
+  {
+   "fieldname": "used_private_ips",
+   "fieldtype": "Small Text",
+   "label": "Used Private IPs"
+  },
+  {
+   "fieldname": "used_public_ips",
+   "fieldtype": "Small Text",
+   "label": "Used Public IPs"
+  },
+  {
+   "fieldname": "host_section",
+   "fieldtype": "Section Break",
+   "label": "Host"
+  },
+  {
+   "fieldname": "bare_metal_host",
+   "fieldtype": "Link",
+   "label": "Bare Metal Host",
+   "options": "Bare Metal Host",
+   "reqd": 1
+  },
+  {
+   "fieldname": "firewall_section",
+   "fieldtype": "Section Break",
+   "label": "Firewall Rules"
+  },
+  {
+   "fieldname": "inbound_rules",
+   "fieldtype": "Table",
+   "label": "Inbound Rules",
+   "options": "Bare Metal Firewall Rule"
+  },
+  {
+   "fieldname": "outbound_rules",
+   "fieldtype": "Table",
+   "label": "Outbound Rules",
+   "options": "Bare Metal Firewall Rule"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-03 14:15:32.847391",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal VPC",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 

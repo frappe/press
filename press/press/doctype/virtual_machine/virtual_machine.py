@@ -163,59 +163,35 @@ class VirtualMachine(Document):
 		return None
 
 	def _provision_bare_metal(self):
-		"""Provision a VM on a bare metal host"""
-		# Find available bare metal host with sufficient resources
-		hosts = frappe.get_all(
-			"Bare Metal Host",
-			filters={
-				"status": "Active",
-				"cluster": self.cluster,
-				"available_cpu": (">=", self.vcpu),
-				"available_memory": (">=", self.memory),
-				"available_disk": (">=", self.disk_size),
-			},
-			order_by="available_cpu desc",
-			limit=1,
-		)
-
-		if not hosts:
-			frappe.throw("No suitable bare metal host found with required resources")
-
-		host = frappe.get_doc("Bare Metal Host", hosts[0].name)
-
+		"""Provision VM on bare metal host"""
 		try:
-			# Allocate resources on host
-			host.allocate_resources(self.vcpu, self.memory, self.disk_size)
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			vpc = frappe.get_doc("Bare Metal VPC", self.vpc)
 
-			# Get agent instance for the host
-			agent = host.get_agent()
+			# Allocate IPs
+			ips = vpc.allocate_ip()
+			self.private_ip = ips["private_ip"]
+			self.public_ip = ips["public_ip"]
+			self.allocated_at = ips["allocated_at"]
 
-			# Create VM using agent
-			response = agent.create_vm({
-				"name": self.name,
-				"vcpu": self.vcpu,
-				"memory": self.memory,
-				"disk": self.disk_size,
-				"image": self.virtual_machine_image,
-				"network": {
-					"cluster": self.cluster,
-					"private_ip": True
-				}
-			})
+			# Create VM
+			response = host.create_vm(
+				name=self.name,
+				network_id=vpc.name,
+				cpu=self.vcpu,
+				memory=self.memory,
+				disk=self.disk_size,
+				image=self.virtual_machine_image
+			)
 
-			# Update VM details
-			self.private_ip_address = response.get("private_ip")
-			self.public_ip_address = response.get("public_ip")
+			# Update status and save
 			self.status = "Running"
-			self.bare_metal_host = host.name
 			self.save()
 
+			return response
 		except Exception as e:
-			# Deallocate resources on failure
-			host.deallocate_resources(self.vcpu, self.memory, self.disk_size)
-			frappe.throw(f"Failed to provision VM on bare metal: {str(e)}")
-
-		return response
+			frappe.log_error(f"Failed to provision bare metal VM: {str(e)}")
+			raise
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1410,130 +1386,71 @@ class VirtualMachine(Document):
 		self.sync()
 
 	def get_bare_metal_status_map(self):
-		"""Map bare metal VM statuses to internal statuses"""
+		"""Map VM experiments status to Press status"""
 		return {
-			"creating": "Pending",
-			"starting": "Pending",
 			"running": "Running",
-			"stopping": "Pending",
 			"stopped": "Stopped",
-			"deleting": "Terminating",
-			"deleted": "Terminated",
+			"terminated": "Terminated",
+			"creating": "Pending",
 			"error": "Error"
 		}
 
 	def _sync_bare_metal(self):
-		"""Sync VM status and details from bare metal host"""
-		if not self.bare_metal_host:
-			return
-
-		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
-		agent = host.get_agent()
-
+		"""Sync VM status from bare metal host"""
 		try:
-			response = agent.get_vm(self.name)
-			if not response:
-				self.status = "Terminated"
-				return
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			vm_status = host.get_vm(self.name)
 
-			# Update VM details
-			self.status = self.get_bare_metal_status_map().get(
-				response.get("status", "error").lower(), "Error"
-			)
-			self.private_ip_address = response.get("private_ip")
-			self.public_ip_address = response.get("public_ip")
-			self.save()
-
+			if vm_status:
+				self.status = self.get_bare_metal_status_map().get(
+					vm_status.get("status"), "Unknown"
+				)
+				self.save()
 		except Exception as e:
-			frappe.log_error(f"Failed to sync bare metal VM {self.name}: {str(e)}")
-			self.status = "Error"
-			self.save()
+			frappe.log_error(f"Failed to sync bare metal VM status: {str(e)}")
 
 	def _start_bare_metal(self):
 		"""Start VM on bare metal host"""
-		if not self.bare_metal_host:
-			frappe.throw("VM not associated with a bare metal host")
-
-		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
-		agent = host.get_agent()
-
 		try:
-			response = agent.start_vm(self.name)
-			self.status = "Pending"
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			response = host.start_vm(self.name)
+			self.status = "Running"
 			self.save()
 			return response
 		except Exception as e:
-			frappe.throw(f"Failed to start VM: {str(e)}")
+			frappe.log_error(f"Failed to start bare metal VM: {str(e)}")
+			raise
 
 	def _stop_bare_metal(self, force=False):
 		"""Stop VM on bare metal host"""
-		if not self.bare_metal_host:
-			frappe.throw("VM not associated with a bare metal host")
-
-		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
-		agent = host.get_agent()
-
 		try:
-			response = agent.stop_vm(self.name, force=force)
-			self.status = "Pending"
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			response = host.stop_vm(self.name, force=force)
+			self.status = "Stopped"
 			self.save()
 			return response
 		except Exception as e:
-			frappe.throw(f"Failed to stop VM: {str(e)}")
-
-	def _reboot_bare_metal(self):
-		"""Reboot VM on bare metal host"""
-		if not self.bare_metal_host:
-			frappe.throw("VM not associated with a bare metal host")
-
-		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
-		agent = host.get_agent()
-
-		try:
-			response = agent.reboot_vm(self.name)
-			self.status = "Pending"
-			self.save()
-			return response
-		except Exception as e:
-			frappe.throw(f"Failed to reboot VM: {str(e)}")
+			frappe.log_error(f"Failed to stop bare metal VM: {str(e)}")
+			raise
 
 	def _terminate_bare_metal(self):
 		"""Terminate VM on bare metal host"""
-		if not self.bare_metal_host:
-			frappe.throw("VM not associated with a bare metal host")
-
-		if self.status == "Terminated":
-			return
-
-		host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
-		agent = host.get_agent()
-
 		try:
-			# Stop VM first if running
-			if self.status == "Running":
-				try:
-					agent.stop_vm(self.name, force=True)
-				except Exception:
-					frappe.log_error("Failed to stop VM before termination")
+			host = frappe.get_doc("Bare Metal Host", self.bare_metal_host)
+			vpc = frappe.get_doc("Bare Metal VPC", self.vpc)
 
-			# Delete the VM
-			try:
-				agent.delete_vm(self.name)
-			except Exception as e:
-				frappe.log_error(f"Failed to delete VM: {str(e)}")
+			# Release IPs
+			vpc.release_ip(self.private_ip, self.public_ip)
 
-			# Always try to release resources
-			host.deallocate_resources(self.vcpu, self.memory, self.disk_size)
-			
+			# Delete VM
+			response = host.delete_vm(self.name)
 			self.status = "Terminated"
-			self.bare_metal_host = None
-			self.private_ip_address = None
-			self.public_ip_address = None
 			self.save()
 
+			return response
 		except Exception as e:
-			frappe.log_error(f"Failed to terminate VM {self.name}: {str(e)}")
-			frappe.throw(f"Failed to terminate VM: {str(e)}")
+			frappe.log_error(f"Failed to terminate bare metal VM: {str(e)}")
+			raise
 
 	@classmethod
 	def bulk_sync_bare_metal(cls):

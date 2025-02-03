@@ -1,6 +1,7 @@
 import frappe
 import requests
 from frappe.model.document import Document
+from datetime import datetime
 
 class BareMetalHost(Document):
     def validate(self):
@@ -16,10 +17,13 @@ class BareMetalHost(Document):
     def check_api_connection(self):
         """Check if VM API is accessible"""
         try:
-            response = requests.get(f"{self.get_api_url()}/health")
+            response = requests.get(
+                f"{self.vm_api_url}/health",
+                timeout=self.vm_api_timeout
+            )
             response.raise_for_status()
         except Exception as e:
-            frappe.throw(f"VM API not accessible at {self.get_api_url()}: {str(e)}")
+            frappe.throw(f"VM API not accessible at {self.vm_api_url}: {str(e)}")
 
     def validate_resources(self):
         if self.available_cpu > self.total_cpu:
@@ -50,14 +54,11 @@ class BareMetalHost(Document):
         self.available_disk = min(self.total_disk, self.available_disk + disk)
         self.save()
 
-    def get_api_url(self):
-        return "http://127.0.0.1:5000"
-
     def get_headers(self):
-        settings = frappe.get_single("Press Settings")
-        api_key = settings.get_password('bare_metal_api_key')
+        """Get API headers with authentication"""
+        api_key = self.get_password('vm_api_key')
         if not api_key:
-            frappe.throw("Bare Metal API Key not set in Press Settings")
+            frappe.throw("VM API Key not set")
         return {
             "Authorization": f"Bearer {api_key}"
         }
@@ -66,14 +67,14 @@ class BareMetalHost(Document):
         """Create network via VM experiments API"""
         try:
             response = requests.post(
-                f"{self.get_api_url()}/api/networks",
+                f"{self.vm_api_url}/api/networks",
                 headers=self.get_headers(),
                 json={
                     "name": name,
                     "cidr": ip_range,
                     "subnets": subnets
                 },
-                timeout=30
+                timeout=self.vm_api_timeout
             )
             response.raise_for_status()
             return response.json()
@@ -85,8 +86,15 @@ class BareMetalHost(Document):
     def create_vm(self, name, network_id, **kwargs):
         """Create VM via VM experiments API"""
         try:
+            # Allocate resources first
+            self.allocate_resources(
+                kwargs.get('cpu', 1),
+                kwargs.get('memory', 1024),
+                kwargs.get('disk', 20)
+            )
+
             response = requests.post(
-                f"{self.get_api_url()}/api/vms",
+                f"{self.vm_api_url}/api/vms",
                 headers=self.get_headers(),
                 json={
                     "name": name,
@@ -94,24 +102,69 @@ class BareMetalHost(Document):
                     "cpu": kwargs.get('cpu', 1),
                     "memory": kwargs.get('memory', 1024),
                     "disk": kwargs.get('disk', 20),
+                    "created_at": datetime.now().isoformat(),
                     **kwargs
                 },
-                timeout=30
+                timeout=self.vm_api_timeout
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.Timeout:
-            frappe.throw("VM creation timed out")
         except Exception as e:
+            # Deallocate resources on failure
+            self.deallocate_resources(
+                kwargs.get('cpu', 1),
+                kwargs.get('memory', 1024),
+                kwargs.get('disk', 20)
+            )
             frappe.throw(f"Failed to create VM: {str(e)}")
 
+    def start_vm(self, name):
+        """Start a VM"""
+        try:
+            response = requests.post(
+                f"{self.vm_api_url}/api/vms/{name}/start",
+                headers=self.get_headers(),
+                timeout=self.vm_api_timeout
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            frappe.throw(f"Failed to start VM: {str(e)}")
+
+    def stop_vm(self, name, force=False):
+        """Stop a VM"""
+        try:
+            response = requests.post(
+                f"{self.vm_api_url}/api/vms/{name}/stop",
+                headers=self.get_headers(),
+                json={"force": force},
+                timeout=self.vm_api_timeout
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            frappe.throw(f"Failed to stop VM: {str(e)}")
+
+    def delete_vm(self, name):
+        """Delete a VM"""
+        try:
+            response = requests.delete(
+                f"{self.vm_api_url}/api/vms/{name}",
+                headers=self.get_headers(),
+                timeout=self.vm_api_timeout
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            frappe.throw(f"Failed to delete VM: {str(e)}")
+
     def get_vm(self, name):
-        """Get VM status via VM experiments API"""
+        """Get VM status"""
         try:
             response = requests.get(
-                f"{self.get_api_url()}/api/vms/{name}",
+                f"{self.vm_api_url}/api/vms/{name}",
                 headers=self.get_headers(),
-                timeout=10
+                timeout=self.vm_api_timeout
             )
             response.raise_for_status()
             return response.json()
