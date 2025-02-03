@@ -8,7 +8,8 @@
   "user",
   "session_id",
   "otp",
-  "verified"
+  "verified",
+  "otp_generated_at"
  ],
  "fields": [
   {
@@ -31,11 +32,16 @@
    "fieldname": "verified",
    "fieldtype": "Check",
    "label": "Verified"
+  },
+  {
+   "fieldname": "otp_generated_at",
+   "fieldtype": "Datetime",
+   "label": "OTP Generated at"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-30 17:47:29.743114",
+ "modified": "2025-02-03 16:19:10.573355",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site User Session",

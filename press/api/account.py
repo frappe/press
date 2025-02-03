@@ -90,7 +90,10 @@ def resend_otp(account_request: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
 	# if last OTP was sent less than 30 seconds ago, throw an error
-	if account_request.modified and (frappe.utils.now_datetime() - account_request.modified).seconds < 30:
+	if (
+		account_request.otp_generated_at
+		and (frappe.utils.now_datetime() - account_request.otp_generated_at).seconds < 30
+	):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	# ensure no team has been created with this email

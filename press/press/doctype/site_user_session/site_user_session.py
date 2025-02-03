@@ -17,6 +17,7 @@ class SiteUserSession(Document):
 		from frappe.types import DF
 
 		otp: DF.Data | None
+		otp_generated_at: DF.Datetime | None
 		session_id: DF.Data | None
 		user: DF.Data | None
 		verified: DF.Check
@@ -29,6 +30,7 @@ class SiteUserSession(Document):
 
 		self.otp = random.randint(100000, 999999)
 		self.session_id = frappe.generate_hash()
+		self.otp_generated_at = frappe.utils.now_datetime()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
 		self.save()
@@ -64,7 +66,7 @@ class SiteUserSession(Document):
 		if not self.otp:
 			return frappe.throw("OTP is not set")
 
-		if (frappe.utils.now_datetime() - self.creation).seconds > 300:
+		if (frappe.utils.now_datetime() - self.otp_generated_at).seconds > 300:
 			return frappe.throw("OTP is expired")
 
 		if self.otp != otp:
