@@ -72,6 +72,7 @@ def signup(email, product=None, referrer=None):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
 def verify_otp(account_request: str, otp: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	# ensure no team has been created with this email
@@ -84,8 +85,14 @@ def verify_otp(account_request: str, otp: str):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
 def resend_otp(account_request: str):
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+
+	# if last OTP was sent less than 30 seconds ago, throw an error
+	if account_request.modified and (frappe.utils.now_datetime() - account_request.modified).seconds < 30:
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
