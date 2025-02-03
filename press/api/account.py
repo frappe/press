@@ -775,11 +775,22 @@ def validate_pincode(billing_details):
 @frappe.whitelist(allow_guest=True)
 def feedback(team, message, note, rating, route=None):
 	feedback = frappe.new_doc("Press Feedback")
+	team_doc = frappe.get_doc("Team", team)
 	feedback.team = team
 	feedback.message = message
 	feedback.note = note
 	feedback.route = route
 	feedback.rating = rating / 5
+	feedback.team_created_on = frappe.utils.getdate(team_doc.creation)
+	feedback.currency = team_doc.currency
+	invs = frappe.get_all(
+		"Invoice",
+		{"team": team, "status": "Paid", "type": "Subscription"},
+		pluck="total",
+		order_by="creation desc",
+		limit=1,
+	)
+	feedback.last_paid_invoice = 0 if not invs else invs[0]
 	feedback.insert(ignore_permissions=True)
 
 
