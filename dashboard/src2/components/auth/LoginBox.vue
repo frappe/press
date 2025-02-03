@@ -30,7 +30,7 @@
 					class="mb-6 break-words text-center text-base font-normal leading-[21px] text-gray-700"
 					v-if="subtitle"
 				>
-					<template>{{ subtitle }}</template>
+					{{ subtitle }}
 				</p>
 				<slot></slot>
 			</div>
