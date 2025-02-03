@@ -1372,7 +1372,7 @@ class Site(Document, TagHelpers):
 				"doctype": "Team Change",
 				"document_type": "Site",
 				"document_name": self.name,
-				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id, "enabled": 1}),
 				"from_team": self.team,
 				"reason": reason,
 				"key": key,
@@ -2815,6 +2815,16 @@ class Site(Document, TagHelpers):
 	def kill_database_process(self, id):
 		agent = Agent(self.server)
 		if agent.should_skip_requests():
+			return None
+		processes = agent.fetch_database_processes(self)
+		if not processes:
+			return None
+		isFoundPid = True
+		for process in processes:
+			if str(process["id"]) == str(id):
+				isFoundPid = True
+				break
+		if not isFoundPid:
 			return None
 		return agent.kill_database_process(self, id)
 

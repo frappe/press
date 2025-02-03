@@ -585,6 +585,7 @@ class BaseServer(Document, TagHelpers):
 		elif self.provider == "OCI":
 			# TODO: Add support for volumes on OCI
 			# Non-boot volumes might not need resize
+			self.break_glass()
 			self.reboot()
 
 	def guess_data_disk_mountpoint(self) -> str:
@@ -1076,7 +1077,7 @@ class BaseServer(Document, TagHelpers):
 
 	def get_device_from_volume_id(self, volume_id):
 		stripped_id = volume_id.replace("-", "")
-		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{ stripped_id }"
+		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
 
 	def get_mount_variables(self):
 		return {

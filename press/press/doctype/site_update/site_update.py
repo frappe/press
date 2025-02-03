@@ -216,7 +216,8 @@ class SiteUpdate(Document):
 		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
-		self.set_physical_backup_mode_if_eligible()
+		if self.deploy_type == "Migrate":
+			self.set_physical_backup_mode_if_eligible()
 
 	def after_insert(self):
 		if not self.scheduled_time:
@@ -227,7 +228,7 @@ class SiteUpdate(Document):
 			return
 
 		# Check if physical backup is disabled globally from Press Settings
-		if frappe.get_value("Press Settings", None, "disable_physical_backup"):
+		if frappe.utils.cint(frappe.get_value("Press Settings", None, "disable_physical_backup")):
 			return
 
 		database_server = frappe.get_value("Server", self.server, "database_server")
@@ -242,20 +243,26 @@ class SiteUpdate(Document):
 		if not enable_physical_backup:
 			return
 
+		# Sanity check - Provider should be AWS EC2
+		provider = frappe.get_value("Database Server", database_server, "provider")
+		if provider != "AWS EC2":
+			return
+
 		# Check for last logical backup
 		last_logical_site_backups = frappe.db.get_list(
 			"Site Backup",
 			filters={"site": self.site, "physical": False},
 			pluck="database_size",
 			limit=1,
+			order_by="creation desc",
 		)
 		db_backup_size = 0
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 200MB and less than 1.5GB
+		# If last logical backup size is greater than 100MB and less than 5000MB
 		# Then only take physical backup
-		if db_backup_size > 209715200 and db_backup_size < 1610612736:
+		if db_backup_size > 104857600 and db_backup_size < 5242880000:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -423,7 +430,7 @@ class SiteUpdate(Document):
 						"destination_database": site.database_name,
 						"destination_server": frappe.get_value("Server", site.server, "database_server"),
 						"restore_specific_tables": len(self.touched_tables_list) > 0,
-						"tables_to_restore": self.touched_tables_list,
+						"tables_to_restore": json.dumps(self.touched_tables_list),
 					}
 				)
 				doc.insert(ignore_permissions=True)
@@ -540,7 +547,9 @@ def update_status(name, status):
 				"Site Update",
 				name,
 				"update_duration",
-				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start),
+				frappe.utils.cint(
+					frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), update_start)
+				),
 			)
 	if status in ["Success", "Recovered"]:
 		backup_type = frappe.db.get_value("Site Update", name, "backup_type")

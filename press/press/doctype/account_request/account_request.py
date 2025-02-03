@@ -98,6 +98,9 @@ class AccountRequest(Document):
 		else:
 			self.is_us_eu = False
 
+	def validate(self):
+		self.email = self.email.strip()
+
 	def after_insert(self):
 		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
 		if not (

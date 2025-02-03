@@ -951,7 +951,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.billing_team:
+		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
 		return bool(

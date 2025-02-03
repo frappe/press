@@ -33,7 +33,7 @@
   when: not partitioned_disk
 
 - name: Add Glass file back
-  command: fallocate -l 250M /root/glass
+  command: fallocate -l 200M /root/glass
 
 - name: Show Modified Volumes
   command: df -h
