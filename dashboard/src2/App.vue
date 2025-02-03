@@ -73,16 +73,21 @@ const isHideSidebar = computed(() => {
 });
 
 const isSignupFlow = ref(
-	window.location.pathname.startsWith('/dashboard/create-site'),
+	window.location.pathname.startsWith('/dashboard/create-site') ||
+		window.location.pathname.startsWith('/dashboard/setup-account') ||
+		window.location.pathname.startsWith('/dashboard/site-login') ||
+		window.location.pathname.startsWith('/dashboard/signup'),
 );
 const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
 	() => {
-		isSignupFlow.value = window.location.pathname.startsWith(
-			'/dashboard/create-site',
-		);
+		isSignupFlow.value =
+			window.location.pathname.startsWith('/dashboard/create-site') ||
+			window.location.pathname.startsWith('/dashboard/setup-account') ||
+			window.location.pathname.startsWith('/dashboard/site-login') ||
+			window.location.pathname.startsWith('/dashboard/signup');
 	},
 );
 

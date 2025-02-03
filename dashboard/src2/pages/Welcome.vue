@@ -1,6 +1,6 @@
 <template>
 	<div class="px-5 py-10" v-if="$team?.doc">
-		<Onboarding />
+		<Onboarding @payment-mode-added="routeToSourcePage" />
 	</div>
 </template>
 <script>
@@ -13,7 +13,19 @@ export default {
 		Onboarding,
 		OnboardingWithoutPayment,
 	},
-	beforeRouteEnter(to, from, next) {
+	data() {
+		return {
+			from: {},
+		};
+	},
+	mounted() {
+		this.from = window.from;
+	},
+	beforeRouteEnter: (to, from, next) => {
+		// adding to window object so that it can be accessed in mounted
+		// since beforeRouteEnter is called before mounted
+		window.from = from;
+
 		let $team = getTeam();
 		window.$team = $team;
 		if ($team.doc.onboarding.complete && $team.doc.onboarding.site_created) {
@@ -23,6 +35,15 @@ export default {
 		} else {
 			next();
 		}
+	},
+	methods: {
+		routeToSourcePage() {
+			if (this.from.name) {
+				this.$router.push({ name: this.from.name, params: this.from.params });
+			} else {
+				this.$router.push({ name: 'Site List' });
+			}
+		},
 	},
 };
 </script>

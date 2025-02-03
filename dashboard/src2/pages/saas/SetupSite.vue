@@ -9,6 +9,7 @@
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
+				v-if="saasProduct"
 				title="Let’s set up your site"
 				subtitle="Setup your default settings for your site"
 				:logo="saasProduct?.logo"
@@ -60,6 +61,13 @@
 							Next
 						</Button>
 					</form>
+				</template>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
 				</template>
 			</LoginBox>
 		</div>

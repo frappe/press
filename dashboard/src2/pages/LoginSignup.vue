@@ -256,6 +256,13 @@
 						</span>
 					</div>
 				</template>
+				<template v-slot:footer v-if="saasProduct">
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-700"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 		</div>
 	</div>

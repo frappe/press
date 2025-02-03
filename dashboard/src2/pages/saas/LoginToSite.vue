@@ -44,6 +44,13 @@
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 			<LoginBox
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
@@ -81,6 +88,13 @@
 						</p>
 					</div>
 				</template>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 			<LoginBox
 				v-else
@@ -111,6 +125,13 @@
 							:value="progressCount"
 							:label="currentBuildStep"
 						/>
+					</div>
+				</template>
+				<template v-slot:footer>
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
 					</div>
 				</template>
 			</LoginBox>

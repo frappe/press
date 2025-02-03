@@ -140,12 +140,12 @@ def send_verification_code(domain: str, route: str = ""):
 
 	check_if_user_can_login(team_info, site_info)
 
-	if is_user_logged_in(team_info.get("user")):
-		if route == "dashboard":
-			redirect_to = "/dashboard/"
-		elif route == "site-dashboard":
-			redirect_to = f"/dashboard/sites/{site_info.get('name')}"
-		return {"is_user_logged_in": True, "redirect_to": redirect_to}
+	# if is_user_logged_in(team_info.get("user")):
+	# 	if route == "dashboard":
+	# 		redirect_to = "/dashboard/"
+	# 	elif route == "site-dashboard":
+	# 		redirect_to = f"/dashboard/sites/{site_info.get('name')}"
+	# 	return {"is_user_logged_in": True, "redirect_to": redirect_to}
 
 	# generate otp and set in redis with 10 min expiry
 	otp = random.randint(10000, 99999)

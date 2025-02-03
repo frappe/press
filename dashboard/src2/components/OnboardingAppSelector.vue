@@ -38,23 +38,16 @@ export default {
 		DownloadIcon,
 	},
 	resources: {
-		productTrialSignup() {
+		getAccountRequestForProductSignup() {
 			return {
-				url: 'press.api.product_trial.signup',
+				url: 'press.api.product_trial.get_account_request_for_product_signup',
 			};
 		},
 	},
 	methods: {
 		openInstallAppPage(app) {
-			this.$resources.productTrialSignup
-				.submit({
-					email: this.$team.doc.user_info.email,
-					first_name: this.$team.doc.user_info.first_name,
-					last_name: this.$team.doc.user_info.last_name,
-					country: this.$team.doc.country,
-					product: app.product_id,
-					terms_accepted: true,
-				})
+			this.$resources.getAccountRequestForProductSignup
+				.submit()
 				.then((account_request) =>
 					this.$router.push({
 						name: 'SignupSetup',

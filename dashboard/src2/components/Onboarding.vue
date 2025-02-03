@@ -242,6 +242,7 @@ import TextInsideCircle from './TextInsideCircle.vue';
 
 export default {
 	name: 'Onboarding',
+	emits: ['payment-mode-added'],
 	components: {
 		StripeCard2: defineAsyncComponent(
 			() => import('../components/StripeCard.vue'),
@@ -274,9 +275,11 @@ export default {
 	methods: {
 		onBuyCreditsSuccess() {
 			this.$team.reload();
+			this.$emit('payment-mode-added');
 		},
 		onAddCardSuccess() {
 			this.$team.reload();
+			this.$emit('payment-mode-added');
 		},
 		onBillingAddresUpdateSuccess() {
 			this.$team.reload();
