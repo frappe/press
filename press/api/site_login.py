@@ -92,6 +92,10 @@ def send_otp(email: str):
 	Send OTP to the user trying to login to the product site from /site-login page
 	"""
 
+	last_otp = frappe.db.get_value("Site User Session", {"user": email}, "modified")
+	if last_otp and (frappe.utils.now_datetime() - last_otp).seconds < 30:
+		return frappe.throw("Please wait for some time before sending the OTP again")
+
 	session = frappe.get_doc({"doctype": "Site User Session", "user": email}).insert()
 	return session.send_otp()
 

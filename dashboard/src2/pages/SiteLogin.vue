@@ -99,6 +99,7 @@
 					</div>
 
 					<ErrorMessage
+						class="mt-4"
 						:message="
 							sites.error || sendOTPMethod.error || verifyOTPMethod.error
 						"
