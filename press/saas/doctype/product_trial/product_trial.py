@@ -86,7 +86,7 @@ class ProductTrial(Document):
 			for field in self.signup_fields
 		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
-		doc.prefilled_site_label = self.get_prefilled_site_label()
+		doc.default_site_label = self.get_default_site_label()
 		return doc
 
 	def validate(self):
@@ -296,7 +296,7 @@ class ProductTrial(Document):
 			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
 
-	def get_prefilled_site_label(self):
+	def get_default_site_label(self):
 		def get_site_label(count=1):
 			from press.utils import get_current_team
 
