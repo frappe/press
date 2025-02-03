@@ -882,7 +882,7 @@ def create_mpesa_payment_record(transaction_response):
 		"default_currency": "KES",
 		"rate": info.requested_amount,
 	}
-	mpesa_invoice = create_invoice_partner_site(data, gateway_name)
+	mpesa_invoice, invoice_name = create_invoice_partner_site(data, gateway_name)
 	payment_record = frappe.get_doc(
 		{
 			"doctype": "Mpesa Payment Record",
@@ -912,7 +912,7 @@ def create_mpesa_payment_record(transaction_response):
 		"mpesa_merchant_id": merchant_request_id,
 		"mpesa_payment_record": payment_record.name,
 		"mpesa_request_id": transaction_id,
-		"mpesa_invoice": mpesa_invoice,
+		"mpesa_invoice": invoice_name,
 	}
 	create_balance_transaction_and_invoice(info.team, info.amount_usd, mpesa_details)
 

@@ -15,6 +15,7 @@ from press.utils import log_error
 from press.utils.billing import (
 	convert_stripe_money,
 	get_frappe_io_connection,
+	get_gateway_details,
 	get_partner_external_connection,
 )
 
@@ -119,6 +120,8 @@ class Invoice(Document):
 		"invoice_pdf",
 		"stripe_invoice_url",
 		"amount_due_with_tax",
+		"mpesa_invoice",
+		"mpesa_invoice_pdf",
 	)
 
 	@staticmethod

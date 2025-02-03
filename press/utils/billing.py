@@ -257,9 +257,10 @@ def get_partner_external_connection(mpesa_setup):
 	if not payment_gateway:
 		frappe.throw("Mpesa Setup not set up in Payment Gateway")
 	# Fetch API key and secret
-	api_key = payment_gateway[0].api_key
-	api_secret = payment_gateway[0].api_secret
-	url = payment_gateway[0].url
+	pg = frappe.get_doc("Payment Gateway", payment_gateway[0].name)
+	api_key = pg.api_key
+	api_secret = pg.get_password("api_secret")
+	url = pg.url
 
 	site_name = url.split("/api/method")[0]
 	# Establish connection

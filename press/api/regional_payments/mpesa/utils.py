@@ -179,7 +179,7 @@ def get_payment_gateway_details():
 def get_gateway_controller():
 	# """Get the list of controllers for the given doctype."""
 	team = get_current_team(get_doc=True)
-	gateway_setting = "Mpesa Setup" if team.country == "Kenya" else ""
+	gateway_setting = "Mpesa Setup" if team.country == "Kenya" else None
 	if gateway_setting:
 		return frappe.db.get_value(gateway_setting, {"team": team.name}, "name")
 	return None
@@ -472,7 +472,8 @@ def create_invoice_partner_site(data, gateway_controller):
 		if response.status_code == 200:
 			response_data = response.json()
 			download_link = response_data.get("message", "")
-			return download_link  # noqa: RET504
+			invoice_name = response_data.get("invoice_name", "")
+			return download_link, invoice_name
 		frappe.log_error(f"API Error: {response.status_code} - {response.text}")
 		frappe.throw(_("Failed to create the invoice via API"))
 
