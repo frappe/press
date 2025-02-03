@@ -1427,7 +1427,6 @@ class Site(Document, TagHelpers):
 	def login_as_user(self, user_email, reason=None):
 		try:
 			sid = self.get_login_sid(user=user_email)
-			print(f"sid: {sid}")
 			if self.standby_for_product:
 				redirect_route = (
 					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")

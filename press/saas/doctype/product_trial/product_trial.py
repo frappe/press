@@ -397,8 +397,6 @@ def sync_product_site_users():
 	product_benches = frappe.get_all(
 		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
 	)
-	# print(f"Syncing users for {product_benches}")
-	# _sync_product_site_users(product_benches)
 	frappe.enqueue(
 		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
 		queue="short",
