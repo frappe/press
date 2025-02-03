@@ -74,7 +74,7 @@ class ProductTrialRequest(Document):
 	}
 
 	def get_doc(self, doc):
-		doc.site_label = frappe.get_value("Site", doc.site, "site_label")
+		doc.site_label = frappe.get_value("Site", doc.site, "label")
 
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")

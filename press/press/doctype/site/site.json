@@ -80,7 +80,7 @@
   "column_break_63",
   "hybrid_saas_pool",
   "saas_communication_secret",
-  "site_label",
+  "label",
   "backups_section",
   "backup_time",
   "column_break_zgig",
@@ -604,9 +604,9 @@
   },
   {
    "description": "Set for sites created through SaaS flow",
-   "fieldname": "site_label",
+   "fieldname": "label",
    "fieldtype": "Data",
-   "label": "Site Label"
+   "label": "Label"
   }
  ],
  "links": [
@@ -681,7 +681,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-12-18 14:20:04.696835",
+ "modified": "2025-02-03 15:51:42.236095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

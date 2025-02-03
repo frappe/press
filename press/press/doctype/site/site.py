@@ -146,6 +146,7 @@ class Site(Document, TagHelpers):
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
+		label: DF.Data | None
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
 		plan: DF.Link | None
@@ -158,7 +159,6 @@ class Site(Document, TagHelpers):
 		setup_wizard_complete: DF.Check
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
-		site_label: DF.Data | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_backups: DF.Check
@@ -204,7 +204,7 @@ class Site(Document, TagHelpers):
 		"host_name",
 		"skip_auto_updates",
 		"additional_system_user_created",
-		"site_label",
+		"label",
 	)
 
 	@staticmethod

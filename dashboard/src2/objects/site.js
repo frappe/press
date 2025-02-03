@@ -64,7 +64,7 @@ export default {
 		route: '/sites',
 		title: 'Sites',
 		fields: [
-			'site_label',
+			'label',
 			'plan.plan_title as plan_title',
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
@@ -157,7 +157,7 @@ export default {
 				format(value, row) {
 					const team = getTeam();
 					const isSaasUser = team.doc.is_saas_user;
-					if (isSaasUser) return row.site_label || value || row.name;
+					if (isSaasUser) return row.label || value || row.name;
 
 					return value || row.name;
 				},

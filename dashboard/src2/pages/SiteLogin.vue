@@ -77,9 +77,9 @@
 								>
 									<div class="space-y-2">
 										<div class="text-base text-gray-800">
-											{{ site.site_label || site.name }}
+											{{ site.label || site.name }}
 										</div>
-										<div v-if="site.site_label" class="text-sm text-gray-600">
+										<div v-if="site.label" class="text-sm text-gray-600">
 											{{ site.name }}
 										</div>
 									</div>

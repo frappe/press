@@ -116,7 +116,7 @@ class ProductTrial(Document):
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
 
-		if frappe.db.exists("Site", {"site_label": site_label, "status": ("!=", "Archived"), "team": team}):
+		if frappe.db.exists("Site", {"label": site_label, "status": ("!=", "Archived"), "team": team}):
 			frappe.throw(f"Site with label {site_label} already exists")
 
 		if standby_site:
@@ -127,7 +127,7 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.site_label = site_label
+			site.label = site_label
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
 			site.reload()
@@ -154,7 +154,7 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
-				site_label=site_label,
+				label=site_label,
 			)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
@@ -304,7 +304,7 @@ class ProductTrial(Document):
 			site_label = f"{user_first_name}'s {self.title} Site"
 			if count > 1:
 				site_label = f"{site_label} {count}"
-			if frappe.db.exists("Site", {"site_label": site_label, "team": get_current_team()}):
+			if frappe.db.exists("Site", {"site_label": label, "team": get_current_team()}):
 				return get_site_label(count + 1)
 			return site_label
 
