@@ -11,6 +11,11 @@
   "start",
   "end",
   "duration",
+  "section_break_nfeq",
+  "raw_devices",
+  "parsed_devices",
+  "raw_filesystems",
+  "parsed_filesystems",
   "section_break_mjhg",
   "steps"
  ],
@@ -69,11 +74,45 @@
    "fieldtype": "Table",
    "label": "Steps",
    "options": "Virtual Machine Migration Step"
+  },
+  {
+   "fieldname": "section_break_nfeq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "raw_devices",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Raw Devices",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parsed_devices",
+   "fieldtype": "Code",
+   "label": "Parsed Devices",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_filesystems",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Raw Filesystems",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parsed_filesystems",
+   "fieldtype": "Code",
+   "label": "Parsed Filesystems",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-21 18:33:29.320891",
+ "modified": "2025-02-03 15:35:30.350348",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Shrink",
