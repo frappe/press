@@ -67,6 +67,14 @@
   "column_break_44",
   "razorpay_payment_id",
   "razorpay_payment_method",
+  "mpesa_billing_section",
+  "mpesa_payment_record",
+  "mpesa_receipt_number",
+  "mpesa_invoice",
+  "mpesa_invoice_pdf",
+  "column_break_ouox",
+  "mpesa_request_id",
+  "mpesa_merchant_id",
   "section_break_47",
   "discounts"
  ],
@@ -469,6 +477,46 @@
    "fieldname": "refund_reason",
    "fieldtype": "Data",
    "label": "Refund Reason"
+  },
+  {
+   "fieldname": "mpesa_billing_section",
+   "fieldtype": "Section Break",
+   "label": "Mpesa Billing"
+  },
+  {
+   "fieldname": "mpesa_payment_record",
+   "fieldtype": "Data",
+   "label": "Mpesa Payment Record"
+  },
+  {
+   "fieldname": "mpesa_request_id",
+   "fieldtype": "Data",
+   "label": "Mpesa Request ID"
+  },
+  {
+   "fieldname": "mpesa_receipt_number",
+   "fieldtype": "Data",
+   "label": "Mpesa Receipt Number"
+  },
+  {
+   "fieldname": "column_break_ouox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mpesa_merchant_id",
+   "fieldtype": "Data",
+   "label": "Mpesa Merchant ID"
+  },
+  {
+   "fieldname": "mpesa_invoice",
+   "fieldtype": "Data",
+   "label": "Mpesa Invoice"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "mpesa_invoice_pdf",
+   "fieldtype": "Attach",
+   "label": "Mpesa Invoice PDF"
   }
  ],
  "is_submittable": 1,
@@ -494,7 +542,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-01-16 15:23:12.363619",
+ "modified": "2025-02-02 19:05:05.300386",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

@@ -45,11 +45,15 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
+  "column_break_uyxo",
+  "mpesa_tax_id",
+  "mpesa_phone_number",
   "partner_section",
   "partner_referral_code",
   "partnership_date",
   "column_break_ppov",
   "frappe_partnership_date",
+  "partner_commission",
   "feature_flags_section",
   "referrer_id",
   "ssh_access_enabled",
@@ -64,6 +68,7 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
+  "mpesa_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -438,6 +443,31 @@
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "mpesa_enabled",
+   "fieldtype": "Check",
+   "label": "Mpesa Enabled"
+  },
+  {
+   "fieldname": "column_break_uyxo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mpesa_tax_id",
+   "fieldtype": "Data",
+   "label": "Mpesa Tax Id"
+  },
+  {
+   "fieldname": "mpesa_phone_number",
+   "fieldtype": "Data",
+   "label": "Mpesa Phone Number"
+  },
+  {
+   "fieldname": "partner_commission",
+   "fieldtype": "Percent",
+   "label": "Partner Commission"
   }
  ],
  "links": [
@@ -497,7 +527,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-11-11 10:27:47.247515",
+ "modified": "2025-01-20 14:30:51.973791",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

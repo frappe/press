@@ -1,0 +1,218 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "allow_import": 1,
+ "autoname": "MP.-.YY.-.MM.-.####",
+ "creation": "2025-01-18 10:49:30.186896",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "merchant_request_id",
+  "transaction_id",
+  "transaction_type",
+  "transaction_time",
+  "grand_total",
+  "amount",
+  "amount_usd",
+  "mpesa_receipt_number",
+  "exchange_rate",
+  "column_break_14",
+  "phone_number",
+  "payment_partner",
+  "invoice_number",
+  "posting_date",
+  "posting_time",
+  "default_currency",
+  "amended_from",
+  "balance_transaction",
+  "local_invoice"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "merchant_request_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Request ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_type",
+   "fieldtype": "Select",
+   "label": "Transaction Type",
+   "options": "\nMpesa Express\nMpesa C2B"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total (Ksh)"
+  },
+  {
+   "fieldname": "amount_usd",
+   "fieldtype": "Float",
+   "label": "Amount (USD)"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate",
+   "precision": "9"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Link",
+   "label": "Payment Partner",
+   "options": "Team"
+  },
+  {
+   "fieldname": "invoice_number",
+   "fieldtype": "Data",
+   "label": "Invoice Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Posting Date",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "KES",
+   "fetch_from": "company.default_currency",
+   "fieldname": "default_currency",
+   "fieldtype": "Data",
+   "label": "Default Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Mpesa Payment Record",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "balance_transaction",
+   "fieldtype": "Link",
+   "label": "Balance Transaction",
+   "options": "Balance Transaction"
+  },
+  {
+   "fieldname": "local_invoice",
+   "fieldtype": "Small Text",
+   "label": "Local Invoice"
+  },
+  {
+   "fieldname": "transaction_id",
+   "fieldtype": "Data",
+   "label": "Transaction ID",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_time",
+   "fieldtype": "Datetime",
+   "label": "Transaction Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Amount (Ksh)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "mpesa_receipt_number",
+   "fieldtype": "Data",
+   "label": "Mpesa Receipt Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Phone Number",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-02-02 17:52:49.719724",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Mpesa Payment Record",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_preview_popup": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "transaction_id",
+ "track_changes": 1
+}

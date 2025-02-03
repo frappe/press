@@ -66,8 +66,12 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
+		mpesa_enabled: DF.Check
+		mpesa_phone_number: DF.Data | None
+		mpesa_tax_id: DF.Data | None
 		notify_email: DF.Data | None
 		parent_team: DF.Link | None
+		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
@@ -112,6 +116,9 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"mpesa_tax_id",
+		"mpesa_phone_number",
+		"mpesa_enabled",
 	)
 
 	def get_doc(self, doc):
