@@ -25,6 +25,7 @@ from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
 )
+from press.press.doctype.devbox.devbox import process_new_devbox_job_update
 from press.press.doctype.site_database_user.site_database_user import SiteDatabaseUser
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
@@ -49,6 +50,7 @@ class AgentJob(Document):
 		callback_failure_count: DF.Int
 		code_server: DF.Link | None
 		data: DF.Code | None
+		devbox: DF.Link | None
 		duration: DF.Time | None
 		end: DF.Datetime | None
 		host: DF.Link | None
@@ -1023,7 +1025,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		elif job.job_type == "Uninstall App from Site":
 			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
-			process_new_site_job_update(job)
+			if is_devbox(devbox_name=job.devbox):
+				process_new_devbox_job_update(job=job)
+			else:
+				process_new_site_job_update(job)
 		elif job.job_type == "Add Code Server to Upstream" or job.job_type == "Setup Code Server":
 			process_new_code_server_job_update(job)
 		elif job.job_type == "Start Code Server":
@@ -1075,6 +1080,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			Bench.process_update_inplace(job)
 		elif job.job_type == "Recover Update In Place":
 			Bench.process_recover_update_inplace(job)
+		elif job.job_type in ("New Devbox", "Start Devbox", "Stop Devbox", "Destroy Devbox"):
+			process_new_devbox_job_update(job=job)
 		elif job.job_type == "Fetch Database Table Schema":
 			process_fetch_database_table_schema_job_update(job)
 		elif job.job_type in [
@@ -1215,3 +1222,7 @@ def update_query_result_status_timestamps(results):
 
 		if result.end:
 			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+
+
+def is_devbox(devbox_name: str):
+	return frappe.db.exists(dt="Devbox", dn=devbox_name)
