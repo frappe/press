@@ -20,7 +20,13 @@
 						Choose an app below to create your first site.
 					</p>
 				</div>
-				<OnboardingAppSelector :apps="$resources.availableApps.data" />
+				<div
+					v-if="$resources.availableApps.loading"
+					class="flex justify-center"
+				>
+					<LoadingText />
+				</div>
+				<OnboardingAppSelector v-else :apps="$resources.availableApps.data" />
 			</div>
 		</div>
 		<div class="flex w-full">
