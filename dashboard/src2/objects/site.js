@@ -1,7 +1,7 @@
 import {
+	createListResource,
 	createResource,
 	LoadingIndicator,
-	createListResource,
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
@@ -64,7 +64,6 @@ export default {
 		route: '/sites',
 		title: 'Sites',
 		fields: [
-			'label',
 			'plan.plan_title as plan_title',
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
@@ -79,74 +78,54 @@ export default {
 		orderBy: 'creation desc',
 		searchField: 'host_name',
 		filterControls() {
-			const team = getTeam();
-			const isSaasUser = team.doc.is_saas_user;
-			if (isSaasUser) {
-				return [
-					{
-						type: 'select',
-						label: 'Status',
-						fieldname: 'status',
-						options: [
-							'',
-							'Active',
-							'Inactive',
-							'Suspended',
-							'Broken',
-							'Archived',
-						],
+			return [
+				{
+					type: 'select',
+					label: 'Status',
+					fieldname: 'status',
+					options: [
+						'',
+						'Active',
+						'Inactive',
+						'Suspended',
+						'Broken',
+						'Archived',
+					],
+				},
+				{
+					type: 'link',
+					label: 'Version',
+					fieldname: 'group.version',
+					options: {
+						doctype: 'Frappe Version',
 					},
-				];
-			} else {
-				return [
-					{
-						type: 'select',
-						label: 'Status',
-						fieldname: 'status',
-						options: [
-							'',
-							'Active',
-							'Inactive',
-							'Suspended',
-							'Broken',
-							'Archived',
-						],
+				},
+				{
+					type: 'link',
+					label: 'Bench Group',
+					fieldname: 'group',
+					options: {
+						doctype: 'Release Group',
 					},
-					{
-						type: 'link',
-						label: 'Version',
-						fieldname: 'group.version',
-						options: {
-							doctype: 'Frappe Version',
+				},
+				{
+					type: 'select',
+					label: 'Region',
+					fieldname: 'cluster',
+					options: clusterOptions,
+				},
+				{
+					type: 'link',
+					label: 'Tag',
+					fieldname: 'tags.tag',
+					options: {
+						doctype: 'Press Tag',
+						filters: {
+							doctype_name: 'Site',
 						},
 					},
-					{
-						type: 'link',
-						label: 'Bench Group',
-						fieldname: 'group',
-						options: {
-							doctype: 'Release Group',
-						},
-					},
-					{
-						type: 'select',
-						label: 'Region',
-						fieldname: 'cluster',
-						options: clusterOptions,
-					},
-					{
-						type: 'link',
-						label: 'Tag',
-						fieldname: 'tags.tag',
-						options: {
-							doctype: 'Press Tag',
-							filters: {
-								doctype_name: 'Site',
-							},
-						},
-					},
-				];
-			}
+				},
+			];
 		},
 		columns: [
 			{
@@ -155,19 +134,10 @@ export default {
 				width: 1.5,
 				class: 'font-medium',
 				format(value, row) {
-					const team = getTeam();
-					const isSaasUser = team.doc.is_saas_user;
-					if (isSaasUser) return row.label || value || row.name;
-
 					return value || row.name;
 				},
 			},
-			{
-				label: 'Status',
-				fieldname: 'status',
-				type: 'Badge',
-				width: '140px',
-			},
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
@@ -195,10 +165,6 @@ export default {
 				format(value, row) {
 					return row.cluster_title || value;
 				},
-				condition(row) {
-					const team = getTeam();
-					return !team.doc.is_saas_user;
-				},
 				prefix(row) {
 					return h('img', {
 						src: row.cluster_image,
@@ -211,10 +177,6 @@ export default {
 				label: 'Bench Group',
 				fieldname: 'group',
 				width: '15rem',
-				condition(row) {
-					const team = getTeam();
-					return !team.doc.is_saas_user;
-				},
 				format(value, row) {
 					return row.group_public ? 'Shared' : row.group_title || value;
 				},
@@ -223,46 +185,6 @@ export default {
 				label: 'Version',
 				fieldname: 'version',
 				width: 0.5,
-				condition(row) {
-					const team = getTeam();
-					return !team.doc.is_saas_user;
-				},
-			},
-			{
-				label: '',
-				type: 'Button',
-				width: '120px',
-				align: 'right',
-				condition(row) {
-					const team = getTeam();
-					return !!team.doc.is_saas_user;
-				},
-				Button({ row }) {
-					return {
-						label: 'Login',
-						variant: 'outline',
-						size: 'sm',
-						onClick(event) {
-							event.preventDefault();
-							const loginAsTeam = createResource({
-								url: 'press.api.client.run_doc_method',
-								params: {
-									dt: 'Site',
-									dn: row.name,
-									method: 'login_as_team',
-								},
-								onSuccess: (url) => {
-									window.open(url.message, '_blank');
-								},
-							});
-							toast.promise(loginAsTeam.submit(), {
-								success: 'Logged in successfully',
-								loading: 'Logging in...',
-								error: 'Failed to login',
-							});
-						},
-					};
-				},
 			},
 		],
 		primaryAction({ listResource: sites }) {
