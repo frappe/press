@@ -3,8 +3,9 @@
 		class="px-5 py-10"
 		v-if="$team?.doc"
 		:class="{
-			'h-full sm:bg-gray-50':
-				!$team.doc.onboarding.is_saas_user && !$team.doc.onboarding.site_created
+			'h-max sm:bg-gray-50':
+				!$team.doc.onboarding.is_saas_user &&
+				!$team.doc.onboarding.site_created,
 		}"
 	>
 		<OnboardingWithoutPayment />
@@ -18,7 +19,7 @@ export default {
 	name: 'Welcome',
 	components: {
 		Onboarding,
-		OnboardingWithoutPayment
+		OnboardingWithoutPayment,
 	},
 	beforeRouteEnter(to, from, next) {
 		let $team = getTeam();
@@ -30,6 +31,6 @@ export default {
 		} else {
 			next();
 		}
-	}
+	},
 };
 </script>
