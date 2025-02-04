@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable, List
+from typing import Iterable
 
 import boto3
 import frappe
@@ -24,10 +23,11 @@ class RootDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		aws_access_key_id: DF.Data
-		aws_secret_access_key: DF.Password
+		aws_access_key_id: DF.Data | None
+		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
-		dns_provider: DF.Literal["AWS Route 53"]
+		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		team: DF.Link | None
 	# end: auto-generated types
 
 	def after_insert(self):
@@ -41,9 +41,7 @@ class RootDomain(Document):
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
-			rsa_key_size = frappe.db.get_value(
-				"Press Settings", "Press Settings", "rsa_key_size"
-			)
+			rsa_key_size = frappe.db.get_value("Press Settings", "Press Settings", "rsa_key_size")
 			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
@@ -80,7 +78,7 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
 
-	def delete_dns_records(self, records: List[str]):
+	def delete_dns_records(self, records: list[str]):
 		try:
 			changes = []
 			for record in records:
@@ -132,7 +130,7 @@ class RootDomain(Document):
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
 			changes = []
-			for site in sites[i : i + batch_size]:  # noqa
+			for site in sites[i : i + batch_size]:
 				changes.append(
 					{
 						"Action": "UPSERT",
