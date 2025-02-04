@@ -197,7 +197,7 @@ class DeployCandidate(Document):
 				)
 
 		# if any job is in running, pending state, set the status to deploying
-		if any(job.get("status") in ["Running", "Pending", "Success"] for job in doc.jobs):
+		if any(job.get("status") in ["Running", "Pending"] for job in doc.jobs):
 			doc.status = "Deploying"
 
 	def autoname(self):
