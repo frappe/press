@@ -128,6 +128,7 @@ def update_payment_gateway_settings(gateway_details):
 					"api_key": gateway_data.api_key,
 					"api_secret": gateway_data.api_secret,
 					"taxes_and_charges": gateway_data.taxes_and_charges,
+					"print_format": gateway_data.print_format,
 				}
 			)
 			return payment_gateway.save().name
@@ -143,6 +144,7 @@ def update_payment_gateway_settings(gateway_details):
 				"api_key": gateway_data.api_key,
 				"api_secret": gateway_data.api_secret,
 				"taxes_and_charges": gateway_data.taxes_and_charges,
+				"print_format": gateway_data.print_format,
 			}
 		)
 
