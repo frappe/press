@@ -23,10 +23,11 @@ class RootDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		aws_access_key_id: DF.Data
-		aws_secret_access_key: DF.Password
+		aws_access_key_id: DF.Data | None
+		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
-		dns_provider: DF.Literal["AWS Route 53"]
+		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		team: DF.Link | None
 	# end: auto-generated types
 
 	def after_insert(self):
