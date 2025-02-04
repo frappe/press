@@ -1049,7 +1049,7 @@ class Team(Document):
 		if self.is_saas_user:
 			pending_site_request = self.get_pending_saas_site_request()
 			if pending_site_request:
-				return f"/create-site/{pending_site_request.product_trial}/setup"
+				return f"/create-site/{pending_site_request.product_trial}/setup?account_request={pending_site_request.account_request}"
 
 		return "/welcome"
 
