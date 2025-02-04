@@ -51,7 +51,7 @@ export default {
 				.then((account_request) =>
 					this.$router.push({
 						name: 'SignupSetup',
-						params: { productId: app.product_id },
+						params: { productId: app.name },
 						query: {
 							account_request: account_request,
 						},
