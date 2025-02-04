@@ -304,7 +304,7 @@ class ProductTrial(Document):
 			site_label = f"{user_first_name}'s {self.title} Site"
 			if count > 1:
 				site_label = f"{site_label} {count}"
-			if frappe.db.exists("Site", {"site_label": label, "team": get_current_team()}):
+			if frappe.db.exists("Site", {"label": site_label, "team": get_current_team()}):
 				return get_site_label(count + 1)
 			return site_label
 
