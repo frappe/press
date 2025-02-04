@@ -86,6 +86,7 @@ class ProductTrial(Document):
 			for field in self.signup_fields
 		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
+		doc.default_site_label = self.get_default_site_label()
 		return doc
 
 	def validate(self):
@@ -105,31 +106,31 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, team, plan, cluster=None, account_request=None):
+	def setup_trial_site(self, site_label, team, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
 
 		standby_site = self.get_standby_site(cluster)
-		team_record = frappe.get_doc("Team", team)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
-		current_user = frappe.session.user
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
-		"""
-		We have set the current user to "Administrator" temporarily
-		to bypass the site creation validation
-		"""
-		frappe.set_user("Administrator")
+		plan = self.trial_plan
+
+		if frappe.db.exists("Site", {"label": site_label, "status": ("!=", "Archived"), "team": team}):
+			frappe.throw(f"Site with label {site_label} already exists")
+
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.is_standby = False
-			site.team = team_record.name
+			site.team = team
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
+			site.label = site_label
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
+			site.reload()
 			site.generate_saas_communication_secret(create_agent_job=True, save=True)
 			if self.create_additional_system_user:
 				agent_job_name = site.create_user_with_team_info()
@@ -139,6 +140,7 @@ class ProductTrial(Document):
 			is_frappe_app_present = any(d["app"] == "frappe" for d in apps)
 			if not is_frappe_app_present:
 				apps.insert(0, {"app": "frappe"})
+
 			site = frappe.get_doc(
 				doctype="Site",
 				subdomain=self.get_unique_site_name(),
@@ -152,6 +154,7 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
+				label=site_label,
 			)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
@@ -161,7 +164,6 @@ class ProductTrial(Document):
 			site.insert(ignore_permissions=True)
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
-		frappe.set_user(current_user)
 		return site, agent_job_name, bool(standby_site)
 
 	def get_proxy_servers_for_available_clusters(self):
@@ -284,15 +286,29 @@ class ProductTrial(Document):
 		return active_standby_sites + recent_pending_standby_sites
 
 	def get_unique_site_name(self):
-		subdomain = generate_random_name()
+		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
 			"subdomain": subdomain,
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = generate_random_name()
+			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
+
+	def get_default_site_label(self):
+		def get_site_label(count=1):
+			from press.utils import get_current_team
+
+			user_first_name = frappe.db.get_value("User", frappe.session.user, "first_name")
+			site_label = f"{user_first_name}'s {self.title} Site"
+			if count > 1:
+				site_label = f"{site_label} {count}"
+			if frappe.db.exists("Site", {"site_label": label, "team": get_current_team()}):
+				return get_site_label(count + 1)
+			return site_label
+
+		return get_site_label()
 
 
 def get_app_subscriptions_site_config(apps: list[str]):
@@ -370,3 +386,42 @@ def send_verification_mail_for_login(email: str, product: str, code: str):
 		args=args,
 		now=True,
 	)
+
+
+def sync_product_site_users():
+	"""Fetch and sync users from product sites, so that they can be used for login to the site from FC."""
+
+	product_groups = frappe.db.get_all(
+		"Product Trial", {"published": 1}, ["release_group"], pluck="release_group"
+	)
+	product_benches = frappe.get_all(
+		"Bench", {"group": ("in", product_groups), "status": "Active"}, pluck="name"
+	)
+	frappe.enqueue(
+		"press.saas.doctype.product_trial.product_trial._sync_product_site_users",
+		queue="short",
+		product_benches=product_benches,
+		job_id="sync_product_site_users",
+		deduplicate=True,
+		enqueue_after_commit=True,
+	)
+	frappe.db.commit()
+
+
+def _sync_product_site_users(product_benches):
+	for bench_name in product_benches:
+		bench = frappe.get_doc("Bench", bench_name)
+		# Skip syncing analytics for benches that have been archived (after the job was enqueued)
+		if bench.status != "Active":
+			return
+		try:
+			bench.sync_product_site_users()
+			frappe.db.commit()
+		except Exception:
+			log_error(
+				"Bench Analytics Sync Error",
+				bench=bench.name,
+				reference_doctype="Bench",
+				reference_name=bench.name,
+			)
+			frappe.db.rollback()

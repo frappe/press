@@ -73,6 +73,9 @@ class ProductTrialRequest(Document):
 		},
 	}
 
+	def get_doc(self, doc):
+		doc.site_label = frappe.get_value("Site", doc.site, "label")
+
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
 
@@ -103,6 +106,11 @@ class ProductTrialRequest(Document):
 				self.capture_posthog_event("product_trial_request_started_setup_wizard_completion")
 			elif self.status == "Site Created":
 				self.capture_posthog_event("product_trial_request_site_created")
+
+				# this is to create a webhook record in the site
+				# so that the user records can be synced with press
+				site = frappe.get_doc("Site", self.site)
+				site.create_sync_user_webhook()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -197,9 +205,10 @@ class ProductTrialRequest(Document):
 						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
-	def create_site(self, cluster: str | None = None, signup_values: dict | None = None):
+	def create_site(self, site_label: str, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
+
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		for field in product.signup_fields:
 			if field.fieldtype == "Password" and field.fieldname in signup_values:
@@ -217,12 +226,25 @@ class ProductTrialRequest(Document):
 		self.site_creation_started_on = now_datetime()
 		self.save(ignore_permissions=True)
 		self.reload()
-		site, agent_job_name, _ = product.setup_trial_site(
-			self.team, product.trial_plan, cluster=cluster, account_request=self.account_request
+		site, agent_job_name, is_standby_site = product.setup_trial_site(
+			site_label=site_label, team=self.team, cluster=cluster, account_request=self.account_request
 		)
 		self.agent_job = agent_job_name
 		self.site = site.name
 		self.save(ignore_permissions=True)
+
+		if is_standby_site and product.setup_wizard_completion_mode == "auto":
+			self.complete_setup_wizard()
+
+		user_mail = frappe.db.get_value("Team", self.team, "user")
+		frappe.get_doc(
+			{
+				"doctype": "Site User",
+				"site": site.name,
+				"user": user_mail,
+				"enabled": 1,
+			}
+		).insert()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
@@ -303,7 +325,7 @@ def get_app_trial_page_url():
 			# Check site status
 			# site_status = frappe.db.get_value("Site", site, "status")
 			# if site_status in ("Active", "Inactive", "Suspended"):
-			return f"/dashboard/app-trial/signup/{product_trial_name}"
+			return f"/dashboard/signup?product={product_trial_name}"
 	except Exception:
 		frappe.log_error(title="App Trial Page URL Error")
 		return None

@@ -12,8 +12,8 @@ def info():
 	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date"], as_dict=True)
 	return {
 		"name": frappe.local.site_name,
-		"trial_end_date": frappe.get_value("Site", frappe.local.site_name, "trial_end_date"),
-		"plan": frappe.get_doc("Site Plan", site.plan),
+		"trial_end_date": site.trial_end_date,
+		"plan": frappe.get_doc("Site Plan", site.plan) if site.plan else None,
 	}
 
 

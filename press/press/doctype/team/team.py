@@ -160,13 +160,6 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
-		doc.hide_sidebar = (
-			not self.parent_team
-			and not doc.onboarding.site_created
-			and len(doc.valid_teams) == 1
-			and not self.is_payment_mode_set()
-			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
-		)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -1056,11 +1049,7 @@ class Team(Document):
 		if self.is_saas_user:
 			pending_site_request = self.get_pending_saas_site_request()
 			if pending_site_request:
-				product_trial = pending_site_request.product_trial
-			else:
-				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
-			if product_trial:
-				return f"/app-trial/setup/{product_trial}"
+				return f"/create-site/{pending_site_request.product_trial}/setup"
 
 		return "/welcome"
 
@@ -1071,7 +1060,7 @@ class Team(Document):
 				"team": self.name,
 				"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard", "Error"]),
 			},
-			["name", "product_trial", "product_trial.title", "status"],
+			["name", "product_trial", "product_trial.title", "status", "account_request"],
 			order_by="creation desc",
 			as_dict=True,
 		)

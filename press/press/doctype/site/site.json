@@ -80,6 +80,7 @@
   "column_break_63",
   "hybrid_saas_pool",
   "saas_communication_secret",
+  "label",
   "backups_section",
   "backup_time",
   "column_break_zgig",
@@ -600,6 +601,12 @@
    "fieldname": "database_access_connection_limit",
    "fieldtype": "Int",
    "label": "Database Access Connection Limit"
+  },
+  {
+   "description": "Set for sites created through SaaS flow",
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label"
   }
  ],
  "links": [
@@ -674,7 +681,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-11-28 15:40:02.431631",
+ "modified": "2025-02-03 15:51:42.236095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

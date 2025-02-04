@@ -11,6 +11,7 @@
   "oauth_signup",
   "send_email",
   "otp",
+  "otp_generated_at",
   "column_break_4",
   "role",
   "invited_by",
@@ -264,11 +265,16 @@
   {
    "fieldname": "column_break_eaxp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "otp_generated_at",
+   "fieldtype": "Datetime",
+   "label": "OTP Generated at"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-17 11:18:35.247936",
+ "modified": "2025-02-03 16:12:50.184724",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
