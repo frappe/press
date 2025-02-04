@@ -31,7 +31,9 @@ class RootDomain(Document):
 	# end: auto-generated types
 
 	def after_insert(self):
-		if not frappe.db.exists("TLS Certificate", {"wildcard": True, "domain": self.name}):
+		if self.dns_provider != "Generic" and not frappe.db.exists(
+			"TLS Certificate", {"wildcard": True, "domain": self.name}
+		):
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -52,6 +54,13 @@ class RootDomain(Document):
 			).insert()
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
+
+	@property
+	def generic_dns_provider(self):
+		if not hasattr(self, "_generic_dns_provider"):
+			self._generic_dns_provider = self.dns_provider == "Generic"
+
+		return self._generic_dns_provider
 
 	@property
 	def boto3_client(self):
@@ -132,6 +141,9 @@ class RootDomain(Document):
 				self.delete_dns_records(to_delete)
 
 	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+		if self.generic_dns_provider:
+			return
+
 		# update records in batches of 500
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
@@ -158,4 +170,7 @@ def cleanup_cname_records():
 	domains = frappe.get_all("Root Domain", pluck="name")
 	for domain_name in domains:
 		domain = RootDomain("Root Domain", domain_name)
+		if domain.generic_dns_provider:
+			continue
+
 		domain.remove_unused_cname_records()
