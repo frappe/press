@@ -172,6 +172,9 @@ class DeployCandidate(Document):
 		return results
 
 	def get_doc(self, doc):
+		def get_job_duration_in_seconds(duration):
+			return float(rounded(duration.total_seconds(), 3))
+
 		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
 		if deploys:
@@ -185,7 +188,17 @@ class DeployCandidate(Document):
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
 				) or [{}]
-				doc.jobs.append(job[0])
+				doc.jobs.append(
+					{
+						**job[0],
+						"title": f"Deploying {bench.bench}",
+						"duration": get_job_duration_in_seconds(job[0].duration) if job else 0,
+					}
+				)
+
+		# if any job is in running, pending state, set the status to deploying
+		if any(job.get("status") in ["Running", "Pending", "Success"] for job in doc.jobs):
+			doc.status = "Deploying"
 
 	def autoname(self):
 		group = self.group[6:]
