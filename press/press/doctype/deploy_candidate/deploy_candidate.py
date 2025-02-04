@@ -173,6 +173,8 @@ class DeployCandidate(Document):
 
 	def get_doc(self, doc):
 		def get_job_duration_in_seconds(duration):
+			if not duration:
+				return 0
 			return float(rounded(duration.total_seconds(), 3))
 
 		doc.jobs = []
