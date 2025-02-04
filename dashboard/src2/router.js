@@ -140,6 +140,11 @@ let router = createRouter({
 					path: 'payouts',
 					component: () => import('./pages/BillingMarketplacePayouts.vue'),
 				},
+				{
+					name: 'BillingMpesaInvoices',
+					path: 'mpesa-invoices',
+					component: () => import('./pages/BillingMpesaInvoices.vue'),
+				},
 			],
 		},
 		{
@@ -209,6 +214,12 @@ let router = createRouter({
 					path: 'approval-requests',
 					component: () =>
 						import('./components/partners/PartnerApprovalRequests.vue'),
+				},
+				{
+					name: 'LocalPaymentSetup',
+					path: 'local-payment-setup',
+					component: () =>
+						import('./components/partners/PartnerLocalPaymentSetup.vue'),
 				},
 			],
 		},

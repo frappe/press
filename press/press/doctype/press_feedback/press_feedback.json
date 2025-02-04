@@ -8,6 +8,9 @@
   "team",
   "message",
   "route",
+  "team_created_on",
+  "currency",
+  "last_paid_invoice",
   "column_break_vcbh",
   "rating",
   "note"
@@ -46,11 +49,27 @@
    "fieldname": "rating",
    "fieldtype": "Rating",
    "label": "Rating"
+  },
+  {
+   "fieldname": "team_created_on",
+   "fieldtype": "Date",
+   "label": "Team Created On"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "last_paid_invoice",
+   "fieldtype": "Currency",
+   "label": "Last Paid Invoice"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-02 20:07:21.508212",
+ "modified": "2025-02-03 15:48:45.990977",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Feedback",

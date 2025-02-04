@@ -308,3 +308,12 @@ def remove_partner():
 		team.remove(member_to_remove)
 	team.partner_email = ""
 	team.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_local_payment_setup():
+	team = get_current_team()
+	data = frappe._dict()
+	data.mpesa_setup = frappe.db.get_value("Mpesa Setup", {"team": team}, "mpesa_setup_id") or None
+	data.payment_gateway = frappe.db.get_value("Payment Gateway", {"team": team}, "name") or None
+	return data

@@ -295,6 +295,7 @@
 		"nvme",
 		"Nxzjr",
 		"Occurred",
+		"OCI",
 		"ocpus",
 		"ocsp",
 		"Odisha",
@@ -447,6 +448,10 @@
 		"venv",
 		"vetur",
 		"Vetur",
+		"Mpesa",
+		"msisdn",
+		"stkpush",
+		"Pesa",
 		"Vevay",
 		"vfat",
 		"vimrc",
@@ -481,6 +486,7 @@
 		"xvda",
 		"sdf",
 		"sdg",
-		"asrc"
+		"asrc",
+		"invs"
 	]
 }
