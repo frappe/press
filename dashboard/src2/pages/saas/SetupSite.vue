@@ -142,7 +142,7 @@ export default {
 				name: this.productId,
 				auto: true,
 				onSuccess: (doc) => {
-					this.siteLabel = doc.prefilled_site_label;
+					this.siteLabel = doc.default_site_label;
 				},
 			};
 		},
