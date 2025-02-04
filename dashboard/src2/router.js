@@ -228,36 +228,6 @@ let router = createRouter({
 			path: '/create-site',
 			redirect: { name: 'Home' },
 			children: [
-				// {
-				// 	name: 'SaaSLogin',
-				// 	path: ':productId/login',
-				// 	component: () => import('./pages/saas/Login.vue'),
-				// 	props: true,
-				// 	meta: {
-				// 		isLoginPage: true,
-				// 	},
-				// },
-				// {
-				// 	name: 'SaaSSignup',
-				// 	path: ':productId/signup',
-				// 	component: () => import('./pages/saas/Signup.vue'),
-				// 	props: true,
-				// 	meta: { isLoginPage: true },
-				// },
-				// {
-				// 	name: 'SaaSSignupVerifyEmail',
-				// 	path: ':productId/verify-email',
-				// 	component: () => import('./pages/saas/VerifyEmail.vue'),
-				// 	props: true,
-				// 	meta: { isLoginPage: true },
-				// },
-				// {
-				// 	name: 'SaaSSignupOAuthSetupAccount',
-				// 	path: ':productId/oauth',
-				// 	component: () => import('./pages/saas/OAuthSetupAccount.vue'),
-				// 	props: true,
-				// 	meta: { isLoginPage: true },
-				// },
 				{
 					name: 'SignupAppSelector',
 					path: 'app-selector',
