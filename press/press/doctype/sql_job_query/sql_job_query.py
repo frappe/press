@@ -1,8 +1,10 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
 from __future__ import annotations
+
+import json
+from typing import Any
 
 from frappe.model.document import Document
 
@@ -27,7 +29,35 @@ class SQLJobQuery(Document):
 		query: DF.SmallText
 		result: DF.JSON | None
 		row_count: DF.Int
+		skip: DF.Check
 		success: DF.Check
 	# end: auto-generated types
 
-	pass
+	@property
+	def columns_list(self) -> list[str]:
+		try:
+			return json.loads(self.columns)
+		except Exception:
+			return []
+
+	@property
+	def profile_dict(self) -> dict[str, Any]:
+		try:
+			return json.loads(self.profile)
+		except Exception:
+			return {}
+
+	@property
+	def result_list(self) -> list[list[Any]]:
+		try:
+			return json.loads(self.result)
+		except Exception:
+			return []
+
+	def is_ddl_query(self) -> bool:
+		return self.query.upper().startswith(("CREATE", "ALTER", "DROP", "TRUNCATE", "RENAME", "COMMENT"))
+
+	def is_restricted_query(self) -> bool:
+		return self.query.upper().startswith(
+			("GRANT", "REVOKE", "SHOW", "USE", "COMMIT", "ROLLBACK", "KILL", "BEGIN", "END", "SET", "LOCK")
+		)

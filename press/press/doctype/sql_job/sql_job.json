@@ -10,15 +10,16 @@
   "user_type",
   "target_type",
   "target_document",
+  "server",
   "database_name",
   "column_break_uaxw",
   "read_only",
   "async",
   "job",
-  "committed",
   "profile_query",
-  "allow_ddl",
+  "allow_ddl_query",
   "allow_any_query",
+  "continue_on_error",
   "section_break_krvx",
   "wait_timeout",
   "column_break_avlz",
@@ -26,7 +27,8 @@
   "column_break_odmx",
   "max_statement_time",
   "section_break_hxxz",
-  "queries"
+  "queries",
+  "prepared_sql_statement"
  ],
  "fields": [
   {
@@ -52,17 +54,11 @@
    "search_index": 1
   },
   {
-   "default": "0",
-   "fieldname": "committed",
-   "fieldtype": "Check",
-   "label": "Committed"
-  },
-  {
    "fieldname": "target_type",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Target Type",
-   "options": "DocType",
+   "options": "Site\nDatabase Server",
    "reqd": 1,
    "search_index": 1
   },
@@ -101,7 +97,8 @@
    "in_standard_filter": 1,
    "label": "User Type",
    "options": "Root User\nSite User",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_hxxz",
@@ -118,28 +115,31 @@
    "default": "300",
    "fieldname": "lock_wait_timeout",
    "fieldtype": "Int",
-   "label": "Lock Wait Timeout (seconds)"
+   "label": "Lock Wait Timeout (seconds)",
+   "reqd": 1
   },
   {
+   "default": "600",
    "fieldname": "max_statement_time",
    "fieldtype": "Int",
    "label": "Max Statement Time (seconds)",
-   "options": "600"
+   "reqd": 1
   },
   {
    "fieldname": "job_type",
    "fieldtype": "Data",
    "in_standard_filter": 1,
    "label": "Job Type",
-   "read_only": 1,
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
+   "default": "60",
    "fieldname": "wait_timeout",
    "fieldtype": "Int",
    "label": "Wait Timeout (seconds)",
-   "options": "60"
+   "reqd": 1
   },
   {
    "fieldname": "database_name",
@@ -161,20 +161,41 @@
   },
   {
    "default": "0",
-   "fieldname": "allow_ddl",
-   "fieldtype": "Check",
-   "label": "Allow DDL"
-  },
-  {
-   "default": "0",
    "fieldname": "allow_any_query",
    "fieldtype": "Check",
    "label": "Allow Any Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_ddl_query",
+   "fieldtype": "Check",
+   "label": "Allow DDL Query"
+  },
+  {
+   "fieldname": "prepared_sql_statement",
+   "fieldtype": "Long Text",
+   "is_virtual": 1,
+   "label": "Prepared SQL Statement",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "continue_on_error",
+   "fieldtype": "Check",
+   "label": "Continue On Error",
+   "options": "If any SQL query fails to run, don't pause the execution of all."
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Database Server",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-04 14:24:21.125100",
+ "modified": "2025-02-05 12:15:48.959309",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",

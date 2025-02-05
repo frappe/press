@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "success",
+  "skip",
   "duration",
   "query",
   "column_break_oowi",
@@ -24,7 +25,6 @@
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Query",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -90,13 +90,20 @@
    "default": "[]",
    "fieldname": "columns",
    "fieldtype": "JSON",
-   "label": "Columns"
+   "label": "Columns",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "skip",
+   "fieldtype": "Check",
+   "label": "Skip"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-04 14:27:55.504722",
+ "modified": "2025-02-04 16:43:08.110539",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job Query",
