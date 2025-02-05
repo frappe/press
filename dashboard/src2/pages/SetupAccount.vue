@@ -5,6 +5,19 @@
 	>
 		<div class="w-full overflow-auto">
 			<LoginBox>
+				<template v-slot:logo v-if="saasProduct">
+					<div class="mx-auto flex items-center space-x-2">
+						<img
+							class="inline-block h-7 w-7 rounded-sm"
+							:src="saasProduct?.logo"
+						/>
+						<span
+							class="select-none text-xl font-semibold tracking-tight text-gray-900"
+						>
+							{{ saasProduct?.title }}
+						</span>
+					</div>
+				</template>
 				<div
 					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 				>
@@ -60,27 +73,36 @@
 							v-model="country"
 							required
 						/>
-						<div class="mt-4 flex items-center gap-2">
+						<div class="!mt-6 flex gap-2">
 							<FormControl type="checkbox" v-model="termsAccepted" />
-							<label class="text-base text-gray-900">
-								By clicking on
-								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
-								>, you accept our
-								<Link href="https://frappecloud.com/policies" target="_blank"
-									>Terms and Policies</Link
+							<label class="text-base text-gray-700">
+								I accept the
+								<Link
+									class="!text-gray-700"
+									href="https://frappecloud.com/policies"
+									target="_blank"
 								>
+									Terms and Policies
+								</Link>
 							</label>
 						</div>
 					</div>
 					<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
 					<Button
-						class="mt-4"
+						class="mt-6"
 						variant="solid"
 						:loading="$resources.setupAccount.loading"
 					>
 						{{ isInvitation ? 'Accept' : 'Create account' }}
 					</Button>
 				</form>
+				<template #footer v-if="saasProduct">
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 		</div>
 	</div>
@@ -105,7 +127,7 @@ export default {
 	components: {
 		LoginBox,
 		Link,
-		Form
+		Form,
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -126,7 +148,7 @@ export default {
 			invitedByParentTeam: false,
 			countries: [],
 			saasProduct: null,
-			signupValues: {}
+			signupValues: {},
 		};
 	},
 	resources: {
@@ -137,7 +159,7 @@ export default {
 					key: this.requestKey,
 					timezone: window.Intl
 						? Intl.DateTimeFormat().resolvedOptions().timeZone
-						: null
+						: null,
 				},
 				auto: true,
 				onSuccess(res) {
@@ -156,7 +178,7 @@ export default {
 						this.countries = res.countries;
 						this.saasProduct = res.product_trial;
 					}
-				}
+				},
 			};
 		},
 		setupAccount() {
@@ -173,17 +195,17 @@ export default {
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
 					oauth_signup: this.oauthSignup,
-					oauth_domain: this.oauthDomain
+					oauth_domain: this.oauthDomain,
 				},
-				onSuccess() {
-					let path = '/dashboard';
+				onSuccess(account_request) {
+					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
-						path = `/dashboard/app-trial/setup/${this.saasProduct.name}`;
+						path = `/dashboard/create-site/${this.saasProduct.name}/setup?account_request=${account_request}`;
 					}
 					window.location.href = path;
-				}
+				},
 			};
-		}
-	}
+		},
+	},
 };
 </script>

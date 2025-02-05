@@ -812,7 +812,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"doctype": "Team Change",
 				"document_type": "Release Group",
 				"document_name": self.name,
-				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id, "enabled": 1}),
 				"from_team": self.team,
 				"reason": reason or "",
 				"key": key,

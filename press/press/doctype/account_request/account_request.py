@@ -45,6 +45,7 @@ class AccountRequest(Document):
 		no_of_users: DF.Int
 		oauth_signup: DF.Check
 		otp: DF.Data | None
+		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
@@ -82,6 +83,9 @@ class AccountRequest(Document):
 
 		if not self.otp:
 			self.otp = random.randint(10000, 99999)
+			self.otp_generated_at = frappe.utils.now_datetime()
+			if frappe.conf.developer_mode and frappe.local.dev_server:
+				self.otp = 11111
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}

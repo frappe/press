@@ -3,17 +3,22 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!isSaaSFlow && !$isMobile && !isHideSidebar"
+					v-if="!isSignupFlow && !$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar v-if="$session.user" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="!isSaaSFlow && $isMobile && !isHideSidebar && $session.user"
+						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
 					<div
-						v-if="!isSaaSFlow && !$session.user && !$route.meta.isLoginPage"
+						v-if="
+							!isSignupFlow &&
+							!isSiteLogin &&
+							!$session.user &&
+							!$route.meta.isLoginPage
+						"
 						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
@@ -37,37 +42,57 @@ import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
 
-const AppSidebar = defineAsyncComponent(() =>
-	import('./components/AppSidebar.vue')
+const AppSidebar = defineAsyncComponent(
+	() => import('./components/AppSidebar.vue'),
 );
-const MobileNav = defineAsyncComponent(() =>
-	import('./components/MobileNav.vue')
+const MobileNav = defineAsyncComponent(
+	() => import('./components/MobileNav.vue'),
 );
 
 const route = useRoute();
 const team = getTeam();
 
 const isHideSidebar = computed(() => {
+	const alwaysHideSidebarRoutes = [
+		'Site Login',
+		'SignupLoginToSite',
+		'SignupSetup',
+	];
+	const alwaysHideSidebarPaths = ['/dashboard/site-login'];
+
 	if (!session.user) return false;
+	if (
+		alwaysHideSidebarRoutes.includes(route.name) ||
+		alwaysHideSidebarPaths.includes(window.location.pathname)
+	)
+		return true;
+
 	return (
-		// using window.location.pathname as router is undefined initially
-		(window.location.pathname === '/dashboard/welcome' ||
-			route.name === 'Welcome') &&
-		session.user &&
-		team?.doc?.hide_sidebar === true
+		route.meta.hideSidebar && session.user && team?.doc?.hide_sidebar === true
 	);
 });
 
-const isSaaSFlow = ref(window.location.pathname.startsWith('/dashboard/saas'));
+const isSignupFlow = ref(
+	window.location.pathname.startsWith('/dashboard/create-site') ||
+		window.location.pathname.startsWith('/dashboard/setup-account') ||
+		window.location.pathname.startsWith('/dashboard/site-login') ||
+		window.location.pathname.startsWith('/dashboard/signup'),
+);
+const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
 
 watch(
 	() => route.name,
 	() => {
-		isSaaSFlow.value = window.location.pathname.startsWith('/dashboard/saas');
-	}
+		isSignupFlow.value =
+			window.location.pathname.startsWith('/dashboard/create-site') ||
+			window.location.pathname.startsWith('/dashboard/setup-account') ||
+			window.location.pathname.startsWith('/dashboard/site-login') ||
+			window.location.pathname.startsWith('/dashboard/signup');
+	},
 );
 
 provide('team', team);
+provide('session', session);
 </script>
 
 <style src="../src/assets/style.css"></style>

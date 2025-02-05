@@ -12,7 +12,7 @@
 				name:
 					object.doctype === 'Site'
 						? 'Site Jobs'
-						: `${object.doctype} Detail Jobs`
+						: `${object.doctype} Detail Jobs`,
 			}"
 		>
 			<template #prefix>
@@ -29,7 +29,7 @@
 					<div class="ml-auto space-x-2">
 						<Button
 							@click="$resources.job.reload()"
-							:loading="$resources.job.loading"
+							:loading="$resources.job.get.loading"
 						>
 							<template #icon>
 								<i-lucide-refresh-ccw class="h-4 w-4" />
@@ -112,7 +112,8 @@ export default {
 						step.title = step.step_name;
 						step.duration = duration(step.duration);
 						step.isOpen =
-							this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
+							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
+							false;
 					}
 
 					// on delivery failure, there'll be no output for any step
@@ -125,7 +126,7 @@ export default {
 				},
 				onSuccess() {
 					this.lastLoaded = Date.now();
-				}
+				},
 			};
 		},
 		errors() {
@@ -139,12 +140,12 @@ export default {
 					document_type: 'Agent Job',
 					document_name: this.id,
 					is_actionable: true,
-					class: 'Error'
+					class: 'Error',
 				},
 				limit: 1,
-				orderBy: 'creation desc'
+				orderBy: 'creation desc',
 			};
-		}
+		},
 	},
 	computed: {
 		object() {
@@ -165,28 +166,28 @@ export default {
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
-							'_blank'
+							'_blank',
 						);
-					}
-				}
-			].filter(option => option.condition?.() ?? true);
-		}
+					},
+				},
+			].filter((option) => option.condition?.() ?? true);
+		},
 	},
 	mounted() {
 		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
-		this.$socket.on('agent_job_update', data => {
+		this.$socket.on('agent_job_update', (data) => {
 			if (data.id === this.id) {
-				data.steps = data.steps.map(step => {
+				data.steps = data.steps.map((step) => {
 					step.title = step.step_name;
 					step.duration = duration(step.duration);
 					step.isOpen =
-						this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
+						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false;
 					return step;
 				});
 
 				this.$resources.job.doc = {
 					...this.$resources.job.doc,
-					...data
+					...data,
 				};
 			}
 		});
@@ -209,7 +210,7 @@ export default {
 			) {
 				this.$resources.job.reload();
 			}
-		}
-	}
+		},
+	},
 };
 </script>

@@ -66,8 +66,12 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
+		mpesa_enabled: DF.Check
+		mpesa_phone_number: DF.Data | None
+		mpesa_tax_id: DF.Data | None
 		notify_email: DF.Data | None
 		parent_team: DF.Link | None
+		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
@@ -112,6 +116,9 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"mpesa_tax_id",
+		"mpesa_phone_number",
+		"mpesa_enabled",
 	)
 
 	def get_doc(self, doc):
@@ -152,13 +159,6 @@ class Team(Document):
 				"stripe_mandate_id",
 			],
 			as_dict=True,
-		)
-		doc.hide_sidebar = (
-			not self.parent_team
-			and not doc.onboarding.site_created
-			and len(doc.valid_teams) == 1
-			and not self.is_payment_mode_set()
-			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
 		)
 
 	def onload(self):
@@ -1049,11 +1049,7 @@ class Team(Document):
 		if self.is_saas_user:
 			pending_site_request = self.get_pending_saas_site_request()
 			if pending_site_request:
-				product_trial = pending_site_request.product_trial
-			else:
-				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
-			if product_trial:
-				return f"/app-trial/setup/{product_trial}"
+				return f"/create-site/{pending_site_request.product_trial}/setup?account_request={pending_site_request.account_request}"
 
 		return "/welcome"
 
@@ -1064,7 +1060,7 @@ class Team(Document):
 				"team": self.name,
 				"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard", "Error"]),
 			},
-			["name", "product_trial", "product_trial.title", "status"],
+			["name", "product_trial", "product_trial.title", "status", "account_request"],
 			order_by="creation desc",
 			as_dict=True,
 		)

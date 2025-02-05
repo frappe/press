@@ -24,10 +24,10 @@
 			<div class="flex w-full items-center">
 				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<div class="ml-auto space-x-2">
+				<div class="ml-auto flex items-center space-x-2">
 					<Button
 						@click="$resources.deploy.reload()"
-						:loading="$resources.deploy.loading"
+						:loading="$resources.deploy.get.loading"
 					>
 						<template #icon>
 							<i-lucide-refresh-ccw class="h-4 w-4" />
@@ -91,6 +91,7 @@
 				:step="step"
 				:key="step.name"
 			/>
+			<JobStep v-for="job in deploy.jobs" :step="job" :key="job.name" />
 		</div>
 	</div>
 </template>
@@ -109,7 +110,7 @@ export default {
 	components: {
 		JobStep,
 		AlertBanner,
-		AlertAddressableError
+		AlertAddressableError,
 	},
 	resources: {
 		deploy() {
@@ -117,7 +118,7 @@ export default {
 				type: 'document',
 				doctype: 'Deploy Candidate',
 				name: this.id,
-				transform: this.transformDeploy
+				transform: this.transformDeploy,
 			};
 		},
 		errors() {
@@ -131,25 +132,25 @@ export default {
 					document_type: 'Deploy Candidate',
 					document_name: this.id,
 					is_actionable: true,
-					class: 'Error'
+					class: 'Error',
 				},
-				limit: 1
+				limit: 1,
 			};
-		}
+		},
 	},
 	mounted() {
 		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
-		this.$socket.on(`bench_deploy:${this.id}:steps`, data => {
+		this.$socket.on(`bench_deploy:${this.id}:steps`, (data) => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
 				this.$resources.deploy.doc.build_steps = this.transformDeploy({
-					build_steps: data.steps
+					build_steps: data.steps,
 				})?.build_steps;
 			}
 		});
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
 			const rgDoc = getCachedDocumentResource(
 				'Release Group',
-				this.$resources.deploy.doc?.group
+				this.$resources.deploy.doc?.group,
 			);
 			if (rgDoc) rgDoc.reload();
 			this.$resources.deploy.reload();
@@ -189,17 +190,17 @@ export default {
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/deploy-candidate/${this.id}`,
-							'_blank'
+							'_blank',
 						);
-					}
+					},
 				},
 				{
 					label: 'Fail and Redeploy',
 					icon: 'repeat',
 					condition: () => this.showFailAndRedeploy,
-					onClick: () => this.failAndRedeploy()
-				}
-			].filter(option => option.condition?.() ?? true);
+					onClick: () => this.failAndRedeploy(),
+				},
+			].filter((option) => option.condition?.() ?? true);
 		},
 		showFailAndRedeploy() {
 			if (!this.deploy || this.deploy.status !== 'Running') {
@@ -210,7 +211,7 @@ export default {
 			const now = dayjs(new Date());
 
 			return now.diff(start, 'hours') > 2;
-		}
+		},
 	},
 	methods: {
 		transformDeploy(deploy) {
@@ -219,7 +220,7 @@ export default {
 					step.isOpen = true;
 				} else {
 					step.isOpen = this.$resources.deploy?.doc?.build_steps?.find(
-						s => s.name === step.name
+						(s) => s.name === step.name,
 					)?.isOpen;
 				}
 				step.title = `${step.stage} - ${step.step}`;
@@ -254,9 +255,9 @@ export default {
 						router.push(`/groups/${group}/deploys/${name}`);
 					}
 				},
-				onError
+				onError,
 			}).fetch();
-		}
-	}
+		},
+	},
 };
 </script>

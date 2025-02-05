@@ -3,7 +3,7 @@
 		<div
 			v-for="app in apps"
 			class="flex cursor-pointer flex-col gap-2.5 rounded-md border border-gray-300 p-4 transition duration-300 hover:border-gray-400"
-			@click.capture="() => openInstallAppPage(app.name)"
+			@click.capture="() => openInstallAppPage(app)"
 		>
 			<img :src="app.image" class="h-6 w-6" />
 			<div class="flex flex-col gap-1">
@@ -35,12 +35,29 @@ export default {
 	name: 'OnboardingAppSelector',
 	props: ['apps'],
 	components: {
-		DownloadIcon
+		DownloadIcon,
+	},
+	resources: {
+		getAccountRequestForProductSignup() {
+			return {
+				url: 'press.api.product_trial.get_account_request_for_product_signup',
+			};
+		},
 	},
 	methods: {
 		openInstallAppPage(app) {
-			this.$router.push(`/install-app/${app}`);
-		}
-	}
+			this.$resources.getAccountRequestForProductSignup
+				.submit()
+				.then((account_request) =>
+					this.$router.push({
+						name: 'SignupSetup',
+						params: { productId: app.name },
+						query: {
+							account_request: account_request,
+						},
+					}),
+				);
+		},
+	},
 };
 </script>

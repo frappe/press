@@ -49,7 +49,7 @@
 				<Tooltip v-if="options.documentation" text="View documentation">
 					<div class="rounded-md bg-gray-100 p-1.5">
 						<a :href="options.documentation" target="_blank">
-							<FeatherIcon class="h-4 w-4" name="help-circle" />
+							<i-lucide-help-circle class="h-4 w-4" />
 						</a>
 					</div>
 				</Tooltip>
@@ -61,7 +61,7 @@
 				>
 					<template #icon>
 						<Tooltip text="Refresh">
-							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
+							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</Tooltip>
 					</template>
 				</Button>
@@ -146,7 +146,6 @@ import {
 	ListHeader,
 	ListRow,
 	TextInput,
-	FeatherIcon,
 	Tooltip,
 	ErrorMessage,
 } from 'frappe-ui';
@@ -167,7 +166,6 @@ export default {
 		ListHeader,
 		ListRow,
 		TextInput,
-		FeatherIcon,
 		Tooltip,
 		ErrorMessage,
 	},
@@ -289,6 +287,7 @@ export default {
 		columns() {
 			let columns = [];
 			for (let column of this.options.columns || []) {
+				if (column.condition && !column.condition(this.context)) continue;
 				columns.push({
 					...column,
 					label: column.label,

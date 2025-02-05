@@ -146,6 +146,7 @@ class Site(Document, TagHelpers):
 		hybrid_saas_pool: DF.Link | None
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
+		label: DF.Data | None
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
 		plan: DF.Link | None
@@ -203,6 +204,7 @@ class Site(Document, TagHelpers):
 		"host_name",
 		"skip_auto_updates",
 		"additional_system_user_created",
+		"label",
 	)
 
 	@staticmethod
@@ -1372,7 +1374,7 @@ class Site(Document, TagHelpers):
 				"doctype": "Team Change",
 				"document_type": "Site",
 				"document_name": self.name,
-				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id, "enabled": 1}),
 				"from_team": self.team,
 				"reason": reason,
 				"key": key,
@@ -1409,10 +1411,32 @@ class Site(Document, TagHelpers):
 		if self.additional_system_user_created:
 			team_user = frappe.db.get_value("Team", self.team, "user")
 			sid = self.get_login_sid(user=team_user)
-			return f"https://{self.host_name or self.name}/desk?sid={sid}"
+			if self.standby_for_product:
+				redirect_route = (
+					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
+					or "/desk"
+				)
+			else:
+				redirect_route = "/desk"
+			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 
 		frappe.throw("No additional system user created for this site")
 		return None
+
+	@site_action(["Active"])
+	def login_as_user(self, user_email, reason=None):
+		try:
+			sid = self.get_login_sid(user=user_email)
+			if self.standby_for_product:
+				redirect_route = (
+					frappe.db.get_value("Product Trial", self.standby_for_product, "redirect_to_after_login")
+					or "/desk"
+				)
+			else:
+				redirect_route = "/desk"
+			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
+		except Exception as e:
+			frappe.throw(str(e))
 
 	@frappe.whitelist()
 	def login(self, reason=None):
@@ -1613,6 +1637,62 @@ class Site(Document, TagHelpers):
 			analytics = self.fetch_analytics()
 		if analytics:
 			create_site_analytics(self.name, analytics)
+
+	def create_sync_user_webhook(self):
+		"""
+		Create 2 webhook records in the site to sync the user with press
+		- One for user record creation
+		- One for user record update
+		"""
+		conn = self.get_connection_as_admin()
+		doctype_data = {
+			"doctype": "Webhook",
+			"webhook_doctype": "User",
+			"enabled": 1,
+			"request_url": "https://frappecloud.com/api/method/press.api.site_login.sync_product_site_user",
+			"request_method": "POST",
+			"request_structure": "JSON",
+			"webhook_json": """{ "user_info": { "email": "{{doc.email}}", "enabled": "{{doc.enabled}}" } }""",
+			"webhook_headers": [
+				{"key": "x-site", "value": self.name},
+				{"key": "Content-Type", "value": "application/json"},
+				{"key": "x-site-token", "value": self.saas_communication_secret},
+			],
+		}
+
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on create",
+				"webhook_docevent": "after_insert",
+			}
+		)
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on update",
+				"webhook_docevent": "on_update",
+				"condition": """doc.has_value_changed("enabled")""",
+			}
+		)
+
+		conn.insert(
+			{
+				**doctype_data,
+				"name": "Sync User records with Frappe Cloud on delete",
+				"webhook_docevent": "on_trash",
+			}
+		)
+
+	def sync_users_to_product_site(self, analytics=None):
+		from press.press.doctype.site_user.site_user import create_user_for_product_site
+
+		if self.is_standby:
+			return
+		if not analytics:
+			analytics = self.fetch_analytics()
+		if analytics:
+			create_user_for_product_site(self.name, analytics)
 
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):

@@ -76,6 +76,7 @@ ALLOWED_DOCTYPES = [
 	"SQL Playground Log",
 	"Site Database User",
 	"Press Settings",
+	"Mpesa Payment Record",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
