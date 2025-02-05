@@ -26,7 +26,7 @@
 				<div class="flex items-center">
 					<h2 class="text-lg font-medium text-gray-900">{{ job.job_type }}</h2>
 					<Badge class="ml-2" :label="job.status" />
-					<div class="ml-auto space-x-2">
+					<div class="ml-auto flex items-center space-x-2">
 						<Button
 							@click="$resources.job.reload()"
 							:loading="$resources.job.get.loading"
