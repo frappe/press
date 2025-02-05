@@ -1281,20 +1281,25 @@ class VirtualMachine(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def attach_new_volume(self, size):
+	def attach_new_volume(self, size, iops=None, throughput=None):
 		if self.cloud_provider != "AWS EC2":
-			return
-		volume_id = self.client().create_volume(
-			AvailabilityZone=self.availability_zone,
-			Size=size,
-			VolumeType="gp3",
-			TagSpecifications=[
+			return None
+		volume_options = {
+			"AvailabilityZone": self.availability_zone,
+			"Size": size,
+			"VolumeType": "gp3",
+			"TagSpecifications": [
 				{
 					"ResourceType": "volume",
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-		)["VolumeId"]
+		}
+		if iops:
+			volume_options["Iops"] = iops
+		if throughput:
+			volume_options["Throughput"] = throughput
+		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 		return volume_id
