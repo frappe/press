@@ -175,7 +175,7 @@ class DeployCandidate(Document):
 		def get_job_duration_in_seconds(duration):
 			if not duration:
 				return 0
-			return float(rounded(duration.total_seconds(), 3))
+			return f"{float(rounded(duration.total_seconds(), 2))}s"
 
 		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
