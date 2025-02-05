@@ -1,12 +1,52 @@
+# Copyright (c) 2025, Frappe and contributors
+# For license information, please see license.txt
+
 import frappe
 import requests
+import json
 from frappe.model.document import Document
 from datetime import datetime
+from urllib.parse import urlparse
+from jinja2 import Template
 
 class BareMetalHost(Document):
     def validate(self):
         self.validate_resources()
-        self.check_api_connection()
+        self.validate_api_url()
+        self.initialize_resources()
+        self.validate_cloud_init_templates()
+
+    def validate_api_url(self):
+        """Validate API URL format"""
+        if not self.vm_api_url:
+            frappe.throw("VM API URL is required")
+        try:
+            result = urlparse(self.vm_api_url)
+            if not all([result.scheme, result.netloc]):
+                frappe.throw("Invalid API URL format. Must include protocol and host")
+        except Exception:
+            frappe.throw("Invalid API URL format")
+
+    def validate_cloud_init_templates(self):
+        """Validate cloud-init templates"""
+        if self.allow_custom_cloud_init:
+            # Validate custom templates if provided
+            if self.custom_user_data_template:
+                self._validate_jinja_template(self.custom_user_data_template, "Custom User Data Template")
+            if self.custom_meta_data_template:
+                self._validate_jinja_template(self.custom_meta_data_template, "Custom Meta Data Template")
+            if self.custom_network_config_template:
+                self._validate_jinja_template(self.custom_network_config_template, "Custom Network Config Template")
+
+    def _validate_jinja_template(self, template_str: str, template_name: str) -> None:
+        """Validate Jinja2 template syntax"""
+        try:
+            Template(template_str)
+        except Exception as e:
+            frappe.throw(f"Invalid Jinja2 template in {template_name}: {str(e)}")
+
+    def initialize_resources(self):
+        """Initialize resource values if not set"""
         if not self.available_cpu:
             self.available_cpu = self.total_cpu
         if not self.available_memory:
@@ -14,18 +54,15 @@ class BareMetalHost(Document):
         if not self.available_disk:
             self.available_disk = self.total_disk
 
-    def check_api_connection(self):
-        """Check if VM API is accessible"""
-        try:
-            response = requests.get(
-                f"{self.vm_api_url}/health",
-                timeout=self.vm_api_timeout
-            )
-            response.raise_for_status()
-        except Exception as e:
-            frappe.throw(f"VM API not accessible at {self.vm_api_url}: {str(e)}")
-
     def validate_resources(self):
+        """Validate resource configurations"""
+        if not self.total_cpu or self.total_cpu <= 0:
+            frappe.throw("Total CPU must be greater than 0")
+        if not self.total_memory or self.total_memory <= 0:
+            frappe.throw("Total Memory must be greater than 0")
+        if not self.total_disk or self.total_disk <= 0:
+            frappe.throw("Total Disk must be greater than 0")
+
         if self.available_cpu > self.total_cpu:
             frappe.throw("Available CPU cannot be more than total CPU")
         if self.available_memory > self.total_memory:
@@ -33,8 +70,38 @@ class BareMetalHost(Document):
         if self.available_disk > self.total_disk:
             frappe.throw("Available disk cannot be more than total disk")
 
+        # Ensure non-negative values
+        if self.available_cpu < 0:
+            self.available_cpu = 0
+        if self.available_memory < 0:
+            self.available_memory = 0
+        if self.available_disk < 0:
+            self.available_disk = 0
+
+    def check_api_connection(self):
+        """Check if VM API is accessible"""
+        try:
+            response = requests.get(
+                f"{self.vm_api_url}/health",
+                timeout=5,
+                verify=True  # Enable SSL verification
+            )
+            response.raise_for_status()
+            return True
+        except requests.exceptions.SSLError:
+            frappe.throw("SSL verification failed. Check the API URL and SSL certificate.")
+        except requests.exceptions.ConnectionError:
+            frappe.throw("Could not connect to API. Check if the service is running.")
+        except requests.exceptions.Timeout:
+            frappe.throw("API request timed out. Check the network connection.")
+        except requests.exceptions.RequestException as e:
+            frappe.throw(f"API connection failed: {str(e)}")
+
     def allocate_resources(self, cpu, memory, disk):
         """Allocate resources for a new VM"""
+        if not all(isinstance(x, (int, float)) for x in [cpu, memory, disk]):
+            frappe.throw("Resource values must be numbers")
+            
         if cpu > self.available_cpu:
             frappe.throw(f"Not enough CPU available. Required: {cpu}, Available: {self.available_cpu}")
         if memory > self.available_memory:
@@ -42,13 +109,16 @@ class BareMetalHost(Document):
         if disk > self.available_disk:
             frappe.throw(f"Not enough disk space available. Required: {disk}, Available: {self.available_disk}")
 
-        self.available_cpu -= cpu
-        self.available_memory -= memory
-        self.available_disk -= disk
+        self.available_cpu = max(0, self.available_cpu - cpu)
+        self.available_memory = max(0, self.available_memory - memory)
+        self.available_disk = max(0, self.available_disk - disk)
         self.save()
 
     def deallocate_resources(self, cpu, memory, disk):
         """Release resources when a VM is deleted"""
+        if not all(isinstance(x, (int, float)) for x in [cpu, memory, disk]):
+            frappe.throw("Resource values must be numbers")
+            
         self.available_cpu = min(self.total_cpu, self.available_cpu + cpu)
         self.available_memory = min(self.total_memory, self.available_memory + memory)
         self.available_disk = min(self.total_disk, self.available_disk + disk)
@@ -63,27 +133,62 @@ class BareMetalHost(Document):
             "Authorization": f"Bearer {api_key}"
         }
 
+    def get_cloud_init_config(self, vm_name: str, network_config: dict, custom_config: dict = None) -> dict:
+        """Generate cloud-init configuration for a VM"""
+        try:
+            context = {
+                "instance_id": vm_name,
+                "hostname": vm_name,
+                "ip_address": network_config.get("ip_address"),
+                "gateway": network_config.get("gateway"),
+                "netmask": network_config.get("netmask", "255.255.255.0"),
+                "nameservers": network_config.get("nameservers", ["8.8.8.8", "8.8.4.4"])
+            }
+
+            if custom_config:
+                context.update(custom_config)
+
+            if self.allow_custom_cloud_init and custom_config:
+                user_data = Template(self.custom_user_data_template or self.default_user_data).render(**context)
+                meta_data = Template(self.custom_meta_data_template or self.default_meta_data).render(**context)
+                network_conf = Template(self.custom_network_config_template or self.default_network_config).render(**context)
+            else:
+                user_data = Template(self.default_user_data).render(**context)
+                meta_data = Template(self.default_meta_data).render(**context)
+                network_conf = Template(self.default_network_config).render(**context)
+
+            return {
+                "user_data": user_data,
+                "meta_data": meta_data,
+                "network_config": network_conf
+            }
+        except Exception as e:
+            frappe.log_error(f"Error generating cloud-init config: {str(e)}")
+            frappe.throw("Failed to generate cloud-init configuration")
+
     def setup_network(self, name, ip_range, subnets):
         """Create network via VM experiments API"""
+        if not name or not ip_range or not subnets:
+            frappe.throw("Name, IP range and subnets are required")
+            
         try:
             response = requests.post(
                 f"{self.vm_api_url}/api/networks",
-                headers=self.get_headers(),
                 json={
                     "name": name,
                     "cidr": ip_range,
                     "subnets": subnets
                 },
-                timeout=self.vm_api_timeout
+                timeout=5,
+                verify=True
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.Timeout:
-            frappe.throw("Network creation timed out")
-        except Exception as e:
-            frappe.throw(f"Failed to setup network: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            frappe.log_error(f"Network setup failed: {str(e)}")
+            frappe.throw("Failed to setup network. Check the error log for details.")
 
-    def create_vm(self, name, network_id, **kwargs):
+    def create_vm(self, name: str, network_id: str, cloud_init_config: dict = None, **kwargs):
         """Create VM via VM experiments API"""
         try:
             # Allocate resources first
@@ -92,6 +197,13 @@ class BareMetalHost(Document):
                 kwargs.get('memory', 1024),
                 kwargs.get('disk', 20)
             )
+
+            # Generate cloud-init config if not provided
+            if not cloud_init_config:
+                cloud_init_config = self.get_cloud_init_config(
+                    name,
+                    kwargs.get('network_config', {})
+                )
 
             response = requests.post(
                 f"{self.vm_api_url}/api/vms",
@@ -102,10 +214,11 @@ class BareMetalHost(Document):
                     "cpu": kwargs.get('cpu', 1),
                     "memory": kwargs.get('memory', 1024),
                     "disk": kwargs.get('disk', 20),
+                    "cloud_init": cloud_init_config,
                     "created_at": datetime.now().isoformat(),
                     **kwargs
                 },
-                timeout=self.vm_api_timeout
+                timeout=30  # Longer timeout for VM creation
             )
             response.raise_for_status()
             return response.json()
@@ -124,7 +237,7 @@ class BareMetalHost(Document):
             response = requests.post(
                 f"{self.vm_api_url}/api/vms/{name}/start",
                 headers=self.get_headers(),
-                timeout=self.vm_api_timeout
+                timeout=30
             )
             response.raise_for_status()
             return response.json()
@@ -138,7 +251,7 @@ class BareMetalHost(Document):
                 f"{self.vm_api_url}/api/vms/{name}/stop",
                 headers=self.get_headers(),
                 json={"force": force},
-                timeout=self.vm_api_timeout
+                timeout=30
             )
             response.raise_for_status()
             return response.json()
@@ -151,7 +264,7 @@ class BareMetalHost(Document):
             response = requests.delete(
                 f"{self.vm_api_url}/api/vms/{name}",
                 headers=self.get_headers(),
-                timeout=self.vm_api_timeout
+                timeout=30
             )
             response.raise_for_status()
             return response.json()
@@ -160,17 +273,17 @@ class BareMetalHost(Document):
 
     def get_vm(self, name):
         """Get VM status"""
+        if not name:
+            frappe.throw("VM name is required")
+            
         try:
             response = requests.get(
                 f"{self.vm_api_url}/api/vms/{name}",
-                headers=self.get_headers(),
-                timeout=self.vm_api_timeout
+                timeout=5,
+                verify=True
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.Timeout:
-            frappe.log_error("VM status check timed out")
-            return None
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             frappe.log_error(f"Failed to get VM status: {str(e)}")
             return None 

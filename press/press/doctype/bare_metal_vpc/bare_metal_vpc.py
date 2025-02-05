@@ -10,14 +10,26 @@ from datetime import datetime
 class BareMetalVPC(Document):
     def validate(self):
         self.validate_cidr()
-        if not self.used_private_ips:
-            self.used_private_ips = json.dumps([])
-        if not self.used_public_ips:
-            self.used_public_ips = json.dumps([])
+        # Initialize IP lists if empty or invalid JSON
+        try:
+            if not self.used_private_ips:
+                self.used_private_ips = "[]"
+            else:
+                json.loads(self.used_private_ips)  # Validate JSON
+            
+            if not self.used_public_ips:
+                self.used_public_ips = "[]"
+            else:
+                json.loads(self.used_public_ips)  # Validate JSON
+        except json.JSONDecodeError:
+            self.used_private_ips = "[]"
+            self.used_public_ips = "[]"
 
     def validate_cidr(self):
         try:
-            ipaddress.ip_network(self.cidr)
+            network = ipaddress.ip_network(self.cidr)
+            if network.prefixlen > 28:  # Ensure subnet isn't too small
+                frappe.throw("CIDR prefix length must be 28 or less")
         except ValueError as e:
             frappe.throw(f"Invalid CIDR format: {str(e)}")
 

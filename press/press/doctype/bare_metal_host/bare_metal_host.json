@@ -19,7 +19,16 @@
   "status",
   "cluster",
   "api_settings_section",
-  "vm_api_url"
+  "vm_api_url",
+  "cloud_init_section",
+  "default_user_data",
+  "default_meta_data",
+  "default_network_config",
+  "custom_cloud_init_section",
+  "allow_custom_cloud_init",
+  "custom_user_data_template",
+  "custom_meta_data_template",
+  "custom_network_config_template"
  ],
  "fields": [
   {
@@ -106,6 +115,64 @@
    "fieldtype": "Data",
    "label": "VM API URL",
    "reqd": 1
+  },
+  {
+   "fieldname": "cloud_init_section",
+   "fieldtype": "Section Break",
+   "label": "Default Cloud-Init Configuration"
+  },
+  {
+   "fieldname": "default_user_data",
+   "fieldtype": "Code",
+   "label": "Default User Data",
+   "description": "Default cloud-init user-data configuration (in YAML format)",
+   "default": "#cloud-config\npackages:\n  - net-tools\n  - iproute2\n  - iptables\n  - netcat\n\nwrite_files:\n  - path: /etc/netplan/50-cloud-init.yaml\n    content: |\n      network:\n        version: 2\n        ethernets:\n          eth0:\n            dhcp4: true\n            nameservers:\n              addresses: [8.8.8.8, 8.8.4.4]\n\nruncmd:\n  - netplan apply\n  - iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE\n  - echo 1 > /proc/sys/net/ipv4/ip_forward"
+  },
+  {
+   "fieldname": "default_meta_data",
+   "fieldtype": "Code",
+   "label": "Default Meta Data",
+   "description": "Default cloud-init meta-data configuration",
+   "default": "instance-id: {instance_id}\nlocal-hostname: {hostname}"
+  },
+  {
+   "fieldname": "default_network_config",
+   "fieldtype": "Code",
+   "label": "Default Network Config",
+   "description": "Default cloud-init network configuration",
+   "default": "version: 2\nethernets:\n  eth0:\n    addresses: [{ip_address}/24]\n    gateway4: {gateway}\n    nameservers:\n      addresses: [8.8.8.8, 8.8.4.4]"
+  },
+  {
+   "fieldname": "custom_cloud_init_section",
+   "fieldtype": "Section Break",
+   "label": "Custom Cloud-Init Configuration"
+  },
+  {
+   "fieldname": "allow_custom_cloud_init",
+   "fieldtype": "Check",
+   "label": "Allow Custom Cloud-Init",
+   "description": "Allow VMs to specify custom cloud-init configurations"
+  },
+  {
+   "fieldname": "custom_user_data_template",
+   "fieldtype": "Code",
+   "label": "Custom User Data Template",
+   "description": "Template for custom user-data (supports Jinja2 templating)",
+   "depends_on": "eval:doc.allow_custom_cloud_init==1"
+  },
+  {
+   "fieldname": "custom_meta_data_template",
+   "fieldtype": "Code",
+   "label": "Custom Meta Data Template",
+   "description": "Template for custom meta-data (supports Jinja2 templating)",
+   "depends_on": "eval:doc.allow_custom_cloud_init==1"
+  },
+  {
+   "fieldname": "custom_network_config_template",
+   "fieldtype": "Code",
+   "label": "Custom Network Config Template",
+   "description": "Template for custom network configuration (supports Jinja2 templating)",
+   "depends_on": "eval:doc.allow_custom_cloud_init==1"
   }
  ],
  "index_web_pages_for_search": 1,
