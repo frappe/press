@@ -24,10 +24,10 @@
 			<div class="flex w-full items-center">
 				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
 				<Badge class="ml-2" :label="deploy.status" />
-				<div class="ml-auto space-x-2">
+				<div class="ml-auto flex items-center space-x-2">
 					<Button
 						@click="$resources.deploy.reload()"
-						:loading="$resources.deploy.loading"
+						:loading="$resources.deploy.get.loading"
 					>
 						<template #icon>
 							<i-lucide-refresh-ccw class="h-4 w-4" />
