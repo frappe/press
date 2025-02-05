@@ -1320,6 +1320,20 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolume.NotFound":
 				return "deleted"
 
+	def get_volume_modifications(self, volume_id):
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
+
+		# AWS EC2 specific https://docs.aws.amazon.com/ebs/latest/userguide/monitoring-volume-modifications.html
+
+		try:
+			return self.client().describe_volumes_modifications(VolumeIds=[volume_id])[
+				"VolumesModifications"
+			][0]
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
+				return None
+
 	def attach_volume(self, volume_id) -> str:
 		if self.cloud_provider != "AWS EC2":
 			raise NotImplementedError

@@ -7,6 +7,7 @@ import json
 import time
 from enum import Enum
 
+import botocore
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -61,7 +62,6 @@ class VirtualMachineShrink(Document):
 		self.add_devices()
 		self.add_filesystems()
 		self.create_new_volumes()
-		self.status = Status.Success
 		self.save()
 
 	def add_steps(self):
@@ -227,7 +227,9 @@ class VirtualMachineShrink(Document):
 			used_size = filesystem.size - filesystem.available
 			# New volume should be roughly 85% full after copying files
 			new_size = int(used_size * 100 / 85)
-			volume_id = machine.attach_new_volume(new_size)
+			new_size = max(new_size, 10)  # Minimum 10 GB
+			iops, throughput = self.get_optimal_performance_attributes()
+			volume_id = machine.attach_new_volume(new_size, iops=iops, throughput=throughput)
 			self.append(
 				"new_volumes",
 				{
@@ -237,14 +239,52 @@ class VirtualMachineShrink(Document):
 				},
 			)
 
+	def get_optimal_performance_attributes(self):
+		MAX_THROUGHPUT = 1000  # 1000 MB/s
+		MAX_BLOCK_SIZE = 256  # 256k
+		BUFFER = 1.2  # 20% buffer iops for overhead
+
+		throughput = MAX_THROUGHPUT
+		iops = int(BUFFER * throughput * 1024 / MAX_BLOCK_SIZE)
+
+		return iops, throughput
+
+	def increase_performance_old_volumes(self) -> StepStatus:
+		"Increase performance of old volumes"
+		machine = self.machine
+		iops, throughput = self.get_optimal_performance_attributes()
+		for volume in self.old_volumes:
+			machine.reload()
+			volume = find(machine.volumes, lambda v: v.volume_id == volume.volume_id)
+			if volume.iops == iops and volume.throughput == throughput:
+				continue
+			try:
+				machine.update_ebs_performance(volume.volume_id, iops, throughput)
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "VolumeModificationRateExceeded":
+					continue
+		return StepStatus.Success
+
+	def wait_for_increased_performance(self) -> StepStatus:
+		"Wait for increased performance to take effect"
+		machine = self.machine
+		for volume in self.old_volumes:
+			modification = machine.get_volume_modifications(volume.volume_id)
+			if modification and modification["ModificationState"] != "completed":
+				return StepStatus.Pending
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 	@property
 	def shrink_steps(self):
-		Wait, NoWait = True, False  # noqa: F841
-		methods = []
+		Wait, NoWait = True, False
+		methods = [
+			(self.increase_performance_old_volumes, NoWait),
+			(self.wait_for_increased_performance, Wait),
+		]
 
 		steps = []
 		for method, wait_for_completion in methods:
