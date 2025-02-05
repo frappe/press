@@ -140,49 +140,6 @@ frappe.ui.form.on('Virtual Machine', {
 		});
 		[
 			[
-				__('Update EBS Performance'),
-				'update_ebs_performance',
-				frm.doc.cloud_provider == 'AWS EC2',
-			],
-		].forEach(([label, method, condition]) => {
-			if (typeof condition === 'undefined' || condition) {
-				frm.add_custom_button(
-					label,
-					() => {
-						frappe.prompt(
-							[
-								{
-									fieldtype: 'Int',
-									label: 'IOPS',
-									fieldname: 'iops',
-									reqd: 1,
-									default: frm.doc.volumes[0].iops,
-								},
-								{
-									fieldtype: 'Int',
-									label: 'Throughput (MB/s)',
-									fieldname: 'throughput',
-									reqd: 1,
-									default: frm.doc.volumes[0].throughput,
-								},
-							],
-							({ iops, throughput }) => {
-								frm
-									.call(method, {
-										iops,
-										throughput,
-									})
-									.then((r) => frm.refresh());
-							},
-							__('Update EBS Performance'),
-						);
-					},
-					__('Actions'),
-				);
-			}
-		});
-		[
-			[
 				__('Update OCI Volume Performance'),
 				'update_oci_volume_performance',
 				frm.doc.cloud_provider == 'OCI',
@@ -352,6 +309,37 @@ frappe.ui.form.on('Virtual Machine Volume', {
 					.then((r) => frm.refresh());
 			},
 			__('Increase Disk Size'),
+		);
+	},
+	update_ebs_performance(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.prompt(
+			[
+				{
+					fieldtype: 'Int',
+					label: 'IOPS',
+					fieldname: 'iops',
+					reqd: 1,
+					default: row.iops,
+				},
+				{
+					fieldtype: 'Int',
+					label: 'Throughput (MB/s)',
+					fieldname: 'throughput',
+					reqd: 1,
+					default: row.throughput,
+				},
+			],
+			({ iops, throughput }) => {
+				frm
+					.call('update_ebs_performance', {
+						volume_id: row.volume_id,
+						iops,
+						throughput,
+					})
+					.then((r) => frm.refresh());
+			},
+			__('Update EBS Performance'),
 		);
 	},
 });

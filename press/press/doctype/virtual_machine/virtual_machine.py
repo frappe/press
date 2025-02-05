@@ -935,9 +935,9 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def update_ebs_performance(self, iops, throughput):
+	def update_ebs_performance(self, volume_id, iops, throughput):
 		if self.cloud_provider == "AWS EC2":
-			volume = self.volumes[0]
+			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			new_iops = int(iops) or volume.iops
 			new_throughput = int(throughput) or volume.throughput
 			self.client().modify_volume(

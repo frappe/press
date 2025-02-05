@@ -5,6 +5,7 @@ import json
 import boto3
 import frappe
 from frappe.utils import cint
+from frappe.core.utils import find
 
 
 def execute(filters=None):
@@ -144,9 +145,9 @@ def rightsize_volumes(filters):
 		row = frappe._dict(row)
 
 		machine = frappe.get_doc("Virtual Machine", row.virtual_machine)
-		volume = machine.volumes[0]
+		volume = find(machine.volumes, lambda v: v.volume_id == row.volume_id)
 
-		if volume.volume_id != row.volume_id:
+		if not volume:
 			# This volume is not managed by Press. Ignore
 			continue
 
@@ -159,7 +160,7 @@ def rightsize_volumes(filters):
 			continue
 
 		try:
-			machine.update_ebs_performance(iops, throughput)
+			machine.update_ebs_performance(volume.volume_id, iops, throughput)
 			machine.add_comment(
 				"Comment",
 				f"Rightsized EBS volume {volume.volume_id} from {volume.iops} IOPS and {volume.throughput} MB/s to {iops} IOPS and {throughput} MB/s",
