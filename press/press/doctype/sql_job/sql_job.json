@@ -56,6 +56,7 @@
   {
    "fieldname": "target_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Target Type",
    "options": "Site\nDatabase Server",
@@ -145,7 +146,7 @@
    "fieldname": "database_name",
    "fieldtype": "Data",
    "label": "Database Name",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "section_break_krvx",
@@ -190,12 +191,13 @@
    "fieldtype": "Link",
    "label": "Server",
    "options": "Database Server",
-   "reqd": 1
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-05 12:15:48.959309",
+ "modified": "2025-02-05 12:23:18.419074",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",

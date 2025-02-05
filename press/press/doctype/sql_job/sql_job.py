@@ -11,6 +11,7 @@ from frappe.model.document import Document
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.site.site import Site
 
 
 class SQLJob(Document):
@@ -27,7 +28,7 @@ class SQLJob(Document):
 		allow_any_query: DF.Check
 		allow_ddl_query: DF.Check
 		continue_on_error: DF.Check
-		database_name: DF.Data
+		database_name: DF.Data | None
 		job: DF.Link | None
 		job_type: DF.Data
 		lock_wait_timeout: DF.Int
@@ -36,7 +37,7 @@ class SQLJob(Document):
 		profile_query: DF.Check
 		queries: DF.Table[SQLJobQuery]
 		read_only: DF.Check
-		server: DF.Link
+		server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		target_document: DF.DynamicLink
 		target_type: DF.Literal["Site", "Database Server"]
@@ -51,10 +52,47 @@ class SQLJob(Document):
 	def validate(self):
 		if self.read_only and (self.allow_any_query or self.allow_ddl_query):
 			frappe.throw("You can run only DQL queries in read-only mode")
+		if self.target_type == "Database Server" and self.user_type != "Root User":
+			frappe.throw("Only root user can run queries on database servers")
 
 	def before_insert(self):
+		self.set_app_server()
+		self.set_database_name()
 		self.format_queries()
 		self.skip_invalid_queries()
+
+	def set_app_server(self):
+		if self.target_type == "Site":
+			self.server = frappe.db.get_value("Site", self.target_document, "server")
+		elif self.target_type == "Database Server":
+			database_server = self.target_document
+
+			# Try to find primary database server in case of replica setup
+			is_primary_db = frappe.db.get_value("Database Server", database_server, "is_primary")
+			if not is_primary_db:
+				database_server = frappe.db.get_value("Database Server", database_server, "primary")
+
+			self.server = frappe.db.get_value(
+				"Server",
+				{
+					"database_server": database_server,
+					"status": ["!=", "Archived"],
+				},
+			)
+
+	def set_database_name(self):
+		if self.target_type == "Database Server":
+			if not self.database_name:
+				# Default to mysql table
+				self.database_name = "mysql"
+		elif self.target_type == "Site":
+			self.database_name = frappe.db.get_value("Site", self.target_document, "database_name")
+			if not self.database_name:
+				site: Site = frappe.get_doc("Site", self.target_document)
+				site.sync_info()
+				self.database_name = site.database_name
+		else:
+			raise frappe.ValidationError("Invalid target type")
 
 	def format_queries(self):
 		# Format queries
