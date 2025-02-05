@@ -106,6 +106,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "In query, you can use <b>{{database_name}}</b> keyword to autofill while executing query.",
    "fieldname": "queries",
    "fieldtype": "Table",
    "label": "Queries",
@@ -190,14 +191,14 @@
    "fieldname": "server",
    "fieldtype": "Link",
    "label": "Server",
-   "options": "Database Server",
+   "options": "Server",
    "read_only": 1,
    "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-05 12:23:18.419074",
+ "modified": "2025-02-05 12:54:54.739294",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",

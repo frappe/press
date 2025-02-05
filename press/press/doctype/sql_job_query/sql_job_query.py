@@ -19,6 +19,7 @@ class SQLJobQuery(Document):
 		from frappe.types import DF
 
 		columns: DF.JSON | None
+		data: DF.JSON | None
 		duration: DF.Duration | None
 		error_code: DF.Data | None
 		error_message: DF.SmallText | None
@@ -27,7 +28,6 @@ class SQLJobQuery(Document):
 		parenttype: DF.Data
 		profile: DF.JSON | None
 		query: DF.SmallText
-		result: DF.JSON | None
 		row_count: DF.Int
 		skip: DF.Check
 		success: DF.Check

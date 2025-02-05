@@ -119,7 +119,7 @@ class SQLJob(Document):
 	@property
 	def prepared_sql_statement_list(self) -> list[str]:
 		statements = [
-			f"SET SESSION wait_timeout = {self.wait_timeout} /* config_wait_timeout_ */;",
+			f"SET SESSION wait_timeout = {self.wait_timeout} /* config_wait_timeout */;",
 			f"SET SESSION lock_wait_timeout = {self.lock_wait_timeout} /* config_lock_wait_timeout */;",
 			f"SET SESSION max_statement_time = {self.max_statement_time} /* config_statement_time */;",
 		]
@@ -130,7 +130,9 @@ class SQLJob(Document):
 		for q in self.queries:
 			if q.skip:
 				continue
-			statements.append(f"{q.query} /* query_{q.name} */;")
+			# Insert variables
+			query = q.query.replace("{{database_name}}", self.database_name)
+			statements.append(f"{query} /* query_{q.name} */;")
 
 		# Add profiling statements
 		if self.profile_query:

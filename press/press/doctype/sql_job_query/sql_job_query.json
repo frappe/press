@@ -16,7 +16,7 @@
   "error_message",
   "section_break_pgzo",
   "columns",
-  "result",
+  "data",
   "profile"
  ],
  "fields": [
@@ -81,13 +81,6 @@
   },
   {
    "default": "[]",
-   "fieldname": "result",
-   "fieldtype": "JSON",
-   "label": "Result",
-   "read_only": 1
-  },
-  {
-   "default": "[]",
    "fieldname": "columns",
    "fieldtype": "JSON",
    "label": "Columns",
@@ -98,12 +91,19 @@
    "fieldname": "skip",
    "fieldtype": "Check",
    "label": "Skip"
+  },
+  {
+   "default": "[]",
+   "fieldname": "data",
+   "fieldtype": "JSON",
+   "label": "Data",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-04 16:43:08.110539",
+ "modified": "2025-02-05 12:52:53.494672",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job Query",
