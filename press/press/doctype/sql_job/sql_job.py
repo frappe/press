@@ -124,6 +124,14 @@ class SQLJob(Document):
 
 	@property
 	def prepared_sql_statement_list(self) -> list[str]:
+		"""
+		Comment at the end of the query is important
+
+		<type>_<query_id_or_type_info>
+
+		query_a6gd59dsd -> In response, there will be record with query id is a6gd59dsd and type is query
+		profile_a6gd59dsd -> In response, there will be record with query id is a6gd59dsd and type is profile
+		"""
 		statements = [
 			f"SET SESSION wait_timeout = {self.wait_timeout} /* config_wait_timeout */;",
 			f"SET SESSION lock_wait_timeout = {self.lock_wait_timeout} /* config_lock_wait_timeout */;",
@@ -171,13 +179,58 @@ class SQLJob(Document):
 		job: AgentJob = frappe.get_doc("Agent Job", self.job)
 		job.cancel_job()
 
-	def process_response(self, status: str, response: list[dict] | None = None):
+	def process_response(self, status: str, response: list[dict] | None = None):  # noqa: C901
 		if status not in ["Success", "Failure"]:
 			return
+		if response is None:
+			response = []
+
 		self.status = status
 		if self.status == "Success":
-			# update queries
-			return
+			"""
+			Expected response format:
+			[
+				{
+					"success": True,
+					"id": query_id / type,
+					"type": query_type [query / profile / config],
+					"columns": [],
+					"data": [],
+					"row_count": row_count,
+					"duration": duration (in seconds),
+					"error_code": mysql error code (0 if unknown error),
+					"error_message": mysql error message,
+				}
+			]
+			"""
+			# Store the self.queries in a map
+			query_map = {q.name: q for q in self.queries}
+			for row in response:
+				record_type = row.get("type")
+				if record_type not in ["query", "profile"]:
+					# No need to process other types [i.e. config]
+					continue
+
+				query_id = row.get("id")
+				if query_id not in query_map:
+					continue
+
+				if record_type == "query":
+					query_map[query_id].success = row.get("success", False)
+					query_map[query_id].duration = row.get("duration", 0)
+					query_map[query_id].row_count = row.get("row_count", 0)
+					query_map[query_id].error_code = row.get("error_code", 0)
+					query_map[query_id].error_message = row.get("error_message", "")
+					query_map[query_id].data = json.dumps(row.get("data", []))
+					query_map[query_id].columns = json.dumps(row.get("columns", []))
+
+				elif record_type == "profile":
+					columns = row.get("columns", [])
+					profile_data = row.get("data", [])
+					query_map[query_id].profile = json.dumps(
+						list(map(lambda x: dict(zip(columns, x)), profile_data))
+					)
+
 		self.save()
 		process_sql_job_updates(self)
 
