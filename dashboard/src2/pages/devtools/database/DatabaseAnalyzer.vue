@@ -166,29 +166,30 @@
 				label="SQL Query Analysis"
 				subLabel="Check the concerning queries that might be affecting your database performance"
 			>
-				<FTabs
-					class="mt-1"
-					:tabs="queryTabs"
-					v-model="queryTabIndex"
-					v-if="queryTabs.length"
-				>
-					<template #tab-panel="{ tab }">
-						<DatabasePerformanceSchemaDisabledNotice
-							v-if="
-								(tab.label === 'Time Consuming Queries' ||
-									tab.label === 'Full Table Scan Queries') &&
-								!isPerformanceSchemaEnabled
-							"
-						/>
-						<ResultTable
-							v-else
-							:columns="tab.columns"
-							:data="tab.data"
-							:enableCSVExport="false"
-							:borderLess="true"
-						/>
-					</template>
-				</FTabs>
+				<div class="mt-1">
+					<FTabs
+						:tabs="queryTabs"
+						v-model="queryTabIndex"
+						v-if="queryTabs.length"
+					>
+						<template #tab-panel="{ tab }">
+							<DatabasePerformanceSchemaDisabledNotice
+								v-if="
+									(tab.label === 'Time Consuming Queries' ||
+										tab.label === 'Full Table Scan Queries') &&
+									!isPerformanceSchemaEnabled
+								"
+							/>
+							<ResultTable
+								v-else
+								:columns="tab.columns"
+								:data="tab.data"
+								:enableCSVExport="false"
+								:borderLess="true"
+							/>
+						</template>
+					</FTabs>
+				</div>
 			</ToggleContent>
 
 			<!-- Indexes Information -->
@@ -197,70 +198,71 @@
 				label="Database Index Analysis"
 				subLabel="Analyze the indexes of the database"
 			>
-				<FTabs
-					class="mt-1"
-					:tabs="databaseIndexesTab"
-					v-model="dbIndexTabIndex"
-					v-if="databaseIndexesTab.length"
-				>
-					<template #tab-panel="{ tab }">
-						<DatabasePerformanceSchemaDisabledNotice
-							v-if="
-								(tab.label === 'Unused Indexes' ||
-									tab.label === 'Suggested Indexes') &&
-								!isPerformanceSchemaEnabled
-							"
-						/>
-						<div v-else-if="tab.label === 'Suggested Indexes'">
-							<div
+				<div class="mt-1">
+					<FTabs
+						:tabs="databaseIndexesTab"
+						v-model="dbIndexTabIndex"
+						v-if="databaseIndexesTab.length"
+					>
+						<template #tab-panel="{ tab }">
+							<DatabasePerformanceSchemaDisabledNotice
 								v-if="
-									!isIndexSuggestionTriggered ||
-									this.$resources.suggestDatabaseIndexes.loading ||
-									this.fetchingDatabaseIndex
+									(tab.label === 'Unused Indexes' ||
+										tab.label === 'Suggested Indexes') &&
+									!isPerformanceSchemaEnabled
 								"
-								class="flex h-60 flex-col items-center justify-center gap-4"
-							>
-								<Button
-									variant="outline"
-									@click="
-										() => {
-											this.isIndexSuggestionTriggered = true;
-											this.$resources.suggestDatabaseIndexes.submit();
-										}
-									"
-									:loading="
+							/>
+							<div v-else-if="tab.label === 'Suggested Indexes'">
+								<div
+									v-if="
+										!isIndexSuggestionTriggered ||
 										this.$resources.suggestDatabaseIndexes.loading ||
 										this.fetchingDatabaseIndex
 									"
-									>Suggest Indexes</Button
+									class="flex h-60 flex-col items-center justify-center gap-4"
 								>
-								<p class="text-base text-gray-700">
-									This may take a while to analyze
-								</p>
+									<Button
+										variant="outline"
+										@click="
+											() => {
+												this.isIndexSuggestionTriggered = true;
+												this.$resources.suggestDatabaseIndexes.submit();
+											}
+										"
+										:loading="
+											this.$resources.suggestDatabaseIndexes.loading ||
+											this.fetchingDatabaseIndex
+										"
+										>Suggest Indexes</Button
+									>
+									<p class="text-base text-gray-700">
+										This may take a while to analyze
+									</p>
+								</div>
+								<ResultTable
+									v-else
+									:columns="suggestedDatabaseIndexes.columns"
+									:data="suggestedDatabaseIndexes.data"
+									:enableCSVExport="false"
+									:borderLess="true"
+									actionHeaderLabel="Add Index"
+									:actionComponent="DatabaseAddIndexButton"
+									:actionComponentProps="{
+										site: this.site,
+									}"
+									:isTruncateText="true"
+								/>
 							</div>
 							<ResultTable
 								v-else
-								:columns="suggestedDatabaseIndexes.columns"
-								:data="suggestedDatabaseIndexes.data"
+								:columns="tab.columns"
+								:data="tab.data"
 								:enableCSVExport="false"
 								:borderLess="true"
-								actionHeaderLabel="Add Index"
-								:actionComponent="DatabaseAddIndexButton"
-								:actionComponentProps="{
-									site: this.site,
-								}"
-								:isTruncateText="true"
 							/>
-						</div>
-						<ResultTable
-							v-else
-							:columns="tab.columns"
-							:data="tab.data"
-							:enableCSVExport="false"
-							:borderLess="true"
-						/>
-					</template>
-				</FTabs>
+						</template>
+					</FTabs>
+				</div>
 			</ToggleContent>
 
 			<DatabaseTableSchemaSizeDetailsDialog
