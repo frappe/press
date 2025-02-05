@@ -369,6 +369,7 @@ __persistent_cache_keys = [
 	"fc_oauth_state*",
 	"one_time_login_key*",
 	"press-auth-logs",
+	"rl:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.
