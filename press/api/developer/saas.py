@@ -165,6 +165,7 @@ def send_verification_code(domain: str, route: str = ""):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=5, seconds=60)
 def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
@@ -187,6 +188,7 @@ def verify_verification_code(domain: str, verification_code: str, route: str = "
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
 def login_to_fc(token: str):
 	email_cache_key = f"saas_fc_login_token:{token}"
 	domain_cache_key = f"saas_fc_login_site:{token}"
