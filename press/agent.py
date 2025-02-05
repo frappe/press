@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.sql_job.sql_job import SQLJob
 
 
 class Agent:
@@ -1319,6 +1320,40 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				"mariadb_root_password": get_mariadb_root_password(site),
 			},
 		)
+
+	def run_sql(self, sql_job: SQLJob) -> str | list[dict]:
+		data = {
+			"queries": sql_job.prepared_sql_statement_list,
+			"read_only": sql_job.read_only,
+			"database_name": sql_job.database_name,
+			"continue_on_error": sql_job.continue_on_error,
+			"async_task": sql_job.async_task,
+			"database_credential": {
+				"host": sql_job.get_database_host(),
+				"port": sql_job.get_database_port(),
+			},
+		}
+
+		if sql_job.target_type == "Database Server" or sql_job.user_type == "Root User":
+			data["database_credential"]["user"] = sql_job.get_database_root_user()
+			data["database_credential"]["password"] = sql_job.get_database_root_password()
+
+		if sql_job.target_type == "Site":
+			data["site"] = sql_job.target_document
+			data["bench"] = frappe.get_cached_value("Site", sql_job.target_document, "bench")
+
+		if sql_job.async_task:
+			return self.create_agent_job(
+				"Run SQL Query",
+				"/database/sql/execute",
+				data=data,
+				site=data.get("site"),
+				bench=data.get("bench"),
+				reference_doctype=sql_job.doctype,
+				reference_name=sql_job.name,
+			).name
+
+		return self.post("/database/sql/execute", data=data)
 
 
 class AgentCallbackException(Exception):

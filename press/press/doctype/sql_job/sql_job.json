@@ -14,7 +14,7 @@
   "database_name",
   "column_break_uaxw",
   "read_only",
-  "async",
+  "async_task",
   "job",
   "profile_query",
   "allow_ddl_query",
@@ -78,12 +78,6 @@
    "fieldname": "profile_query",
    "fieldtype": "Check",
    "label": "Profile Query"
-  },
-  {
-   "default": "0",
-   "fieldname": "async",
-   "fieldtype": "Check",
-   "label": "Async"
   },
   {
    "default": "0",
@@ -194,11 +188,17 @@
    "options": "Server",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "async_task",
+   "fieldtype": "Check",
+   "label": "Async Task"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-05 12:54:54.739294",
+ "modified": "2025-02-05 16:13:07.430344",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",

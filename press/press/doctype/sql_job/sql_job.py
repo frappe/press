@@ -3,11 +3,16 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import frappe
 import sqlparse
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
+
+from press.agent import Agent
+from press.utils import get_mariadb_host, get_mariadb_port, get_mariadb_root_password, get_mariadb_root_user
 
 if TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -27,6 +32,7 @@ class SQLJob(Document):
 
 		allow_any_query: DF.Check
 		allow_ddl_query: DF.Check
+		async_task: DF.Check
 		continue_on_error: DF.Check
 		database_name: DF.Data | None
 		job: DF.Link | None
@@ -144,12 +150,77 @@ class SQLJob(Document):
 
 	@frappe.whitelist()
 	def start(self):
-		pass
+		self.status = "Running"
+		agent = Agent(self.server)
+		try:
+			response = agent.run_sql(self)
+			if self.async_task:
+				self.job = response
+			else:
+				# process the response
+				self.process_response("Success", response)
+		except Exception:
+			self.status = "Failure"
+		finally:
+			self.save()
 
 	@frappe.whitelist()
 	def cancel(self):
-		pass
+		if not self.job:
+			return
+		job: AgentJob = frappe.get_doc("Agent Job", self.job)
+		job.cancel_job()
+
+	def process_response(self, status: str, response: list[dict] | None = None):
+		if status not in ["Success", "Failure"]:
+			return
+		self.status = status
+		if self.status == "Success":
+			# update queries
+			return
+		self.save()
+		process_sql_job_updates(self)
+
+	def get_database_root_password(self):
+		if self.target_type == "Database Server":
+			return get_decrypted_password("Database Server", self.target_document, "mariadb_root_password")
+		if self.target_type == "Site":
+			return get_mariadb_root_password(self.target_document)
+		raise frappe.ValidationError("Invalid target type")
+
+	def get_database_host(self):
+		if self.target_type == "Database Server":
+			return frappe.get_cached_value("Database Server", self.target_document, "private_ip")
+		if self.target_type == "Site":
+			return get_mariadb_host(self.target_document)
+		raise frappe.ValidationError("Invalid target type")
+
+	def get_database_port(self):
+		if self.target_type == "Database Server":
+			return 3306
+		if self.target_type == "Site":
+			return get_mariadb_port(self.target_document)
+		raise frappe.ValidationError("Invalid target type")
+
+	def get_database_root_user(self):
+		if self.target_type == "Database Server":
+			return frappe.get_cached_value("Database Server", self.target_document, "mariadb_root_user")
+		if self.target_type == "Site":
+			return get_mariadb_root_user(self.target_document)
+		raise frappe.ValidationError("Invalid target type")
 
 
-def process_job_updates(job: AgentJob):
+def process_agent_job_update(job: AgentJob):
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+	sql_job: SQLJob = frappe.get_doc("SQL Job", job.reference_name)
+	job_data = None
+	try:
+		job_data = json.loads(job.data)
+	except Exception:
+		job_data = None
+	sql_job.process_response(job.status, job_data)
+
+
+def process_sql_job_updates(job: SQLJob):
 	pass
