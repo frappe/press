@@ -101,10 +101,10 @@ export default {
 		if (!this.accountRequest) {
 			if (this?.$session?.logoutWithoutReload?.submit) {
 				this.$session.logoutWithoutReload.submit().then(() => {
-					this.redirectToSignup();
+					this.redirectToLogin();
 				});
 			} else {
-				this.redirectToSignup();
+				this.redirectToLogin();
 			}
 		} else {
 			this.$resources.siteRequest.fetch();
@@ -218,12 +218,9 @@ export default {
 			}
 			return { server, pingTime };
 		},
-		redirectToSignup() {
+		redirectToLogin() {
 			this.$router.push({
-				name: 'SaaSSignup',
-				params: {
-					productId: this.productId,
-				},
+				name: 'Login',
 			});
 		},
 	},
