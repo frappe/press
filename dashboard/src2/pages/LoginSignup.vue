@@ -313,6 +313,27 @@ export default {
 					this.accountRequestCreated = true;
 					toast.success('Verification code sent to your email');
 				},
+				onError: (error) => {
+					if (error?.exc_type !== 'ValidationError') {
+						return;
+					}
+					let errorMessage = '';
+					if ((error?.messages ?? []).length) {
+						errorMessage = error?.messages?.[0];
+					}
+					// check if error message has `is already registered` substring
+					if (errorMessage.includes('is already registered')) {
+						localStorage.setItem('login_email', this.email);
+						if (this.saasProduct) {
+							this.$router.push({
+								name: 'Site Login',
+							});
+						} else
+							this.$router.push({
+								name: 'Login',
+							});
+					}
+				},
 			};
 		},
 		verifyOTP() {
