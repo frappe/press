@@ -77,7 +77,11 @@
 							<FormControl type="checkbox" v-model="termsAccepted" />
 							<label class="text-base text-gray-700">
 								I accept the
-								<Link href="https://frappecloud.com/policies" target="_blank">
+								<Link
+									class="!text-gray-700"
+									href="https://frappecloud.com/policies"
+									target="_blank"
+								>
 									Terms and Policies
 								</Link>
 							</label>
@@ -85,7 +89,7 @@
 					</div>
 					<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
 					<Button
-						class="mt-4"
+						class="mt-6"
 						variant="solid"
 						:loading="$resources.setupAccount.loading"
 					>
