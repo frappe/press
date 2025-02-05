@@ -31,11 +31,16 @@ class VirtualMachineShrink(Document):
 		from press.infrastructure.doctype.virtual_machine_shrink_filesystem.virtual_machine_shrink_filesystem import (
 			VirtualMachineShrinkFilesystem,
 		)
+		from press.infrastructure.doctype.virtual_machine_shrink_volume.virtual_machine_shrink_volume import (
+			VirtualMachineShrinkVolume,
+		)
 
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		filesystems: DF.Table[VirtualMachineShrinkFilesystem]
 		name: DF.Int | None
+		new_volumes: DF.Table[VirtualMachineShrinkVolume]
+		old_volumes: DF.Table[VirtualMachineShrinkVolume]
 		parsed_devices: DF.Code | None
 		parsed_filesystems: DF.Code | None
 		raw_devices: DF.Code | None
@@ -52,8 +57,10 @@ class VirtualMachineShrink(Document):
 		self.add_steps()
 
 	def after_insert(self):
+		self.add_old_volumes()
 		self.add_devices()
 		self.add_filesystems()
+		self.create_new_volumes()
 		self.status = Status.Success
 		self.save()
 
@@ -197,6 +204,38 @@ class VirtualMachineShrink(Document):
 				}
 			)
 			self.append("filesystems", filesystem)
+
+	def add_old_volumes(self):
+		machine = self.machine
+		root_volume = machine.get_root_volume()
+		for volume in machine.volumes:
+			if volume.volume_id == root_volume.volume_id:
+				continue
+			self.append(
+				"old_volumes",
+				{
+					"volume_id": volume.volume_id,
+					"status": "Attached",
+					"size": volume.size,
+				},
+			)
+
+	def create_new_volumes(self):
+		# Create new volumes for the filesystems
+		machine = self.machine
+		for filesystem in self.filesystems:
+			used_size = filesystem.size - filesystem.available
+			# New volume should be roughly 85% full after copying files
+			new_size = int(used_size * 100 / 85)
+			volume_id = machine.attach_new_volume(new_size)
+			self.append(
+				"new_volumes",
+				{
+					"volume_id": volume_id,
+					"status": "Attached",
+					"size": new_size,
+				},
+			)
 
 	@property
 	def machine(self):

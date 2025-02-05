@@ -1297,6 +1297,7 @@ class VirtualMachine(Document):
 		)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
+		return volume_id
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
@@ -1347,11 +1348,19 @@ class VirtualMachine(Document):
 	def detach(self, volume_id):
 		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 		if not volume:
-			return
+			return False
 		self.client().detach_volume(
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)
 		self.sync()
+		return True
+
+	@frappe.whitelist()
+	def delete_volume(self, volume_id):
+		if self.detach(volume_id):
+			self.wait_for_volume_to_be_available(volume_id)
+			self.client().delete_volume(VolumeId=volume_id)
+			self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

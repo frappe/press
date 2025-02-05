@@ -110,7 +110,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -321,6 +321,16 @@ frappe.ui.form.on('Virtual Machine Volume', {
 			() =>
 				frm
 					.call('detach', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
+	},
+	delete_volume(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to delete volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('delete_volume', { volume_id: row.volume_id })
 					.then((r) => frm.refresh()),
 		);
 	},

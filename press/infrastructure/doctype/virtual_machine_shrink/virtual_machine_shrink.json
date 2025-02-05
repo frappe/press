@@ -18,7 +18,10 @@
   "parsed_filesystems",
   "filesystems",
   "section_break_mjhg",
-  "steps"
+  "steps",
+  "volumes_section",
+  "old_volumes",
+  "new_volumes"
  ],
  "fields": [
   {
@@ -117,11 +120,30 @@
    "label": "Filesystems",
    "options": "Virtual Machine Shrink Filesystem",
    "read_only": 1
+  },
+  {
+   "fieldname": "volumes_section",
+   "fieldtype": "Section Break",
+   "label": "Volumes"
+  },
+  {
+   "fieldname": "old_volumes",
+   "fieldtype": "Table",
+   "label": "Old Volumes",
+   "options": "Virtual Machine Shrink Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_volumes",
+   "fieldtype": "Table",
+   "label": "New Volumes",
+   "options": "Virtual Machine Shrink Volume",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-03 16:22:42.574048",
+ "modified": "2025-02-05 11:39:19.394128",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Shrink",
