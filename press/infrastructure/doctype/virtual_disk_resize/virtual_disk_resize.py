@@ -239,7 +239,7 @@ class VirtualDiskResize(Document):
 		if not self.old_volume_id:
 			self.set_old_volume_id()
 
-		volume = find(self.machine.volumes, lambda v: v.volume_id == self.old_volume_id)
+		volume = self.old_volume
 		self.old_volume_size = volume.size
 		self.old_volume_iops = volume.iops
 		self.old_volume_throughput = volume.throughput
@@ -269,29 +269,24 @@ class VirtualDiskResize(Document):
 
 		return iops, throughput
 
-	def increase_performance_old_volumes(self) -> StepStatus:
-		"Increase performance of old volumes"
-		machine = self.machine
+	def increase_old_volume_performance(self) -> StepStatus:
+		"Increase performance of old volume"
 		iops, throughput = self.get_optimal_performance_attributes()
-		for volume in self.old_volumes:
-			machine.reload()
-			volume = find(machine.volumes, lambda v: v.volume_id == volume.volume_id)
-			if volume.iops == iops and volume.throughput == throughput:
-				continue
-			try:
-				machine.update_ebs_performance(volume.volume_id, iops, throughput)
-			except botocore.exceptions.ClientError as e:
-				if e.response.get("Error", {}).get("Code") == "VolumeModificationRateExceeded":
-					continue
+		volume = self.old_volume
+		if volume.iops == iops and volume.throughput == throughput:
+			return StepStatus.Success
+		try:
+			self.machine.update_ebs_performance(volume.volume_id, iops, throughput)
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "VolumeModificationRateExceeded":
+				return StepStatus.Failure
 		return StepStatus.Success
 
 	def wait_for_increased_performance(self) -> StepStatus:
 		"Wait for increased performance to take effect"
-		machine = self.machine
-		for volume in self.old_volumes:
-			modification = machine.get_volume_modifications(volume.volume_id)
-			if modification and modification["ModificationState"] != "completed":
-				return StepStatus.Pending
+		modification = self.machine.get_volume_modifications(self.old_volume.volume_id)
+		if modification and modification["ModificationState"] != "completed":
+			return StepStatus.Pending
 		return StepStatus.Success
 
 	@property
@@ -299,10 +294,14 @@ class VirtualDiskResize(Document):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
 
 	@property
+	def old_volume(self):
+		return find(self.machine.volumes, lambda v: v.volume_id == self.old_volume_id)
+
+	@property
 	def shrink_steps(self):
 		Wait, NoWait = True, False
 		methods = [
-			(self.increase_performance_old_volumes, NoWait),
+			(self.increase_old_volume_performance, NoWait),
 			(self.wait_for_increased_performance, Wait),
 		]
 
