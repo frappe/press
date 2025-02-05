@@ -130,7 +130,6 @@
 <script setup>
 import { computed, inject, ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { get, set } from 'idb-keyval';
 import { createResource } from 'frappe-ui';
 import LoginBox from '../components/auth/LoginBox.vue';
 import { getToastErrorMessage } from '../utils/toast';
@@ -140,16 +139,9 @@ import { userCurrency } from '../utils/format';
 const team = inject('team');
 const session = inject('session');
 
-const email = ref('');
+const email = ref(localStorage.getItem('product_site_user') || '');
 const otp = ref('');
 const showOTPField = ref(false);
-const selectedSite = ref(null);
-
-get('product_site_user').then((e) => {
-	if (e) {
-		email.value = e;
-	}
-});
 
 const goBack = () => {
 	sites.reset();
@@ -208,7 +200,7 @@ const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
 	onSuccess: () => {
 		showOTPField.value = true;
-		if (email.value) set('product_site_user', email.value);
+		if (email.value) localStorage.setItem('site_login_email', email.value);
 	},
 });
 
@@ -233,11 +225,9 @@ function sendOTP() {
 const verifyOTPMethod = createResource({
 	url: 'press.api.site_login.verify_otp',
 	onSuccess: () => {
-		// showOTPField.value = false;
 		sites.submit({
 			user: email.value,
 		});
-		// loginToSite(selectedSite.value.name);
 		otp.value = '';
 	},
 });
@@ -274,11 +264,10 @@ function planTitle(site) {
 	return site.plan_title;
 }
 
-const subtitle = ref(
-	sites.fetched && sites.data.length !== 0
-		? `Pick a site to log in to as ${email || session.user}`
-		: !sites.fetched
-			? 'Enter your email and verification code to access your site'
-			: '',
-);
+const subtitle = computed(() => {
+	if (sites.fetched && sites.data.length !== 0)
+		return `Pick a site to log in to as ${email.value || session.user}`;
+	else if (!sites.fetched) return 'Enter your email to access your site';
+	else return '';
+});
 </script>
