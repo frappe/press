@@ -9,7 +9,7 @@ from enum import Enum
 
 import botocore
 import frappe
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -17,7 +17,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 SUPPORTED_FILESYSTEMS = ["ext4"]
 
 
-class VirtualMachineShrink(Document):
+class VirtualDiskResize(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -29,23 +29,29 @@ class VirtualMachineShrink(Document):
 		from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 			VirtualMachineMigrationStep,
 		)
-		from press.infrastructure.doctype.virtual_machine_shrink_filesystem.virtual_machine_shrink_filesystem import (
-			VirtualMachineShrinkFilesystem,
-		)
-		from press.infrastructure.doctype.virtual_machine_shrink_volume.virtual_machine_shrink_volume import (
-			VirtualMachineShrinkVolume,
-		)
 
+		devices: DF.Code | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
-		filesystems: DF.Table[VirtualMachineShrinkFilesystem]
+		filesystem_mount_point: DF.Data | None
+		filesystem_type: DF.Data | None
+		filesystems: DF.Code | None
 		name: DF.Int | None
-		new_volumes: DF.Table[VirtualMachineShrinkVolume]
-		old_volumes: DF.Table[VirtualMachineShrinkVolume]
-		parsed_devices: DF.Code | None
-		parsed_filesystems: DF.Code | None
-		raw_devices: DF.Code | None
-		raw_filesystems: DF.Code | None
+		new_filesystem_uuid: DF.Data | None
+		new_volume_id: DF.Data | None
+		new_volume_iops: DF.Int
+		new_volume_size: DF.Int
+		new_volume_status: DF.Literal["Unprovisioned", "Attached"]
+		new_volume_throughput: DF.Int
+		old_filesystem_device: DF.Data | None
+		old_filesystem_size: DF.Int
+		old_filesystem_used: DF.Int
+		old_filesystem_uuid: DF.Data | None
+		old_volume_id: DF.Data | None
+		old_volume_iops: DF.Int
+		old_volume_size: DF.Int
+		old_volume_status: DF.Literal["Attached", "Deleted"]
+		old_volume_throughput: DF.Int
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
@@ -55,13 +61,13 @@ class VirtualMachineShrink(Document):
 	def before_insert(self):
 		self.validate_aws_only()
 		self.validate_existing_migration()
+		self.set_old_volume_attributes()
 		self.add_steps()
 
 	def after_insert(self):
-		self.add_old_volumes()
-		self.add_devices()
-		self.add_filesystems()
-		self.create_new_volumes()
+		self.set_filesystem_attributes()
+		self.set_new_volume_attributes()
+		self.create_new_volume()
 		self.save()
 
 	def add_steps(self):
@@ -86,32 +92,50 @@ class VirtualMachineShrink(Document):
 		):
 			frappe.throw(f"An existing shrink document is already {existing[0].lower()}.")
 
-	def add_devices(self):
-		command = "lsblk --json --output name,type,uuid,mountpoint,size,fstype"
+	def set_filesystem_attributes(self):
+		devices = self.fetch_devices()
+		if len(devices) != 1:
+			frappe.throw("Multiple filesystems found on volume. Can't shrink")
+
+		self.old_filesystem_device = f"/dev/{devices[0]['name']}"
+
+		filesystems = self.fetch_filesystems()
+
+		self.verify_mount_point(devices[0], filesystems[0])
+		self.set_old_filesystem_attributes(devices[0], filesystems[0])
+
+		self.devices = json.dumps(devices, indent=2)
+		self.filesystems = json.dumps(filesystems, indent=2)
+
+	def fetch_devices(self):
+		device_name = self._get_device_from_volume_id(self.old_volume_id)
+		command = f"lsblk --json --output name,type,uuid,mountpoint,size,fstype {device_name}"
 		output = self.ansible_run(command)["output"]
 
-		"""Sample output of the command
+		"""Sample outputs of the command
 		{
 			"blockdevices": [
-				{"name":"loop0", "type":"loop", "uuid":null, "mountpoint":"/snap/amazon-ssm-agent/9882", "size":"22.9M", "fstype":null},
-				{"name":"loop1", "type":"loop", "uuid":null, "mountpoint":"/snap/core20/2437", "size":"59.5M", "fstype":null},
-				{"name":"loop2", "type":"loop", "uuid":null, "mountpoint":"/snap/core22/1720", "size":"68.9M", "fstype":null},
-				{"name":"loop3", "type":"loop", "uuid":null, "mountpoint":"/snap/lxd/29631", "size":"92M", "fstype":null},
-				{"name":"loop4", "type":"loop", "uuid":null, "mountpoint":"/snap/snapd/23546", "size":"38.7M", "fstype":null},
-				{"name":"loop5", "type":"loop", "uuid":null, "mountpoint":"/snap/core22/1752", "size":"68.9M", "fstype":null},
-				{"name":"nvme0n1", "type":"disk", "uuid":null, "mountpoint":null, "size":"8G", "fstype":null,
+				{"name":"nvme1n1", "type":"disk", "uuid":null, "mountpoint":null, "size":"200G", "fstype":null,
 					"children": [
-						{"name":"nvme0n1p1", "type":"part", "uuid":"b113b841-a1ab-417c-8e6d-a6167e2b26df", "mountpoint":"/", "size":"7.9G", "fstype":"ext4"},
-						{"name":"nvme0n1p15", "type":"part", "uuid":"9A05-3AFC", "mountpoint":"/boot/efi", "size":"99M", "fstype":"vfat"}
+						{"name":"nvme1n1p1", "type":"part", "uuid":"db7f5fbc-cf4b-45ae-985d-11e4b2222934", "mountpoint":"/opt/volumes/mariadb", "size":"199.9G", "fstype":"ext4"},
+						{"name":"nvme1n1p14", "type":"part", "uuid":null, "mountpoint":null, "size":"4M", "fstype":null},
+						{"name":"nvme1n1p15", "type":"part", "uuid":"1284-3BC2", "mountpoint":null, "size":"106M", "fstype":"vfat"}
 					]
-				},
+				}
+			]
+		}
+
+		{
+			"blockdevices": [
 				{"name":"nvme1n1", "type":"disk", "uuid":"d7ed9d71-e496-4ea7-b141-dffb3b1f4884", "mountpoint":"/opt/volumes/mariadb", "size":"20G", "fstype":"ext4"}
 			]
-		}"""
-		devices = json.loads(output)["blockdevices"]
-		self.raw_devices = json.dumps(devices, indent=2)
-		self.parsed_devices = json.dumps(self._parse_devices(devices), indent=2)
-		self.save()
+		}
+		"""
+		return self._parse_devices(json.loads(output)["blockdevices"])
+
+	def _get_device_from_volume_id(self, volume_id):
+		stripped_id = volume_id.replace("-", "")
+		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
 
 	def _parse_devices(self, devices):
 		parsed = []
@@ -123,14 +147,22 @@ class VirtualMachineShrink(Document):
 			# Disk has partitions. e.g root volume
 			if "children" in device:
 				for partition in device["children"]:
+					# We only care about data filesystems (ext4)
+					# Exclude tmpfs, squashfs, devtmpfs, etc
+					if partition["fstype"] not in SUPPORTED_FILESYSTEMS:
+						continue
 					if partition["type"] == "part":
 						parsed.append(partition)
 			else:
 				# Single partition. e.g data volume
+				# We only care about data filesystems (ext4)
+				# Exclude tmpfs, squashfs, devtmpfs, etc
+				if device["fstype"] not in SUPPORTED_FILESYSTEMS:
+					continue
 				parsed.append(device)
 		return parsed
 
-	def add_filesystems(self):
+	def fetch_filesystems(self):
 		command = "df -k --sync --local --print-type"
 		# Note: ansible run doesn't support --arg=value syntax
 		output = self.ansible_run(command)["output"]
@@ -152,11 +184,22 @@ class VirtualMachineShrink(Document):
 			/dev/loop5      squashfs     70528   70528         0 100% /snap/core22/1752
 			tmpfs           tmpfs       393240       0    393240   0% /run/user/0
 		"""
+		return self._parse_filesystems(output)
+
+	def _parse_filesystems(self, raw_filesystems):
 		filesystems = []
-		for line in output.splitlines()[1:]:  # Skip the header
+		for line in raw_filesystems.splitlines()[1:]:  # Skip the header
 			if not line:
 				continue
 			filesystem, type, size, used, available, *_, mountpoint = line.split()
+			# We only care about data filesystems (ext4)
+			# Exclude tmpfs, squashfs, devtmpfs, etc
+			if type not in SUPPORTED_FILESYSTEMS:
+				continue
+
+			if filesystem != self.old_filesystem_device:
+				continue
+
 			# size and used are number of 1k blocks. We convert them to GB
 			# AWS sizing API deals with integer GB
 			filesystems.append(
@@ -169,75 +212,52 @@ class VirtualMachineShrink(Document):
 					"available": frappe.utils.rounded(int(available) / (1024 * 1024), 1),
 				}
 			)
+		return filesystems
 
-		self.raw_filesystems = json.dumps(filesystems, indent=2)
-		parsed_filesystems = self._parse_filesystems(filesystems)
-		self.parsed_filesystems = json.dumps(parsed_filesystems, indent=2)
-		self.add_filesystems_to_table(parsed_filesystems)
-		self.save()
+	def verify_mount_point(self, device, filesystem):
+		if device["mountpoint"] != filesystem["mount_point"]:
+			frappe.throw("Device and Filesystem mount point don't match. Can't shrink")
 
-	def _parse_filesystems(self, filesystems):
-		parsed = []
-		for filesystem in filesystems:
-			# We only care about data filesystems (ext4)
-			# Exclude tmpfs, squashfs, devtmpfs, etc
-			if filesystem["type"] not in SUPPORTED_FILESYSTEMS:
-				continue
+	def set_old_filesystem_attributes(self, device, filesystem):
+		self.filesystem_mount_point = device["mountpoint"]
+		self.filesystem_type = device["fstype"]
+		self.old_filesystem_uuid = device["uuid"]
+		self.old_filesystem_size = filesystem["size"]
+		self.old_filesystem_used = filesystem["used"]
 
-			parsed.append(filesystem)
-		return parsed
-
-	def add_filesystems_to_table(self, filesystems):
-		parsed_devices = json.loads(self.parsed_devices)
-		mounts = self.machine.get_server().mounts
-		for filesystem in filesystems:
-			device = find(parsed_devices, lambda d: d["mountpoint"] == filesystem["mount_point"])
-			mount = find(mounts, lambda m: m.mount_point == filesystem["mount_point"])
-
-			if not device or not mount:
-				continue
-
-			filesystem.update(
-				{
-					"uuid": device["uuid"],
-					"volume_id": mount.volume_id,
-				}
-			)
-			self.append("filesystems", filesystem)
-
-	def add_old_volumes(self):
+	def set_old_volume_id(self):
 		machine = self.machine
 		root_volume = machine.get_root_volume()
-		for volume in machine.volumes:
-			if volume.volume_id == root_volume.volume_id:
-				continue
-			self.append(
-				"old_volumes",
-				{
-					"volume_id": volume.volume_id,
-					"status": "Attached",
-					"size": volume.size,
-				},
-			)
 
-	def create_new_volumes(self):
-		# Create new volumes for the filesystems
-		machine = self.machine
-		for filesystem in self.filesystems:
-			used_size = filesystem.size - filesystem.available
-			# New volume should be roughly 85% full after copying files
-			new_size = int(used_size * 100 / 85)
-			new_size = max(new_size, 10)  # Minimum 10 GB
-			iops, throughput = self.get_optimal_performance_attributes()
-			volume_id = machine.attach_new_volume(new_size, iops=iops, throughput=throughput)
-			self.append(
-				"new_volumes",
-				{
-					"volume_id": volume_id,
-					"status": "Attached",
-					"size": new_size,
-				},
-			)
+		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
+		if len(volumes) != 1:
+			frappe.throw("Multiple volumes found. Please select the volume to shrink")
+
+		self.old_volume_id = volumes[0].volume_id
+
+	def set_old_volume_attributes(self):
+		if not self.old_volume_id:
+			self.set_old_volume_id()
+
+		volume = find(self.machine.volumes, lambda v: v.volume_id == self.old_volume_id)
+		self.old_volume_size = volume.size
+		self.old_volume_iops = volume.iops
+		self.old_volume_throughput = volume.throughput
+
+	def set_new_volume_attributes(self):
+		# Set size and performance attributes for new volume
+		# New volume should be roughly 85% full after copying files
+		new_size = int(self.old_filesystem_used * 100 / 85)
+		self.new_filesystem_size = max(new_size, 10)  # Minimum 10 GB
+		self.new_volume_size = self.new_filesystem_size
+		self.new_volume_iops, self.new_volume_throughput = self.get_optimal_performance_attributes()
+
+	def create_new_volume(self):
+		# Create new volume
+		self.new_volume_id = self.machine.attach_new_volume(
+			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+		)
+		self.new_volume_status = "Attached"
 
 	def get_optimal_performance_attributes(self):
 		MAX_THROUGHPUT = 1000  # 1000 MB/s

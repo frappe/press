@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestVirtualMachineShrink(UnitTestCase):
+class UnitTestVirtualDiskResize(UnitTestCase):
 	"""
-	Unit tests for VirtualMachineShrink.
+	Unit tests for VirtualDiskResize.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestVirtualMachineShrink(IntegrationTestCase):
+class IntegrationTestVirtualDiskResize(IntegrationTestCase):
 	"""
-	Integration tests for VirtualMachineShrink.
+	Integration tests for VirtualDiskResize.
 	Use this class for testing interactions between multiple components.
 	"""
 
