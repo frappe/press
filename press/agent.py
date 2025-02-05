@@ -1344,7 +1344,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 		if sql_job.async_task:
 			return self.create_agent_job(
-				"Run SQL Query",
+				"Run SQL Queries",
 				"/database/sql/execute",
 				data=data,
 				site=data.get("site"),

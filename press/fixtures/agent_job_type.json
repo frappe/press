@@ -2407,5 +2407,20 @@
     "step_name": "Wait for Enqueued Jobs"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-02-05 19:21:12.508888",
+  "name": "Run SQL Queries",
+  "request_method": "POST",
+  "request_path": "/database/sql/execute",
+  "steps": [
+   {
+     "step_name": "Run SQL Queries"
+   }
+  ]
  }
 ]
