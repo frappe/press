@@ -3,7 +3,7 @@
 		class="px-5 py-10"
 		v-if="$team?.doc"
 		:class="{
-			'h-max sm:bg-gray-50':
+			'h-max min-h-full sm:bg-gray-50':
 				!$team.doc.onboarding.is_saas_user &&
 				!$team.doc.onboarding.site_created,
 		}"

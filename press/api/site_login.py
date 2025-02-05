@@ -123,7 +123,9 @@ def login_to_site(email: str, site: str):
 	"""
 	session_id = frappe.local.request.cookies.get("site_user_sid")
 	if not session_id or not isinstance(session_id, str):
-		return frappe.throw("Invalid session")
+		if frappe.session.user == "Guest":
+			return frappe.throw("Invalid session")
+		frappe.get_doc({"doctype": "Site User Session", "user": email}).insert()
 
 	site_user_name = frappe.db.get_value("Site User", {"user": email, "site": site}, "name")
 	if not site_user_name:

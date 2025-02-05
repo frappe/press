@@ -185,7 +185,7 @@ function loginToSite(siteName) {
 
 	toast.promise(
 		login.submit({
-			email: email.value,
+			email: email.value || session.user,
 			site: siteName,
 		}),
 		{
