@@ -8,6 +8,7 @@ import time
 from enum import Enum
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -27,9 +28,13 @@ class VirtualMachineShrink(Document):
 		from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
 			VirtualMachineMigrationStep,
 		)
+		from press.infrastructure.doctype.virtual_machine_shrink_filesystem.virtual_machine_shrink_filesystem import (
+			VirtualMachineShrinkFilesystem,
+		)
 
 		duration: DF.Duration | None
 		end: DF.Datetime | None
+		filesystems: DF.Table[VirtualMachineShrinkFilesystem]
 		name: DF.Int | None
 		parsed_devices: DF.Code | None
 		parsed_filesystems: DF.Code | None
@@ -151,7 +156,7 @@ class VirtualMachineShrink(Document):
 				{
 					"filesystem": filesystem,
 					"type": type,
-					"mountpoint": mountpoint,
+					"mount_point": mountpoint,
 					"size": frappe.utils.rounded(int(size) / (1024 * 1024), 1),
 					"used": frappe.utils.rounded(int(used) / (1024 * 1024), 1),
 					"available": frappe.utils.rounded(int(available) / (1024 * 1024), 1),
@@ -159,7 +164,9 @@ class VirtualMachineShrink(Document):
 			)
 
 		self.raw_filesystems = json.dumps(filesystems, indent=2)
-		self.parsed_filesystems = json.dumps(self._parse_filesystems(filesystems), indent=2)
+		parsed_filesystems = self._parse_filesystems(filesystems)
+		self.parsed_filesystems = json.dumps(parsed_filesystems, indent=2)
+		self.add_filesystems_to_table(parsed_filesystems)
 		self.save()
 
 	def _parse_filesystems(self, filesystems):
@@ -172,6 +179,24 @@ class VirtualMachineShrink(Document):
 
 			parsed.append(filesystem)
 		return parsed
+
+	def add_filesystems_to_table(self, filesystems):
+		parsed_devices = json.loads(self.parsed_devices)
+		mounts = self.machine.get_server().mounts
+		for filesystem in filesystems:
+			device = find(parsed_devices, lambda d: d["mountpoint"] == filesystem["mount_point"])
+			mount = find(mounts, lambda m: m.mount_point == filesystem["mount_point"])
+
+			if not device or not mount:
+				continue
+
+			filesystem.update(
+				{
+					"uuid": device["uuid"],
+					"volume_id": mount.volume_id,
+				}
+			)
+			self.append("filesystems", filesystem)
 
 	@property
 	def machine(self):

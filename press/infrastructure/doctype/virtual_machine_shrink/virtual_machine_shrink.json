@@ -16,6 +16,7 @@
   "parsed_devices",
   "raw_filesystems",
   "parsed_filesystems",
+  "filesystems",
   "section_break_mjhg",
   "steps"
  ],
@@ -73,7 +74,8 @@
    "fieldname": "steps",
    "fieldtype": "Table",
    "label": "Steps",
-   "options": "Virtual Machine Migration Step"
+   "options": "Virtual Machine Migration Step",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_nfeq",
@@ -108,11 +110,18 @@
    "label": "Parsed Filesystems",
    "options": "JSON",
    "read_only": 1
+  },
+  {
+   "fieldname": "filesystems",
+   "fieldtype": "Table",
+   "label": "Filesystems",
+   "options": "Virtual Machine Shrink Filesystem",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-03 15:35:30.350348",
+ "modified": "2025-02-03 16:22:42.574048",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Machine Shrink",
