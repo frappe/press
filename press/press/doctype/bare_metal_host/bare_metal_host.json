@@ -126,21 +126,21 @@
    "fieldtype": "Code",
    "label": "Default User Data",
    "description": "Default cloud-init user-data configuration (in YAML format)",
-   "default": "#cloud-config\npackages:\n  - net-tools\n  - iproute2\n  - iptables\n  - netcat\n\nwrite_files:\n  - path: /etc/netplan/50-cloud-init.yaml\n    content: |\n      network:\n        version: 2\n        ethernets:\n          eth0:\n            dhcp4: true\n            nameservers:\n              addresses: [8.8.8.8, 8.8.4.4]\n\nruncmd:\n  - netplan apply\n  - iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE\n  - echo 1 > /proc/sys/net/ipv4/ip_forward"
+   "default": "#cloud-config\npackages:\n  - net-tools\n  - iproute2\n  - iptables\n  - netcat\n  - curl\n  - wget\n  - vim\n\npackage_update: true\npackage_upgrade: true\n\nwrite_files:\n  - path: /etc/netplan/50-cloud-init.yaml\n    content: |\n      network:\n        version: 2\n        ethernets:\n          eth0:\n            addresses: [{ip_address}/24]\n            gateway4: {gateway}\n            nameservers:\n              addresses: {nameservers}\n\ntimezone: {timezone}\n\nntp:\n  enabled: true\n  servers: {ntp_servers}\n\nssh_authorized_keys: {ssh_authorized_keys}\n\nruncmd:\n  - netplan apply\n  - iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE\n  - echo 1 > /proc/sys/net/ipv4/ip_forward\n  - systemctl restart ntp"
   },
   {
    "fieldname": "default_meta_data",
    "fieldtype": "Code",
    "label": "Default Meta Data",
    "description": "Default cloud-init meta-data configuration",
-   "default": "instance-id: {instance_id}\nlocal-hostname: {hostname}"
+   "default": "instance-id: {instance_id}\nlocal-hostname: {hostname}\nnetwork-interfaces: |\n  auto eth0\n  iface eth0 inet static\n  address {ip_address}\n  netmask {netmask}\n  gateway {gateway}\n  dns-nameservers {nameservers}"
   },
   {
    "fieldname": "default_network_config",
    "fieldtype": "Code",
    "label": "Default Network Config",
    "description": "Default cloud-init network configuration",
-   "default": "version: 2\nethernets:\n  eth0:\n    addresses: [{ip_address}/24]\n    gateway4: {gateway}\n    nameservers:\n      addresses: [8.8.8.8, 8.8.4.4]"
+   "default": "version: 2\nethernets:\n  eth0:\n    addresses: [{ip_address}/24]\n    gateway4: {gateway}\n    nameservers:\n      addresses: {nameservers}\n    routes:\n      - to: 0.0.0.0/0\n        via: {gateway}"
   },
   {
    "fieldname": "custom_cloud_init_section",

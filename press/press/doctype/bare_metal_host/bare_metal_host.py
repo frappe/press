@@ -136,35 +136,82 @@ class BareMetalHost(Document):
     def get_cloud_init_config(self, vm_name: str, network_config: dict, custom_config: dict = None) -> dict:
         """Generate cloud-init configuration for a VM"""
         try:
+            # Validate required network config
+            if not network_config.get("ip_address"):
+                frappe.throw("IP address is required in network configuration")
+            if not network_config.get("gateway"):
+                frappe.throw("Gateway is required in network configuration")
+
+            # Base context with defaults
             context = {
                 "instance_id": vm_name,
                 "hostname": vm_name,
                 "ip_address": network_config.get("ip_address"),
                 "gateway": network_config.get("gateway"),
                 "netmask": network_config.get("netmask", "255.255.255.0"),
-                "nameservers": network_config.get("nameservers", ["8.8.8.8", "8.8.4.4"])
+                "nameservers": network_config.get("nameservers", ["8.8.8.8", "8.8.4.4"]),
+                "ssh_authorized_keys": network_config.get("ssh_keys", []),
+                "timezone": network_config.get("timezone", "UTC"),
+                "ntp_servers": network_config.get("ntp_servers", ["pool.ntp.org"]),
+                "packages": [
+                    "net-tools",
+                    "iproute2",
+                    "iptables",
+                    "netcat",
+                    "curl",
+                    "wget",
+                    "vim"
+                ]
             }
 
+            # Merge custom config if provided
             if custom_config:
-                context.update(custom_config)
+                # Deep merge for nested structures
+                for key, value in custom_config.items():
+                    if isinstance(value, dict) and key in context and isinstance(context[key], dict):
+                        context[key].update(value)
+                    elif isinstance(value, list) and key in context and isinstance(context[key], list):
+                        context[key].extend(value)
+                    else:
+                        context[key] = value
 
-            if self.allow_custom_cloud_init and custom_config:
-                user_data = Template(self.custom_user_data_template or self.default_user_data).render(**context)
-                meta_data = Template(self.custom_meta_data_template or self.default_meta_data).render(**context)
-                network_conf = Template(self.custom_network_config_template or self.default_network_config).render(**context)
-            else:
-                user_data = Template(self.default_user_data).render(**context)
-                meta_data = Template(self.default_meta_data).render(**context)
-                network_conf = Template(self.default_network_config).render(**context)
+            # Generate configurations
+            try:
+                if self.allow_custom_cloud_init and custom_config:
+                    user_data = Template(self.custom_user_data_template or self.default_user_data).render(**context)
+                    meta_data = Template(self.custom_meta_data_template or self.default_meta_data).render(**context)
+                    network_conf = Template(self.custom_network_config_template or self.default_network_config).render(**context)
+                else:
+                    user_data = Template(self.default_user_data).render(**context)
+                    meta_data = Template(self.default_meta_data).render(**context)
+                    network_conf = Template(self.default_network_config).render(**context)
 
-            return {
-                "user_data": user_data,
-                "meta_data": meta_data,
-                "network_config": network_conf
-            }
+                # Validate generated YAML
+                import yaml
+                for name, data in [
+                    ("user_data", user_data),
+                    ("meta_data", meta_data),
+                    ("network_config", network_conf)
+                ]:
+                    try:
+                        yaml.safe_load(data)
+                    except yaml.YAMLError as e:
+                        frappe.throw(f"Invalid YAML in {name}: {str(e)}")
+
+                return {
+                    "user_data": user_data,
+                    "meta_data": meta_data,
+                    "network_config": network_conf,
+                    "context": context  # Include rendered context for debugging
+                }
+
+            except Exception as e:
+                frappe.log_error(f"Template rendering error: {str(e)}")
+                frappe.throw(f"Failed to render cloud-init templates: {str(e)}")
+
         except Exception as e:
             frappe.log_error(f"Error generating cloud-init config: {str(e)}")
-            frappe.throw("Failed to generate cloud-init configuration")
+            frappe.throw(f"Failed to generate cloud-init configuration: {str(e)}")
 
     def setup_network(self, name, ip_range, subnets):
         """Create network via VM experiments API"""
