@@ -229,6 +229,7 @@ const verifyOTPMethod = createResource({
 			user: email.value,
 		});
 		otp.value = '';
+		sendOTPMethod.error = '';
 	},
 });
 
