@@ -214,7 +214,7 @@ class SiteUpdate(Document):
 			)
 
 	def before_insert(self):
-		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
+		self.backup_type = "Logical"
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
 
@@ -469,7 +469,6 @@ class SiteUpdate(Document):
 			)
 		else:
 			# Site is already on the source bench
-
 			if site.status_before_update == "Active":
 				# Disable maintenance mode for active sites
 				job = agent.update_site_recover(site)

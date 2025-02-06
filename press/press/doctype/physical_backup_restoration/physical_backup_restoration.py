@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import time
@@ -149,19 +150,13 @@ class PhysicalBackupRestoration(Document):
 			self.tables_to_restore = "[]"
 			return
 
-		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
-		if not self.tables_to_restore:
-			frappe.throw("You must provide at least one table to restore.")
+		tables_to_restore = []
+		with contextlib.suppress(Exception):
+			tables_to_restore = json.loads(self.tables_to_restore)
 
-		tables_to_restore_list = json.loads(self.tables_to_restore)
-		site_backup = frappe.get_doc("Site Backup", self.site_backup)
-		existing_tables_in_backup = set(
-			json.loads(site_backup.innodb_tables) + json.loads(site_backup.myisam_tables)
-		)
-		filtered_tables_to_restore_list = [
-			table for table in tables_to_restore_list if table in existing_tables_in_backup
-		]
-		self.tables_to_restore = json.dumps(filtered_tables_to_restore_list)
+		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
+		if not tables_to_restore:
+			frappe.throw("You must provide at least one table to restore.")
 
 	def set_mount_point(self):
 		self.mount_point = f"/mnt/{self.name}"
