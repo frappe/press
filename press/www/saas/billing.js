@@ -202,7 +202,7 @@ function showFCLogindialog(email) {
 			type: 'POST',
 			args: {
 				domain: window.location.hostname,
-				otp: otp,
+				verification_code: otp,
 			},
 			freeze: true,
 			silent: true,
