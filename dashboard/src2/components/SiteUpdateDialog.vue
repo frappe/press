@@ -142,12 +142,12 @@ export default {
 						type: 'Badge',
 						format(value, row) {
 							return row.will_branch_change
-								? row.next_branch
+								? row.branch
 								: row.next_tag || row.next_hash.slice(0, 7);
 						},
 						link(value, row) {
 							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.next_branch}`;
+								return `${row.repository_url}/tree/${row.branch}`;
 							}
 							if (row.next_tag) {
 								return `${row.repository_url}/releases/tag/${row.next_tag}`;
