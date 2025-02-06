@@ -324,14 +324,18 @@ export default {
 					// check if error message has `is already registered` substring
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
-						if (this.saasProduct) {
-							this.$router.push({
-								name: 'Site Login',
-							});
-						} else
-							this.$router.push({
-								name: 'Login',
-							});
+
+						// timeout to show error message before redirecting
+						setTimeout(() => {
+							if (this.saasProduct) {
+								this.$router.push({
+									name: 'Site Login',
+								});
+							} else
+								this.$router.push({
+									name: 'Login',
+								});
+						}, 1000);
 					}
 				},
 			};
