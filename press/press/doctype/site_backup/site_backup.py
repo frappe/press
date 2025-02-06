@@ -26,10 +26,6 @@ class SiteBackup(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.physical_backup_file_metadata.physical_backup_file_metadata import (
-			PhysicalBackupFileMetadata,
-		)
-
 		config_file: DF.Data | None
 		config_file_size: DF.Data | None
 		config_file_url: DF.Text | None
@@ -39,10 +35,7 @@ class SiteBackup(Document):
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
 		files_availability: DF.Literal["", "Available", "Unavailable"]
-		files_metadata: DF.Table[PhysicalBackupFileMetadata]
-		innodb_tables: DF.JSON | None
 		job: DF.Link | None
-		myisam_tables: DF.JSON | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
 		physical: DF.Check
@@ -59,7 +52,6 @@ class SiteBackup(Document):
 		site: DF.Link
 		snapshot_request_key: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
-		table_schema: DF.Code | None
 		team: DF.Link | None
 		with_files: DF.Check
 	# end: auto-generated types
@@ -149,6 +141,18 @@ class SiteBackup(Document):
 
 	def on_update(self):
 		if self.physical and self.has_value_changed("status") and self.status in ["Success", "Failure"]:
+			site_update_doc_name = frappe.db.exists("Site Update", {"site_backup": self.name})
+			if site_update_doc_name:
+				"""
+				If site backup was trigerred for Site Update,
+				Then, trigger Site Update to proceed with the next steps
+				"""
+				site_update = frappe.get_doc("Site Update", site_update_doc_name)
+				if self.status == "Success":
+					site_update.create_update_site_agent_request()
+				elif self.status == "Failure":
+					site_update.activate_site()
+
 			"""
 			Rollback the permission changes made to the database directory
 			Change it back to 770 from 700
@@ -172,7 +176,7 @@ class SiteBackup(Document):
 	def _create_physical_backup(self):
 		site = frappe.get_doc("Site", self.site)
 		"""
-		Change the /var/lib/mysql/<database_name> directory's permission to 770 from 770
+		Change the /var/lib/mysql/<database_name> directory's permission to 700 from 770
 		The files inside that directory will have 660 permission, So no need to change the permission of the files
 
 		`frappe` user on server is already part of `mysql` group.
@@ -279,7 +283,7 @@ def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dic
 	)
 
 
-def process_backup_site_job_update(job):  # noqa: C901
+def process_backup_site_job_update(job):
 	backups = frappe.get_all("Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1)
 	if not backups:
 		return
@@ -291,35 +295,10 @@ def process_backup_site_job_update(job):  # noqa: C901
 
 		if job.status == "Success":
 			if frappe.get_value("Site Backup", backup.name, "physical"):
-				site_backup: SiteBackup = frappe.get_doc("Site Backup", backup.name)
-				data = json.loads(job.data)
-				if site_backup.database_name not in data:
-					frappe.log_error("[Failure] Database name not found in the backup data", data=job.data)
-					site_backup.status = "Failure"
-				else:
-					site_backup.files_availability = "Available"
-					site_backup.innodb_tables = json.dumps(data[site_backup.database_name]["innodb_tables"])
-					site_backup.myisam_tables = json.dumps(data[site_backup.database_name]["myisam_tables"])
-					site_backup.table_schema = data[site_backup.database_name]["table_schema"]
-					files_metadata = data[site_backup.database_name]["files_metadata"]
-					for x in files_metadata:
-						site_backup.append(
-							"files_metadata",
-							{
-								"file": x,
-								"size": files_metadata[x]["size"],
-								"checksum": files_metadata[x]["checksum"],
-							},
-						)
-					site_backup.status = "Success"
-				site_backup.save()
-				site_backup.reload()
-				# If site backup was trigerred for Site Update,
-				# Then, trigger Site Update to proceed with the next steps
-				site_update_doc_name = frappe.db.exists("Site Update", {"site_backup": site_backup.name})
-				if site_update_doc_name:
-					site_update = frappe.get_doc("Site Update", site_update_doc_name)
-					site_update.create_update_site_agent_request()
+				doc: SiteBackup = frappe.get_doc("Site Backup", backup.name)
+				doc.files_availability = "Available"
+				doc.status = "Success"
+				doc.save()
 			else:
 				frappe.db.set_value("Site Backup", backup.name, "status", status)
 				job_data = json.loads(job.data)

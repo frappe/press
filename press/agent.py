@@ -490,10 +490,6 @@ class Agent:
 		)
 
 	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
-		backup: SiteBackup = frappe.get_doc("Site Backup", backup_restoration.site_backup)
-		files_metadata = {}
-		for item in backup.files_metadata:
-			files_metadata[item.file] = {"size": item.size, "checksum": item.checksum}
 		data = {
 			"backup_db": backup_restoration.source_database,
 			"target_db": backup_restoration.destination_database,
@@ -501,10 +497,6 @@ class Agent:
 			"private_ip": frappe.get_value(
 				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
 			),
-			"files_metadata": files_metadata,
-			"innodb_tables": json.loads(backup.innodb_tables),
-			"myisam_tables": json.loads(backup.myisam_tables),
-			"table_schema": backup.table_schema,
 			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
 			"restore_specific_tables": backup_restoration.restore_specific_tables,
 			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
