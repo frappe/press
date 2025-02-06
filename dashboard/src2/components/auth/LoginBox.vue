@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-full">
-		<div class="relative z-10 mx-auto py-8 sm:w-max sm:pb-0 sm:pt-32">
+		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
 			<div
 				class="flex flex-col items-center"
 				@dblclick="redirectForFrappeioAuth"
@@ -34,8 +34,8 @@
 				</p>
 				<slot></slot>
 			</div>
+			<slot name="footer"></slot>
 		</div>
-		<slot name="footer"></slot>
 		<div class="absolute bottom-4 z-[1] flex w-full justify-center">
 			<FrappeLogo class="h-4" />
 		</div>
