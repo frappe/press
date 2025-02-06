@@ -289,6 +289,27 @@ class VirtualDiskResize(Document):
 			return StepStatus.Pending
 		return StepStatus.Success
 
+	def format_new_volume(self) -> StepStatus:
+		"Format new volume"
+		device = self._get_device_from_volume_id(self.new_volume_id)
+		output = self.ansible_run(f"mkfs -t {self.filesystem_type} {device}")["output"]
+		"""Sample output of the command
+		Creating filesystem with 2621440 4k blocks and 655360 inodes
+		Filesystem UUID: f82d5b68-765a-4a4c-8fda-67c224726afe
+		Superblock backups stored on blocks:
+			32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632
+
+		Allocating group tables: done
+		Writing inode tables: done
+		Creating journal (16384 blocks): done
+		Writing superblocks and filesystem accounting information: done
+		"""
+		for line in output.splitlines():
+			if "UUID" not in line:
+				continue
+			self.new_filesystem_uuid = line.split()[-1]
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -303,6 +324,7 @@ class VirtualDiskResize(Document):
 		methods = [
 			(self.increase_old_volume_performance, NoWait),
 			(self.wait_for_increased_performance, Wait),
+			(self.format_new_volume, NoWait),
 		]
 
 		steps = []
