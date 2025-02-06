@@ -34,6 +34,7 @@
   "old_filesystem_used",
   "column_break_ublt",
   "new_filesystem_uuid",
+  "new_filesystem_temporary_mount_point",
   "section_break_mjhg",
   "steps",
   "section_break_nfeq",
@@ -244,11 +245,17 @@
   {
    "fieldname": "column_break_ublt",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_filesystem_temporary_mount_point",
+   "fieldtype": "Data",
+   "label": "New Filesystem Temporary Mount Point",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-05 21:10:06.162175",
+ "modified": "2025-02-06 09:26:04.199036",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",

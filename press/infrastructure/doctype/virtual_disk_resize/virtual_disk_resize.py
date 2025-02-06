@@ -37,6 +37,7 @@ class VirtualDiskResize(Document):
 		filesystem_type: DF.Data | None
 		filesystems: DF.Code | None
 		name: DF.Int | None
+		new_filesystem_temporary_mount_point: DF.Data | None
 		new_filesystem_uuid: DF.Data | None
 		new_volume_id: DF.Data | None
 		new_volume_iops: DF.Int
@@ -310,6 +311,14 @@ class VirtualDiskResize(Document):
 			self.new_filesystem_uuid = line.split()[-1]
 		return StepStatus.Success
 
+	def mount_new_volume(self) -> StepStatus:
+		"Mount new volume"
+		device = self._get_device_from_volume_id(self.new_volume_id)
+		self.new_filesystem_temporary_mount_point = "/opt/volumes/resize"
+		self.ansible_run(f"mkdir {self.new_filesystem_temporary_mount_point}")
+		self.ansible_run(f"mount {device} {self.new_filesystem_temporary_mount_point}")
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -325,6 +334,7 @@ class VirtualDiskResize(Document):
 			(self.increase_old_volume_performance, NoWait),
 			(self.wait_for_increased_performance, Wait),
 			(self.format_new_volume, NoWait),
+			(self.mount_new_volume, NoWait),
 		]
 
 		steps = []
