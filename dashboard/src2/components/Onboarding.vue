@@ -73,7 +73,7 @@
 			<div v-else-if="trialSite">
 				<div class="flex items-center justify-between space-x-2">
 					<div class="flex items-center space-x-2">
-						<TextInsideCircle>1</TextInsideCircle>
+						<TextInsideCircle>2</TextInsideCircle>
 						<span class="text-base font-medium">
 							Your trial site is ready
 						</span>
@@ -132,7 +132,7 @@
 				<div v-else>
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
-							<TextInsideCircle>2</TextInsideCircle>
+							<TextInsideCircle>3</TextInsideCircle>
 							<span class="text-base font-medium">
 								Billing address updated
 							</span>
@@ -205,7 +205,7 @@
 				<div v-else>
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
-							<TextInsideCircle>3</TextInsideCircle>
+							<TextInsideCircle>4</TextInsideCircle>
 							<span
 								class="text-base font-medium"
 								v-if="$team.doc.payment_mode === 'Card'"
