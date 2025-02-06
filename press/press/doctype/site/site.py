@@ -1994,15 +1994,6 @@ class Site(Document, TagHelpers):
 		self.can_change_plan(ignore_card_setup)
 		plan_config = self.get_plan_config(plan)
 
-		if (
-			frappe.db.exists(
-				"Subscription",
-				{"enabled": 1, "site": self.name, "document_type": "Marketplace App"},
-			)
-			and self.trial_end_date
-		):
-			plan_config["app_include_js"] = []
-
 		self._update_configuration(plan_config)
 		ret = frappe.get_doc(
 			{
