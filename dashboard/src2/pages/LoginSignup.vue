@@ -588,7 +588,7 @@ export default {
 				return 'Sign in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create a ${this.saasProduct.title} site`;
+					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
 				return 'Create a new account';
 			}
