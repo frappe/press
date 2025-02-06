@@ -102,7 +102,14 @@
 					class="flex w-full flex-col items-center justify-center space-y-2 pb-8"
 				>
 					<Button
-						v-if="$session.user && !sites.fetched"
+						v-if="sites.fetched"
+						class="mt-4"
+						@click="goBack"
+						icon-right="arrow-left"
+						variant="ghost"
+						label="Login from another account"
+					/>
+					<Button
 						class="mt-4"
 						@click="
 							$router.push({
@@ -112,14 +119,6 @@
 						icon-right="arrow-right"
 						variant="ghost"
 						label="Go to Frappe Cloud dashboard"
-					/>
-					<Button
-						v-if="sites.fetched"
-						class="mt-4"
-						@click="goBack"
-						icon-right="arrow-left"
-						variant="ghost"
-						label="Login from another account"
 					/>
 				</div>
 			</template>
