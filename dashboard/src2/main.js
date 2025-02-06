@@ -93,6 +93,9 @@ getInitialData().then(() => {
 					/e is not defined/,
 					/Cannot set property ethereum of #<Window> which has only a getter/,
 					/Can't find variable: ResizeObserver/,
+					/Method not found/,
+					/Menu caption text is required/,
+					/Internal error opening backing store for indexedDB.open/,
 				];
 				const ignoreErrorTypes = [
 					'BuildValidationError',
@@ -103,6 +106,8 @@ getInitialData().then(() => {
 					'AuthenticationError',
 					'RateLimitExceededError',
 					'InsufficientSpaceOnServer',
+					'ConflictingDNSRecord',
+					'MultipleARecords',
 				];
 				const error = hint.originalException;
 

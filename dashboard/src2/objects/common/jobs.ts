@@ -115,7 +115,7 @@ function getJobTabColumns(doctype: JobDocTypes) {
 			label: '',
 			fieldname: 'creation',
 			type: 'Timestamp',
-			width: 0.5,
+			width: 0.75,
 			align: 'right'
 		}
 	];

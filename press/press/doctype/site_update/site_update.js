@@ -14,6 +14,10 @@ frappe.ui.form.on('Site Update', {
 	},
 
 	refresh: function (frm) {
+		// Disable save button
+		frm.disable_save();
+
+		// Add custom buttons
 		[
 			[
 				__('Trigger Recovery Job'),

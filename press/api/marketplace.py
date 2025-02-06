@@ -752,8 +752,7 @@ def get_marketplace_apps_for_onboarding() -> list[dict]:
 	for app in apps:
 		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
 	# sort by total installs
-	apps = sorted(apps, key=lambda x: x["total_installs"], reverse=True)
-	return apps  # noqa: RET504
+	return sorted(apps, key=lambda x: x["total_installs"], reverse=True)
 
 
 def is_on_marketplace(app: str) -> bool:

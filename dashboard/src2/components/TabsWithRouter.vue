@@ -1,6 +1,6 @@
 <template>
 	<FTabs v-if="visibleTabs?.length" v-model="currentTab" :tabs="visibleTabs">
-		<template #default="{ tab }">
+		<template #tab-panel="{ tab }">
 			<slot name="tab-content" :tab="tab">
 				<router-view :tab="tab" />
 			</slot>
@@ -14,12 +14,12 @@ export default {
 	name: 'TabsWithRouter',
 	props: ['tabs', 'document'],
 	components: {
-		FTabs: Tabs
+		FTabs: Tabs,
 	},
 	computed: {
 		visibleTabs() {
-			return this.tabs.filter(tab =>
-				tab.condition ? tab.condition({ doc: this.document }) : true
+			return this.tabs.filter((tab) =>
+				tab.condition ? tab.condition({ doc: this.document }) : true,
 			);
 		},
 		currentTab: {
@@ -39,8 +39,8 @@ export default {
 				let tab = this.visibleTabs[val];
 				let tabRouteName = tab.routeName || tab.route.name;
 				this.$router.push({ name: tabRouteName });
-			}
-		}
-	}
+			},
+		},
+	},
 };
 </script>

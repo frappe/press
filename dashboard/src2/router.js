@@ -22,6 +22,7 @@ let router = createRouter({
 			path: '/welcome',
 			name: 'Welcome',
 			component: () => import('./pages/Welcome.vue'),
+			meta: { hideSidebar: true },
 		},
 		{
 			path: '/login',
@@ -34,6 +35,12 @@ let router = createRouter({
 			name: 'Signup',
 			component: () => import('./pages/LoginSignup.vue'),
 			meta: { isLoginPage: true },
+		},
+		{
+			path: '/site-login',
+			name: 'Site Login',
+			component: () => import('./pages/SiteLogin.vue'),
+			meta: { hideSidebar: true },
 		},
 		{
 			path: '/setup-account/:requestKey/:joinRequest?',
@@ -217,51 +224,29 @@ let router = createRouter({
 			],
 		},
 		{
-			name: 'SaaS',
-			path: '/saas',
+			name: 'Signup Create Site',
+			path: '/create-site',
 			redirect: { name: 'Home' },
 			children: [
 				{
-					name: 'SaaSLogin',
-					path: ':productId/login',
-					component: () => import('./pages/saas/Login.vue'),
-					props: true,
-					meta: {
-						isLoginPage: true,
-					},
+					name: 'SignupAppSelector',
+					path: 'app-selector',
+					component: () => import('./pages/saas/AppSelector.vue'),
+					meta: { hideSidebar: true },
 				},
 				{
-					name: 'SaaSSignup',
-					path: ':productId/signup',
-					component: () => import('./pages/saas/Signup.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupVerifyEmail',
-					path: ':productId/verify-email',
-					component: () => import('./pages/saas/VerifyEmail.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupOAuthSetupAccount',
-					path: ':productId/oauth',
-					component: () => import('./pages/saas/OAuthSetupAccount.vue'),
-					props: true,
-					meta: { isLoginPage: true },
-				},
-				{
-					name: 'SaaSSignupSetup',
+					name: 'SignupSetup',
 					path: ':productId/setup',
 					component: () => import('./pages/saas/SetupSite.vue'),
 					props: true,
+					meta: { hideSidebar: true },
 				},
 				{
-					name: 'SaaSSignupLoginToSite',
+					name: 'SignupLoginToSite',
 					path: ':productId/login-to-site',
 					component: () => import('./pages/saas/LoginToSite.vue'),
 					props: true,
+					meta: { hideSidebar: true },
 				},
 			],
 		},
@@ -281,13 +266,6 @@ let router = createRouter({
 			name: 'CreateSiteForMarketplaceApp',
 			path: '/create-site/:app',
 			component: () => import('./pages/CreateSiteForMarketplaceApp.vue'),
-			props: true,
-		},
-		{
-			path: '/user-review/:marketplaceApp',
-			name: 'ReviewMarketplaceApp',
-			component: () =>
-				import('./components/marketplace/ReviewMarketplaceApp.vue'),
 			props: true,
 		},
 		{
@@ -395,7 +373,9 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next();
 		} else {
-			if (to.name == 'SaaSSignupSetup') {
+			if (to.name == 'Site Login') {
+				next();
+			} else if (to.name == 'SignupSetup') {
 				next({
 					name: 'SaaSSignup',
 					params: to.params,
