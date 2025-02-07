@@ -31,6 +31,8 @@ class VirtualDiskResize(Document):
 		)
 
 		devices: DF.Code | None
+		downtime_duration: DF.Duration | None
+		downtime_end: DF.Datetime | None
 		downtime_start: DF.Datetime | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
@@ -421,6 +423,17 @@ class VirtualDiskResize(Document):
 		self.ansible_run("systemctl daemon-reload")
 		return StepStatus.Success
 
+	def start_service(self) -> StepStatus:
+		"Start service"
+		if self.service:
+			self.ansible_run(f"systemctl start {self.service}")
+
+		# We had stopped filebeat, start it again
+		self.ansible_run("systemctl start filebeat")
+		self.downtime_end = frappe.utils.now_datetime()
+		self.downtime_duration = (self.downtime_end - self.downtime_start).total_seconds()
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -445,6 +458,7 @@ class VirtualDiskResize(Document):
 			(self.unmount_old_volume, NoWait),
 			(self.unmount_new_volume, NoWait),
 			(self.update_mount, NoWait),
+			(self.start_service, NoWait),
 		]
 
 		steps = []
