@@ -17,6 +17,12 @@ frappe.ui.form.on('Site Update', {
 		// Disable save button
 		frm.disable_save();
 
+		// Add link
+		frm.add_web_link(
+			`/dashboard/sites/${frm.doc.site}/updates/${frm.doc.name}`,
+			__('Visit Dashboard'),
+		);
+
 		// Add custom buttons
 		[
 			[

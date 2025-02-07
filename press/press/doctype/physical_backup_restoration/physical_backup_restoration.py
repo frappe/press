@@ -299,7 +299,7 @@ class PhysicalBackupRestoration(Document):
 				children = device_info["children"]
 				# try to find the partition with label cloudimg-rootfs
 				for child in children:
-					if child["label"] == "cloudimg-rootfs":
+					if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
 						disk_partition_to_mount = "/dev/{}".format(child["name"])
 						break
 
@@ -309,7 +309,7 @@ class PhysicalBackupRestoration(Document):
 		if not disk_partition_to_mount:
 			self.log_error(
 				title="Not able to find disk partition to mount",
-				message=f"Disk name: {disk_name}, Possible disks: {possible_disks}",
+				message=f"Disk name: {disk_name}, Possible disks: {possible_disks} or with serial {disk_serial}",
 			)
 			return StepStatus.Failure
 
@@ -320,10 +320,13 @@ class PhysicalBackupRestoration(Document):
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
-		path = os.path.join(self.mount_point, "var/lib/mysql")
-		result = self.ansible_run(f"chmod -R 770 {path}")
+		base_path = os.path.join(self.mount_point, "var/lib/mysql")
+		result = self.ansible_run(f"chmod 777 {base_path}")
 		if result["status"] == "Success":
-			return StepStatus.Success
+			db_path = os.path.join(self.mount_point, "var/lib/mysql", self.source_database)
+			result = self.ansible_run(f"chmod -R 777 {db_path}")
+			if result["status"] == "Success":
+				return StepStatus.Success
 		return StepStatus.Failure
 
 	def change_permission_of_database_directory(self) -> StepStatus:
@@ -632,8 +635,7 @@ class PhysicalBackupRestoration(Document):
 	def ansible_run(self, command):
 		inventory = f"{self.virtual_machine.public_ip_address},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
-		if result["status"] != "Success":
-			self.add_command(command, result)
+		self.add_command(command, result)
 		return result
 
 	def add_command(self, command, result):
