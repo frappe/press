@@ -43,6 +43,7 @@ class SQLJob(Document):
 		profile_query: DF.Check
 		queries: DF.Table[SQLJobQuery]
 		read_only: DF.Check
+		row_limit: DF.Int
 		server: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		target_document: DF.DynamicLink
@@ -146,6 +147,12 @@ class SQLJob(Document):
 				continue
 			# Insert variables
 			query = q.query.replace("{{database_name}}", self.database_name)
+
+			# If it's a select query apply the limit
+			if self.row_limit and q.is_select_query():
+				query = f"SELECT * FROM ({query}) AS t LIMIT {self.row_limit}"
+
+			# Add the query id to the query
 			statements.append(f"{query} /* query_{q.name} */;")
 
 		# Add profiling statements

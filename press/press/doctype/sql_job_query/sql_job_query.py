@@ -61,3 +61,8 @@ class SQLJobQuery(Document):
 		return self.query.upper().startswith(
 			("GRANT", "REVOKE", "SHOW", "USE", "COMMIT", "ROLLBACK", "KILL", "BEGIN", "END", "SET", "LOCK")
 		)
+
+	def is_select_query(self) -> bool:
+		if len(self.query) < 6:
+			return False
+		return self.query[:6] in ("SELECT", "select")

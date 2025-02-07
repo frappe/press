@@ -20,6 +20,7 @@
   "allow_ddl_query",
   "allow_any_query",
   "continue_on_error",
+  "row_limit",
   "section_break_krvx",
   "wait_timeout",
   "column_break_avlz",
@@ -46,7 +47,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: doc.async",
+   "depends_on": "eval: doc.async_task",
    "fieldname": "job",
    "fieldtype": "Link",
    "label": "Job",
@@ -194,11 +195,17 @@
    "fieldname": "async_task",
    "fieldtype": "Check",
    "label": "Async Task"
+  },
+  {
+   "default": "1000",
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-05 16:13:07.430344",
+ "modified": "2025-02-07 17:32:34.367672",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",
