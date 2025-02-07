@@ -369,7 +369,7 @@ router.beforeEach(async (to, from, next) => {
 			if (to.name == 'Site Login') {
 				next();
 			} else {
-				next({ name: 'Login', query: { redirect: to.fullPath } });
+				next({ name: 'Login', query: { redirect: to.href } });
 			}
 		}
 	}
