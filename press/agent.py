@@ -1317,7 +1317,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		data = {
 			"queries": sql_job.prepared_sql_statement_list,
 			"read_only": sql_job.read_only,
-			"database_name": sql_job.database_name,
+			"database": sql_job.database_name,
 			"continue_on_error": sql_job.continue_on_error,
 			"async_task": sql_job.async_task,
 			"database_credential": {

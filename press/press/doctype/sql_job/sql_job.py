@@ -165,8 +165,9 @@ class SQLJob(Document):
 			if self.async_task:
 				self.job = response
 			else:
+				data = response.get("data")
 				# process the response
-				self.process_response("Success", response)
+				self.process_response("Success", data)
 		except Exception:
 			self.status = "Failure"
 		finally:
@@ -238,28 +239,28 @@ class SQLJob(Document):
 		if self.target_type == "Database Server":
 			return get_decrypted_password("Database Server", self.target_document, "mariadb_root_password")
 		if self.target_type == "Site":
-			return get_mariadb_root_password(self.target_document)
+			return get_mariadb_root_password(frappe.get_doc("Site", self.target_document))
 		raise frappe.ValidationError("Invalid target type")
 
 	def get_database_host(self):
 		if self.target_type == "Database Server":
 			return frappe.get_cached_value("Database Server", self.target_document, "private_ip")
 		if self.target_type == "Site":
-			return get_mariadb_host(self.target_document)
+			return get_mariadb_host(frappe.get_doc("Site", self.target_document))
 		raise frappe.ValidationError("Invalid target type")
 
 	def get_database_port(self):
 		if self.target_type == "Database Server":
 			return 3306
 		if self.target_type == "Site":
-			return get_mariadb_port(self.target_document)
+			return get_mariadb_port(frappe.get_doc("Site", self.target_document))
 		raise frappe.ValidationError("Invalid target type")
 
 	def get_database_root_user(self):
 		if self.target_type == "Database Server":
 			return frappe.get_cached_value("Database Server", self.target_document, "mariadb_root_user")
 		if self.target_type == "Site":
-			return get_mariadb_root_user(self.target_document)
+			return get_mariadb_root_user(frappe.get_doc("Site", self.target_document))
 		raise frappe.ValidationError("Invalid target type")
 
 
@@ -273,6 +274,7 @@ def process_agent_job_update(job: AgentJob):
 	except Exception:
 		job_data = None
 	sql_job.process_response(job.status, job_data)
+	frappe.db.set_value("Agent Job", job.name, "data", "")
 
 
 def process_sql_job_updates(job: SQLJob):
