@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import sqlparse
@@ -269,6 +269,50 @@ class SQLJob(Document):
 		if self.target_type == "Site":
 			return get_mariadb_root_user(frappe.get_doc("Site", self.target_document))
 		raise frappe.ValidationError("Invalid target type")
+
+	@staticmethod
+	def run_queries(
+		queries: str | list[str],
+		target_type: Literal["Database Server", "Site"],
+		target: str,
+		site: str | Site,
+		type: str = "Generic",
+		async_task: bool = False,
+		user: Literal["Root User", "Site User"] = "Root User",
+		wait_timeout: int | None = None,
+		lock_wait_timeout: int | None = None,
+		max_statement_time: int | None = None,
+	) -> SQLJob:
+		if not queries:
+			frappe.throw("No queries provided")
+
+		if isinstance(queries, str):
+			queries = queries.split(";")
+			queries = [q.strip() for q in queries]
+			queries = [q for q in queries if q]
+
+		doc: SQLJob = frappe.get_doc(
+			{
+				"doctype": "Site Job",
+				"target_document": target,
+				"target_type": target_type,
+				"site": site,
+				"job_type": type,
+				"async_task": async_task,
+				"queries": [{"query": q} for q in queries],
+				"wait_timeout": wait_timeout,
+				"lock_wait_timeout": lock_wait_timeout,
+				"max_statement_time": max_statement_time,
+				"user_type": user,
+			}
+		)
+		doc.insert()
+		doc.start()
+		return doc
+
+	@staticmethod
+	def get_status(name: str) -> str:
+		return frappe.db.get_value("SQL Job", name, "status")
 
 
 def process_agent_job_update(job: AgentJob):
