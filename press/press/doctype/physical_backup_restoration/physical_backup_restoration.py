@@ -320,8 +320,12 @@ class PhysicalBackupRestoration(Document):
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
-		path = os.path.join(self.mount_point, "var/lib/mysql")
-		result = self.ansible_run(f"chmod -R 770 {path}")
+		base_path = os.path.join(self.mount_point, "var/lib/mysql")
+		result = self.ansible_run(f"chmod 777 {base_path}")
+		if result["status"] == "Success":
+			return StepStatus.Success
+		db_path = os.path.join(self.mount_point, "var/lib/mysql", self.source_database)
+		result = self.ansible_run(f"chmod -R 777 {db_path}")
 		if result["status"] == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
