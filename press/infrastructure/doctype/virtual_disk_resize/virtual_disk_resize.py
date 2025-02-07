@@ -365,6 +365,39 @@ class VirtualDiskResize(Document):
 		self.virtual_disk_snapshot = snapshots[0]
 		return StepStatus.Success
 
+	def start_copy(self) -> StepStatus:
+		"Start copying files"
+		server = self.machine.get_server()
+		server.copy_files(
+			source=self.filesystem_mount_point,
+			destination=self.new_filesystem_temporary_mount_point,
+		)
+		return StepStatus.Success
+
+	def wait_for_copy(self) -> StepStatus:
+		"Wait for files to be copied"
+		plays = frappe.get_all(
+			"Ansible Play",
+			{
+				"server": self.machine.get_server().name,
+				"play": "Copy Files",
+				"creation": (">", self.creation),
+			},
+			["status"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if not plays:
+			return StepStatus.Running
+
+		play_status = plays[0].status
+		if play_status == "Success":
+			return StepStatus.Success
+		if play_status in ("Failure", "Unreachable"):
+			return StepStatus.Failure
+
+		return StepStatus.Running
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -384,6 +417,8 @@ class VirtualDiskResize(Document):
 			(self.stop_service, NoWait),
 			(self.unmount_bind_mounts, NoWait),
 			(self.snapshot_machine, NoWait),
+			(self.start_copy, NoWait),
+			(self.wait_for_copy, Wait),
 		]
 
 		steps = []
