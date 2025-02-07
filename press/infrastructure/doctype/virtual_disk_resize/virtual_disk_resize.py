@@ -336,6 +336,18 @@ class VirtualDiskResize(Document):
 		self.ansible_run("systemctl stop filebeat")
 		return StepStatus.Success
 
+	def unmount_bind_mounts(self) -> StepStatus:
+		"Unmount bind mounts"
+		output = self.ansible_run(
+			f"findmnt --json --source {self.old_filesystem_device} --output target,source"
+		)["output"]
+		mounts = json.loads(output)["filesystems"]
+		for mount in mounts:
+			if "[/" not in mount["source"]:
+				continue
+			self.ansible_run(f"umount {mount['target']}")
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
