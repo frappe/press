@@ -544,6 +544,7 @@ class VirtualDiskResize(Document):
 			if step.status in (StepStatus.Pending, StepStatus.Running):
 				step.status = StepStatus.Failure
 		self.status = Status.Failure
+		self.save()
 
 	@property
 	def next_step(self) -> VirtualMachineMigrationStep | None:
