@@ -299,7 +299,7 @@ class PhysicalBackupRestoration(Document):
 				children = device_info["children"]
 				# try to find the partition with label cloudimg-rootfs
 				for child in children:
-					if child["label"] == "cloudimg-rootfs":
+					if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
 						disk_partition_to_mount = "/dev/{}".format(child["name"])
 						break
 
@@ -309,7 +309,7 @@ class PhysicalBackupRestoration(Document):
 		if not disk_partition_to_mount:
 			self.log_error(
 				title="Not able to find disk partition to mount",
-				message=f"Disk name: {disk_name}, Possible disks: {possible_disks}",
+				message=f"Disk name: {disk_name}, Possible disks: {possible_disks} or with serial {disk_serial}",
 			)
 			return StepStatus.Failure
 
