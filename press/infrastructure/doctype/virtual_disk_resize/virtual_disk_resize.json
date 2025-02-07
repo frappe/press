@@ -11,6 +11,10 @@
   "start",
   "end",
   "duration",
+  "column_break_puhr",
+  "downtime_start",
+  "downtime_end",
+  "downtime_duration",
   "volumes_section",
   "column_break_qwbl",
   "old_volume_id",
@@ -27,6 +31,7 @@
   "filesystems_section",
   "filesystem_mount_point",
   "filesystem_type",
+  "service",
   "column_break_npqx",
   "old_filesystem_uuid",
   "old_filesystem_device",
@@ -251,11 +256,39 @@
    "fieldtype": "Data",
    "label": "New Filesystem Temporary Mount Point",
    "read_only": 1
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "label": "Service",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_puhr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "downtime_start",
+   "fieldtype": "Datetime",
+   "label": "Downtime Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "downtime_end",
+   "fieldtype": "Datetime",
+   "label": "Downtime End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "downtime_duration",
+   "fieldtype": "Duration",
+   "label": "Downtime Duration",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-06 09:26:04.199036",
+ "modified": "2025-02-07 20:08:06.484108",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",

@@ -31,6 +31,7 @@ class VirtualDiskResize(Document):
 		)
 
 		devices: DF.Code | None
+		downtime_start: DF.Datetime | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		filesystem_mount_point: DF.Data | None
@@ -53,6 +54,7 @@ class VirtualDiskResize(Document):
 		old_volume_size: DF.Int
 		old_volume_status: DF.Literal["Attached", "Deleted"]
 		old_volume_throughput: DF.Int
+		service: DF.Data | None
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
@@ -226,6 +228,12 @@ class VirtualDiskResize(Document):
 		self.old_filesystem_size = filesystem["size"]
 		self.old_filesystem_used = filesystem["used"]
 
+		SERVICES = {
+			"/opt/volumes/benches": "docker",
+			"/opt/volumes/mariadb": "mariadb",
+		}
+		self.service = SERVICES.get(self.filesystem_mount_point)
+
 	def set_old_volume_id(self):
 		machine = self.machine
 		root_volume = machine.get_root_volume()
@@ -317,6 +325,15 @@ class VirtualDiskResize(Document):
 		self.new_filesystem_temporary_mount_point = "/opt/volumes/resize"
 		self.ansible_run(f"mkdir {self.new_filesystem_temporary_mount_point}")
 		self.ansible_run(f"mount {device} {self.new_filesystem_temporary_mount_point}")
+		return StepStatus.Success
+
+	def stop_service(self) -> StepStatus:
+		"Stop service"
+		self.downtime_start = frappe.utils.now_datetime()
+		if self.service:
+			self.ansible_run(f"systemctl stop {self.service}")
+		# Filebeat keeps the file open and prevents unmounting
+		self.ansible_run("systemctl stop filebeat")
 		return StepStatus.Success
 
 	@property
