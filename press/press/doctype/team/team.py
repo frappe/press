@@ -119,6 +119,7 @@ class Team(Document):
 		"mpesa_tax_id",
 		"mpesa_phone_number",
 		"mpesa_enabled",
+		"account_request",
 	)
 
 	def get_doc(self, doc):
@@ -1505,6 +1506,9 @@ def validate_site_creation(doc, method):
 	if frappe.session.user == "Administrator":
 		return
 	if not doc.team:
+		return
+	# allow product signups
+	if doc.standby_for_product:
 		return
 
 	# validate site creation for team
