@@ -36,6 +36,7 @@ class DatabaseServer(BaseServer):
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
+		bastion_server: DF.Link | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		enable_physical_backup: DF.Check

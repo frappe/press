@@ -42,6 +42,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
+  "bastion_server",
   "root_public_key",
   "section_break_21",
   "domains",
@@ -421,10 +422,16 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [],
- "modified": "2024-12-26 13:20:05.120010",
+ "modified": "2025-01-24 15:13:50.974733",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

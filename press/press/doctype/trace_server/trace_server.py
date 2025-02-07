@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 
@@ -18,6 +19,7 @@ class TraceServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bastion_server: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -65,9 +67,7 @@ class TraceServer(BaseServer):
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -115,9 +115,7 @@ class TraceServer(BaseServer):
 	def upgrade_server(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_upgrade_server", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_server", queue="long", timeout=2400)
 
 	def _upgrade_server(self):
 		try:

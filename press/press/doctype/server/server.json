@@ -59,6 +59,7 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
+  "bastion_server",
   "root_public_key",
   "section_break_22",
   "use_for_new_benches",
@@ -545,10 +546,16 @@
    "fieldtype": "Check",
    "label": "Has Data Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "bastion_server",
+   "fieldtype": "Link",
+   "label": "Bastion Server",
+   "options": "Bastion Server"
   }
  ],
  "links": [],
- "modified": "2025-01-02 16:52:55.927591",
+ "modified": "2025-01-24 15:01:12.013078",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -1,5 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import base64
 import os
@@ -21,6 +22,7 @@ class AnalyticsServer(BaseServer):
 		from frappe.types import DF
 
 		agent_password: DF.Password | None
+		bastion_server: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -66,9 +68,7 @@ class AnalyticsServer(BaseServer):
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
