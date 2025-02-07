@@ -22,6 +22,7 @@
   "old_volume_size",
   "old_volume_iops",
   "old_volume_throughput",
+  "virtual_disk_snapshot",
   "column_break_fzja",
   "new_volume_id",
   "new_volume_status",
@@ -284,11 +285,18 @@
    "fieldtype": "Duration",
    "label": "Downtime Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "virtual_disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Virtual Disk Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-07 20:08:06.484108",
+ "modified": "2025-02-07 20:14:17.624669",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",

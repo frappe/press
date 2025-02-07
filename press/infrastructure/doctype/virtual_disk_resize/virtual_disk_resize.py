@@ -58,6 +58,7 @@ class VirtualDiskResize(Document):
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		steps: DF.Table[VirtualMachineMigrationStep]
+		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
 	# end: auto-generated types
 
@@ -348,6 +349,22 @@ class VirtualDiskResize(Document):
 			self.ansible_run(f"umount {mount['target']}")
 		return StepStatus.Success
 
+	def snapshot_machine(self) -> StepStatus:
+		"Snapshot machine"
+		machine = self.machine
+		machine.create_snapshots()
+
+		snapshots = frappe.get_all(
+			"Virtual Disk Snapshot",
+			{"name": ("in", machine.flags.created_snapshots), "volume_id": self.old_volume_id},
+			pluck="name",
+		)
+		if len(snapshots) == 0:
+			frappe.throw("Failed to create a snapshot")
+
+		self.virtual_disk_snapshot = snapshots[0]
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -364,6 +381,9 @@ class VirtualDiskResize(Document):
 			(self.wait_for_increased_performance, Wait),
 			(self.format_new_volume, NoWait),
 			(self.mount_new_volume, NoWait),
+			(self.stop_service, NoWait),
+			(self.unmount_bind_mounts, NoWait),
+			(self.snapshot_machine, NoWait),
 		]
 
 		steps = []
