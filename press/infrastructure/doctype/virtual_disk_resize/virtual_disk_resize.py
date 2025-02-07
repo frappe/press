@@ -398,6 +398,29 @@ class VirtualDiskResize(Document):
 
 		return StepStatus.Running
 
+	def unmount_old_volume(self) -> StepStatus:
+		"Unmount old volume"
+		self.ansible_run(f"umount {self.filesystem_mount_point}")
+		return StepStatus.Success
+
+	def unmount_new_volume(self) -> StepStatus:
+		"Unmount new volume"
+		self.ansible_run(f"umount {self.new_filesystem_temporary_mount_point}")
+		return StepStatus.Success
+
+	def update_mount(self) -> StepStatus:
+		"Mount new volume on old mount point"
+		# Mount the new volume using the new UUID
+		# Update fstab
+		# 	1. Find mount matching the old UUID in fstab
+		# 	2. Update UUID for this mountpoint
+		# Reference: https://stackoverflow.com/questions/16637799/sed-error-invalid-reference-1-on-s-commands-rhs#comment88576787_16637847
+		self.ansible_run(
+			f"sed -Ei 's/^UUID\\={self.old_filesystem_uuid}\\s(.*$)/UUID\\={self.new_filesystem_uuid} \\1/g' /etc/fstab"
+		)
+		self.ansible_run("systemctl daemon-reload")
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -419,6 +442,9 @@ class VirtualDiskResize(Document):
 			(self.snapshot_machine, NoWait),
 			(self.start_copy, NoWait),
 			(self.wait_for_copy, Wait),
+			(self.unmount_old_volume, NoWait),
+			(self.unmount_new_volume, NoWait),
+			(self.update_mount, NoWait),
 		]
 
 		steps = []
