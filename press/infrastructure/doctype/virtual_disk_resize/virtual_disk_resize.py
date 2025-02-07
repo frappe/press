@@ -434,6 +434,19 @@ class VirtualDiskResize(Document):
 		self.downtime_duration = (self.downtime_end - self.downtime_start).total_seconds()
 		return StepStatus.Success
 
+	def reduce_performance_of_new_volume(self) -> StepStatus:
+		"Reduce performance of new volume"
+		self.machine.update_ebs_performance(
+			self.new_volume_id, self.old_volume_iops, self.old_volume_throughput
+		)
+		return StepStatus.Success
+
+	def delete_old_volume(self) -> StepStatus:
+		"Delete old volume"
+		self.machine.delete_volume(self.old_volume_id)
+		self.old_volume_status = "Deleted"
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -459,6 +472,8 @@ class VirtualDiskResize(Document):
 			(self.unmount_new_volume, NoWait),
 			(self.update_mount, NoWait),
 			(self.start_service, NoWait),
+			(self.reduce_performance_of_new_volume, NoWait),
+			(self.delete_old_volume, NoWait),
 		]
 
 		steps = []
