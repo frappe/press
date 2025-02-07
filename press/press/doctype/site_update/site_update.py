@@ -257,6 +257,7 @@ class SiteUpdate(Document):
 			pluck="database_size",
 			limit=1,
 			order_by="creation desc",
+			ignore_permissions=True,
 		)
 		db_backup_size = 0
 		if len(last_logical_site_backups) > 0:
