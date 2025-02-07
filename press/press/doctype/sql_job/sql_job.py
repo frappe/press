@@ -275,14 +275,40 @@ class SQLJob(Document):
 		queries: str | list[str],
 		target_type: Literal["Database Server", "Site"],
 		target: str,
-		site: str | Site,
-		type: str = "Generic",
-		async_task: bool = False,
+		mode: Literal["r", "rw"] = "r",
 		user: Literal["Root User", "Site User"] = "Root User",
-		wait_timeout: int | None = None,
-		lock_wait_timeout: int | None = None,
-		max_statement_time: int | None = None,
+		type: str = "Generic",
+		allow_ddl_query: bool = False,
+		allow_any_query: bool = False,
+		async_task: bool = False,
+		continue_on_error: bool = False,
+		wait_timeout: int = 30,
+		lock_wait_timeout: int = 30,
+		max_statement_time: int = 600,
+		profiling: bool = False,
 	) -> SQLJob:
+		"""Execute SQL queries against a database target.
+
+		Args:
+			queries: Single multiline SQL query string or list of queries to execute
+			target_type: Type of target - "Database Server" or "Site"
+			target: Name of the target database server or site
+			mode: Access mode - "r" for read-only, "rw" for read-write
+			user: User type to execute as - "Root User" or "Site User"
+			type: Job type label [Useful for callbacks]
+			allow_ddl_query: Allow DDL (Data Definition Language) queries
+			allow_any_query: Allow any type of query without restrictions
+			async_task: Run queries asynchronously via agent job
+			continue_on_error: Continue executing remaining queries if one fails
+			wait_timeout: Session wait timeout in seconds
+			lock_wait_timeout: Lock wait timeout in seconds
+			max_statement_time: Maximum time limit for statement execution in seconds
+			profiling: Enable query profiling
+
+		Returns:
+			SQLJob: Created SQL Job document
+		"""
+
 		if not queries:
 			frappe.throw("No queries provided")
 
@@ -293,10 +319,9 @@ class SQLJob(Document):
 
 		doc: SQLJob = frappe.get_doc(
 			{
-				"doctype": "Site Job",
+				"doctype": "SQL Job",
 				"target_document": target,
 				"target_type": target_type,
-				"site": site,
 				"job_type": type,
 				"async_task": async_task,
 				"queries": [{"query": q} for q in queries],
@@ -304,6 +329,11 @@ class SQLJob(Document):
 				"lock_wait_timeout": lock_wait_timeout,
 				"max_statement_time": max_statement_time,
 				"user_type": user,
+				"read_only": mode != "rw",
+				"profile_query": profiling,
+				"continue_on_error": continue_on_error,
+				"allow_ddl_query": allow_ddl_query,
+				"allow_any_query": allow_any_query,
 			}
 		)
 		doc.insert()

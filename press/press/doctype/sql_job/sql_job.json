@@ -109,7 +109,7 @@
    "reqd": 1
   },
   {
-   "default": "300",
+   "default": "30",
    "fieldname": "lock_wait_timeout",
    "fieldtype": "Int",
    "label": "Lock Wait Timeout (seconds)",
@@ -132,7 +132,7 @@
    "set_only_once": 1
   },
   {
-   "default": "60",
+   "default": "30",
    "fieldname": "wait_timeout",
    "fieldtype": "Int",
    "label": "Wait Timeout (seconds)",
@@ -205,7 +205,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-07 17:32:34.367672",
+ "modified": "2025-02-07 21:43:28.285974",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",
