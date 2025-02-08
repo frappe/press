@@ -26,9 +26,9 @@ class SiteUserSession(Document):
 	def send_otp(self):
 		"""Send OTP to the user for site login."""
 
-		import random
+		from press.utils.otp import generate_otp
 
-		self.otp = random.randint(100000, 999999)
+		self.otp = generate_otp()
 		self.session_id = frappe.generate_hash()
 		self.otp_generated_at = frappe.utils.now_datetime()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
