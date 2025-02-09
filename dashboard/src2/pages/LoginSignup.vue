@@ -324,14 +324,19 @@ export default {
 					// check if error message has `is already registered` substring
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
-						if (this.saasProduct) {
+
+						if (this.$route.query?.product) {
 							this.$router.push({
-								name: 'Site Login',
+								name: 'Login',
+								query: {
+									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
+								},
 							});
-						} else
+						} else {
 							this.$router.push({
 								name: 'Login',
 							});
+						}
 					}
 				},
 			};
@@ -500,6 +505,10 @@ export default {
 				{
 					onSuccess: (res) => {
 						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
+						// if query param redirect is present, redirect to that route
+						if (this.$route.query.redirect) {
+							loginRoute = this.$route.query.redirect;
+						}
 						localStorage.setItem('login_email', this.email);
 						window.location.href = loginRoute;
 					},
@@ -584,7 +593,7 @@ export default {
 				return 'Sign in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create a ${this.saasProduct.title} site`;
+					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
 				return 'Create a new account';
 			}

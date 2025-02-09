@@ -197,10 +197,10 @@ export default {
 					oauth_signup: this.oauthSignup,
 					oauth_domain: this.oauthDomain,
 				},
-				onSuccess(account_request) {
+				onSuccess() {
 					let path = '/dashboard/create-site/app-selector';
 					if (this.saasProduct) {
-						path = `/dashboard/create-site/${this.saasProduct.name}/setup?account_request=${account_request}`;
+						path = `/dashboard/create-site/${this.saasProduct.name}/setup`;
 					}
 					window.location.href = path;
 				},

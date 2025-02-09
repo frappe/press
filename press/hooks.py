@@ -199,6 +199,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
+		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -368,6 +369,7 @@ __persistent_cache_keys = [
 	"fc_oauth_state*",
 	"one_time_login_key*",
 	"press-auth-logs",
+	"rl:*",
 ]
 
 # `frappe.rename_doc` erases all caches, this hook preserves some of them.

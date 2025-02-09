@@ -2320,6 +2320,12 @@
     "step_name": "Export Table Schema"
    },
    {
+    "step_name": "Collect Files Metadata"
+   },
+   {
+    "step_name": "Store Backup Metadata"
+   },
+   {
     "step_name": "Create Database Snapshot"
    },
    {
@@ -2337,6 +2343,9 @@
   "request_method": "POST",
   "request_path": "/database/physical-restore",
   "steps": [
+   {
+    "step_name": "Validate Backup Files"
+   },
    {
     "step_name": "Validate Connection to Target Database"
    },

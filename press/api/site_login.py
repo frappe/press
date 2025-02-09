@@ -101,7 +101,7 @@ def send_otp(email: str):
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
+@rate_limit(limit=5, seconds=60 * 60)
 def verify_otp(email: str, otp: str):
 	"""
 	Verify OTP

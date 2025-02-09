@@ -48,7 +48,7 @@
 							<div class="mt-2 text-gray-600">Members</div>
 							<div
 								v-if="roleUsers.length === 0"
-								class="p-4 text-center text-gray-500"
+								class="p-6 text-center text-gray-500"
 							>
 								<span>No members added to this role.</span>
 							</div>

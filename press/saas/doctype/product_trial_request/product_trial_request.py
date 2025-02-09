@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils.data import now_datetime
+from frappe.utils.data import add_to_date, now_datetime
 from frappe.utils.momentjs import get_all_timezones
 from frappe.utils.password import decrypt as decrypt_password
 from frappe.utils.password import encrypt as encrypt_password
@@ -329,3 +329,13 @@ def get_app_trial_page_url():
 	except Exception:
 		frappe.log_error(title="App Trial Page URL Error")
 		return None
+
+
+def expire_long_pending_trial_requests():
+	frappe.db.set_value(
+		"Product Trial Request",
+		{"status": "Pending", "creation": ("<", add_to_date(now_datetime(), hours=-6))},
+		"status",
+		"Expired",
+		update_modified=False,
+	)

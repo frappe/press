@@ -152,15 +152,26 @@ def setup_account(key: str, country: str | None = None):
 	}
 
 
+def _get_existing_trial_request(product: str, team: str):
+	return frappe.get_value(
+		"Product Trial Request",
+		{"team": team, "status": ["not in", ["Error", "Expired", "Site Created"]], "product_trial": product},
+		["name", "site"],
+		as_dict=True,
+	)
+
+
 @frappe.whitelist(methods=["POST"])
 def get_request(product: str, account_request: str | None = None):
 	team = frappe.local.team()
+
 	# validate if there is already a site
-	site = _get_active_site(product, team.name)
-	if site:
+	if site := _get_active_site(product, team.name):
 		site_request = frappe.get_doc(
 			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
 		)
+	elif request := _get_existing_trial_request(product, team.name):
+		site_request = frappe.get_doc("Product Trial Request", request.name)
 	else:
 		# check if account request is valid
 		is_valid_account_request = frappe.get_value("Account Request", account_request, "email") == team.user

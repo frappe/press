@@ -95,6 +95,7 @@ getInitialData().then(() => {
 					/Can't find variable: ResizeObserver/,
 					/Method not found/,
 					/Menu caption text is required/,
+					/Internal error opening backing store for indexedDB.open/,
 				];
 				const ignoreErrorTypes = [
 					'BuildValidationError',

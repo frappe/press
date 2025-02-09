@@ -1,5 +1,4 @@
 import json
-import random
 
 import frappe
 import frappe.utils
@@ -124,8 +123,10 @@ It can potentially break the integrations.
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(limit=5, seconds=60)
+@rate_limit(limit=5, seconds=60 * 60)
 def send_verification_code(domain: str, route: str = ""):
+	from press.utils.otp import generate_otp
+
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
 		frappe.throw("The domain is not active currently. Please try again.")
@@ -148,7 +149,7 @@ def send_verification_code(domain: str, route: str = ""):
 	# 	return {"is_user_logged_in": True, "redirect_to": redirect_to}
 
 	# generate otp and set in redis with 10 min expiry
-	otp = random.randint(10000, 99999)
+	otp = generate_otp()
 	frappe.cache.set_value(
 		f"otp_hash_for_fc_login_via_saas_flow:{domain}",
 		frappe.utils.sha256_hash(str(otp)),
@@ -165,6 +166,7 @@ def send_verification_code(domain: str, route: str = ""):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=5, seconds=60 * 60)
 def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
@@ -187,6 +189,7 @@ def verify_verification_code(domain: str, verification_code: str, route: str = "
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
 def login_to_fc(token: str):
 	email_cache_key = f"saas_fc_login_token:{token}"
 	domain_cache_key = f"saas_fc_login_site:{token}"

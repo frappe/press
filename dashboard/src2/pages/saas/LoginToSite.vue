@@ -98,7 +98,7 @@
 			</LoginBox>
 			<LoginBox
 				v-else
-				title="Building your site"
+				title="Creating your site"
 				:subtitle="
 					this.$resources?.siteRequest?.doc?.site_label ||
 					this.$resources?.siteRequest?.doc?.site
@@ -121,7 +121,7 @@
 					<div class="flex h-40 items-center justify-center">
 						<Progress
 							class="px-10"
-							size="lg"
+							size="md"
 							:value="progressCount"
 							:label="currentBuildStep"
 						/>

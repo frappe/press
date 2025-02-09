@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import json
-import random
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string
 
 from press.utils import get_country_info, is_valid_email_address
+from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
 
@@ -82,10 +82,10 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		if not self.otp:
-			self.otp = random.randint(10000, 99999)
+			self.otp = generate_otp()
 			self.otp_generated_at = frappe.utils.now_datetime()
 			if frappe.conf.developer_mode and frappe.local.dev_server:
-				self.otp = 11111
+				self.otp = 111111
 
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info() or {}
@@ -145,7 +145,7 @@ class AccountRequest(Document):
 		return False
 
 	def reset_otp(self):
-		self.otp = random.randint(10000, 99999)
+		self.otp = generate_otp()
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
