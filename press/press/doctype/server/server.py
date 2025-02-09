@@ -1286,6 +1286,31 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
 		return None
 
+	def copy_files(self, source, destination):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_copy_files",
+			source=source,
+			destination=destination,
+			queue="long",
+			timeout=7200,
+		)
+
+	def _copy_files(self, source, destination):
+		try:
+			ansible = Ansible(
+				playbook="copy.yml",
+				server=self,
+				variables={
+					"source": source,
+					"destination": destination,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Sever File Copy Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
