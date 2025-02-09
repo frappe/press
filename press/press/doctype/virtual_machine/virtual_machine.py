@@ -208,16 +208,19 @@ class VirtualMachine(Document):
 
 		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
-			additional_volumes.append(
-				{
-					"DeviceName": f"/dev/sd{device_name_index}",
-					"Ebs": {
-						"DeleteOnTermination": True,
-						"VolumeSize": volume.size,
-						"VolumeType": volume.volume_type,
-					},
-				}
-			)
+			volume_options = {
+				"DeviceName": f"/dev/sd{device_name_index}",
+				"Ebs": {
+					"DeleteOnTermination": True,
+					"VolumeSize": volume.size,
+					"VolumeType": volume.volume_type,
+				},
+			}
+			if volume.iops:
+				volume_options["Ebs"]["Iops"] = volume.iops
+			if volume.throughput:
+				volume_options["Ebs"]["Throughput"] = volume.throughput
+			additional_volumes.append(volume_options)
 
 		options = {
 			"BlockDeviceMappings": [

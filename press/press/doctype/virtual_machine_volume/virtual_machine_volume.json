@@ -45,7 +45,7 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "IOPS",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.iops"
   },
   {
    "columns": 1,
@@ -53,7 +53,7 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Throughput",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.throughput"
   },
   {
    "columns": 4,
@@ -113,7 +113,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-05 12:52:19.473963",
+ "modified": "2025-02-07 20:38:39.733552",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",
