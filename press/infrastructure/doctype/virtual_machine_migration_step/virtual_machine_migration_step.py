@@ -16,7 +16,6 @@ class VirtualMachineMigrationStep(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-
 		attempts: DF.Int
 		duration: DF.Duration | None
 		end: DF.Datetime | None
