@@ -191,7 +191,7 @@
 								type="text"
 								class="mt-4"
 								placeholder="5 digit verification code"
-								maxlength="5"
+								maxlength="6"
 								v-model="otp"
 								required
 							/>
