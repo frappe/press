@@ -19,7 +19,7 @@ class SaasSitePool:
 			"Site",
 			filters={
 				"is_standby": True,
-				"status": "Active",
+				"status": ["in", ["Active", "Pending", "Installing", "Updating"]],
 				"standby_for": self.app,
 				"hybrid_saas_pool": "",
 			},

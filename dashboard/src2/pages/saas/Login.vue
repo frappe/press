@@ -215,7 +215,7 @@ export default {
 		moveToSiteLoginPage(product_trial_request) {
 			this.isRedirecting = true;
 			window.location.href = this.$router.resolve({
-				name: 'SaaSSignupLoginToSite',
+				name: 'SignupLoginToSite',
 				params: {
 					productId: this.productId,
 				},

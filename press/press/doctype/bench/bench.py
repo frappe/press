@@ -447,6 +447,29 @@ class Bench(Document):
 				)
 				frappe.db.rollback()
 
+	def sync_product_site_users(self):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
+		data = agent.get_sites_analytics(self)
+		if not data:
+			return
+		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
+			try:
+				frappe.get_doc("Site", site).sync_users_to_product_site(analytics)
+				frappe.db.commit()
+			except Exception:
+				log_error(
+					"Site Users Sync Error",
+					site=site,
+					analytics=analytics,
+					reference_doctype="Bench",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
+
 	@dashboard_whitelist()
 	def update_all_sites(self):
 		sites = frappe.get_all(

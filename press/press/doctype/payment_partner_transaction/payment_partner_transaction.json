@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "autoname": "PPT.-.YY.-.MM.-.####",
+ "creation": "2025-01-18 10:53:07.242575",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_details_section",
+  "payment_partner",
+  "posting_date",
+  "column_break_manc",
+  "payment_gateway",
+  "column_break_ejza",
+  "team",
+  "transaction_details_section",
+  "amount",
+  "actual_amount",
+  "column_break_xqsh",
+  "currency",
+  "actual_currency",
+  "column_break_jyxx",
+  "exchange_rate",
+  "submitted_to_frappe",
+  "section_break_yhqq",
+  "payment_transaction_details",
+  "section_break_7oh3",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Team Details"
+  },
+  {
+   "fieldname": "payment_partner",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payment Partner",
+   "options": "Team"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date"
+  },
+  {
+   "fieldname": "column_break_manc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_gateway",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payment Gateway",
+   "options": "Payment Gateway"
+  },
+  {
+   "fieldname": "column_break_ejza",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "transaction_details_section",
+   "fieldtype": "Section Break",
+   "label": "Transaction Details"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "options": "currency"
+  },
+  {
+   "fieldname": "actual_amount",
+   "fieldtype": "Currency",
+   "label": "Actual Amount",
+   "options": "actual_currency"
+  },
+  {
+   "fieldname": "column_break_xqsh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fetch_from": "payment_gateway.currency",
+   "fieldname": "actual_currency",
+   "fieldtype": "Link",
+   "label": "Actual Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_jyxx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
+  },
+  {
+   "default": "0",
+   "fieldname": "submitted_to_frappe",
+   "fieldtype": "Check",
+   "label": "Submitted To Frappe"
+  },
+  {
+   "fieldname": "section_break_yhqq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "payment_transaction_details",
+   "fieldtype": "Code",
+   "label": "Payment Transaction Details",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_7oh3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Payment Partner Transaction",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-02-02 17:54:48.975501",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Payment Partner Transaction",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

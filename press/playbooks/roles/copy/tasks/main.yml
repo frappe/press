@@ -1,0 +1,8 @@
+---
+- name: Copy Files from Source to Destination
+  command: "cp --archive --recursive {{ source }}/. {{ destination }}/"
+  async: 7200
+  poll: 5
+
+- name: Write Buffered Data to Disk
+  command: sync

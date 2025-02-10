@@ -1,9 +1,6 @@
 import frappe
 
 from press.api.client import dashboard_whitelist
-from press.saas.doctype.product_trial_request.product_trial_request import (
-	get_app_trial_page_url,
-)
 from press.utils import get_full_chain_cert_of_domain, get_minified_script, get_minified_script_2, log_error
 
 
@@ -19,6 +16,10 @@ def script_2():
 
 @frappe.whitelist(allow_guest=True)
 def handle_suspended_site_redirection():
+	from press.saas.doctype.product_trial_request.product_trial_request import (
+		get_app_trial_page_url,
+	)
+
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response["location"] = get_app_trial_page_url() or "/dashboard"
 

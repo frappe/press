@@ -1637,7 +1637,7 @@ def check_dns_cname(name, domain):
 	except MultipleCNAMERecords:
 		multiple_domains = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple CNAME records: {multiple_domains}.Please keep only one.",
+			f"Domain {domain} has multiple CNAME records: {multiple_domains}. Please keep only one.",
 			MultipleCNAMERecords,
 		)
 	except dns.resolver.NoAnswer as e:
@@ -1683,7 +1683,7 @@ def check_dns_a(name, domain):
 	except MultipleARecords:
 		multiple_ips = ", ".join(part.to_text() for part in answer)
 		frappe.throw(
-			f"Domain {domain} has multiple A records: {multiple_ips}.Please keep only one.",
+			f"Domain {domain} has multiple A records: {multiple_ips}. Please keep only one.",
 			MultipleARecords,
 		)
 	except dns.resolver.NoAnswer as e:

@@ -208,16 +208,19 @@ class VirtualMachine(Document):
 
 		for index, volume in enumerate(self.volumes, start=len(additional_volumes)):
 			device_name_index = chr(ord("f") + index)
-			additional_volumes.append(
-				{
-					"DeviceName": f"/dev/sd{device_name_index}",
-					"Ebs": {
-						"DeleteOnTermination": True,
-						"VolumeSize": volume.size,
-						"VolumeType": volume.volume_type,
-					},
-				}
-			)
+			volume_options = {
+				"DeviceName": f"/dev/sd{device_name_index}",
+				"Ebs": {
+					"DeleteOnTermination": True,
+					"VolumeSize": volume.size,
+					"VolumeType": volume.volume_type,
+				},
+			}
+			if volume.iops:
+				volume_options["Ebs"]["Iops"] = volume.iops
+			if volume.throughput:
+				volume_options["Ebs"]["Throughput"] = volume.throughput
+			additional_volumes.append(volume_options)
 
 		options = {
 			"BlockDeviceMappings": [
@@ -935,9 +938,9 @@ class VirtualMachine(Document):
 		return None
 
 	@frappe.whitelist()
-	def update_ebs_performance(self, iops, throughput):
+	def update_ebs_performance(self, volume_id, iops, throughput):
 		if self.cloud_provider == "AWS EC2":
-			volume = self.volumes[0]
+			volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 			new_iops = int(iops) or volume.iops
 			new_throughput = int(throughput) or volume.throughput
 			self.client().modify_volume(
@@ -1281,22 +1284,28 @@ class VirtualMachine(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def attach_new_volume(self, size):
+	def attach_new_volume(self, size, iops=None, throughput=None):
 		if self.cloud_provider != "AWS EC2":
-			return
-		volume_id = self.client().create_volume(
-			AvailabilityZone=self.availability_zone,
-			Size=size,
-			VolumeType="gp3",
-			TagSpecifications=[
+			return None
+		volume_options = {
+			"AvailabilityZone": self.availability_zone,
+			"Size": size,
+			"VolumeType": "gp3",
+			"TagSpecifications": [
 				{
 					"ResourceType": "volume",
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-		)["VolumeId"]
+		}
+		if iops:
+			volume_options["Iops"] = iops
+		if throughput:
+			volume_options["Throughput"] = throughput
+		volume_id = self.client().create_volume(**volume_options)["VolumeId"]
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
+		return volume_id
 
 	def wait_for_volume_to_be_available(self, volume_id):
 		# AWS EC2 specific
@@ -1313,6 +1322,20 @@ class VirtualMachine(Document):
 		except botocore.exceptions.ClientError as e:
 			if e.response.get("Error", {}).get("Code") == "InvalidVolume.NotFound":
 				return "deleted"
+
+	def get_volume_modifications(self, volume_id):
+		if self.cloud_provider != "AWS EC2":
+			raise NotImplementedError
+
+		# AWS EC2 specific https://docs.aws.amazon.com/ebs/latest/userguide/monitoring-volume-modifications.html
+
+		try:
+			return self.client().describe_volumes_modifications(VolumeIds=[volume_id])[
+				"VolumesModifications"
+			][0]
+		except botocore.exceptions.ClientError as e:
+			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
+				return None
 
 	def attach_volume(self, volume_id) -> str:
 		if self.cloud_provider != "AWS EC2":
@@ -1347,11 +1370,19 @@ class VirtualMachine(Document):
 	def detach(self, volume_id):
 		volume = find(self.volumes, lambda v: v.volume_id == volume_id)
 		if not volume:
-			return
+			return False
 		self.client().detach_volume(
 			Device=volume.device, InstanceId=self.instance_id, VolumeId=volume.volume_id
 		)
 		self.sync()
+		return True
+
+	@frappe.whitelist()
+	def delete_volume(self, volume_id):
+		if self.detach(volume_id):
+			self.wait_for_volume_to_be_available(volume_id)
+			self.client().delete_volume(VolumeId=volume_id)
+			self.sync()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")

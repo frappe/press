@@ -1,5 +1,4 @@
 import json
-import random
 
 import frappe
 import frappe.utils
@@ -114,8 +113,8 @@ def get_trial_expiry(secret_key):
 
 """
 NOTE: These mentioned apis are used for all type of saas sites to allow login to frappe cloud
-- request_login_to_fc
-- validate_login_to_fc
+- send_verification_code
+- verify_verification_code
 - login_to_fc
 
 Don't change the file name or the method names
@@ -124,8 +123,10 @@ It can potentially break the integrations.
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(limit=5, seconds=60)
-def request_login_to_fc(domain: str):
+@rate_limit(limit=5, seconds=60 * 60)
+def send_verification_code(domain: str, route: str = ""):
+	from press.utils.otp import generate_otp
+
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
 		frappe.throw("The domain is not active currently. Please try again.")
@@ -137,6 +138,88 @@ def request_login_to_fc(domain: str):
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
 		frappe.throw("Your Frappe Cloud team is disabled currently.")
+
+	check_if_user_can_login(team_info, site_info)
+
+	# if is_user_logged_in(team_info.get("user")):
+	# 	if route == "dashboard":
+	# 		redirect_to = "/dashboard/"
+	# 	elif route == "site-dashboard":
+	# 		redirect_to = f"/dashboard/sites/{site_info.get('name')}"
+	# 	return {"is_user_logged_in": True, "redirect_to": redirect_to}
+
+	# generate otp and set in redis with 10 min expiry
+	otp = generate_otp()
+	frappe.cache.set_value(
+		f"otp_hash_for_fc_login_via_saas_flow:{domain}",
+		frappe.utils.sha256_hash(str(otp)),
+		expires_in_sec=60 * 10,
+	)
+
+	email = team_info.get("user")
+	send_email_with_verification_code(email, otp)
+
+	return {
+		"email": mask_email(email, 50),
+		"is_user_logged_in": False,
+	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=5, seconds=60 * 60)
+def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
+	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
+	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
+		frappe.throw("Invalid Code. Please try again.")
+
+	site = frappe.get_value("Site Domain", domain, "site")
+	team = frappe.get_value("Site", site, "team")
+	user = frappe.get_value("Team", team, "user")
+
+	# as otp is valid, delete the otp from redis
+	frappe.cache.delete_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}")
+
+	# login and generate a login_token to store sid
+	login_token = frappe.generate_hash(length=64)
+	frappe.cache.set_value(f"saas_fc_login_token:{login_token}", user, expires_in_sec=60)
+	if route == "site-dashboard":
+		frappe.cache.set_value(f"saas_fc_login_site:{login_token}", domain, expires_in_sec=60)
+
+	frappe.response["login_token"] = login_token
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def login_to_fc(token: str):
+	email_cache_key = f"saas_fc_login_token:{token}"
+	domain_cache_key = f"saas_fc_login_site:{token}"
+	email = frappe.cache.get_value(email_cache_key, expires=True)
+	domain = frappe.cache.get_value(domain_cache_key, expires=True)
+
+	if email:
+		frappe.cache.delete_value(email_cache_key)
+		frappe.local.login_manager.login_as(email)
+	frappe.response.type = "redirect"
+	if domain:
+		frappe.cache.delete_value(domain_cache_key)
+		frappe.response.location = f"/dashboard/sites/{domain}"
+	else:
+		frappe.response.location = "/dashboard/"
+
+
+def is_user_logged_in(user):
+	Sessions = frappe.qb.DocType("Sessions")
+
+	return bool(
+		frappe.qb.from_(Sessions)
+		.select(Sessions.user)
+		.where(Sessions.user == user)
+		.where(Sessions.status == "Active")
+		.run(as_dict=True)
+	)
+
+
+def check_if_user_can_login(team_info, site_info):
 	if team_info.get("enforce_2fa"):
 		frappe.throw(
 			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
@@ -151,15 +234,8 @@ def request_login_to_fc(domain: str):
 	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
 		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
 
-	# generate otp and set in redis with 10 min expiry
-	otp = random.randint(10000, 99999)
-	frappe.cache.set_value(
-		f"otp_hash_for_fc_login_via_saas_flow:{domain}",
-		frappe.utils.sha256_hash(str(otp)),
-		expires_in_sec=60 * 10,
-	)
 
-	email = team_info.get("user")
+def send_email_with_verification_code(email, otp):
 	if frappe.conf.developer_mode:
 		print("\nVerification Code for login to Frappe Cloud:")
 		print(f"\nOTP for {email}:")
@@ -177,38 +253,3 @@ def request_login_to_fc(domain: str):
 			},
 			now=True,
 		)
-
-	return {
-		"email": mask_email(email, 50),
-	}
-
-
-@frappe.whitelist(allow_guest=True, methods=["POST"])
-def validate_login_to_fc(domain: str, otp: str):
-	otp_hash = frappe.cache().get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
-	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(otp)):
-		frappe.throw("Invalid Code. Please try again.")
-
-	site = frappe.get_value("Site Domain", domain, "site")
-	team = frappe.get_value("Site", site, "team")
-	user = frappe.get_value("Team", team, "user")
-
-	# as otp is valid, delete the otp from redis
-	frappe.cache().delete_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}")
-
-	# login and generate a login_token to store sid
-	login_token = frappe.generate_hash(length=64)
-	frappe.cache.set_value(f"saas_fc_login_token:{login_token}", user, expires_in_sec=60)
-
-	frappe.response["login_token"] = login_token
-
-
-@frappe.whitelist(allow_guest=True)
-def login_to_fc(token: str):
-	cache_key = f"saas_fc_login_token:{token}"
-	email = frappe.cache().get_value(cache_key, expires=True)
-	if email:
-		frappe.cache().delete_value(cache_key)
-		frappe.local.login_manager.login_as(email)
-	frappe.response.type = "redirect"
-	frappe.response.location = "/dashboard"

@@ -135,6 +135,7 @@ class SiteUpdate(Document):
 		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
+		self.set_physical_backup_mode_if_eligible()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -213,18 +214,19 @@ class SiteUpdate(Document):
 			)
 
 	def before_insert(self):
-		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
+		self.backup_type = "Logical"
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
-		if self.deploy_type == "Migrate":
-			self.set_physical_backup_mode_if_eligible()
 
 	def after_insert(self):
 		if not self.scheduled_time:
 			self.start()
 
-	def set_physical_backup_mode_if_eligible(self):
+	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
 		if self.skipped_backups:
+			return
+
+		if self.deploy_type != "Migrate":
 			return
 
 		# Check if physical backup is disabled globally from Press Settings
@@ -255,14 +257,15 @@ class SiteUpdate(Document):
 			pluck="database_size",
 			limit=1,
 			order_by="creation desc",
+			ignore_permissions=True,
 		)
 		db_backup_size = 0
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 100MB and less than 5000MB
+		# If last logical backup size is greater than 250MB and less than 1GB
 		# Then only take physical backup
-		if db_backup_size > 104857600 and db_backup_size < 5242880000:
+		if db_backup_size > 262144000 and db_backup_size < 1073741824:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -467,7 +470,6 @@ class SiteUpdate(Document):
 			)
 		else:
 			# Site is already on the source bench
-
 			if site.status_before_update == "Active":
 				# Disable maintenance mode for active sites
 				job = agent.update_site_recover(site)

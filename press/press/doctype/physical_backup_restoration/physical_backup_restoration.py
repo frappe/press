@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import time
@@ -149,19 +150,13 @@ class PhysicalBackupRestoration(Document):
 			self.tables_to_restore = "[]"
 			return
 
-		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
-		if not self.tables_to_restore:
-			frappe.throw("You must provide at least one table to restore.")
+		tables_to_restore = []
+		with contextlib.suppress(Exception):
+			tables_to_restore = json.loads(self.tables_to_restore)
 
-		tables_to_restore_list = json.loads(self.tables_to_restore)
-		site_backup = frappe.get_doc("Site Backup", self.site_backup)
-		existing_tables_in_backup = set(
-			json.loads(site_backup.innodb_tables) + json.loads(site_backup.myisam_tables)
-		)
-		filtered_tables_to_restore_list = [
-			table for table in tables_to_restore_list if table in existing_tables_in_backup
-		]
-		self.tables_to_restore = json.dumps(filtered_tables_to_restore_list)
+		# If restore_specific_tables is checked, raise error if tables_to_restore is empty
+		if not tables_to_restore:
+			frappe.throw("You must provide at least one table to restore.")
 
 	def set_mount_point(self):
 		self.mount_point = f"/mnt/{self.name}"
@@ -215,50 +210,55 @@ class PhysicalBackupRestoration(Document):
 
 		Next, If the volume was created from a snapshot of root volume, the volume will have multiple partitions.
 
-		> lsblk --json -o name,fstype,type,label,serial
+		> lsblk --json -o name,fstype,type,label,serial,size -b
+
+		> Dummy output
 
 		{
 			"blockdevices":[
-				{ "name":"loop0", "fstype":null, "type": "loop", "label": null },
-				{ "name":"loop1", "fstype":null, "type": "loop", "label": null },
-				{ "name":"loop2", "fstype":null, "type": "loop", "label": null },
-				{ "name":"loop3", "fstype":null, "type": "loop", "label": null },
-				{ "name":"loop4", "fstype":null, "type": "loop", "label": null },
+				{ "name":"loop0", "fstype":null, "type": "loop", "label": null, "size": 16543383 },
+				{ "name":"loop1", "fstype":null, "type": "loop", "label": null, "size": 16543383 },
+				{ "name":"loop2", "fstype":null, "type": "loop", "label": null, "size": 16543383 },
+				{ "name":"loop3", "fstype":null, "type": "loop", "label": null, "size": 16543383 },
+				{ "name":"loop4", "fstype":null, "type": "loop", "label": null, "size": 16543383 },
 				{
-					"name":"xvda","fstype":null, "type": "disk", "label": null,
+					"name":"xvda","fstype":null, "type": "disk", "label": null, "size": 4294966784
 					"children":[
 						{
 							"name":"xvda1",
 							"fstype":"ext4",
 							"type":"part",
-							"label":"cloudimg-rootfs"
+							"label":"cloudimg-rootfs",
+							"size": 4294966784
 						},
 						{
 							"name":"xvda14",
 							"fstype":null,
 							"type":"part",
-							"label":null
+							"label":null,
+							"size": 123345
 						},
 						{
 							"name":"xvda15",
 							"fstype":"vfat",
 							"type":"part",
-							"label":"UEFI"
+							"label":"UEFI",
+							"size": 124553
 						}
 					]
 				},
-				{"name":"nvme0n1", "fstype":null, "type":"disk", "label":null, "serial":"vol0784b4423604486ea",
+				{"name":"nvme0n1", "fstype":null, "type":"disk", "label":null, "serial":"vol0784b4423604486ea", "size": 4294966784
 					"children": [
-						{"name":"nvme0n1p1", "fstype":"ext4", "type":"part", "label":"cloudimg-rootfs", "serial":null},
-						{"name":"nvme0n1p14", "fstype":null, "type":"part", "label":null, "serial":null},
-						{"name":"nvme0n1p15", "fstype":"vfat", "type":"part", "label":"UEFI", "serial":null}
+						{"name":"nvme0n1p1", "fstype":"ext4", "type":"part", "label":"cloudimg-rootfs", "serial":null, "size": 4123906784},
+						{"name":"nvme0n1p14", "fstype":null, "type":"part", "label":null, "serial":null "size": 234232},
+						{"name":"nvme0n1p15", "fstype":"vfat", "type":"part", "label":"UEFI", "serial":null, "size": 124553}
 					]
 				}
 			]
 		}
 
 		"""
-		result = self.ansible_run("lsblk --json -o name,fstype,type,label,serial")
+		result = self.ansible_run("lsblk --json -o name,fstype,type,label,serial,size -b")
 		if result["status"] != "Success":
 			return StepStatus.Failure
 
@@ -302,11 +302,22 @@ class PhysicalBackupRestoration(Document):
 			# the volume will have multiple partitions.
 			if device_info["type"] == "disk" and device_info.get("children"):
 				children = device_info["children"]
-				# try to find the partition with label cloudimg-rootfs
+				largest_partition_size = 1073741824  # 1GB | Disk partition should be larger than 1GB
+				largest_partition = None
+				# try to find the partition with label cloudimg-rootfs or old-rootfs
 				for child in children:
-					if child["label"] == "cloudimg-rootfs":
+					if child["size"] > largest_partition_size:
+						largest_partition_size = child["size"]
+						largest_partition = child["name"]
+
+					if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
 						disk_partition_to_mount = "/dev/{}".format(child["name"])
 						break
+
+				# If the partitions are not labeled, try to find largest partition
+				if not disk_partition_to_mount and largest_partition is not None:
+					disk_partition_to_mount = f"/dev/{largest_partition}"
+					break
 
 			if disk_partition_to_mount:
 				break
@@ -314,7 +325,7 @@ class PhysicalBackupRestoration(Document):
 		if not disk_partition_to_mount:
 			self.log_error(
 				title="Not able to find disk partition to mount",
-				message=f"Disk name: {disk_name}, Possible disks: {possible_disks}",
+				message=f"Disk name: {disk_name}, Possible disks: {possible_disks} or with serial {disk_serial}",
 			)
 			return StepStatus.Failure
 
@@ -325,10 +336,13 @@ class PhysicalBackupRestoration(Document):
 
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
-		path = os.path.join(self.mount_point, "var/lib/mysql")
-		result = self.ansible_run(f"chmod -R 770 {path}")
+		base_path = os.path.join(self.mount_point, "var/lib/mysql")
+		result = self.ansible_run(f"chmod 777 {base_path}")
 		if result["status"] == "Success":
-			return StepStatus.Success
+			db_path = os.path.join(self.mount_point, "var/lib/mysql", self.source_database)
+			result = self.ansible_run(f"chmod -R 777 {db_path}")
+			if result["status"] == "Success":
+				return StepStatus.Success
 		return StepStatus.Failure
 
 	def change_permission_of_database_directory(self) -> StepStatus:
@@ -637,8 +651,7 @@ class PhysicalBackupRestoration(Document):
 	def ansible_run(self, command):
 		inventory = f"{self.virtual_machine.public_ip_address},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
-		if result["status"] != "Success":
-			self.add_command(command, result)
+		self.add_command(command, result)
 		return result
 
 	def add_command(self, command, result):
