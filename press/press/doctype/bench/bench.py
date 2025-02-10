@@ -274,6 +274,7 @@ class Bench(Document):
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
 			"socketio_port": 19000 + self.port_offset,
+			"rq_port": 11000 + self.port_offset,
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
 			"codeserver_port": 16000 + self.port_offset,
