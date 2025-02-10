@@ -2119,11 +2119,11 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Suspended"])
-	def unsuspend(self, reason=None):
+	def unsuspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
-		self.update_site_status_on_proxy("activated")
+		self.update_site_status_on_proxy("activated", skip_reload=skip_reload)
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
