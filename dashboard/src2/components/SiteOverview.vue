@@ -160,7 +160,7 @@
 				</div>
 				<div class="p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex min-h-[1.75rem] items-center justify-between text-base text-gray-700"
 					>
 						<span>Database</span>
 						<Button
