@@ -110,7 +110,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -132,49 +132,6 @@ frappe.ui.form.on('Virtual Machine', {
 									.then((r) => frm.refresh());
 							},
 							__('Resize Virtual Machine'),
-						);
-					},
-					__('Actions'),
-				);
-			}
-		});
-		[
-			[
-				__('Update EBS Performance'),
-				'update_ebs_performance',
-				frm.doc.cloud_provider == 'AWS EC2',
-			],
-		].forEach(([label, method, condition]) => {
-			if (typeof condition === 'undefined' || condition) {
-				frm.add_custom_button(
-					label,
-					() => {
-						frappe.prompt(
-							[
-								{
-									fieldtype: 'Int',
-									label: 'IOPS',
-									fieldname: 'iops',
-									reqd: 1,
-									default: frm.doc.volumes[0].iops,
-								},
-								{
-									fieldtype: 'Int',
-									label: 'Throughput (MB/s)',
-									fieldname: 'throughput',
-									reqd: 1,
-									default: frm.doc.volumes[0].throughput,
-								},
-							],
-							({ iops, throughput }) => {
-								frm
-									.call(method, {
-										iops,
-										throughput,
-									})
-									.then((r) => frm.refresh());
-							},
-							__('Update EBS Performance'),
 						);
 					},
 					__('Actions'),
@@ -324,6 +281,16 @@ frappe.ui.form.on('Virtual Machine Volume', {
 					.then((r) => frm.refresh()),
 		);
 	},
+	delete_volume(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to delete volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('delete_volume', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
+	},
 	increase_disk_size(frm, cdt, cdn) {
 		let row = frm.selected_doc;
 		frappe.prompt(
@@ -342,6 +309,37 @@ frappe.ui.form.on('Virtual Machine Volume', {
 					.then((r) => frm.refresh());
 			},
 			__('Increase Disk Size'),
+		);
+	},
+	update_ebs_performance(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.prompt(
+			[
+				{
+					fieldtype: 'Int',
+					label: 'IOPS',
+					fieldname: 'iops',
+					reqd: 1,
+					default: row.iops,
+				},
+				{
+					fieldtype: 'Int',
+					label: 'Throughput (MB/s)',
+					fieldname: 'throughput',
+					reqd: 1,
+					default: row.throughput,
+				},
+			],
+			({ iops, throughput }) => {
+				frm
+					.call('update_ebs_performance', {
+						volume_id: row.volume_id,
+						iops,
+						throughput,
+					})
+					.then((r) => frm.refresh());
+			},
+			__('Update EBS Performance'),
 		);
 	},
 });

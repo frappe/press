@@ -190,8 +190,8 @@
 								label="Verification code"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit verification code"
-								maxlength="5"
+								placeholder="6 digit verification code"
+								maxlength="6"
 								v-model="otp"
 								required
 							/>
@@ -325,17 +325,18 @@ export default {
 					if (errorMessage.includes('is already registered')) {
 						localStorage.setItem('login_email', this.email);
 
-						// timeout to show error message before redirecting
-						setTimeout(() => {
-							if (this.saasProduct) {
-								this.$router.push({
-									name: 'Site Login',
-								});
-							} else
-								this.$router.push({
-									name: 'Login',
-								});
-						}, 1000);
+						if (this.$route.query?.product) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
+								},
+							});
+						} else {
+							this.$router.push({
+								name: 'Login',
+							});
+						}
 					}
 				},
 			};
@@ -504,6 +505,10 @@ export default {
 				{
 					onSuccess: (res) => {
 						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
+						// if query param redirect is present, redirect to that route
+						if (this.$route.query.redirect) {
+							loginRoute = this.$route.query.redirect;
+						}
 						localStorage.setItem('login_email', this.email);
 						window.location.href = loginRoute;
 					},
