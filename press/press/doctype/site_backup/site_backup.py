@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 
@@ -216,11 +218,32 @@ class SiteBackup(Document):
 		if self.database_snapshot:
 			# Snapshot already exists, So no need to create a new one
 			return
+
 		server = frappe.get_value("Site", self.site, "server")
 		database_server = frappe.get_value("Server", server, "database_server")
 		virtual_machine = frappe.get_doc(
 			"Virtual Machine", frappe.get_value("Database Server", database_server, "virtual_machine")
 		)
+
+		cache_key = f"volume_active_snapshot:{self.database_server}"
+
+		max_retries = 3
+		while max_retries > 0:
+			is_ongoing_snapshot = frappe.utils.cint(frappe.cache.get_value(cache_key, expires=True))
+			if not is_ongoing_snapshot:
+				break
+			time.sleep(2)
+			max_retries -= 1
+
+		if frappe.cache.get_value(cache_key, expires=True):
+			raise OngoingSnapshotError("Snapshot creation per volume rate exceeded")
+
+		frappe.cache.set_value(
+			cache_key,
+			1,
+			expires_in_sec=15,
+		)
+
 		virtual_machine.create_snapshots(exclude_boot_volume=True, created_for_site_update=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
 			frappe.throw("Failed to create a snapshot for the database server")
@@ -244,6 +267,12 @@ class SiteBackup(Document):
 	@classmethod
 	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
+
+
+class OngoingSnapshotError(Exception):
+	"""Exception raised when other snapshot creation is ongoing"""
+
+	pass
 
 
 def track_offsite_backups(site: str, backup_data: dict, offsite_backup_data: dict) -> tuple:

@@ -2,8 +2,12 @@ from typing import TYPE_CHECKING
 
 import frappe
 
+from press.press.doctype.site_backup.site_backup import OngoingSnapshotError
+
 if TYPE_CHECKING:
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+
+from botocore.exceptions import ClientError
 
 
 @frappe.whitelist(allow_guest=True, methods="POST")
@@ -25,6 +29,15 @@ def create_snapshot(name: str, key: str):
 		# Re-verify if the snapshot was created and linked to the site backup
 		if not site_backup.database_snapshot:
 			frappe.throw("Failed to create a snapshot for the database server")
+	except ClientError as e:
+		if e.response["Error"]["Code"] == "SnapshotCreationPerVolumeRateExceeded":
+			# Agent will wait atleast 15s and then will retry
+			# https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html#:~:text=SnapshotCreationPerVolumeRateExceeded
+			frappe.throw("Snapshot creation per volume rate exceeded")
+		else:
+			raise e
+	except OngoingSnapshotError:
+		frappe.throw("There are concurrent snapshot creation requests. Try again later.")
 	except Exception as e:
 		raise e
 	finally:
