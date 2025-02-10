@@ -12,6 +12,7 @@
   "target_document",
   "server",
   "database_name",
+  "expires_in_sec",
   "column_break_uaxw",
   "read_only",
   "async_task",
@@ -21,6 +22,7 @@
   "allow_any_query",
   "continue_on_error",
   "row_limit",
+  "expires_at",
   "section_break_krvx",
   "wait_timeout",
   "column_break_avlz",
@@ -201,11 +203,25 @@
    "fieldname": "row_limit",
    "fieldtype": "Int",
    "label": "Row Limit"
+  },
+  {
+   "default": "-1",
+   "fieldname": "expires_in_sec",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Expires In Sec"
+  },
+  {
+   "depends_on": "eval: doc.expires_in_sec != -1",
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Expires At",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-07 21:43:28.285974",
+ "modified": "2025-02-10 12:53:22.740951",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SQL Job",

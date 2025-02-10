@@ -35,6 +35,8 @@ class SQLJob(Document):
 		async_task: DF.Check
 		continue_on_error: DF.Check
 		database_name: DF.Data | None
+		expires_at: DF.Datetime | None
+		expires_in_sec: DF.Int
 		job: DF.Link | None
 		job_type: DF.Data
 		lock_wait_timeout: DF.Int
@@ -285,6 +287,7 @@ class SQLJob(Document):
 		wait_timeout: int = 30,
 		lock_wait_timeout: int = 30,
 		max_statement_time: int = 600,
+		expires_in_sec: int = 0,
 		profiling: bool = False,
 	) -> SQLJob:
 		"""Execute SQL queries against a database target.
@@ -303,6 +306,7 @@ class SQLJob(Document):
 			wait_timeout: Session wait timeout in seconds
 			lock_wait_timeout: Lock wait timeout in seconds
 			max_statement_time: Maximum time limit for statement execution in seconds
+			expires_in_sec: Expire job after given seconds, If -1 then never expires
 			profiling: Enable query profiling
 
 		Returns:
@@ -334,6 +338,7 @@ class SQLJob(Document):
 				"continue_on_error": continue_on_error,
 				"allow_ddl_query": allow_ddl_query,
 				"allow_any_query": allow_any_query,
+				"expires_in_sec": expires_in_sec,
 			}
 		)
 		doc.insert()
