@@ -538,6 +538,10 @@ class SiteUpdate(Document):
 			for step in agent_steps
 		]
 
+	@frappe.whitelist()
+	def set_cause_of_failure_is_resolved(self):
+		frappe.db.set_value("Site Update", self.name, "cause_of_failure_is_resolved", 1)
+
 
 def update_status(name, status):
 	frappe.db.set_value("Site Update", name, "status", status)
