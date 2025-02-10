@@ -1341,8 +1341,6 @@ Response: {reason or getattr(result, "text", "Unknown")}
 				data=data,
 				site=data.get("site"),
 				bench=data.get("bench"),
-				reference_doctype=sql_job.doctype,
-				reference_name=sql_job.name,
 			).name
 
 		return self.post("/database/sql/execute", data=data)

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from typing import TYPE_CHECKING, Literal
 
 import frappe
@@ -69,6 +70,10 @@ class SQLJob(Document):
 		self.set_database_name()
 		self.format_queries()
 		self.skip_invalid_queries()
+
+	def on_trash(self):
+		if self.job:
+			frappe.db.delete("Agent Job", {"name": self.job})
 
 	def set_app_server(self):
 		if self.target_type == "Site":
@@ -165,19 +170,22 @@ class SQLJob(Document):
 				statements.append(f"SHOW PROFILE ALL FOR QUERY {i + 1} /* profile_{q.name} */;")
 		return statements
 
+	def on_update(self):
+		if self.expires_in_sec != -1 or self.expires_in_sec is not None:
+			self.expires_at = frappe.utils.now_datetime() + timedelta(seconds=self.expires_in_sec)
+
 	@frappe.whitelist()
 	def start(self):
 		self.status = "Running"
 		agent = Agent(self.server)
 		try:
 			response = agent.run_sql(self)
-			if self.async_task:
-				self.job = response
-			else:
+			if not self.async_task:
 				data = response.get("data")
 				# process the response
 				self.process_response("Success", data)
-		except Exception:
+		except Exception as e:
+			frappe.msgprint(f"Error while executing SQL job: {e}")
 			self.status = "Failure"
 		finally:
 			self.save()
@@ -216,6 +224,7 @@ class SQLJob(Document):
 			# Store the self.queries in a map
 			query_map = {q.name: q for q in self.queries}
 			for row in response:
+				print(row)
 				record_type = row.get("type")
 				if record_type not in ["query", "profile"]:
 					# No need to process other types [i.e. config]
@@ -353,14 +362,32 @@ class SQLJob(Document):
 def process_agent_job_update(job: AgentJob):
 	if job.status not in ["Success", "Failure", "Delivery Failure"]:
 		return
-	sql_job: SQLJob = frappe.get_doc("SQL Job", job.reference_name)
+	sql_job_name = frappe.db.exists("SQL Job", {"job": job.name})
+	if not sql_job_name:
+		return
+	sql_job: SQLJob = frappe.get_doc("SQL Job", sql_job_name)
 	job_data = None
 	try:
-		job_data = json.loads(job.data)
+		job_data = json.loads(job.data)["data"]
 	except Exception:
 		job_data = None
 	sql_job.process_response(job.status, job_data)
 	frappe.db.set_value("Agent Job", job.name, "data", "")
+
+
+def cleanup_old_sql_jobs():
+	# find all sql jobs with expiry passed
+	docs = frappe.get_all(
+		"SQL Job",
+		{
+			"expires_at": ("<=", frappe.utils.now_datetime()),
+		},
+		pluck="name",
+		order_by=None,
+		limit=500,
+	)
+	for doc in docs:
+		frappe.delete_doc("SQL Job", doc.name, delete_permanently=True)
 
 
 def process_sql_job_updates(job: SQLJob):
