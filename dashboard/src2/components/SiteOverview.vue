@@ -93,7 +93,7 @@
 							@click="showPlanChangeDialog"
 							:disabled="!$team.doc.payment_mode"
 						>
-							{{ currentPlan.is_trial_plan ? 'Upgrade' : 'Change' }}
+							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
 						</Button>
 					</div>
 				</div>
