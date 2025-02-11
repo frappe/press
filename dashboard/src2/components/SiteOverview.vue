@@ -68,7 +68,12 @@
 											</template>
 											<template v-else-if="currentPlan">
 												{{ $format.planTitle(currentPlan) }}
-												<span v-if="currentPlan.price_inr">/month</span>
+												<span v-if="currentPlan.price_inr && $isMobile">
+													/mo
+												</span>
+												<span v-if="currentPlan.price_inr && !$isMobile">
+													/month
+												</span>
 											</template>
 											<template v-else> No plan set </template>
 											<div
@@ -88,7 +93,7 @@
 							@click="showPlanChangeDialog"
 							:disabled="!$team.doc.payment_mode"
 						>
-							{{ currentPlan.is_trial_plan ? 'Upgrade' : 'Change' }}
+							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
 						</Button>
 					</div>
 				</div>
@@ -155,7 +160,7 @@
 				</div>
 				<div class="p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex min-h-[1.75rem] items-center justify-between text-base text-gray-700"
 					>
 						<span>Database</span>
 						<Button

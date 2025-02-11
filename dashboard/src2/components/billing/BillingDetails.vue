@@ -40,13 +40,13 @@ const billingInformation = reactive({
 	state: '',
 	postal_code: '',
 	country: '',
-	gstin: ''
+	gstin: '',
 });
 
 createResource({
 	url: 'press.api.account.get_billing_information',
 	auto: true,
-	onSuccess: data => {
+	onSuccess: (data) => {
 		Object.assign(billingInformation, {
 			address: data.address_line1,
 			city: data.city,
@@ -54,9 +54,9 @@ createResource({
 			postal_code: data.pincode,
 			country: data.country,
 			gstin: data.gstin == 'Not Applicable' ? '' : data.gstin,
-			billing_name: data.billing_name
+			billing_name: data.billing_name,
 		});
-	}
+	},
 });
 
 const errorMessage = ref('');
@@ -66,6 +66,14 @@ function updateBillingInformation() {
 		errorMessage.value = 'Billing Name is required';
 		return;
 	}
+	const billing_name = billingInformation.billing_name.trim();
+	const billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
+	const billingNameValid = billingNameRegex.test(billing_name);
+	if (!billingNameValid) {
+		errorMessage.value = 'Billing Name contains invalid characters';
+		return;
+	}
+	billingInformation.billing_name = billing_name;
 	addressFormRef.value.updateBillingInformation.submit();
 }
 </script>

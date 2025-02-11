@@ -1,16 +1,23 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from typing import ClassVar
 
 import frappe
-from frappe.model.document import Document
 import rq
+from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.site import check_dns
-from press.exceptions import AAAARecordExists, ConflictingCAARecord
+from press.exceptions import (
+	AAAARecordExists,
+	ConflictingCAARecord,
+	ConflictingDNSRecord,
+	MultipleARecords,
+	MultipleCNAMERecords,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
@@ -36,7 +43,7 @@ class SiteDomain(Document):
 		tls_certificate: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
+	dashboard_fields: ClassVar = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -49,6 +56,7 @@ class SiteDomain(Document):
 					break
 			domains.sort(key=lambda domain: not domain.primary)
 			return domains
+		return None
 
 	def after_insert(self):
 		if not self.default:
@@ -69,9 +77,7 @@ class SiteDomain(Document):
 		site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
-			frappe.throw(
-				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError
-			)
+			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
 		site.set_redirects_in_proxy([self.name])
 
 	def remove_redirect_in_proxy(self):
@@ -146,14 +152,10 @@ class SiteDomain(Document):
 
 	def on_trash(self):
 		if self.domain == frappe.db.get_value("Site", self.site, "host_name"):
-			frappe.throw(
-				msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError
-			)
+			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default:
-			self.create_remove_host_agent_request()
-		elif self.redirect_to_primary:
+		if not self.default or self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()
@@ -193,7 +195,7 @@ def process_new_host_job_update(job):
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
 
 
-def update_dns_type():
+def update_dns_type():  # noqa: C901
 	domains = frappe.get_all(
 		"Site Domain",
 		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
@@ -217,6 +219,12 @@ def update_dns_type():
 			pass
 		except ConflictingCAARecord:
 			pass
+		except ConflictingDNSRecord:
+			pass
+		except MultipleARecords:
+			pass
+		except MultipleCNAMERecords:
+			pass
 		except rq.timeouts.JobTimeoutException:
 			return
 		except Exception:
@@ -224,6 +232,4 @@ def update_dns_type():
 			log_error("DNS Check Failed", domain=domain)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Site Domain"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Domain")

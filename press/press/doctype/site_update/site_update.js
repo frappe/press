@@ -31,6 +31,11 @@ frappe.ui.form.on('Site Update', {
 				!frm.doc.recover_job,
 			],
 			[__('Start'), 'start', ['Scheduled', 'Failure'].includes(frm.doc.status)],
+			[
+				__('Cause of Failure is Resolved'),
+				'set_cause_of_failure_is_resolved',
+				!frm.doc.cause_of_failure_is_resolved,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

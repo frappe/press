@@ -1055,6 +1055,9 @@ class Team(Document):
 		return "/welcome"
 
 	def get_pending_saas_site_request(self):
+		if frappe.db.exists("Product Trial Request", {"team": self.name, "status": "Site Created"}):
+			return None
+
 		return frappe.db.get_value(
 			"Product Trial Request",
 			{
@@ -1081,10 +1084,12 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
+		from press.press.doctype.site.site import Site
+
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
 			try:
-				frappe.get_doc("Site", site).suspend(reason, skip_reload=True)
+				Site("Site", site).suspend(reason, skip_reload=True)
 			except Exception:
 				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
@@ -1126,13 +1131,14 @@ class Team(Document):
 	@frappe.whitelist()
 	def unsuspend_sites(self, reason=None):
 		from press.press.doctype.bench.bench import Bench
+		from press.press.doctype.site.site import Site
 
 		suspended_sites = [
 			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})
 		]
 		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
-			frappe.get_doc("Site", site).unsuspend(reason)
+			Site("Site", site).unsuspend(reason, skip_reload=True)
 		workloads_after = list(Bench.get_workloads(suspended_sites))
 		self.reallocate_workers_if_needed(workloads_before, workloads_after)
 

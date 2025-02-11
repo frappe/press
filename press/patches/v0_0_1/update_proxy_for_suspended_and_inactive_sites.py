@@ -16,4 +16,4 @@ def execute():
 	for site in sites:
 		site = frappe.get_doc("Site", site.name)
 		proxy_status = {"Suspended": "suspended", "Inactive": "deactivated"}
-		site.update_site_status_on_proxy(proxy_status[site.status])
+		site.update_site_status_on_proxy(proxy_status[site.status], skip_reload=True)

@@ -190,7 +190,7 @@
 								label="Verification code"
 								type="text"
 								class="mt-4"
-								placeholder="6 digit verification code"
+								placeholder="123456"
 								maxlength="6"
 								v-model="otp"
 								required
