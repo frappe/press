@@ -1525,7 +1525,7 @@ def validate_site_creation(doc, method):
 
 
 def has_unsettled_invoices(team):
-	data = frappe.db.exists(
+	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
 		["sum(amount_due) as amount_due"]
