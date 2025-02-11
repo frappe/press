@@ -1055,6 +1055,9 @@ class Team(Document):
 		return "/welcome"
 
 	def get_pending_saas_site_request(self):
+		if frappe.db.exists("Product Trial Request", {"team": self.name, "status": "Site Created"}):
+			return None
+
 		return frappe.db.get_value(
 			"Product Trial Request",
 			{
