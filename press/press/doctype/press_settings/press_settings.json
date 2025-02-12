@@ -68,6 +68,10 @@
   "backup_offset",
   "column_break_48",
   "backup_limit",
+  "physical_backups_section",
+  "disable_physical_backup",
+  "enable_physical_restore_failover",
+  "physical_restore_docker_image",
   "docker_tab",
   "section_break_59",
   "docker_registry_url",
@@ -197,7 +201,6 @@
   "disable_auto_retry",
   "disable_agent_job_deduplication",
   "enable_email_pre_verification",
-  "disable_physical_backup",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1327,11 +1330,28 @@
    "fieldname": "disable_physical_backup",
    "fieldtype": "Check",
    "label": "Disable Physical Backup"
+  },
+  {
+   "fieldname": "physical_backups_section",
+   "fieldtype": "Section Break",
+   "label": "Physical Backups"
+  },
+  {
+   "default": "0",
+   "description": "If physical restore fails, it will spawn up a new database container to try logical restoration.",
+   "fieldname": "enable_physical_restore_failover",
+   "fieldtype": "Check",
+   "label": "Enable Physical Restore Failover"
+  },
+  {
+   "fieldname": "physical_restore_docker_image",
+   "fieldtype": "Data",
+   "label": "Physical Restore Docker Image"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-28 14:41:49.332529",
+ "modified": "2025-02-12 15:00:45.072392",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
