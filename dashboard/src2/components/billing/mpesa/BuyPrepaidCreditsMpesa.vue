@@ -139,6 +139,11 @@ export default {
 							'Both partner and phone number are required for payment.',
 						);
 					}
+					if (!this.taxIdInput) {
+						throw new DashboardError(
+							'Tax ID is required for payment.',
+						);
+					}
 				},
 				async onSuccess(data) {
 					if (data?.ResponseCode === '0') {
