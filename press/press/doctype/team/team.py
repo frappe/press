@@ -1525,10 +1525,14 @@ def validate_site_creation(doc, method):
 
 
 def has_unsettled_invoices(team):
-	return frappe.db.exists(
+	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
-	)
+		["sum(amount_due) as amount_due"]
+	)[0]
+	if data.amount_due <= 5:
+		return False
+	return True
 
 
 def has_active_servers(team):
