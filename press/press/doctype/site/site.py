@@ -1462,33 +1462,48 @@ class Site(Document, TagHelpers):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		return FrappeClient(f"https://{self.name}", "Administrator", password)
 
-	def get_login_sid(self, user="Administrator"):
+	def get_sid_from_agent(self, user: str) -> str | None:
+		try:
+			agent = Agent(self.server)
+			return agent.get_site_sid(self, user)
+		except requests.HTTPError as e:
+			if "validate_ip_address" in str(e):
+				frappe.throw(
+					f"Login with {user}'s credentials is IP restricted. Please remove the same and try again.",
+					frappe.ValidationError,
+				)
+			elif f"User {user} does not exist" in str(e):
+				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
+			elif frappe.db.exists(
+				"Incident",
+				{
+					"server": self.server,
+					"status": ("not in", ["Resolved", "Auto-Resolved", "Press-Resolved"]),
+				},
+			):
+				frappe.throw(
+					"Server appears to be unresponsive. Please try again in some time.",
+					frappe.ValidationError,
+				)
+			else:
+				raise e
+		except AgentRequestSkippedException:
+			frappe.throw(
+				"Server is unresponsive. Please try again in some time.",
+				frappe.ValidationError,
+			)
+
+	def get_login_sid(self, user: str = "Administrator"):
 		sid = None
 		if user == "Administrator":
 			password = get_decrypted_password("Site", self.name, "admin_password")
 			response = requests.post(
 				f"https://{self.name}/api/method/login",
-				data={"usr": "Administrator", "pwd": password},
+				data={"usr": user, "pwd": password},
 			)
 			sid = response.cookies.get("sid")
 		if not sid:
-			try:
-				agent = Agent(self.server)
-				sid = agent.get_site_sid(self, user)
-			except requests.HTTPError as e:
-				if "validate_ip_address" in str(e):
-					frappe.throw(
-						f"Login with {user}'s credentials is IP restricted. Please remove the same and try again.",
-						frappe.ValidationError,
-					)
-				elif f"User {user} does not exist" in str(e):
-					frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)
-				raise e
-			except AgentRequestSkippedException:
-				frappe.throw(
-					"Server is unresponsive. Please try again in some time.",
-					frappe.ValidationError,
-				)
+			sid = self.get_sid_from_agent(user)
 		if not sid or sid == "Guest":
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
 		return sid
