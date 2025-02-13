@@ -355,8 +355,21 @@ export default {
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
 		};
 	},
+	mounted() {
+		const url = new URL(window.location.href);
+		const site_name = url.searchParams.get('site');
+		if (site_name) {
+			this.site = site_name;
+		}
+	},
 	watch: {
 		site(site_name) {
+			if (!site_name) return;
+			// set site to query param ?site=site_name
+			const url = new URL(window.location.href);
+			url.searchParams.set('site', site_name);
+			window.history.pushState({}, '', url);
+
 			// reset state
 			this.data = null;
 			this.errorMessage = null;
