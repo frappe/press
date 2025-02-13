@@ -1528,7 +1528,7 @@ def has_unsettled_invoices(team):
 	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
-		["sum(amount_due) as amount_due"]
+		["sum(amount_due) as amount_due"],
 	)[0]
 	if data.amount_due <= 5:
 		return False
