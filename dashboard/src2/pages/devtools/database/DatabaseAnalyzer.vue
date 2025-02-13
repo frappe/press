@@ -149,6 +149,7 @@
 						class="mt-2"
 						:columns="databaseProcesses.columns"
 						:data="databaseProcesses.data"
+						:alignColumns="alignColumns"
 						:cellFormatters="cellFormatters"
 						:fullViewFormatters="fullViewFormatters"
 						actionHeaderLabel="Kill"
@@ -186,6 +187,7 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:alignColumns="alignColumns"
 								:cellFormatters="cellFormatters"
 								:fullViewFormatters="fullViewFormatters"
 								:enableCSVExport="false"
@@ -248,6 +250,7 @@
 									v-else
 									:columns="suggestedDatabaseIndexes.columns"
 									:data="suggestedDatabaseIndexes.data"
+									:alignColumns="alignColumns"
 									:cellFormatters="cellFormatters"
 									:fullViewFormatters="fullViewFormatters"
 									:enableCSVExport="false"
@@ -264,6 +267,7 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:alignColumns="alignColumns"
 								:cellFormatters="cellFormatters"
 								:fullViewFormatters="fullViewFormatters"
 								:isTruncateText="true"
@@ -693,6 +697,15 @@ export default {
 		fullViewFormatters() {
 			return {
 				Query: (v) => formatValue(v, 'sql'),
+			};
+		},
+		alignColumns() {
+			return {
+				Percentage: 'right',
+				'Rows Examined': 'right',
+				'Rows Sent': 'right',
+				Calls: 'right',
+				'Avg Time': 'right',
 			};
 		},
 	},

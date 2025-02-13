@@ -12,6 +12,7 @@ import MaximizedIcon from '~icons/lucide/maximize-2';
 const props = defineProps({
 	columns: { type: Array, required: true },
 	data: { type: Array, required: true },
+	alignColumns: { type: Object, default: {} },
 	cellFormatters: { type: Object, default: {} }, // For cell level formatters
 	fullViewFormatters: { type: Object, default: {} }, // For full view formatters
 	borderLess: { type: Boolean, default: false },
@@ -68,6 +69,9 @@ const table = useVueTable({
 				accessorKey: column,
 				enableSorting: false,
 				isNumber: false,
+				meta: {
+					align: props.alignColumns[column] || 'left',
+				},
 			};
 		});
 		return [indexColumn, ...cols];
@@ -207,6 +211,7 @@ const downloadCSV = async () => {
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
+							:align="cell.column.columnDef.meta?.align"
 							class="truncate border-r px-3 py-2"
 							:class="{
 								'border-b': !(
