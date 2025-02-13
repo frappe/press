@@ -1,5 +1,41 @@
+import json
+
 import frappe
 import requests
+
+
+def send_developer_email(email, app_name, branch, repository_url, version):
+	dev = frappe.get_doc("User", {"email": email})
+	developer_name = dev.full_name
+	email_args = {
+		"recipients": email,
+		"subject": "Frappe Cloud: Make your app's GitHub Repository Public",
+		"template": "marketplace_app_visibility",
+		"args": {
+			"developer_name": developer_name,
+			"app_name": app_name,
+			"branch": branch,
+			"version": version,
+			"repository_url": repository_url,
+		},
+	}
+	frappe.enqueue(method=frappe.sendmail, queue="short", timeout=300, **email_args)
+
+
+@frappe.whitelist()
+def send_emails(columns, data):
+	frappe.only_for("System Manager")
+	data = json.loads(data)
+	for row in data:
+		visibility = row.get("visibility")
+		if visibility != "Private":
+			continue
+		app_name = row.get("app_name")
+		branch = row.get("branch")
+		repository_url = row.get("repository_url")
+		email = row.get("team")
+		version = row.get("version")
+		send_developer_email(email, app_name, branch, repository_url, version)
 
 
 def check_repository_visibility(repository_url, personal_access_token):
