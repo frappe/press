@@ -178,15 +178,15 @@ export function formatCommaSeperatedNumber(number) {
 
 export function formatMilliseconds(ms) {
 	if (ms < 100) {
-		return `${ms.toFixed(3).replace(/\.?0+$/, '')} ms`; // Keep milliseconds if less than 100 and remove unnecessary zeros
+		return `${ms.toFixed(3).replace(/\.?0+$/, '')}ms`; // Keep milliseconds if less than 100 and remove unnecessary zeros
 	} else if (ms < 60000) {
 		// Less than 1 minute, convert to seconds
 		let seconds = ms / 1000;
-		return `${seconds.toFixed(1).replace(/\.?0+$/, '')} s`;
+		return `${seconds.toFixed(1).replace(/\.?0+$/, '')}s`;
 	} else {
 		// Convert to minutes
 		let minutes = ms / 60000;
-		return `${minutes.toFixed(1).replace(/\.?0+$/, '')} m`;
+		return `${minutes.toFixed(1).replace(/\.?0+$/, '')}m`;
 	}
 }
 

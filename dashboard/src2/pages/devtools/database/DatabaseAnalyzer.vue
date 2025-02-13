@@ -692,6 +692,7 @@ export default {
 				'Rows Sent': (v) => formatValue(v, 'commaSeperatedNumber'),
 				Calls: (v) => formatValue(v, 'commaSeperatedNumber'),
 				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
+				Duration: (v) => formatValue(v, 'durationSeconds'),
 			};
 		},
 		fullViewFormatters() {
@@ -706,6 +707,7 @@ export default {
 				'Rows Sent': 'right',
 				Calls: 'right',
 				'Avg Time': 'right',
+				Duration: 'right',
 			};
 		},
 	},
