@@ -226,17 +226,7 @@ class Team(Document):
 		if self.payment_mode == "Paid By Partner" and not self.billing_team:
 			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
 
-		has_unpaid_invoices = frappe.get_all(
-			"Invoice",
-			{
-				"team": self.name,
-				"status": ("in", ["Draft", "Unpaid"]),
-				"type": "Subscription",
-				"total": (">", 0),
-			},
-		)
-
-		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
+		if self.payment_mode == "Paid By Partner" and has_unsettled_invoices(self.name):
 			frappe.throw(
 				"Cannot set payment mode to Paid By Partner. Please finalize and settle the pending invoices first"
 			)
