@@ -149,7 +149,9 @@
 						class="mt-2"
 						:columns="databaseProcesses.columns"
 						:data="databaseProcesses.data"
-						actionHeaderLabel="Kill Process"
+						:cellFormatters="cellFormatters"
+						:fullViewFormatters="fullViewFormatters"
+						actionHeaderLabel="Kill"
 						:actionComponent="DatabaseProcessKillButton"
 						:actionComponentProps="{
 							site: this.site,
@@ -184,8 +186,11 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
 								:enableCSVExport="false"
 								:borderLess="true"
+								:isTruncateText="true"
 							/>
 						</template>
 					</FTabs>
@@ -243,6 +248,8 @@
 									v-else
 									:columns="suggestedDatabaseIndexes.columns"
 									:data="suggestedDatabaseIndexes.data"
+									:cellFormatters="cellFormatters"
+									:fullViewFormatters="fullViewFormatters"
 									:enableCSVExport="false"
 									:borderLess="true"
 									actionHeaderLabel="Add Index"
@@ -257,6 +264,9 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
+								:isTruncateText="true"
 								:enableCSVExport="false"
 								:borderLess="true"
 							/>
@@ -302,6 +312,7 @@ import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h, markRaw } from 'vue';
 import { toast } from 'vue-sonner';
+import { formatValue } from '../../../utils/format';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
@@ -571,7 +582,7 @@ export default {
 				},
 				{
 					label: 'Time Consuming Queries',
-					columns: ['Percentage', 'Calls', 'Avg Time (ms)', 'Query'],
+					columns: ['Percentage', 'Calls', 'Avg Time', 'Query'],
 					data: result['top_10_time_consuming_queries'].map((e) => {
 						return [
 							Math.round(e['percent'], 1),
@@ -669,6 +680,19 @@ export default {
 						e['query'],
 					];
 				}),
+			};
+		},
+		cellFormatters() {
+			return {
+				'Rows Examined': (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Rows Sent': (v) => formatValue(v, 'commaSeperatedNumber'),
+				Calls: (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
+			};
+		},
+		fullViewFormatters() {
+			return {
+				Query: (v) => formatValue(v, 'sql'),
 			};
 		},
 	},
