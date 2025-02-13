@@ -542,6 +542,10 @@ class SiteUpdate(Document):
 	def set_cause_of_failure_is_resolved(self):
 		frappe.db.set_value("Site Update", self.name, "cause_of_failure_is_resolved", 1)
 
+	@frappe.whitelist()
+	def set_status(self, status):
+		frappe.db.set_value("Site Update", self.name, "status", status)
+
 
 def update_status(name, status):
 	frappe.db.set_value("Site Update", name, "status", status)
