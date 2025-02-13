@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-04 11:07:50.551118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "job_type",
+  "user_type",
+  "target_type",
+  "target_document",
+  "server",
+  "database_name",
+  "expires_in_sec",
+  "column_break_uaxw",
+  "read_only",
+  "async_task",
+  "job",
+  "profile_query",
+  "allow_ddl_query",
+  "allow_any_query",
+  "continue_on_error",
+  "row_limit",
+  "expires_at",
+  "section_break_krvx",
+  "wait_timeout",
+  "column_break_avlz",
+  "lock_wait_timeout",
+  "column_break_odmx",
+  "max_statement_time",
+  "section_break_hxxz",
+  "queries",
+  "prepared_sql_statement"
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_uaxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.async_task",
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job",
+   "search_index": 1
+  },
+  {
+   "fieldname": "target_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Target Type",
+   "options": "Site\nDatabase Server",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "target_document",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Target Document",
+   "options": "target_type",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "profile_query",
+   "fieldtype": "Check",
+   "label": "Profile Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "read_only",
+   "fieldtype": "Check",
+   "label": "Read Only"
+  },
+  {
+   "default": "Site User",
+   "fieldname": "user_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "User Type",
+   "options": "Root User\nSite User",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_hxxz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "In query, you can use <b>{{database_name}}</b> keyword to autofill while executing query.",
+   "fieldname": "queries",
+   "fieldtype": "Table",
+   "label": "Queries",
+   "options": "SQL Job Query",
+   "reqd": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "lock_wait_timeout",
+   "fieldtype": "Int",
+   "label": "Lock Wait Timeout (seconds)",
+   "reqd": 1
+  },
+  {
+   "default": "600",
+   "fieldname": "max_statement_time",
+   "fieldtype": "Int",
+   "label": "Max Statement Time (seconds)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Job Type",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "wait_timeout",
+   "fieldtype": "Int",
+   "label": "Wait Timeout (seconds)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_krvx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_avlz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_odmx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_any_query",
+   "fieldtype": "Check",
+   "label": "Allow Any Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_ddl_query",
+   "fieldtype": "Check",
+   "label": "Allow DDL Query"
+  },
+  {
+   "fieldname": "prepared_sql_statement",
+   "fieldtype": "Long Text",
+   "is_virtual": 1,
+   "label": "Prepared SQL Statement",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "continue_on_error",
+   "fieldtype": "Check",
+   "label": "Continue On Error",
+   "options": "If any SQL query fails to run, don't pause the execution of all."
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "async_task",
+   "fieldtype": "Check",
+   "label": "Async Task"
+  },
+  {
+   "default": "1000",
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit"
+  },
+  {
+   "default": "-1",
+   "fieldname": "expires_in_sec",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Expires In Sec"
+  },
+  {
+   "depends_on": "eval: doc.expires_in_sec != -1",
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Expires At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-10 12:53:22.740951",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "SQL Job",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

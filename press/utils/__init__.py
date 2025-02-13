@@ -832,7 +832,7 @@ def mask_email(email: str, percentage: float) -> str:
 	return masked_local_part + "@" + masked_domain
 
 
-def get_mariadb_root_password(site):
+def get_mariadb_root_password(site) -> str | None:
 	from frappe.utils.password import get_decrypted_password
 
 	database_server, managed_database_service = frappe.get_cached_value(
@@ -849,6 +849,39 @@ def get_mariadb_root_password(site):
 		field = "mariadb_root_password"
 
 	return get_decrypted_password(doctype, name, field)
+
+
+def get_mariadb_host(site) -> str | None:
+	database_server, managed_database_service = frappe.get_cached_value(
+		"Bench", site.bench, ["database_server", "managed_database_service"]
+	)
+
+	if managed_database_service:
+		doctype = "Managed Database Service"
+		name = managed_database_service
+		field = "name"
+	else:
+		doctype = "Database Server"
+		name = database_server
+		field = "private_ip"
+
+	return frappe.db.get_value(doctype, name, field)
+
+
+def get_mariadb_port(site) -> int | None:
+	managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
+	if managed_database_service:
+		return frappe.db.get_value("Managed Database Service", managed_database_service, "port")
+	return 3306
+
+
+def get_mariadb_root_user(site) -> str | None:
+	managed_database_service = frappe.get_cached_value(
+		"Bench", site.bench, ["database_server", "managed_database_service"]
+	)
+	if managed_database_service:
+		return frappe.db.get_value("Managed Database Service", managed_database_service, "database_root_user")
+	return "root"
 
 
 def is_valid_email_address(email) -> bool:

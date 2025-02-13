@@ -999,6 +999,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
+		from press.press.doctype.sql_job.sql_job import process_agent_job_update
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration and job_matches_site_migration(job, site_migration):
@@ -1091,6 +1092,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_deactivate_site_job_update(job)
 		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
 			process_activate_site_job_update(job)
+		elif job.job_type == "Run SQL Queries":
+			process_agent_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
