@@ -1078,7 +1078,7 @@ class Team(Document):
 				"trial_end_date": ("is", "set"),
 				"status": ("!=", "Archived"),
 			},
-			["name", "trial_end_date", "standby_for_product.title as product_title"],
+			["name", "trial_end_date", "standby_for_product.title as product_title", "host_name"],
 			order_by="`tabSite`.`modified` desc",
 		)
 
@@ -1528,7 +1528,7 @@ def has_unsettled_invoices(team):
 	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
-		["sum(amount_due) as amount_due"]
+		["sum(amount_due) as amount_due"],
 	)[0]
 	if data.amount_due <= 5:
 		return False

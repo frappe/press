@@ -77,10 +77,7 @@
 								>
 									<div class="space-y-2">
 										<div class="text-base text-gray-800">
-											{{ site.label || site.name }}
-										</div>
-										<div v-if="site.label" class="text-sm text-gray-600">
-											{{ site.name }}
+											{{ site.host_name || site.name }}
 										</div>
 									</div>
 									<FeatherIcon name="external-link" class="h-4 w-4" />

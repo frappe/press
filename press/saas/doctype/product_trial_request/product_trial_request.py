@@ -39,18 +39,25 @@ class ProductTrialRequest(Document):
 
 		account_request: DF.Link | None
 		agent_job: DF.Link | None
+		domain: DF.Data | None
 		product_trial: DF.Link | None
 		signup_details: DF.JSON | None
 		site: DF.Link | None
 		site_creation_completed_on: DF.Datetime | None
 		site_creation_started_on: DF.Datetime | None
 		status: DF.Literal[
-			"Pending", "Wait for Site", "Completing Setup Wizard", "Site Created", "Error", "Expired"
+			"Pending",
+			"Wait for Site",
+			"Completing Setup Wizard",
+			"Adding Domain",
+			"Site Created",
+			"Error",
+			"Expired",
 		]
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ("site", "status", "product_trial")
+	dashboard_fields = ("site", "status", "product_trial", "domain")
 
 	agent_job_step_to_frontend_step = {  # noqa: RUF012
 		"New Site": {
@@ -72,9 +79,6 @@ class ProductTrialRequest(Document):
 			"Enable Scheduler": "Just a moment",
 		},
 	}
-
-	def get_doc(self, doc):
-		doc.site_label = frappe.get_value("Site", doc.site, "label")
 
 	def get_email(self):
 		return frappe.db.get_value("Team", self.team, "user")
@@ -98,19 +102,20 @@ class ProductTrialRequest(Document):
 
 	def on_update(self):
 		if self.has_value_changed("status"):
-			if self.status == "Error":
-				self.capture_posthog_event("product_trial_request_failed")
-			elif self.status == "Wait for Site":
-				self.capture_posthog_event("product_trial_request_initiated_site_creation")
-			elif self.status == "Completing Setup Wizard":
-				self.capture_posthog_event("product_trial_request_started_setup_wizard_completion")
-			elif self.status == "Site Created":
-				self.capture_posthog_event("product_trial_request_site_created")
+			match self.status:
+				case "Error":
+					self.capture_posthog_event("product_trial_request_failed")
+				case "Wait for Site":
+					self.capture_posthog_event("product_trial_request_initiated_site_creation")
+				case "Completing Setup Wizard":
+					self.capture_posthog_event("product_trial_request_started_setup_wizard_completion")
+				case "Site Created":
+					self.capture_posthog_event("product_trial_request_site_created")
 
-				# this is to create a webhook record in the site
-				# so that the user records can be synced with press
-				site = frappe.get_doc("Site", self.site)
-				site.create_sync_user_webhook()
+					# this is to create a webhook record in the site
+					# so that the user records can be synced with press
+					site = frappe.get_doc("Site", self.site)
+					site.create_sync_user_webhook()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
@@ -205,7 +210,7 @@ class ProductTrialRequest(Document):
 						frappe.throw(f"Invalid value for {field.label}. Please choose a valid option")
 
 	@dashboard_whitelist()
-	def create_site(self, site_label: str, cluster: str | None = None, signup_values: dict | None = None):
+	def create_site(self, subdomain: str, cluster: str | None = None, signup_values: dict | None = None):
 		if not signup_values:
 			signup_values = {}
 
@@ -224,10 +229,11 @@ class ProductTrialRequest(Document):
 		product = frappe.get_doc("Product Trial", self.product_trial)
 		self.status = "Wait for Site"
 		self.site_creation_started_on = now_datetime()
+		self.domain = f"{subdomain}.{product.domain}"
 		self.save(ignore_permissions=True)
 		self.reload()
 		site, agent_job_name, is_standby_site = product.setup_trial_site(
-			site_label=site_label, team=self.team, cluster=cluster, account_request=self.account_request
+			subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 		)
 		self.agent_job = agent_job_name
 		self.site = site.name
@@ -261,7 +267,9 @@ class ProductTrialRequest(Document):
 		if status == "Success":
 			if self.status == "Site Created":
 				return {"progress": 100}
-			return {"progress": 90, "current_step": self.status}
+			if self.status == "Adding Domain":
+				return {"progress": 90, "current_step": self.status}
+			return {"progress": 80, "current_step": self.status}
 
 		if status == "Running":
 			mode = frappe.get_value("Product Trial", self.product_trial, "setup_wizard_completion_mode")

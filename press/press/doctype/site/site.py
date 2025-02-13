@@ -3197,9 +3197,42 @@ def process_complete_setup_wizard_job_update(job):
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-		product_trial_request.status = "Site Created"
-		product_trial_request.site_creation_completed_on = now_datetime()
+		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
+			product_trial_request.status = "Adding Domain"
+		else:
+			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)
+	elif job.status in ("Failure", "Delivery Failure"):
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
+
+def process_add_domain_job_update(job):
+	records = frappe.get_list("Product Trial Request", filters={"site": job.site}, fields=["name"])
+	if not records:
+		return
+
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+	if job.status == "Success":
+		if frappe.get_all(
+			"Agent Job",
+			filters={"site": job.site, "job_type": "Complete Setup Wizard", "status": ["!=", "Success"]},
+		):
+			product_trial_request.status = "Completing Setup Wizard"
+		else:
+			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
+
+		product_trial_request.save(ignore_permissions=True)
+
+		site_domain = json.loads(job.request_data).get("domain")
+		site = frappe.get_doc("Site", job.site)
+		auto_generated_domain = site.host_name
+		site.host_name = site_domain
+		site.save()
+		site.set_redirect(auto_generated_domain)
+
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)

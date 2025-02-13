@@ -59,8 +59,18 @@ class SiteDomain(Document):
 		return None
 
 	def after_insert(self):
-		if not self.default:
-			self.create_tls_certificate()
+		if self.default:
+			return
+
+		if self.has_root_tls_certificate:
+			server = frappe.db.get_value("Site", self.site, "server")
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+
+			agent = Agent(server=proxy_server, server_type="Proxy Server")
+			agent.add_subdomain_to_upstream(server=server, site=self.site, domain=self.domain)
+			return
+
+		self.create_tls_certificate()
 
 	def validate(self):
 		if self.has_value_changed("redirect_to_primary"):
@@ -72,6 +82,10 @@ class SiteDomain(Document):
 	@property
 	def default(self):
 		return self.domain == self.site
+
+	@property
+	def has_root_tls_certificate(self):
+		return bool(frappe.db.exists("Root Domain", self.domain.split(".", 1)[1], "name"))
 
 	def setup_redirect_in_proxy(self):
 		site = frappe.get_doc("Site", self.site)
@@ -193,6 +207,25 @@ def process_new_host_job_update(job):
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
+
+
+def process_add_domain_to_upstream_job_update(job):
+	request_data = json.loads(job.request_data)
+	domain = request_data.get("domain")
+	domain_status = frappe.get_value("Site Domain", domain, "status")
+
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "In Progress",
+		"Success": "Active",
+		"Failure": "Broken",
+		"Delivery Failure": "Broken",
+	}[job.status]
+
+	if updated_status != domain_status:
+		frappe.db.set_value("Site Domain", domain, "status", updated_status)
+		if updated_status == "Active":
+			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
 
 
 def update_dns_type():  # noqa: C901

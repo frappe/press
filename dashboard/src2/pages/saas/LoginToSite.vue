@@ -12,7 +12,7 @@
 				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Logging in to site"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -56,7 +56,7 @@
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -100,7 +100,7 @@
 				v-else
 				title="Creating your site"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -176,7 +176,8 @@ export default {
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard'
+						doc.status == 'Completing Setup Wizard' ||
+						doc.status == 'Adding Domain'
 					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
@@ -220,7 +221,7 @@ export default {
 							let redirectRoute =
 								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
 								'/desk';
-							let loginURL = `https://${this.$resources.siteRequest.doc.site}${redirectRoute}?sid=${sid}`;
+							let loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
 							this.isRedirectingToSite = true;
 							window.open(loginURL, '_self');
 						},
