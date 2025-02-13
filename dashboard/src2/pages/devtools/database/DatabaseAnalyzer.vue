@@ -89,9 +89,9 @@
 							style="background-color: #e86c13"
 						></div>
 						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.data_size }} MB</span
-						>
+						><span class="ml-auto text-sm text-gray-800">{{
+							formatSizeInMB(this.databaseSizeBreakup.data_size)
+						}}</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -102,8 +102,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Index Size</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.index_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
+						</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -114,8 +114,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Free Space</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.free_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
+						</span>
 					</div>
 				</div>
 			</div>
@@ -733,6 +733,22 @@ export default {
 			this.showTableSchemaSizeDetailsDialog = false;
 			this.preSelectedSchemaForSchemaDialog = tableName;
 			this.showTableSchemasDialog = true;
+		},
+		formatSizeInMB(mb) {
+			try {
+				let floatMB = parseFloat(mb);
+				if (floatMB < 1) {
+					let kb = floatMB * 1024; // Convert MB to KB
+					return `${Math.round(kb)} KB`; // Return KB without decimal
+				} else if (floatMB < 1024) {
+					return `${Math.round(floatMB)} MB`; // Return MB without decimal
+				} else {
+					let gb = floatMB / 1024; // Convert MB to GB
+					return `${gb.toFixed(1)} GB`; // Return GB with 1 decimal
+				}
+			} catch (error) {
+				return `${mb} MB`; // Return MB without decimal
+			}
 		},
 	},
 };
