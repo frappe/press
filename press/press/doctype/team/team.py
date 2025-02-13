@@ -66,8 +66,12 @@ class Team(Document):
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
+		mpesa_enabled: DF.Check
+		mpesa_phone_number: DF.Data | None
+		mpesa_tax_id: DF.Data | None
 		notify_email: DF.Data | None
 		parent_team: DF.Link | None
+		partner_commission: DF.Percent
 		partner_email: DF.Data | None
 		partner_referral_code: DF.Data | None
 		partnership_date: DF.Date | None
@@ -112,6 +116,10 @@ class Team(Document):
 		"enable_performance_tuning",
 		"enable_inplace_updates",
 		"servers_enabled",
+		"mpesa_tax_id",
+		"mpesa_phone_number",
+		"mpesa_enabled",
+		"account_request",
 	)
 
 	def get_doc(self, doc):
@@ -152,13 +160,6 @@ class Team(Document):
 				"stripe_mandate_id",
 			],
 			as_dict=True,
-		)
-		doc.hide_sidebar = (
-			not self.parent_team
-			and not doc.onboarding.site_created
-			and len(doc.valid_teams) == 1
-			and not self.is_payment_mode_set()
-			and frappe.db.count("Marketplace App", {"team": self.name}) == 0
 		)
 
 	def onload(self):
@@ -944,7 +945,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.billing_team:
+		if self.free_account or self.billing_team or self.payment_mode:
 			return True
 
 		return bool(
@@ -1049,22 +1050,21 @@ class Team(Document):
 		if self.is_saas_user:
 			pending_site_request = self.get_pending_saas_site_request()
 			if pending_site_request:
-				product_trial = pending_site_request.product_trial
-			else:
-				product_trial = frappe.db.get_value("Account Request", self.account_request, "product_trial")
-			if product_trial:
-				return f"/app-trial/setup/{product_trial}"
+				return f"/create-site/{pending_site_request.product_trial}/setup?account_request={pending_site_request.account_request}"
 
 		return "/welcome"
 
 	def get_pending_saas_site_request(self):
+		if frappe.db.exists("Product Trial Request", {"team": self.name, "status": "Site Created"}):
+			return None
+
 		return frappe.db.get_value(
 			"Product Trial Request",
 			{
 				"team": self.name,
 				"status": ("in", ["Pending", "Wait for Site", "Completing Setup Wizard", "Error"]),
 			},
-			["name", "product_trial", "product_trial.title", "status"],
+			["name", "product_trial", "product_trial.title", "status", "account_request"],
 			order_by="creation desc",
 			as_dict=True,
 		)
@@ -1084,10 +1084,12 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
+		from press.press.doctype.site.site import Site
+
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
 			try:
-				frappe.get_doc("Site", site).suspend(reason, skip_reload=True)
+				Site("Site", site).suspend(reason, skip_reload=True)
 			except Exception:
 				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
@@ -1129,13 +1131,14 @@ class Team(Document):
 	@frappe.whitelist()
 	def unsuspend_sites(self, reason=None):
 		from press.press.doctype.bench.bench import Bench
+		from press.press.doctype.site.site import Site
 
 		suspended_sites = [
 			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})
 		]
 		workloads_before = list(Bench.get_workloads(suspended_sites))
 		for site in suspended_sites:
-			frappe.get_doc("Site", site).unsuspend(reason)
+			Site("Site", site).unsuspend(reason, skip_reload=True)
 		workloads_after = list(Bench.get_workloads(suspended_sites))
 		self.reallocate_workers_if_needed(workloads_before, workloads_after)
 
@@ -1510,6 +1513,9 @@ def validate_site_creation(doc, method):
 		return
 	if not doc.team:
 		return
+	# allow product signups
+	if doc.standby_for_product:
+		return
 
 	# validate site creation for team
 	team = frappe.get_doc("Team", doc.team)
@@ -1519,10 +1525,14 @@ def validate_site_creation(doc, method):
 
 
 def has_unsettled_invoices(team):
-	return frappe.db.exists(
+	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
-	)
+		["sum(amount_due) as amount_due"]
+	)[0]
+	if data.amount_due <= 5:
+		return False
+	return True
 
 
 def has_active_servers(team):

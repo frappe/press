@@ -135,6 +135,7 @@ class SiteUpdate(Document):
 		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
+		self.set_physical_backup_mode_if_eligible()
 
 	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
@@ -213,18 +214,19 @@ class SiteUpdate(Document):
 			)
 
 	def before_insert(self):
-		self.backup_type = "Logical"  # Just to be safe, set it to Logical initially
+		self.backup_type = "Logical"
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
-		if self.deploy_type == "Migrate":
-			self.set_physical_backup_mode_if_eligible()
 
 	def after_insert(self):
 		if not self.scheduled_time:
 			self.start()
 
-	def set_physical_backup_mode_if_eligible(self):
+	def set_physical_backup_mode_if_eligible(self):  # noqa: C901
 		if self.skipped_backups:
+			return
+
+		if self.deploy_type != "Migrate":
 			return
 
 		# Check if physical backup is disabled globally from Press Settings
@@ -243,6 +245,11 @@ class SiteUpdate(Document):
 		if not enable_physical_backup:
 			return
 
+		# Sanity check - Provider should be AWS EC2
+		provider = frappe.get_value("Database Server", database_server, "provider")
+		if provider != "AWS EC2":
+			return
+
 		# Check for last logical backup
 		last_logical_site_backups = frappe.db.get_list(
 			"Site Backup",
@@ -250,14 +257,15 @@ class SiteUpdate(Document):
 			pluck="database_size",
 			limit=1,
 			order_by="creation desc",
+			ignore_permissions=True,
 		)
 		db_backup_size = 0
 		if len(last_logical_site_backups) > 0:
 			db_backup_size = cint(last_logical_site_backups[0])
 
-		# If last logical backup size is greater than 200MB and less than 1.5GB
+		# If last logical backup size is greater than 250MB and less than 1GB
 		# Then only take physical backup
-		if db_backup_size > 209715200 and db_backup_size < 1610612736:
+		if db_backup_size > 262144000 and db_backup_size < 1073741824:
 			self.backup_type = "Physical"
 
 	@dashboard_whitelist()
@@ -462,7 +470,6 @@ class SiteUpdate(Document):
 			)
 		else:
 			# Site is already on the source bench
-
 			if site.status_before_update == "Active":
 				# Disable maintenance mode for active sites
 				job = agent.update_site_recover(site)
@@ -530,6 +537,14 @@ class SiteUpdate(Document):
 			}
 			for step in agent_steps
 		]
+
+	@frappe.whitelist()
+	def set_cause_of_failure_is_resolved(self):
+		frappe.db.set_value("Site Update", self.name, "cause_of_failure_is_resolved", 1)
+
+	@frappe.whitelist()
+	def set_status(self, status):
+		frappe.db.set_value("Site Update", self.name, "status", status)
 
 
 def update_status(name, status):

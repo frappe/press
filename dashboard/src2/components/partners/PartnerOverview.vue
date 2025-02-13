@@ -160,7 +160,7 @@
 </template>
 
 <script setup>
-import { computed, inject, ref } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import dayjs from '../../utils/dayjs';
 import { FeatherIcon, Button, createResource, Progress } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
@@ -258,6 +258,16 @@ function calculateNextTier(tier) {
 		nextTierTarget.value -
 		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution;
 }
+
+watch(
+	() => partnerDetails.data,
+	(newData) => {
+		if (newData) {
+			calculateNextTier(newData.partner_type);
+		}
+	},
+	{ deep: true },
+);
 
 const formatDate = dateString => {
 	return new Date(dateString).toLocaleDateString('en-US', {

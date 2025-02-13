@@ -187,11 +187,11 @@
 								required
 							/>
 							<FormControl
-								label="Verification Code"
+								label="Verification code"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit verification code"
-								maxlength="5"
+								placeholder="123456"
+								maxlength="6"
 								v-model="otp"
 								required
 							/>
@@ -213,7 +213,7 @@
 								:loading="$resources.resendOTP.loading"
 								@click="$resources.resendOTP.submit()"
 							>
-								Didn't receive OTP? Resend
+								Didn't receive verification code? Resend
 							</Button>
 						</form>
 						<div class="mt-6 text-center">
@@ -256,6 +256,13 @@
 						</span>
 					</div>
 				</template>
+				<template v-slot:footer v-if="saasProduct">
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 		</div>
 	</div>
@@ -265,6 +272,7 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../utils/toast';
 
 export default {
 	name: 'Signup',
@@ -303,9 +311,34 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.accountRequestCreated = true;
-					toast.success('OTP sent to your email');
+					toast.success('Verification code sent to your email');
 				},
-				onError: this.onSignupError.bind(this),
+				onError: (error) => {
+					if (error?.exc_type !== 'ValidationError') {
+						return;
+					}
+					let errorMessage = '';
+					if ((error?.messages ?? []).length) {
+						errorMessage = error?.messages?.[0];
+					}
+					// check if error message has `is already registered` substring
+					if (errorMessage.includes('is already registered')) {
+						localStorage.setItem('login_email', this.email);
+
+						if (this.$route.query?.product) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
+								},
+							});
+						} else {
+							this.$router.push({
+								name: 'Login',
+							});
+						}
+					}
+				},
 			};
 		},
 		verifyOTP() {
@@ -328,7 +361,12 @@ export default {
 				},
 				onSuccess() {
 					this.otp = '';
-					toast.success('Resent OTP to your email');
+					toast.success('Verification code sent to your email');
+				},
+				onError(err) {
+					toast.error(
+						getToastErrorMessage(err, 'Failed to resend verification code'),
+					);
 				},
 			};
 		},
@@ -467,8 +505,9 @@ export default {
 				{
 					onSuccess: (res) => {
 						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-						if (this.$route.query.product) {
-							loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
+						// if query param redirect is present, redirect to that route
+						if (this.$route.query.redirect) {
+							loginRoute = this.$route.query.redirect;
 						}
 						localStorage.setItem('login_email', this.email);
 						window.location.href = loginRoute;
@@ -486,22 +525,6 @@ export default {
 					},
 				},
 			);
-		},
-		onSignupError(error) {
-			if (error?.exc_type !== 'ValidationError') {
-				return;
-			}
-			let errorMessage = '';
-			if ((error?.messages ?? []).length) {
-				errorMessage = error?.messages?.[0];
-			}
-			// check if error message has `is already registered` substring
-			if (errorMessage.includes('is already registered')) {
-				localStorage.setItem('login_email', this.email);
-				this.$router.push({
-					name: 'Login',
-				});
-			}
 		},
 	},
 	computed: {
@@ -570,7 +593,7 @@ export default {
 				return 'Sign in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create ${this.saasProduct.title} site`;
+					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
 				return 'Create a new account';
 			}

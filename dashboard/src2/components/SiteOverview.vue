@@ -18,6 +18,12 @@
 				Login
 			</Button>
 		</AlertBanner>
+		<AlertAddPaymentMode
+			v-if="!$team.doc.payment_mode"
+			class="col-span-1 lg:col-span-2"
+			title="Add a payment mode to upgrade your plan"
+			type="info"
+		/>
 		<DismissableBanner
 			v-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
@@ -62,7 +68,12 @@
 											</template>
 											<template v-else-if="currentPlan">
 												{{ $format.planTitle(currentPlan) }}
-												<span v-if="currentPlan.price_inr">/month</span>
+												<span v-if="currentPlan.price_inr && $isMobile">
+													/mo
+												</span>
+												<span v-if="currentPlan.price_inr && !$isMobile">
+													/month
+												</span>
 											</template>
 											<template v-else> No plan set </template>
 											<div
@@ -78,7 +89,12 @@
 								</div>
 							</div>
 						</div>
-						<Button @click="showPlanChangeDialog">Change</Button>
+						<Button
+							@click="showPlanChangeDialog"
+							:disabled="!$team.doc.payment_mode"
+						>
+							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
+						</Button>
 					</div>
 				</div>
 				<div class="border-b p-5 lg:border-b-0 lg:border-r">
@@ -144,14 +160,14 @@
 				</div>
 				<div class="p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex min-h-[1.75rem] items-center justify-between text-base text-gray-700"
 					>
 						<span>Database</span>
 						<Button
 							v-if="
 								(currentPlan
 									? (currentUsage.database / currentPlan.max_database_usage) *
-									  100
+										100
 									: 0) >= 80
 							"
 							variant="ghost"
@@ -165,7 +181,7 @@
 							:value="
 								currentPlan
 									? (currentUsage.database / currentPlan.max_database_usage) *
-									  100
+										100
 									: 0
 							"
 						/>
@@ -259,27 +275,34 @@ import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
 import { trialDays } from '../utils/site';
+import AlertAddPaymentMode from './AlertAddPaymentMode.vue';
 
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
-	components: { SiteDailyUsage, Progress, AlertBanner, DismissableBanner },
+	components: {
+		SiteDailyUsage,
+		Progress,
+		AlertBanner,
+		DismissableBanner,
+		AlertAddPaymentMode,
+	},
 	data() {
 		return {
-			isSetupWizardComplete: true
+			isSetupWizardComplete: true,
 		};
 	},
 	mounted() {
 		if (this.$site?.doc?.status === 'Active') {
-			this.$site.isSetupWizardComplete.submit().then(res => {
+			this.$site.isSetupWizardComplete.submit().then((res) => {
 				this.isSetupWizardComplete = res;
 			});
 		}
 	},
 	methods: {
 		showPlanChangeDialog() {
-			let SitePlansDialog = defineAsyncComponent(() =>
-				import('../components/ManageSitePlansDialog.vue')
+			let SitePlansDialog = defineAsyncComponent(
+				() => import('../components/ManageSitePlansDialog.vue'),
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
 		},
@@ -289,13 +312,13 @@ export default {
 		loginAsAdmin() {
 			this.$site.loginAsAdmin
 				.submit({ reason: '' })
-				.then(url => window.open(url, '_blank'));
+				.then((url) => window.open(url, '_blank'));
 		},
 		loginAsTeam() {
 			if (this.$site.doc?.additional_system_user_created) {
 				this.$site.loginAsTeam
 					.submit({ reason: '' })
-					.then(url => window.open(url, '_blank'));
+					.then((url) => window.open(url, '_blank'));
 			} else {
 				this.loginAsAdmin();
 			}
@@ -303,37 +326,37 @@ export default {
 		removeTag(tag) {
 			toast.promise(
 				this.$site.removeTag.submit({
-					tag: tag.tag_name
+					tag: tag.tag_name,
 				}),
 				{
 					loading: 'Removing tag...',
 					success: `Tag ${tag.tag_name} removed`,
-					error: e => getToastErrorMessage(e)
-				}
+					error: (e) => getToastErrorMessage(e),
+				},
 			);
 		},
 		showAddTagDialog() {
-			const TagsDialog = defineAsyncComponent(() =>
-				import('../dialogs/TagsDialog.vue')
+			const TagsDialog = defineAsyncComponent(
+				() => import('../dialogs/TagsDialog.vue'),
 			);
 			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }));
 		},
-		trialDays
+		trialDays,
 	},
 	computed: {
 		siteInformation() {
 			return [
 				{
 					label: 'Owned by',
-					value: this.$site.doc?.owner_email
+					value: this.$site.doc?.owner_email,
 				},
 				{
 					label: 'Created by',
-					value: this.$site.doc?.owner
+					value: this.$site.doc?.owner,
 				},
 				{
 					label: 'Created on',
-					value: this.$format.date(this.$site.doc?.creation)
+					value: this.$format.date(this.$site.doc?.creation),
 				},
 				{
 					label: 'Region',
@@ -341,8 +364,8 @@ export default {
 					prefix: h('img', {
 						src: this.$site.doc?.cluster.image,
 						alt: this.$site.doc?.cluster.title,
-						class: 'h-4 w-4'
-					})
+						class: 'h-4 w-4',
+					}),
 				},
 				{
 					label: 'Inbound IP',
@@ -350,10 +373,10 @@ export default {
 					suffix: h(
 						Tooltip,
 						{
-							text: 'Use this for adding A records for your site'
+							text: 'Use this for adding A records for your site',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' })
-					)
+						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+					),
 				},
 				{
 					label: 'Outbound IP',
@@ -361,11 +384,11 @@ export default {
 					suffix: h(
 						Tooltip,
 						{
-							text: 'Use this for whitelisting our server on a 3rd party service'
+							text: 'Use this for whitelisting our server on a 3rd party service',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' })
-					)
-				}
+						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+					),
+				},
 			];
 		},
 		currentPlan() {
@@ -382,7 +405,7 @@ export default {
 						? this.$site.doc.current_plan.price_per_day_inr
 						: this.$site.doc.current_plan.price_per_day_usd,
 				currency: currency === 'INR' ? '₹' : '$',
-				...this.$site.doc.current_plan
+				...this.$site.doc.current_plan,
 			};
 		},
 		currentUsage() {
@@ -390,7 +413,7 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
-		}
-	}
+		},
+	},
 };
 </script>

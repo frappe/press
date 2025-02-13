@@ -25,10 +25,6 @@ export default {
 						fieldname: 'customer_email'
 					},
 					{
-						label: 'Customer Team ID',
-						fieldname: 'requested_by'
-					},
-					{
 						label: 'Raised On',
 						fieldname: 'creation',
 						format(value) {
@@ -107,7 +103,7 @@ export default {
 						label: '',
 						type: 'Component',
 						width: 1,
-						align: 'left',
+						align: 'center',
 						component({ row, listResource }) {
 							if (row.status === 'Pending' && row.approved_by_partner === 0) {
 								return h(Button, {

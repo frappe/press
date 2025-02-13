@@ -28,6 +28,7 @@ class BalanceTransaction(Document):
 		description: DF.SmallText | None
 		ending_balance: DF.Currency
 		invoice: DF.Data | None
+		paid_via_local_pg: DF.Check
 		source: DF.Literal[
 			"",
 			"Prepaid Credits",

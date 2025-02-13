@@ -274,6 +274,7 @@ class Bench(Document):
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
 			"socketio_port": 19000 + self.port_offset,
+			"rq_port": 11000 + self.port_offset,
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
 			"codeserver_port": 16000 + self.port_offset,
@@ -439,6 +440,29 @@ class Bench(Document):
 			except Exception:
 				log_error(
 					"Site Analytics Sync Error",
+					site=site,
+					analytics=analytics,
+					reference_doctype="Bench",
+					reference_name=self.name,
+				)
+				frappe.db.rollback()
+
+	def sync_product_site_users(self):
+		agent = Agent(self.server)
+		if agent.should_skip_requests():
+			return
+		data = agent.get_sites_analytics(self)
+		if not data:
+			return
+		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
+			try:
+				frappe.get_doc("Site", site).sync_users_to_product_site(analytics)
+				frappe.db.commit()
+			except Exception:
+				log_error(
+					"Site Users Sync Error",
 					site=site,
 					analytics=analytics,
 					reference_doctype="Bench",

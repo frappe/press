@@ -9,11 +9,12 @@ from press.saas.api import whitelist_saas_api
 
 @whitelist_saas_api
 def info():
-	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date"], as_dict=True)
+	site = frappe.get_value("Site", frappe.local.site_name, ["plan", "trial_end_date", "team"], as_dict=True)
 	return {
 		"name": frappe.local.site_name,
-		"trial_end_date": frappe.get_value("Site", frappe.local.site_name, "trial_end_date"),
-		"plan": frappe.get_doc("Site Plan", site.plan),
+		"trial_end_date": site.trial_end_date,
+		"payment_method_added": bool(frappe.db.get_value("Team", site.team, "payment_mode")),
+		"plan": frappe.get_doc("Site Plan", site.plan) if site.plan else None,
 	}
 
 

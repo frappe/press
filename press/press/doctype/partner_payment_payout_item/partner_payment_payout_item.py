@@ -1,12 +1,12 @@
-from __future__ import annotations
-
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
 # import frappe
 from frappe.model.document import Document
 
 
-class PhysicalBackupFileMetadata(Document):
+class PartnerPaymentPayoutItem(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -15,12 +15,15 @@ class PhysicalBackupFileMetadata(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		checksum: DF.Data | None
-		file: DF.Data
+		amount: DF.Currency
+		amount_in_local_currency: DF.Currency
+		commission_amount: DF.Currency
+		net_amount: DF.Currency
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		size: DF.Int
+		posting_date: DF.Date | None
+		transaction_id: DF.Link
 	# end: auto-generated types
 
 	pass

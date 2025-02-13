@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "autoname": "field:gateway",
+ "creation": "2025-01-18 10:45:52.966302",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "column_break_kvnc",
+  "team_name",
+  "column_break_pwgv",
+  "currency",
+  "gateway",
+  "ui_configuration_section",
+  "integration_logo",
+  "column_break_jcag",
+  "gateway_settings",
+  "column_break_noki",
+  "gateway_controller",
+  "partner_integration_section",
+  "url",
+  "print_format",
+  "column_break_oefu",
+  "api_key",
+  "column_break_slwm",
+  "api_secret",
+  "taxes_section",
+  "taxes_and_charges"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_kvnc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "team.team_title",
+   "fieldname": "team_name",
+   "fieldtype": "Data",
+   "label": "Team Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pwgv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "gateway",
+   "fieldtype": "Data",
+   "label": "Gateway",
+   "unique": 1
+  },
+  {
+   "fieldname": "ui_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "UI Configuration"
+  },
+  {
+   "fieldname": "integration_logo",
+   "fieldtype": "Attach Image",
+   "label": "Integration Logo"
+  },
+  {
+   "fieldname": "column_break_jcag",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gateway_settings",
+   "fieldtype": "Link",
+   "label": "Gateway Settings",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "column_break_noki",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gateway_controller",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Gateway Controller",
+   "options": "gateway_settings"
+  },
+  {
+   "fieldname": "partner_integration_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Integration"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "URL"
+  },
+  {
+   "fieldname": "column_break_oefu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Data",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_slwm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret"
+  },
+  {
+   "fieldname": "taxes_section",
+   "fieldtype": "Section Break",
+   "label": "Taxes"
+  },
+  {
+   "fieldname": "taxes_and_charges",
+   "fieldtype": "Percent",
+   "label": "Taxes and Charges"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Data",
+   "label": "Print Format"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-02 19:51:36.821998",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Payment Gateway",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
