@@ -200,7 +200,8 @@ class ProductTrial(Document):
 		if site.host_name == site_domain:
 			return
 
-		site.add_domain(site_domain)
+		site.add_domain_for_product_site(site_domain)
+		site.add_domain_to_config(site_domain)
 
 	def get_available_clusters(self):
 		release_group = frappe.get_doc("Release Group", self.release_group)

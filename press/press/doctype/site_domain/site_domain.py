@@ -224,8 +224,11 @@ def process_add_domain_to_upstream_job_update(job):
 
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", domain, "status", updated_status)
-		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
+
+	if job.status in ["Failure", "Delivery Failure"]:
+		frappe.db.set_value(
+			"Product Trial Request", {"domain": request_data.get("domain")}, "status", "Error"
+		)
 
 
 def update_dns_type():  # noqa: C901

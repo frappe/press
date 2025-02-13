@@ -1145,6 +1145,20 @@ class Site(Document, TagHelpers):
 				}
 			).insert()
 
+	def add_domain_for_product_site(self, domain):
+		domain = domain.lower().strip(".")
+		log_site_activity(self.name, "Add Domain")
+		create_dns_record(doc=self, record_name=domain)
+		frappe.get_doc(
+			{
+				"doctype": "Site Domain",
+				"status": "Pending",
+				"site": self.name,
+				"domain": domain,
+				"dns_type": "CNAME",
+			}
+		).insert()
+
 	@frappe.whitelist()
 	def create_dns_record(self):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))

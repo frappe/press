@@ -75,17 +75,16 @@
 				</template>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<!-- <Button variant="outline" @click="signupForCurrentProduct"
-							>Signup for new site</Button
-						>
-						<p class="my-4 text-gray-600">or,</p> -->
-						<p class="text-center text-base leading-5 text-gray-800">
-							Contact at
-							<a href="mailto:support@frappe.io" class="underline"
-								>support@frappe.io</a
-							><br />
-							to resolve the issue
-						</p>
+						<div class="text-center text-base leading-5 text-gray-800">
+							<p>It looks like something went wrong</p>
+							<p>
+								Contact
+								<a href="mailto:support@frappe.io" class="underline"
+									>support@frappe.io</a
+								><br />
+								to resolve the issue
+							</p>
+						</div>
 					</div>
 				</template>
 				<template v-slot:footer>

@@ -633,7 +633,7 @@ class Agent:
 		data = {"domain": domain}
 		return self.create_agent_job(
 			"Add Domain to Upstream",
-			f"proxy/upstreams/{ip}/subdomains",
+			f"proxy/upstreams/{ip}/domains",
 			data,
 			site=site,
 			upstream=server,
