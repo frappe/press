@@ -2458,6 +2458,10 @@ class Site(Document, TagHelpers):
 			for key, value in query.items():
 				if isinstance(value, float):
 					query[key] = int(value)
+
+		# Sort by duration
+		slow_queries.sort(key=lambda x: x["duration"], reverse=True)
+
 		is_performance_schema_enabled = False
 		if database_server := frappe.db.get_value("Server", self.server, "database_server"):
 			is_performance_schema_enabled = frappe.db.get_value(

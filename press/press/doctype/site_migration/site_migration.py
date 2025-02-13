@@ -646,8 +646,11 @@ class SiteMigration(Document):
 		self.run_next_step()
 
 	def is_cleanup_done(self, job: "AgentJob") -> bool:
-		return (
-			job.job_type == "Archive Site" and job.status == "Success" and job.bench == self.destination_bench
+		return (job.job_type == "Archive Site" and job.bench == self.destination_bench) and (
+			job.status == "Success"
+			or (
+				job.status == "Failure" and f"KeyError: '{self.site}'" in str(job.traceback)
+			)  # sometimes site may not even get created in destination to clean it up
 		)
 
 
