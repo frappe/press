@@ -81,6 +81,7 @@ def get_product_sites_of_user(user: str):
 			"plan.plan_title as plan_title",
 			"plan.price_usd as price_usd",
 			"plan.price_inr as price_inr",
+			"host_name",
 		],
 	)
 

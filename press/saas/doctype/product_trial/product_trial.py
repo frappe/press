@@ -86,7 +86,7 @@ class ProductTrial(Document):
 			for field in self.signup_fields
 		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
-		doc.default_site_label = self.get_default_site_label()
+		doc.site = self.get_standby_site()
 		return doc
 
 	def validate(self):
@@ -106,18 +106,23 @@ class ProductTrial(Document):
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
 
-	def setup_trial_site(self, site_label, team, cluster=None, account_request=None):
+	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
 
-		standby_site = self.get_standby_site(cluster)
+		site_domain = f"{subdomain}.{self.domain}"
+
+		if frappe.db.exists(
+			"Site", {"name": site_domain, "is_standby": 1, "is_standby_for_product": self.name}
+		):
+			standby_site = site_domain
+		else:
+			standby_site = self.get_standby_site(cluster)
+		print(standby_site)
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
 		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
-
-		if frappe.db.exists("Site", {"label": site_label, "status": ("!=", "Archived"), "team": team}):
-			frappe.throw(f"Site with label {site_label} already exists")
 
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
@@ -127,13 +132,13 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.label = site_label
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
 			site.reload()
 			site.generate_saas_communication_secret(create_agent_job=True, save=True)
 			if self.create_additional_system_user:
 				agent_job_name = site.create_user_with_team_info()
+			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
 			apps = [{"app": d.app} for d in self.apps]
@@ -143,7 +148,7 @@ class ProductTrial(Document):
 
 			site = frappe.get_doc(
 				doctype="Site",
-				subdomain=self.get_unique_site_name(),
+				subdomain=subdomain,
 				domain=self.domain,
 				group=self.release_group,
 				cluster=cluster,
@@ -154,7 +159,6 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
-				label=site_label,
 			)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
@@ -188,6 +192,16 @@ class ProductTrial(Document):
 				proxy_servers_for_available_clusters[proxy_server_name] = cluster
 
 		return proxy_servers_for_available_clusters
+
+	def set_site_domain(self, site, site_domain):
+		if not site_domain:
+			return
+
+		if site.host_name == site_domain:
+			return
+
+		site.add_domain_for_product_site(site_domain)
+		site.add_domain_to_config(site_domain)
 
 	def get_available_clusters(self):
 		release_group = frappe.get_doc("Release Group", self.release_group)
@@ -295,20 +309,6 @@ class ProductTrial(Document):
 		while frappe.db.exists("Site", filters):
 			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
-
-	def get_default_site_label(self):
-		def get_site_label(count=1):
-			from press.utils import get_current_team
-
-			user_first_name = frappe.db.get_value("User", frappe.session.user, "first_name")
-			site_label = f"{user_first_name}'s {self.title} Site"
-			if count > 1:
-				site_label = f"{site_label} {count}"
-			if frappe.db.exists("Site", {"label": site_label, "team": get_current_team()}):
-				return get_site_label(count + 1)
-			return site_label
-
-		return get_site_label()
 
 
 def get_app_subscriptions_site_config(apps: list[str]):

@@ -1068,7 +1068,7 @@ class Team(Document):
 				"trial_end_date": ("is", "set"),
 				"status": ("!=", "Archived"),
 			},
-			["name", "trial_end_date", "standby_for_product.title as product_title"],
+			["name", "trial_end_date", "standby_for_product.title as product_title", "host_name"],
 			order_by="`tabSite`.`modified` desc",
 		)
 

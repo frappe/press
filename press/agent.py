@@ -627,6 +627,18 @@ class Agent:
 			upstream=server,
 		)
 
+	def add_domain_to_upstream(self, server, site=None, domain=None):
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"domain": domain}
+		return self.create_agent_job(
+			"Add Domain to Upstream",
+			f"proxy/upstreams/{ip}/domains",
+			data,
+			site=site,
+			upstream=server,
+		)
+
 	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=False):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
