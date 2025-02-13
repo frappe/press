@@ -664,15 +664,7 @@ export default {
 			if (!this.isRequiredInformationReceived) return null;
 			const result = this.$resources.databaseProcesses.data?.message ?? [];
 			return {
-				columns: [
-					'ID',
-					'State',
-					'Time (s)',
-					'User',
-					'Host',
-					'Command',
-					'Query',
-				],
+				columns: ['ID', 'State', 'Time', 'User', 'Host', 'Command', 'Query'],
 				data: result.map((e) => {
 					return [
 						e['id'],
@@ -693,6 +685,7 @@ export default {
 				Calls: (v) => formatValue(v, 'commaSeperatedNumber'),
 				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
 				Duration: (v) => formatValue(v, 'durationSeconds'),
+				Time: (v) => formatValue(v, 'durationSeconds'),
 			};
 		},
 		fullViewFormatters() {
@@ -708,6 +701,7 @@ export default {
 				Calls: 'right',
 				'Avg Time': 'right',
 				Duration: 'right',
+				Time: 'right',
 			};
 		},
 	},
