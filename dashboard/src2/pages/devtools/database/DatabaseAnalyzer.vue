@@ -377,8 +377,16 @@ export default {
 				site_name: site_name,
 			});
 			this.$resources.site.submit();
-			this.$resources.databasePerformanceReport.submit();
-			this.$resources.databaseProcesses.submit();
+			this.$resources.databasePerformanceReport.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'get_database_performance_report',
+			});
+			this.$resources.databaseProcesses.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'fetch_database_processes',
+			});
 		},
 	},
 	resources: {
