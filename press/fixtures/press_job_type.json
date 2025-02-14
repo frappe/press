@@ -212,7 +212,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-01-31 13:35:54.680660",
+  "modified": "2025-02-14 14:30:00.676187",
   "name": "Increase Disk Size",
   "steps": [
    {
@@ -226,7 +226,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "if server.provider == \"OCI\":\n    machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    machine.sync()\n    result = (machine.status == \"Running\", False)\nelse:\n    result = (True, False)",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"OCI\":\n    machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n    machine.sync()\n    result = (machine.status == \"Running\", False)\nelse:\n    result = (True, False)",
     "step_name": "Wait for server to start (OCI)",
     "wait_until_true": 1
    },
