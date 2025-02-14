@@ -24,10 +24,10 @@
 			type="autocomplete"
 			label="Choose GitHub User / Organization"
 			:options="
-				options.installations.map(i => ({
+				options.installations.map((i) => ({
 					label: i.login,
 					value: String(i.id), // type cast to string for search to work
-					image: i.image
+					image: i.image,
 				}))
 			"
 			v-model="selectedGithubUser"
@@ -63,9 +63,9 @@
 			v-if="selectedGithubUserData"
 			label="Choose GitHub Repository"
 			:options="
-				(selectedGithubUserData.repos || []).map(r => ({
+				(selectedGithubUserData.repos || []).map((r) => ({
 					label: r.name,
-					value: r.name
+					value: r.name,
 				}))
 			"
 			v-model="selectedGithubRepository"
@@ -109,7 +109,7 @@ export default {
 			app: {},
 			selectedBranch: '',
 			selectedGithubUser: null,
-			selectedGithubRepository: null
+			selectedGithubRepository: null,
 		};
 	},
 	watch: {
@@ -118,16 +118,20 @@ export default {
 			this.$emit('fieldChange');
 		},
 		selectedGithubRepository(val) {
+			if (!val) {
+				this.selectedBranch = '';
+				return;
+			}
 			this.$emit('fieldChange');
 			this.$resources.branches.submit({
 				owner: this.selectedGithubUser?.label,
 				name: val?.label,
-				installation: this.selectedGithubUser?.value
+				installation: this.selectedGithubUser?.value,
 			});
 
 			if (this.selectedGithubUserData) {
 				let defaultBranch = this.selectedGithubUserData.repos.find(
-					r => r.name === val.label
+					(r) => r.name === val.label
 				).default_branch;
 				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
 			} else this.selectedBranch = '';
@@ -138,20 +142,20 @@ export default {
 					owner: this.appOwner,
 					repository: this.appName,
 					branch: newSelectedBranch.value,
-					selectedGithubUser: this.selectedGithubUserData
+					selectedGithubUser: this.selectedGithubUserData,
 				});
-		}
+		},
 	},
 	resources: {
 		options() {
 			return {
 				url: 'press.api.github.options',
-				auto: true
+				auto: true,
 			};
 		},
 		branches() {
 			return {
-				url: 'press.api.github.branches'
+				url: 'press.api.github.branches',
 			};
 		},
 		clearAccessToken() {
@@ -159,9 +163,9 @@ export default {
 				url: 'press.api.github.clear_token_and_get_installation_url',
 				onSuccess(installation_url) {
 					window.location.href = installation_url + '?state=' + this.state;
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		options() {
@@ -174,15 +178,15 @@ export default {
 			return this.selectedGithubRepository?.label;
 		},
 		branchOptions() {
-			return (this.$resources.branches.data || []).map(branch => ({
+			return (this.$resources.branches.data || []).map((branch) => ({
 				label: branch.name,
-				value: branch.name
+				value: branch.name,
 			}));
 		},
 		selectedGithubUserData() {
 			if (!this.selectedGithubUser) return null;
 			return this.options.installations.find(
-				i => i.id === Number(this.selectedGithubUser.value)
+				(i) => i.id === Number(this.selectedGithubUser.value)
 			);
 		},
 		needsAuthorization() {
@@ -202,7 +206,7 @@ export default {
 			let location = window.location.href;
 			let state = { team: this.$team.name, url: location };
 			return btoa(JSON.stringify(state));
-		}
-	}
+		},
+	},
 };
 </script>
