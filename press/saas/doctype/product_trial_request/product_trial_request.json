@@ -10,6 +10,7 @@
   "product_trial",
   "team",
   "site",
+  "domain",
   "column_break_cubd",
   "status",
   "account_request",
@@ -48,7 +49,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nCompleting Setup Wizard\nSite Created\nError\nExpired"
+   "options": "Pending\nWait for Site\nCompleting Setup Wizard\nAdding Domain\nSite Created\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -101,11 +102,16 @@
    "fieldname": "site_creation_completed_on",
    "fieldtype": "Datetime",
    "label": "Site Creation Completed On"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-19 15:17:20.958670",
+ "modified": "2025-02-11 08:02:31.486460",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial Request",

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import re
 from collections import defaultdict
 from contextlib import suppress
 from functools import cached_property, wraps
@@ -84,6 +83,7 @@ from press.utils import (
 	human_readable,
 	log_error,
 	unique,
+	validate_subdomain,
 )
 from press.utils.dns import _change_dns_record, create_dns_record
 
@@ -338,16 +338,7 @@ class Site(Document, TagHelpers):
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
 	def validate_site_name(self):
-		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-		if not re.match(site_regex, self.subdomain):
-			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
-			)
-		if len(self.subdomain) > 32:
-			frappe.throw("Subdomain too long. Use 32 or less characters")
-
-		if len(self.subdomain) < 5:
-			frappe.throw("Subdomain too short. Use 5 or more characters")
+		validate_subdomain(self.subdomain)
 
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
@@ -1144,6 +1135,20 @@ class Site(Document, TagHelpers):
 					"dns_response": json.dumps(response, indent=4, default=str),
 				}
 			).insert()
+
+	def add_domain_for_product_site(self, domain):
+		domain = domain.lower().strip(".")
+		log_site_activity(self.name, "Add Domain")
+		create_dns_record(doc=self, record_name=domain)
+		frappe.get_doc(
+			{
+				"doctype": "Site Domain",
+				"status": "Pending",
+				"site": self.name,
+				"domain": domain,
+				"dns_type": "CNAME",
+			}
+		).insert()
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -2458,6 +2463,10 @@ class Site(Document, TagHelpers):
 			for key, value in query.items():
 				if isinstance(value, float):
 					query[key] = int(value)
+
+		# Sort by duration
+		slow_queries.sort(key=lambda x: x["duration"], reverse=True)
+
 		is_performance_schema_enabled = False
 		if database_server := frappe.db.get_value("Server", self.server, "database_server"):
 			is_performance_schema_enabled = frappe.db.get_value(
@@ -3197,9 +3206,42 @@ def process_complete_setup_wizard_job_update(job):
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "additional_system_user_created", True)
-		product_trial_request.status = "Site Created"
-		product_trial_request.site_creation_completed_on = now_datetime()
+		if frappe.get_all("Site Domain", filters={"site": job.site, "status": ["!=", "Active"]}):
+			product_trial_request.status = "Adding Domain"
+		else:
+			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
 		product_trial_request.save(ignore_permissions=True)
+	elif job.status in ("Failure", "Delivery Failure"):
+		product_trial_request.status = "Error"
+		product_trial_request.save(ignore_permissions=True)
+
+
+def process_add_domain_job_update(job):
+	records = frappe.get_list("Product Trial Request", filters={"site": job.site}, fields=["name"])
+	if not records:
+		return
+
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+	if job.status == "Success":
+		if frappe.get_all(
+			"Agent Job",
+			filters={"site": job.site, "job_type": "Complete Setup Wizard", "status": ["!=", "Success"]},
+		):
+			product_trial_request.status = "Completing Setup Wizard"
+		else:
+			product_trial_request.status = "Site Created"
+			product_trial_request.site_creation_completed_on = now_datetime()
+
+		product_trial_request.save(ignore_permissions=True)
+
+		site_domain = json.loads(job.request_data).get("domain")
+		site = frappe.get_doc("Site", job.site)
+		auto_generated_domain = site.host_name
+		site.host_name = site_domain
+		site.save()
+		site.set_redirect(auto_generated_domain)
+
 	elif job.status in ("Failure", "Delivery Failure"):
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)

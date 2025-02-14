@@ -226,17 +226,7 @@ class Team(Document):
 		if self.payment_mode == "Paid By Partner" and not self.billing_team:
 			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
 
-		has_unpaid_invoices = frappe.get_all(
-			"Invoice",
-			{
-				"team": self.name,
-				"status": ("in", ["Draft", "Unpaid"]),
-				"type": "Subscription",
-				"total": (">", 0),
-			},
-		)
-
-		if self.payment_mode == "Paid By Partner" and has_unpaid_invoices:
+		if self.payment_mode == "Paid By Partner" and has_unsettled_invoices(self.name):
 			frappe.throw(
 				"Cannot set payment mode to Paid By Partner. Please finalize and settle the pending invoices first"
 			)
@@ -1078,7 +1068,7 @@ class Team(Document):
 				"trial_end_date": ("is", "set"),
 				"status": ("!=", "Archived"),
 			},
-			["name", "trial_end_date", "standby_for_product.title as product_title"],
+			["name", "trial_end_date", "standby_for_product.title as product_title", "host_name"],
 			order_by="`tabSite`.`modified` desc",
 		)
 
@@ -1525,10 +1515,15 @@ def validate_site_creation(doc, method):
 
 
 def has_unsettled_invoices(team):
+	if not frappe.db.exists(
+		"Invoice", {"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"}
+	):
+		return False
+
 	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
-		["sum(amount_due) as amount_due"]
+		["sum(amount_due) as amount_due"],
 	)[0]
 	if data.amount_due <= 5:
 		return False

@@ -92,7 +92,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPublished\nIn Review\nAttention Required\nRejected"
+   "options": "Draft\nPublished\nIn Review\nAttention Required\nRejected\nDisabled"
   },
   {
    "fieldname": "section_break_5",
@@ -411,7 +411,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2024-09-12 10:43:13.742115",
+ "modified": "2025-02-13 17:16:24.333531",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

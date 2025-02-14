@@ -12,7 +12,7 @@
 				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Logging in to site"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -56,7 +56,7 @@
 				v-else-if="this.$resources?.siteRequest?.doc?.status === 'Error'"
 				title="Site creation failed"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -75,17 +75,16 @@
 				</template>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col items-center justify-center px-10">
-						<!-- <Button variant="outline" @click="signupForCurrentProduct"
-							>Signup for new site</Button
-						>
-						<p class="my-4 text-gray-600">or,</p> -->
-						<p class="text-center text-base leading-5 text-gray-800">
-							Contact at
-							<a href="mailto:support@frappe.io" class="underline"
-								>support@frappe.io</a
-							><br />
-							to resolve the issue
-						</p>
+						<div class="text-center text-base leading-5 text-gray-800">
+							<p>It looks like something went wrong</p>
+							<p>
+								Contact
+								<a href="mailto:support@frappe.io" class="underline"
+									>support@frappe.io</a
+								><br />
+								to resolve the issue
+							</p>
+						</div>
 					</div>
 				</template>
 				<template v-slot:footer>
@@ -100,7 +99,7 @@
 				v-else
 				title="Creating your site"
 				:subtitle="
-					this.$resources?.siteRequest?.doc?.site_label ||
+					this.$resources?.siteRequest?.doc?.domain ||
 					this.$resources?.siteRequest?.doc?.site
 				"
 			>
@@ -176,7 +175,8 @@ export default {
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard'
+						doc.status == 'Completing Setup Wizard' ||
+						doc.status == 'Adding Domain'
 					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
@@ -220,7 +220,7 @@ export default {
 							let redirectRoute =
 								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
 								'/desk';
-							let loginURL = `https://${this.$resources.siteRequest.doc.site}${redirectRoute}?sid=${sid}`;
+							let loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
 							this.isRedirectingToSite = true;
 							window.open(loginURL, '_self');
 						},

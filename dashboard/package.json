@@ -40,6 +40,7 @@
 		"qrcode": "^1.5.4",
 		"register-service-worker": "^1.6.2",
 		"socket.io-client": "^4.5.1",
+		"sql-formatter": "^15.4.10",
 		"unplugin-icons": "^0.17.0",
 		"unplugin-vue-components": "^0.25.2",
 		"vue": "^3.4.12",

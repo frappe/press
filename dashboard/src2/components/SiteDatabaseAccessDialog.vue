@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Manage Database Users',
-			size: planSupportsDatabaseAccess ? '3xl' : 'xl'
+			size: planSupportsDatabaseAccess ? '3xl' : 'xl',
 		}"
 		v-model="show"
 	>
@@ -67,13 +67,13 @@ export default {
 	name: 'SiteDatabaseAccessDialog',
 	props: ['site'],
 	components: {
-		ManageSitePlansDialog: defineAsyncComponent(() =>
-			import('./ManageSitePlansDialog.vue')
+		ManageSitePlansDialog: defineAsyncComponent(
+			() => import('./ManageSitePlansDialog.vue'),
 		),
 		ClickToCopyField,
 		ObjectList,
 		SiteDatabaseUserCredentialDialog,
-		SiteDatabaseAddEditUserDialog
+		SiteDatabaseAddEditUserDialog,
 	},
 	data() {
 		return {
@@ -82,7 +82,7 @@ export default {
 			showChangePlanDialog: false,
 			selectedUser: '',
 			showDatabaseUserCredentialDialog: false,
-			showDatabaseAddEditUserDialog: false
+			showDatabaseAddEditUserDialog: false,
 		};
 	},
 	watch: {
@@ -95,7 +95,7 @@ export default {
 			if (!val) {
 				this.show = true;
 			}
-		}
+		},
 	},
 	resources: {
 		deleteSiteDatabaseUser() {
@@ -108,11 +108,11 @@ export default {
 					toast.error(
 						err.messages.length
 							? err.messages.join('\n')
-							: 'Failed to initiate database user deletion'
+							: 'Failed to initiate database user deletion',
 					);
-				}
+				},
 			};
-		}
+		},
 	},
 	computed: {
 		listOptions() {
@@ -120,7 +120,7 @@ export default {
 				doctype: 'Site Database User',
 				filters: {
 					site: this.site,
-					status: ['!=', 'Archived']
+					status: ['!=', 'Archived'],
 				},
 				searchField: 'label',
 				filterControls() {
@@ -129,29 +129,29 @@ export default {
 							type: 'select',
 							label: 'Status',
 							fieldname: 'status',
-							options: ['', 'Pending', 'Active', 'Failed']
-						}
+							options: ['', 'Pending', 'Active', 'Failed'],
+						},
 					];
 				},
 				columns: [
 					{
 						label: 'Label',
 						fieldname: 'label',
-						width: '150px'
+						width: '150px',
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						width: 0.5,
 						align: 'center',
-						type: 'Badge'
+						type: 'Badge',
 					},
 					{
 						label: 'DB Connections',
 						fieldname: 'max_connections',
 						width: 0.5,
 						align: 'center',
-						format: value => `${value} Connection` + (value > 1 ? 's' : '')
+						format: (value) => `${value} Connection` + (value > 1 ? 's' : ''),
 					},
 					{
 						label: 'Mode',
@@ -162,17 +162,17 @@ export default {
 							return {
 								read_only: 'Read Only',
 								read_write: 'Read/Write',
-								granular: 'Granular'
+								granular: 'Granular',
 							}[value];
-						}
+						},
 					},
 					{
 						label: 'Created On',
 						fieldname: 'creation',
 						width: 0.5,
 						align: 'center',
-						format: value => date(value, 'll')
-					}
+						format: (value) => date(value, 'll'),
+					},
 				],
 				rowActions: ({ row, listResource, documentResource }) => {
 					if (row.status === 'Archived' || row.status === 'Pending') {
@@ -185,7 +185,7 @@ export default {
 								this.show = false;
 								this.selectedUser = row.name;
 								this.showDatabaseUserCredentialDialog = true;
-							}
+							},
 						},
 						{
 							label: 'Configure User',
@@ -193,13 +193,12 @@ export default {
 								this.selectedUser = row.name;
 								this.show = false;
 								this.showDatabaseAddEditUserDialog = true;
-							}
+							},
 						},
 						{
 							label: 'Delete User',
-							onClick: event => {
+							onClick: () => {
 								this.show = false;
-								event.stopPropagation();
 								confirmDialog({
 									title: 'Delete Database User',
 									message: `Are you sure you want to delete the database user ?<br>`,
@@ -211,23 +210,23 @@ export default {
 											this.$resources.deleteSiteDatabaseUser.submit({
 												dt: 'Site Database User',
 												dn: row.name,
-												method: 'archive'
+												method: 'archive',
 											});
 											this.$resources.deleteSiteDatabaseUser.promise.then(
 												() => {
 													hide();
 													this.show = true;
-												}
+												},
 											);
 											return this.$resources.deleteSiteDatabaseUser.promise;
-										}
+										},
 									},
 									onSuccess: () => {
 										listResource.refresh();
-									}
+									},
 								});
-							}
-						}
+							},
+						},
 					];
 				},
 				primaryAction: () => {
@@ -235,15 +234,15 @@ export default {
 						label: 'Add User',
 						variant: 'solid',
 						slots: {
-							prefix: icon('plus')
+							prefix: icon('plus'),
 						},
 						onClick: () => {
 							this.show = false;
 							this.selectedUser = null;
 							this.showDatabaseAddEditUserDialog = true;
-						}
+						},
 					};
-				}
+				},
 			};
 		},
 		sitePlan() {
@@ -254,12 +253,12 @@ export default {
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
-		}
+		},
 	},
 	methods: {
 		hideSiteDatabaseAddEditUserDialog() {
 			this.showDatabaseAddEditUserDialog = false;
-		}
-	}
+		},
+	},
 };
 </script>

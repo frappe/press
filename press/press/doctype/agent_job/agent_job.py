@@ -977,6 +977,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site.site import (
+			process_add_domain_job_update,
 			process_archive_site_job_update,
 			process_complete_setup_wizard_job_update,
 			process_create_user_job_update,
@@ -992,7 +993,10 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
-		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
+		from press.press.doctype.site_domain.site_domain import (
+			process_add_domain_to_upstream_job_update,
+			process_new_host_job_update,
+		)
 		from press.press.doctype.site_update.site_update import (
 			process_activate_site_job_update,
 			process_deactivate_site_job_update,
@@ -1040,6 +1044,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_archive_site_job_update(job)
 		elif job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
+		elif job.job_type == "Add Domain to Upstream":
+			process_add_domain_to_upstream_job_update(job)
 		elif job.job_type == "Update Site Migrate" or job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
 		elif (
@@ -1091,6 +1097,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_deactivate_site_job_update(job)
 		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
 			process_activate_site_job_update(job)
+		elif job.job_type == "Add Domain":
+			process_add_domain_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

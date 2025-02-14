@@ -88,10 +88,10 @@
 					<div class="mt-2">
 						<a
 							class="flex items-center text-base font-medium underline"
-							:href="`https://${trialSite.name}`"
+							:href="`https://${trialSite.host_name || trialSite.name}`"
 							target="_blank"
 						>
-							https://{{ trialSite.name }}
+							https://{{ trialSite.host_name || trialSite.name }}
 							<i-lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
 						</a>
 					</div>

@@ -11,7 +11,7 @@
 			<LoginBox
 				v-if="saasProduct"
 				title="Let’s set up your site"
-				subtitle="Setup your default settings for your site"
+				subtitle="Create your site and get started"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -28,13 +28,22 @@
 					</div>
 				</template>
 				<template v-slot:default>
-					<form class="w-full" @submit.prevent="createSite">
-						<FormControl
-							label="Site name (will be used to access your site)"
-							v-model="siteLabel"
-							variant="outline"
-							class="mb-4"
-						/>
+					<form class="w-full space-y-4" @submit.prevent="createSite">
+						<div class="w-full space-y-1.5">
+							<label class="block text-xs text-ink-gray-5"> Site domain </label>
+							<div class="col-span-2 flex w-full">
+								<input
+									class="dark:[color-scheme:dark] z-10 h-7 w-full rounded rounded-r-none border border-outline-gray-2 bg-surface-white py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-3 hover:shadow-sm focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+									:placeholder="`${saasProduct.name}-site`"
+									v-model="subdomain"
+								/>
+								<div
+									class="flex items-center rounded-r bg-gray-100 px-2 text-base"
+								>
+									.{{ saasProduct.domain }}
+								</div>
+							</div>
+						</div>
 						<FormControl
 							label="Email address (will be your login ID)"
 							:modelValue="$team.doc.user"
@@ -91,7 +100,7 @@ export default {
 			findingClosestServer: false,
 			closestCluster: null,
 			signupValues: {},
-			siteLabel: '',
+			subdomain: '',
 		};
 	},
 	resources: {
@@ -127,7 +136,7 @@ export default {
 				name: this.productId,
 				auto: true,
 				onSuccess: (doc) => {
-					this.siteLabel = doc.default_site_label;
+					if (doc.site) this.subdomain = doc.site.split('.')[0];
 				},
 			};
 		},
@@ -140,7 +149,7 @@ export default {
 						dn: this.$resources.siteRequest.data.name,
 						method: 'create_site',
 						args: {
-							site_label: this.siteLabel,
+							subdomain: this.subdomain,
 							cluster: this.closestCluster ?? 'Default',
 							signup_values: this.signupValues,
 						},

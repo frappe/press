@@ -89,9 +89,9 @@
 							style="background-color: #e86c13"
 						></div>
 						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.data_size }} MB</span
-						>
+						><span class="ml-auto text-sm text-gray-800">{{
+							formatSizeInMB(this.databaseSizeBreakup.data_size)
+						}}</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -102,8 +102,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Index Size</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.index_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
+						</span>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -114,8 +114,8 @@
 						></div>
 						<span class="text-sm text-gray-800">Free Space</span
 						><span class="ml-auto text-sm text-gray-800"
-							>{{ this.databaseSizeBreakup.free_size }} MB</span
-						>
+							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
+						</span>
 					</div>
 				</div>
 			</div>
@@ -149,7 +149,10 @@
 						class="mt-2"
 						:columns="databaseProcesses.columns"
 						:data="databaseProcesses.data"
-						actionHeaderLabel="Kill Process"
+						:alignColumns="alignColumns"
+						:cellFormatters="cellFormatters"
+						:fullViewFormatters="fullViewFormatters"
+						actionHeaderLabel="Kill"
 						:actionComponent="DatabaseProcessKillButton"
 						:actionComponentProps="{
 							site: this.site,
@@ -184,8 +187,12 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:alignColumns="alignColumns"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
 								:enableCSVExport="false"
 								:borderLess="true"
+								:isTruncateText="true"
 							/>
 						</template>
 					</FTabs>
@@ -243,6 +250,9 @@
 									v-else
 									:columns="suggestedDatabaseIndexes.columns"
 									:data="suggestedDatabaseIndexes.data"
+									:alignColumns="alignColumns"
+									:cellFormatters="cellFormatters"
+									:fullViewFormatters="fullViewFormatters"
 									:enableCSVExport="false"
 									:borderLess="true"
 									actionHeaderLabel="Add Index"
@@ -257,6 +267,10 @@
 								v-else
 								:columns="tab.columns"
 								:data="tab.data"
+								:alignColumns="alignColumns"
+								:cellFormatters="cellFormatters"
+								:fullViewFormatters="fullViewFormatters"
+								:isTruncateText="true"
 								:enableCSVExport="false"
 								:borderLess="true"
 							/>
@@ -302,6 +316,7 @@ import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h, markRaw } from 'vue';
 import { toast } from 'vue-sonner';
+import { formatValue } from '../../../utils/format';
 import ToggleContent from '../../../components/ToggleContent.vue';
 import ResultTable from '../../../components/devtools/database/ResultTable.vue';
 import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
@@ -340,8 +355,21 @@ export default {
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
 		};
 	},
+	mounted() {
+		const url = new URL(window.location.href);
+		const site_name = url.searchParams.get('site');
+		if (site_name) {
+			this.site = site_name;
+		}
+	},
 	watch: {
 		site(site_name) {
+			if (!site_name) return;
+			// set site to query param ?site=site_name
+			const url = new URL(window.location.href);
+			url.searchParams.set('site', site_name);
+			window.history.pushState({}, '', url);
+
 			// reset state
 			this.data = null;
 			this.errorMessage = null;
@@ -571,7 +599,7 @@ export default {
 				},
 				{
 					label: 'Time Consuming Queries',
-					columns: ['Percentage', 'Calls', 'Avg Time (ms)', 'Query'],
+					columns: ['Percentage', 'Calls', 'Avg Time', 'Query'],
 					data: result['top_10_time_consuming_queries'].map((e) => {
 						return [
 							Math.round(e['percent'], 1),
@@ -649,15 +677,7 @@ export default {
 			if (!this.isRequiredInformationReceived) return null;
 			const result = this.$resources.databaseProcesses.data?.message ?? [];
 			return {
-				columns: [
-					'ID',
-					'State',
-					'Time (s)',
-					'User',
-					'Host',
-					'Command',
-					'Query',
-				],
+				columns: ['ID', 'State', 'Time', 'User', 'Host', 'Command', 'Query'],
 				data: result.map((e) => {
 					return [
 						e['id'],
@@ -669,6 +689,32 @@ export default {
 						e['query'],
 					];
 				}),
+			};
+		},
+		cellFormatters() {
+			return {
+				'Rows Examined': (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Rows Sent': (v) => formatValue(v, 'commaSeperatedNumber'),
+				Calls: (v) => formatValue(v, 'commaSeperatedNumber'),
+				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
+				Duration: (v) => formatValue(v, 'durationSeconds'),
+				Time: (v) => formatValue(v, 'durationSeconds'),
+			};
+		},
+		fullViewFormatters() {
+			return {
+				Query: (v) => formatValue(v, 'sql'),
+			};
+		},
+		alignColumns() {
+			return {
+				Percentage: 'right',
+				'Rows Examined': 'right',
+				'Rows Sent': 'right',
+				Calls: 'right',
+				'Avg Time': 'right',
+				Duration: 'right',
+				Time: 'right',
 			};
 		},
 	},
@@ -696,6 +742,22 @@ export default {
 			this.showTableSchemaSizeDetailsDialog = false;
 			this.preSelectedSchemaForSchemaDialog = tableName;
 			this.showTableSchemasDialog = true;
+		},
+		formatSizeInMB(mb) {
+			try {
+				let floatMB = parseFloat(mb);
+				if (floatMB < 1) {
+					let kb = floatMB * 1024; // Convert MB to KB
+					return `${Math.round(kb)} KB`; // Return KB without decimal
+				} else if (floatMB < 1024) {
+					return `${Math.round(floatMB)} MB`; // Return MB without decimal
+				} else {
+					let gb = floatMB / 1024; // Convert MB to GB
+					return `${gb.toFixed(1)} GB`; // Return GB with 1 decimal
+				}
+			} catch (error) {
+				return `${mb} MB`; // Return MB without decimal
+			}
 		},
 	},
 };

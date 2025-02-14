@@ -1,5 +1,6 @@
 import dayjs, { dayjsLocal } from '../utils/dayjs';
 import { getTeam } from '../data/team';
+import { format } from 'sql-formatter';
 
 export function bytes(bytes, decimals = 2, current = 0) {
 	if (bytes === 0) return '0 Bytes';
@@ -22,7 +23,7 @@ export function duration(value) {
 	[hours, minutes, seconds] = [
 		parseInt(hours),
 		parseInt(minutes),
-		parseInt(seconds)
+		parseInt(seconds),
 	];
 
 	let format = '';
@@ -66,7 +67,7 @@ export function currency(value, currency, fractions = 2) {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency,
-		maximumFractionDigits: fractions
+		maximumFractionDigits: fractions,
 	}).format(value);
 }
 
@@ -113,4 +114,103 @@ export function commaSeparator(arr, separator) {
 
 export function commaAnd(arr) {
 	return commaSeparator(arr, 'and');
+}
+
+export function formatSQL(query) {
+	try {
+		return format(query, {
+			language: 'mariadb',
+			tabWidth: 2,
+			keywordCase: 'upper',
+		});
+	} catch (_) {
+		return query;
+	}
+}
+
+export function formatSeconds(seconds) {
+	if (seconds === 0) return '0s';
+	if (seconds <= 60) return `${seconds}s`;
+
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const remainingSeconds = seconds % 60;
+
+	let result = [];
+
+	if (hours > 0) {
+		result.push(`${hours}h`);
+	}
+
+	if (minutes > 0) {
+		result.push(`${minutes}m`);
+	}
+
+	if (remainingSeconds > 0) {
+		result.push(`${remainingSeconds}s`);
+	}
+
+	return result.join(' ');
+}
+
+export function formatCommaSeperatedNumber(number) {
+	let numStr = number.toString();
+
+	let lastThree = numStr.slice(-3);
+	let remaining = numStr.slice(0, -3);
+
+	let parts = [];
+	while (remaining.length > 2) {
+		parts.push(remaining.slice(-2));
+		remaining = remaining.slice(0, -2);
+	}
+
+	if (remaining) {
+		parts.push(remaining);
+	}
+
+	let result = parts.reverse().join(',') + ',' + lastThree;
+	// truncate , at start or end
+	result = result.replace(/^,/, '');
+	result = result.replace(/,$/, '');
+	return result;
+}
+
+export function formatMilliseconds(ms) {
+	if (ms < 100) {
+		return `${ms.toFixed(3).replace(/\.?0+$/, '')}ms`; // Keep milliseconds if less than 100 and remove unnecessary zeros
+	} else if (ms < 60000) {
+		// Less than 1 minute, convert to seconds
+		let seconds = ms / 1000;
+		return `${seconds.toFixed(1).replace(/\.?0+$/, '')}s`;
+	} else {
+		// Convert to minutes
+		let minutes = ms / 60000;
+		return `${minutes.toFixed(1).replace(/\.?0+$/, '')}m`;
+	}
+}
+
+export function formatValue(value, type) {
+	switch (type) {
+		case 'bytes':
+			return bytes(value);
+		case 'date':
+			return date(value);
+		case 'duration':
+			return duration(value);
+		case 'durationSeconds':
+			return formatSeconds(value);
+		case 'durationMilliseconds':
+			return formatMilliseconds(value);
+		case 'commaSeperatedNumber':
+			return formatCommaSeperatedNumber(value);
+		case 'numberK':
+			return numberK(value);
+		case 'pricePerDay':
+			return pricePerDay(value);
+		case 'sql':
+			return formatSQL(value);
+		default:
+			return value;
+	}
 }
