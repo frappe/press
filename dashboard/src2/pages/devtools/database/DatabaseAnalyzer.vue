@@ -397,6 +397,13 @@ export default {
 				url: 'press.api.client.run_doc_method',
 				initialData: {},
 				auto: false,
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_table_schema',
+					};
+				},
 				onSuccess: (data) => {
 					if (data?.message?.loading) {
 						setTimeout(this.fetchTableSchemas, 5000);
