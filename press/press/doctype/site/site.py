@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import re
 from collections import defaultdict
 from contextlib import suppress
 from functools import cached_property, wraps
@@ -84,6 +83,7 @@ from press.utils import (
 	human_readable,
 	log_error,
 	unique,
+	validate_subdomain,
 )
 from press.utils.dns import _change_dns_record, create_dns_record
 
@@ -338,16 +338,7 @@ class Site(Document, TagHelpers):
 			self.setup_wizard_status_check_next_retry_on = now_datetime()
 
 	def validate_site_name(self):
-		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-		if not re.match(site_regex, self.subdomain):
-			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
-			)
-		if len(self.subdomain) > 32:
-			frappe.throw("Subdomain too long. Use 32 or less characters")
-
-		if len(self.subdomain) < 5:
-			frappe.throw("Subdomain too short. Use 5 or more characters")
+		validate_subdomain(self.subdomain)
 
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist

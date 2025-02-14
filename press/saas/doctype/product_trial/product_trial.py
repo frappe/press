@@ -11,7 +11,7 @@ from frappe.model.document import Document
 from frappe.utils.data import get_url
 from frappe.utils.momentjs import get_all_timezones
 
-from press.utils import log_error
+from press.utils import log_error, validate_subdomain
 from press.utils.unique_name_generator import generate as generate_random_name
 
 
@@ -108,6 +108,8 @@ class ProductTrial(Document):
 
 	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
 		from press.press.doctype.site.site import get_plan_config
+
+		validate_subdomain(subdomain)
 
 		site_domain = f"{subdomain}.{self.domain}"
 
