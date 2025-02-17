@@ -1507,7 +1507,7 @@ class Site(Document, TagHelpers):
 				data={"usr": user, "pwd": password},
 			)
 			sid = response.cookies.get("sid")
-		if not sid:
+		if not sid or sid == "Guest":
 			sid = self.get_sid_from_agent(user)
 		if not sid or sid == "Guest":
 			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
