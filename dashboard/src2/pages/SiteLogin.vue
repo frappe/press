@@ -102,9 +102,9 @@
 						v-if="sites.fetched"
 						class="mt-4"
 						@click="goBack"
-						icon-right="arrow-left"
+						icon-right="log-out"
 						variant="ghost"
-						label="Login from another account"
+						label="Log out"
 					/>
 					<Button
 						class="mt-4"
