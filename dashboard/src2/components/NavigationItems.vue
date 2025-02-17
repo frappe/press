@@ -49,7 +49,7 @@ export default {
 					icon: () => h(Notification),
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
-					condition: !onboardingComplete && !isSaasUser,
+					condition: onboardingComplete && !isSaasUser,
 					badge: () => {
 						if (unreadNotificationsCount.data > 0) {
 							return h(
