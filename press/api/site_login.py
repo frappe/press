@@ -127,10 +127,9 @@ def verify_otp(email: str, otp: str):
 	frappe.db.set_value("Site User Session", session.name, {"otp": None, "verified": 1})
 
 	five_days_in_seconds = 5 * 24 * 60 * 60
-	frappe.local.cookie_manager.set_cookie(
+	return frappe.local.cookie_manager.set_cookie(
 		"site_user_sid", session.session_id, max_age=five_days_in_seconds, httponly=True
 	)
-	return session.session_id
 
 
 @frappe.whitelist(allow_guest=True)
