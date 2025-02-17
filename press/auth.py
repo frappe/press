@@ -56,12 +56,19 @@ ALLOWED_WILDCARD_PATHS = [
 	"/api/method/press.www.marketplace.index.",
 ]
 
+DENIED_PATHS = [
+	# Added from frappe/wwww/..
+	"/printview",
+	"/printpreview",
+]
+
+
 DENIED_WILDCARD_PATHS = [
 	"/api/",
 ]
 
 
-def hook():
+def hook():  # noqa: C901
 	if frappe.form_dict.cmd:
 		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
@@ -72,6 +79,10 @@ def hook():
 	# Allow unchecked access to System Users
 	if user_type == "System User":
 		return
+
+	if path in DENIED_PATHS:
+		log(path, user_type)
+		frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
 
 	for denied in DENIED_WILDCARD_PATHS:
 		if path.startswith(denied):
