@@ -142,7 +142,7 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
-	def create_volume(self, availability_zone: str, throughput: int | None = None) -> str:
+	def create_volume(self, availability_zone: str, iops: int = 3000, throughput: int | None = None) -> str:
 		self.sync()
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
@@ -158,6 +158,7 @@ class VirtualDiskSnapshot(Document):
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud Snapshot - {self.name}"}],
 				},
 			],
+			Iops=iops,
 			Throughput=throughput,
 		)
 		return response["VolumeId"]
