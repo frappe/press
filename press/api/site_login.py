@@ -68,6 +68,14 @@ def get_product_sites_of_user(user: str):
 	if not frappe.db.exists("Site User", {"user": user}):
 		return []
 
+	session_id = frappe.local.request.cookies.get("site_user_sid")
+	if (
+		not session_id
+		or not isinstance(session_id, str)
+		or not frappe.db.exists("Site User Session", {"user": user, "session_id": session_id})
+	):
+		return frappe.throw("Invalid session")
+
 	sites = frappe.db.get_all(
 		"Site User", filters={"user": user, "enabled": 1}, fields=["site"], pluck="site"
 	)
