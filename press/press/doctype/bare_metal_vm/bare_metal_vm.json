@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-07 11:34:57.152010",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "name",
+  "host",
+  "status",
+  "template",
+  "resources_section",
+  "cpu",
+  "memory",
+  "disk",
+  "network_section",
+  "ip_address",
+  "gateway",
+  "netmask",
+  "nameservers",
+  "cloud_init_section",
+  "allow_custom_cloud_init",
+  "user_data",
+  "meta_data",
+  "network_config",
+  "system_section",
+  "created_at",
+  "started_at",
+  "stopped_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "host",
+   "fieldtype": "Link",
+   "label": "Host",
+   "options": "Bare Metal Host",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Creating\nRunning\nStopped\nDeleted",
+   "default": "Creating",
+   "reqd": 1
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Link",
+   "label": "Template",
+   "options": "Bare Metal VM Template",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resources_section",
+   "fieldtype": "Section Break",
+   "label": "Resources"
+  },
+  {
+   "fieldname": "cpu",
+   "fieldtype": "Int",
+   "label": "CPU",
+   "reqd": 1
+  },
+  {
+   "fieldname": "memory",
+   "fieldtype": "Int",
+   "label": "Memory (GB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "disk",
+   "fieldtype": "Int",
+   "label": "Disk (GB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "network_section",
+   "fieldtype": "Section Break",
+   "label": "Network"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gateway",
+   "fieldtype": "Data",
+   "label": "Gateway",
+   "reqd": 1
+  },
+  {
+   "fieldname": "netmask",
+   "fieldtype": "Data",
+   "label": "Netmask",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nameservers",
+   "fieldtype": "Small Text",
+   "label": "Nameservers",
+   "description": "One nameserver per line"
+  },
+  {
+   "fieldname": "cloud_init_section",
+   "fieldtype": "Section Break",
+   "label": "Cloud-Init Configuration"
+  },
+  {
+   "fieldname": "allow_custom_cloud_init",
+   "fieldtype": "Check",
+   "label": "Allow Custom Cloud-Init",
+   "default": 0
+  },
+  {
+   "fieldname": "user_data",
+   "fieldtype": "Code",
+   "label": "User Data",
+   "depends_on": "allow_custom_cloud_init",
+   "description": "Cloud-init user-data (YAML format)"
+  },
+  {
+   "fieldname": "meta_data",
+   "fieldtype": "Code",
+   "label": "Meta Data",
+   "depends_on": "allow_custom_cloud_init",
+   "description": "Cloud-init meta-data"
+  },
+  {
+   "fieldname": "network_config",
+   "fieldtype": "Code",
+   "label": "Network Config",
+   "depends_on": "allow_custom_cloud_init",
+   "description": "Cloud-init network configuration"
+  },
+  {
+   "fieldname": "system_section",
+   "fieldtype": "Section Break",
+   "label": "System"
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Last Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stopped_at",
+   "fieldtype": "Datetime",
+   "label": "Last Stopped At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-07 16:28:32.847391",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal VM",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 

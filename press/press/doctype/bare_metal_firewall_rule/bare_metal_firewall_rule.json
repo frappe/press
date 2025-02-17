@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2025-02-03 17:11:48.125840",
+ "creation": "2024-02-07 08:11:48.125840",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -46,7 +46,7 @@
  "istable": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-03 16:48:19.923456",
+ "modified": "2024-02-07 13:48:19.923456",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bare Metal Firewall Rule",

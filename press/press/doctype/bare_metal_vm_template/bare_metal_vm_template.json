@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-07 09:23:45.152010",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "name",
+  "description",
+  "image_section",
+  "image_url",
+  "image_size",
+  "resources_section",
+  "default_cpu",
+  "default_memory",
+  "default_disk",
+  "cloud_init_section",
+  "user_data_template",
+  "meta_data_template",
+  "network_config_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "image_section",
+   "fieldtype": "Section Break",
+   "label": "Image"
+  },
+  {
+   "fieldname": "image_url",
+   "fieldtype": "Data",
+   "label": "Image URL",
+   "reqd": 1,
+   "description": "URL to download the VM image"
+  },
+  {
+   "fieldname": "image_size",
+   "fieldtype": "Int",
+   "label": "Image Size (GB)",
+   "default": 20,
+   "reqd": 1
+  },
+  {
+   "fieldname": "resources_section",
+   "fieldtype": "Section Break",
+   "label": "Default Resources"
+  },
+  {
+   "fieldname": "default_cpu",
+   "fieldtype": "Int",
+   "label": "Default CPU",
+   "default": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_memory",
+   "fieldtype": "Int",
+   "label": "Default Memory (GB)",
+   "default": 2,
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_disk",
+   "fieldtype": "Int",
+   "label": "Default Disk (GB)",
+   "default": 20,
+   "reqd": 1
+  },
+  {
+   "fieldname": "cloud_init_section",
+   "fieldtype": "Section Break",
+   "label": "Cloud-Init Templates"
+  },
+  {
+   "fieldname": "user_data_template",
+   "fieldtype": "Code",
+   "label": "User Data Template",
+   "description": "Cloud-init user-data template (YAML format)"
+  },
+  {
+   "fieldname": "meta_data_template",
+   "fieldtype": "Code",
+   "label": "Meta Data Template",
+   "description": "Cloud-init meta-data template"
+  },
+  {
+   "fieldname": "network_config_template",
+   "fieldtype": "Code",
+   "label": "Network Config Template",
+   "description": "Cloud-init network configuration template"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-07 15:42:18.847391",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal VM Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-01-27 14:13:57.152010",
+ "creation": "2024-02-07 13:13:57.152010",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -177,7 +177,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-03 19:27:54.198765",
+ "modified": "2024-02-07 17:27:54.198765",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bare Metal Host",
