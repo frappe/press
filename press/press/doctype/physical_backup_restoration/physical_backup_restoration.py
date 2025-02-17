@@ -175,7 +175,9 @@ class PhysicalBackupRestoration(Document):
 	def create_volume_from_snapshot(self) -> StepStatus:
 		"""Create volume from snapshot"""
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.disk_snapshot)
-		self.volume = snapshot.create_volume(availability_zone=self.virtual_machine.availability_zone)
+		self.volume = snapshot.create_volume(
+			availability_zone=self.virtual_machine.availability_zone, throughput=300
+		)
 		return StepStatus.Success
 
 	def wait_for_volume_to_be_available(self) -> StepStatus:

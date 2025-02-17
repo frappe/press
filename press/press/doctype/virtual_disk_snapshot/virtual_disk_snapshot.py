@@ -142,12 +142,23 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
-	def create_volume(self, availability_zone: str) -> str:
+	def create_volume(self, availability_zone: str, throughput: int | None = None) -> str:
 		self.sync()
 		if self.status != "Completed":
 			raise Exception("Snapshot is unavailable")
+		if throughput is None:
+			throughput = 125
 		response = self.client.create_volume(
-			SnapshotId=self.snapshot_id, AvailabilityZone=availability_zone, VolumeType="gp3"
+			SnapshotId=self.snapshot_id,
+			AvailabilityZone=availability_zone,
+			VolumeType="gp3",
+			TagSpecifications=[
+				{
+					"ResourceType": "volume",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud Snapshot - {self.name}"}],
+				},
+			],
+			Throughput=throughput,
 		)
 		return response["VolumeId"]
 
