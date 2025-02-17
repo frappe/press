@@ -64,7 +64,8 @@ def whitelist_saas_api(func):  # noqa: C901
 		# if user not in the team, throw error
 		team_members = frappe.get_doc("Team", site_record.team).get_user_list()
 		if not site_user or site_user not in team_members:
-			frappe.throw("Invalid x-site-user provided", frappe.AuthenticationError)
+			# not throwing an error here, as some sites might not be using x-site-user
+			return None
 
 		if site_record.saas_communication_secret != site_token:
 			frappe.throw("Invalid x-site-token provided", frappe.AuthenticationError)
