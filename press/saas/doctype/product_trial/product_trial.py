@@ -119,7 +119,7 @@ class ProductTrial(Document):
 			standby_site = site_domain
 		else:
 			standby_site = self.get_standby_site(cluster)
-		print(standby_site)
+
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
