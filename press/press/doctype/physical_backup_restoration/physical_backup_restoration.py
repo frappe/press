@@ -15,6 +15,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.physical_restoration_test.physical_restoration_test import trigger_next_restoration
 
 if TYPE_CHECKING:
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
@@ -47,6 +48,7 @@ class PhysicalBackupRestoration(Document):
 		end: DF.Datetime | None
 		job: DF.Link | None
 		mount_point: DF.Data | None
+		physical_restoration_test: DF.Data | None
 		restore_specific_tables: DF.Check
 		site: DF.Link
 		site_backup: DF.Link
@@ -123,6 +125,9 @@ class PhysicalBackupRestoration(Document):
 			)
 
 			process_physical_backup_restoration_status_update(self.name)
+
+			if self.physical_restoration_test:
+				trigger_next_restoration(self.physical_restoration_test)
 
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")

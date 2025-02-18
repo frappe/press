@@ -11,7 +11,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 
-class PhysicalBackupExperimentSite(Document):
+class PhysicalBackupGroupSite(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 

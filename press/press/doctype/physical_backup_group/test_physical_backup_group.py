@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestPhysicalBackupExperimentGroup(UnitTestCase):
+class UnitTestPhysicalBackupGroup(UnitTestCase):
 	"""
-	Unit tests for PhysicalBackupExperimentGroup.
+	Unit tests for PhysicalBackupGroup.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestPhysicalBackupExperimentGroup(IntegrationTestCase):
+class IntegrationTestPhysicalBackupGroup(IntegrationTestCase):
 	"""
-	Integration tests for PhysicalBackupExperimentGroup.
+	Integration tests for PhysicalBackupGroup.
 	Use this class for testing interactions between multiple components.
 	"""
 

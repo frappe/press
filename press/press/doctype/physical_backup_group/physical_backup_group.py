@@ -9,7 +9,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 
-class PhysicalBackupExperimentGroup(Document):
+class PhysicalBackupGroup(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -18,19 +18,19 @@ class PhysicalBackupExperimentGroup(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.physical_backup_experiment_site.physical_backup_experiment_site import (
-			PhysicalBackupExperimentSite,
+		from press.press.doctype.physical_backup_group_site.physical_backup_group_site import (
+			PhysicalBackupGroupSite,
 		)
 
 		available_backups: DF.Int
 		no_of_sites: DF.Int
-		site_backups: DF.Table[PhysicalBackupExperimentSite]
+		site_backups: DF.Table[PhysicalBackupGroupSite]
 		successful_backups: DF.Int
 		unavailable_backups: DF.Int
 	# end: auto-generated types
 
 	@property
-	def next_site_backup(self) -> PhysicalBackupExperimentSite | None:
+	def next_site_backup(self) -> PhysicalBackupGroupSite | None:
 		# Fetch the last one before pending
 		for site in self.site_backups:
 			if site.status == "Pending":
@@ -38,7 +38,7 @@ class PhysicalBackupExperimentGroup(Document):
 		return None
 
 	@property
-	def current_site_backup(self) -> PhysicalBackupExperimentSite | None:
+	def current_site_backup(self) -> PhysicalBackupGroupSite | None:
 		# Fetch the last one before pending
 		for site in reversed(self.site_backups):
 			if site.status != "Pending":

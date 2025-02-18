@@ -65,16 +65,16 @@
    "fieldname": "site_backups",
    "fieldtype": "Table",
    "label": "Site Backups",
-   "options": "Physical Backup Experiment Site",
+   "options": "Physical Backup Group Site",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-18 13:49:20.306808",
+ "modified": "2025-02-18 15:14:19.059871",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Physical Backup Experiment Group",
+ "name": "Physical Backup Group",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [

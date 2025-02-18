@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-18 14:30:59.285081",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "backup_group",
+  "test_site",
+  "max_restorations",
+  "column_break_ctsy",
+  "destination_database",
+  "destination_server",
+  "completed",
+  "section_break_nipr",
+  "results"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_ctsy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "test_site",
+   "fieldtype": "Link",
+   "label": "Test Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_nipr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "results",
+   "fieldtype": "Table",
+   "label": "Results",
+   "options": "Physical Restoration Test Result"
+  },
+  {
+   "fetch_from": "test_site.database_name",
+   "fieldname": "destination_database",
+   "fieldtype": "Data",
+   "label": " Destination Database"
+  },
+  {
+   "fieldname": "destination_server",
+   "fieldtype": "Link",
+   "label": "Destination Server",
+   "options": "Database Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_restorations",
+   "fieldtype": "Int",
+   "label": "Max Restorations",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "completed",
+   "fieldtype": "Check",
+   "label": "Completed"
+  },
+  {
+   "fieldname": "backup_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Backup Group",
+   "options": "Physical Backup Group",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-02-18 16:41:44.401442",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Restoration Test",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
