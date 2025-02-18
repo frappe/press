@@ -240,11 +240,25 @@ frappe.ui.form.on('Virtual Machine', {
 								reqd: 1,
 								default: 10,
 							},
+							{
+								fieldtype: 'Int',
+								label: 'IOPS',
+								fieldname: 'iops',
+								reqd: 1,
+								default: 3000,
+							},
+							{
+								fieldtype: 'Int',
+								label: 'Throughput (MB/s)',
+								fieldname: 'throughput',
+								reqd: 1,
+								default: 125,
+							},
 						],
-						({ size }) => {
+						({ size, iops, throughput }) => {
 							frm
 								.call('attach_new_volume', {
-									size,
+									size, iops, throughput,
 								})
 								.then((r) => frm.refresh());
 						},
