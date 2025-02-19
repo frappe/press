@@ -92,6 +92,7 @@ class PhysicalBackupGroupSite(Document):
 			duration = time.time() - start_time
 			self.duration_seconds = int(duration)
 			self.save()
+			frappe.enqueue_doc("Physical Backup Group", self.parent, "_trigger_next_backup", queue="default")
 		except Exception:
 			frappe.log_error(title="Error while bulk physical backup")
 		finally:
