@@ -24,6 +24,7 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.site.site import Site
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,
@@ -113,6 +114,7 @@ class ProductTrial(Document):
 
 		site_domain = f"{subdomain}.{self.domain}"
 
+		# if user didn't change the subdomain, and is picking the provided site
 		if frappe.db.exists(
 			"Site", {"name": site_domain, "is_standby": 1, "is_standby_for_product": self.name}
 		):
@@ -195,11 +197,11 @@ class ProductTrial(Document):
 
 		return proxy_servers_for_available_clusters
 
-	def set_site_domain(self, site, site_domain):
+	def set_site_domain(self, site: Site, site_domain: str):
 		if not site_domain:
 			return
 
-		if site.host_name == site_domain:
+		if site.name == site_domain:
 			return
 
 		site.add_domain_for_product_site(site_domain)
@@ -288,18 +290,18 @@ class ProductTrial(Document):
 				"status": "Active",
 			},
 		)
-		# sites that are in pending state created in the last hour
-		recent_pending_standby_sites = frappe.db.count(
+		# sites that are created in the last hour
+		recent_standby_sites = frappe.db.count(
 			"Site",
 			{
 				"cluster": cluster,
 				"is_standby": 1,
 				"standby_for_product": self.name,
-				"status": ("in", ["Pending", "Installing"]),
+				"status": ("not in", ["Archived", "Suspended"]),
 				"creation": (">", frappe.utils.add_to_date(None, hours=-1)),
 			},
 		)
-		return active_standby_sites + recent_pending_standby_sites
+		return active_standby_sites + recent_standby_sites
 
 	def get_unique_site_name(self):
 		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
