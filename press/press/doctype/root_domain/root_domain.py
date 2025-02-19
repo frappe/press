@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable, List
+from typing import Iterable
 
 import boto3
 import frappe
@@ -41,9 +40,7 @@ class RootDomain(Document):
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
-			rsa_key_size = frappe.db.get_value(
-				"Press Settings", "Press Settings", "rsa_key_size"
-			)
+			rsa_key_size = frappe.db.get_value("Press Settings", "Press Settings", "rsa_key_size")
 			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
@@ -80,7 +77,7 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
 
-	def delete_dns_records(self, records: List[str]):
+	def delete_dns_records(self, records: list[str]):
 		try:
 			changes = []
 			for record in records:
@@ -103,11 +100,17 @@ class RootDomain(Document):
 		)
 		return [json.loads(d_str)["new_name"] for d_str in renaming_sites]
 
+	def get_active_site_domains(self):
+		return frappe.get_all(
+			"Site Domain", {"domain": ("like", f"%{self.name}"), "status": "Active"}, pluck="name"
+		)
+
 	def get_active_domains(self):
 		active_sites = frappe.get_all(
 			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
 		)
 		active_sites.extend(self.get_sites_being_renamed())
+		active_sites.extend(self.get_active_site_domains())
 		return active_sites
 
 	def remove_unused_cname_records(self):
@@ -132,7 +135,7 @@ class RootDomain(Document):
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
 			changes = []
-			for site in sites[i : i + batch_size]:  # noqa
+			for site in sites[i : i + batch_size]:
 				changes.append(
 					{
 						"Action": "UPSERT",
@@ -153,5 +156,5 @@ class RootDomain(Document):
 def cleanup_cname_records():
 	domains = frappe.get_all("Root Domain", pluck="name")
 	for domain_name in domains:
-		domain = frappe.get_doc("Root Domain", domain_name)
+		domain = RootDomain("Root Domain", domain_name)
 		domain.remove_unused_cname_records()
