@@ -71,7 +71,6 @@ class PhysicalBackupGroup(Document):
 	def _trigger_next_backup(self):
 		self.sync()
 		self.reload()
-		frappe.db.commit()
 		current_site_backup = self.current_site_backup
 		if current_site_backup and current_site_backup.status == "Running":
 			return
@@ -82,8 +81,13 @@ class PhysicalBackupGroup(Document):
 			return
 		next_site_backup.status = "Running"
 		next_site_backup.save(ignore_permissions=True)
-		frappe.db.commit()
-		next_site_backup.physical_backup()
+		frappe.enqueue_doc(
+			"Physical Backup Group Site",
+			next_site_backup.name,
+			"physical_backup",
+			queue="default",
+			enqueue_after_commit=True,
+		)
 
 	@frappe.whitelist()
 	def retry_failed_backups(self):
