@@ -107,4 +107,4 @@ class PhysicalBackupGroupSite(Document):
 	def on_update(self):
 		if self.has_value_changed("status") and self.status in ("Success", "Failure"):
 			# trigger next backup
-			frappe.get_doc("Physical Backup Group", self.parent).trigger_next_backup()
+			frappe.enqueue_doc("Physical Backup Group", self.parent, "_trigger_next_backup", queue="default")
