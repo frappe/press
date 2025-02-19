@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-18 10:31:17.504134",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "db_size",
+  "status",
+  "backup_available",
+  "backup",
+  "duration_seconds"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "backup",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Backup",
+   "options": "Site Backup"
+  },
+  {
+   "default": "0",
+   "fieldname": "backup_available",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Backup Available",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "DB Size (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration_seconds",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Duration (seconds)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-02-18 13:39:44.803273",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Physical Backup Group Site",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
