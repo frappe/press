@@ -108,7 +108,6 @@ class PhysicalBackupGroup(Document):
 
 	@frappe.whitelist()
 	def create_duplicate_group(self):
-		# return
 		suffix = 2
 		name = self.name + "-" + str(suffix)
 		while frappe.db.exists("Physical Backup Group", name):
