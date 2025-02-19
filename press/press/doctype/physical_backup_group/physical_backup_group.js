@@ -14,6 +14,7 @@ frappe.ui.form.on('Physical Backup Group', {
 			[__('Retry Failed Backups'), 'retry_failed_backups', true],
 			[__('Delete Backups'), 'delete_backups', true],
 			[__('Activate All Sites'), 'activate_all_sites', true],
+			[__('Create Duplicate Group'), 'create_duplicate_group', true],
 		].forEach(([label, method, grouped]) => {
 			frm.add_custom_button(
 				label,
@@ -22,8 +23,7 @@ frappe.ui.form.on('Physical Backup Group', {
 						`Are you sure you want to ${label.toLowerCase()}?`,
 						() =>
 							frm
-								.call({
-									method: method,
+								.call(method, {
 									freeze: true,
 									freeze_message: __('Please wait...'),
 								})

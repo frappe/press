@@ -21,8 +21,7 @@ frappe.ui.form.on('Physical Backup Restoration', {
 							`Are you sure you want to ${label.toLowerCase()}?`,
 							() =>
 								frm
-									.call({
-										method: method,
+									.call(method, {
 										freeze: true,
 										freeze_message: __('Please wait...'),
 									})

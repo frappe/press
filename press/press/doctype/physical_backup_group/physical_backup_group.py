@@ -105,3 +105,22 @@ class PhysicalBackupGroup(Document):
 			site = frappe.get_doc("Site", site_backup.site)
 			agent = Agent(site.server)
 			agent.activate_site(site)
+
+	@frappe.whitelist()
+	def create_duplicate_group(self):
+		# return
+		suffix = 2
+		name = self.name + "-" + str(suffix)
+		while frappe.db.exists("Physical Backup Group", name):
+			suffix += 1
+			name = self.name + "-" + str(suffix)
+		duplicate_group = frappe.get_doc(
+			{
+				"doctype": "Physical Backup Group",
+				"name": name,
+				"site_backups": [
+					{"site": site_backup.site, "status": "Pending"} for site_backup in self.site_backups
+				],
+			}
+		).insert()
+		frappe.msgprint("Created duplicate group - " + duplicate_group.name)
