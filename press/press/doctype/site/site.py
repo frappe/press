@@ -1680,28 +1680,25 @@ class Site(Document, TagHelpers):
 			],
 		}
 
-		conn.insert(
-			{
-				**doctype_data,
-				"name": "Sync User records with Frappe Cloud on create",
-				"webhook_docevent": "after_insert",
-			}
-		)
-		conn.insert(
-			{
-				**doctype_data,
-				"name": "Sync User records with Frappe Cloud on update",
-				"webhook_docevent": "on_update",
-				"condition": """doc.has_value_changed("enabled")""",
-			}
-		)
-
-		conn.insert(
-			{
-				**doctype_data,
-				"name": "Sync User records with Frappe Cloud on delete",
-				"webhook_docevent": "on_trash",
-			}
+		conn.insert_many(
+			[
+				{
+					**doctype_data,
+					"name": "Sync User records with Frappe Cloud on create",
+					"webhook_docevent": "after_insert",
+				},
+				{
+					**doctype_data,
+					"name": "Sync User records with Frappe Cloud on update",
+					"webhook_docevent": "on_update",
+					"condition": """doc.has_value_changed("enabled")""",
+				},
+				{
+					**doctype_data,
+					"name": "Sync User records with Frappe Cloud on delete",
+					"webhook_docevent": "on_trash",
+				},
+			]
 		)
 
 	def sync_users_to_product_site(self, analytics=None):
