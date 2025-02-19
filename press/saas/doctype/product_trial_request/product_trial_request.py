@@ -251,7 +251,7 @@ class ProductTrialRequest(Document):
 				"user": user_mail,
 				"enabled": 1,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
