@@ -20,6 +20,7 @@ from press.exceptions import (
 )
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.utils.dns import create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
 
 
@@ -78,6 +79,13 @@ class SiteDomain(Document):
 				self.setup_redirect_in_proxy()
 			elif not self.is_new():
 				self.remove_redirect_in_proxy()
+
+	@frappe.whitelist()
+	def create_dns_record(self):
+		site = frappe.get_doc("Site", self.site)
+		if not self.domain.endswith(site.domain):
+			return
+		create_dns_record(site, self.domain)
 
 	@property
 	def default(self):
