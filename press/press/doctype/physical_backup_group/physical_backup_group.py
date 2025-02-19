@@ -69,8 +69,6 @@ class PhysicalBackupGroup(Document):
 		frappe.msgprint("Triggered next backup")
 
 	def _trigger_next_backup(self):
-		self.sync()
-		self.reload()
 		current_site_backup = self.current_site_backup
 		if current_site_backup and current_site_backup.status == "Running":
 			return
