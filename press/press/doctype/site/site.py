@@ -1660,9 +1660,10 @@ class Site(Document, TagHelpers):
 
 	def create_sync_user_webhook(self):
 		"""
-		Create 2 webhook records in the site to sync the user with press
+		Create 3 webhook records in the site to sync the user with press
 		- One for user record creation
 		- One for user record update
+		- One for user record deletion
 		"""
 		conn = self.get_connection_as_admin()
 		doctype_data = {
