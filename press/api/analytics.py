@@ -222,6 +222,37 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
+def get_histogram_chart_result(
+	path_bucket: PathBucket,
+	query_type: str,
+	labels: list[datetime],
+	to_s_divisor: float,
+):
+	path_data = frappe._dict(
+		{
+			"path": path_bucket.key,
+			"values": [0] * len(labels),
+			"stack": "path",
+		}
+	)
+	hist_bucket: HistBucket
+	for hist_bucket in path_bucket.histogram_of_method.buckets:
+		label = get_datetime(hist_bucket.key_as_string)
+		if label not in labels:
+			continue
+		path_data["values"][labels.index(label)] = (
+			(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
+			if query_type == "average_duration"
+			else (
+				flt(hist_bucket.sum_of_duration.value) / to_s_divisor
+				if query_type == "duration"
+				else hist_bucket.doc_count
+				if query_type == "count"
+				else 0
+			)
+		)
+	return path_data
+
 def get_stacked_histogram_chart_result(
 	search: Search,
 	query_type: str,
@@ -240,30 +271,7 @@ def get_stacked_histogram_chart_result(
 
 	path_bucket: PathBucket
 	for path_bucket in aggs.method_path.buckets:
-		path_data = frappe._dict(
-			{
-				"path": path_bucket.key,
-				"values": [0] * len(labels),
-				"stack": "path",
-			}
-		)
-		hist_bucket: HistBucket
-		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			label = get_datetime(hist_bucket.key_as_string)
-			if label not in labels:
-				continue
-			path_data["values"][labels.index(label)] = (
-				(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
-				if query_type == "average_duration"
-				else (
-					flt(hist_bucket.sum_of_duration.value) / to_s_divisor
-					if query_type == "duration"
-					else hist_bucket.doc_count
-					if query_type == "count"
-					else 0
-				)
-			)
-		datasets.append(path_data)
+		datasets.append(get_histogram_chart_result(path_bucket, query_type, labels, to_s_divisor))
 
 	if normalize_slow_logs:
 		datasets = normalize_datasets(datasets)
