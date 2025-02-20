@@ -83,6 +83,11 @@ class PhysicalRestorationTest(Document):
 	def start(self):
 		self.sync()
 		record = None
+		# check if there is any running restoration
+		for result in self.results:
+			if result.status == "Running":
+				return
+
 		for result in self.results:
 			if result.status == "Pending":
 				record = result
