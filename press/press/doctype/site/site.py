@@ -18,7 +18,7 @@ import pytz
 import requests
 from frappe import _
 from frappe.core.utils import find
-from frappe.frappeclient import FrappeClient
+from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
@@ -1681,26 +1681,28 @@ class Site(Document, TagHelpers):
 			],
 		}
 
-		conn.insert_many(
-			[
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on create",
-					"webhook_docevent": "after_insert",
-				},
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on update",
-					"webhook_docevent": "on_update",
-					"condition": """doc.has_value_changed("enabled")""",
-				},
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on delete",
-					"webhook_docevent": "on_trash",
-				},
-			]
-		)
+		webhook_data = [
+			{
+				"name": "Sync User records with Frappe Cloud on create",
+				"webhook_docevent": "after_insert",
+			},
+			{
+				"name": "Sync User records with Frappe Cloud on update",
+				"webhook_docevent": "on_update",
+				"condition": """doc.has_value_changed("enabled")""",
+			},
+			{
+				"name": "Sync User records with Frappe Cloud on delete",
+				"webhook_docevent": "on_trash",
+			},
+		]
+
+		for webhook in webhook_data:
+			try:
+				conn.insert({**doctype_data, **webhook})
+			except FrappeException as ex:
+				if "frappe.exceptions.DuplicateEntryError" not in str(ex):
+					raise ex
 
 	def sync_users_to_product_site(self, analytics=None):
 		from press.press.doctype.site_user.site_user import create_user_for_product_site

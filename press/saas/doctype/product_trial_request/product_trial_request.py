@@ -114,9 +114,8 @@ class ProductTrialRequest(Document):
 
 					# this is to create a webhook record in the site
 					# so that the user records can be synced with press
-					site = frappe.get_doc("Site", self.site)
-					if site.setup_wizard_status_check_retries == 0:
-						site.create_sync_user_webhook()
+					site: Site = frappe.get_doc("Site", self.site)
+					site.create_sync_user_webhook()
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
