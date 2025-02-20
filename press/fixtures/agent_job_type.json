@@ -1742,6 +1742,9 @@
    },
    {
     "step_name": "Unlock All Tables"
+   },
+   {
+    "step_name": "Run Container to Restore Tables"
    }
   ]
  },
