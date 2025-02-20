@@ -37,7 +37,7 @@
 		</div>
 		<Dialog
 			:options="{
-				title: 'Partner Code',
+				title: 'Link Partner Account',
 				actions: [
 					{
 						label: 'Submit',
@@ -50,7 +50,7 @@
 		>
 			<template v-slot:body-content>
 				<p class="pb-2 text-p-base">
-					Enter partner code provided by your Partner
+					Enter the partner code provided by your Partner
 				</p>
 				<div class="rounded border border-gray-200 bg-gray-100 p-2 mb-4">
 					<span class="text-sm leading-[1.5] text-gray-700">
