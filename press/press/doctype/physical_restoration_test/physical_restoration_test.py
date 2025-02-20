@@ -55,7 +55,7 @@ class PhysicalRestorationTest(Document):
 			doc: PhysicalBackupRestoration = frappe.get_doc(
 				{
 					"doctype": "Physical Backup Restoration",
-					"site": record.site,
+					"site": self.test_site,
 					"status": "Pending",
 					"site_backup": record.backup,
 					"source_database": frappe.db.get_value("Site Backup", record.backup, "database_name"),
