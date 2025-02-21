@@ -20,7 +20,7 @@
 					<div
 						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
 					>
-						<i-lucide-badge-check class="h-4 w-8 text-gray-600" />
+						<i-lucide-badge-check class="mr-2 h-5 w-12 text-gray-600" />
 						<span>
 							<strong>Support</strong> covers only issues of Frappe apps and not
 							functional queries. You can raise a support ticket for Frappe
