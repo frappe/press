@@ -21,7 +21,11 @@
 				<div
 					class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
 				>
-					{{ invitedBy ? 'Invitation to join' : 'Set up your account' }}
+					{{
+						invitedBy
+							? 'Invitation to join'
+							: 'Set up your Frappe Cloud account'
+					}}
 				</div>
 				<div class="mt-2 text-center text-sm text-gray-600" v-if="invitedBy">
 					Invitation by {{ invitedBy }}
