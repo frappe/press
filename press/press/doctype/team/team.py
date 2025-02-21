@@ -209,7 +209,7 @@ class Team(Document):
 			self.partner_email = self.user
 
 	def validate_disable(self):
-		if self.has_value_changed("enabled") and self.enabled == 0 and has_unsettled_invoices(self.team):
+		if self.has_value_changed("enabled") and self.enabled == 0 and has_unsettled_invoices(self.name):
 			frappe.throw(
 				"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
 			)

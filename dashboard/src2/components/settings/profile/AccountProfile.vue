@@ -286,19 +286,19 @@ export default {
 				this.unpaidInvoices = data;
 			},
 		},
-		hasActiveServers: {
-			url: 'press.api.account.has_active_servers',
-			auto: true,
-			params: {
-				team: this.$team.doc.name,
-			},
-			onSuccess(data) {
-				if (data) {
-					console.log(data);
-					this.$team.reload();
-					this.showActiveServersDialog = true;
-				}
-			},
+		hasActiveServers() {
+			return {
+				url: 'press.api.account.has_active_servers',
+				auto: true,
+				params: {
+					team: this.$team.doc.name,
+				},
+				onSuccess(data) {
+					if (data) {
+						this.showActiveServersDialog = true;
+					}
+				},
+			};
 		},
 	},
 	methods: {
@@ -313,7 +313,9 @@ export default {
 			toast.success('Your profile was updated successfully');
 		},
 		deactivateAccount(disableAccount2FACode) {
-			if (this.draftInvoice) {
+			const currency = this.$team.doc.currency;
+			const minAmount = currency === 'INR' ? 410 : 5;
+			if (this.draftInvoice && this.draftInvoice.amount_due > minAmount) {
 				const finalizeInvoicesDialog = defineAsyncComponent(
 					() => import('../../billing/FinalizeInvoicesDialog.vue'),
 				);
@@ -340,15 +342,17 @@ export default {
 					}
 				} else {
 					let invoice = this.unpaidInvoices;
-					if (
-						invoice.stripe_invoice_url &&
-						this.$team.doc.payment_mode === 'Card'
-					) {
-						window.open(
-							`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
-						);
-					} else {
-						this.showAddPrepaidCreditsDialog = true;
+					if (invoice.amount_due > minAmount) {
+						if (
+							invoice.stripe_invoice_url &&
+							this.$team.doc.payment_mode === 'Card'
+						) {
+							window.open(
+								`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
+							);
+						} else {
+							this.showAddPrepaidCreditsDialog = true;
+						}
 					}
 				}
 				return;
