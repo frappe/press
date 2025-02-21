@@ -255,7 +255,7 @@ const verifyCardWithMicroCharge = createResource({
 async function setupStripeIntent() {
 	await getPublishedKeyAndSetupIntent.submit();
 	const { first_name, last_name = '' } = team.doc?.user_info;
-	const fullname = first_name + ' ' + last_name;
+	const fullname = `${first_name} ${last_name ?? ''}`;
 	billingInformation.cardHolderName = fullname.trimEnd();
 }
 
