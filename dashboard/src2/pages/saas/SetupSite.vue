@@ -30,7 +30,9 @@
 				<template v-slot:default>
 					<form class="w-full space-y-4" @submit.prevent="createSite">
 						<div class="w-full space-y-1.5">
-							<label class="block text-xs text-ink-gray-5"> Site domain </label>
+							<label class="block text-xs text-ink-gray-5">
+								Site subdomain
+							</label>
 							<div class="col-span-2 flex w-full">
 								<input
 									class="dark:[color-scheme:dark] z-10 h-7 w-full rounded rounded-r-none border border-outline-gray-2 bg-surface-white py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-3 hover:shadow-sm focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
@@ -42,6 +44,31 @@
 								>
 									.{{ saasProduct.domain }}
 								</div>
+							</div>
+							<div class="mt-1">
+								<div
+									v-if="$resources.subdomainExists.loading"
+									class="text-sm text-gray-600"
+								>
+									Checking...
+								</div>
+								<template
+									v-else-if="
+										!$resources.subdomainExists.error &&
+										$resources.subdomainExists.data != null
+									"
+								>
+									<div
+										v-if="$resources.subdomainExists.data"
+										class="text-sm text-green-600"
+									>
+										{{ subdomain }}.{{ saasProduct.domain }} is available
+									</div>
+									<div v-else class="text-sm text-red-600">
+										{{ subdomain }}.{{ saasProduct.domain }} is not available
+									</div>
+								</template>
+								<ErrorMessage :message="$resources.subdomainExists.error" />
 							</div>
 						</div>
 						<FormControl
@@ -84,8 +111,10 @@
 </template>
 <script>
 import { toast } from 'vue-sonner';
+import { debounce } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
+import { validateSubdomain } from '../../utils/site';
 
 export default {
 	name: 'SignupSetup',
@@ -102,6 +131,17 @@ export default {
 			signupValues: {},
 			subdomain: '',
 		};
+	},
+	watch: {
+		subdomain: {
+			handler: debounce(function (value) {
+				let invalidMessage = validateSubdomain(value);
+				this.$resources.subdomainExists.error = invalidMessage;
+				if (!invalidMessage) {
+					this.$resources.subdomainExists.submit();
+				}
+			}, 500),
+		},
 	},
 	resources: {
 		siteRequest() {
@@ -137,6 +177,26 @@ export default {
 				auto: true,
 				onSuccess: (doc) => {
 					if (doc.site) this.subdomain = doc.site.split('.')[0];
+				},
+			};
+		},
+		subdomainExists() {
+			return {
+				url: 'press.api.site.exists',
+				makeParams() {
+					return {
+						domain: this.saasProduct?.domain,
+						subdomain: this.subdomain,
+					};
+				},
+				validate() {
+					let error = validateSubdomain(this.subdomain);
+					if (error) {
+						return new DashboardError(error);
+					}
+				},
+				transform(data) {
+					return !Boolean(data);
 				},
 			};
 		},
