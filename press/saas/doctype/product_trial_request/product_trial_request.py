@@ -114,7 +114,7 @@ class ProductTrialRequest(Document):
 
 					# this is to create a webhook record in the site
 					# so that the user records can be synced with press
-					site = frappe.get_doc("Site", self.site)
+					site: Site = frappe.get_doc("Site", self.site)
 					site.create_sync_user_webhook()
 
 	@frappe.whitelist()
@@ -250,7 +250,7 @@ class ProductTrialRequest(Document):
 				"user": user_mail,
 				"enabled": 1,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901

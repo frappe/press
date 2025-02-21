@@ -252,7 +252,19 @@ const paymentModeOptions = [
 			h(DropdownItem, {
 				label: 'Paid by Partner',
 				active: team.doc.payment_mode === 'Paid by Partner',
-				onClick: () => updatePaymentMode('Paid By Partner'),
+				onClick: () =>
+					confirmDialog({
+						title: 'Confirm Payment Mode',
+						message: `By changing the payment mode to <strong>Paid by Partner</strong>, following details will be shared with your partner: <br><br><li>Site/Server name</li> <li>Plan name</li><li>Number of days site/server is active</li><br>Are you sure you want to proceed?`,
+						primaryAction: {
+							label: 'Change Payment Mode',
+							variant: 'solid',
+							onClick: ({ hide }) => {
+								updatePaymentMode('Paid By Partner');
+								hide();
+							},
+						},
+					}),
 			}),
 	},
 	{
@@ -329,7 +341,7 @@ function updatePaymentMode(mode) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
 	} else if (mode === 'Paid By Partner') {
-		if (unpaidInvoices.data.length > 0) {
+		if (unpaidInvoices.data) {
 			payUnpaidInvoices();
 			return;
 		}
@@ -338,6 +350,7 @@ function updatePaymentMode(mode) {
 				() => import('./FinalizeInvoicesDialog.vue'),
 			);
 			renderDialog(h(finalizeInvoicesDialog));
+			return;
 		}
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

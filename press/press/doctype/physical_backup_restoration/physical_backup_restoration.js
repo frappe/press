@@ -19,7 +19,13 @@ frappe.ui.form.on('Physical Backup Restoration', {
 					() => {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()}?`,
-							() => frm.call(method).then(() => frm.refresh()),
+							() =>
+								frm
+									.call(method, {
+										freeze: true,
+										freeze_message: __('Please wait...'),
+									})
+									.then(() => frm.refresh()),
 						);
 					},
 					grouped ? __('Actions') : null,

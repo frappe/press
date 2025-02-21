@@ -29,7 +29,9 @@
   "column_break_qosz",
   "duration",
   "section_break_aqam",
-  "steps"
+  "steps",
+  "section_break_weie",
+  "physical_restoration_test"
  ],
  "fields": [
   {
@@ -180,11 +182,20 @@
    "fieldname": "restore_specific_tables",
    "fieldtype": "Check",
    "label": "Restore Specific Tables"
+  },
+  {
+   "fieldname": "section_break_weie",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "physical_restoration_test",
+   "fieldtype": "Data",
+   "label": "Physical Restoration Test"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-24 19:48:40.696658",
+ "modified": "2025-02-18 17:10:29.624598",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

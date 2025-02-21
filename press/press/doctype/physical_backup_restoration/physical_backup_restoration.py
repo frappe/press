@@ -15,6 +15,7 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.physical_restoration_test.physical_restoration_test import trigger_next_restoration
 
 if TYPE_CHECKING:
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
@@ -47,6 +48,7 @@ class PhysicalBackupRestoration(Document):
 		end: DF.Datetime | None
 		job: DF.Link | None
 		mount_point: DF.Data | None
+		physical_restoration_test: DF.Data | None
 		restore_specific_tables: DF.Check
 		site: DF.Link
 		site_backup: DF.Link
@@ -124,6 +126,9 @@ class PhysicalBackupRestoration(Document):
 
 			process_physical_backup_restoration_status_update(self.name)
 
+			if self.physical_restoration_test:
+				trigger_next_restoration(self.physical_restoration_test)
+
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
@@ -176,7 +181,7 @@ class PhysicalBackupRestoration(Document):
 		"""Create volume from snapshot"""
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.disk_snapshot)
 		self.volume = snapshot.create_volume(
-			availability_zone=self.virtual_machine.availability_zone, throughput=300, iops=3000
+			availability_zone=self.virtual_machine.availability_zone, throughput=600, iops=4000
 		)
 		return StepStatus.Success
 
@@ -300,26 +305,29 @@ class PhysicalBackupRestoration(Document):
 				disk_partition_to_mount = "/dev/{}".format(device_info["name"])
 				break
 
-			# If the volume was created from a snapshot of root volume
-			# the volume will have multiple partitions.
-			if device_info["type"] == "disk" and device_info.get("children"):
-				children = device_info["children"]
-				largest_partition_size = 1073741824  # 1GB | Disk partition should be larger than 1GB
-				largest_partition = None
-				# try to find the partition with label cloudimg-rootfs or old-rootfs
-				for child in children:
-					if child["size"] > largest_partition_size:
-						largest_partition_size = child["size"]
-						largest_partition = child["name"]
+			if device_info["type"] == "disk":
+				children = device_info.get("children", [])
+				if len(children) == 0:
+					# Disk doesn't have any partitions, mount the disk directly
+					disk_partition_to_mount = "/dev/{}".format(device_info["name"])
+				else:
+					# Disk has multiple partitions, so find the correct partition
+					largest_partition_size = 1073741824  # 1GB | Disk partition should be larger than 1GB
+					largest_partition = None
+					# try to find the partition with label cloudimg-rootfs or old-rootfs
+					for child in children:
+						if child["size"] > largest_partition_size:
+							largest_partition_size = child["size"]
+							largest_partition = child["name"]
 
-					if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
-						disk_partition_to_mount = "/dev/{}".format(child["name"])
+						if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
+							disk_partition_to_mount = "/dev/{}".format(child["name"])
+							break
+
+					# If the partitions are not labeled, try to find largest partition
+					if not disk_partition_to_mount and largest_partition is not None:
+						disk_partition_to_mount = f"/dev/{largest_partition}"
 						break
-
-				# If the partitions are not labeled, try to find largest partition
-				if not disk_partition_to_mount and largest_partition is not None:
-					disk_partition_to_mount = f"/dev/{largest_partition}"
-					break
 
 			if disk_partition_to_mount:
 				break

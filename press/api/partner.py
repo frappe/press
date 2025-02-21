@@ -16,14 +16,15 @@ def approve_partner_request(key):
 			partner_request_doc.save(ignore_permissions=True)
 			partner_request_doc.reload()
 
-			partner = frappe.get_doc("Team", partner_request_doc.partner)
-			customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
-			customer_team.partner_email = partner.partner_email
-			customer_team.partnership_date = frappe.utils.getdate(partner_request_doc.creation)
-			team_members = [d.user for d in customer_team.team_members]
-			if partner.user not in team_members:
-				customer_team.append("team_members", {"user": partner.user})
-			customer_team.save(ignore_permissions=True)
+			partner_email = frappe.db.get_value("Team", partner_request_doc.partner, "partner_email")
+			frappe.db.set_value(
+				"Team",
+				partner_request_doc.requested_by,
+				{
+					"partner_email": partner_email,
+					"partnership_date": frappe.utils.getdate(partner_request_doc.creation),
+				},
+			)
 
 		frappe.db.commit()
 
