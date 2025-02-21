@@ -129,6 +129,7 @@ export default {
 			findingClosestServer: false,
 			closestCluster: null,
 			signupValues: {},
+			initialSubdomain: '',
 			subdomain: '',
 		};
 	},
@@ -137,7 +138,7 @@ export default {
 			handler: debounce(function (value) {
 				let invalidMessage = validateSubdomain(value);
 				this.$resources.subdomainExists.error = invalidMessage;
-				if (!invalidMessage) {
+				if (!invalidMessage && value !== this.initialSubdomain) {
 					this.$resources.subdomainExists.submit();
 				}
 			}, 500),
@@ -176,7 +177,10 @@ export default {
 				name: this.productId,
 				auto: true,
 				onSuccess: (doc) => {
-					if (doc.site) this.subdomain = doc.site.split('.')[0];
+					if (doc.site) {
+						this.subdomain = doc.site.split('.')[0];
+						this.initialSubdomain = doc.site.split('.')[0];
+					}
 				},
 			};
 		},
