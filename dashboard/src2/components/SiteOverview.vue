@@ -356,7 +356,9 @@ export default {
 				},
 				{
 					label: 'Created on',
-					value: this.$format.date(this.$site.doc?.creation),
+					value: this.$format.date(
+						this.$site.doc?.signup_time || this.$site.doc?.creation,
+					),
 				},
 				{
 					label: 'Region',

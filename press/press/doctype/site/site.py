@@ -159,6 +159,7 @@ class Site(Document, TagHelpers):
 		setup_wizard_complete: DF.Check
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
+		signup_time: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_backups: DF.Check
@@ -205,6 +206,7 @@ class Site(Document, TagHelpers):
 		"skip_auto_updates",
 		"additional_system_user_created",
 		"label",
+		"signup_time",
 	)
 
 	@staticmethod

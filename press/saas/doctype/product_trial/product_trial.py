@@ -138,6 +138,7 @@ class ProductTrial(Document):
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.save(ignore_permissions=True)
 			site.create_subscription(plan)
+			site.signup_time = frappe.utils.now()
 			site.reload()
 			site.generate_saas_communication_secret(create_agent_job=True, save=True)
 			if self.create_additional_system_user:
@@ -163,6 +164,7 @@ class ProductTrial(Document):
 				team=team,
 				apps=apps,
 				trial_end_date=trial_end_date,
+				signup_time=frappe.utils.now(),
 			)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
