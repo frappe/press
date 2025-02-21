@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Change Plan',
-			size: step === 'site-plans' ? '5xl' : 'lg',
+			size: step === 'site-plans' ? '3xl' : 'lg',
 		}"
 		v-model="show"
 	>
