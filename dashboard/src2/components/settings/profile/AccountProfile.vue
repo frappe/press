@@ -320,9 +320,9 @@ export default {
 					() => import('../../billing/FinalizeInvoicesDialog.vue'),
 				);
 				renderDialog(h(finalizeInvoicesDialog));
-				return;
 			} else if (this.unpaidInvoices) {
 				if (this.unpaidInvoices.length > 1) {
+					this.showDisableAccountDialog = false;
 					if (this.$team.doc.payment_mode === 'Prepaid Credits') {
 						this.showAddPrepaidCreditsDialog = true;
 					} else {
@@ -369,7 +369,6 @@ export default {
 						});
 					}
 				}
-				return;
 			}
 
 			// validate if any active servers
