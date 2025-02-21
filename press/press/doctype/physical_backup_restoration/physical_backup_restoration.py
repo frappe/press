@@ -305,26 +305,29 @@ class PhysicalBackupRestoration(Document):
 				disk_partition_to_mount = "/dev/{}".format(device_info["name"])
 				break
 
-			# If the volume was created from a snapshot of root volume
-			# the volume will have multiple partitions.
-			if device_info["type"] == "disk" and device_info.get("children"):
-				children = device_info["children"]
-				largest_partition_size = 1073741824  # 1GB | Disk partition should be larger than 1GB
-				largest_partition = None
-				# try to find the partition with label cloudimg-rootfs or old-rootfs
-				for child in children:
-					if child["size"] > largest_partition_size:
-						largest_partition_size = child["size"]
-						largest_partition = child["name"]
+			if device_info["type"] == "disk":
+				children = device_info.get("children", [])
+				if len(children) == 0:
+					# Disk doesn't have any partitions, mount the disk directly
+					disk_partition_to_mount = "/dev/{}".format(device_info["name"])
+				else:
+					# Disk has multiple partitions, so find the correct partition
+					largest_partition_size = 1073741824  # 1GB | Disk partition should be larger than 1GB
+					largest_partition = None
+					# try to find the partition with label cloudimg-rootfs or old-rootfs
+					for child in children:
+						if child["size"] > largest_partition_size:
+							largest_partition_size = child["size"]
+							largest_partition = child["name"]
 
-					if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
-						disk_partition_to_mount = "/dev/{}".format(child["name"])
+						if child["label"] == "cloudimg-rootfs" or child["label"] == "old-rootfs":
+							disk_partition_to_mount = "/dev/{}".format(child["name"])
+							break
+
+					# If the partitions are not labeled, try to find largest partition
+					if not disk_partition_to_mount and largest_partition is not None:
+						disk_partition_to_mount = f"/dev/{largest_partition}"
 						break
-
-				# If the partitions are not labeled, try to find largest partition
-				if not disk_partition_to_mount and largest_partition is not None:
-					disk_partition_to_mount = f"/dev/{largest_partition}"
-					break
 
 			if disk_partition_to_mount:
 				break
