@@ -8,8 +8,9 @@ frappe.ui.form.on('Physical Restoration Test', {
 		}
 
 		[
-			[__('Start / Resume'), 'start', false],
 			[__('Sync'), 'sync', false],
+			[__('Start / Resume'), 'start', true],
+			[__('Reset Failed Restorations'), 'reset_failed_restorations', true],
 		].forEach(([label, method, grouped]) => {
 			frm.add_custom_button(
 				label,
