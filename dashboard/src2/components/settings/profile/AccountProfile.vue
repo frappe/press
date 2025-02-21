@@ -343,16 +343,30 @@ export default {
 				} else {
 					let invoice = this.unpaidInvoices;
 					if (invoice.amount_due > minAmount) {
-						if (
-							invoice.stripe_invoice_url &&
-							this.$team.doc.payment_mode === 'Card'
-						) {
-							window.open(
-								`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
-							);
-						} else {
-							this.showAddPrepaidCreditsDialog = true;
-						}
+						this.showDisableAccountDialog = false;
+						confirmDialog({
+							title: 'Clear Unpaid Invoice',
+							message: `You have an unpaid invoice of ${
+								invoice.currency === 'INR' ? '₹' : '$'
+							} ${invoice.amount_due}. Please clear it before disabling the account.`,
+							primaryAction: {
+								label: 'Settle it now',
+								variant: 'solid',
+								onClick: ({ hide }) => {
+									if (
+										invoice.stripe_invoice_url &&
+										this.$team.doc.payment_mode === 'Card'
+									) {
+										window.open(
+											`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
+										);
+									} else {
+										this.showAddPrepaidCreditsDialog = true;
+									}
+									hide();
+								},
+							},
+						});
 					}
 				}
 				return;
