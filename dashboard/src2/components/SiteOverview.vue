@@ -18,6 +18,17 @@
 				Login
 			</Button>
 		</AlertBanner>
+
+		<AlertBanner
+			v-if="$site.doc.current_plan?.is_trial_plan"
+			class="col-span-1 lg:col-span-2"
+			title="Upgrade to a paid plan to continue using your site after the trial period."
+		>
+			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
+				Upgrade
+			</Button>
+		</AlertBanner>
+
 		<DismissableBanner
 			v-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
