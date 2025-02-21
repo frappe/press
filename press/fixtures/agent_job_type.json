@@ -1741,6 +1741,9 @@
     "step_name": "Copying MyISAM Table Files"
    },
    {
+    "step_name": "Validate And Fix Tables"
+   },
+   {
     "step_name": "Unlock All Tables"
    }
   ]
