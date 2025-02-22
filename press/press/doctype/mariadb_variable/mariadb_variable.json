@@ -10,12 +10,14 @@
  "engine": "InnoDB",
  "field_order": [
   "dynamic",
+  "skippable",
   "datatype",
   "doc_section",
-  "skippable",
   "column_break_yrfg",
+  "set_on_new_servers",
+  "configurable_by_user",
   "default_value",
-  "set_on_new_servers"
+  "available_values"
  ],
  "fields": [
   {
@@ -61,11 +63,23 @@
    "fieldname": "set_on_new_servers",
    "fieldtype": "Check",
    "label": "Set on new servers"
+  },
+  {
+   "default": "0",
+   "fieldname": "configurable_by_user",
+   "fieldtype": "Check",
+   "label": "Configurable by User"
+  },
+  {
+   "fieldname": "available_values",
+   "fieldtype": "Small Text",
+   "label": "Available Values",
+   "not_nullable": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-03 07:14:39.263413",
+ "modified": "2024-12-05 11:58:31.074384",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",
