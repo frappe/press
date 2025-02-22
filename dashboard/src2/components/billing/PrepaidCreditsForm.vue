@@ -34,14 +34,16 @@
 			</FormControl>
 			<FormControl
 				v-if="team.doc.country === 'Kenya' && paymentGateway === 'M-Pesa'"
-				:label="`Amount in KES (Exchange Rate: ${Math.round(exchangeRate)} against 1 USD)`"
+				:label="`Amount in KES (Exchange Rate: ${Math.round(
+					exchangeRate,
+				)} against 1 USD)`"
 				disabled
 				:modelValue="amountInKES"
 				name="amount_in_kes"
 				type="number"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700 -ml-1">
+					<div class="-ml-1 grid w-4 place-items-center text-sm text-gray-700">
 						{{ 'Ksh' }}
 					</div>
 				</template>
@@ -128,6 +130,9 @@ import { ref, computed, inject, watch, onMounted } from 'vue';
 const emit = defineEmits(['success']);
 
 const team = inject('team');
+const props = defineProps({
+	minimumAmount: Number,
+});
 
 const totalUnpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
@@ -136,6 +141,7 @@ const totalUnpaidAmount = createResource({
 });
 
 const minimumAmount = computed(() => {
+	if (props.minimumAmount) return props.minimumAmount;
 	if (!team.doc) return 0;
 	const unpaidAmount = totalUnpaidAmount.data || 0;
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
