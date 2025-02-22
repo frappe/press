@@ -209,15 +209,10 @@ class Team(Document):
 			self.partner_email = self.user
 
 	def validate_disable(self):
-		if self.has_value_changed("enabled"):
-			has_unpaid_invoices = frappe.get_all(
-				"Invoice",
-				{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+		if self.has_value_changed("enabled") and self.enabled == 0 and has_unsettled_invoices(self.name):
+			frappe.throw(
+				"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
 			)
-			if self.enabled == 0 and has_unpaid_invoices:
-				frappe.throw(
-					"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
-				)
 
 	def validate_billing_team(self):
 		if not (self.billing_team and self.payment_mode == "Paid By Partner"):
@@ -1520,18 +1515,19 @@ def has_unsettled_invoices(team):
 	):
 		return False
 
+	currency = frappe.db.get_value("Team", team, "currency")
+	minimum_amount = 5
+	if currency == "INR":
+		minimum_amount = 450
+
 	data = frappe.get_all(
 		"Invoice",
 		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
 		["sum(amount_due) as amount_due"],
 	)[0]
-	if data.amount_due <= 5:
+	if data.amount_due <= minimum_amount:
 		return False
 	return True
-
-
-def has_active_servers(team):
-	return frappe.db.exists("Server", {"status": "Active", "team": team})
 
 
 def is_us_eu():
