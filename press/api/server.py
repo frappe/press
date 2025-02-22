@@ -347,21 +347,21 @@ avg by (instance) (
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def get_request_by_site(name, query, timezone, duration):
-	from press.api.analytics import FilterByResource, get_request_by_
+	from press.api.analytics import ResourceType, get_request_by_
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_request_by_(name, query, timezone, timespan, timegrain, FilterByResource.SERVER)
+	return get_request_by_(name, query, timezone, timespan, timegrain, ResourceType.SERVER)
 
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
-	from press.api.analytics import FilterByResource, get_slow_logs
+	from press.api.analytics import ResourceType, get_slow_logs
 
 	timespan, timegrain = get_timespan_timegrain(duration)
 
-	return get_slow_logs(name, query, timezone, timespan, timegrain, FilterByResource.SERVER, normalize)
+	return get_slow_logs(name, query, timezone, timespan, timegrain, ResourceType.SERVER, normalize)
 
 
 def prometheus_query(query, function, timezone, timespan, timegrain):
