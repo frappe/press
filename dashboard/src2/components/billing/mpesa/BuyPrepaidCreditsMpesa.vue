@@ -141,18 +141,11 @@ export default {
 						);
 					}
 					if (!this.taxIdInput) {
-						throw new DashboardError(
-							'Tax ID is required for payment.',
-						);
+						throw new DashboardError('Tax ID is required for payment.');
 					}
-					if(this.taxIdInput){
-						if (!pattern.test(this.taxIdInput)) {
-							throw new DashboardError(
-								"Tax ID should be in the format 'A123456789A'",
-							);
-						}
+					if (this.taxIdInput && !pattern.test(this.taxIdInput)) {
+						throw new DashboardError('Invalid Tax Id');
 					}
-					
 				},
 				async onSuccess(data) {
 					if (data?.ResponseCode === '0') {
