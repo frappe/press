@@ -18,7 +18,7 @@ import pytz
 import requests
 from frappe import _
 from frappe.core.utils import find
-from frappe.frappeclient import FrappeClient
+from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import (
@@ -159,6 +159,7 @@ class Site(Document, TagHelpers):
 		setup_wizard_complete: DF.Check
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
 		setup_wizard_status_check_retries: DF.Int
+		signup_time: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
 		skip_scheduled_backups: DF.Check
@@ -205,6 +206,7 @@ class Site(Document, TagHelpers):
 		"skip_auto_updates",
 		"additional_system_user_created",
 		"label",
+		"signup_time",
 	)
 
 	@staticmethod
@@ -1660,9 +1662,10 @@ class Site(Document, TagHelpers):
 
 	def create_sync_user_webhook(self):
 		"""
-		Create 2 webhook records in the site to sync the user with press
+		Create 3 webhook records in the site to sync the user with press
 		- One for user record creation
 		- One for user record update
+		- One for user record deletion
 		"""
 		conn = self.get_connection_as_admin()
 		doctype_data = {
@@ -1680,26 +1683,28 @@ class Site(Document, TagHelpers):
 			],
 		}
 
-		conn.insert_many(
-			[
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on create",
-					"webhook_docevent": "after_insert",
-				},
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on update",
-					"webhook_docevent": "on_update",
-					"condition": """doc.has_value_changed("enabled")""",
-				},
-				{
-					**doctype_data,
-					"name": "Sync User records with Frappe Cloud on delete",
-					"webhook_docevent": "on_trash",
-				},
-			]
-		)
+		webhook_data = [
+			{
+				"name": "Sync User records with Frappe Cloud on create",
+				"webhook_docevent": "after_insert",
+			},
+			{
+				"name": "Sync User records with Frappe Cloud on update",
+				"webhook_docevent": "on_update",
+				"condition": """doc.has_value_changed("enabled")""",
+			},
+			{
+				"name": "Sync User records with Frappe Cloud on delete",
+				"webhook_docevent": "on_trash",
+			},
+		]
+
+		for webhook in webhook_data:
+			try:
+				conn.insert({**doctype_data, **webhook})
+			except FrappeException as ex:
+				if "frappe.exceptions.DuplicateEntryError" not in str(ex):
+					raise ex
 
 	def sync_users_to_product_site(self, analytics=None):
 		from press.press.doctype.site_user.site_user import create_user_for_product_site

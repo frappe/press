@@ -104,7 +104,7 @@ class PhysicalBackupGroupSite(Document):
 		if database_snapshot:
 			frappe.get_doc("Virtual Disk Snapshot", database_snapshot).delete_snapshot()
 
-	def on_update(self):
-		if self.has_value_changed("status") and self.status in ("Success", "Failure"):
-			# trigger next backup
-			frappe.get_doc("Physical Backup Experiment Group", self.parent).trigger_next_backup()
+	# def on_update(self):
+	# 	if self.has_value_changed("status") and self.status in ("Success", "Failure"):
+	# 		# trigger next backup
+	# 		frappe.enqueue_doc("Physical Backup Group", self.parent, "_trigger_next_backup", queue="default")

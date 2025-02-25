@@ -44,4 +44,4 @@ def create_user_for_product_site(site, data):
 			user = frappe.get_doc(
 				{"doctype": "Site User", "site": site, "user": user_mail, "enabled": enabled}
 			)
-			user.insert()
+			user.insert(ignore_permissions=True)

@@ -66,11 +66,6 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 
 
 @frappe.whitelist()
-def mark_notification_as_read(name):
-	frappe.db.set_value("Press Notification", name, "read", True)
-
-
-@frappe.whitelist()
 def mark_all_notifications_as_read():
 	frappe.db.set_value("Press Notification", {"team": get_current_team()}, "read", 1, update_modified=False)
 

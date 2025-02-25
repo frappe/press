@@ -26,8 +26,6 @@ from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
 	get_team_members,
-	has_active_servers,
-	has_unsettled_invoices,
 )
 from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture
@@ -241,13 +239,13 @@ def disable_account(totp_code: str | None):
 
 	if user != team.user:
 		frappe.throw("Only team owner can disable the account")
-	if has_unsettled_invoices(team.name):
-		return "Unpaid Invoices"
-	if has_active_servers(team.name):
-		return "Active Servers"
 
 	team.disable_account()
-	return None
+
+
+@frappe.whitelist()
+def has_active_servers(team):
+	return frappe.db.exists("Server", {"status": "Active", "team": team})
 
 
 @frappe.whitelist()

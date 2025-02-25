@@ -67,7 +67,9 @@ class PressSettings(Document):
 		enable_app_grouping: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_physical_restore_failover: DF.Check
 		enable_site_pooling: DF.Check
+		enable_spam_check: DF.Check
 		enforce_storage_limits: DF.Check
 		erpnext_api_key: DF.Data | None
 		erpnext_api_secret: DF.Password | None
@@ -108,6 +110,7 @@ class PressSettings(Document):
 		offsite_backups_secret_access_key: DF.Password | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
+		physical_restore_docker_image: DF.Data | None
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
@@ -127,6 +130,9 @@ class PressSettings(Document):
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		spaces_domain: DF.Link | None
+		spamd_api_key: DF.Data | None
+		spamd_api_secret: DF.Password | None
+		spamd_endpoint: DF.Data | None
 		ssh_certificate_authority: DF.Link | None
 		staging_expiry: DF.Int
 		staging_plan: DF.Link | None

@@ -68,6 +68,10 @@
   "backup_offset",
   "column_break_48",
   "backup_limit",
+  "physical_backups_section",
+  "disable_physical_backup",
+  "enable_physical_restore_failover",
+  "physical_restore_docker_image",
   "docker_tab",
   "section_break_59",
   "docker_registry_url",
@@ -151,6 +155,12 @@
   "twilio_api_key_secret",
   "column_break_kxuj",
   "twilio_phone_number",
+  "spamd_section",
+  "enable_spam_check",
+  "spamd_endpoint",
+  "column_break_xhfy",
+  "spamd_api_key",
+  "spamd_api_secret",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -197,7 +207,6 @@
   "disable_auto_retry",
   "disable_agent_job_deduplication",
   "enable_email_pre_verification",
-  "disable_physical_backup",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1327,11 +1336,58 @@
    "fieldname": "disable_physical_backup",
    "fieldtype": "Check",
    "label": "Disable Physical Backup"
+  },
+  {
+   "fieldname": "physical_backups_section",
+   "fieldtype": "Section Break",
+   "label": "Physical Backups"
+  },
+  {
+   "default": "0",
+   "description": "If physical restore fails, it will spawn up a new database container to try logical restoration.",
+   "fieldname": "enable_physical_restore_failover",
+   "fieldtype": "Check",
+   "label": "Enable Physical Restore Failover"
+  },
+  {
+   "fieldname": "physical_restore_docker_image",
+   "fieldtype": "Data",
+   "label": "Physical Restore Docker Image"
+  },
+  {
+   "fieldname": "spamd_section",
+   "fieldtype": "Section Break",
+   "label": "Spamd"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_spam_check",
+   "fieldtype": "Check",
+   "label": "Enable Spam Check"
+  },
+  {
+   "fieldname": "spamd_endpoint",
+   "fieldtype": "Data",
+   "label": "Spamd Endpoint"
+  },
+  {
+   "fieldname": "column_break_xhfy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "spamd_api_key",
+   "fieldtype": "Data",
+   "label": "Spamd API Key"
+  },
+  {
+   "fieldname": "spamd_api_secret",
+   "fieldtype": "Password",
+   "label": "Spamd API Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-01-28 14:41:49.332529",
+ "modified": "2025-02-18 17:47:56.410653",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

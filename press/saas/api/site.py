@@ -13,8 +13,9 @@ def info():
 	return {
 		"name": frappe.local.site_name,
 		"trial_end_date": site.trial_end_date,
-		"payment_method_added": bool(frappe.db.get_value("Team", site.team, "payment_mode")),
-		"plan": frappe.get_doc("Site Plan", site.plan) if site.plan else None,
+		"plan": frappe.db.get_value("Site Plan", site.plan, ["is_trial_plan"], as_dict=True)
+		if site.plan
+		else None,
 	}
 
 

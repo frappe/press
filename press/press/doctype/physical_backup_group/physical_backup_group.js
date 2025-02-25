@@ -9,7 +9,7 @@ frappe.ui.form.on('Physical Backup Group', {
 
 		[
 			[__('Sync'), 'sync', false],
-			[__('Trigger Next Backup'), 'trigger_next_backup', false],
+			[__('Start / Resume'), 'trigger_next_backup', false],
 			[__('Set DB Sizes'), 'set_db_sizes', true],
 			[__('Retry Failed Backups'), 'retry_failed_backups', true],
 			[__('Delete Backups'), 'delete_backups', true],

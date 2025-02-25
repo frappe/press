@@ -10,6 +10,11 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldtype: 'Link',
 			options: 'Site',
 			reqd: 1,
+			get_query: function () {
+				return {
+					filters: { status: ["!=", "Archived"] },
+				};
+			},
 		},
 		{
 			fieldname: 'start_datetime',

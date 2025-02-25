@@ -52,37 +52,43 @@ class PhysicalRestorationTest(Document):
 		# populate results table
 		records = backup_group.site_backups[: self.max_restorations]
 		for record in records:
-			doc: PhysicalBackupRestoration = frappe.get_doc(
-				{
-					"doctype": "Physical Backup Restoration",
-					"site": record.site,
-					"status": "Pending",
-					"site_backup": record.backup,
-					"source_database": frappe.db.get_value("Site Backup", record.backup, "database_name"),
-					"destination_database": self.destination_database,
-					"destination_server": self.destination_server,
-					"restore_specific_tables": False,
-					"tables_to_restore": "[]",
-					"physical_restoration_test": self.name,
-				}
-			)
-			doc.insert(ignore_permissions=True)
 			self.append(
 				"results",
 				{
 					"site": record.site,
 					"db_size_mb": record.db_size,
-					"restore_record": doc.name,
+					"restore_record": self._create_restoration_record(record.backup).name,
 					"status": "Pending",
 				},
 			)
 
 		self.save()
 
+	def _create_restoration_record(self, site_backup: str) -> PhysicalBackupRestoration:
+		return frappe.get_doc(
+			{
+				"doctype": "Physical Backup Restoration",
+				"site": self.test_site,
+				"status": "Pending",
+				"site_backup": site_backup,
+				"source_database": frappe.db.get_value("Site Backup", site_backup, "database_name"),
+				"destination_database": self.destination_database,
+				"destination_server": self.destination_server,
+				"restore_specific_tables": False,
+				"tables_to_restore": "[]",
+				"physical_restoration_test": self.name,
+			}
+		).insert(ignore_permissions=True)
+
 	@frappe.whitelist()
 	def start(self):
 		self.sync()
 		record = None
+		# check if there is any running restoration
+		for result in self.results:
+			if result.status == "Running":
+				return
+
 		for result in self.results:
 			if result.status == "Pending":
 				record = result
@@ -103,6 +109,19 @@ class PhysicalRestorationTest(Document):
 	def sync(self):
 		for result in self.results:
 			result.save()
+
+	@frappe.whitelist()
+	def reset_failed_restorations(self):
+		for result in self.results:
+			if result.status == "Failure":
+				result.status = "Pending"
+				# find the backup from the previous restoration
+				site_backup = frappe.db.get_value(
+					"Physical Backup Restoration", result.restore_record, "site_backup"
+				)
+				result.restore_record = self._create_restoration_record(site_backup).name
+				result.duration = None
+				result.save()
 
 
 def trigger_next_restoration(record_id: str):
