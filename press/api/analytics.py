@@ -303,6 +303,7 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 
 class SlowLogGroupByChart(StackedGroupByChart):
 	to_s_divisor = 1e9
+	database_name = None
 
 	def __init__(
 		self,
@@ -333,12 +334,18 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
 		)
 		if self.resource_type == ResourceType.SITE:
-			if database_name := frappe.db.get_value("Site", self.name, "database_name"):
-				self.search = self.search.filter("match", mysql__slowlog__current_user=database_name)
+			self.database_name = frappe.db.get_value("Site", self.name, "database_name")
+			if self.database_name:
+				self.search = self.search.filter("match", mysql__slowlog__current_user=self.database_name)
 			self.group_by_field = "mysql.slowlog.query"
 		elif self.resource_type == ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
 			self.group_by_field = "mysql.slowlog.current_user"
+
+	def run(self):
+		if not self.database_name:
+			return {"datasets": [], "labels": []}
+		return super().run()
 
 
 @frappe.whitelist()
