@@ -183,7 +183,7 @@ class StackedGroupByChart:
 		self.search.aggs.bucket("histogram_of_method", self.histogram_of_method())
 
 		if AggType(self.agg_type) is AggType.COUNT:
-			self.search.aggs["histogram_of_method"].bucket("path_count", "value_count")
+			self.search.aggs["histogram_of_method"].bucket("path_count", self.count_of_values())
 		elif AggType(self.agg_type) is AggType.DURATION:
 			self.search.aggs["histogram_of_method"].bucket("sum_of_duration", self.sum_of_duration())
 		elif AggType(self.agg_type) is AggType.AVERAGE_DURATION:
