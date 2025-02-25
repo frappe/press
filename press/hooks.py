@@ -199,6 +199,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
+		"press.press.doctype.virtual_machine.virtual_machine.update_all_vm_status",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -222,6 +223,10 @@ scheduler_events = {
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
 		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
+		"press.api.jobs.process_job_queue",
+		"press.press.doctype.virtual_machine.virtual_machine.cleanup_unused_disks",
+		"press.press.doctype.virtual_machine.virtual_machine.cleanup_unused_snapshots",
+		"press.infrastructure.doctype.ip_pool_settings.ip_pool_settings.update_ip_metrics",
 	],
 	"cron": {
 		"1-59/2 * * * *": [

@@ -44,6 +44,51 @@ class MetricsRenderer:
 			filters={"status": ("!=", "Success")},
 		)
 
+		# IP Pool Metrics
+		ip_pool_total = Gauge(
+			"press_ip_pool_total", 
+			"Total number of IPs in the pool", 
+			registry=self.registry
+		)
+		ip_pool_used = Gauge(
+			"press_ip_pool_used", 
+			"Number of used IPs", 
+			registry=self.registry
+		)
+		ip_pool_available = Gauge(
+			"press_ip_pool_available", 
+			"Number of available IPs", 
+			registry=self.registry
+		)
+		ip_pool_elastic = Gauge(
+			"press_ip_pool_elastic", 
+			"Number of elastic IPs", 
+			registry=self.registry
+		)
+		ip_pool_utilization = Gauge(
+			"press_ip_pool_utilization", 
+			"IP pool utilization percentage", 
+			registry=self.registry
+		)
+
+		# Get IP pool stats from database
+		ip_stats = frappe.db.get_value(
+			"IP Pool Settings",
+			None,
+			["total_ips", "used_ips", "elastic_ips"],
+		) or (0, 0, 0)
+
+		total_ips, used_ips, elastic_ips = ip_stats
+		available_ips = total_ips - used_ips
+		utilization = (used_ips / total_ips * 100) if total_ips > 0 else 0
+
+		# Set metrics
+		ip_pool_total.set(total_ips)
+		ip_pool_used.set(used_ips)
+		ip_pool_available.set(available_ips)
+		ip_pool_elastic.set(elastic_ips)
+		ip_pool_utilization.set(utilization)
+
 		self.get_status("press_site_total", "Site", filters={"status": ("!=", "Archived")})
 		self.get_status("press_bench_total", "Bench", filters={"status": ("!=", "Archived")})
 		self.get_status("press_server_total", "Server")

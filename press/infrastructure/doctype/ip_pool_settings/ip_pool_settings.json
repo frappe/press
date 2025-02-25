@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2025-02-25 09:38:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ip_pool_section",
+  "total_ips",
+  "used_ips",
+  "elastic_ips",
+  "column_break_4",
+  "auto_scaling_enabled",
+  "scaling_threshold",
+  "max_pool_size",
+  "section_break_8",
+  "last_scaled_at",
+  "last_updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "ip_pool_section",
+   "fieldtype": "Section Break",
+   "label": "IP Pool Statistics"
+  },
+  {
+   "fieldname": "total_ips",
+   "fieldtype": "Int",
+   "label": "Total IPs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "used_ips",
+   "fieldtype": "Int",
+   "label": "Used IPs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "elastic_ips",
+   "fieldtype": "Int",
+   "label": "Elastic IPs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_scaling_enabled",
+   "fieldtype": "Check",
+   "label": "Auto Scaling Enabled"
+  },
+  {
+   "default": "80",
+   "fieldname": "scaling_threshold",
+   "fieldtype": "Percent",
+   "label": "Scaling Threshold"
+  },
+  {
+   "fieldname": "max_pool_size",
+   "fieldtype": "Int",
+   "label": "Maximum Pool Size"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "last_scaled_at",
+   "fieldtype": "Datetime",
+   "label": "Last Scaled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-02-25 09:38:00.000000",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "IP Pool Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+} 
