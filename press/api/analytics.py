@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 		"""Single element of list of Datasets returned for stacked histogram chart"""
 
 		path: str
-		values: list[float, int]  # List of values for each timestamp [43.0, 0, 0...]
+		values: list[float | int]  # List of values for each timestamp [43.0, 0, 0...]
 		stack: Final[str]
 
 	class HistBucket(FieldBucket):
@@ -60,22 +60,17 @@ class ResourceType(Enum):
 	SERVER = "server"
 
 
-class LogType(Enum):
-	REQUEST = "request"
-	SLOWLOG = "slowlog"
-	JOB = "job"
-
-
 class AggType(Enum):
 	COUNT = "count"
 	DURATION = "duration"
 	AVERAGE_DURATION = "average_duration"
 
 
-class GroupByChart:
+class StackedGroupByChart:
 	search: Search
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
+	group_by_field: str
 	MAX_NO_OF_PATHS: int = 10
 
 	def __init__(
@@ -83,7 +78,6 @@ class GroupByChart:
 		name: str,
 		agg_type: AggType,
 		resource_type: ResourceType,
-		group_by_field: str,
 		timezone: str,
 		timespan: int,
 		timegrain: int,
@@ -93,12 +87,11 @@ class GroupByChart:
 			return
 
 		self.url = f"https://{self.log_server}/elasticsearch"
-		self.password = get_decrypted_password("Log Server", self.log_server, "kibana_password")
+		self.password = str(get_decrypted_password("Log Server", self.log_server, "kibana_password"))
 
 		self.name = name
 		self.agg_type = agg_type
 		self.resource_type = resource_type
-		self.group_by_field = group_by_field
 		self.timezone = timezone
 		self.timespan = timespan
 		self.timegrain = timegrain
@@ -107,22 +100,26 @@ class GroupByChart:
 		self.setup_search_aggs()
 
 	def setup_search_filters(self):
-		es = Elasticsearch(f"https://{self.log_server}/elasticsearch", basic_auth=("frappe", self.password))
-		self.search = Search(using=es, index="filebeat-*").extra(size=0)
+		es = Elasticsearch(self.url, basic_auth=("frappe", self.password))
 		self.start, self.end = get_rounded_boundaries(self.timespan, self.timegrain, self.timezone)
-
-		self.search = self.search.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(self.start.timestamp() * 1000),
-					"lte": int(self.end.timestamp() * 1000),
-				}
-			},
+		self.search = (
+			Search(using=es, index="filebeat-*")
+			.filter(
+				"range",
+				**{
+					"@timestamp": {
+						"gte": int(self.start.timestamp() * 1000),
+						"lte": int(self.end.timestamp() * 1000),
+					}
+				},
+			)
+			.extra(size=0)
 		)
 
 	def setup_search_aggs(self):
-		if self.agg_type == AggType.COUNT:
+		if not self.group_by_field:
+			frappe.throw("Group by field not set")
+		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs.bucket(
 				"method_path",
 				"terms",
@@ -132,24 +129,28 @@ class GroupByChart:
 			).bucket("histogram_of_method", self.histogram_of_method())
 			self.search.aggs["method_path"].bucket("path_count", self.count_of_values())
 
-		elif self.agg_type == AggType.DURATION:
+		elif AggType(self.agg_type) is AggType.DURATION:
 			self.search.aggs.bucket(
 				"method_path",
 				"terms",
 				field=self.group_by_field,
 				size=self.MAX_NO_OF_PATHS,
 				order={"outside_sum": "desc"},
-			).bucket("histogram_of_method", self.histogram_of_method())
+			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
+				"sum_of_duration", self.sum_of_duration()
+			)
 			self.search.aggs["method_path"].bucket("outside_sum", self.sum_of_duration())  # for sorting
 
-		elif self.agg_type == AggType.AVERAGE_DURATION:
+		elif AggType(self.agg_type) is AggType.AVERAGE_DURATION:
 			self.search.aggs.bucket(
 				"method_path",
 				"terms",
 				field=self.group_by_field,
 				size=self.MAX_NO_OF_PATHS,
 				order={"outside_avg": "desc"},
-			).bucket("histogram_of_method", self.histogram_of_method())
+			).bucket("histogram_of_method", self.histogram_of_method()).bucket(
+				"avg_of_duration", self.avg_of_duration()
+			)
 			self.search.aggs["method_path"].bucket("outside_avg", self.avg_of_duration())
 
 	def histogram_of_method(self):
@@ -170,22 +171,22 @@ class GroupByChart:
 	def avg_of_duration(self):
 		raise NotImplementedError
 
-	def exclude_top_k_data(self, datasets):
+	def exclude_top_k_data(self, datasets: list[Dataset]):
 		raise NotImplementedError
 
-	def get_other_bucket(self, datasets, labels):
+	def get_other_bucket(self, datasets: list[Dataset], labels):
 		# filters present in search already, clear out aggs and response
 		self.search.aggs._params = {}
 		del self.search._response
 
 		self.exclude_top_k_data(datasets)
-		self.search.aggs.bucket("histogram_of_method", self.histogram_of_method)
+		self.search.aggs.bucket("histogram_of_method", self.histogram_of_method())
 
-		if self.agg_type == AggType.COUNT:
+		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs["histogram_of_method"].bucket("path_count", "value_count")
-		elif self.agg_type == AggType.DURATION:
+		elif AggType(self.agg_type) is AggType.DURATION:
 			self.search.aggs["histogram_of_method"].bucket("sum_of_duration", self.sum_of_duration())
-		elif self.agg_type == AggType.AVERAGE_DURATION:
+		elif AggType(self.agg_type) is AggType.AVERAGE_DURATION:
 			self.search.aggs["histogram_of_method"].bucket("avg_of_duration", self.avg_of_duration())
 
 		aggs = self.search.execute().aggregations
@@ -198,13 +199,11 @@ class GroupByChart:
 		path_bucket: PathBucket,
 		labels: list[datetime],
 	):
-		path_data = frappe._dict(
-			{
-				"path": path_bucket.key,
-				"values": [0] * len(labels),
-				"stack": "path",
-			}
-		)
+		path_data = {
+			"path": path_bucket.key,
+			"values": [0] * len(labels),
+			"stack": "path",
+		}
 		hist_bucket: HistBucket
 		for hist_bucket in path_bucket.histogram_of_method.buckets:
 			label = get_datetime(hist_bucket.key_as_string)
@@ -212,12 +211,12 @@ class GroupByChart:
 				continue
 			path_data["values"][labels.index(label)] = (
 				(flt(hist_bucket.avg_of_duration.value) / self.to_s_divisor)
-				if self.agg_type == "average_duration"
+				if AggType(self.agg_type) is AggType.AVERAGE_DURATION
 				else (
 					flt(hist_bucket.sum_of_duration.value) / self.to_s_divisor
-					if self.agg_type == "duration"
+					if AggType(self.agg_type) is AggType.DURATION
 					else hist_bucket.doc_count
-					if self.agg_type == "count"
+					if AggType(self.agg_type) is AggType.COUNT
 					else 0
 				)
 			)
@@ -252,19 +251,9 @@ class GroupByChart:
 		return self.get_stacked_histogram_chart()
 
 
-class RequestGroupByChart(GroupByChart):
-
-	def __init__(
-		self,
-		name: str,
-		agg_type: AggType,
-		resource_type: ResourceType,
-		group_by_field: str,
-		timezone: str,
-		timespan: int,
-		timegrain: int,
-	):
-		super().__init__(name, agg_type, resource_type, group_by_field, timezone, timespan, timegrain)
+class RequestGroupByChart(StackedGroupByChart):
+	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
+		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -282,14 +271,15 @@ class RequestGroupByChart(GroupByChart):
 		)
 		if self.resource_type == ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
+			self.group_by_field = "json.request.path"
 		elif self.resource_type == ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
+			self.group_by_field = "json.site"
 
 
-class BackgroundJobGroupByChart(GroupByChart):
-
-	def __init__(self, name, agg_type, resource_type, group_by_field, timezone, timespan, timegrain):
-		super().__init__(name, agg_type, resource_type, group_by_field, timezone, timespan, timegrain)
+class BackgroundJobGroupByChart(StackedGroupByChart):
+	def __init__(self, name, agg_type, resource_type, timezone, timespan, timegrain):
+		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
 
 	def sum_of_duration(self):
 		return A("sum", field="json.duration")
@@ -305,11 +295,13 @@ class BackgroundJobGroupByChart(GroupByChart):
 		self.search = self.search.filter("match_phrase", json__transaction_type="job")
 		if self.resource_type == ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
+			self.group_by_field = "json.job.method"
 		elif self.resource_type == ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
+			self.group_by_field = "json.site"
 
 
-class SlowLogGroupByChart(GroupByChart):
+class SlowLogGroupByChart(StackedGroupByChart):
 	to_s_divisor = 1e9
 
 	def __init__(
@@ -317,13 +309,12 @@ class SlowLogGroupByChart(GroupByChart):
 		name,
 		agg_type,
 		resource_type,
-		group_by_field,
 		timezone,
 		timespan,
 		timegrain,
 		normalize_slow_logs=False,
 	):
-		super().__init__(name, agg_type, resource_type, group_by_field, timezone, timespan, timegrain)
+		super().__init__(name, agg_type, resource_type, timezone, timespan, timegrain)
 		self.normalize_slow_logs = normalize_slow_logs
 
 	def sum_of_duration(self):
@@ -344,8 +335,10 @@ class SlowLogGroupByChart(GroupByChart):
 		if self.resource_type == ResourceType.SITE:
 			if database_name := frappe.db.get_value("Site", self.name, "database_name"):
 				self.search = self.search.filter("match", mysql__slowlog__current_user=database_name)
+			self.group_by_field = "mysql.slowlog.query"
 		elif self.resource_type == ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
+			self.group_by_field = "mysql.slowlog.current_user"
 
 
 @frappe.whitelist()
@@ -510,107 +503,9 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
-def get_histogram_chart_result(
-	path_bucket: PathBucket,
-	agg_type: str,
-	labels: list[datetime],
-	to_s_divisor: float,
+def get_request_by_(
+	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, resource_type=ResourceType.SITE
 ):
-	path_data = frappe._dict(
-		{
-			"path": path_bucket.key,
-			"values": [0] * len(labels),
-			"stack": "path",
-		}
-	)
-	hist_bucket: HistBucket
-	for hist_bucket in path_bucket.histogram_of_method.buckets:
-		label = get_datetime(hist_bucket.key_as_string)
-		if label not in labels:
-			continue
-		path_data["values"][labels.index(label)] = (
-			(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
-			if agg_type == "average_duration"
-			else (
-				flt(hist_bucket.sum_of_duration.value) / to_s_divisor
-				if agg_type == "duration"
-				else hist_bucket.doc_count
-				if agg_type == "count"
-				else 0
-			)
-		)
-	return path_data
-
-
-def get_other_bucket_data(
-	search: Search, datasets, labels, timegrain, timezone, agg_type: str, log_type: str, to_s_divisor: float
-):
-	# filters present in search already, clear out aggs and response
-	search.aggs._params = {}
-	del search._response
-
-	if log_type == "transaction":
-		search.exclude("match_phrase", json__transaction__path=list(map(lambda x: x["path"], datasets)))
-	elif log_type == "slowlog":
-		search.exclude("match_phrase", mysql__slowlog__query=list(map(lambda x: x["path"], datasets)))
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-
-	search.aggs.bucket("histogram_of_method", histogram_of_method)
-
-	if agg_type == "count":
-		search.aggs["histogram_of_method"].bucket("path_count", "value_count")
-	elif agg_type == "duration":
-		search.aggs["histogram_of_method"].bucket("sum_of_duration", "sum", field="json.duration")
-	elif agg_type == "average_duration":
-		search.aggs["histogram_of_method"].bucket("avg_of_duration", "avg", field="json.duration")
-
-	aggs = search.execute().aggregations
-
-	aggs.key = "Other"  # Set custom key Other bucket
-	return get_histogram_chart_result(aggs, agg_type, labels, to_s_divisor)
-
-
-def get_stacked_histogram_chart_result(
-	search: Search,
-	agg_type: AggType,
-	log_type: LogType,
-	start: datetime,
-	end: datetime,
-	timegrain: int,
-	timezone: str,
-	to_s_divisor: float = 1e6,
-	normalize_slow_logs: bool = False,
-) -> dict[str, list[Dataset] | list[datetime]]:
-	aggs: AggResponse = search.execute().aggregations
-
-	timegrain_delta = timedelta(seconds=timegrain)
-	labels = [start + i * timegrain_delta for i in range((end - start) // timegrain_delta + 1)]
-	# method_path has buckets of timestamps with method(eg: avg) of that duration
-	datasets = []
-
-	path_bucket: PathBucket
-	for path_bucket in aggs.method_path.buckets:
-		datasets.append(get_histogram_chart_result(path_bucket, agg_type, labels, to_s_divisor))
-
-	datasets.append(
-		get_other_bucket_data(search, datasets, labels, timegrain, timezone, agg_type, to_s_divisor)
-	)
-
-	if normalize_slow_logs:
-		datasets = normalize_datasets(datasets)
-
-	labels = [label.replace(tzinfo=None) for label in labels]
-	return {"datasets": datasets, "labels": labels}
-
-
-def get_request_by_(name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE):
 	"""
 	:param name: site/server name depending on resource_type
 	:param agg_type: count, duration, average_duration
@@ -619,479 +514,61 @@ def get_request_by_(name, agg_type, timezone, timespan, timegrain, resource_type
 	:param timegrain: interval in seconds
 	:param resource_type: filter by site or server
 	"""
-	MAX_NO_OF_PATHS = 10
-
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
-
-	url = f"https://{log_server}/elasticsearch"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
-
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__transaction_type="request")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
-		)
-		.exclude("match_phrase", json__request__path="/api/method/ping")
-		.extra(size=0)
-	)
-	if resource_type == ResourceType.SITE:
-		search = search.filter("match_phrase", json__site=name)
-		group_by_field = "json.request.path"
-	elif resource_type == ResourceType.SERVER:
-		search = search.filter("match_phrase", agent__name=name)
-		group_by_field = "json.site"
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	avg_of_duration = A("avg", field="json.duration")
-	sum_of_duration = A("sum", field="json.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"path_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket("path_count", "value_count", field=group_by_field)
-
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
-
-	elif agg_type == "average_duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
-
-		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
-
-	return get_stacked_histogram_chart_result(
-		search, agg_type, LogType.REQUEST, start, end, timegrain, timezone
-	)
+	return RequestGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain).run()
 
 
 def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
-	MAX_NO_OF_PATHS = 10
-
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
-
-	url = f"https://{log_server}/elasticsearch"
-	password = str(get_decrypted_password("Log Server", log_server, "kibana_password"))
-
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
-		.filter("match_phrase", json__transaction_type="job")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
-		)
-		.extra(size=0)
-	)
-
-	group_by_field = "json.job.method"
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	avg_of_duration = A("avg", field="json.duration")
-	sum_of_duration = A("sum", field="json.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"method_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket("method_count", "value_count", field=group_by_field)
-
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
-
-	elif agg_type == "average_duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
-
-		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
-
-	return get_stacked_histogram_chart_result(search, agg_type, LogType.JOB, start, end, timegrain, timezone)
+	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
 
 
 def get_slow_logs(
 	name, agg_type, timezone, timespan, timegrain, resource_type=ResourceType.SITE, normalize=False
 ):
-	MAX_NO_OF_PATHS = 10
+	return SlowLogGroupByChart(name, agg_type, resource_type, timezone, timespan, timegrain, normalize).run()
 
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
 
-	url = f"https://{log_server}/elasticsearch/"
-	password = str(get_decrypted_password("Log Server", log_server, "kibana_password"))
+class RunDocMethodMethodNames(RequestGroupByChart):
+	def __init__(self, name, agg_type, timezone, timespan, timegrain):
+		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
+		self.group_by_field = "json.methodname"
 
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
-		)
-		.exclude(
-			"wildcard",
-			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
-		)
-		.extra(size=0)
-	)
-	if resource_type == ResourceType.SITE and (
-		database_name := frappe.db.get_value("Site", name, "database_name")
-	):
-		search = search.filter("match", mysql__slowlog__current_user=database_name)
-	elif resource_type == ResourceType.SERVER:
-		search = search.filter("match", agent__name=name)
-	else:
-		return {"datasets": [], "labels": []}
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	sum_of_duration = A("sum", field="event.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field="mysql.slowlog.query",
-			size=MAX_NO_OF_PATHS,
-			order={"slowlog_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket(
-			"slowlog_count",
-			"value_count",
-			field="mysql.slowlog.query",
-		)
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field="mysql.slowlog.query",
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
-
-	return get_stacked_histogram_chart_result(
-		search,
-		agg_type,
-		LogType.SLOWLOG,
-		start,
-		end,
-		timegrain,
-		timezone,
-		to_s_divisor=1e9,
-		normalize_slow_logs=normalize,
-	)
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.search = self.search.filter("match_phrase", json__request__path="/api/method/run_doc_method")
 
 
 def get_run_doc_method_methodnames(site, agg_type, timezone, timespan, timegrain):
-	MAX_NO_OF_PATHS = 10
+	return RunDocMethodMethodNames(site, agg_type, timezone, timespan, timegrain).run()
 
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
 
-	url = f"https://{log_server}/elasticsearch"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+class QueryReportRunReports(RequestGroupByChart):
+	def __init__(self, name, agg_type, timezone, timespan, timegrain):
+		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
+		self.group_by_field = "json.report"
 
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
-		.filter("match_phrase", json__transaction_type="request")
-		.filter("match_phrase", json__request__path="/api/method/run_doc_method")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.query_report.run"
 		)
-		.extra(size=0)
-	)
-
-	group_by_field = "json.methodname"
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	avg_of_duration = A("avg", field="json.duration")
-	sum_of_duration = A("sum", field="json.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"path_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket("path_count", "value_count", field=group_by_field)
-
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
-
-	elif agg_type == "average_duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
-
-		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
-
-	return get_stacked_histogram_chart_result(
-		search, agg_type, LogType.REQUEST, start, end, timegrain, timezone
-	)
 
 
 def get_query_report_run_reports(site, agg_type, timezone, timespan, timegrain):
-	MAX_NO_OF_PATHS = 10
+	return QueryReportRunReports(site, agg_type, timezone, timespan, timegrain).run()
 
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
 
-	url = f"https://{log_server}/elasticsearch"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+class GenerateReportReports(BackgroundJobGroupByChart):
+	def __init__(self, name, agg_type, timezone, timespan, timegrain):
+		super().__init__(name, agg_type, ResourceType.SITE, timezone, timespan, timegrain)
+		self.group_by_field = "json.report"
 
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
-		.filter("match_phrase", json__transaction_type="request")
-		.filter("match_phrase", json__request__path="/api/method/frappe.desk.query_report.run")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
-		)
-		.extra(size=0)
-	)
-
-	group_by_field = "json.report"
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	avg_of_duration = A("avg", field="json.duration")
-	sum_of_duration = A("sum", field="json.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"path_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket("path_count", "value_count", field=group_by_field)
-
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
-
-	elif agg_type == "average_duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
-
-		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)
-
-	return get_stacked_histogram_chart_result(search, agg_type, LogType.start, end, timegrain)
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.search = self.search.filter("match_phrase", json__job__method="generate_report")
 
 
 def get_generate_report_reports(site, agg_type, timezone, timespan, timegrain):
-	MAX_NO_OF_PATHS = 10
-
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
-		return {"datasets": [], "labels": []}
-
-	url = f"https://{log_server}/elasticsearch"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
-
-	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
-
-	es = Elasticsearch(url, basic_auth=("frappe", password))
-	search = (
-		Search(using=es, index="filebeat-*")
-		.filter("match_phrase", json__site=site)
-		.filter("match_phrase", json__transaction_type="job")
-		.filter("match_phrase", json__job__method="generate_report")
-		.filter(
-			"range",
-			**{
-				"@timestamp": {
-					"gte": int(start.timestamp() * 1000),
-					"lte": int(end.timestamp() * 1000),
-				}
-			},
-		)
-		.extra(size=0)
-	)
-
-	group_by_field = "json.report"
-
-	histogram_of_method = A(
-		"date_histogram",
-		field="@timestamp",
-		fixed_interval=f"{timegrain}s",
-		time_zone=timezone,
-		min_doc_count=0,
-	)
-	avg_of_duration = A("avg", field="json.duration")
-	sum_of_duration = A("sum", field="json.duration")
-
-	if agg_type == "count":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"method_count": "desc"},
-		).bucket("histogram_of_method", histogram_of_method)
-
-		search.aggs["method_path"].bucket("method_count", "value_count", field=group_by_field)
-
-	elif agg_type == "duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_sum": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("sum_of_duration", sum_of_duration)
-		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
-
-	elif agg_type == "average_duration":
-		search.aggs.bucket(
-			"method_path",
-			"terms",
-			field=group_by_field,
-			size=MAX_NO_OF_PATHS,
-			order={"outside_avg": "desc"},
-		).bucket("histogram_of_method", histogram_of_method).bucket("avg_of_duration", avg_of_duration)
-
-		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
-
-	return get_stacked_histogram_chart_result(search, agg_type, start, end, timegrain)
+	return GenerateReportReports(site, agg_type, timezone, timespan, timegrain).run()
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
