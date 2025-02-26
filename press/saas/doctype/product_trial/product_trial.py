@@ -115,9 +115,7 @@ class ProductTrial(Document):
 		site_domain = f"{subdomain}.{self.domain}"
 
 		# if user didn't change the subdomain, and is picking the provided site
-		if frappe.db.exists(
-			"Site", {"name": site_domain, "is_standby": 1, "is_standby_for_product": self.name}
-		):
+		if frappe.db.exists("Site", {"name": site_domain, "is_standby": 1, "standby_for_product": self.name}):
 			standby_site = site_domain
 		else:
 			standby_site = self.get_standby_site(cluster)
@@ -203,7 +201,7 @@ class ProductTrial(Document):
 		if not site_domain:
 			return
 
-		if site.name == site_domain:
+		if site.name == site_domain or site.host_name == site_domain:
 			return
 
 		site.add_domain_for_product_site(site_domain)
