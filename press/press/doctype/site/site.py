@@ -1126,6 +1126,9 @@ class Site(Document, TagHelpers):
 		domain = domain.lower().strip(".")
 		response = check_dns(self.name, domain)
 		if response["matched"]:
+			if frappe.db.exists("Site Domain", {"domain": domain}):
+				frappe.throw(f"The domain {frappe.bold(domain)} is already used by a site")
+
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
