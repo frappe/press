@@ -83,7 +83,7 @@ class SaasSitePool:
 					"is_standby": 1,
 					"standby_for": self.app,
 					"hybrid_saas_pool": pool_name,
-					"status": "Active",
+					"status": ("in", ["Active", "Pending", "Installing", "Updating"]),
 				},
 			)
 
