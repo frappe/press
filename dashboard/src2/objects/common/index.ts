@@ -5,7 +5,7 @@ import type {
 	ColumnField,
 	DocumentResource,
 	Route,
-	Row
+	Row,
 } from './types';
 import { trialDays } from '../../utils/site';
 import { planTitle } from '../../utils/format';
@@ -23,7 +23,7 @@ export const clusterOptions = [
 	'Singapore',
 	'UAE',
 	'Virginia',
-	'Zurich'
+	'Zurich',
 ];
 
 export function getUpsellBanner(site: DocumentResource, title: string) {
@@ -39,6 +39,7 @@ export function getUpsellBanner(site: DocumentResource, title: string) {
 		title: title,
 		dismissable: true,
 		id: site.name,
+		type: 'gray',
 		button: {
 			label: 'Upgrade Plan',
 			variant: 'outline',
@@ -47,8 +48,8 @@ export function getUpsellBanner(site: DocumentResource, title: string) {
 					() => import('../../components/ManageSitePlansDialog.vue')
 				);
 				renderDialog(h(SitePlansDialog, { site: site.name }));
-			}
-		}
+			},
+		},
 	} satisfies BannerConfig as BannerConfig;
 }
 
@@ -63,13 +64,13 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 			prefix: () => {
 				if (forBenchTab) return;
 				return h('div', { class: 'ml-2 w-3.5 h-3.5' });
-			}
+			},
 		},
 		{
 			label: 'Status',
 			fieldname: 'status',
 			type: 'Badge',
-			width: 0.5
+			width: 0.5,
 		},
 		{
 			label: 'Region',
@@ -80,9 +81,9 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 					return h('img', {
 						src: row.cluster_image,
 						class: 'w-4 h-4',
-						alt: row.cluster_title
+						alt: row.cluster_title,
 					});
-			}
+			},
 		},
 		{
 			label: 'Plan',
@@ -92,8 +93,8 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 					return trialDays(row.trial_end_date);
 				}
 				return planTitle(row);
-			}
-		}
+			},
+		},
 	] satisfies ColumnField[] as ColumnField[];
 }
 
@@ -103,7 +104,7 @@ export function siteTabFilterControls() {
 			type: 'select',
 			label: 'Status',
 			fieldname: 'status',
-			options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+			options: ['', 'Active', 'Inactive', 'Suspended', 'Broken'],
 		},
 		{
 			type: 'select',
@@ -120,15 +121,15 @@ export function siteTabFilterControls() {
 				'Singapore',
 				'UAE',
 				'Virginia',
-				'Zurich'
-			]
-		}
+				'Zurich',
+			],
+		},
 	];
 }
 
 export function sitesTabRoute(r: Row) {
 	return {
 		name: 'Site Detail',
-		params: { name: r.name }
+		params: { name: r.name },
 	} satisfies Route as Route;
 }
