@@ -49,7 +49,7 @@
 							{{
 								formatCurrency(
 									partnerDetails.data
-										?.custom_ongoing_period_fc_invoice_contribution
+										?.custom_ongoing_period_fc_invoice_contribution,
 								) || '0.0'
 							}}
 						</div>
@@ -58,7 +58,7 @@
 								>Previous Month:
 								{{
 									formatCurrency(
-										partnerDetails.data?.custom_fc_invoice_contribution
+										partnerDetails.data?.custom_fc_invoice_contribution,
 									) || '0.0'
 								}}</span
 							>
@@ -150,10 +150,10 @@
 		<Dialog
 			:show="showPartnerMembersDialog"
 			v-model="showPartnerMembersDialog"
-			:options="{ size: 'xl', title: 'Certified Members' }"
+			:options="{ size: '3xl', title: 'Certified Members' }"
 		>
 			<template #body-content>
-				<PartnerMembers :partnerName="partnerDetails.data?.company_name" />
+				<PartnerMembers :partnerName="partnerDetails.data?.name" />
 			</template>
 		</Dialog>
 	</div>
@@ -179,11 +179,11 @@ const partnerDetails = createResource({
 	auto: true,
 	cache: 'partnerDetails',
 	params: {
-		partner_email: team.doc.partner_email
+		partner_email: team.doc.partner_email,
 	},
 	onSuccess() {
 		calculateNextTier(partnerDetails.data.partner_type);
-	}
+	},
 });
 
 const daysUntilRenewal = computed(() => {
@@ -208,12 +208,12 @@ const nextTierTarget = ref(0);
 function calculateTierProgress(next_tier_value) {
 	console.log(
 		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution,
-		next_tier_value
+		next_tier_value,
 	);
 	return Math.ceil(
 		(partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution /
 			next_tier_value) *
-			100
+			100,
 	);
 }
 
@@ -221,12 +221,12 @@ function calculateNextTier(tier) {
 	const target_inr = {
 		Gold: 500000,
 		Silver: 200000,
-		Bronze: 50000
+		Bronze: 50000,
 	};
 	const target_usd = {
 		Gold: 6000,
 		Silver: 2500,
-		Bronze: 600
+		Bronze: 600,
 	};
 
 	const current_tier = partnerDetails.data?.partner_type;
@@ -269,26 +269,26 @@ watch(
 	{ deep: true },
 );
 
-const formatDate = dateString => {
+const formatDate = (dateString) => {
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
-		day: 'numeric'
+		day: 'numeric',
 	});
 };
 
-const formatCurrency = amount => {
+const formatCurrency = (amount) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
-		maximumFractionDigits: 2
+		maximumFractionDigits: 2,
 	}).format(amount);
 };
 
-const formatNumber = value => {
+const formatNumber = (value) => {
 	return new Intl.NumberFormat('en-US', {
 		notation: 'compact',
-		compactDisplay: 'short'
+		compactDisplay: 'short',
 	}).format(value);
 };
 </script>
