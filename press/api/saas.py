@@ -166,7 +166,7 @@ def get_hybrid_saas_pool(account_request):
 	)
 
 	for rule in ar_rules:
-		if eval(f"account_request.{rule.field} {rule.condition} '{rule.value}'"):
+		if frappe.safe_eval(f"account_request.{rule.field} {rule.condition} '{rule.value}'"):
 			hybrid_pool = rule.parent
 			return hybrid_pool  # noqa: RET504
 
