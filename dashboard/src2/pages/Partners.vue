@@ -49,6 +49,10 @@ export default {
 					route: { name: 'PartnerApprovalRequests' },
 				},
 				{
+					label: 'Partner  Certificates',
+					route: { name: 'PartnerCertificates' },
+				},
+				{
 					label: 'Local Payment Setup',
 					route: { name: 'LocalPaymentSetup' },
 					condition: () =>
