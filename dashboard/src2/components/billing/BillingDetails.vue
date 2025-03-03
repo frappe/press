@@ -27,14 +27,20 @@
 <script setup>
 import NewAddressForm from './NewAddressForm.vue';
 import { FormControl, ErrorMessage, Button, createResource } from 'frappe-ui';
-import { reactive, ref } from 'vue';
+import { reactive, ref, inject } from 'vue';
 
 const emit = defineEmits(['success']);
 
+const team = inject('team');
+
 const addressFormRef = ref(null);
 
+const fullName = `${team.doc.user_info.first_name || ''} ${
+	team.doc.user_info.last_name || ''
+}`.trim();
+
 const billingInformation = reactive({
-	billing_name: '',
+	billing_name: fullName || '',
 	address: '',
 	city: '',
 	state: '',
@@ -47,6 +53,8 @@ createResource({
 	url: 'press.api.account.get_billing_information',
 	auto: true,
 	onSuccess: (data) => {
+		if (!Object.keys(data).length) return;
+
 		Object.assign(billingInformation, {
 			address: data.address_line1,
 			city: data.city,

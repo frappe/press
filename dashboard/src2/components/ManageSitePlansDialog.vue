@@ -1,7 +1,12 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Change Plan',
+			title:
+				step === 'site-plans'
+					? 'Change Plan'
+					: step === 'billing-details'
+						? 'Add Billing Details'
+						: 'Add Payment Mode',
 			size: step === 'site-plans' ? '3xl' : 'lg',
 		}"
 		v-model="show"
@@ -10,7 +15,7 @@
 			<!-- steps are for users without payment method added, 
 		 otherwise user will only go through just the initial step to change plan  -->
 
-			<div v-if="step == 'site-plans'">
+			<div v-if="step === 'site-plans'">
 				<SitePlansCards
 					v-model="plan"
 					:isPrivateBenchSite="!$site.doc.group_public"
@@ -31,7 +36,7 @@
 				<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 			</div>
 
-			<div v-else-if="step == 'billing-details'">
+			<div v-else-if="step === 'billing-details'">
 				<div class="mb-5 inline-flex gap-1.5 text-base text-gray-700">
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
@@ -39,11 +44,7 @@
 				<BillingDetails ref="billingRef" @success="step = 'add-payment-mode'" />
 			</div>
 
-			<div v-else-if="step == 'add-payment-mode'">
-				<div class="mb-5 inline-flex gap-1.5 text-base text-gray-700">
-					<FeatherIcon class="h-4" name="info" />
-					<span> Add a payment mode before upgrading your plan. </span>
-				</div>
+			<div v-else-if="step === 'add-payment-mode'">
 				<div
 					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
 				>
@@ -54,7 +55,7 @@
 						}"
 						@click="isAutomatedBilling = true"
 					>
-						Automated Billing
+						Add Card
 					</div>
 					<div
 						class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
@@ -63,9 +64,33 @@
 						}"
 						@click="isAutomatedBilling = false"
 					>
-						Add Money
+						Add Prepaid Credits
 					</div>
 				</div>
+
+				<div>
+					<div
+						v-if="isAutomatedBilling"
+						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+					>
+						<FeatherIcon class="h-4" name="info" />
+						<span>
+							Adding a card will enable automated billing for your account. You
+							will be charged automatically at the end of your billing cycle.
+						</span>
+					</div>
+					<div
+						v-else
+						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+					>
+						<FeatherIcon class="h-4" name="info" />
+						<span>
+							Adding prepaid credits will allow you to manually recharge your
+							account balance. You can use this balance to pay for your plan.
+						</span>
+					</div>
+				</div>
+
 				<CardForm v-if="isAutomatedBilling" @success="paymentModeAdded" />
 				<PrepaidCreditsForm
 					v-else
@@ -123,7 +148,6 @@ export default {
 			show: true,
 			plan: null,
 			step: 'site-plans',
-			showMessage: false,
 			isAutomatedBilling: true,
 			showAddPaymentModeDialog: false,
 			showBillingDetailsDialog: false,
