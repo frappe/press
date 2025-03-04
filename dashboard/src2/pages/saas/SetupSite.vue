@@ -11,7 +11,6 @@
 			<LoginBox
 				v-if="saasProduct"
 				title="Let’s set up your site"
-				subtitle="Create your site and get started"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:logo v-if="saasProduct">
