@@ -9,12 +9,10 @@
 	<div class="flex h-screen overflow-hidden sm:bg-gray-50" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
-				v-if="this.$resources?.siteRequest?.doc?.status === 'Site Created'"
-				title="Logging in to site"
-				:subtitle="
-					this.$resources?.siteRequest?.doc?.domain ||
-					this.$resources?.siteRequest?.doc?.site
-				"
+				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
+				title="Site created successfully"
+				:subtitle="`The trial site is ready at
+					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="mx-auto flex items-center space-x-2">
@@ -29,15 +27,23 @@
 						</span>
 					</div>
 				</template>
-				<div
-					class="flex h-40 items-center justify-center"
-					v-if="
-						this.$resources?.siteRequest?.getLoginSid.loading ||
-						isRedirectingToSite
-					"
-				>
-					<Spinner class="mr-2 w-4" />
-					<p class="text-base text-gray-800">Please wait for a moment</p>
+				<div>
+					<div
+						class="mb-4 mt-16 flex flex-col items-center justify-center space-y-4"
+					>
+						<Button
+							variant="solid"
+							class="w-2/5"
+							icon-right="external-link"
+							@click="loginToSite"
+							:loading="
+								this.$resources?.siteRequest?.getLoginSid.loading ||
+								isRedirectingToSite
+							"
+						>
+							Log In
+						</Button>
+					</div>
 				</div>
 				<ErrorMessage
 					v-if="!isRedirectingToSite"
@@ -180,10 +186,6 @@ export default {
 					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
-
-					if (doc.status == 'Site Created') {
-						this.loginToSite();
-					}
 				},
 				whitelistedMethods: {
 					getProgress: {
@@ -216,13 +218,13 @@ export default {
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(data) {
-							let sid = data;
-							let redirectRoute =
+							const sid = data;
+							const redirectRoute =
 								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
 								'/desk';
-							let loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
+							const loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
 							this.isRedirectingToSite = true;
-							window.open(loginURL, '_self');
+							window.open(loginURL, '_blank');
 						},
 					},
 				},
@@ -237,12 +239,6 @@ export default {
 	methods: {
 		loginToSite() {
 			this.$resources.siteRequest.getLoginSid.submit();
-		},
-		signupForCurrentProduct() {
-			this.$router.push({
-				name: 'SignupSetup',
-				params: { productId: this.productId },
-			});
 		},
 	},
 };
