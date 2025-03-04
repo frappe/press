@@ -1,13 +1,8 @@
 <template>
 	<Dialog
 		:options="{
-			title:
-				step === 'site-plans'
-					? 'Change Plan'
-					: step === 'billing-details'
-						? 'Add Billing Details'
-						: 'Add Payment Mode',
-			size: step === 'site-plans' ? '3xl' : 'lg',
+			title: showSetupSubscription ? 'Setup Subscription' : 'Change Plan',
+			size: step === 'site-plans' ? '3xl' : '3xl',
 		}"
 		v-model="show"
 	>
@@ -16,6 +11,17 @@
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
+				<!-- doing this weird thing because progress with intervals doesn't rerender on moving to new step for some reason -->
+				<!-- TODO: fix it in frappe-ui -->
+				<Progress
+					v-if="showSetupSubscription"
+					class="my-8"
+					size="md"
+					:label="progressLabel"
+					:interval-count="3"
+					:intervals="true"
+					:value="32"
+				/>
 				<SitePlansCards
 					v-model="plan"
 					:isPrivateBenchSite="!$site.doc.group_public"
@@ -37,6 +43,14 @@
 			</div>
 
 			<div v-else-if="step === 'billing-details'">
+				<Progress
+					class="my-8"
+					size="md"
+					:label="progressLabel"
+					:interval-count="3"
+					:intervals="true"
+					:value="65"
+				/>
 				<div class="mb-5 inline-flex gap-1.5 text-base text-gray-700">
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
@@ -45,6 +59,14 @@
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
+				<Progress
+					class="my-8"
+					:label="progressLabel"
+					size="md"
+					:interval-count="3"
+					:intervals="true"
+					:value="99"
+				/>
 				<div
 					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
 				>
@@ -122,7 +144,7 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
 import { getPlans, getPlan } from '../data/plans';
 import CardForm from './billing/CardForm.vue';
@@ -133,6 +155,7 @@ export default {
 	name: 'ManageSitePlansDialog',
 	components: {
 		CardForm,
+		Progress,
 		SitePlansCards,
 		BillingDetails,
 		PrepaidCreditsForm,
@@ -208,6 +231,22 @@ export default {
 	computed: {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
+		},
+		showSetupSubscription() {
+			return (
+				!this.$team.doc.payment_mode ||
+				!this.$team.doc.billing_details ||
+				!Object.keys(this.$team.doc.billing_details).length
+			);
+		},
+		progressLabel() {
+			if (this.step === 'site-plans') {
+				return 'Select a plan';
+			} else if (this.step === 'billing-details') {
+				return 'Add billing details';
+			} else if (this.step === 'add-payment-mode') {
+				return 'Add payment mode';
+			}
 		},
 	},
 };
