@@ -1157,7 +1157,12 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_dns_record(self):
-		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
+		domains = frappe.db.get_list(
+			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
+		)
+		for domain in domains:
+			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1], "name")):
+				create_dns_record(doc=self, record_name=domain)
 
 	@frappe.whitelist()
 	def update_dns_record(self, value):

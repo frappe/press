@@ -234,6 +234,12 @@ class SiteMigration(Document):
 		site_domain = frappe.get_doc("Site Domain", domain)
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
+
+		if site_domain.has_root_tls_certificate:
+			return agent.add_domain_to_upstream(
+				server=self.destination_server, site=site_domain.site, domain=site_domain.domain
+			)
+
 		return agent.new_host(site_domain)
 
 	def remove_host_from_source_proxy(self, domain):
