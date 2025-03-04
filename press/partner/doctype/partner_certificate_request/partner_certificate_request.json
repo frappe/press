@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PCR-{YYYY}{MM}-{#####}",
+ "creation": "2025-03-01 11:27:40.991647",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_team",
+  "partner_member_email",
+  "partner_member_name",
+  "course"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "partner_member_email",
+   "fieldtype": "Link",
+   "label": "Partner Member Email",
+   "options": "User"
+  },
+  {
+   "fieldname": "partner_member_name",
+   "fieldtype": "Data",
+   "label": "Partner Member Name"
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Data",
+   "label": "Course"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-03 08:21:45.447099",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Certificate Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

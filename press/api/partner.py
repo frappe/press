@@ -54,6 +54,7 @@ def get_partner_details(partner_email):
 		"Partner",
 		filters={"email": partner_email, "enabled": 1},
 		fields=[
+			"name",
 			"email",
 			"partner_type",
 			"company_name",
@@ -289,7 +290,7 @@ def get_partner_members(partner):
 	return client.get_list(
 		"LMS Certificate",
 		filters={"partner": partner},
-		fields=["member_name", "member_email"],
+		fields=["member_name", "member_email", "course", "version"],
 	)
 
 
