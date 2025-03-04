@@ -17,16 +17,15 @@ export default {
 		title: String,
 		id: {
 			type: String,
-			required: true
+			required: true,
 		},
 		type: {
 			type: String,
-			default: 'info'
-		}
+		},
 	},
 	data() {
 		return {
-			_show: true
+			_show: true,
 		};
 	},
 	components: { AlertBanner },
@@ -36,7 +35,7 @@ export default {
 				if (!this._show) return false;
 
 				const dismissedDate = parseInt(
-					localStorage.getItem(`dismissed-banner-${this.id}`)
+					localStorage.getItem(`dismissed-banner-${this.id}`),
 				);
 				if (!dismissedDate) return true;
 
@@ -50,14 +49,14 @@ export default {
 			},
 			set(value) {
 				this._show = value;
-			}
-		}
+			},
+		},
 	},
 	methods: {
 		dismiss() {
 			this.show = false;
 			localStorage.setItem(`dismissed-banner-${this.id}`, Date.now());
-		}
-	}
+		},
+	},
 };
 </script>

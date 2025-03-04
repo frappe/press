@@ -18,12 +18,17 @@
 				Login
 			</Button>
 		</AlertBanner>
-		<AlertAddPaymentMode
-			v-if="!$team.doc.payment_mode"
+
+		<AlertBanner
+			v-if="$site.doc.current_plan?.is_trial_plan"
 			class="col-span-1 lg:col-span-2"
-			title="Add a payment mode to upgrade your plan"
-			type="info"
-		/>
+			title="Upgrade to a paid plan to continue using your site after the trial period."
+		>
+			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
+				Upgrade
+			</Button>
+		</AlertBanner>
+
 		<DismissableBanner
 			v-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
@@ -48,6 +53,7 @@
 			class="col-span-1 lg:col-span-2"
 			title="Your site is currently on a shared bench group. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
 			:id="$site.name"
+			type="gray"
 		>
 			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
 				Upgrade Plan
@@ -89,10 +95,7 @@
 								</div>
 							</div>
 						</div>
-						<Button
-							@click="showPlanChangeDialog"
-							:disabled="!$team.doc.payment_mode"
-						>
+						<Button @click="showPlanChangeDialog">
 							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
 						</Button>
 					</div>
@@ -275,7 +278,6 @@ import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
 import AlertBanner from './AlertBanner.vue';
 import { trialDays } from '../utils/site';
-import AlertAddPaymentMode from './AlertAddPaymentMode.vue';
 
 export default {
 	name: 'SiteOverview',
@@ -285,7 +287,6 @@ export default {
 		Progress,
 		AlertBanner,
 		DismissableBanner,
-		AlertAddPaymentMode,
 	},
 	data() {
 		return {
