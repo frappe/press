@@ -89,8 +89,12 @@ function onDeactivateSite() {
 	return confirmDialog({
 		title: 'Deactivate Site',
 		message: `
-			Are you sure you want to deactivate this site? The site will go in an inactive state.
-			It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
+			Are you sure you want to deactivate this site?<br><br>
+			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+			The site will go in an <strong>inactive</strong> state.It won't be accessible and background jobs won't run. 
+			<br><br>
+			<div class="text-red-600">You will <strong>still be charged</strong> for it.</div>
+			</div>
 		`,
 		primaryAction: {
 			label: 'Deactivate',
