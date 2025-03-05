@@ -32,7 +32,6 @@
 				>
 					{{ subtitle }}
 				</p>
-				<div v-else class="h-12"></div>
 				<slot></slot>
 			</div>
 			<slot name="footer"></slot>
