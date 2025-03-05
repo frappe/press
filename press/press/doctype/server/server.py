@@ -94,6 +94,7 @@ class BaseServer(Document, TagHelpers):
 			{"primary": doc.database_server, "is_replication_setup": 1},
 			"name",
 		)
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
 

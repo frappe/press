@@ -411,7 +411,7 @@ export default {
 				},
 				{
 					label: 'Owned by',
-					value: this.$appServer.doc.team,
+					value: this.$appServer.doc.owner_email || this.$appServer.doc.team,
 				},
 				{
 					label: 'Created by',
