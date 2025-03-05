@@ -3,8 +3,61 @@
 		<LoginBox title="Log in to your site on Frappe Cloud" :subtitle="subtitle">
 			<template v-slot:default>
 				<div>
+					<div v-if="sitePrePicked">
+						<div v-if="loginError">
+							<div class="flex items-center justify-center space-x-2 text-base">
+								<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+								<p>
+									Something went wrong while attempting to log in to your site
+								</p>
+							</div>
+							<div class="mx-4 mt-4 space-x-4">
+								<Button
+									label="Try again"
+									icon-left="refresh-cw"
+									@click="loginToSite(pickedSite)"
+								/>
+								<Button
+									label="View your sites"
+									icon-left="list"
+									:route="{
+										name: 'Site Login',
+									}"
+								/>
+							</div>
+						</div>
+						<div
+							v-else-if="isPickedSiteValid"
+							class="mb-8 mt-16 flex flex-col items-center justify-center space-x-2 text-base"
+						>
+							<div class="flex items-center justify-center space-x-2 text-base">
+								<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
+								<div>
+									<p>You are about to log in to your site</p>
+									<span class="font-semibold">{{ pickedSiteDomain }}</span>
+								</div>
+							</div>
+							<div class="mx-4 mt-8 space-x-4">
+								<Button
+									label="Log in"
+									icon-left="log-in"
+									:loading="login.loading"
+									@click="loginToSite(pickedSite)"
+								/>
+								<!-- <Button
+									label="View other sites"
+									icon-left="list"
+									:route="{
+										name: 'Site Login',
+									}"
+								/> -->
+							</div>
+						</div>
+					</div>
 					<div
-						v-if="$session.loading || isCookieValid.loading || sites.loading"
+						v-else-if="
+							$session.loading || isCookieValid.loading || sites.loading
+						"
 						class="mx-auto flex items-center justify-center space-x-2 text-base"
 					>
 						<LoadingText />
@@ -131,13 +184,19 @@ import LoginBox from '../components/auth/LoginBox.vue';
 import { getToastErrorMessage } from '../utils/toast';
 import { trialDays } from '../utils/site';
 import { userCurrency } from '../utils/format';
+import { useRoute } from 'vue-router';
 
 const team = inject('team');
 const session = inject('session');
 
+const route = useRoute();
+const pickedSite = route.query.site;
+const isPickedSiteValid = ref(false);
+
 const email = ref(localStorage.getItem('product_site_user') || '');
 const otp = ref('');
 const showOTPField = ref(false);
+const loginError = ref(false);
 
 const goBack = () => {
 	sites.reset();
@@ -146,7 +205,7 @@ const goBack = () => {
 
 const isCookieValid = createResource({
 	url: 'press.api.site_login.check_session_id',
-	auto: true,
+	auto: !session.user,
 	onSuccess: (session_user_email) => {
 		if (session_user_email) {
 			email.value = session_user_email;
@@ -164,12 +223,23 @@ const sites = createResource({
 	params: {
 		user: email.value || session.user,
 	},
+	onSuccess: (data) => {
+		if (pickedSite) {
+			if (
+				data.find((site) => site.name === pickedSite) ||
+				data.find((site) => site.host_name === pickedSite)
+			) {
+				isPickedSiteValid.value = true;
+			}
+		}
+	},
 });
 
 const login = createResource({
 	url: 'press.api.site_login.login_to_site',
 	onSuccess: (url) => {
-		window.open(url, '_blank');
+		const newTab = pickedSite ? '_self' : '_blank';
+		window.open(url, newTab);
 	},
 });
 
@@ -179,17 +249,27 @@ function loginToSite(siteName) {
 		return;
 	}
 
-	toast.promise(
+	// avoid toast if user is coming from their site to login
+	if (pickedSite)
 		login.submit({
 			email: email.value || session.user,
 			site: siteName,
-		}),
-		{
-			loading: 'Logging in ...',
-			success: 'Logged in',
-			error: (e) => getToastErrorMessage(e),
-		},
-	);
+		});
+	else
+		toast.promise(
+			login.submit({
+				email: email.value || session.user,
+				site: siteName,
+			}),
+			{
+				loading: 'Logging in ...',
+				success: 'Logged in',
+				error: (e) => {
+					loginError.value = true;
+					getToastErrorMessage(e);
+				},
+			},
+		);
 }
 
 const sendOTPMethod = createResource({
@@ -262,9 +342,25 @@ function planTitle(site) {
 }
 
 const subtitle = computed(() => {
-	if (sites.fetched && sites.data.length !== 0)
+	if (pickedSite && sites.fetched && sites.data.length !== 0) return ``;
+	else if (sites.fetched && sites.data.length !== 0)
 		return `Pick a site to log in to as ${email.value || session.user}`;
 	else if (!sites.fetched) return 'Enter your email to access your site';
 	else return '';
+});
+
+const sitePrePicked = computed(() => {
+	if (pickedSite && sites.fetched && sites.data.length !== 0) {
+		return sites.data.find(
+			(site) => site.name === pickedSite || site.host_name === pickedSite,
+		);
+	}
+	return false;
+});
+
+const pickedSiteDomain = computed(() => {
+	if (sitePrePicked.value)
+		return sitePrePicked.value.host_name || sitePrePicked.value.name;
+	return '';
 });
 </script>

@@ -85,7 +85,6 @@ def get_product_sites_of_user(user: str):
 		filters={"name": ["in", sites], "status": "Active"},
 		fields=[
 			"name",
-			"label",
 			"trial_end_date",
 			"plan.plan_title as plan_title",
 			"plan.price_usd as price_usd",
