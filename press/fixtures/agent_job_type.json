@@ -1699,7 +1699,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-01-19 22:57:23.072792",
+  "modified": "2025-03-05 22:57:23.072792",
   "name": "Physical Restore Database",
   "request_method": "POST",
   "request_path": "/database/physical-restore",
@@ -1741,10 +1741,10 @@
     "step_name": "Copying MyISAM Table Files"
    },
    {
-    "step_name": "Validate And Fix Tables"
+    "step_name": "Unlock All Tables"
    },
    {
-    "step_name": "Unlock All Tables"
+    "step_name": "Validate And Fix Tables"
    }
   ]
  },
