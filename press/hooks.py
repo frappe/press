@@ -343,7 +343,6 @@ override_doctype_class = {"User": "press.overrides.CustomUser"}
 
 on_session_creation = "press.overrides.on_session_creation"
 # on_logout = "press.overrides.on_logout"
-on_login = "press.overrides.on_login"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
