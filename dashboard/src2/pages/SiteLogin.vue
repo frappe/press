@@ -29,7 +29,7 @@
 						</div>
 						<div
 							v-else-if="isPickedSiteValid"
-							class="mb-8 mt-16 flex flex-col items-center justify-center space-x-2 text-base"
+							class="mt-8 flex flex-col items-center justify-center space-x-2 text-base"
 						>
 							<div class="flex items-center justify-center space-x-2 text-base">
 								<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
@@ -47,6 +47,32 @@
 									@click="loginToSite(pickedSite)"
 								/>
 							</div>
+						</div>
+					</div>
+					<div v-else-if="pickedSite">
+						<div
+							class="mt-8 flex items-center justify-center space-x-2 text-base"
+						>
+							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+							<div class="flex flex-col gap-2">
+								<p>
+									{{ email || session.user }} is not a user of the site
+									<span class="font-semibold">{{ pickedSite }}</span>
+								</p>
+							</div>
+						</div>
+						<div class="mt-8 flex w-full justify-center space-x-4">
+							<Button
+								label="View your sites"
+								icon-left="list"
+								@click="
+									() => {
+										$router.push({
+											name: 'Site Login',
+										});
+									}
+								"
+							/>
 						</div>
 					</div>
 					<div
@@ -185,7 +211,7 @@ const team = inject('team');
 const session = inject('session');
 
 const route = useRoute();
-const pickedSite = route.query.site;
+const pickedSite = computed(() => route.query.site);
 const isPickedSiteValid = ref(false);
 
 const email = ref(localStorage.getItem('product_site_user') || '');
@@ -219,10 +245,10 @@ const sites = createResource({
 		user: email.value || session.user,
 	},
 	onSuccess: (data) => {
-		if (pickedSite) {
+		if (pickedSite.value) {
 			if (
-				data.find((site) => site.name === pickedSite) ||
-				data.find((site) => site.host_name === pickedSite)
+				data.find((site) => site.name === pickedSite.value) ||
+				data.find((site) => site.host_name === pickedSite.value)
 			) {
 				isPickedSiteValid.value = true;
 			}
@@ -233,7 +259,7 @@ const sites = createResource({
 const login = createResource({
 	url: 'press.api.site_login.login_to_site',
 	onSuccess: (url) => {
-		const newTab = pickedSite ? '_self' : '_blank';
+		const newTab = pickedSite.value ? '_self' : '_blank';
 		window.open(url, newTab);
 	},
 });
@@ -245,7 +271,7 @@ function loginToSite(siteName) {
 	}
 
 	// avoid toast if user is coming from their site to login
-	if (pickedSite)
+	if (pickedSite.value)
 		login.submit({
 			email: email.value || session.user,
 			site: siteName,
@@ -337,7 +363,7 @@ function planTitle(site) {
 }
 
 const subtitle = computed(() => {
-	if (pickedSite && sites.fetched && sites.data.length !== 0) return ``;
+	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return ``;
 	else if (sites.fetched && sites.data.length !== 0)
 		return `Pick a site to log in to as ${email.value || session.user}`;
 	else if (!sites.fetched) return 'Enter your email to access your site';
@@ -345,9 +371,19 @@ const subtitle = computed(() => {
 });
 
 const sitePrePicked = computed(() => {
-	if (pickedSite && sites.fetched && sites.data.length !== 0) {
+	if (pickedSite.value && sites.fetched && sites.data.length !== 0) {
+		console.log(
+			sites.data,
+			pickedSite.value,
+			sites.data.find(
+				(site) =>
+					site.name === pickedSite.value || site.host_name === pickedSite.value,
+			),
+		);
+
 		return sites.data.find(
-			(site) => site.name === pickedSite || site.host_name === pickedSite,
+			(site) =>
+				site.name === pickedSite.value || site.host_name === pickedSite.value,
 		);
 	}
 	return false;
