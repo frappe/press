@@ -42,6 +42,7 @@
 								<Button
 									label="Log in"
 									icon-left="log-in"
+									variant="solid"
 									:loading="login.loading"
 									@click="loginToSite(pickedSite)"
 								/>
