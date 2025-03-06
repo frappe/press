@@ -263,7 +263,8 @@ class RequestGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", json__request__path=list(map(lambda x: x["path"], datasets)))
+		for path in list(map(lambda x: x["path"], datasets)):
+			self.search = self.search.exclude("match_phrase", json__request__path=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -289,7 +290,8 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", json__job__method=list(map(lambda x: x["path"], datasets)))
+		for path in list(map(lambda x: x["path"], datasets)):
+			self.search = self.search.exclude("match_phrase", json__job__method=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -326,7 +328,8 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return A("avg", field="event.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", mysql__slowlog__query=list(map(lambda x: x["path"], datasets)))
+		for path in list(map(lambda x: x["path"], datasets)):
+			self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
