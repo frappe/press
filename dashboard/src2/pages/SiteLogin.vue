@@ -49,32 +49,6 @@
 							</div>
 						</div>
 					</div>
-					<div v-else-if="pickedSite">
-						<div
-							class="mt-8 flex items-center justify-center space-x-2 text-base"
-						>
-							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
-							<div class="flex flex-col gap-2">
-								<p>
-									{{ email || session.user }} is not a user of the site
-									<span class="font-semibold">{{ pickedSite }}</span>
-								</p>
-							</div>
-						</div>
-						<div class="mt-8 flex w-full justify-center space-x-4">
-							<Button
-								label="View your sites"
-								icon-left="list"
-								@click="
-									() => {
-										$router.push({
-											name: 'Site Login',
-										});
-									}
-								"
-							/>
-						</div>
-					</div>
 					<div
 						v-else-if="
 							$session.loading || isCookieValid.loading || sites.loading
@@ -131,6 +105,32 @@
 							@click="sendOTP"
 						/>
 					</form>
+					<div v-else-if="pickedSite">
+						<div
+							class="mt-8 flex items-center justify-center space-x-2 text-base"
+						>
+							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+							<div class="flex flex-col gap-2">
+								<p>
+									{{ email || session.user }} is not a user of the site
+									<span class="font-semibold">{{ pickedSite }}</span>
+								</p>
+							</div>
+						</div>
+						<div class="mt-8 flex w-full justify-center space-x-4">
+							<Button
+								label="View your sites"
+								icon-left="list"
+								@click="
+									() => {
+										$router.push({
+											name: 'Site Login',
+										});
+									}
+								"
+							/>
+						</div>
+					</div>
 					<div v-else class="mt-10">
 						<div v-if="sites.data.length === 0">
 							<div class="text-center text-base leading-6 text-gray-700">
@@ -363,24 +363,19 @@ function planTitle(site) {
 }
 
 const subtitle = computed(() => {
-	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return ``;
+	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return '';
 	else if (sites.fetched && sites.data.length !== 0)
 		return `Pick a site to log in to as ${email.value || session.user}`;
-	else if (!sites.fetched) return 'Enter your email to access your site';
+	else if (
+		!sites.fetched &&
+		!(sites.loading || isCookieValid.loading || session.loading)
+	)
+		return 'Enter your email to access your site';
 	else return '';
 });
 
 const sitePrePicked = computed(() => {
 	if (pickedSite.value && sites.fetched && sites.data.length !== 0) {
-		console.log(
-			sites.data,
-			pickedSite.value,
-			sites.data.find(
-				(site) =>
-					site.name === pickedSite.value || site.host_name === pickedSite.value,
-			),
-		);
-
 		return sites.data.find(
 			(site) =>
 				site.name === pickedSite.value || site.host_name === pickedSite.value,
