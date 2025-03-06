@@ -314,7 +314,7 @@ function payUnpaidInvoices() {
 			});
 		}
 	} else {
-		let invoice = _unpaidInvoices;
+		let invoice = _unpaidInvoices[0];
 		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
 			window.open(
 				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
@@ -340,7 +340,7 @@ function updatePaymentMode(mode) {
 	} else if (mode === 'Card' && !team.doc.payment_method) {
 		showMessage.value = true;
 		showAddCardDialog.value = true;
-	} else if (mode === 'Paid By Partner') {
+	} else if (mode === 'Paid By Partner' && Boolean(unpaidInvoices.data.length > 0)) {
 		if (unpaidInvoices.data) {
 			payUnpaidInvoices();
 			return;
