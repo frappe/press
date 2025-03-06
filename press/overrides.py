@@ -78,10 +78,12 @@ def on_session_creation():
 
 def on_login(login_manager):
 	user = login_manager.user
-	if frappe.db.get_value("User 2FA", {"user": user, "enabled": 1}) and not frappe.db.get_value(
-		"User 2FA",
-		{"user": user, "enabled": 1, "last_verified_at": (">", frappe.utils.add_to_date(None, seconds=-30))},
-	):
+	has_2fa = frappe.db.get_value(
+		"User 2FA", {"user": user, "enabled": 1}, ["last_verified_at"], as_dict=True
+	)
+	if (has_2fa and not has_2fa.get("last_verified_at")) or has_2fa.get(
+		"last_verified_at"
+	) < frappe.utils.add_to_date(None, seconds=-10):
 		frappe.throw("Please re-login to verify your identity.")
 
 
