@@ -1135,7 +1135,7 @@ def get_user_ssh_keys():
 
 
 @frappe.whitelist(allow_guest=True)
-# @rate_limit(limit=5, seconds=60 * 60)
+@rate_limit(limit=5, seconds=60 * 60)
 def is_2fa_enabled(user):
 	return frappe.db.get_value("User 2FA", user, "enabled")
 
