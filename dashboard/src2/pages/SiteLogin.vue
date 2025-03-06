@@ -15,6 +15,7 @@
 								<Button
 									label="Try again"
 									icon-left="refresh-cw"
+									:loading="login.loading"
 									@click="loginToSite(pickedSite)"
 								/>
 								<Button
@@ -44,13 +45,6 @@
 									:loading="login.loading"
 									@click="loginToSite(pickedSite)"
 								/>
-								<!-- <Button
-									label="View other sites"
-									icon-left="list"
-									:route="{
-										name: 'Site Login',
-									}"
-								/> -->
 							</div>
 						</div>
 					</div>
