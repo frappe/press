@@ -1146,7 +1146,9 @@ def verify_2fa(user, totp_code):
 	user_totp_secret = get_decrypted_password("User 2FA", user, "totp_secret")
 	verified = pyotp.TOTP(user_totp_secret).verify(totp_code)
 
-	if not verified:
+	if verified:
+		frappe.db.set_value("User 2FA", user, "last_verified_at", frappe.utils.now())
+	else:
 		frappe.throw("Invalid 2FA code", frappe.AuthenticationError)
 
 	return verified
