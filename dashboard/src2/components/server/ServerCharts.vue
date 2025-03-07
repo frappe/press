@@ -324,7 +324,7 @@
 			>
 				<template #action>
 					<TabButtons
-						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsFrequencyType"
 					/>
 				</template>
@@ -348,7 +348,7 @@
 			>
 				<template #action>
 					<TabButtons
-						:buttons="[{ label: 'Non-normalized' }, { label: 'Normalized' }]"
+						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsDurationType"
 					/>
 				</template>
@@ -387,8 +387,8 @@ export default {
 			duration: '1 Hour',
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
-			slowLogsDurationType: 'Non-normalized',
-			slowLogsFrequencyType: 'Non-normalized',
+			slowLogsDurationType: 'Denormalized',
+			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
 			chartColors: [
@@ -522,21 +522,6 @@ export default {
 					timezone: this.localTimezone,
 					duration: this.duration,
 					normalize: this.slowLogsFrequencyType === 'Normalized',
-				},
-				auto:
-					this.showAdvancedAnalytics &&
-					!this.isServerType('Application Server'),
-			};
-		},
-		normalizedSlowLogsCount() {
-			return {
-				url: 'press.api.server.get_slow_logs_by_site',
-				params: {
-					name: this.chosenServer,
-					query: 'count',
-					timezone: this.localTimezone,
-					duration: this.duration,
-					normalize: true,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
