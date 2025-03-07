@@ -28,4 +28,12 @@ class PartnerCertificate(Document):
 		version: DF.Data | None
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"certificate_link",
+		"course",
+		"version",
+		"issue_date",
+		"partner_member_name",
+		"partner_member_email",
+		"free",
+	)
