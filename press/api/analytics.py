@@ -66,6 +66,15 @@ class AggType(Enum):
 	AVERAGE_DURATION = "average_duration"
 
 
+TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
+	"1h": (60 * 60, 60),
+	"6h": (6 * 60 * 60, 5 * 60),
+	"24h": (24 * 60 * 60, 30 * 60),
+	"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
+	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+}
+
+
 class StackedGroupByChart:
 	search: Search
 	to_s_divisor: float = 1e6
@@ -355,13 +364,7 @@ class SlowLogGroupByChart(StackedGroupByChart):
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
-	timespan, timegrain = {
-		"1h": (60 * 60, 60),
-		"6h": (6 * 60 * 60, 5 * 60),
-		"24h": (24 * 60 * 60, 30 * 60),
-		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
-	}[duration]
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
@@ -380,13 +383,7 @@ def get(name, timezone, duration="7d"):
 
 @frappe.whitelist()
 def get_advanced_analytics(name, timezone, duration="7d"):
-	timespan, timegrain = {
-		"1h": (60 * 60, 60),
-		"6h": (6 * 60 * 60, 5 * 60),
-		"24h": (24 * 60 * 60, 30 * 60),
-		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
-	}[duration]
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
@@ -530,6 +527,15 @@ def get_request_by_(
 
 def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
 	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+
+
+@frappe.whitelist()
+def get_slow_logs_by_query(
+	name: str, agg_type: str, timezone: str, duration: str = "24h", normalize: bool = False
+):
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+
+	return get_slow_logs(name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize)
 
 
 def get_slow_logs(
