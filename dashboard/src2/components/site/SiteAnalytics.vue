@@ -199,16 +199,18 @@
 
 			<AnalyticsCard class="sm:col-span-2" title="Frequent Slow Queries">
 				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
 					<TabButtons
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsFrequencyType"
 					/>
-					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
-						:to="{ name: 'Site Performance Slow Queries' }"
-					>
-						Slow Queries Reports →
-					</router-link>
 				</template>
 				<BarChart
 					:key="slowLogsCountData"
@@ -223,6 +225,14 @@
 
 			<AnalyticsCard class="sm:col-span-2" title="Top Slow Queries">
 				<template #action>
+					<Tooltip text="Show Detailed Reports">
+						<router-link
+							class="ml-2 mr-auto text-base text-gray-600 hover:text-gray-700"
+							:to="{ name: 'Site Performance Slow Queries' }"
+						>
+							→
+						</router-link>
+					</Tooltip>
 					<TabButtons
 						:buttons="[{ label: 'Denormalized' }, { label: 'Normalized' }]"
 						v-model="slowLogsDurationType"
