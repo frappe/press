@@ -665,12 +665,6 @@ def process_required_job_callbacks(job):
 		process_backup_site_job_update(job)
 
 
-def job_matches_site_migration(job, site_migration_name: str):
-	site_migration = SiteMigration("Site Migration", site_migration_name)
-	next = site_migration.next_step
-	return job.name == next.step_job if next else False
-
-
 def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration = SiteMigration("Site Migration", site_migration_name)
 	if job.name != site_migration.next_step.step_job:
