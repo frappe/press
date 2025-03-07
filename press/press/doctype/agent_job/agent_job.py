@@ -28,6 +28,7 @@ from press.press.doctype.agent_job_type.agent_job_type import (
 from press.press.doctype.site_database_user.site_database_user import SiteDatabaseUser
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
+	job_matches_site_migration,
 	process_site_migration_job_update,
 )
 from press.utils import has_role, log_error, timer
@@ -1004,7 +1005,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		)
 
 		site_migration = get_ongoing_migration(job.site)
-		if site_migration:
+		if site_migration and job_matches_site_migration(job, site_migration):
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
