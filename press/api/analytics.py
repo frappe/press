@@ -272,18 +272,22 @@ class RequestGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		for path in list(map(lambda x: x["path"], datasets)):
-			self.search = self.search.exclude("match_phrase", json__request__path=path)
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__request__path=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		self.search = self.search.filter("match_phrase", json__transaction_type="request").exclude(
 			"match_phrase", json__request__path="/api/method/ping"
 		)
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
 			self.group_by_field = "json.request.path"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
 			self.group_by_field = "json.site"
 
@@ -299,16 +303,20 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		for path in list(map(lambda x: x["path"], datasets)):
-			self.search = self.search.exclude("match_phrase", json__job__method=path)
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__job__method=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		self.search = self.search.filter("match_phrase", json__transaction_type="job")
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
 			self.group_by_field = "json.job.method"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
 			self.group_by_field = "json.site"
 
@@ -337,8 +345,12 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return A("avg", field="event.duration")
 
 	def exclude_top_k_data(self, datasets):
-		for path in list(map(lambda x: x["path"], datasets)):
-			self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", mysql__slowlog__current_user=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -346,12 +358,12 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			"wildcard",
 			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
 		)
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.database_name = frappe.db.get_value("Site", self.name, "database_name")
 			if self.database_name:
 				self.search = self.search.filter("match", mysql__slowlog__current_user=self.database_name)
 			self.group_by_field = "mysql.slowlog.query"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
 			self.group_by_field = "mysql.slowlog.current_user"
 
