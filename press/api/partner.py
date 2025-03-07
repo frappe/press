@@ -313,6 +313,20 @@ def remove_partner():
 
 
 @frappe.whitelist()
+def apply_for_certificate(member_name, certificate_type):
+	team = get_current_team(get_doc=True)
+	doc = frappe.new_doc("Partner Certificate Request")
+	doc.update(
+		{
+			"partner_team": team.name,
+			"partner_member_name": member_name,
+			"course": certificate_type,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
 def get_local_payment_setup():
 	team = get_current_team()
 	data = frappe._dict()
