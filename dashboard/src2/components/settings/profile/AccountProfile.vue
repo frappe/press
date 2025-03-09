@@ -139,7 +139,7 @@
 						</li>
 						<li>Your account billing will be stopped</li>
 					</ul>
-					You can enable your account later anytime. Do you want to continue?
+					You can log in later to enable your account. Do you want to continue?
 				</div>
 				<FormControl
 					v-if="user.is_2fa_enabled"
@@ -348,7 +348,9 @@ export default {
 							title: 'Clear Unpaid Invoice',
 							message: `You have an unpaid invoice of ${
 								invoice.currency === 'INR' ? '₹' : '$'
-							} ${invoice.amount_due}. Please clear it before disabling the account.`,
+							} ${
+								invoice.amount_due
+							}. Please clear it before disabling the account.`,
 							primaryAction: {
 								label: 'Settle it now',
 								variant: 'solid',
