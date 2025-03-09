@@ -215,7 +215,7 @@
 										query: { ...$route.query, use_otp: 1 },
 									}"
 								>
-									Continue with Email Verification <Cc:ie></Cc:ie>ode
+									Continue with Email Verification Code
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
