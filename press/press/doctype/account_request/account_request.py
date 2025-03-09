@@ -146,6 +146,8 @@ class AccountRequest(Document):
 
 	def reset_otp(self):
 		self.otp = generate_otp()
+		if frappe.conf.developer_mode:
+			self.otp = 111111
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()

@@ -79,15 +79,6 @@
 									autocomplete="family-name"
 									required
 								/>
-								<FormControl
-									v-if="!oauthDomain"
-									label="Password"
-									type="password"
-									v-model="password"
-									name="password"
-									autocomplete="new-password"
-									required
-								/>
 							</template>
 							<FormControl
 								type="select"
@@ -165,7 +156,6 @@ export default {
 			email: null,
 			firstName: null,
 			lastName: null,
-			password: null,
 			errorMessage: null,
 			userExists: null,
 			twoFactorCode: null,
@@ -217,7 +207,6 @@ export default {
 				url: 'press.api.account.setup_account',
 				params: {
 					key: this.requestKey,
-					password: this.password,
 					first_name: this.firstName,
 					last_name: this.lastName,
 					country: this.country,

@@ -115,6 +115,7 @@ def verify_otp(email: str, otp: str):
 	"""
 	Verify OTP
 	"""
+	from frappe.auth import get_login_attempt_tracker
 
 	session = frappe.db.get_value(
 		"Site User Session", {"user": email}, ["name", "session_id", "otp", "otp_generated_at"], as_dict=True
@@ -128,10 +129,14 @@ def verify_otp(email: str, otp: str):
 	if (frappe.utils.now_datetime() - session.otp_generated_at).seconds > 300:
 		return frappe.throw("OTP is expired")
 
+	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
+
 	if session.otp != otp:
+		ip_tracker and ip_tracker.add_failure_attempt()
 		return frappe.throw("Invalid OTP")
 
 	frappe.db.set_value("Site User Session", session.name, {"otp": None, "verified": 1})
+	ip_tracker and ip_tracker.add_success_attempt()
 
 	five_days_in_seconds = 5 * 24 * 60 * 60
 	return frappe.local.cookie_manager.set_cookie(
