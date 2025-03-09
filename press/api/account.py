@@ -174,9 +174,6 @@ def setup_account(  # noqa: C901
 		if not first_name:
 			frappe.throw("First Name is required")
 
-		if not password and not (oauth_signup or oauth_domain):
-			frappe.throw("Password is required")
-
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
 
