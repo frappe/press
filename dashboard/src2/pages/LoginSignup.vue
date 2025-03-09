@@ -143,7 +143,7 @@
 								</div>
 								<Button
 									v-else-if="!otpSent"
-									class="mt-2"
+									class="mt-4"
 									:loading="$resources.sendOTP.loading"
 									variant="solid"
 									@click="$resources.sendOTP.submit()"
@@ -175,7 +175,7 @@
 									required
 								/>
 								<Button
-									class="mt-2"
+									class="mt-4"
 									:loading="$resources.signup.loading"
 									variant="solid"
 								>
