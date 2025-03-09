@@ -117,18 +117,33 @@
 								>
 									Log In
 								</Button>
-								<Button
-									v-else-if="useOTP && otpSent"
-									class="mt-4"
-									:loading="$resources.verifyOTPAndLogin.loading"
-									variant="solid"
-									@click="verifyOTPAndLogin"
-								>
-									Submit Verification Code
-								</Button>
+								<div class="mt-4 space-y-2" v-else-if="useOTP && otpSent">
+									<Button
+										class="w-full"
+										:loading="$resources.verifyOTPAndLogin.loading"
+										variant="solid"
+										@click="verifyOTPAndLogin"
+									>
+										Submit Verification Code
+									</Button>
+									<Button
+										class="w-full"
+										:loading="$resources.sendOTP.loading"
+										variant="outline"
+										:disabled="otpResendCountdown > 0"
+										@click="$resources.sendOTP.submit()"
+									>
+										Resend Verification Code
+										{{
+											otpResendCountdown > 0
+												? `in ${otpResendCountdown} seconds`
+												: ''
+										}}
+									</Button>
+								</div>
 								<Button
 									v-else-if="!otpSent"
-									class="mt-4"
+									class="mt-2"
 									:loading="$resources.sendOTP.loading"
 									variant="solid"
 									@click="$resources.sendOTP.submit()"
@@ -185,17 +200,16 @@
 							</div>
 
 							<div class="flex flex-col gap-2">
-								<Button
-									v-if="useOTP"
+								<!-- <Button
 									:route="{
 										name: 'Login',
 										query: { ...$route.query, use_otp: undefined },
 									}"
 								>
 									Continue with Password
-								</Button>
+								</Button> -->
 								<Button
-									v-else
+									v-if="!useOTP"
 									:route="{
 										name: 'Login',
 										query: { ...$route.query, use_otp: 1 },
@@ -269,8 +283,14 @@
 								variant="outline"
 								:loading="$resources.resendOTP.loading"
 								@click="$resources.resendOTP.submit()"
+								:disabled="otpResendCountdown > 0"
 							>
-								Didn't receive verification code? Resend
+								Resend Verification Code
+								{{
+									otpResendCountdown > 0
+										? `in ${otpResendCountdown} seconds`
+										: ''
+								}}
 							</Button>
 						</form>
 						<div class="mt-6 text-center">
@@ -346,11 +366,17 @@ export default {
 			otpSent: false,
 			twoFactorCode: '',
 			password: null,
+			otpResendCountdown: 0,
 			resetPasswordEmailSent: false,
 		};
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		setInterval(() => {
+			if (this.otpResendCountdown > 0) {
+				this.otpResendCountdown -= 1;
+			}
+		}, 1000);
 	},
 	watch: {
 		email() {
@@ -369,6 +395,7 @@ export default {
 				onSuccess(account_request) {
 					this.account_request = account_request;
 					this.otpRequested = true;
+					this.otpResendCountdown = 30;
 					toast.success('Verification code sent to your email');
 				},
 				onError: (error) => {
@@ -419,6 +446,7 @@ export default {
 				},
 				onSuccess() {
 					this.otp = '';
+					this.otpResendCountdown = 30;
 					toast.success('Verification code sent to your email');
 				},
 				onError(err) {
@@ -436,6 +464,7 @@ export default {
 				},
 				onSuccess() {
 					this.otpSent = true;
+					this.otpResendCountdown = 30;
 					toast.success('Verification code sent to your email');
 				},
 				onError(err) {
