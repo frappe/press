@@ -24,16 +24,11 @@
 					type="text"
 					v-model="billingInformation.cardHolderName"
 				/>
-				<!-- <AddressForm
-					ref="addressFormRef"
-					class="mt-5"
-					v-model:address="billingInformation"
-					@success="console.log('Address form submitted')"
-				/> -->
 				<NewAddressForm
 					ref="addressFormRef"
 					class="mt-5"
 					v-model="billingInformation"
+					:disable-form="props.disableAddressForm"
 					@success="console.log('Address form submitted')"
 				/>
 			</div>
@@ -99,6 +94,9 @@ import { ref, reactive, computed, inject, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 
 const emit = defineEmits(['success']);
+const props = defineProps({
+	disableAddressForm: { type: Boolean, default: true },
+});
 
 const team = inject('team');
 

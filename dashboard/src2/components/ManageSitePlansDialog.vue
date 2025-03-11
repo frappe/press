@@ -113,7 +113,11 @@
 					</div>
 				</div>
 
-				<CardForm v-if="isAutomatedBilling" @success="paymentModeAdded" />
+				<CardForm
+					v-if="isAutomatedBilling"
+					@success="paymentModeAdded"
+					:showAddressForm="false"
+				/>
 				<PrepaidCreditsForm
 					v-else
 					:minimumAmount="

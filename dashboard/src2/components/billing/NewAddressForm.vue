@@ -14,6 +14,7 @@
 						:type="getInputType(field)"
 						:name="field.fieldname"
 						:options="field.options"
+						:disabled="props.disableForm"
 						:required="field.required"
 					/>
 				</div>
@@ -22,6 +23,7 @@
 				<FormControl
 					label="I have GSTIN"
 					type="checkbox"
+					:disabled="props.disableForm"
 					v-model="gstApplicable"
 				/>
 				<FormControl
@@ -29,6 +31,7 @@
 					class="mt-5"
 					label="GSTIN"
 					type="text"
+					:disabled="props.disableForm"
 					v-model="billingInformation.gstin"
 				/>
 			</div>
@@ -46,6 +49,9 @@ const emit = defineEmits(['success']);
 const team = inject('team');
 
 const billingInformation = defineModel();
+const props = defineProps({
+	disableForm: { type: Boolean, default: false },
+});
 
 const updateBillingInformation = createResource({
 	url: 'press.api.account.update_billing_information',
@@ -59,21 +65,21 @@ const updateBillingInformation = createResource({
 	onSuccess: () => {
 		toast.success('Billing information updated');
 		emit('success');
-	}
+	},
 });
 
 const gstApplicable = ref(false);
 
 watch(
 	() => billingInformation.value.gstin,
-	gstin => {
+	(gstin) => {
 		gstApplicable.value = gstin && gstin !== 'Not Applicable';
-	}
+	},
 );
 
 async function validate() {
 	// validate mandatory fields
-	for (let field of sections.value.flatMap(s => s.fields)) {
+	for (let field of sections.value.flatMap((s) => s.fields)) {
 		if (field.required && !billingInformation.value[field.fieldname]) {
 			return `${field.label} is required`;
 		}
@@ -124,7 +130,7 @@ const _indianStates = [
 	'Tripura',
 	'Uttar Pradesh',
 	'Uttarakhand',
-	'West Bengal'
+	'West Bengal',
 ];
 
 const _countryList = createResource({
@@ -134,25 +140,25 @@ const _countryList = createResource({
 	onSuccess: () => {
 		let userCountry = team.doc?.country;
 		if (userCountry) {
-			let country = countryList.value?.find(d => d.label === userCountry);
+			let country = countryList.value?.find((d) => d.label === userCountry);
 			if (country) {
 				billingInformation.value.country = country.value;
 			}
 		}
-	}
+	},
 });
 
 const countryList = computed(() => {
-	return (_countryList.data || []).map(d => ({
+	return (_countryList.data || []).map((d) => ({
 		label: d.name,
-		value: d.name
+		value: d.name,
 	}));
 });
 
 const indianStates = computed(() => {
-	return _indianStates.map(state => ({
+	return _indianStates.map((state) => ({
 		label: state,
-		value: state
+		value: state,
 	}));
 });
 
@@ -167,15 +173,15 @@ const sections = computed(() => {
 					label: 'Country',
 					fieldname: 'country',
 					options: countryList.value,
-					required: true
+					required: true,
 				},
 				{
 					fieldtype: 'Data',
 					label: 'City',
 					fieldname: 'city',
-					required: true
-				}
-			]
+					required: true,
+				},
+			],
 		},
 		{
 			name: 'Address',
@@ -185,9 +191,9 @@ const sections = computed(() => {
 					fieldtype: 'Data',
 					label: 'Address',
 					fieldname: 'address',
-					required: true
-				}
-			]
+					required: true,
+				},
+			],
 		},
 		{
 			name: 'State and Postal Code',
@@ -202,16 +208,16 @@ const sections = computed(() => {
 					options:
 						billingInformation.value.country === 'India'
 							? indianStates.value
-							: null
+							: null,
 				},
 				{
 					fieldtype: 'Data',
 					label: 'Postal Code',
 					fieldname: 'postal_code',
-					required: true
-				}
-			]
-		}
+					required: true,
+				},
+			],
+		},
 	];
 });
 
@@ -223,13 +229,13 @@ function getInputType(field) {
 		Check: 'checkbox',
 		Password: 'password',
 		Text: 'textarea',
-		Date: 'date'
+		Date: 'date',
 	}[field.fieldtype || 'Data'];
 }
 
 const _validateGST = createResource({
 	url: 'press.api.billing.validate_gst',
-	params: { address: billingInformation.value }
+	params: { address: billingInformation.value },
 });
 
 async function validateGST() {
