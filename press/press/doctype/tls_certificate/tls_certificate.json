@@ -20,8 +20,8 @@
   "section_break_10",
   "decoded_certificate",
   "certificate",
-  "full_chain",
   "intermediate_chain",
+  "full_chain",
   "private_key",
   "section_break_cvcg",
   "error",
@@ -104,6 +104,7 @@
    "hide_border": 1
   },
   {
+   "description": "Only Domain\u2019s Certificate",
    "fieldname": "certificate",
    "fieldtype": "Code",
    "label": "Certificate",
@@ -118,6 +119,7 @@
    "read_only_depends_on": "eval: doc.provider == \"Let's Encrypt\""
   },
   {
+   "description": "Chain certificate to establish trust (Intermediate + Trust chain for non lets encrypt certificates)",
    "fieldname": "intermediate_chain",
    "fieldtype": "Code",
    "label": "Intermediate Chain",
