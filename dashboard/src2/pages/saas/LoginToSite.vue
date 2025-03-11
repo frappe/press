@@ -11,7 +11,7 @@
 			<LoginBox
 				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Site created successfully"
-				:subtitle="`The trial site is ready at
+				:subtitle="`Your trial site is ready at
 					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
 				<template v-slot:logo v-if="saasProduct">
