@@ -1,15 +1,25 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import boto3
 import frappe
 from frappe.core.utils import find
-from frappe.model.document import Document
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from frappe.model.document import Document
 
 
 @frappe.whitelist()
 def create_dns_record(doc, record_name=None):
 	"""Check if site needs dns records and creates one."""
 	domain = frappe.get_doc("Root Domain", doc.domain)
+
+	if domain.generic_dns_provider:
+		return
+
 	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
 	if doc.cluster == domain.default_cluster and not is_standalone:
 		return
@@ -21,24 +31,23 @@ def create_dns_record(doc, record_name=None):
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 
-def _change_dns_record(
-	method: str, domain: Document, proxy_server: str, record_name: str = None
-):
+def _change_dns_record(method: str, domain: Document, proxy_server: str, record_name: str | None = None):
 	"""
 	Change dns record of site
 
 	method: CREATE | DELETE | UPSERT
 	"""
 	try:
+		if domain.generic_dns_provider:
+			return
+
 		client = boto3.client(
 			"route53",
 			aws_access_key_id=domain.aws_access_key_id,
 			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 		)
 		zones = client.list_hosted_zones_by_name()["HostedZones"]
-		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-			"Id"
-		]
+		hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 		client.change_resource_record_sets(
 			ChangeBatch={
 				"Changes": [
