@@ -277,7 +277,7 @@ export default {
 											this.$appServer.increaseDiskSize.submit(
 												{
 													server: doc.name,
-													increment: values.storage,
+													increment: Number(values.storage),
 												},
 												{
 													onSuccess: () => {
