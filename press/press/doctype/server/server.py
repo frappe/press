@@ -94,6 +94,7 @@ class BaseServer(Document, TagHelpers):
 			{"primary": doc.database_server, "is_replication_setup": 1},
 			"name",
 		)
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
 
@@ -223,6 +224,10 @@ class BaseServer(Document, TagHelpers):
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
+
+			if domain.generic_dns_provider:
+				return
+
 			client = boto3.client(
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,

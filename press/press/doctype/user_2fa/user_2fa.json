@@ -8,7 +8,8 @@
  "field_order": [
   "user",
   "totp_secret",
-  "enabled"
+  "enabled",
+  "last_verified_at"
  ],
  "fields": [
   {
@@ -28,11 +29,17 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "last_verified_at",
+   "fieldtype": "Datetime",
+   "label": "Last Verified At"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-21 16:36:26.321395",
+ "modified": "2025-03-06 21:23:48.649044",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User 2FA",
@@ -76,6 +83,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

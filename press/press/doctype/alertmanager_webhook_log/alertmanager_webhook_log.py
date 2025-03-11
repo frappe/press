@@ -190,6 +190,10 @@ class AlertmanagerWebhookLog(Document):
 			return
 		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
 			return
+		cluster = frappe.get_value("Server", self.incident_scope, "cluster")
+		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
+			return
 
 		instances = self.get_past_alert_instances()
 		if len(instances) > min(0.4 * self.total_instances(), 15):

@@ -6,6 +6,7 @@ from __future__ import annotations
 import time
 
 import frappe
+from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -41,16 +42,20 @@ class PhysicalBackupGroupSite(Document):
 	def sync(self):
 		if not self.backup:
 			return
-		backup = frappe.get_doc("Site Backup", self.backup)
-		if backup.database_snapshot:
-			# sync status of snapshot
-			frappe.get_doc("Virtual Disk Snapshot", backup.database_snapshot).sync()
-			backup.reload()
-		if backup.status == "Pending":
-			self.status = "Running"
-		else:
-			self.status = backup.status
-		self.backup_available = backup.files_availability == "Available"
+		try:
+			backup = frappe.get_doc("Site Backup", self.backup)
+			if backup.database_snapshot:
+				# sync status of snapshot
+				frappe.get_doc("Virtual Disk Snapshot", backup.database_snapshot).sync()
+				backup.reload()
+			if backup.status == "Pending":
+				self.status = "Running"
+			else:
+				self.status = backup.status
+			self.backup_available = backup.files_availability == "Available"
+		except DoesNotExistError:
+			self.backup = None
+			self.backup_available = False
 		self.save()
 
 	def physical_backup(self):

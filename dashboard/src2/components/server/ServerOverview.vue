@@ -277,7 +277,7 @@ export default {
 											this.$appServer.increaseDiskSize.submit(
 												{
 													server: doc.name,
-													increment: values.storage,
+													increment: Number(values.storage),
 												},
 												{
 													onSuccess: () => {
@@ -411,7 +411,7 @@ export default {
 				},
 				{
 					label: 'Owned by',
-					value: this.$appServer.doc.team,
+					value: this.$appServer.doc.owner_email || this.$appServer.doc.team,
 				},
 				{
 					label: 'Created by',

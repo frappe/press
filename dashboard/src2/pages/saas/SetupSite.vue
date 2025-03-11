@@ -11,7 +11,6 @@
 			<LoginBox
 				v-if="saasProduct"
 				title="Let’s set up your site"
-				subtitle="Create your site and get started"
 				:logo="saasProduct?.logo"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -31,7 +30,7 @@
 					<form class="w-full space-y-4" @submit.prevent="createSite">
 						<div class="w-full space-y-1.5">
 							<label class="block text-xs text-ink-gray-5">
-								Site subdomain
+								Enter subdomain for your site
 							</label>
 							<div class="col-span-2 flex w-full">
 								<input

@@ -66,6 +66,15 @@ class AggType(Enum):
 	AVERAGE_DURATION = "average_duration"
 
 
+TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
+	"1h": (60 * 60, 60),
+	"6h": (6 * 60 * 60, 5 * 60),
+	"24h": (24 * 60 * 60, 30 * 60),
+	"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
+	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+}
+
+
 class StackedGroupByChart:
 	search: Search
 	to_s_divisor: float = 1e6
@@ -236,7 +245,7 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if datasets:
+		if len(datasets) >= self.MAX_NO_OF_PATHS:
 			datasets.append(self.get_other_bucket(datasets, labels))
 
 		if self.normalize_slow_logs:
@@ -263,17 +272,22 @@ class RequestGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", json__request__path=list(map(lambda x: x["path"], datasets)))
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__request__path=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		self.search = self.search.filter("match_phrase", json__transaction_type="request").exclude(
 			"match_phrase", json__request__path="/api/method/ping"
 		)
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
 			self.group_by_field = "json.request.path"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
 			self.group_by_field = "json.site"
 
@@ -289,15 +303,20 @@ class BackgroundJobGroupByChart(StackedGroupByChart):
 		return A("avg", field="json.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", json__job__method=list(map(lambda x: x["path"], datasets)))
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__job__method=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
 		self.search = self.search.filter("match_phrase", json__transaction_type="job")
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.search = self.search.filter("match_phrase", json__site=self.name)
 			self.group_by_field = "json.job.method"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match_phrase", agent__name=self.name)
 			self.group_by_field = "json.site"
 
@@ -326,7 +345,12 @@ class SlowLogGroupByChart(StackedGroupByChart):
 		return A("avg", field="event.duration")
 
 	def exclude_top_k_data(self, datasets):
-		self.search.exclude("match_phrase", mysql__slowlog__query=list(map(lambda x: x["path"], datasets)))
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", mysql__slowlog__query=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", mysql__slowlog__current_user=path)
 
 	def setup_search_filters(self):
 		super().setup_search_filters()
@@ -334,12 +358,12 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			"wildcard",
 			mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*",  # noqa
 		)
-		if self.resource_type == ResourceType.SITE:
+		if ResourceType(self.resource_type) is ResourceType.SITE:
 			self.database_name = frappe.db.get_value("Site", self.name, "database_name")
 			if self.database_name:
 				self.search = self.search.filter("match", mysql__slowlog__current_user=self.database_name)
 			self.group_by_field = "mysql.slowlog.query"
-		elif self.resource_type == ResourceType.SERVER:
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:
 			self.search = self.search.filter("match", agent__name=self.name)
 			self.group_by_field = "mysql.slowlog.current_user"
 
@@ -352,13 +376,7 @@ class SlowLogGroupByChart(StackedGroupByChart):
 @frappe.whitelist()
 @protected("Site")
 def get(name, timezone, duration="7d"):
-	timespan, timegrain = {
-		"1h": (60 * 60, 60),
-		"6h": (6 * 60 * 60, 5 * 60),
-		"24h": (24 * 60 * 60, 30 * 60),
-		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
-	}[duration]
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
@@ -377,13 +395,7 @@ def get(name, timezone, duration="7d"):
 
 @frappe.whitelist()
 def get_advanced_analytics(name, timezone, duration="7d"):
-	timespan, timegrain = {
-		"1h": (60 * 60, 60),
-		"6h": (6 * 60 * 60, 5 * 60),
-		"24h": (24 * 60 * 60, 30 * 60),
-		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
-	}[duration]
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
@@ -527,6 +539,15 @@ def get_request_by_(
 
 def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain):
 	return BackgroundJobGroupByChart(site, agg_type, ResourceType.SITE, timezone, timespan, timegrain).run()
+
+
+@frappe.whitelist()
+def get_slow_logs_by_query(
+	name: str, agg_type: str, timezone: str, duration: str = "24h", normalize: bool = False
+):
+	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+
+	return get_slow_logs(name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize)
 
 
 def get_slow_logs(

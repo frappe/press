@@ -73,7 +73,7 @@ def get_product_sites_of_user(user: str):
 		not session_id
 		or not isinstance(session_id, str)
 		or not frappe.db.exists("Site User Session", {"user": user, "session_id": session_id})
-	):
+	) and (frappe.session.user == "Guest"):
 		return frappe.throw("Invalid session")
 
 	sites = frappe.db.get_all(
@@ -85,7 +85,6 @@ def get_product_sites_of_user(user: str):
 		filters={"name": ["in", sites], "status": "Active"},
 		fields=[
 			"name",
-			"label",
 			"trial_end_date",
 			"plan.plan_title as plan_title",
 			"plan.price_usd as price_usd",

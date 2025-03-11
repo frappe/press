@@ -425,12 +425,10 @@ def get_unpaid_invoices():
 			"status": "Unpaid",
 			"type": "Subscription",
 		},
-		["name", "status", "period_end", "currency", "amount_due", "total"],
+		["name", "status", "period_end", "currency", "amount_due", "total", "stripe_invoice_url"],
 		order_by="creation asc",
 	)
 
-	if len(unpaid_invoices) == 1:
-		return frappe.get_doc("Invoice", unpaid_invoices[0].name)
 	return unpaid_invoices
 
 

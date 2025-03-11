@@ -5,6 +5,7 @@
 			class="col-span-1 lg:col-span-2"
 			title="Your sites are on an End of Life version. Upgrade to the latest version to get the latest features and security updates."
 			:id="`${$releaseGroup.name}-eol`"
+			type="gray"
 		>
 			<Button
 				class="ml-auto"

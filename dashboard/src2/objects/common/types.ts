@@ -188,6 +188,7 @@ export interface BannerConfig {
 	title: string;
 	dismissable: boolean;
 	id: string;
+	type?: string;
 	button?: {
 		label: string;
 		variant: string;

@@ -1126,6 +1126,9 @@ class Site(Document, TagHelpers):
 		domain = domain.lower().strip(".")
 		response = check_dns(self.name, domain)
 		if response["matched"]:
+			if frappe.db.exists("Site Domain", {"domain": domain}):
+				frappe.throw(f"The domain {frappe.bold(domain)} is already used by a site")
+
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
@@ -1154,7 +1157,13 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_dns_record(self):
-		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
+		self._create_default_site_domain()
+		domains = frappe.db.get_list(
+			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
+		)
+		for domain in domains:
+			if bool(frappe.db.exists("Root Domain", domain.split(".", 1)[1], "name")):
+				create_dns_record(doc=self, record_name=domain)
 
 	@frappe.whitelist()
 	def update_dns_record(self, value):
@@ -3356,9 +3365,8 @@ def process_uninstall_app_site_job_update(job):
 
 def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], site: Site):
 	site_apps = set([app.app for app in site.apps])
-	apps_to_install = apps_from_backup - site_apps
 	apps_to_uninstall = site_apps - apps_from_backup
-	for app in apps_to_install:
+	for app in apps_from_backup:
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription

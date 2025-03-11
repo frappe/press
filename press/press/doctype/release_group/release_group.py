@@ -974,7 +974,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 			next_hash = app.hash
 
-			update_available = not current_hash or current_hash != next_hash
+			update_available = not current_hash or current_hash != next_hash or will_branch_change
 			if not app.releases:
 				update_available = False
 
@@ -982,7 +982,7 @@ class ReleaseGroup(Document, TagHelpers):
 				frappe._dict(
 					{
 						"title": app.title,
-						"app": app.app,  # remove this line once dashboard1 is removed
+						"app": app.app,
 						"name": app.app,
 						"source": source.name,
 						"repository": source.repository,
