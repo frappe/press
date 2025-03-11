@@ -55,6 +55,9 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	def validate(self):
+		self.validate_key_length()
+
 	def on_update(self):
 		if self.is_new():
 			return
@@ -187,6 +190,15 @@ class TLSCertificate(Document):
 		).decode()
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
+
+	def validate_key_length(self):
+		if self.custom:
+			private_key = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+
+			if private_key.bits() != int(self.rsa_key_size):
+				frappe.throw(
+					f"Private key length does not match the selected RSA key size. Expected {self.rsa_key_size} bits, got {private_key.bits()} bits."
+				)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")

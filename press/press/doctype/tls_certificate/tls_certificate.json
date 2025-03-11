@@ -75,7 +75,7 @@
    "fieldtype": "Select",
    "label": "RSA Key Size",
    "options": "2048\n3072\n4096",
-   "read_only_depends_on": "eval: doc.wildcard",
+   "read_only_depends_on": "eval: doc.wildcard && !doc.custom",
    "reqd": 1
   },
   {
@@ -159,7 +159,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-11 19:32:20.067650",
+ "modified": "2025-03-11 20:06:31.492906",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
