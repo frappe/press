@@ -245,7 +245,7 @@ class StackedGroupByChart:
 		for path_bucket in aggs.method_path.buckets:
 			datasets.append(self.get_histogram_chart(path_bucket, labels))
 
-		if datasets:
+		if len(datasets) >= self.MAX_NO_OF_PATHS:
 			datasets.append(self.get_other_bucket(datasets, labels))
 
 		if self.normalize_slow_logs:
