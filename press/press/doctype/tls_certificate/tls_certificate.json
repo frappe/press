@@ -12,6 +12,7 @@
   "rsa_key_size",
   "wildcard",
   "provider",
+  "custom",
   "section_break_6",
   "issued_on",
   "column_break_8",
@@ -164,6 +165,12 @@
    "label": "Provider",
    "options": "Let's Encrypt\nOther",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "custom",
+   "fieldtype": "Check",
+   "label": "Custom"
   }
  ],
  "grid_page_length": 50,
