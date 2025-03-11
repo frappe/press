@@ -56,7 +56,10 @@ class TLSCertificate(Document):
 		self.obtain_certificate()
 
 	def validate(self):
-		self.validate_key_length()
+		if self.custom:
+			self.configure_full_chain()
+			self.validate_key_length()
+			self.validate_certificate()
 
 	def on_update(self):
 		if self.is_new():
@@ -76,6 +79,10 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
+
+		if self.custom:
+			return
+
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype,
@@ -191,14 +198,54 @@ class TLSCertificate(Document):
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
-	def validate_key_length(self):
-		if self.custom:
-			private_key = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+	def configure_full_chain(self):
+		if not self.full_chain:
+			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
 
-			if private_key.bits() != int(self.rsa_key_size):
-				frappe.throw(
-					f"Private key length does not match the selected RSA key size. Expected {self.rsa_key_size} bits, got {private_key.bits()} bits."
-				)
+	def _get_private_key_object(self):
+		try:
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+		except OpenSSL.crypto.Error as e:
+			log_error("TLS Private Key Exception", certificate=self.name)
+			raise e
+
+	def _get_certificate_object(self):
+		try:
+			return OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.full_chain)
+		except OpenSSL.crypto.Error as e:
+			log_error("Custom TLS Certificate Exception", certificate=self.name)
+			raise e
+
+	def validate_key_length(self):
+		private_key = self._get_private_key_object()
+
+		if private_key.bits() != int(self.rsa_key_size):
+			frappe.throw(
+				f"Private key length does not match the selected RSA key size. Expected {self.rsa_key_size} bits, got {private_key.bits()} bits."
+			)
+
+	def _validate_key_certificate_association(self):
+		context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+		context.use_privatekey(self._get_private_key_object())
+		context.use_certificate(self._get_certificate_object())
+
+		try:
+			context.check_privatekey()
+		except OpenSSL.SSL.Error:
+			log_error("TLS Key Certificate Association Exception", certificate=self.name)
+			frappe.throw("Private Key and Certificate do not match")
+
+	def validate_certificate(self):
+		try:
+			self._validate_key_certificate_association()
+			self._extract_certificate_details()
+
+			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
+		except Exception as e:
+			self.error = repr(e)
+			self.status = "Failure"
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")

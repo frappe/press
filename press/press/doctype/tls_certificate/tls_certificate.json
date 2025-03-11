@@ -19,8 +19,8 @@
   "section_break_10",
   "decoded_certificate",
   "certificate",
-  "full_chain",
   "intermediate_chain",
+  "full_chain",
   "private_key",
   "section_break_cvcg",
   "error",
@@ -101,6 +101,7 @@
    "hide_border": 1
   },
   {
+   "description": "Only Domain\u2019s Certificate",
    "fieldname": "certificate",
    "fieldtype": "Code",
    "label": "Certificate",
@@ -113,6 +114,7 @@
    "read_only": 1
   },
   {
+   "description": "Chain certificate to establish trust (Intermediate + Trust chain for non lets encrypt certificates)",
    "fieldname": "intermediate_chain",
    "fieldtype": "Code",
    "label": "Intermediate Chain",
@@ -159,7 +161,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-11 20:06:31.492906",
+ "modified": "2025-03-11 21:00:24.453723",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
