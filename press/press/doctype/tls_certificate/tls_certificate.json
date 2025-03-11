@@ -78,7 +78,7 @@
    "fieldtype": "Select",
    "label": "RSA Key Size",
    "options": "2048\n3072\n4096",
-   "read_only_depends_on": "eval: doc.wildcard",
+   "read_only_depends_on": "eval: doc.wildcard && !doc.custom",
    "reqd": 1
   },
   {
