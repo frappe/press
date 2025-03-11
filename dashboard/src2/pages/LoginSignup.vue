@@ -79,7 +79,7 @@
 								/>
 
 								<!-- Password Authentication -->
-								<template v-if="!isOauthLogin && !useOTP">
+								<template v-if="!isOauthLogin && usePassword">
 									<FormControl
 										class="mt-4"
 										label="Password"
@@ -111,7 +111,7 @@
 								</template>
 
 								<!-- OTP Authentication -->
-								<template v-else-if="useOTP">
+								<template v-else-if="!usePassword">
 									<!-- OTP Verification Input (when OTP is sent) -->
 									<template v-if="otpSent">
 										<FormControl
@@ -215,19 +215,21 @@
 							</div>
 
 							<div class="flex flex-col gap-2">
-								<!-- <Button
+								<Button
+									v-if="isLogin && !usePassword"
 									:route="{
 										name: 'Login',
-										query: { ...$route.query, use_otp: undefined },
+										query: { ...$route.query, use_password: 1 },
 									}"
+									icon-left="key"
 								>
 									Continue with Password
-								</Button> -->
+								</Button>
 								<Button
-									v-if="isLogin && !useOTP"
+									v-else-if="isLogin && usePassword"
 									:route="{
 										name: 'Login',
-										query: { ...$route.query, use_otp: 1 },
+										query: { ...$route.query, use_password: undefined },
 									}"
 									icon-left="mail"
 								>
@@ -551,7 +553,7 @@ export default {
 				url: 'press.api.account.verify_2fa',
 				onSuccess: async () => {
 					if (this.isLogin) {
-						if (this.useOTP) {
+						if (!this.usePassword) {
 							await this.$resources.verifyOTPAndLogin.submit();
 						} else {
 							await this.login();
@@ -579,7 +581,7 @@ export default {
 					this.$resources.oauthLogin.submit({
 						provider: this.socialLoginKey,
 					});
-				} else if (this.useOTP) {
+				} else if (!this.usePassword) {
 					// OTP login is handled by separate buttons
 					return;
 				} else if (this.email && this.password) {
@@ -726,8 +728,8 @@ export default {
 				this.emailDomain.length > 0
 			);
 		},
-		useOTP() {
-			return Boolean(this.$route.query.use_otp);
+		usePassword() {
+			return Boolean(this.$route.query.use_password);
 		},
 		oauthProviders() {
 			const domains = this.$resources.signupSettings.data?.oauth_domains;
