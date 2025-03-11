@@ -53,13 +53,6 @@
 						</a>
 					</div>
 				</Tooltip>
-				<Button v-if="$list && $list.doctype === 'Site'" @click="exportAsCSV">
-					<template #icon>
-						<Tooltip text="Export as CSV">
-							<i-lucide-download class="h-4 w-4" />
-						</Tooltip>
-					</template>
-				</Button>
 				<Button
 					label="Refresh"
 					v-if="$list"
@@ -72,6 +65,13 @@
 						</Tooltip>
 					</template>
 				</Button>
+
+				<Dropdown v-if="moreActions.length" :options="moreActions">
+					<Button>
+						<FeatherIcon name="more-horizontal" class="h-4 w-4" />
+					</Button>
+				</Dropdown>
+
 				<ActionButton
 					v-for="button in actions"
 					v-bind="button"
@@ -148,7 +148,6 @@ import AlertBanner from './AlertBanner.vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
-import { unparse } from 'papaparse';
 import {
 	ListView,
 	ListHeader,
@@ -387,6 +386,16 @@ export default {
 				return true;
 			});
 		},
+		moreActions() {
+			if (!this.options.moreActions) return [];
+			const actions = this.options.moreActions(this.context);
+			return actions.filter((action) => {
+				if (action.condition) {
+					return action.condition(this.context);
+				}
+				return true;
+			});
+		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
@@ -475,21 +484,6 @@ export default {
 				});
 				this.$list.reload();
 			}
-		},
-		async exportAsCSV() {
-			let csv = unparse({
-				fields: this.$list.columns,
-				data: this.$list.data,
-			});
-			csv = '\uFEFF' + csv; // for utf-8
-			// create a blob and trigger a download
-			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-			const filename = `Sites.csv`;
-			const link = document.createElement('a');
-			link.href = URL.createObjectURL(blob);
-			link.download = filename;
-			link.click();
-			URL.revokeObjectURL(link.href);
 		},
 	},
 };
