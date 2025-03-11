@@ -30,6 +30,7 @@ class TLSCertificate(Document):
 		from frappe.types import DF
 
 		certificate: DF.Code | None
+		custom: DF.Check
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
 		error: DF.Code | None

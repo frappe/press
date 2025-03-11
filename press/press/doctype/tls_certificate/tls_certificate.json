@@ -11,6 +11,7 @@
   "column_break_3",
   "rsa_key_size",
   "wildcard",
+  "custom",
   "section_break_6",
   "issued_on",
   "column_break_8",
@@ -120,8 +121,8 @@
   {
    "fieldname": "private_key",
    "fieldtype": "Code",
-   "label": "Private Key",
    "hidden": 1,
+   "label": "Private Key",
    "read_only": 1
   },
   {
@@ -148,11 +149,17 @@
    "fieldtype": "Int",
    "label": "Retry Count",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "custom",
+   "fieldtype": "Check",
+   "label": "Custom"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-17 10:43:33.881463",
+ "modified": "2025-03-11 19:32:20.067650",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
