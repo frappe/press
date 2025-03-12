@@ -10,6 +10,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Callable
 
 import frappe
+from apps.press.press.utils import log_error
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -697,6 +698,23 @@ class PhysicalBackupRestoration(Document):
 		pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
 		comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
 		self.add_comment(text=comment)
+
+
+def process_scheduled_restorations():
+	scheduled_restorations = frappe.get_list(
+		"Physical Backup Restoration",
+		filters={"status": "Scheduled"},
+		pluck="name",
+		order_by="creation asc",
+	)
+	for restoration in scheduled_restorations:
+		try:
+			doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", restoration)
+			doc.next()
+			frappe.db.commit()
+		except Exception:
+			log_error(title="Physical Backup Restoration Start Error", physical_restoration=restoration)
+			frappe.db.rollback()
 
 
 def process_job_update(job):

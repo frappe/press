@@ -244,6 +244,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
