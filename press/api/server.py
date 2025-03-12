@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 import requests
 from frappe.utils import convert_utc_to_timezone, flt
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.bench import all as all_benches
@@ -275,6 +276,7 @@ def calculate_swap(name):
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def analytics(name, query, timezone, duration):
 	timespan, timegrain = get_timespan_timegrain(duration)
 
@@ -346,6 +348,7 @@ avg by (instance) (
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def get_request_by_site(name, query, timezone, duration):
 	from press.api.analytics import ResourceType, get_request_by_
 
@@ -356,6 +359,7 @@ def get_request_by_site(name, query, timezone, duration):
 
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
+@redis_cache(ttl=10 * 60)
 def get_slow_logs_by_site(name, query, timezone, duration, normalize=False):
 	from press.api.analytics import ResourceType, get_slow_logs
 
