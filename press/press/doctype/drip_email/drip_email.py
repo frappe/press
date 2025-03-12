@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import timedelta
 
 import frappe
@@ -99,7 +98,7 @@ class DripEmail(Document):
 			reference_name=self.name,
 			unsubscribe_message="Unsubscribe",
 			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
-			unsubscribe_params=json.dumps({"account_request": account_request.name}),
+			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
 			template="drip_email",
 			args={"message": message, "title": title},
