@@ -76,7 +76,7 @@ class PhysicalBackupRestoration(Document):
 		GeneralStep = False
 		CleanupStep = True
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait, SyncStep, GeneralStep),
+			(self.wait_for_pending_snapshot_to_be_completed, Wait, AsyncStep, GeneralStep),
 			(self.create_volume_from_snapshot, NoWait, SyncStep, GeneralStep),
 			(self.wait_for_volume_to_be_available, Wait, SyncStep, GeneralStep),
 			(self.attach_volume_to_instance, NoWait, SyncStep, GeneralStep),
@@ -174,7 +174,10 @@ class PhysicalBackupRestoration(Document):
 		if snapshot.status == "Completed":
 			return StepStatus.Success
 		if snapshot.status == "Pending":
-			return StepStatus.Pending
+			# Send `Running` status to the queue
+			# So, that the current job can exit for now
+			# Once Snapshot status updated, someone will trigger this job again
+			return StepStatus.Running
 		return StepStatus.Failure
 
 	def create_volume_from_snapshot(self) -> StepStatus:
@@ -368,10 +371,10 @@ class PhysicalBackupRestoration(Document):
 			site = frappe.get_doc("Site", self.site)
 			agent = Agent(self.destination_server, "Database Server")
 			self.job = agent.physical_restore_database(site, self)
-			return StepStatus.Pending
+			return StepStatus.Running
 		job_status = frappe.db.get_value("Agent Job", self.job, "status")
 		if job_status in ["Undelivered", "Running", "Pending"]:
-			return StepStatus.Pending
+			return StepStatus.Running
 		if job_status == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
@@ -625,7 +628,7 @@ class PhysicalBackupRestoration(Document):
 		try:
 			result = getattr(self, step.method)()
 			step.status = result.name
-			if step.is_async and result == StepStatus.Pending:
+			if step.is_async and result == StepStatus.Running:
 				self.save(ignore_version=True)
 				return
 			if step.wait_for_completion:
