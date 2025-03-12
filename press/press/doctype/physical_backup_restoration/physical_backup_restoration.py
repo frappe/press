@@ -10,12 +10,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, Callable
 
 import frappe
-from apps.press.press.utils import log_error
 from frappe.model.document import Document
 
 from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.physical_restoration_test.physical_restoration_test import trigger_next_restoration
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
