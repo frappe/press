@@ -7,6 +7,7 @@
  "field_order": [
   "virtual_machine",
   "status",
+  "expected_disk_size",
   "column_break_tjrh",
   "start",
   "end",
@@ -292,11 +293,17 @@
    "label": "Virtual Disk Snapshot",
    "options": "Virtual Disk Snapshot",
    "read_only": 1
+  },
+  {
+   "fieldname": "expected_disk_size",
+   "fieldtype": "Int",
+   "label": "Expected Disk Size",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-07 20:14:17.624669",
+ "modified": "2025-03-11 11:05:05.107704",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Virtual Disk Resize",
