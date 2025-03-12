@@ -82,7 +82,7 @@ class DripEmail(Document):
 	def send_mail(self, context, recipient):
 		# build the message
 		message = frappe.render_template(self.message, context)
-		title = frappe.db.get_value("Marketplace App", self.saas_app, "title")
+		app = frappe.db.get_value("Marketplace App", self.saas_app, ["title", "image"], as_dict=True)
 
 		# add to queue
 		frappe.sendmail(
@@ -95,7 +95,8 @@ class DripEmail(Document):
 			unsubscribe_message="Don't send me help messages",
 			attachments=self.get_setup_guides(context.get("account_request", "")),
 			template="drip_email",
-			args={"message": message, "title": title},
+			args={"message": message, "title": app.title, "logo": app.image},
+			now=True,
 		)
 
 	@property
