@@ -53,7 +53,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
+   "options": "Pending\nScheduled\nRunning\nSuccess\nFailure",
    "read_only": 1,
    "reqd": 1
   },
@@ -196,7 +196,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-12 18:16:02.279878",
+ "modified": "2025-03-12 18:46:12.956759",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

@@ -53,7 +53,7 @@ class PhysicalBackupRestoration(Document):
 		site_backup: DF.Link
 		source_database: DF.Data
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Scheduled", "Running", "Success", "Failure"]
 		steps: DF.Table[PhysicalBackupRestorationStep]
 		tables_to_restore: DF.JSON | None
 		volume: DF.Data | None
@@ -508,6 +508,9 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		if self.status == "Scheduled":
+			frappe.msgprint("Restoration is already in Scheduled state. It will be executed soon.")
+			return
 		# If restore_specific_tables was provided, but no tables are there to restore, then skip the restore
 		if self.restore_specific_tables:
 			try:
@@ -521,10 +524,10 @@ class PhysicalBackupRestoration(Document):
 				self.save()
 				return
 		# Else, continue with the restoration
-		self.status = "Running"
+		# Just set to scheduled, scheduler will pick it up
+		self.status = "Scheduled"
 		self.start = frappe.utils.now_datetime()
 		self.save()
-		self.next()
 
 	def fail(self) -> None:
 		self.status = "Failure"
@@ -590,6 +593,24 @@ class PhysicalBackupRestoration(Document):
 
 		if is_cleanup_required:
 			self.next()
+
+	@frappe.whitelist(allow_guest=True)
+	def retry(self):
+		# Check if all the cleanup steps are completed
+		for step in self.steps:
+			if not step.is_cleanup_step:
+				continue
+			if step.status not in ["Success", "Skipped"]:
+				frappe.throw("Cleanup steps are not completed. Please clean up before retrying.")
+		# Reset the states
+		self.status = "Scheduled"
+		self.start = None
+		self.end = None
+		self.duration = None
+		self.job = None
+		for step in self.steps:
+			step.status = "Pending"
+		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
