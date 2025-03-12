@@ -548,11 +548,20 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def next(self) -> None:
-		self.status = "Running"
-		self.save(ignore_version=True)
-		next_step = self.next_step
+		if self.status != "Running":
+			self.status = "Running"
+			self.save(ignore_version=True)
 
-		if not next_step:
+		next_step_name = None
+
+		# Check if current_step is running
+		current_running_step = self.current_running_step
+		if current_running_step:
+			next_step_name = current_running_step.name
+		elif self.next_step:
+			next_step_name = self.next_step.name
+
+		if not next_step_name:
 			# We've executed everything
 			self.finish()
 			return
@@ -561,7 +570,7 @@ class PhysicalBackupRestoration(Document):
 			self.doctype,
 			self.name,
 			"execute_step",
-			step_name=next_step.name,
+			step_name=next_step_name,
 			enqueue_after_commit=True,
 			at_front=True,
 		)
@@ -605,6 +614,13 @@ class PhysicalBackupRestoration(Document):
 				step.status = "Failure"
 		self.status = "Failure"
 		self.save()
+
+	@property
+	def current_running_step(self) -> PhysicalBackupRestorationStep | None:
+		for step in self.steps:
+			if step.status == "Running":
+				return step
+		return None
 
 	@property
 	def next_step(self) -> PhysicalBackupRestorationStep | None:
