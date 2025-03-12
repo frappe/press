@@ -684,7 +684,7 @@ def process_job_update(job):
 
 	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
 	if job.status in ["Success", "Failure", "Delivery Failure"]:
-		doc.next(ignore_version=True)
+		doc.next()
 
 
 def get_physical_backup_restoration_steps(name: str) -> list[dict]:

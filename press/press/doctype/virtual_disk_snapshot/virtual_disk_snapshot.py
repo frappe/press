@@ -65,7 +65,14 @@ class VirtualDiskSnapshot(Document):
 			self.duration = frappe.utils.cint(
 				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
 			)
-			self.save()
+			self.save(ignore_version=True)
+
+			# Trigger execution of restoration
+			physical_restore_name = frappe.db.exists(
+				"Physical Backup Restoration", {"disk_snapshot": self.name}
+			)
+			if physical_restore_name:
+				frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
 
 	@frappe.whitelist()
 	def sync(self):
