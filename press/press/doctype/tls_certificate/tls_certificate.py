@@ -30,6 +30,7 @@ class TLSCertificate(Document):
 		from frappe.types import DF
 
 		certificate: DF.Code | None
+		custom: DF.Check
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
 		error: DF.Code | None
@@ -54,6 +55,13 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	def validate(self):
+		if self.custom:
+			self.configure_full_chain()
+			self.validate_key_length()
+			self.validate_key_certificate_association()
+			self._extract_certificate_details()
+
 	def on_update(self):
 		if self.is_new():
 			return
@@ -72,6 +80,10 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
+
+		if self.custom:
+			return
+
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype,
@@ -187,6 +199,50 @@ class TLSCertificate(Document):
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
+	def configure_full_chain(self):
+		if not self.full_chain:
+			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
+
+	def _get_private_key_object(self):
+		try:
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+		except OpenSSL.crypto.Error as e:
+			log_error("TLS Private Key Exception", certificate=self.name)
+			raise e
+
+	def _get_certificate_object(self):
+		try:
+			return OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.full_chain)
+		except OpenSSL.crypto.Error as e:
+			log_error("Custom TLS Certificate Exception", certificate=self.name)
+			raise e
+
+	def validate_key_length(self):
+		private_key = self._get_private_key_object()
+
+		if private_key.bits() != int(self.rsa_key_size):
+			frappe.throw(
+				f"Private key length does not match the selected RSA key size. Expected {self.rsa_key_size} bits, got {private_key.bits()} bits."
+			)
+
+	def validate_key_certificate_association(self):
+		context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+		context.use_privatekey(self._get_private_key_object())
+		context.use_certificate(self._get_certificate_object())
+
+		try:
+			context.check_privatekey()
+			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
+		except OpenSSL.SSL.Error as e:
+			self.error = repr(e)
+			log_error("TLS Key Certificate Association Exception", certificate=self.name)
+			frappe.throw("Private Key and Certificate do not match")
+		finally:
+			if self.error:
+				self.status = "Failure"
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")
 
@@ -229,6 +285,7 @@ def renew_tls_certificates():
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
 			"retry_count": ("<", 5),
+			"custom": 0,
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
@@ -237,7 +294,9 @@ def renew_tls_certificates():
 	for certificate in pending:
 		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
 			break
+
 		site = frappe.db.get_value("Site Domain", {"tls_certificate": certificate.name}, "site")
+
 		try:
 			if not should_renew(site, certificate):
 				continue
@@ -258,6 +317,34 @@ def renew_tls_certificates():
 			)
 			log_error("TLS Renewal Exception", certificate=certificate, site=site)
 			frappe.db.commit()
+
+
+def notify_custom_tls_renewal():
+	seven_days = frappe.utils.add_days(None, 7)
+	fifteen_days = frappe.utils.add_days(None, 15)
+
+	for dt in [fifteen_days, seven_days]:
+		pending = frappe.get_all(
+			"TLS Certificate",
+			fields=["name", "domain", "team", "expires_on"],
+			filters={
+				"status": ("in", ("Active", "Failure")),
+				"expires_on": ("<=", dt),
+				"custom": 1,
+			},
+			ignore_ifnull=True,
+			order_by="expires_on ASC, status DESC",
+		)
+
+		for certificate in pending:
+			if certificate.team:
+				team = frappe.get_value("Team", certificate.team, ["email", "name"], as_dict=True)
+
+				frappe.sendmail(
+					recipients=team,
+					subject=f"TLS Certificate Renewal Required: {certificate.name}",
+					message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
+				)
 
 
 def update_server_tls_certifcate(server, certificate):
