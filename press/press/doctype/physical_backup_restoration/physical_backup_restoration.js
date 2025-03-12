@@ -8,12 +8,7 @@ frappe.ui.form.on('Physical Backup Restoration', {
 		}
 
 		[
-			[
-				__('Start'),
-				'execute',
-				frm.doc.status === 'Pending' || frm.doc.status === 'Scheduled',
-				false,
-			],
+			[__('Start'), 'execute', frm.doc.status === 'Pending', false],
 			[__('Force Continue'), 'force_continue', true, true],
 			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running', true],
 			[__('Cleanup'), 'cleanup', frm.doc.status === 'Failure', true],
