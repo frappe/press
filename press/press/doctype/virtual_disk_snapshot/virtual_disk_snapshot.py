@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import time
+
 import boto3
 import frappe
 import frappe.utils
@@ -189,6 +191,30 @@ def sync_snapshots():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)
+
+
+def sync_physical_backup_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot",
+		{"status": "Pending", "created_for_site_update": ["==", 1]},
+		order_by="modified asc",
+	)
+	start_time = time.time()
+	for snapshot in snapshots:
+		# if already spent more than 1 minute, then don't do sync anymore
+		# because this function will be executed every minute
+		# we don't want to run two syncs at the same time
+		if time.time() - start_time > 60:
+			break
+
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(
+				title="Physical Restore : Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name
+			)
 
 
 def delete_old_snapshots():
