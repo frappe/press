@@ -18,6 +18,7 @@ from frappe.utils import (
 	flt,
 	get_datetime,
 )
+from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 from pytz import timezone as pytz_timezone
 
@@ -375,6 +376,7 @@ class SlowLogGroupByChart(StackedGroupByChart):
 
 @frappe.whitelist()
 @protected("Site")
+@redis_cache(ttl=10 * 60)
 def get(name, timezone, duration="7d"):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
@@ -394,6 +396,7 @@ def get(name, timezone, duration="7d"):
 
 
 @frappe.whitelist()
+@redis_cache(ttl=10 * 60)
 def get_advanced_analytics(name, timezone, duration="7d"):
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
 
@@ -436,6 +439,7 @@ def get_more_background_job_detail_fn_names():
 
 @frappe.whitelist()
 @protected("Site")
+@redis_cache(ttl=10 * 60)
 def daily_usage(name, timezone):
 	timespan = 7 * 24 * 60 * 60
 	timegrain = 24 * 60 * 60
