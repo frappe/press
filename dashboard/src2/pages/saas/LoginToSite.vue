@@ -200,9 +200,8 @@ export default {
 							this.currentBuildStep =
 								data.current_step || this.currentBuildStep;
 							this.progressCount += 1;
-							if (data.progress == 100) {
-								this.loginToSite();
-							} else if (
+
+							if (
 								!(
 									this.$resources.siteRequest.getProgress.error &&
 									this.progressCount <= 10
