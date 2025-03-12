@@ -6,7 +6,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import time
 from enum import Enum
 from typing import TYPE_CHECKING, Callable
 
@@ -69,37 +68,34 @@ class PhysicalBackupRestoration(Document):
 
 	@property
 	def migration_steps(self):
-		Wait = True
-		NoWait = False
 		SyncStep = False
 		AsyncStep = True
 		GeneralStep = False
 		CleanupStep = True
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait, AsyncStep, GeneralStep),
-			(self.create_volume_from_snapshot, NoWait, SyncStep, GeneralStep),
-			(self.wait_for_volume_to_be_available, Wait, SyncStep, GeneralStep),
-			(self.attach_volume_to_instance, NoWait, SyncStep, GeneralStep),
-			(self.create_mount_point, NoWait, SyncStep, GeneralStep),
-			(self.mount_volume_to_instance, NoWait, SyncStep, GeneralStep),
-			(self.change_permission_of_backup_directory, NoWait, SyncStep, GeneralStep),
-			(self.change_permission_of_database_directory, NoWait, SyncStep, GeneralStep),
-			(self.restore_database, Wait, AsyncStep, GeneralStep),
-			(self.rollback_permission_of_database_directory, NoWait, SyncStep, CleanupStep),
-			(self.unmount_volume_from_instance, NoWait, SyncStep, CleanupStep),
-			(self.delete_mount_point, NoWait, SyncStep, CleanupStep),
-			(self.detach_volume_from_instance, NoWait, SyncStep, CleanupStep),
-			(self.wait_for_volume_to_be_detached, Wait, SyncStep, CleanupStep),
-			(self.delete_volume, NoWait, SyncStep, CleanupStep),
+			(self.wait_for_pending_snapshot_to_be_completed, AsyncStep, GeneralStep),
+			(self.create_volume_from_snapshot, SyncStep, GeneralStep),
+			(self.wait_for_volume_to_be_available, SyncStep, GeneralStep),
+			(self.attach_volume_to_instance, SyncStep, GeneralStep),
+			(self.create_mount_point, SyncStep, GeneralStep),
+			(self.mount_volume_to_instance, SyncStep, GeneralStep),
+			(self.change_permission_of_backup_directory, SyncStep, GeneralStep),
+			(self.change_permission_of_database_directory, SyncStep, GeneralStep),
+			(self.restore_database, AsyncStep, GeneralStep),
+			(self.rollback_permission_of_database_directory, SyncStep, CleanupStep),
+			(self.unmount_volume_from_instance, SyncStep, CleanupStep),
+			(self.delete_mount_point, SyncStep, CleanupStep),
+			(self.detach_volume_from_instance, SyncStep, CleanupStep),
+			(self.wait_for_volume_to_be_detached, SyncStep, CleanupStep),
+			(self.delete_volume, SyncStep, CleanupStep),
 		]
 
 		steps = []
-		for method, wait_for_completion, is_async, is_cleanup_step in methods:
+		for method, is_async, is_cleanup_step in methods:
 			steps.append(
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
-					"wait_for_completion": wait_for_completion,
 					"is_async": is_async,
 					"is_cleanup_step": is_cleanup_step,
 				}
@@ -551,9 +547,9 @@ class PhysicalBackupRestoration(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def next(self, ignore_version=False) -> None:
+	def next(self) -> None:
 		self.status = "Running"
-		self.save(ignore_version=ignore_version)
+		self.save(ignore_version=True)
 		next_step = self.next_step
 
 		if not next_step:
@@ -624,19 +620,12 @@ class PhysicalBackupRestoration(Document):
 		if not step.start:
 			step.start = frappe.utils.now_datetime()
 		step.status = "Running"
-		ignore_version_while_saving = False
 		try:
 			result = getattr(self, step.method)()
 			step.status = result.name
 			if step.is_async and result == StepStatus.Running:
 				self.save(ignore_version=True)
 				return
-			if step.wait_for_completion:
-				step.attempts = step.attempts + 1
-				if result == StepStatus.Pending:
-					# Wait some time before the next run
-					ignore_version_while_saving = True
-					time.sleep(1)
 		except Exception:
 			step.status = "Failure"
 			step.traceback = frappe.get_traceback(with_context=True)
@@ -647,7 +636,7 @@ class PhysicalBackupRestoration(Document):
 		if step.status == "Failure":
 			self.fail()
 		else:
-			self.next(ignore_version_while_saving)
+			self.next()
 
 	def get_step(self, step_name) -> PhysicalBackupRestorationStep | None:
 		for step in self.steps:
