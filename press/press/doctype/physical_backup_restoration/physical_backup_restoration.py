@@ -578,6 +578,8 @@ class PhysicalBackupRestoration(Document):
 			step_name=next_step_name,
 			enqueue_after_commit=True,
 			at_front=True,
+			deduplicate=True,
+			job_name=f"physical_restoration||{self.name}||{next_step_name}",
 		)
 
 	@frappe.whitelist()
