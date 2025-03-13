@@ -151,7 +151,7 @@ class AccountRequest(Document):
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def send_verification_email(self, send_otp_mail=False):  # noqa: C901
+	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
 		if frappe.conf.developer_mode:
@@ -218,6 +218,27 @@ class AccountRequest(Document):
 			capture("verification_email_sent", "fc_signup", self.email)
 		frappe.sendmail(
 			sender=sender,
+			recipients=self.email,
+			subject=subject,
+			template=template,
+			args=args,
+			now=True,
+		)
+
+	def send_login_mail(self):
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			print(rf"\Login OTP for {self.email}:")
+			print(self.otp)
+			print()
+			return
+
+		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		args = {
+			"otp": self.otp,
+		}
+		template = "login_otp"
+
+		frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
 			template=template,
