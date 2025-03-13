@@ -151,7 +151,7 @@ class AccountRequest(Document):
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def send_verification_email(self):  # noqa: C901
+	def send_verification_email(self, send_otp_mail=False):  # noqa: C901
 		url = self.get_verification_url()
 
 		if frappe.conf.developer_mode:
@@ -191,7 +191,7 @@ class AccountRequest(Document):
 		else:
 			template = "verify_account"
 
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by and self.role != "Press Admin" and not send_otp_mail:
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 

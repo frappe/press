@@ -128,7 +128,7 @@ def resend_otp(account_request: str):
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
 	account_request.reset_otp()
-	account_request.send_verification_email()
+	account_request.send_verification_email(send_otp_mail=True)
 
 
 @frappe.whitelist(allow_guest=True)
