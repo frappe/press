@@ -75,6 +75,7 @@
 									placeholder="johndoe@mail.com"
 									autocomplete="email"
 									v-model="email"
+									:disabled="otpSent && !usePassword"
 									required
 								/>
 

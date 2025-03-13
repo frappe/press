@@ -60,6 +60,7 @@
 					<form v-else-if="!sites.fetched">
 						<FormControl
 							label="Email"
+							:disabled="showOTPField"
 							class="w-full"
 							v-model="email"
 							placeholder="johndoe@mail.com"
