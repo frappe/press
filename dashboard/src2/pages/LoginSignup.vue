@@ -163,7 +163,7 @@
 								<!-- OAuth Authentication -->
 								<template v-else>
 									<Button class="mt-4" variant="solid">
-										Log In with {{ oauthProviderName }}
+										Log in with {{ oauthProviderName }}
 									</Button>
 								</template>
 
@@ -259,7 +259,7 @@
 									{{
 										$route.name == 'Login'
 											? 'New member? Create a new account.'
-											: 'Already have an account? Log In.'
+											: 'Already have an account? Log in.'
 									}}
 								</router-link>
 							</div>
@@ -322,7 +322,7 @@
 								{{
 									$route.name == 'Login'
 										? 'New member? Create a new account.'
-										: 'Already have an account? Log In.'
+										: 'Already have an account? Log in.'
 								}}
 							</router-link>
 						</div>
@@ -761,9 +761,9 @@ export default {
 				return 'Reset password';
 			} else if (this.isLogin) {
 				if (this.saasProduct) {
-					return `Log In to your account to start using ${this.saasProduct.title}`;
+					return `Log in to your account to start using ${this.saasProduct.title}`;
 				}
-				return 'Log In to your account';
+				return 'Log in to your account';
 			} else {
 				if (this.saasProduct) {
 					return `Sign up to create your ${this.saasProduct.title} site`;
