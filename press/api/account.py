@@ -149,7 +149,7 @@ def send_otp(email: str):
 		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	account_request.reset_otp()
-	account_request.send_verification_email()
+	account_request.send_verification_email(send_otp_mail=True)
 
 
 @frappe.whitelist(allow_guest=True)
