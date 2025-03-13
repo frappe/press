@@ -70,8 +70,7 @@
   "backup_limit",
   "physical_backups_section",
   "disable_physical_backup",
-  "enable_physical_restore_failover",
-  "physical_restore_docker_image",
+  "max_concurrent_physical_restorations",
   "docker_tab",
   "section_break_59",
   "docker_registry_url",
@@ -1343,18 +1342,6 @@
    "label": "Physical Backups"
   },
   {
-   "default": "0",
-   "description": "If physical restore fails, it will spawn up a new database container to try logical restoration.",
-   "fieldname": "enable_physical_restore_failover",
-   "fieldtype": "Check",
-   "label": "Enable Physical Restore Failover"
-  },
-  {
-   "fieldname": "physical_restore_docker_image",
-   "fieldtype": "Data",
-   "label": "Physical Restore Docker Image"
-  },
-  {
    "fieldname": "spamd_section",
    "fieldtype": "Section Break",
    "label": "Spamd"
@@ -1383,11 +1370,17 @@
    "fieldname": "spamd_api_secret",
    "fieldtype": "Password",
    "label": "Spamd API Secret"
+  },
+  {
+   "default": "2",
+   "fieldname": "max_concurrent_physical_restorations",
+   "fieldtype": "Int",
+   "label": "Max Concurrent Physical Restorations"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-02-18 17:47:56.410653",
+ "modified": "2025-03-13 01:50:21.645351",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

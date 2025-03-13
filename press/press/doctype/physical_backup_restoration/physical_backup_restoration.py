@@ -10,6 +10,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Callable
 
 import frappe
+import frappe.utils
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -702,14 +703,53 @@ class PhysicalBackupRestoration(Document):
 
 def process_scheduled_restorations():
 	scheduled_restorations = frappe.get_list(
-		"Physical Backup Restoration",
-		filters={"status": "Scheduled"},
-		pluck="name",
-		order_by="creation asc",
+		"Physical Backup Restoration", filters={"status": "Scheduled"}, pluck="name", order_by="creation asc"
 	)
+	max_concurrent_restorations = frappe.utils.cint(
+		frappe.get_cached_value("Press Settings", "Press Settings", "max_concurrent_physical_restorations")
+	)
+	db_servers_with_max_running_concurrent_restorations = set()
+	db_servers_with_incident = set(
+		frappe.db.get_all(
+			"Incident",
+			filters={
+				"resource_type": "Database Server",
+				"status": ["in", ["Confirmed", "Acknowledged", "Investigating"]],
+			},
+			pluck="resource",
+		)
+	)
+
 	for restoration in scheduled_restorations:
 		try:
 			doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", restoration)
+			"""
+			Avoid to start restoration on server, if DB server has incident
+			"""
+			if doc.destination_server in db_servers_with_incident:
+				continue
+
+			"""
+			Take count of `Running` restorations on db server
+			If count is less than `max_concurrent_restorations`, then start the restoration
+			"""
+			running_restorations = frappe.db.count(
+				"Physical Backup Restoration",
+				filters={"status": "Running", "destination_server": doc.destination_server},
+			)
+			if running_restorations > max_concurrent_restorations:
+				db_servers_with_max_running_concurrent_restorations.add(doc.destination_server)
+				continue
+
+			"""
+			Check if DB server has `enable_physical_backup` checked
+			If not, then skip the restoration
+			"""
+			if not frappe.utils.cint(
+				frappe.db.get_value("Database Server", doc.destination_server, "enable_physical_backup")
+			):
+				continue
+
 			doc.next()
 			frappe.db.commit()
 		except Exception:
