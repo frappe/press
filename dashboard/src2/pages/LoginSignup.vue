@@ -128,7 +128,7 @@
 												variant="solid"
 												@click="verifyOTPAndLogin"
 											>
-												Submit Verification Code
+												Submit verification code
 											</Button>
 											<Button
 												class="w-full"
@@ -137,7 +137,7 @@
 												:disabled="otpResendCountdown > 0"
 												@click="$resources.sendOTP.submit()"
 											>
-												Resend Verification Code
+												Resend verification code
 												{{
 													otpResendCountdown > 0
 														? `in ${otpResendCountdown} seconds`
@@ -155,7 +155,7 @@
 											variant="solid"
 											@click="$resources.sendOTP.submit()"
 										>
-											Send Verification Code
+											Send verification code
 										</Button>
 									</template>
 								</template>
@@ -233,7 +233,7 @@
 									}"
 									icon-left="mail"
 								>
-									Continue with Email Verification Code
+									Continue with Email verification code
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
@@ -303,7 +303,7 @@
 								@click="$resources.resendOTP.submit()"
 								:disabled="otpResendCountdown > 0"
 							>
-								Resend Verification Code
+								Resend verification code
 								{{
 									otpResendCountdown > 0
 										? `in ${otpResendCountdown} seconds`
