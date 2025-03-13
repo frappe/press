@@ -191,7 +191,7 @@ class AccountRequest(Document):
 		else:
 			template = "verify_account"
 
-			if self.invited_by and self.role != "Press Admin" and not send_otp_mail:
+			if self.invited_by and self.role != "Press Admin":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
