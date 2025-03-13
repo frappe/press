@@ -64,7 +64,6 @@ def signup(email, product=None, referrer=None):
 	frappe.set_user(current_user)
 	if account_request:
 		return account_request.name
-	return None
 
 	return None
 
@@ -72,14 +71,45 @@ def signup(email, product=None, referrer=None):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
 def verify_otp(account_request: str, otp: str):
+	from frappe.auth import get_login_attempt_tracker
+
 	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
+
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
+		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
 	if account_request.otp != otp:
+		ip_tracker and ip_tracker.add_failure_attempt()
 		frappe.throw("Invalid OTP. Please try again.")
+
+	ip_tracker and ip_tracker.add_success_attempt()
 	account_request.reset_otp()
 	return account_request.request_key
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def verify_otp_and_login(email: str, otp: str):
+	from frappe.auth import get_login_attempt_tracker
+
+	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
+
+	if not account_request:
+		frappe.throw("Please sign up first")
+
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
+
+	if account_request.otp != otp:
+		ip_tracker and ip_tracker.add_failure_attempt()
+		frappe.throw("Invalid OTP. Please try again.")
+
+	ip_tracker and ip_tracker.add_success_attempt()
+	account_request.reset_otp()
+
+	return frappe.local.login_manager.login_as(email)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -97,6 +127,27 @@ def resend_otp(account_request: str):
 	# ensure no team has been created with this email
 	if frappe.db.exists("Team", {"user": account_request.email}) and not account_request.product_trial:
 		frappe.throw("Invalid Email")
+	account_request.reset_otp()
+	account_request.send_verification_email()
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60)
+def send_otp(email: str):
+	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
+
+	if not account_request:
+		frappe.throw("Please sign up first")
+
+	account_request: "AccountRequest" = frappe.get_doc("Account Request", account_request)
+
+	# if last OTP was sent less than 30 seconds ago, throw an error
+	if (
+		account_request.otp_generated_at
+		and (frappe.utils.now_datetime() - account_request.otp_generated_at).seconds < 30
+	):
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
+
 	account_request.reset_otp()
 	account_request.send_verification_email()
 
@@ -122,9 +173,6 @@ def setup_account(  # noqa: C901
 	if not user_exists:
 		if not first_name:
 			frappe.throw("First Name is required")
-
-		if not password and not (oauth_signup or oauth_domain):
-			frappe.throw("Password is required")
 
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
