@@ -7,6 +7,7 @@
  "field_order": [
   "site",
   "status",
+  "cleanup_completed",
   "site_backup",
   "disk_snapshot",
   "column_break_zind",
@@ -192,11 +193,17 @@
    "fieldname": "physical_restoration_test",
    "fieldtype": "Data",
    "label": "Physical Restoration Test"
+  },
+  {
+   "default": "0",
+   "fieldname": "cleanup_completed",
+   "fieldtype": "Check",
+   "label": "Cleanup Completed"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-12 18:46:12.956759",
+ "modified": "2025-03-13 17:25:24.393508",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

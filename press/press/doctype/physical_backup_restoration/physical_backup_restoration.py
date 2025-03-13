@@ -41,6 +41,7 @@ class PhysicalBackupRestoration(Document):
 			PhysicalBackupRestorationStep,
 		)
 
+		cleanup_completed: DF.Check
 		destination_database: DF.Data
 		destination_server: DF.Link
 		device: DF.Data | None
@@ -542,11 +543,11 @@ class PhysicalBackupRestoration(Document):
 		self.cleanup()
 
 	def finish(self) -> None:
-		self.status = "Success"
-		# If any step is failed, then mark the job as failed
-		for step in self.steps:
-			if step.status == "Failure":
-				self.status = "Failure"
+		# if status is already Success or Failure, then don't change it
+		if self.status in ("Success", "Failure"):
+			return
+		self.status = "Success" if self.is_restoration_steps_successful() else "Failure"
+		self.cleanup_completed = self.is_cleanup_steps_successful()
 		self.end = frappe.utils.now_datetime()
 		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 		self.save()
@@ -558,18 +559,25 @@ class PhysicalBackupRestoration(Document):
 			self.save(ignore_version=True)
 
 		next_step_name = None
+		next_step_method_name = None
 
 		# Check if current_step is running
 		current_running_step = self.current_running_step
 		if current_running_step:
 			next_step_name = current_running_step.name
+			next_step_method_name = self.current_running_step.method
 		elif self.next_step:
 			next_step_name = self.next_step.name
+			next_step_method_name = self.next_step.method
 
 		if not next_step_name:
 			# We've executed everything
 			self.finish()
 			return
+
+		if next_step_method_name == self.rollback_permission_of_database_directory.__name__:
+			# That means `Restore Database` step has been executed
+			self.finish()
 
 		frappe.enqueue_doc(
 			self.doctype,
@@ -612,6 +620,7 @@ class PhysicalBackupRestoration(Document):
 		self.end = None
 		self.duration = None
 		self.job = None
+		self.cleanup_completed = False
 		for step in self.steps:
 			step.status = "Pending"
 		self.save(ignore_version=True)
@@ -653,6 +662,17 @@ class PhysicalBackupRestoration(Document):
 			if step.status == "Pending":
 				return step
 		return None
+
+	def is_restoration_steps_successful(self) -> bool:
+		return all(step.status == "Success" for step in self.steps)
+
+	def is_cleanup_steps_successful(self) -> bool:
+		if self.cleanup_completed:
+			return True
+
+		# All the cleanup steps need to be Skipped or Success
+		# Anything else means the cleanup steps are not completed
+		return all(step.status in ("Skipped", "Success") for step in self.steps)
 
 	@frappe.whitelist()
 	def execute_step(self, step_name):
