@@ -543,13 +543,13 @@ class PhysicalBackupRestoration(Document):
 		self.cleanup()
 
 	def finish(self) -> None:
-		# if status is already Success or Failure, then don't change it
+		# if status is already Success or Failure, then don't change the durations
 		if self.status in ("Success", "Failure"):
-			return
+			self.end = frappe.utils.now_datetime()
+			self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
+
 		self.status = "Success" if self.is_restoration_steps_successful() else "Failure"
 		self.cleanup_completed = self.is_cleanup_steps_successful()
-		self.end = frappe.utils.now_datetime()
-		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
 		self.save()
 
 	@frappe.whitelist()
@@ -752,6 +752,35 @@ def process_scheduled_restorations():
 				continue
 
 			"""
+			Check if DB server has `enable_physical_backup` checked
+			If not, then skip the restoration
+			"""
+			if not frappe.utils.cint(
+				frappe.db.get_value("Database Server", doc.destination_server, "enable_physical_backup")
+			):
+				continue
+
+			"""
+			Take count of `Success` or `Failure` restorations with cleanup pending on db server
+			If there are more than 4 jobs like this, don't start new job.
+
+			Until unless cleanup happens the temporary volumes will be left behind in EBS.
+			That can create issues in restorations.
+			"""
+			if (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"status": ["Success", "Failure"],
+						"cleanup_completed": 0,
+						"destination_server": doc.destination_server,
+					},
+				)
+				> 4
+			):
+				continue
+
+			"""
 			Take count of `Running` restorations on db server
 			If count is less than `max_concurrent_restorations`, then start the restoration
 			"""
@@ -761,15 +790,6 @@ def process_scheduled_restorations():
 			)
 			if running_restorations > max_concurrent_restorations:
 				db_servers_with_max_running_concurrent_restorations.add(doc.destination_server)
-				continue
-
-			"""
-			Check if DB server has `enable_physical_backup` checked
-			If not, then skip the restoration
-			"""
-			if not frappe.utils.cint(
-				frappe.db.get_value("Database Server", doc.destination_server, "enable_physical_backup")
-			):
 				continue
 
 			doc.next()
