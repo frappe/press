@@ -170,6 +170,10 @@ class PressSettings(Document):
 		"partnership_fee_usd",
 	)
 
+	def validate(self):
+		if self.max_concurrent_physical_restorations > 5:
+			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
