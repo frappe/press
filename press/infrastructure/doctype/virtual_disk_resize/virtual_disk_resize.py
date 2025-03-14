@@ -453,7 +453,7 @@ class VirtualDiskResize(Document):
 		machine = self.machine
 		# Only do this if we have 2 volumes (Root and Data)
 		# If we have more than 2 volumes, we can't be sure which one is the data volume
-		if len(machine.volumes) == 2 and machine.has_data_volume():
+		if len(machine.volumes) == 2 and machine.has_data_volume:
 			# Clear the volumes list, it'll be repopulated on save
 			server = machine.get_server()
 			server.volumes = []
