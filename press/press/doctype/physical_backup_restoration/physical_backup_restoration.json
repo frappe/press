@@ -23,6 +23,7 @@
   "section_break_gthb",
   "restore_specific_tables",
   "tables_to_restore",
+  "log_ansible_output",
   "section_break_swxv",
   "start",
   "column_break_xqdd",
@@ -199,11 +200,17 @@
    "fieldname": "cleanup_completed",
    "fieldtype": "Check",
    "label": "Cleanup Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "log_ansible_output",
+   "fieldtype": "Check",
+   "label": "Log Ansible Output"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-13 17:25:24.393508",
+ "modified": "2025-03-15 12:40:21.147676",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",

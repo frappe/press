@@ -203,7 +203,7 @@ def sync_snapshots():
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "created_for_site_update": ["==", 1]},
+		{"status": "Pending", "created_for_site_update": 1},
 		order_by="modified asc",
 	)
 	start_time = time.time()

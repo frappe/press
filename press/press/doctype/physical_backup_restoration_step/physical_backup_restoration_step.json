@@ -14,8 +14,10 @@
   "end",
   "duration",
   "column_break_qtmf",
-  "is_async",
   "is_cleanup_step",
+  "is_async",
+  "wait_for_completion",
+  "attempts",
   "section_break_vyao",
   "traceback"
  ],
@@ -84,12 +86,24 @@
    "fieldname": "is_cleanup_step",
    "fieldtype": "Check",
    "label": "Is Cleanup Step"
+  },
+  {
+   "default": "0",
+   "fieldname": "wait_for_completion",
+   "fieldtype": "Check",
+   "label": "Wait For Completion"
+  },
+  {
+   "default": "0",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-12 14:14:36.418632",
+ "modified": "2025-03-15 11:44:12.299561",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration Step",
