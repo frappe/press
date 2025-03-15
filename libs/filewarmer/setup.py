@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name="filewarmer",
-	version="0.0.15",
+	version="0.0.16",
 	description="Library to read file blocks as fast as possible",
 	long_description=open("README.md").read(),  # noqa: SIM115
 	long_description_content_type="text/markdown",

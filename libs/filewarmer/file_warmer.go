@@ -33,7 +33,7 @@ type FileReadRequest struct {
 func main() {}
 
 //export WarmupFiles
-func WarmupFiles(filePaths **C.char, filePathCount C.int, method *C.char, smallFileSizeThreshold C.long, blockSizeForSmallFiles C.long, blockSizeForLargeFiles C.long, smallFilesWorkerCount C.int, largeFilesWorkerCount C.int) {
+func WarmupFiles(filePaths **C.char, filePathCount C.int, method *C.char, smallFileSizeThreshold C.long, blockSizeForSmallFiles C.long, blockSizeForLargeFiles C.long, smallFilesWorkerCount C.int, largeFilesWorkerCount C.int, loggingEnabled C.int) {
 	// Convert the C char array back to a Go slice
 	length := int(filePathCount)
 	tmpSlice := (*[1 << 30]*C.char)(unsafe.Pointer(filePaths))[:length:length]
@@ -43,10 +43,10 @@ func WarmupFiles(filePaths **C.char, filePathCount C.int, method *C.char, smallF
 	}
 
 	// Call the Go function with converted values
-	warmupFiles(goFilePaths, FileIOMethod(C.GoString(method)), int64(smallFileSizeThreshold), int64(blockSizeForSmallFiles), int64(blockSizeForLargeFiles), int(smallFilesWorkerCount), int(largeFilesWorkerCount))
+	warmupFiles(goFilePaths, FileIOMethod(C.GoString(method)), int64(smallFileSizeThreshold), int64(blockSizeForSmallFiles), int64(blockSizeForLargeFiles), int(smallFilesWorkerCount), int(largeFilesWorkerCount), int(loggingEnabled) == 1)
 }
 
-func warmupFiles(filePaths []string, method FileIOMethod, smallFileSizeThreshold int64, blockSizeForSmallFiles int64, blockSizeForLargeFiles int64, smallFilesWorkerCount int, largeFilesWorkerCount int) {
+func warmupFiles(filePaths []string, method FileIOMethod, smallFileSizeThreshold int64, blockSizeForSmallFiles int64, blockSizeForLargeFiles int64, smallFilesWorkerCount int, largeFilesWorkerCount int, loggingEnabled bool) {
 	var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 	var totalFileSize int64
@@ -60,7 +60,9 @@ func warmupFiles(filePaths []string, method FileIOMethod, smallFileSizeThreshold
 		// And reading large file will add/remove cache and slow down system and the whole process
 		file, err := os.OpenFile(filePath, os.O_RDONLY|syscall.O_DIRECT, 0)
 		if err != nil {
-			logger.Printf("Error opening file: %v\n", err)
+			if loggingEnabled {
+				logger.Printf("Error opening file: %v\n", err)
+			}
 			continue
 		}
 		defer file.Close()
@@ -88,24 +90,28 @@ func warmupFiles(filePaths []string, method FileIOMethod, smallFileSizeThreshold
 	wg.Add(2)
 
 	// Always run a single thread for small files
-	warmupFileGroup(smallFiles, method, blockSizeForSmallFiles, smallFilesWorkerCount, &wg, logger)
-	warmupFileGroup(largeFiles, method, blockSizeForLargeFiles, largeFilesWorkerCount, &wg, logger)
+	warmupFileGroup(smallFiles, method, blockSizeForSmallFiles, smallFilesWorkerCount, &wg, logger, loggingEnabled)
+	warmupFileGroup(largeFiles, method, blockSizeForLargeFiles, largeFilesWorkerCount, &wg, logger, loggingEnabled)
 
 	// Log stats
-	totalData := (float64(totalFileSize) / 1024 / 1024) // MB
-	duration := time.Since(startTime)
-	logger.Printf("~~~ Overall Stats ~~~ \n")
-	logger.Printf("Total time: %.2f seconds\n", duration.Seconds())
-	logger.Printf("Total data: %.2f MB\n", totalData)
-	logger.Printf("Average throughput: %.2f MB/s\n", totalData/duration.Seconds())
+	if loggingEnabled {
+		totalData := (float64(totalFileSize) / 1024 / 1024) // MB
+		duration := time.Since(startTime)
+		logger.Printf("~~~ Overall Stats ~~~ \n")
+		logger.Printf("Total time: %.2f seconds\n", duration.Seconds())
+		logger.Printf("Total data: %.2f MB\n", totalData)
+		logger.Printf("Average throughput: %.2f MB/s\n", totalData/duration.Seconds())
+	}
 
 }
 
-func warmupFileGroup(files []*os.File, method FileIOMethod, blockSize int64, workersCount int, wg *sync.WaitGroup, logger *log.Logger) {
+func warmupFileGroup(files []*os.File, method FileIOMethod, blockSize int64, workersCount int, wg *sync.WaitGroup, logger *log.Logger, loggingEnabled bool) {
 	defer wg.Done()
 
 	if len(files) == 0 {
-		logger.Println("No files to warmup")
+		if loggingEnabled {
+			logger.Println("No files to warmup")
+		}
 		return
 	}
 
@@ -136,7 +142,9 @@ func warmupFileGroup(files []*os.File, method FileIOMethod, blockSize int64, wor
 	}
 
 	for _, file := range files {
-		logger.Printf("Warming up file: %s\n", file.Name())
+		if loggingEnabled {
+			logger.Printf("Warming up file: %s\n", file.Name())
+		}
 
 		fd := int(file.Fd())
 
