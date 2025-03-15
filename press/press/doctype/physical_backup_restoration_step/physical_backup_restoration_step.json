@@ -27,7 +27,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
+   "options": "Pending\nScheduled\nRunning\nSkipped\nSuccess\nFailure",
    "reqd": 1
   },
   {
@@ -103,7 +103,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-15 11:44:12.299561",
+ "modified": "2025-03-15 17:35:31.824500",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration Step",

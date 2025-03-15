@@ -26,7 +26,7 @@ class PhysicalBackupRestorationStep(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		status: DF.Literal["Pending", "Scheduled", "Running", "Skipped", "Success", "Failure"]
 		step: DF.Data
 		traceback: DF.Code | None
 		wait_for_completion: DF.Check
