@@ -18,6 +18,8 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 class SiteBackup(Document):
 	# begin: auto-generated types
@@ -221,7 +223,7 @@ class SiteBackup(Document):
 
 		server = frappe.get_value("Site", self.site, "server")
 		database_server = frappe.get_value("Server", server, "database_server")
-		virtual_machine = frappe.get_doc(
+		virtual_machine: VirtualMachine = frappe.get_doc(
 			"Virtual Machine", frappe.get_value("Database Server", database_server, "virtual_machine")
 		)
 
