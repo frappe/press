@@ -744,7 +744,8 @@ class PhysicalBackupRestoration(Document):
 		self.add_comment(text=comment)
 
 
-def process_scheduled_restorations():
+def process_scheduled_restorations():  # noqa: C901
+	start_time = time.time()
 	scheduled_restorations = frappe.get_list(
 		"Physical Backup Restoration", filters={"status": "Scheduled"}, pluck="name", order_by="creation asc"
 	)
@@ -764,6 +765,13 @@ def process_scheduled_restorations():
 	)
 
 	for restoration in scheduled_restorations:
+		if time.time() - start_time > 25:
+			"""
+			The job runs every 30 seconds
+			So, if we already took 25 seconds, then we should just stop processing
+			and let the next job run
+			"""
+			break
 		try:
 			doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", restoration)
 			"""
