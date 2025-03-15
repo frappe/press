@@ -69,7 +69,7 @@ class VirtualDiskSnapshot(Document):
 
 			# Trigger execution of restoration
 			physical_restore_name = frappe.db.exists(
-				"Physical Backup Restoration", {"disk_snapshot": self.name}
+				"Physical Backup Restoration", {"disk_snapshot": self.name, "status": "Running"}
 			)
 			if physical_restore_name:
 				frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
