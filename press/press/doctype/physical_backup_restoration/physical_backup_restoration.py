@@ -564,24 +564,21 @@ class PhysicalBackupRestoration(Document):
 			self.status = "Running"
 			self.save(ignore_version=True)
 
-		next_step_name = None
-		next_step_method_name = None
+		next_step_to_run = None
 
 		# Check if current_step is running
 		current_running_step = self.current_running_step
 		if current_running_step:
-			next_step_name = current_running_step.name
-			next_step_method_name = self.current_running_step.method
+			next_step_to_run = current_running_step
 		elif self.next_step:
-			next_step_name = self.next_step.name
-			next_step_method_name = self.next_step.method
+			next_step_to_run = self.next_step
 
-		if not next_step_name:
+		if not next_step_to_run:
 			# We've executed everything
 			self.finish()
 			return
 
-		if next_step_method_name == self.rollback_permission_of_database_directory.__name__:
+		if next_step_to_run.method == self.rollback_permission_of_database_directory.__name__:
 			# That means `Restore Database` step has been executed
 			self.finish()
 
@@ -589,10 +586,11 @@ class PhysicalBackupRestoration(Document):
 			self.doctype,
 			self.name,
 			"execute_step",
-			step_name=next_step_name,
+			step_name=next_step_to_run.name,
 			enqueue_after_commit=True,
-			deduplicate=True,
-			job_id=f"physical_restoration||{self.name}||{next_step_name}",
+			deduplicate=next_step_to_run.wait_for_completion
+			is False,  # Don't deduplicate if wait_for_completion is True
+			job_id=f"physical_restoration||{self.name}||{next_step_to_run.name}",
 		)
 
 	@frappe.whitelist()
@@ -704,7 +702,9 @@ class PhysicalBackupRestoration(Document):
 			"""
 			if step.wait_for_completion and result == StepStatus.Running:
 				step.attempts = step.attempts + 1 if step.attempts else 1
+				self.save(ignore_version=True)
 				time.sleep(1)
+
 		except Exception:
 			step.status = "Failure"
 			step.traceback = frappe.get_traceback(with_context=True)
