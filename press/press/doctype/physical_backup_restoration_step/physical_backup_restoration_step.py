@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -32,4 +32,6 @@ class PhysicalBackupRestorationStep(Document):
 		wait_for_completion: DF.Check
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		if self.is_async and self.wait_for_completion:
+			frappe.throw("Cannot wait for completion on async kind of step")

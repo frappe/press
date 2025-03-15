@@ -247,6 +247,9 @@ scheduler_events = {
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
+		"* * * * * 0/30": [
+			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
@@ -270,6 +273,7 @@ scheduler_events = {
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
 		],
 		"* * * * *": [
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",

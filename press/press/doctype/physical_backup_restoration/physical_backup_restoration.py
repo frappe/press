@@ -11,11 +11,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, Callable
 
 import frappe
+import frappe.utils
 from frappe.model.document import Document
 
 from press.agent import Agent
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.physical_restoration_test.physical_restoration_test import trigger_next_restoration
+from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
@@ -40,6 +42,7 @@ class PhysicalBackupRestoration(Document):
 			PhysicalBackupRestorationStep,
 		)
 
+		cleanup_completed: DF.Check
 		destination_database: DF.Data
 		destination_server: DF.Link
 		device: DF.Data | None
@@ -47,6 +50,7 @@ class PhysicalBackupRestoration(Document):
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job: DF.Link | None
+		log_ansible_output: DF.Check
 		mount_point: DF.Data | None
 		physical_restoration_test: DF.Data | None
 		restore_specific_tables: DF.Check
@@ -54,7 +58,7 @@ class PhysicalBackupRestoration(Document):
 		site_backup: DF.Link
 		source_database: DF.Data
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Scheduled", "Running", "Success", "Failure"]
 		steps: DF.Table[PhysicalBackupRestorationStep]
 		tables_to_restore: DF.JSON | None
 		volume: DF.Data | None
@@ -69,38 +73,38 @@ class PhysicalBackupRestoration(Document):
 
 	@property
 	def migration_steps(self):
-		Wait = True
-		NoWait = False
 		SyncStep = False
 		AsyncStep = True
 		GeneralStep = False
 		CleanupStep = True
+		Wait = True
+		NoWait = False
 		methods = [
-			(self.wait_for_pending_snapshot_to_be_completed, Wait, SyncStep, GeneralStep),
-			(self.create_volume_from_snapshot, NoWait, SyncStep, GeneralStep),
-			(self.wait_for_volume_to_be_available, Wait, SyncStep, GeneralStep),
-			(self.attach_volume_to_instance, NoWait, SyncStep, GeneralStep),
-			(self.create_mount_point, NoWait, SyncStep, GeneralStep),
-			(self.mount_volume_to_instance, NoWait, SyncStep, GeneralStep),
-			(self.change_permission_of_backup_directory, NoWait, SyncStep, GeneralStep),
-			(self.change_permission_of_database_directory, NoWait, SyncStep, GeneralStep),
-			(self.restore_database, Wait, AsyncStep, GeneralStep),
-			(self.rollback_permission_of_database_directory, NoWait, SyncStep, CleanupStep),
-			(self.unmount_volume_from_instance, NoWait, SyncStep, CleanupStep),
-			(self.delete_mount_point, NoWait, SyncStep, CleanupStep),
-			(self.detach_volume_from_instance, NoWait, SyncStep, CleanupStep),
-			(self.wait_for_volume_to_be_detached, Wait, SyncStep, CleanupStep),
-			(self.delete_volume, NoWait, SyncStep, CleanupStep),
+			(self.wait_for_pending_snapshot_to_be_completed, AsyncStep, NoWait, GeneralStep),
+			(self.create_volume_from_snapshot, SyncStep, NoWait, GeneralStep),
+			(self.wait_for_volume_to_be_available, SyncStep, Wait, GeneralStep),
+			(self.attach_volume_to_instance, SyncStep, NoWait, GeneralStep),
+			(self.create_mount_point, SyncStep, NoWait, GeneralStep),
+			(self.mount_volume_to_instance, SyncStep, NoWait, GeneralStep),
+			(self.change_permission_of_backup_directory, SyncStep, NoWait, GeneralStep),
+			(self.change_permission_of_database_directory, SyncStep, NoWait, GeneralStep),
+			(self.restore_database, AsyncStep, NoWait, GeneralStep),
+			(self.rollback_permission_of_database_directory, SyncStep, NoWait, CleanupStep),
+			(self.unmount_volume_from_instance, SyncStep, NoWait, CleanupStep),
+			(self.delete_mount_point, SyncStep, NoWait, CleanupStep),
+			(self.detach_volume_from_instance, SyncStep, NoWait, CleanupStep),
+			(self.wait_for_volume_to_be_detached, SyncStep, Wait, CleanupStep),
+			(self.delete_volume, SyncStep, NoWait, CleanupStep),
 		]
 
 		steps = []
-		for method, wait_for_completion, is_async, is_cleanup_step in methods:
+		for method, is_async, wait_for_completion, is_cleanup_step in methods:
 			steps.append(
 				{
 					"step": method.__doc__,
 					"method": method.__name__,
-					"wait_for_completion": wait_for_completion,
 					"is_async": is_async,
+					"wait_for_completion": wait_for_completion,
 					"is_cleanup_step": is_cleanup_step,
 				}
 			)
@@ -174,7 +178,10 @@ class PhysicalBackupRestoration(Document):
 		if snapshot.status == "Completed":
 			return StepStatus.Success
 		if snapshot.status == "Pending":
-			return StepStatus.Pending
+			# Send `Running` status to the queue
+			# So, that the current job can exit for now
+			# Once Snapshot status updated, someone will trigger this job again
+			return StepStatus.Running
 		return StepStatus.Failure
 
 	def create_volume_from_snapshot(self) -> StepStatus:
@@ -192,7 +199,7 @@ class PhysicalBackupRestoration(Document):
 		if status == "available":
 			return StepStatus.Success
 		if status == "creating":
-			return StepStatus.Pending
+			return StepStatus.Running
 		return StepStatus.Failure
 
 	def attach_volume_to_instance(self) -> StepStatus:
@@ -368,10 +375,10 @@ class PhysicalBackupRestoration(Document):
 			site = frappe.get_doc("Site", self.site)
 			agent = Agent(self.destination_server, "Database Server")
 			self.job = agent.physical_restore_database(site, self)
-			return StepStatus.Pending
+			return StepStatus.Running
 		job_status = frappe.db.get_value("Agent Job", self.job, "status")
 		if job_status in ["Undelivered", "Running", "Pending"]:
-			return StepStatus.Pending
+			return StepStatus.Running
 		if job_status == "Success":
 			return StepStatus.Success
 		return StepStatus.Failure
@@ -430,7 +437,7 @@ class PhysicalBackupRestoration(Document):
 			return StepStatus.Success
 		if state == "error":
 			return StepStatus.Failure
-		return StepStatus.Pending
+		return StepStatus.Running
 
 	def delete_volume(self) -> StepStatus:
 		"""Delete volume"""
@@ -509,6 +516,9 @@ class PhysicalBackupRestoration(Document):
 
 	@frappe.whitelist()
 	def execute(self):
+		if self.status == "Scheduled":
+			frappe.msgprint("Restoration is already in Scheduled state. It will be executed soon.")
+			return
 		# If restore_specific_tables was provided, but no tables are there to restore, then skip the restore
 		if self.restore_specific_tables:
 			try:
@@ -522,49 +532,67 @@ class PhysicalBackupRestoration(Document):
 				self.save()
 				return
 		# Else, continue with the restoration
-		self.status = "Running"
+		# Just set to scheduled, scheduler will pick it up
+		self.status = "Scheduled"
 		self.start = frappe.utils.now_datetime()
 		self.save()
-		self.next()
 
-	def fail(self) -> None:
+	def fail(self, save: bool = True) -> None:
 		self.status = "Failure"
 		for step in self.steps:
 			if step.status == "Pending":
 				step.status = "Skipped"
 		self.end = frappe.utils.now_datetime()
 		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
-		self.save()
+		if save:
+			self.save(ignore_version=True)
 		self.cleanup()
 
 	def finish(self) -> None:
-		self.status = "Success"
-		# If any step is failed, then mark the job as failed
-		for step in self.steps:
-			if step.status == "Failure":
-				self.status = "Failure"
-		self.end = frappe.utils.now_datetime()
-		self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
+		# if status is already Success or Failure, then don't update the status and durations
+		if self.status not in ("Success", "Failure"):
+			self.status = "Success" if self.is_restoration_steps_successful() else "Failure"
+			self.end = frappe.utils.now_datetime()
+			self.duration = frappe.utils.cint((self.end - self.start).total_seconds())
+
+		self.cleanup_completed = self.is_cleanup_steps_successful()
 		self.save()
 
 	@frappe.whitelist()
-	def next(self, ignore_version=False) -> None:
-		self.status = "Running"
-		self.save(ignore_version=ignore_version)
-		next_step = self.next_step
+	def next(self) -> None:
+		if self.status != "Running" and self.status not in ("Success", "Failure"):
+			self.status = "Running"
+			self.save(ignore_version=True)
 
-		if not next_step:
+		next_step_name = None
+		next_step_method_name = None
+
+		# Check if current_step is running
+		current_running_step = self.current_running_step
+		if current_running_step:
+			next_step_name = current_running_step.name
+			next_step_method_name = self.current_running_step.method
+		elif self.next_step:
+			next_step_name = self.next_step.name
+			next_step_method_name = self.next_step.method
+
+		if not next_step_name:
 			# We've executed everything
 			self.finish()
 			return
+
+		if next_step_method_name == self.rollback_permission_of_database_directory.__name__:
+			# That means `Restore Database` step has been executed
+			self.finish()
 
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"execute_step",
-			step_name=next_step.name,
+			step_name=next_step_name,
 			enqueue_after_commit=True,
-			at_front=True,
+			deduplicate=True,
+			job_id=f"physical_restoration||{self.name}||{next_step_name}",
 		)
 
 	@frappe.whitelist()
@@ -582,6 +610,25 @@ class PhysicalBackupRestoration(Document):
 
 		if is_cleanup_required:
 			self.next()
+
+	@frappe.whitelist(allow_guest=True)
+	def retry(self):
+		# Check if all the cleanup steps are completed
+		for step in self.steps:
+			if not step.is_cleanup_step:
+				continue
+			if step.status not in ["Success", "Skipped"]:
+				frappe.throw("Cleanup steps are not completed. Please clean up before retrying.")
+		# Reset the states
+		self.status = "Scheduled"
+		self.start = None
+		self.end = None
+		self.duration = None
+		self.job = None
+		self.cleanup_completed = False
+		for step in self.steps:
+			step.status = "Pending"
+		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def force_continue(self) -> None:
@@ -608,11 +655,29 @@ class PhysicalBackupRestoration(Document):
 		self.save()
 
 	@property
+	def current_running_step(self) -> PhysicalBackupRestorationStep | None:
+		for step in self.steps:
+			if step.status == "Running":
+				return step
+		return None
+
+	@property
 	def next_step(self) -> PhysicalBackupRestorationStep | None:
 		for step in self.steps:
 			if step.status == "Pending":
 				return step
 		return None
+
+	def is_restoration_steps_successful(self) -> bool:
+		return all(step.status == "Success" for step in self.steps if not step.is_cleanup_step)
+
+	def is_cleanup_steps_successful(self) -> bool:
+		if self.cleanup_completed:
+			return True
+
+		# All the cleanup steps need to be Skipped or Success
+		# Anything else means the cleanup steps are not completed
+		return all(step.status in ("Skipped", "Success") for step in self.steps)
 
 	@frappe.whitelist()
 	def execute_step(self, step_name):
@@ -620,20 +685,26 @@ class PhysicalBackupRestoration(Document):
 
 		if not step.start:
 			step.start = frappe.utils.now_datetime()
-		step.status = "Running"
-		ignore_version_while_saving = False
 		try:
 			result = getattr(self, step.method)()
 			step.status = result.name
-			if step.is_async and result == StepStatus.Pending:
+			"""
+			If the step is async and function has returned Running,
+			Then save the document and return
+
+			Some external process will resume the job later
+			"""
+			if step.is_async and result == StepStatus.Running:
 				self.save(ignore_version=True)
 				return
-			if step.wait_for_completion:
-				step.attempts = step.attempts + 1
-				if result == StepStatus.Pending:
-					# Wait some time before the next run
-					ignore_version_while_saving = True
-					time.sleep(1)
+
+			"""
+			If the step is sync and function is marked to wait for completion,
+			Then wait for the function to complete
+			"""
+			if step.wait_for_completion and result == StepStatus.Running:
+				step.attempts = step.attempts + 1 if step.attempts else 1
+				time.sleep(1)
 		except Exception:
 			step.status = "Failure"
 			step.traceback = frappe.get_traceback(with_context=True)
@@ -642,9 +713,10 @@ class PhysicalBackupRestoration(Document):
 		step.duration = (step.end - step.start).total_seconds()
 
 		if step.status == "Failure":
-			self.fail()
+			self.fail(save=True)
 		else:
-			self.next(ignore_version_while_saving)
+			self.save(ignore_version=True)
+			self.next()
 
 	def get_step(self, step_name) -> PhysicalBackupRestorationStep | None:
 		for step in self.steps:
@@ -665,9 +737,98 @@ class PhysicalBackupRestoration(Document):
 		return result
 
 	def add_command(self, command, result):
+		if not self.log_ansible_output:
+			return
 		pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
 		comment = f"<pre><code>{command}</code></pre><pre><code>{pretty_result}</pre></code>"
 		self.add_comment(text=comment)
+
+
+def process_scheduled_restorations():  # noqa: C901
+	start_time = time.time()
+	scheduled_restorations = frappe.get_list(
+		"Physical Backup Restoration", filters={"status": "Scheduled"}, pluck="name", order_by="creation asc"
+	)
+	max_concurrent_restorations = frappe.utils.cint(
+		frappe.get_cached_value("Press Settings", "Press Settings", "max_concurrent_physical_restorations")
+	)
+	db_servers_with_max_running_concurrent_restorations = set()
+	db_servers_with_incident = set(
+		frappe.db.get_all(
+			"Incident",
+			filters={
+				"resource_type": "Database Server",
+				"status": ["in", ["Confirmed", "Acknowledged", "Investigating"]],
+			},
+			pluck="resource",
+		)
+	)
+
+	for restoration in scheduled_restorations:
+		if time.time() - start_time > 25:
+			"""
+			The job runs every 30 seconds
+			So, if we already took 25 seconds, then we should just stop processing
+			and let the next job run
+			"""
+			break
+		try:
+			doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", restoration)
+			"""
+			Avoid to start restoration on server, if DB server has incident
+			"""
+			if doc.destination_server in db_servers_with_incident:
+				continue
+
+			"""
+			Check if DB server has `enable_physical_backup` checked
+			If not, then skip the restoration
+			"""
+			if not frappe.utils.cint(
+				frappe.db.get_value("Database Server", doc.destination_server, "enable_physical_backup")
+			):
+				continue
+
+			"""
+			Take count of `Success` or `Failure` restorations with cleanup pending on db server
+			If there are more than 4 jobs like this, don't start new job.
+
+			Until unless cleanup happens the temporary volumes will be left behind in EBS.
+			That can create issues in restorations.
+			"""
+			if (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"status": ["in", ["Success", "Failure"]],
+						"cleanup_completed": 0,
+						"destination_server": doc.destination_server,
+					},
+				)
+				> 4
+			):
+				continue
+
+			"""
+			Take count of `Running` restorations on db server
+			If count is less than `max_concurrent_restorations`, then start the restoration
+			"""
+			running_restorations = frappe.db.count(
+				"Physical Backup Restoration",
+				filters={"status": "Running", "destination_server": doc.destination_server},
+			)
+			if running_restorations > max_concurrent_restorations:
+				db_servers_with_max_running_concurrent_restorations.add(doc.destination_server)
+				continue
+
+			if doc.status != "Scheduled":
+				continue
+
+			doc.next()
+			frappe.db.commit()
+		except Exception:
+			log_error(title="Physical Backup Restoration Start Error", physical_restoration=restoration)
+			frappe.db.rollback()
 
 
 def process_job_update(job):
@@ -676,7 +837,7 @@ def process_job_update(job):
 
 	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
 	if job.status in ["Success", "Failure", "Delivery Failure"]:
-		doc.next(ignore_version=True)
+		doc.next()
 
 
 def get_physical_backup_restoration_steps(name: str) -> list[dict]:

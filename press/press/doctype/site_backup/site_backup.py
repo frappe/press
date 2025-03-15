@@ -18,6 +18,8 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 class SiteBackup(Document):
 	# begin: auto-generated types
@@ -221,7 +223,7 @@ class SiteBackup(Document):
 
 		server = frappe.get_value("Site", self.site, "server")
 		database_server = frappe.get_value("Server", server, "database_server")
-		virtual_machine = frappe.get_doc(
+		virtual_machine: VirtualMachine = frappe.get_doc(
 			"Virtual Machine", frappe.get_value("Database Server", database_server, "virtual_machine")
 		)
 
@@ -244,7 +246,7 @@ class SiteBackup(Document):
 			expires_in_sec=15,
 		)
 
-		virtual_machine.create_snapshots(exclude_boot_volume=True, created_for_site_update=True)
+		virtual_machine.create_snapshots(exclude_boot_volume=True, physical_backup=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
 			frappe.throw("Failed to create a snapshot for the database server")
 		frappe.db.set_value(
