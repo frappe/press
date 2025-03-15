@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   git \
   mariadb-client \
   libmariadb-dev \
+  pkg-config \
   pv \
   ntp \
   wget \
