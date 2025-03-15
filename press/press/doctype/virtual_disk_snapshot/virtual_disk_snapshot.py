@@ -25,9 +25,9 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
-		created_for_site_update: DF.Check
 		duration: DF.Duration | None
 		mariadb_root_password: DF.Password | None
+		physical_backup: DF.Check
 		progress: DF.Data | None
 		region: DF.Link
 		size: DF.Int
@@ -188,9 +188,7 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all(
-		"Virtual Disk Snapshot", {"status": "Pending", "created_for_site_update": ["!=", 1]}
-	)
+	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": ["!=", 1]})
 	for snapshot in snapshots:
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
@@ -203,7 +201,7 @@ def sync_snapshots():
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "created_for_site_update": 1},
+		{"status": "Pending", "physical_backup": 1},
 		order_by="modified asc",
 	)
 	start_time = time.time()
@@ -230,7 +228,7 @@ def delete_old_snapshots():
 		{
 			"status": "Completed",
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
-			"created_for_site_update": 0,
+			"physical_backup": 0,
 		},
 		pluck="name",
 		order_by="creation asc",

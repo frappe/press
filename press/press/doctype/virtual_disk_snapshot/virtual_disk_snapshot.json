@@ -13,7 +13,6 @@
   "cluster",
   "region",
   "volume_id",
-  "created_for_site_update",
   "section_break_41e4",
   "size",
   "start_time",
@@ -21,7 +20,8 @@
   "progress",
   "duration",
   "section_break_12",
-  "mariadb_root_password"
+  "mariadb_root_password",
+  "physical_backup"
  ],
  "fields": [
   {
@@ -129,9 +129,9 @@
   },
   {
    "default": "0",
-   "fieldname": "created_for_site_update",
+   "fieldname": "physical_backup",
    "fieldtype": "Check",
-   "label": "Created For Site Update"
+   "label": "Physical Backup"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -141,7 +141,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-01-28 15:28:24.912058",
+ "modified": "2025-03-15 16:12:58.373642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
