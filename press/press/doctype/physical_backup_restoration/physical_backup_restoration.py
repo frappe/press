@@ -434,6 +434,8 @@ class PhysicalBackupRestoration(Document):
 			return StepStatus.Success
 		state = self.virtual_machine.get_state_of_volume(self.volume)
 		if state in ["available", "deleting", "deleted"]:
+			with contextlib.suppress(Exception):
+				self.virtual_machine.sync()
 			return StepStatus.Success
 		if state == "error":
 			return StepStatus.Failure
