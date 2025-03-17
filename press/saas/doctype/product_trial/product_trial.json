@@ -34,6 +34,9 @@
   "section_break_ncgc",
   "email_subject",
   "email_header_content",
+  "suspension_email_section",
+  "suspension_email_subject",
+  "suspension_email_content",
   "setup_wizard_tab",
   "setup_wizard_completion_mode",
   "setup_wizard_payload_generator_script",
@@ -197,7 +200,8 @@
   },
   {
    "fieldname": "section_break_ncgc",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Signup E-mail"
   },
   {
    "default": "<p><strong>You're almost done!</strong></p>\n<p>Just one quick step left to get you started with Frappe Cloud!</p>",
@@ -225,8 +229,26 @@
    "fieldtype": "Data",
    "label": "Redirect To After Login",
    "reqd": 1
+  },
+  {
+   "fieldname": "suspension_email_section",
+   "fieldtype": "Section Break",
+   "label": "Suspension E-mail"
+  },
+  {
+   "default": "Your {product_title} trial just expired",
+   "fieldname": "suspension_email_subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "default": "{% import \"templates/emails/macros.html\" as utils %}\n{% extends \"templates/emails/base.html\" %}\n\n{% block content %}\n\n\t<div class=\"p-8 bg-white\">\n\t\t<p class=\"mb-6\">\n\t\t    The trial period of your {{ doc.title }} site <strong>{{ site.host_name }}</strong> has ended on {{ frappe.utils.getdate(site.trial_end_date).strftime('%%d %%B, %%Y') }}.\n\t\t    Your site will now be suspended. Choose a plan and add your billing information for your site to resume service.\n\t\t</p>\n\t\t{{ utils.button('Open Dashboard', frappe.get_url('/dashboard/sites/' + site.name)) }}\n\t\t{{ utils.separator() }}\n\t\t{{ utils.signature() }}\n\t</div>\n\n{% endblock %}\n",
+   "fieldname": "suspension_email_content",
+   "fieldtype": "HTML Editor",
+   "label": "Content"
   }
  ],
+ "grid_page_length": 50,
  "image_field": "logo",
  "index_web_pages_for_search": 1,
  "links": [
@@ -239,7 +261,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2024-11-21 22:13:33.724250",
+ "modified": "2025-03-17 15:21:39.791490",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
@@ -259,6 +281,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
