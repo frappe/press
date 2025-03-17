@@ -65,6 +65,7 @@ frappe.ui.form.on('TLS Certificate', {
 			'full_chain',
 			'issued_on',
 			'expires_on',
+			'team',
 		];
 		fields.forEach(function (field) {
 			frm.set_df_property(field, 'read_only', !frm.doc.custom);

@@ -13,6 +13,7 @@ from datetime import datetime
 import frappe
 import OpenSSL
 from frappe.model.document import Document
+from frappe.query_builder.functions import Date
 
 from press.api.site import check_dns_cname_a
 from press.exceptions import (
@@ -64,10 +65,13 @@ class TLSCertificate(Document):
 
 	def validate(self):
 		if self.custom:
+			if not self.team:
+				frappe.throw("Team is mandatory for custom certificates")
+
 			self.configure_full_chain()
 			self.validate_key_length()
 			self.validate_key_certificate_association()
-			self._extract_certificate_details()
+			# self._extract_certificate_details()
 
 	def on_update(self):
 		if self.is_new():
@@ -346,31 +350,32 @@ def renew_tls_certificates():
 
 
 def notify_custom_tls_renewal():
-	seven_days = frappe.utils.add_days(None, 7)
-	fifteen_days = frappe.utils.add_days(None, 15)
+	seven_days = frappe.utils.add_days(None, 7).date()
+	fifteen_days = frappe.utils.add_days(None, 15).date()
 
-	for dt in [fifteen_days, seven_days]:
-		pending = frappe.get_all(
-			"TLS Certificate",
-			fields=["name", "domain", "team", "expires_on"],
-			filters={
-				"status": ("in", ("Active", "Failure")),
-				"expires_on": ("<=", dt),
-				"custom": 1,
-			},
-			ignore_ifnull=True,
-			order_by="expires_on ASC, status DESC",
-		)
+	tls_cert = frappe.qb.DocType("TLS Certificate")
 
-		for certificate in pending:
-			if certificate.team:
-				team = frappe.get_value("Team", certificate.team, ["email", "name"], as_dict=True)
+	# Notify team members 15 days and 7 days before expiry
 
-				frappe.sendmail(
-					recipients=team,
-					subject=f"TLS Certificate Renewal Required: {certificate.name}",
-					message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
-				)
+	query = (
+		frappe.qb.from_(tls_cert)
+		.select(tls_cert.name, tls_cert.domain, tls_cert.team, tls_cert.expires_on)
+		.where(tls_cert.status.isin(["Active", "Failure"]))
+		.where((Date(tls_cert.expires_on) == seven_days) | (Date(tls_cert.expires_on) == fifteen_days))
+		.where(tls_cert.custom == 1)
+	)
+
+	pending = query.run(as_dict=True)
+
+	for certificate in pending:
+		if certificate.team:
+			notify_email = frappe.get_value("Team", certificate.team, "notify_email")
+
+			frappe.sendmail(
+				recipients=notify_email,
+				subject=f"TLS Certificate Renewal Required: {certificate.name}",
+				message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
+			)
 
 
 def update_server_tls_certifcate(server, certificate):
