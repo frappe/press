@@ -94,7 +94,7 @@ class DripEmail(Document):
 			reference_name=self.name,
 			unsubscribe_message="Don't send me help messages",
 			attachments=self.get_setup_guides(context.get("account_request", "")),
-			template="drip_email",
+			template="product_trial_email",
 			args={"message": message, "title": app.title, "logo": app.image},
 		)
 

@@ -450,6 +450,7 @@ def send_suspend_mail(site: str, product: str) -> None:
 	recipient = frappe.get_value("Team", site.team, "user")
 	args = {}
 
+	# TODO: enable it when we use the full logo
 	# if product.email_full_logo:
 	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
 	if product.logo:
@@ -468,7 +469,6 @@ def send_suspend_mail(site: str, product: str) -> None:
 		sender=sender,
 		recipients=recipient,
 		subject=subject,
-		template="drip_email",
+		template="product_trial_email",
 		args=args,
-		now=True,
 	)
