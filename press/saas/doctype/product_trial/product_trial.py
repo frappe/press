@@ -24,7 +24,6 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site.site import Site
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,
@@ -47,6 +46,8 @@ class ProductTrial(Document):
 		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
+		suspension_email_content: DF.HTMLEditor | None
+		suspension_email_subject: DF.Data | None
 		title: DF.Data
 		trial_days: DF.Int
 		trial_plan: DF.Link
@@ -429,3 +430,45 @@ def _sync_product_site_users(product_benches):
 				reference_name=bench.name,
 			)
 			frappe.db.rollback()
+
+
+def send_suspend_mail(site: str, product: str) -> None:
+	"""Send suspension mail to the site owner."""
+
+	site = frappe.db.get_value("Site", site, ["team", "trial_end_date", "name", "host_name"], as_dict=True)
+	product = frappe.db.get_value(
+		"Product Trial",
+		product,
+		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
+		as_dict=True,
+	)
+	sender = ""
+	subject = (
+		product.suspension_email_subject.format(product_title=product.title)
+		or f"Your {product.title} site is expired"
+	)
+	recipient = frappe.get_value("Team", site.team, "user")
+	args = {}
+
+	# if product.email_full_logo:
+	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
+	if product.logo:
+		args.update({"logo": get_url(product.logo, True), "title": product.title})
+	if product.email_account:
+		sender = frappe.get_value("Email Account", product.email_account, "email_id")
+
+	context = {
+		"site": site,
+		"product": product,
+	}
+	message = frappe.render_template(product.suspension_email_content, context)
+	args.update({"message": message})
+
+	frappe.sendmail(
+		sender=sender,
+		recipients=recipient,
+		subject=subject,
+		template="drip_email",
+		args=args,
+		now=True,
+	)
