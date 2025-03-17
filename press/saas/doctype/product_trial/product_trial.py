@@ -134,13 +134,13 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.save(ignore_permissions=True)
-			site.create_subscription(plan)
 			site.signup_time = frappe.utils.now()
-			site.reload()
-			site.generate_saas_communication_secret(create_agent_job=True, save=True)
+			site.generate_saas_communication_secret(create_agent_job=True, save=False)
+			site.save()  # Save is needed for create_subscription to work TODO: remove this
+			site.create_subscription(plan)
 			if self.create_additional_system_user:
 				agent_job_name = site.create_user_with_team_info()
+			site.reload()
 			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
@@ -169,7 +169,7 @@ class ProductTrial(Document):
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
-			site.insert(ignore_permissions=True)
+			site.insert()
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		return site, agent_job_name, bool(standby_site)
