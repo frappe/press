@@ -224,7 +224,7 @@
 									}"
 									icon-left="key"
 								>
-									Continue with Password
+									Continue with password
 								</Button>
 								<Button
 									v-else-if="isLogin && usePassword"
@@ -234,7 +234,7 @@
 									}"
 									icon-left="mail"
 								>
-									Continue with Email verification code
+									Continue with verification code
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
