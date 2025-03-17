@@ -96,7 +96,6 @@ class DripEmail(Document):
 			attachments=self.get_setup_guides(context.get("account_request", "")),
 			template="drip_email",
 			args={"message": message, "title": app.title, "logo": app.image},
-			now=True,
 		)
 
 	@property
