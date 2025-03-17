@@ -1695,11 +1695,11 @@
   ]
  },
  {
-  "disabled_auto_retry": 1,
+  "disabled_auto_retry": 0,
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-03-05 22:57:23.072792",
+  "modified": "2025-03-17 17:57:23.072792",
   "name": "Physical Restore Database",
   "request_method": "POST",
   "request_path": "/database/physical-restore",
