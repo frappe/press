@@ -214,41 +214,51 @@ class ProductTrialRequest(Document):
 		if not signup_values:
 			signup_values = {}
 
-		product = frappe.get_doc("Product Trial", self.product_trial)
-		for field in product.signup_fields:
-			if field.fieldtype == "Password" and field.fieldname in signup_values:
-				password_analysis = test_password_strength(signup_values[field.fieldname])
-				if int(field.min_password_score) > password_analysis["score"]:
-					suggestions = password_analysis["feedback"]["suggestions"]
-					suggestion = suggestions[0] if suggestions else ""
-					frappe.throw(f"{field.label} is easy to guess.\n{suggestion}")
-				signup_values[field.fieldname] = encrypt_password(signup_values[field.fieldname])
+		try:
+			product = frappe.get_doc("Product Trial", self.product_trial)
+			for field in product.signup_fields:
+				if field.fieldtype == "Password" and field.fieldname in signup_values:
+					password_analysis = test_password_strength(signup_values[field.fieldname])
+					if int(field.min_password_score) > password_analysis["score"]:
+						suggestions = password_analysis["feedback"]["suggestions"]
+						suggestion = suggestions[0] if suggestions else ""
+						frappe.throw(f"{field.label} is easy to guess.\n{suggestion}")
+					signup_values[field.fieldname] = encrypt_password(signup_values[field.fieldname])
 
-		self.signup_details = json.dumps(signup_values)
-		self.validate_signup_fields()
-		product = frappe.get_doc("Product Trial", self.product_trial)
-		self.status = "Wait for Site"
-		self.site_creation_started_on = now_datetime()
-		self.domain = f"{subdomain}.{product.domain}"
-		site, agent_job_name, is_standby_site = product.setup_trial_site(
-			subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
-		)
-		self.agent_job = agent_job_name
-		self.site = site.name
-		self.save()
+			self.signup_details = json.dumps(signup_values)
+			self.validate_signup_fields()
+			product = frappe.get_doc("Product Trial", self.product_trial)
+			self.status = "Wait for Site"
+			self.site_creation_started_on = now_datetime()
+			self.domain = f"{subdomain}.{product.domain}"
+			site, agent_job_name, is_standby_site = product.setup_trial_site(
+				subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
+			)
+			self.agent_job = agent_job_name
+			self.site = site.name
+			self.save()
 
-		if is_standby_site and product.setup_wizard_completion_mode == "auto":
-			self.complete_setup_wizard()
+			if is_standby_site and product.setup_wizard_completion_mode == "auto":
+				self.complete_setup_wizard()
 
-		user_mail = frappe.db.get_value("Team", self.team, "user")
-		frappe.get_doc(
-			{
-				"doctype": "Site User",
-				"site": site.name,
-				"user": user_mail,
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True)
+			user_mail = frappe.db.get_value("Team", self.team, "user")
+			frappe.get_doc(
+				{
+					"doctype": "Site User",
+					"site": site.name,
+					"user": user_mail,
+					"enabled": 1,
+				}
+			).insert(ignore_permissions=True)
+		except Exception as e:
+			log_error(
+				title="Product Trial Request Site Creation Error",
+				data=e,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+			self.status = "Error"
+			self.save()
 
 	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):  # noqa: C901
