@@ -277,7 +277,6 @@ def unsubscribe(email: str, account_request: str) -> None:
 	site = frappe.db.get_value("Site", {"account_request": account_request}, ["host_name", "name"], as_dict=1)
 	print(site, is_unsubscribed)
 	if is_unsubscribed:  # already unsubscribed
-		print("Already Unsubscribed")
 		return frappe.respond_as_web_page(
 			_("Already Unsubscribed"),
 			_(
