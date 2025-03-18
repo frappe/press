@@ -189,7 +189,7 @@ class DeployCandidate(Document):
 					["name", "status", "end", "duration", "bench"],
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
-				) or [{}]
+				) or [frappe._dict()]
 				doc.jobs.append(
 					{
 						**job[0],
