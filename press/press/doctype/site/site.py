@@ -2134,6 +2134,11 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
+		if self.standby_for_product:
+			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
+
+			send_suspend_mail(self.name, self.standby_for_product)
+
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
 			"Marketplace App Subscription",

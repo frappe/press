@@ -442,6 +442,10 @@ def send_suspend_mail(site: str, product: str) -> None:
 		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
 		as_dict=True,
 	)
+
+	if not site or not product:
+		return
+
 	sender = ""
 	subject = (
 		product.suspension_email_subject.format(product_title=product.title)
