@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import time
+
 import boto3
 import frappe
 import frappe.utils
@@ -23,9 +25,9 @@ class VirtualDiskSnapshot(Document):
 		from frappe.types import DF
 
 		cluster: DF.Link | None
-		created_for_site_update: DF.Check
 		duration: DF.Duration | None
 		mariadb_root_password: DF.Password | None
+		physical_backup: DF.Check
 		progress: DF.Data | None
 		region: DF.Link
 		size: DF.Int
@@ -63,7 +65,14 @@ class VirtualDiskSnapshot(Document):
 			self.duration = frappe.utils.cint(
 				frappe.utils.time_diff_in_seconds(frappe.utils.now_datetime(), self.creation)
 			)
-			self.save()
+			self.save(ignore_version=True)
+
+			# Trigger execution of restoration
+			physical_restore_name = frappe.db.exists(
+				"Physical Backup Restoration", {"disk_snapshot": self.name, "status": "Running"}
+			)
+			if physical_restore_name:
+				frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
 
 	@frappe.whitelist()
 	def sync(self):
@@ -179,9 +188,7 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all(
-		"Virtual Disk Snapshot", {"status": "Pending", "created_for_site_update": ["!=", 1]}
-	)
+	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": ["!=", 1]})
 	for snapshot in snapshots:
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
@@ -191,13 +198,37 @@ def sync_snapshots():
 			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)
 
 
+def sync_physical_backup_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot",
+		{"status": "Pending", "physical_backup": 1},
+		order_by="modified asc",
+	)
+	start_time = time.time()
+	for snapshot in snapshots:
+		# if already spent more than 1 minute, then don't do sync anymore
+		# because this function will be executed every minute
+		# we don't want to run two syncs at the same time
+		if time.time() - start_time > 60:
+			break
+
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(
+				title="Physical Restore : Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name
+			)
+
+
 def delete_old_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
 		{
 			"status": "Completed",
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
-			"created_for_site_update": 0,
+			"physical_backup": 0,
 		},
 		pluck="name",
 		order_by="creation asc",

@@ -20,7 +20,8 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fetch_from": "site.team",
@@ -63,7 +64,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-05 23:05:20.377096",
+ "modified": "2025-03-18 10:10:37.246343",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan Change",

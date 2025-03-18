@@ -24,7 +24,6 @@ class ProductTrial(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site.site import Site
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
 		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
 			ProductTrialSignupField,
@@ -47,6 +46,8 @@ class ProductTrial(Document):
 		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
+		suspension_email_content: DF.HTMLEditor | None
+		suspension_email_subject: DF.Data | None
 		title: DF.Data
 		trial_days: DF.Int
 		trial_plan: DF.Link
@@ -134,13 +135,13 @@ class ProductTrial(Document):
 			site.account_request = account_request
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
-			site.save(ignore_permissions=True)
-			site.create_subscription(plan)
 			site.signup_time = frappe.utils.now()
-			site.reload()
-			site.generate_saas_communication_secret(create_agent_job=True, save=True)
+			site.generate_saas_communication_secret(create_agent_job=True, save=False)
+			site.save()  # Save is needed for create_subscription to work TODO: remove this
+			site.create_subscription(plan)
 			if self.create_additional_system_user:
 				agent_job_name = site.create_user_with_team_info()
+			site.reload()
 			self.set_site_domain(site, site_domain)
 		else:
 			# Create a site in the cluster, if standby site is not available
@@ -169,7 +170,7 @@ class ProductTrial(Document):
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
 			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
 				site.flags.ignore_additional_system_user_creation = True
-			site.insert(ignore_permissions=True)
+			site.insert()
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
 		return site, agent_job_name, bool(standby_site)
@@ -429,3 +430,49 @@ def _sync_product_site_users(product_benches):
 				reference_name=bench.name,
 			)
 			frappe.db.rollback()
+
+
+def send_suspend_mail(site: str, product: str) -> None:
+	"""Send suspension mail to the site owner."""
+
+	site = frappe.db.get_value("Site", site, ["team", "trial_end_date", "name", "host_name"], as_dict=True)
+	product = frappe.db.get_value(
+		"Product Trial",
+		product,
+		["title", "suspension_email_subject", "suspension_email_content", "email_full_logo", "logo"],
+		as_dict=True,
+	)
+
+	if not site or not product:
+		return
+
+	sender = ""
+	subject = (
+		product.suspension_email_subject.format(product_title=product.title)
+		or f"Your {product.title} site is expired"
+	)
+	recipient = frappe.get_value("Team", site.team, "user")
+	args = {}
+
+	# TODO: enable it when we use the full logo
+	# if product.email_full_logo:
+	# 	args.update({"image_path": get_url(product.email_full_logo, True)})
+	if product.logo:
+		args.update({"logo": get_url(product.logo, True), "title": product.title})
+	if product.email_account:
+		sender = frappe.get_value("Email Account", product.email_account, "email_id")
+
+	context = {
+		"site": site,
+		"product": product,
+	}
+	message = frappe.render_template(product.suspension_email_content, context)
+	args.update({"message": message})
+
+	frappe.sendmail(
+		sender=sender,
+		recipients=recipient,
+		subject=subject,
+		template="product_trial_email",
+		args=args,
+	)

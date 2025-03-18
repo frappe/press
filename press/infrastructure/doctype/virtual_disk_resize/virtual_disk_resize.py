@@ -36,6 +36,7 @@ class VirtualDiskResize(Document):
 		downtime_start: DF.Datetime | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
+		expected_disk_size: DF.Int
 		filesystem_mount_point: DF.Data | None
 		filesystem_type: DF.Data | None
 		filesystems: DF.Code | None
@@ -261,7 +262,7 @@ class VirtualDiskResize(Document):
 		# New volume should be roughly 85% full after copying files
 		new_size = int(self.old_filesystem_used * 100 / 85)
 		self.new_filesystem_size = max(new_size, 10)  # Minimum 10 GB
-		self.new_volume_size = self.new_filesystem_size
+		self.new_volume_size = max(self.new_filesystem_size, self.expected_disk_size)
 		self.new_volume_iops, self.new_volume_throughput = self.get_optimal_performance_attributes()
 
 	def create_new_volume(self):
@@ -447,6 +448,18 @@ class VirtualDiskResize(Document):
 		self.old_volume_status = "Deleted"
 		return StepStatus.Success
 
+	def propagate_volume_id(self) -> StepStatus:
+		"Propagate volume id"
+		machine = self.machine
+		# Only do this if we have 2 volumes (Root and Data)
+		# If we have more than 2 volumes, we can't be sure which one is the data volume
+		if len(machine.volumes) == 2 and machine.has_data_volume:
+			# Clear the volumes list, it'll be repopulated on save
+			server = machine.get_server()
+			server.volumes = []
+			server.save()
+		return StepStatus.Success
+
 	@property
 	def machine(self):
 		return frappe.get_doc("Virtual Machine", self.virtual_machine)
@@ -474,6 +487,7 @@ class VirtualDiskResize(Document):
 			(self.start_service, NoWait),
 			(self.reduce_performance_of_new_volume, NoWait),
 			(self.delete_old_volume, NoWait),
+			(self.propagate_volume_id, NoWait),
 		]
 
 		steps = []

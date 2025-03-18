@@ -1157,6 +1157,7 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_dns_record(self):
+		self._create_default_site_domain()
 		domains = frappe.db.get_list(
 			"Site Domain", filters={"site": self.name}, fields=["domain"], pluck="domain"
 		)
@@ -2132,6 +2133,11 @@ class Site(Document, TagHelpers):
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
+
+		if self.standby_for_product:
+			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
+
+			send_suspend_mail(self.name, self.standby_for_product)
 
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
@@ -3364,9 +3370,8 @@ def process_uninstall_app_site_job_update(job):
 
 def process_marketplace_hooks_for_backup_restore(apps_from_backup: set[str], site: Site):
 	site_apps = set([app.app for app in site.apps])
-	apps_to_install = apps_from_backup - site_apps
 	apps_to_uninstall = site_apps - apps_from_backup
-	for app in apps_to_install:
+	for app in apps_from_backup:
 		if (
 			frappe.get_cached_value("Marketplace App", app, "subscription_type") == "Free"
 		):  # like india_compliance; no need to check subscription
@@ -3484,9 +3489,6 @@ def process_rename_site_job_update(job):  # noqa: C901
 		# update job obj with new name
 		job.reload()
 		updated_status = "Active"
-		from press.press.doctype.site.pool import create as create_pooled_sites
-
-		create_pooled_sites()
 
 	elif "Failure" in (first, second):
 		updated_status = "Broken"

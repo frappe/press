@@ -4,6 +4,7 @@ import {
 	LoadingIndicator,
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
+import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
@@ -198,6 +199,47 @@ export default {
 					router.push({ name: 'New Site' });
 				},
 			};
+		},
+		moreActions({ listResource: sites }) {
+			return [
+				{
+					label: 'Export as CSV',
+					icon: 'download',
+					onClick() {
+						const fields = [
+							'host_name',
+							'plan_title',
+							'cluster_title',
+							'group_title',
+							'version',
+						];
+
+						const data = sites.data.map((site) => {
+							const row = {};
+							fields.forEach((field) => {
+								row[field] = site[field];
+							});
+							return row;
+						});
+
+						let csv = unparse({
+							fields,
+							data,
+						});
+						csv = '\uFEFF' + csv; // for utf-8
+
+						// create a blob and trigger a download
+						const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+						const today = new Date().toISOString().split('T')[0];
+						const filename = `sites-${today}.csv`;
+						const link = document.createElement('a');
+						link.href = URL.createObjectURL(blob);
+						link.download = filename;
+						link.click();
+						URL.revokeObjectURL(link.href);
+					},
+				},
+			];
 		},
 	},
 	detail: {

@@ -14,10 +14,10 @@
   "end",
   "duration",
   "column_break_qtmf",
-  "wait_for_completion",
-  "is_async",
-  "attempts",
   "is_cleanup_step",
+  "is_async",
+  "wait_for_completion",
+  "attempts",
   "section_break_vyao",
   "traceback"
  ],
@@ -27,14 +27,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
+   "options": "Pending\nScheduled\nRunning\nSkipped\nSuccess\nFailure",
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "wait_for_completion",
-   "fieldtype": "Check",
-   "label": "Wait For Completion"
   },
   {
    "fieldname": "step",
@@ -73,11 +67,6 @@
    "label": "Duration"
   },
   {
-   "fieldname": "attempts",
-   "fieldtype": "Int",
-   "label": "Attempts"
-  },
-  {
    "fieldname": "section_break_vyao",
    "fieldtype": "Section Break"
   },
@@ -97,12 +86,24 @@
    "fieldname": "is_cleanup_step",
    "fieldtype": "Check",
    "label": "Is Cleanup Step"
+  },
+  {
+   "default": "0",
+   "fieldname": "wait_for_completion",
+   "fieldtype": "Check",
+   "label": "Wait For Completion"
+  },
+  {
+   "default": "0",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-20 16:48:34.338658",
+ "modified": "2025-03-15 17:35:31.824500",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration Step",

@@ -17,6 +17,7 @@ class FWUP:
 		block_size_for_large_files: int = 256 * 1024,  # 256KB
 		small_files_worker_count: int = 1,
 		large_files_worker_count: int = 4,
+		enable_logging: bool = False,
 	) -> None:
 		if not file_paths:
 			return
@@ -30,6 +31,9 @@ class FWUP:
 		# Get a pointer to the array of C string pointers
 		list_ptr = ctypes.cast(ctypes.pointer(c_arr), ctypes.POINTER(ctypes.POINTER(ctypes.c_char_p)))
 
+		# Convert enable_logging to C int
+		enable_logging_int = 1 if enable_logging else 0
+
 		# Call the C function with converted arguments
 		self.lib.WarmupFiles(
 			list_ptr,
@@ -40,6 +44,7 @@ class FWUP:
 			ctypes.c_long(block_size_for_large_files),
 			ctypes.c_int(small_files_worker_count),
 			ctypes.c_int(large_files_worker_count),
+			ctypes.c_int(enable_logging_int),
 		)
 
 	def load_shared_library(self):
@@ -55,6 +60,7 @@ class FWUP:
 				ctypes.c_long,  # blockSizeForLargeFiles
 				ctypes.c_int,  # smallFilesWorkerCount
 				ctypes.c_int,  # largeFilesWorkerCount
+				ctypes.c_int,  # enabledLogging
 			]
 			self.lib.WarmupFiles.restype = None  # void return type
 

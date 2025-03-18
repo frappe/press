@@ -87,6 +87,7 @@ class DripEmail(Document):
 		message = frappe.render_template(self.message, context)
 		title = frappe.db.get_value("Marketplace App", self.saas_app, "title")
 		account_request = context.get("account_request", "")
+		app = frappe.db.get_value("Marketplace App", self.saas_app, ["title", "image"], as_dict=True)
 
 		# add to queue
 		frappe.sendmail(
@@ -100,8 +101,8 @@ class DripEmail(Document):
 			unsubscribe_method="api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
 			unsubscribe_params={"account_request": account_request.name},
 			attachments=self.get_setup_guides(account_request),
-			template="drip_email",
-			args={"message": message, "title": title},
+			template="product_trial_email",
+			args={"message": message, "title": app.title, "logo": app.image},
 		)
 
 	@property

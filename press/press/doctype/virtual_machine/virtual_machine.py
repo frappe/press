@@ -773,7 +773,7 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self, exclude_boot_volume=False, created_for_site_update=False):
+	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False):
 		"""
 		exclude_boot_volume is applicable only for Servers with data volume
 		"""
@@ -784,11 +784,11 @@ class VirtualMachine(Document):
 		# So that, we can get the correct reference of snapshots created in current session
 		self.flags.created_snapshots = []
 		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws(exclude_boot_volume, created_for_site_update)
+			self._create_snapshots_aws(exclude_boot_volume, physical_backup)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
 
-	def _create_snapshots_aws(self, exclude_boot_volume: bool, created_for_site_update: bool):
+	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool):
 		response = self.client().create_snapshots(
 			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
@@ -806,7 +806,7 @@ class VirtualMachine(Document):
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
-						"created_for_site_update": created_for_site_update,
+						"physical_backup": physical_backup,
 					}
 				).insert()
 				self.flags.created_snapshots.append(doc.name)

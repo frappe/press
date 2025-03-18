@@ -415,7 +415,6 @@ export default {
 								],
 								app_plans: appPlans,
 								cluster: this.cluster,
-								bench: this.bench ? this.selectedVersion.group.bench : null,
 								group: this.selectedVersion.group.name,
 								domain: this.options.domain,
 								subscription_plan: this.plan.name,

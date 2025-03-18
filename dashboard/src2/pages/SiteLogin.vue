@@ -60,6 +60,7 @@
 					<form v-else-if="!sites.fetched">
 						<FormControl
 							label="Email"
+							:disabled="showOTPField"
 							class="w-full"
 							v-model="email"
 							placeholder="johndoe@mail.com"
@@ -68,6 +69,7 @@
 							v-if="showOTPField"
 							label="Verification Code"
 							v-model="otp"
+							placeholder="123456"
 							class="mt-2"
 						/>
 						<div v-if="showOTPField">
@@ -84,12 +86,19 @@
 								@click="verifyOTP"
 							/>
 							<Button
-								label="Resend Verification Code"
 								variant="outline"
 								class="mt-2 w-full"
+								:disabled="otpResendCountdown > 0"
 								@click="sendOTP()"
 								:loading="sendOTPMethod.loading"
-							/>
+							>
+								Resend verification code
+								{{
+									otpResendCountdown > 0
+										? `in ${otpResendCountdown} seconds`
+										: ''
+								}}
+							</Button>
 						</div>
 						<Button
 							v-else
@@ -218,6 +227,13 @@ const email = ref(localStorage.getItem('product_site_user') || '');
 const otp = ref('');
 const showOTPField = ref(false);
 const loginError = ref(false);
+const otpResendCountdown = ref(0);
+
+setInterval(() => {
+	if (otpResendCountdown.value > 0) {
+		otpResendCountdown.value -= 1;
+	}
+}, 1000);
 
 const goBack = () => {
 	sites.reset();
@@ -297,6 +313,7 @@ const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
 	onSuccess: () => {
 		showOTPField.value = true;
+		otpResendCountdown.value = 30;
 		if (email.value) localStorage.setItem('site_login_email', email.value);
 	},
 });

@@ -11,7 +11,7 @@
 			<LoginBox
 				v-if="$resources?.siteRequest?.doc?.status === 'Site Created'"
 				title="Site created successfully"
-				:subtitle="`The trial site is ready at
+				:subtitle="`Your trial site is ready at
 					${$resources?.siteRequest?.doc?.domain || $resources?.siteRequest?.doc?.site}`"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -36,17 +36,13 @@
 							class="w-2/5"
 							icon-right="external-link"
 							@click="loginToSite"
-							:loading="
-								this.$resources?.siteRequest?.getLoginSid.loading ||
-								isRedirectingToSite
-							"
+							:loading="this.$resources?.siteRequest?.getLoginSid.loading"
 						>
 							Log In
 						</Button>
 					</div>
 				</div>
 				<ErrorMessage
-					v-if="!isRedirectingToSite"
 					class="w-full text-center"
 					:message="this.$resources?.siteRequest?.getLoginSid.error"
 				/>
@@ -158,7 +154,6 @@ export default {
 		return {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
-			isRedirectingToSite: false,
 			currentBuildStep: 'Preparing for build',
 		};
 	},
@@ -200,9 +195,8 @@ export default {
 							this.currentBuildStep =
 								data.current_step || this.currentBuildStep;
 							this.progressCount += 1;
-							if (data.progress == 100) {
-								this.loginToSite();
-							} else if (
+
+							if (
 								!(
 									this.$resources.siteRequest.getProgress.error &&
 									this.progressCount <= 10
@@ -223,7 +217,6 @@ export default {
 								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
 								'/desk';
 							const loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
-							this.isRedirectingToSite = true;
 							window.open(loginURL, '_blank');
 						},
 					},

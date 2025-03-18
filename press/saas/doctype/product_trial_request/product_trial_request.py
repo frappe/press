@@ -230,14 +230,12 @@ class ProductTrialRequest(Document):
 		self.status = "Wait for Site"
 		self.site_creation_started_on = now_datetime()
 		self.domain = f"{subdomain}.{product.domain}"
-		self.save(ignore_permissions=True)
-		self.reload()
 		site, agent_job_name, is_standby_site = product.setup_trial_site(
 			subdomain=subdomain, team=self.team, cluster=cluster, account_request=self.account_request
 		)
 		self.agent_job = agent_job_name
 		self.site = site.name
-		self.save(ignore_permissions=True)
+		self.save()
 
 		if is_standby_site and product.setup_wizard_completion_mode == "auto":
 			self.complete_setup_wizard()

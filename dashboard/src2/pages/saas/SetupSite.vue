@@ -30,7 +30,7 @@
 					<form class="w-full space-y-4" @submit.prevent="createSite">
 						<div class="w-full space-y-1.5">
 							<label class="block text-xs text-ink-gray-5">
-								Pick a subdomain for your site
+								Enter subdomain for your site
 							</label>
 							<div class="col-span-2 flex w-full">
 								<input

@@ -97,7 +97,8 @@
   {
    "fieldname": "secret_key",
    "fieldtype": "Data",
-   "label": "Secret Key"
+   "label": "Secret Key",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -107,7 +108,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-11-06 19:02:20.960429",
+ "modified": "2025-03-18 10:11:04.918139",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

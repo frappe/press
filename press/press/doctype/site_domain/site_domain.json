@@ -28,7 +28,8 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "domain",
@@ -107,7 +108,7 @@
   }
  ],
  "links": [],
- "modified": "2024-06-21 15:19:41.758948",
+ "modified": "2025-03-18 10:09:23.846340",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
