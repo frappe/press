@@ -127,7 +127,8 @@
    "label": "Status",
    "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "admin_password",
@@ -687,7 +688,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-02-21 16:53:33.942822",
+ "modified": "2025-03-18 10:11:29.472701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
