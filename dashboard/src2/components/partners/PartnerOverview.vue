@@ -73,7 +73,7 @@
 						<div class="flex items-center">
 							<div class="text-xl font-semibold py-2">
 								{{
-									partnerDetails.data?.custom_number_of_certified_members || 5
+									partnerDetails.data?.custom_number_of_certified_members || 0
 								}}
 							</div>
 						</div>
