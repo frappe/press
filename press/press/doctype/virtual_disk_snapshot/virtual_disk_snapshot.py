@@ -109,7 +109,7 @@ class VirtualDiskSnapshot(Document):
 				snapshot.time_created.astimezone(pytz.timezone(frappe.utils.get_system_timezone())),
 				"yyyy-MM-dd HH:mm:ss",
 			)
-		self.save()
+		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def delete_snapshot(self):
@@ -188,7 +188,7 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": ["!=", 1]})
+	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0})
 	for snapshot in snapshots:
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()

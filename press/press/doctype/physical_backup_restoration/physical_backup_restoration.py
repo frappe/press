@@ -173,7 +173,10 @@ class PhysicalBackupRestoration(Document):
 	def wait_for_pending_snapshot_to_be_completed(self) -> StepStatus:
 		"""Wait for pending snapshot to be completed"""
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.disk_snapshot)
-		snapshot.sync()
+		with contextlib.suppress(Exception):
+			# Don't fail this step due to timestamp mismatch like basic error
+			# One background job will trigger this job again anyway
+			snapshot.sync()
 
 		if snapshot.status == "Completed":
 			return StepStatus.Success
