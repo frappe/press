@@ -680,7 +680,7 @@ class PhysicalBackupRestoration(Document):
 
 		# All the cleanup steps need to be Skipped or Success
 		# Anything else means the cleanup steps are not completed
-		return all(step.status in ("Skipped", "Success") for step in self.steps)
+		return all(step.status in ("Skipped", "Success") for step in self.steps if step.is_cleanup_step)
 
 	@frappe.whitelist()
 	def execute_step(self, step_name):
