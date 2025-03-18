@@ -242,7 +242,7 @@
    "label": "Subject"
   },
   {
-   "default": "{% import \"templates/emails/macros.html\" as utils %}\n{% extends \"templates/emails/base.html\" %}\n\n{% block content %}\n\n\t<div class=\"p-8 bg-white\">\n\t\t<p class=\"mb-6\">\n\t\t    The trial period of your {{ doc.title }} site <strong>{{ site.host_name }}</strong> has ended on {{ frappe.utils.getdate(site.trial_end_date).strftime('%%d %%B, %%Y') }}.\n\t\t    Your site will now be suspended. Choose a plan and add your billing information for your site to resume service.\n\t\t</p>\n\t\t{{ utils.button('Open Dashboard', frappe.get_url('/dashboard/sites/' + site.name)) }}\n\t\t{{ utils.separator() }}\n\t\t{{ utils.signature() }}\n\t</div>\n\n{% endblock %}\n",
+   "default": "{% import \"templates/emails/macros.html\" as utils %}\n\n{% block content %}\n\n\t<div class=\"bg-white\">\n\t\t<p class=\"mb-6\">\n\t\t    The trial period of your {{ product.title }} site <strong>{{ site.host_name }}</strong> has ended on {{ frappe.utils.getdate(site.trial_end_date).strftime('%d %B, %Y') }}.\n\t\t    Your site will now be suspended. Choose a plan and add your billing information for your site to resume service.\n\t\t</p>\n\t\t{{ utils.button('Open Dashboard', frappe.get_url('/dashboard/sites/' + site.name)) }}\n\t\t{{ utils.separator() }}\n\t\t{{ utils.signature() }}\n\t</div>\n\n{% endblock %}\n",
    "fieldname": "suspension_email_content",
    "fieldtype": "HTML Editor",
    "label": "Content"
@@ -261,7 +261,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2025-03-17 15:21:39.791490",
+ "modified": "2025-03-17 17:52:47.220276",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",
