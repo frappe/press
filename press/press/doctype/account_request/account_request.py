@@ -60,6 +60,7 @@ class AccountRequest(Document):
 		state: DF.Data | None
 		subdomain: DF.Data | None
 		team: DF.Data | None
+		unsubscribed_from_drip_emails: DF.Check
 		url_args: DF.Code | None
 	# end: auto-generated types
 
