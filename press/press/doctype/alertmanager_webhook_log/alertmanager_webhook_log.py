@@ -110,11 +110,11 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
-			send_telegram_notifs = frappe.get_cached_value("Press Settings", "send_telegram_notifications")
+			send_telegram_notifs = frappe.db.get_single_value("Press Settings", "send_telegram_notifications")
 			if send_telegram_notifs:
 				enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
 
-			send_email_notifs = frappe.get_cached_value("Press Settings", "send_email_notifications")
+			send_email_notifs = frappe.db.get_single_value("Press Settings", "send_email_notifications")
 			if send_email_notifs:
 				enqueue_doc(self.doctype, self.name, "send_email_notification", enqueue_after_commit=True)
 
