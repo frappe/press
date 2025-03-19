@@ -446,9 +446,9 @@ def daily_usage(name, timezone):
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
 
 	plan = frappe.get_cached_doc("Site", name).plan
-
+	
 	return {
-		"data": [{"value": r.max, "date": r.date} for r in request_data],
+		"data": [{"value": getattr(r, "max", 0), "date": getattr(r, "date", 0)} for r in request_data],
 		"plan_limit": get_plan_config(plan)["rate_limit"]["limit"] if plan else 0,
 	}
 
