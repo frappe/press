@@ -26,7 +26,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
-from pymysql.err import InterfaceError
 
 from press.utils.email_validator import validate_email
 
@@ -600,9 +599,11 @@ def reconnect_on_failure():
 	def wrapper(wrapped, instance, args, kwargs):
 		try:
 			return wrapped(*args, **kwargs)
-		except InterfaceError:
-			frappe.db.connect()
-			return wrapped(*args, **kwargs)
+		except Exception as e:
+			if frappe.db.is_interface_error(e):
+				frappe.db.connect()
+				return wrapped(*args, **kwargs)
+			raise
 
 	return wrapper
 
