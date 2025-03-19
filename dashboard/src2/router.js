@@ -194,7 +194,7 @@ let router = createRouter({
 			],
 		},
 		{
-			name: 'Partner Portal',
+			name: 'Partnership',
 			path: '/partners',
 			redirect: { name: 'PartnerOverview' },
 			component: () => import('./pages/Partners.vue'),
@@ -226,6 +226,24 @@ let router = createRouter({
 					path: 'local-payment-setup',
 					component: () =>
 						import('./components/partners/PartnerLocalPaymentSetup.vue'),
+				},
+			],
+		},
+		{
+			name: 'Partner Admin',
+			path: '/partner-admin',
+			redirect: { name: 'PartnerList' },
+			component: () => import('./pages/PartnerAdmin.vue'),
+			children: [
+				{
+					name: 'PartnerList',
+					path: 'partner-list',
+					component: () => import('./pages/PartnerList.vue'),
+				},
+				{
+					name: 'CertificateList',
+					path: 'certificate-list',
+					component: () => import('./pages/PartnerAdminCertificates.vue'),
 				},
 			],
 		},

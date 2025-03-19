@@ -159,10 +159,10 @@ export default {
 					disabled: enforce2FA,
 				},
 				{
-					name: 'Partner Portal',
+					name: 'Partnership',
 					icon: () => h(Globe),
 					route: '/partners',
-					isActive: routeName.startsWith('Partner'),
+					isActive: routeName === 'Partnership',
 					condition: Boolean(this.$team.doc.erpnext_partner),
 					disabled: enforce2FA,
 				},
@@ -172,6 +172,13 @@ export default {
 					route: '/settings',
 					isActive: routeName.startsWith('Settings'),
 					disabled: enforce2FA,
+				},
+				{
+					name: 'Partner Admin',
+					icon: () => h(Globe),
+					route: '/partner-admin',
+					isActive: routeName === 'Partner Admin',
+					condition: Boolean(this.$team.doc.is_desk_user),
 				},
 			].filter((item) => item.condition ?? true);
 		},
