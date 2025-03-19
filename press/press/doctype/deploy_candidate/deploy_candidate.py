@@ -189,12 +189,12 @@ class DeployCandidate(Document):
 					["name", "status", "end", "duration", "bench"],
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
-				) or [frappe._dict()]
+				) or [{}]
 				doc.jobs.append(
 					{
 						**job[0],
 						"title": f"Deploying {bench.bench}",
-						"duration": get_job_duration_in_seconds(job[0].duration) if job else 0,
+						"duration": get_job_duration_in_seconds(getattr(job[0], "duration", 0)) if job else 0,
 					}
 				)
 
