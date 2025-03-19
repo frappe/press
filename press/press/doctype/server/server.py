@@ -223,6 +223,10 @@ class BaseServer(Document, TagHelpers):
 
 	def create_dns_record(self):
 		try:
+			if not self.domain:
+				frappe.throw("Select a root domain in Press Settings first.")
+				return
+
 			domain = frappe.get_doc("Root Domain", self.domain)
 
 			if domain.generic_dns_provider:
