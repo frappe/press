@@ -30,6 +30,7 @@ class TLSCertificate(Document):
 		from frappe.types import DF
 
 		certificate: DF.Code | None
+		custom: DF.Check
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
 		error: DF.Code | None
@@ -51,6 +52,10 @@ class TLSCertificate(Document):
 		else:
 			self.name = self.domain
 
+	def validate(self):
+		self.configure_full_chain()
+		self.validate_custom_certificate()
+
 	def after_insert(self):
 		self.obtain_certificate()
 
@@ -60,6 +65,16 @@ class TLSCertificate(Document):
 
 		if self.has_value_changed("rsa_key_size"):
 			self.obtain_certificate()
+
+		self._trigger_callbacks_for_custom_certificate()
+
+	def _trigger_callbacks_for_custom_certificate(self):
+		if self.custom and (
+			self.has_value_changed("certificate") or self.has_value_changed("private_key")
+		):
+			frappe.enqueue_doc(
+				self.doctype, self.name, "_trigger_callbacks", enqueue_after_commit=True
+			)
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
@@ -72,6 +87,10 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
+
+		if self.custom:
+			return
+
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype,
@@ -179,6 +198,14 @@ class TLSCertificate(Document):
 		with suppress(Exception):
 			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
 
+	def configure_full_chain(self):
+		if self.custom and not self.full_chain:
+			if self.certificate and self.intermediate_chain:
+				self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
+
+			if not self.intermediate_chain:
+				self.full_chain = self.certificate
+
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)
 		self.decoded_certificate = OpenSSL.crypto.dump_certificate(
@@ -186,6 +213,82 @@ class TLSCertificate(Document):
 		).decode()
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
+
+	def _get_private_key_object(self):
+		try:
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+		except OpenSSL.crypto.Error as e:
+			log_error("TLS Private Key Exception", certificate=self.name)
+			raise e
+
+	def _get_certificate_object(self):
+		certificate = self._get_certificate()
+		try:
+			return OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, certificate)
+		except OpenSSL.crypto.Error as e:
+			log_error("Custom TLS Certificate Exception", certificate=self.name)
+			raise e
+
+	def _validate_key_certificate_association(self):
+		context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+		context.use_privatekey(self._get_private_key_object())
+		context.use_certificate(self._get_certificate_object())
+
+		try:
+			context.check_privatekey()
+		except OpenSSL.SSL.Error:
+			log_error("TLS Key Certificate Association Exception", certificate=self.name)
+			frappe.throw("Private Key and Certificate do not match")
+
+	def _get_certificate(self):
+		if self.full_chain:
+			return self.full_chain
+
+		return self.certificate
+
+	def validate_custom_certificate(self):
+		if not self.custom:
+			return
+
+		if not self.certificate or not self.private_key:
+			return
+
+		try:
+			self._validate_key_certificate_association()
+			self._extract_certificate_details()
+
+			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
+		except Exception as e:
+			self.error = repr(e)
+			self.status = "Failure"
+
+	def _trigger_callbacks(self):
+		self.trigger_site_domain_callback()
+		self.trigger_self_hosted_server_callback()
+
+		if self.wildcard:
+			self.trigger_server_tls_setup_callback()
+			self._update_secondary_wildcard_domains()
+
+	@property
+	def tls_file_mapper(self):
+		if self.intermediate_chain:
+			return """
+			{
+				"ssl_certificate": "fullchain.pem",
+				"ssl_certificate_key": "privkey.pem",
+				"ssl_trusted_certificate": "chain.pem"
+			}
+			"""
+		else:
+			return """
+			{
+				"ssl_certificate": "cert.pem",
+				"ssl_certificate_key": "privkey.pem"
+			}
+			"""
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")
@@ -229,6 +332,7 @@ def renew_tls_certificates():
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
 			"retry_count": ("<", 5),
+			"custom": 0,
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
@@ -237,7 +341,11 @@ def renew_tls_certificates():
 	for certificate in pending:
 		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
 			break
-		site = frappe.db.get_value("Site Domain", {"tls_certificate": certificate.name}, "site")
+
+		site = frappe.db.get_value(
+			"Site Domain", {"tls_certificate": certificate.name}, "site"
+		)
+
 		try:
 			if not should_renew(site, certificate):
 				continue

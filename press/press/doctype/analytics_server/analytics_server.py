@@ -59,10 +59,7 @@ class AnalyticsServer(BaseServer):
 
 	def _setup_server(self):
 		agent_repository_url = self.get_agent_repository_url()
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		certificate = self.get_certificate()
 
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
@@ -76,6 +73,8 @@ class AnalyticsServer(BaseServer):
 			ansible = Ansible(
 				playbook="analytics.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"workers": 1,
@@ -97,6 +96,7 @@ class AnalyticsServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"certificate_file_mapper": certificate.tls_file_mapper,
 				},
 			)
 			play = ansible.run()

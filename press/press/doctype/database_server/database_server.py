@@ -33,10 +33,12 @@ class DatabaseServer(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
+		_old_data_directory: DF.Data | None
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
 		cluster: DF.Link | None
+		data_dir: DF.Data | None
 		domain: DF.Link | None
 		enable_physical_backup: DF.Check
 		frappe_public_key: DF.Code | None
@@ -95,6 +97,7 @@ class DatabaseServer(BaseServer):
 		self.validate_mariadb_root_password()
 		self.validate_server_id()
 		self.validate_mariadb_system_variables()
+		self.set_data_directory()
 
 	def validate_mariadb_root_password(self):
 		if not self.mariadb_root_password:
@@ -104,6 +107,15 @@ class DatabaseServer(BaseServer):
 		variable: DatabaseServerMariaDBVariable
 		for variable in self.mariadb_system_variables:
 			variable.validate()
+
+	def set_data_directory(self):
+		if not self.data_dir:
+			self.data_dir = "/var/lib/mysql/"
+
+		doc_before_save = self.get_doc_before_save()
+
+		if doc_before_save and self.has_value_changed("data_dir"):
+			self._old_data_directory = doc_before_save.data_dir
 
 	def on_update(self):
 		if self.flags.in_insert or self.is_new():
@@ -346,6 +358,10 @@ class DatabaseServer(BaseServer):
 			else:
 				self.server_id = 1
 
+	@property
+	def datadir(self):
+		return self.data_dir or "/var/lib/mysql"
+
 	def _setup_server(self):
 		config = self._get_config()
 		try:
@@ -390,11 +406,7 @@ class DatabaseServer(BaseServer):
 		self.save()
 
 	def _get_config(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
+		certificate = self.get_certificate()
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
 			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
@@ -469,6 +481,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
@@ -493,6 +507,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"primary_private_ip": primary.private_ip,
@@ -545,6 +561,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_physical_backup.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"mariadb_root_password": mariadb_root_password,
 					"backup_path": path,
@@ -559,6 +577,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="failover.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={"mariadb_root_password": self.get_password("mariadb_root_password")},
 			)
 			play = ansible.run()
@@ -630,6 +650,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="database_exporters.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -654,6 +676,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"mariadb_old_root_password": old_password,
 					"mariadb_root_password": self.mariadb_root_password,
@@ -710,6 +734,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password_secondary.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"mariadb_root_password": self.mariadb_root_password,
 					"private_ip": self.private_ip,
@@ -730,6 +756,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="deadlock_logger.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
@@ -755,6 +783,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="pt_stalk.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_port": mariadb_port,
@@ -787,6 +817,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_debug_symbols.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 		except Exception:
@@ -834,6 +866,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="database_rename.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server_type": self.doctype,
 					"server": self.name,
@@ -894,6 +928,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="reconfigure_mysqld_exporter.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
@@ -917,6 +953,8 @@ class DatabaseServer(BaseServer):
 		ansible = Ansible(
 			playbook="mariadb_memory_allocator.yml",
 			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
 			variables={
 				"server": self.name,
 				"allocator": memory_allocator.lower(),
@@ -948,6 +986,41 @@ class DatabaseServer(BaseServer):
 		mount_points = set(mount.mount_point for mount in self.mounts)
 		mariadb_mount_points = set(["/var/lib/mysql", "/etc/mysql"])
 		return mariadb_mount_points.issubset(mount_points)
+
+	@frappe.whitelist()
+	def change_data_directory(self, data_dir):
+		self._old_data_directory = "/var/lib/mysql/"  # self.data_dir
+		self.data_dir = data_dir
+		self.save()
+		self.load_from_db()
+
+		# if self._old_data_directory != self.data_dir:
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_change_data_directory",
+			enqueue_after_commit=True,
+		)
+
+	def _change_data_directory(self):
+		ansible = Ansible(
+			playbook="mariadb_change_datadir.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"current_mariadb_datadir": self._old_data_directory,
+				"new_mariadb_datadir": self.data_dir,
+			},
+		)
+
+		play = ansible.run()
+
+		if play.status == "Failure":
+			log_error("MariaDB Data Directory Change Error", server=self.name)
+			self.status = "Broken"
+			self.save()
+
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")

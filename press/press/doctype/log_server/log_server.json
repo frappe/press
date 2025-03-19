@@ -22,6 +22,8 @@
   "agent_section",
   "agent_password",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -190,6 +192,16 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [
@@ -198,7 +210,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-12-13 15:09:14.473225",
+ "modified": "2024-08-26 11:35:12.346866",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",

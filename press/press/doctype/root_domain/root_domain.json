@@ -8,7 +8,8 @@
  "field_order": [
   "default_cluster",
   "team",
-  "column_break_4",
+  "column_break_exzq",
+  "section_break_hdal",
   "dns_provider",
   "aws_access_key_id",
   "aws_secret_access_key"
@@ -52,6 +53,14 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "column_break_exzq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_hdal",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,

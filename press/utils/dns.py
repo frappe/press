@@ -21,6 +21,7 @@ def create_dns_record(doc, record_name=None):
 		return
 
 	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
+
 	if doc.cluster == domain.default_cluster and not is_standalone:
 		return
 
