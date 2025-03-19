@@ -87,9 +87,7 @@ class AppSource(Document):
 		versions = set()
 		for row in self.versions:
 			if row.version in versions:
-				frappe.throw(
-					f"Version {row.version} can be added only once", frappe.ValidationError
-				)
+				frappe.throw(f"Version {row.version} can be added only once", frappe.ValidationError)
 			versions.add(row.version)
 
 	def before_save(self):
@@ -171,6 +169,7 @@ class AppSource(Document):
 			self.set_poll_succeeded()
 		else:
 			self.set_poll_failed(response)
+			self.db_update()
 			return ("", {}, False)
 
 		# Will cause recursion of db.save is used
@@ -245,9 +244,7 @@ class AppSource(Document):
 		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
 
 
-def create_app_source(
-	app: str, repository_url: str, branch: str, versions: List[str]
-) -> AppSource:
+def create_app_source(app: str, repository_url: str, branch: str, versions: List[str]) -> AppSource:
 	team = get_current_team()
 
 	app_source = frappe.get_doc(
@@ -266,9 +263,7 @@ def create_app_source(
 	return app_source
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"App Source"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("App Source")
 
 
 def get_timestamp_from_commit_info(commit_info: dict) -> str | None:
