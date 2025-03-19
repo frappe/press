@@ -81,6 +81,7 @@ class VirtualMachine(Document):
 		root_disk_size: DF.Int
 		security_group_id: DF.Data | None
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
 		subnet_cidr_block: DF.Data | None
@@ -1395,7 +1396,7 @@ def sync_virtual_machines():
 
 
 def snapshot_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
+	machines = frappe.get_all("Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0})
 	for machine in machines:
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
