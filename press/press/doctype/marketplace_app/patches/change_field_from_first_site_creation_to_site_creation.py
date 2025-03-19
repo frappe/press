@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import frappe
-import pymysql
 
 
 def execute():
@@ -10,5 +9,5 @@ def execute():
 		frappe.db.sql(
 			"UPDATE `tabMarketplace App` SET show_for_site_creation = show_for_first_site_creation"
 		)
-	except pymysql.err.OperationalError:
+	except frappe.db.OperationalError:
 		pass

@@ -15,7 +15,6 @@ from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
-from pymysql.err import InterfaceError
 
 
 def reconnect_on_failure():
@@ -23,9 +22,11 @@ def reconnect_on_failure():
 	def wrapper(wrapped, instance, args, kwargs):
 		try:
 			return wrapped(*args, **kwargs)
-		except InterfaceError:
-			frappe.db.connect()
-			return wrapped(*args, **kwargs)
+		except Exception as e:
+			if frappe.db.is_interface_error(e):
+				frappe.db.connect()
+				return wrapped(*args, **kwargs)
+			raise
 
 	return wrapper
 
