@@ -6,7 +6,7 @@ import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
-from frappe.utils import get_url
+from frappe.utils import get_url, validate_email_address
 from twilio.rest import Client
 
 from press.api.billing import get_stripe
@@ -64,6 +64,7 @@ class PressSettings(Document):
 		docker_registry_username: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
+		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
@@ -128,6 +129,8 @@ class PressSettings(Document):
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		send_email_notifications: DF.Check
+		send_telegram_notifications: DF.Check
 		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
@@ -173,6 +176,16 @@ class PressSettings(Document):
 	def validate(self):
 		if self.max_concurrent_physical_restorations > 5:
 			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+
+		if self.send_email_notifications:
+			if self.email_recipients:
+				# Split the comma-separated emails into a list
+				email_list = [email.strip() for email in self.email_recipients.split(",")]
+				for email in email_list:
+					if not validate_email_address(email):
+						frappe.throw(f"Invalid email address: {email}")
+			else:
+				frappe.throw("Email Recipients List can not be empty")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
