@@ -387,9 +387,9 @@ def get(name, timezone, duration="7d"):
 	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
 
 	return {
-		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
-		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
-		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
+		"usage_counter": [{"value": getattr(r, "max", {}), "date": getattr(r, "date", {})} for r in request_data],
+		"request_count": [{"value": getattr(r, "count", {}), "date": getattr(r, "date", {})} for r in request_data],
+		"request_cpu_time": [{"value": getattr(r, "duration", {}), "date": getattr(r, "date", {})} for r in request_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
 	}
@@ -419,8 +419,8 @@ def get_advanced_analytics(name, timezone, duration="7d"):
 		),
 		"slow_logs_by_count": get_slow_logs(name, "count", timezone, timespan, timegrain),
 		"slow_logs_by_duration": get_slow_logs(name, "duration", timezone, timespan, timegrain),
-		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
-		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
+		"job_count": [{"value": getattr(r, "count", {}), "date": getattr(r, "date", {})} for r in job_data],
+		"job_cpu_time": [{"value": getattr(r, "duration", {}), "date": getattr(r, "date", {})} for r in job_data],
 	}
 
 
@@ -448,7 +448,7 @@ def daily_usage(name, timezone):
 	plan = frappe.get_cached_doc("Site", name).plan
 	
 	return {
-		"data": [{"value": getattr(r, "max", 0), "date": getattr(r, "date", 0)} for r in request_data],
+		"data": [{"value": getattr(r, "max", {}), "date": getattr(r, "date", {})} for r in request_data],
 		"plan_limit": get_plan_config(plan)["rate_limit"]["limit"] if plan else 0,
 	}
 
