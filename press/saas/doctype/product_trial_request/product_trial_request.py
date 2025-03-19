@@ -250,6 +250,8 @@ class ProductTrialRequest(Document):
 					"enabled": 1,
 				}
 			).insert(ignore_permissions=True)
+		except frappe.exceptions.ValidationError:
+			raise
 		except Exception as e:
 			log_error(
 				title="Product Trial Request Site Creation Error",
