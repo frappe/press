@@ -86,7 +86,7 @@
 							variant="solid"
 							type="submit"
 							:disabled="
-								$resources.subdomainExists.error ||
+								!!$resources.subdomainExists.error ||
 								!$resources.subdomainExists.data ||
 								!subdomain.length
 							"
@@ -114,6 +114,7 @@ import { debounce } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 import { validateSubdomain } from '../../utils/site';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SignupSetup',
@@ -179,6 +180,7 @@ export default {
 					if (doc.site) {
 						this.subdomain = doc.site.split('.')[0];
 						this.initialSubdomain = doc.site.split('.')[0];
+						this.$resources.subdomainExists.submit();
 					}
 				},
 			};
@@ -193,13 +195,15 @@ export default {
 					};
 				},
 				validate() {
-					let error = validateSubdomain(this.subdomain);
+					const error = validateSubdomain(this.subdomain);
 					if (error) {
-						return new DashboardError(error);
+						throw new DashboardError(error);
 					}
 				},
-				initialData: !!this.subdomain,
 				transform(data) {
+					if (data && this.subdomain === this.initialSubdomain) {
+						return true;
+					}
 					return !Boolean(data);
 				},
 			};
