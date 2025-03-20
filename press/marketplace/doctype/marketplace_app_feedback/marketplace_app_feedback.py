@@ -26,7 +26,7 @@ class MarketplaceAppFeedback(Document):
 	pass
 
 
-def collect_uninstall_feedback(app: str, feedback: str, site: str) -> None:
+def collect_app_uninstall_feedback(app: str, feedback: str, site: str) -> None:
 	"""
 	Collect feedback when an app is uninstalled
 	"""
