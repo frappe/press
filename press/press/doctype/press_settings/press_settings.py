@@ -22,7 +22,6 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
 		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
@@ -102,6 +101,7 @@ class PressSettings(Document):
 		max_concurrent_physical_restorations: DF.Int
 		micro_debit_charge_inr: DF.Currency
 		micro_debit_charge_usd: DF.Currency
+		minimum_rebuild_ram: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
