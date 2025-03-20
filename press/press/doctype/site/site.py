@@ -2334,7 +2334,7 @@ class Site(Document, TagHelpers):
 			bench_query = bench_query.where(Bench.group == self.group)
 		if self.server:
 			bench_query = bench_query.where(Server.name == self.server)
-		print("TEST: ", bench_query)
+
 		result = bench_query.run(as_dict=True)
 		if len(result) == 0:
 			frappe.throw("No bench available to deploy this site")
