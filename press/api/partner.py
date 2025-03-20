@@ -319,7 +319,7 @@ def apply_for_certificate(member_name, certificate_type):
 	doc.update(
 		{
 			"partner_team": team.name,
-			"partner_member_name": member_name,
+			"partner_member_email": member_name,
 			"course": certificate_type,
 		}
 	)

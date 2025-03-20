@@ -25,19 +25,22 @@
    "options": "User"
   },
   {
+   "fetch_from": "partner_member_email.full_name",
    "fieldname": "partner_member_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Partner Member Name"
   },
   {
    "fieldname": "course",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Course"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-03 08:21:45.447099",
+ "modified": "2025-03-20 11:53:59.787567",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Certificate Request",

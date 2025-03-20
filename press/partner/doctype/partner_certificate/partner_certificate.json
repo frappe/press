@@ -23,6 +23,7 @@
   {
    "fieldname": "course",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Course"
   },
   {
@@ -48,6 +49,7 @@
   {
    "fieldname": "version",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Version"
   },
   {
@@ -62,6 +64,7 @@
   {
    "fieldname": "partner_team",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Partner Team",
    "options": "Team"
   },
@@ -72,8 +75,10 @@
    "options": "User"
   },
   {
+   "fetch_from": "partner_member_email.full_name",
    "fieldname": "partner_member_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Partner Member Name"
   },
   {
@@ -85,7 +90,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-03 08:21:27.325772",
+ "modified": "2025-03-20 12:07:03.663512",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Certificate",
