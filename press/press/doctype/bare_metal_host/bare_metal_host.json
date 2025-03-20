@@ -17,6 +17,7 @@
   "cluster",
   "domain",
   "public",
+  "is_vm_host",
   "resources_section",
   "total_cpu",
   "total_memory",
@@ -237,6 +238,13 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_vm_host",
+   "fieldtype": "Check",
+   "label": "Is VM Host",
+   "description": "This host can be used to create virtual machines"
   }
  ],
  "links": [
