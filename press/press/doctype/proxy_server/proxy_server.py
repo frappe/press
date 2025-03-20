@@ -103,10 +103,8 @@ class ProxyServer(BaseServer):
 			if domain.domain == self.domain:
 				# self.domain certs are symlinks
 				continue
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
-			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate = self.get_certificate()
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,
@@ -159,6 +157,7 @@ class ProxyServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"certificate_file_mapper": certificate.tls_file_mapper,
 					"press_url": frappe.utils.get_url(),
 				},
 			)
@@ -235,6 +234,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="fail2ban.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			play = ansible.run()
 			self.reload()
@@ -259,9 +260,16 @@ class ProxyServer(BaseServer):
 				{"status": "Active", "cluster": self.cluster},
 				as_list=True,
 			)[0][0]
+
+			if not default_hostgroup:
+				frappe.msgprint("No active database servers found")
+				return
+
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -297,6 +305,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="primary_proxy.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
@@ -315,6 +325,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="secondary_proxy.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
@@ -343,6 +355,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="failover_prepare_primary_proxy.yml",
 				server=primary,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 		except Exception:
@@ -368,6 +382,8 @@ class ProxyServer(BaseServer):
 		ansible = Ansible(
 			playbook="failover_remove_primary_access.yml",
 			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
 			variables={
 				"primary_public_key": frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
 			},
@@ -375,7 +391,12 @@ class ProxyServer(BaseServer):
 		ansible.run()
 
 	def up_secondary(self):
-		ansible = Ansible(playbook="failover_up_secondary_proxy.yml", server=self)
+		ansible = Ansible(
+			playbook="failover_up_secondary_proxy.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+		)
 		ansible.run()
 
 	def update_dns_records_for_all_sites(self):
@@ -446,9 +467,16 @@ class ProxyServer(BaseServer):
 				{"status": "Active", "cluster": self.cluster},
 				as_list=True,
 			)[0][0]
+
+			if not default_hostgroup:
+				frappe.msgprint("No active database servers found")
+				return
+
 			ansible = Ansible(
 				playbook="proxysql_monitor.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
@@ -478,6 +506,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="wireguard.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,
@@ -523,6 +553,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="reload_wireguard.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"wireguard_port": self.wireguard_port,

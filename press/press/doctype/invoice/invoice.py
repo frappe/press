@@ -17,6 +17,7 @@ from press.utils.billing import (
 	get_frappe_io_connection,
 	get_gateway_details,
 	get_partner_external_connection,
+	disabled_frappeio_auth,
 )
 
 
@@ -759,6 +760,9 @@ class Invoice(Document):
 			return None
 
 		try:
+			if disabled_frappeio_auth():
+				return
+
 			team = frappe.get_doc("Team", self.team)
 			address = frappe.get_doc("Address", team.billing_address) if team.billing_address else None
 			if not address:
@@ -808,6 +812,9 @@ class Invoice(Document):
 	def fetch_invoice_pdf(self):
 		if self.frappe_invoice:
 			from urllib.parse import urlencode
+
+			if disabled_frappeio_auth():
+				return
 
 			client = self.get_frappeio_connection()
 			print_format = frappe.db.get_single_value("Press Settings", "print_format")

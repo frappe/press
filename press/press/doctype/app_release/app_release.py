@@ -498,6 +498,7 @@ def check_python_syntax(dirpath: str) -> str:
 		text=True,
 		capture_output=True,
 	)
+
 	if proc.returncode == 0:
 		return ""
 

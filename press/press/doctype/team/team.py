@@ -20,6 +20,7 @@ from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
+	disabled_frappeio_auth,
 )
 from press.utils.telemetry import capture
 
@@ -517,7 +518,7 @@ class Team(Document):
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
-		if frappe.flags.in_test:
+		if frappe.flags.in_test or disabled_frappeio_auth():
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
@@ -664,7 +665,7 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
-		if frappe.flags.in_install:
+		if frappe.flags.in_install or disabled_frappeio_auth():
 			return
 
 		try:
@@ -975,6 +976,9 @@ class Team(Document):
 
 	def get_partner_level(self):
 		# fetch partner level from frappe.io
+		if disabled_frappeio_auth():
+			return "", ""
+
 		client = get_frappe_io_connection()
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
