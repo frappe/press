@@ -1,0 +1,102 @@
+---
+- name: Check if default network exists
+  shell: virsh net-list --all | grep default
+  register: default_network
+  failed_when: false
+  changed_when: false
+
+- name: Create and start default network if it doesn't exist
+  block:
+    - name: Define default network
+      command: virsh net-define /etc/libvirt/qemu/networks/default.xml
+      when: default_network.rc != 0
+
+    - name: Set default network to autostart
+      command: virsh net-autostart default
+      when: default_network.rc != 0
+
+    - name: Start default network
+      command: virsh net-start default
+      when: default_network.rc != 0
+  when: default_network.rc != 0
+
+- name: Set up bridge network
+  block:
+    - name: Create network XML
+      template:
+        src: bridge_network.xml.j2
+        dest: /tmp/bridge_network.xml
+        mode: '0644'
+
+    - name: Check if bridge network exists
+      shell: virsh net-list --all | grep {{ bridge_network.name }}
+      register: bridge_network_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Define bridge network
+      command: virsh net-define /tmp/bridge_network.xml
+      when: bridge_network_exists.rc != 0
+
+    - name: Set bridge network to autostart
+      command: virsh net-autostart {{ bridge_network.name }}
+      when: bridge_network_exists.rc != 0
+
+    - name: Start bridge network
+      command: virsh net-start {{ bridge_network.name }}
+      when: bridge_network_exists.rc != 0
+
+    - name: Clean up temporary network XML file
+      file:
+        path: /tmp/bridge_network.xml
+        state: absent
+  when: bridge_network is defined
+
+- name: Configure UFW for VM networking (Ubuntu)
+  block:
+    - name: Check if UFW is installed
+      command: which ufw
+      register: ufw_check
+      failed_when: false
+      changed_when: false
+
+    - name: Allow VM network traffic in UFW
+      ufw:
+        rule: allow
+        direction: in
+        interface: "{{ bridge_network.name | default('virbr0') }}"
+      when: ufw_check.rc == 0
+
+    - name: Allow traffic forwarding for VMs
+      lineinfile:
+        path: /etc/ufw/sysctl.conf
+        regexp: "^#?net/ipv4/ip_forward"
+        line: "net/ipv4/ip_forward=1"
+        state: present
+      when: ufw_check.rc == 0
+
+    - name: Enable forwarding in UFW config
+      lineinfile:
+        path: /etc/default/ufw
+        regexp: "^DEFAULT_FORWARD_POLICY"
+        line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+        state: present
+      when: ufw_check.rc == 0
+
+    - name: Enable NAT in UFW
+      blockinfile:
+        path: /etc/ufw/before.rules
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR LIBVIRT NAT"
+        insertbefore: "^# Don't delete these required lines"
+        block: |
+          # NAT for libvirt virtual machines
+          *nat
+          :POSTROUTING ACCEPT [0:0]
+          -A POSTROUTING -s {{ bridge_network.ip | default('192.168.100.1') }}/24 -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+          COMMIT
+      when: ufw_check.rc == 0
+
+    - name: Reload UFW
+      command: ufw reload
+      when: ufw_check.rc == 0
+  when: configure_firewall | default(true) 

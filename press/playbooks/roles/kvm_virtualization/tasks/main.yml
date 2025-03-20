@@ -1,0 +1,94 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install KVM and QEMU packages for Ubuntu
+  apt:
+    name: 
+      - qemu-kvm
+      - libvirt-daemon-system
+      - libvirt-clients
+      - bridge-utils
+      - virtinst
+      - virt-top
+      - libguestfs-tools
+      - qemu-utils
+      - genisoimage
+      - python3-libvirt
+      - python3-lxml
+      - cloud-image-utils  # Added for cloud-init image handling
+      - whois              # Added for mkpasswd utility
+    state: present
+
+- name: Enable and start libvirtd service
+  systemd:
+    name: libvirtd
+    enabled: yes
+    state: started
+
+- name: Add user to libvirt and kvm groups
+  user:
+    name: "{{ vm_host_user | default(ansible_user) }}"
+    groups: libvirt,kvm
+    append: yes
+  when: vm_host_user is defined or ansible_user is defined
+
+- name: Configure network for VM host
+  include_tasks: network.yml
+  when: configure_network | default(true)
+
+- name: Configure storage for VM host
+  include_tasks: storage.yml
+  when: configure_storage | default(true)
+
+- name: Create VM directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - "{{ vm_directory | default('/opt/vms') }}"
+    - "{{ vm_images_directory | default('/opt/vm_images') }}"
+    - "{{ vm_config_directory | default('/opt/vm_configs') }}"
+    - "{{ vm_templates_directory | default('/opt/vm_templates') }}"
+
+- name: Configure AppArmor for libvirt
+  block:
+    - name: Check if AppArmor is active
+      command: aa-status
+      register: apparmor_status
+      changed_when: false
+      failed_when: false
+
+    - name: Add permissions to libvirt AppArmor profile
+      lineinfile:
+        path: /etc/apparmor.d/abstractions/libvirt-qemu
+        line: "  # Allow cloud-init ISO generation and access"
+        state: present
+      when: apparmor_status.rc == 0
+
+    - name: Add specific permissions for ISO images and VM directories
+      lineinfile:
+        path: /etc/apparmor.d/abstractions/libvirt-qemu
+        line: "  {{ item }} rw,"
+        state: present
+      with_items:
+        - "/opt/vms/** rwk,"
+        - "/opt/vm_images/** rwk,"
+        - "/opt/vm_configs/** rwk,"
+        - "/opt/vm_templates/** rwk,"
+        - "/tmp/cloud-init-*.iso rwk,"
+      when: apparmor_status.rc == 0
+
+    - name: Restart AppArmor service
+      systemd:
+        name: apparmor
+        state: restarted
+      when: apparmor_status.rc == 0
+
+- name: Download Ubuntu cloud image
+  get_url:
+    url: https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img
+    dest: "{{ vm_images_directory | default('/opt/vm_images') }}/ubuntu-20.04-server-cloudimg-amd64.img"
+    mode: '0644' 
