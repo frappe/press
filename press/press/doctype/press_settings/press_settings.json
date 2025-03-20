@@ -194,10 +194,13 @@
   "monitor_server",
   "monitor_token",
   "press_monitoring_password",
-  "column_break_100",
+  "send_telegram_notifications",
+  "column_break_jlzi",
   "log_server",
   "telegram_alert_chat_id",
   "telegram_alerts_chat_group",
+  "send_email_notifications",
+  "email_recipients",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -954,10 +957,6 @@
    "options": "Monitor Server"
   },
   {
-   "fieldname": "column_break_100",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "monitor_token",
    "fieldtype": "Data",
    "label": "Monitor Token"
@@ -1376,11 +1375,33 @@
    "fieldname": "max_concurrent_physical_restorations",
    "fieldtype": "Int",
    "label": "Max Concurrent Physical Restorations"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_telegram_notifications",
+   "fieldtype": "Check",
+   "label": "Send Telegram Notifications"
+  },
+  {
+   "fieldname": "column_break_jlzi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_email_notifications",
+   "fieldtype": "Check",
+   "label": "Send Email Notifications"
+  },
+  {
+   "depends_on": "eval: doc.send_email_notifications== true",
+   "fieldname": "email_recipients",
+   "fieldtype": "Small Text",
+   "label": "Email Recipients"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-13 01:50:21.645351",
+ "modified": "2025-03-19 11:06:43.919300",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
