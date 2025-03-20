@@ -1,0 +1,290 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:hostname",
+ "creation": "2025-03-20 10:54:25.505888",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "hostname",
+  "hostname_abbreviation",
+  "status",
+  "is_server_prepared",
+  "is_server_setup",
+  "column_break_5",
+  "team",
+  "cluster",
+  "domain",
+  "public",
+  "resources_section",
+  "total_cpu",
+  "total_memory",
+  "total_disk",
+  "column_break_14",
+  "available_cpu",
+  "available_memory",
+  "available_disk",
+  "ssh_section",
+  "ip",
+  "private_ip",
+  "ssh_user",
+  "ssh_port",
+  "column_break_19",
+  "frappe_user_password",
+  "agent_password",
+  "frappe_public_key",
+  "modified",
+  "modified_by",
+  "creation",
+  "owner",
+  "tags_section",
+  "tags"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hostname",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_server_prepared",
+   "fieldtype": "Check",
+   "label": "Is Server Prepared",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Is Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "fieldname": "resources_section",
+   "fieldtype": "Section Break",
+   "label": "Resources"
+  },
+  {
+   "fieldname": "total_cpu",
+   "fieldtype": "Int",
+   "label": "Total CPU",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_memory",
+   "fieldtype": "Int",
+   "label": "Total Memory (MB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_disk",
+   "fieldtype": "Int",
+   "label": "Total Disk (GB)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "available_cpu",
+   "fieldtype": "Int",
+   "label": "Available CPU"
+  },
+  {
+   "fieldname": "available_memory",
+   "fieldtype": "Int",
+   "label": "Available Memory (MB)"
+  },
+  {
+   "fieldname": "available_disk",
+   "fieldtype": "Int",
+   "label": "Available Disk (GB)"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key"
+  },
+  {
+   "fieldname": "modified",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Modified",
+   "read_only": 1
+  },
+  {
+   "fieldname": "modified_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Modified By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "creation",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Creation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "owner",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Owner",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
+  }
+ ],
+ "links": [
+  {
+   "group": "Jobs",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "server"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Agent Job Log",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2025-03-20 10:54:25.505888",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bare Metal Host",
+ "name_case": "Title Case",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+} 
