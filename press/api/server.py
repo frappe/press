@@ -204,6 +204,10 @@ def usage(name):
 			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})) / (1024 * 1024)""",
 			lambda x: x,
 		),
+		"free_memory": (
+			f"""avg_over_time(node_memory_MemFree_bytes{{instance="{name}", job="node"}}[10m])""",
+			lambda x: x,
+		)
 	}
 
 	result = {}
