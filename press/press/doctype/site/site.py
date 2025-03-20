@@ -695,7 +695,12 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app: str) -> str:
+	def uninstall_app(self, app: str, feedback: str = "") -> str:
+		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
+			collect_uninstall_feedback,
+		)
+
+		collect_uninstall_feedback(app, feedback, self.name)
 		agent = Agent(self.server)
 		job = agent.uninstall_app_site(self, app)
 
