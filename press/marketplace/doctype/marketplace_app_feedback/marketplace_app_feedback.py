@@ -57,4 +57,4 @@ def collect_app_uninstall_feedback(app: str, feedback: str, site: str) -> None:
 			"app_installed_on": app_installed_on,
 			"app_lifespan": app_lifespan,
 		}
-	).insert()
+	).insert(ignore_permissions=True)
