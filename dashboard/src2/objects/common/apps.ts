@@ -210,35 +210,6 @@ const siteAppListOptions: Partial<TabList> = {
 				label: 'Uninstall',
 				condition: () => row.app !== 'frappe',
 				onClick() {
-					// const dialogConfig: DialogConfig = {
-					// 	title: `Uninstall App`,
-					// 	message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc?.name}</b>?<br>
-					// 					All doctypes and modules related to this app will be removed.`,
-					// 	onSuccess({ hide }) {
-					// 		if (site.uninstallApp.loading) return;
-					// 		toast.promise(
-					// 			site.uninstallApp.submit({
-					// 				app: row.app
-					// 			}),
-					// 			{
-					// 				loading: 'Scheduling app uninstall...',
-					// 				success: (jobId: string) => {
-					// 					hide();
-					// 					router.push({
-					// 						name: 'Site Job',
-					// 						params: {
-					// 							name: site.name,
-					// 							id: jobId
-					// 						}
-					// 					});
-					// 					return 'App uninstall scheduled';
-					// 				},
-					// 				error: (e: Error) => getToastErrorMessage(e)
-					// 			}
-					// 		);
-					// 	}
-					// };
-					// confirmDialog(dialogConfig);
 					const UninstallAppDialog = defineAsyncComponent(
 						() => import('../../components/site/UninstallAppDialog.vue')
 					);
