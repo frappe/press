@@ -1378,34 +1378,11 @@
    "label": "Max Concurrent Physical Restorations"
   },
   {
-<<<<<<< HEAD
-   "default": "1",
-   "fieldname": "send_telegram_notifications",
-   "fieldtype": "Check",
-   "label": "Send Telegram Notifications"
-  },
-  {
-   "fieldname": "column_break_jlzi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_email_notifications",
-   "fieldtype": "Check",
-   "label": "Send Email Notifications"
-  },
-  {
-   "depends_on": "eval: doc.send_email_notifications== true",
-   "fieldname": "email_recipients",
-   "fieldtype": "Small Text",
-   "label": "Email Recipients"
-=======
    "default": "2",
    "fieldname": "minimum_rebuild_ram",
    "fieldtype": "Int",
    "label": "Minimum Rebuild Ram",
    "non_negative": 1
->>>>>>> d58066e0f (feat: Added min ram in press settings)
   }
  ],
  "issingle": 1,
