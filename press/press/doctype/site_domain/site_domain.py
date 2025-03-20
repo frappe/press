@@ -144,7 +144,7 @@ class SiteDomain(Document):
 
 	def create_agent_request(self, skip_reload=False):
 		server = frappe.db.get_value("Site", self.site, "server")
-		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
+		is_standalone = frappe.db.get_value("Server", server, "is_standalone", as_dict=True)
 		if is_standalone:
 			agent = Agent(server, server_type="Server")
 		else:

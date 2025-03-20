@@ -455,9 +455,7 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def fetch_keys(self):
 		try:
-			ansible = Ansible(
-				playbook="keys.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
-			)
+			ansible = Ansible(playbook="keys.yml", server=self, user=self._ssh_user(), port=self._ssh_port())
 			ansible.run()
 		except Exception:
 			log_error("Server Key Fetch Exception", server=self.as_dict())
@@ -819,27 +817,6 @@ class BaseServer(Document, TagHelpers):
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
 		).insert()
-
-	def get_certificate(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-
-		if not certificate_name and self.is_self_hosted:
-			certificate_name = frappe.db.get_value("TLS Certificate", {"domain": f"{self.name}"}, "name")
-
-			if not certificate_name:
-				self_hosted_server = frappe.db.get_value(
-					"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
-				)
-
-				certificate_name = frappe.db.get_value(
-					"TLS Certificate",
-					{"domain": f"{self_hosted_server.hostname}.{self_hosted_server.domain}"},
-					"name",
-				)
-
-		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
@@ -1334,27 +1311,27 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
-	def get_certificate(self):
+	def get_certificate(self, domain=None):
+		if not domain:
+			domain = self.domain
+
 		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+			"TLS Certificate", {"wildcard": True, "domain": domain}, "name"
 		)
 
-		if not certificate_name:
-			if hasattr(self, "is_self_hosted") and self.is_self_hosted:
-				certificate_name = frappe.db.get_value(
-					"TLS Certificate", {"domain": {self.name}}, "name"
+		if not certificate_name and hasattr(self, "is_self_hosted") and self.is_self_hosted:
+			certificate_name = frappe.db.get_value("TLS Certificate", {"domain": {self.name}}, "name")
+
+			if not certificate_name:
+				self_hosted_server = frappe.db.get_value(
+					"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
 				)
 
-				if not certificate_name:
-					self_hosted_server = frappe.db.get_value(
-						"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
-					)
-
-					certificate_name = frappe.db.get_value(
-						"TLS Certificate",
-						{"domain": f"{self_hosted_server.hostname}.{self_hosted_server.domain}"},
-						"name",
-					)
+				certificate_name = frappe.db.get_value(
+					"TLS Certificate",
+					{"domain": f"{self_hosted_server.hostname}.{self_hosted_server.domain}"},
+					"name",
+				)
 
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
