@@ -47,8 +47,10 @@ class Team(Document):
 		child_team_members: DF.Table[ChildTeamMember]
 		code_servers_enabled: DF.Check
 		communication_emails: DF.Table[CommunicationEmail]
+		company_logo: DF.Attach | None
 		country: DF.Link | None
 		currency: DF.Link | None
+		customers: DF.SmallText | None
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
 		discounts: DF.Table[InvoiceDiscount]
@@ -61,6 +63,7 @@ class Team(Document):
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
 		github_access_token: DF.Data | None
+		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
 		is_saas_user: DF.Check
@@ -90,6 +93,7 @@ class Team(Document):
 		team_title: DF.Data | None
 		user: DF.Link | None
 		via_erpnext: DF.Check
+		website_link: DF.Data | None
 	# end: auto-generated types
 
 	dashboard_fields = (
