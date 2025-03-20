@@ -1293,6 +1293,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 			AppSource.public,
 			AppSource.app_title,
 			MarketplaceApp.title,
+			MarketplaceApp.collect_feedback,
 		)
 		.where(AppSource.name.isin([d.source for d in installed_bench_apps]))
 	)
@@ -1348,13 +1349,6 @@ def get_installed_apps(site, query_filters: dict | None = None):
 				as_dict=True,
 			)
 			app_source.subscription = subscription
-			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image", "collect_feedback"], as_dict=True
-			)
-
-			app_source.app_title = marketplace_app_info.title
-			app_source.app_image = marketplace_app_info.image
-			app_source.collect_feedback = marketplace_app_info.collect_feedback
 
 			app_source.plan_info = frappe.db.get_value(
 				"Marketplace App Plan",
