@@ -359,8 +359,13 @@ def replenish_standby_sites():
 		try:
 			product.create_standby_sites_in_each_cluster()
 			frappe.db.commit()
-		except Exception:
-			log_error("Replenish Standby Sites Error", product=product.name)
+		except Exception as e:
+			log_error(
+				"Replenish Standby Sites Error",
+				data=e,
+				reference_doctype="Product Trial",
+				reference_name=product.name,
+			)
 			frappe.db.rollback()
 
 
