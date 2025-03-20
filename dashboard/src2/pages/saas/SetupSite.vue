@@ -51,12 +51,7 @@
 								>
 									Checking...
 								</div>
-								<template
-									v-else-if="
-										!$resources.subdomainExists.error &&
-										$resources.subdomainExists.data != null
-									"
-								>
+								<template v-else-if="!$resources.subdomainExists.error">
 									<div
 										v-if="$resources.subdomainExists.data"
 										class="text-sm text-green-600"
@@ -90,8 +85,13 @@
 							class="mt-8 w-full"
 							variant="solid"
 							type="submit"
+							:disabled="
+								!!$resources.subdomainExists.error ||
+								!$resources.subdomainExists.data ||
+								!subdomain.length
+							"
 							:loading="findingClosestServer || $resources.createSite?.loading"
-							loadingText="Submitting ..."
+							loadingText="Creating site..."
 						>
 							Next
 						</Button>
@@ -114,6 +114,7 @@ import { debounce } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
 import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 import { validateSubdomain } from '../../utils/site';
+import { DashboardError } from '../../utils/error';
 
 export default {
 	name: 'SignupSetup',
@@ -179,6 +180,7 @@ export default {
 					if (doc.site) {
 						this.subdomain = doc.site.split('.')[0];
 						this.initialSubdomain = doc.site.split('.')[0];
+						this.$resources.subdomainExists.submit();
 					}
 				},
 			};
@@ -193,12 +195,15 @@ export default {
 					};
 				},
 				validate() {
-					let error = validateSubdomain(this.subdomain);
+					const error = validateSubdomain(this.subdomain);
 					if (error) {
-						return new DashboardError(error);
+						throw new DashboardError(error);
 					}
 				},
 				transform(data) {
+					if (data && this.subdomain === this.initialSubdomain) {
+						return true;
+					}
 					return !Boolean(data);
 				},
 			};

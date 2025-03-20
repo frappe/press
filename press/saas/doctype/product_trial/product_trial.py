@@ -109,9 +109,10 @@ class ProductTrial(Document):
 			frappe.throw("Redirection route after login should start with /")
 
 	def setup_trial_site(self, subdomain, team, cluster=None, account_request=None):
-		from press.press.doctype.site.site import get_plan_config
+		from press.press.doctype.site.site import Site, get_plan_config
 
 		validate_subdomain(subdomain)
+		Site.exists(subdomain, self.domain)
 
 		site_domain = f"{subdomain}.{self.domain}"
 

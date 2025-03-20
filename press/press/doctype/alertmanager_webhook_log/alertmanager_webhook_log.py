@@ -110,7 +110,14 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
-			enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
+			send_telegram_notifs = frappe.db.get_single_value("Press Settings", "send_telegram_notifications")
+			if send_telegram_notifs:
+				enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
+
+			send_email_notifs = frappe.db.get_single_value("Press Settings", "send_email_notifications")
+			if send_email_notifs:
+				enqueue_doc(self.doctype, self.name, "send_email_notification", enqueue_after_commit=True)
+
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"
 		):
@@ -249,6 +256,16 @@ class AlertmanagerWebhookLog(Document):
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
 		TelegramMessage.enqueue(message=message, topic=self.severity)
+
+	def send_email_notification(self):
+		message = self.generate_telegram_message()
+		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients")
+		email_list = [email.strip() for email in recipient_emails.split(",")]
+		frappe.sendmail(
+			recipients=email_list,
+			subject=self.alert,
+			message=message,
+		)
 
 	@property
 	def bench(self):
