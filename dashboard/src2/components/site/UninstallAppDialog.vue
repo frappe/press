@@ -101,15 +101,13 @@ const handleConfirm = () => {
 
 	toast.promise(uninstallApp.submit(), {
 		loading: 'Scheduling app uninstall...',
-		success: (jobId: string) => {
-			console.log(jobId);
-
+		success: (jobId: { message: string }) => {
 			showDialog.value = false;
 			router.push({
 				name: 'Site Job',
 				params: {
 					name: props.site.name,
-					id: jobId,
+					id: jobId.message,
 				},
 			});
 			return 'App uninstall scheduled';
