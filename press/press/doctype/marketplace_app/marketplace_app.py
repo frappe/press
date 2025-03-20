@@ -55,6 +55,7 @@ class MarketplaceApp(WebsiteGenerator):
 		app: DF.Link
 		average_rating: DF.Float
 		categories: DF.Table[MarketplaceAppCategories]
+		collect_feedback: DF.Check
 		custom_verify_template: DF.Check
 		description: DF.SmallText
 		documentation: DF.Data | None
