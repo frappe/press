@@ -259,7 +259,7 @@ class AlertmanagerWebhookLog(Document):
 
 	def send_email_notification(self):
 		message = self.generate_telegram_message()
-		recipient_emails = frappe.get_cached_value("Press Settings", "email_recipients")
+		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients")
 		email_list = [email.strip() for email in recipient_emails.split(",")]
 		frappe.sendmail(
 			recipients=email_list,
