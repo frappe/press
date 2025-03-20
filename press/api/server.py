@@ -207,7 +207,7 @@ def usage(name):
 		"free_memory": (
 			f"""avg_over_time(node_memory_MemFree_bytes{{instance="{name}", job="node"}}[10m])""",
 			lambda x: x,
-		)
+		),
 	}
 
 	result = {}

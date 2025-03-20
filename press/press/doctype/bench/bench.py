@@ -593,17 +593,15 @@ class Bench(Document):
 		free_memory = usage(self.server).get("free_memory")
 		if not free_memory:
 			return True
-		free_memory /= 1024 ** 3
+		free_memory /= 1024**3
 		return free_memory >= minimum_rebuild_ram
-		
 
 	@dashboard_whitelist()
 	def rebuild(self, force: bool = False):
 		if force or self.should_rebuild():
 			return Agent(self.server).rebuild_bench(self)
-	
-		frappe.throw("Provision more ram to allow bench rebuild!")
 
+		frappe.throw("Provision more ram to allow bench rebuild!")
 
 	@dashboard_whitelist()
 	def restart(self, web_only=False):

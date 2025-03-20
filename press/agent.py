@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
-	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import \
-	    PhysicalBackupRestoration
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
 
@@ -237,8 +238,7 @@ class Agent:
 		def sanitized_site_config(site):
 			sanitized_config = {}
 			if site.remote_config_file:
-				from press.press.doctype.site_activity.site_activity import \
-				    log_site_activity
+				from press.press.doctype.site_activity.site_activity import log_site_activity
 
 				site_config = frappe.get_doc("Remote File", site.remote_config_file)
 				new_config = site_config.get_content()

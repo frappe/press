@@ -22,6 +22,7 @@ class PressSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.app_group.app_group import AppGroup
 		from press.press.doctype.erpnext_app.erpnext_app import ERPNextApp
 
