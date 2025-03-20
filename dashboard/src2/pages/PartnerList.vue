@@ -22,8 +22,8 @@ export default {
 						transform(data) {
 							return data.map((d) => {
 								return {
-									name: d.name,
 									company: d.billing_name,
+									email: d.partner_email,
 									country: d.country,
 									tier: d.tier || '',
 								};
@@ -35,12 +35,12 @@ export default {
 				},
 				columns: [
 					{
-						label: 'Partner Name',
-						fieldname: 'name',
-					},
-					{
 						label: 'Company',
 						fieldname: 'company',
+					},
+					{
+						label: 'Partner Email',
+						fieldname: 'email',
 					},
 					{
 						label: 'Country',
