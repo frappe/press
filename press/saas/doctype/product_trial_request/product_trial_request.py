@@ -163,7 +163,12 @@ class ProductTrialRequest(Document):
 			return frappe._dict(_locals.get("payload", {}))
 
 		except Exception as e:
-			frappe.log_error(title="Product Trial Request Setup Wizard Payload Generation Error")
+			log_error(
+				title="Product Trial Request Setup Wizard Payload Generation Error",
+				data=e,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
 
 	def get_user_login_password_from_signup_details(self) -> str | None:

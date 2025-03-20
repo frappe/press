@@ -34,7 +34,7 @@
 						<div v-if="tab.value === 'public-github-app'" class="space-y-4">
 							<div class="mt-4 flex items-end space-x-2">
 								<FormControl
-									class="mb-0.5 grow"
+									class="grow"
 									label="GitHub URL"
 									v-model="githubAppLink"
 									autocomplete="off"
