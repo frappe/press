@@ -71,10 +71,7 @@ def execute(filters=None):
 	columns = [
 		{"fieldname": "app_name", "label": "Application Name", "fieldtype": "Data", "width": 200},
 		{"fieldname": "team", "label": "Team", "fieldtype": "Data", "width": 200},
-		{"fieldname": "version", "label": "Version", "fieldtype": "Data", "width": 100},
-		{"fieldname": "source", "label": "Source", "fieldtype": "Data", "width": 100},
 		{"fieldname": "repository_url", "label": "Repository URL", "fieldtype": "Data", "width": 300},
-		{"fieldname": "branch", "label": "Branch", "fieldtype": "Data", "width": 100},
 		{
 			"fieldname": "visibility",
 			"label": "Visibility",
@@ -86,20 +83,22 @@ def execute(filters=None):
 	data = frappe.db.sql(
 		"""
         SELECT
-            ma.name AS app_name,
+			ma.name AS app_name,
 			t.user AS team,
-            mav.version AS version,
-            mav.source AS source,
-            asrc.repository_url AS repository_url,
-            asrc.branch AS branch
-        FROM
-            `tabMarketplace App` ma
-        JOIN
-            `tabMarketplace App Version` mav ON ma.name = mav.parent
-        JOIN
-            `tabApp Source` asrc ON mav.source = asrc.name
+			asrc.repository_url AS repository_url
+		FROM
+			`tabMarketplace App` ma
+		JOIN
+			`tabMarketplace App Version` mav ON ma.name = mav.parent
+		JOIN
+			`tabApp Source` asrc ON mav.source = asrc.name
 		JOIN
 			`tabTeam` t ON ma.team = t.name
+		WHERE
+			asrc.enabled = 1 AND
+			ma.status = 'Published'
+		GROUP BY
+			repository_url
         """,
 		as_dict=True,
 	)
