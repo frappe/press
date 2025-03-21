@@ -1,6 +1,8 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import json
 import shutil
 
@@ -74,7 +76,7 @@ def _execute_command(doc):
 
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
-		super(AnsibleCallback, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 		self.hosts = {}
 
 	def v2_runner_on_ok(self, result, *args, **kwargs):
