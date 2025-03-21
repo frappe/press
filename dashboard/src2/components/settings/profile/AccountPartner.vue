@@ -91,10 +91,14 @@
 			}"
 		>
 			<template v-slot:body-content>
-				<p class="text-p-base pb-3">
+				<div class="text-p-base pb-2">
 					This will remove the Partner associated with your account. Are you
-					sure you want to remove the Partner?
-				</p>
+					sure you want to remove the Partner? <br /><br />
+					<div class="text-gray-800 bg-gray-200 p-2 rounded-md">
+						Your partner will no longer have access to your sites and servers
+						and will be removed as team member from your team.
+					</div>
+				</div>
 			</template>
 		</Dialog>
 	</Card>
@@ -131,7 +135,9 @@ export default {
 					if (data === 'Request already sent') {
 						toast.error('Approval Request has already been sent to Partner');
 					} else {
-						toast.success('Approval Request has been sent to Partner');
+						toast.success(
+							'Approval Request has been sent to Partner. Please wait for Partner to accept the request',
+						);
 					}
 				},
 				onError() {

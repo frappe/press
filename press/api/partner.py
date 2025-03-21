@@ -54,6 +54,7 @@ def get_partner_details(partner_email):
 		"Partner",
 		filters={"email": partner_email, "enabled": 1},
 		fields=[
+			"name",
 			"email",
 			"partner_type",
 			"company_name",
@@ -289,7 +290,7 @@ def get_partner_members(partner):
 	return client.get_list(
 		"LMS Certificate",
 		filters={"partner": partner},
-		fields=["member_name", "member_email"],
+		fields=["member_name", "member_email", "course", "version"],
 	)
 
 
@@ -309,6 +310,28 @@ def remove_partner():
 		team.remove(member_to_remove)
 	team.partner_email = ""
 	team.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def apply_for_certificate(member_name, certificate_type):
+	team = get_current_team(get_doc=True)
+	doc = frappe.new_doc("Partner Certificate Request")
+	doc.update(
+		{
+			"partner_team": team.name,
+			"partner_member_email": member_name,
+			"course": certificate_type,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_partner_teams():
+	teams = frappe.get_all(
+		"Team", {"enabled": 1, "erpnext_partner": 1}, ["partner_email", "billing_name", "country"]
+	)
+	return teams  # noqa: RET504
 
 
 @frappe.whitelist()

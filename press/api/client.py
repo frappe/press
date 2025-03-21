@@ -77,6 +77,7 @@ ALLOWED_DOCTYPES = [
 	"Site Database User",
 	"Press Settings",
 	"Mpesa Payment Record",
+	"Partner Certificate",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
