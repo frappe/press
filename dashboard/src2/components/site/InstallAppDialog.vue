@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			title: 'Install app on your site',
-			size: '4xl'
+			size: '4xl',
 		}"
 	>
 		<template #body-content>
@@ -25,16 +25,16 @@ export default {
 	props: {
 		site: {
 			type: String,
-			required: true
-		}
+			required: true,
+		},
 	},
 	emits: ['installed'],
 	components: {
-		ObjectList
+		ObjectList,
 	},
 	data() {
 		return {
-			show: true
+			show: true,
 		};
 	},
 	computed: {
@@ -42,67 +42,67 @@ export default {
 			return getCachedDocumentResource('Site', this.site);
 		},
 		listOptions() {
-			const handleInstall = row => {
+			const handleInstall = (row) => {
 				if (this.$site.installApp.loading) return;
 
-				if (row.plans) {
+				if (row.plans && row.plans.some((plan) => plan.price_inr > 0)) {
 					this.show = false;
 
-					let SiteAppPlanSelectDialog = defineAsyncComponent(() =>
-						import('./SiteAppPlanSelectDialog.vue')
+					let SiteAppPlanSelectDialog = defineAsyncComponent(
+						() => import('./SiteAppPlanSelectDialog.vue'),
 					);
 
 					renderDialog(
 						h(SiteAppPlanSelectDialog, {
 							app: row,
 							currentPlan: null,
-							onPlanSelected: plan => {
+							onPlanSelected: (plan) => {
 								toast.promise(
 									this.$site.installApp.submit({
 										app: row.app,
-										plan: plan.name
+										plan: plan.name,
 									}),
 									{
 										loading: 'Installing app...',
-										success: jobId => {
+										success: (jobId) => {
 											router.push({
 												name: 'Site Job',
 												params: {
 													name: this.site,
-													id: jobId
-												}
+													id: jobId,
+												},
 											});
 											this.$emit('installed');
 											this.show = false;
 											return 'App will be installed shortly';
 										},
-										error: e => getToastErrorMessage(e)
-									}
+										error: (e) => getToastErrorMessage(e),
+									},
 								);
-							}
-						})
+							},
+						}),
 					);
 				} else {
 					toast.promise(
 						this.$site.installApp.submit({
-							app: row.app
+							app: row.app,
 						}),
 						{
 							loading: 'Installing app...',
-							success: jobId => {
+							success: (jobId) => {
 								router.push({
 									name: 'Site Job',
 									params: {
 										name: this.site,
-										id: jobId
-									}
+										id: jobId,
+									},
 								});
 								this.$emit('installed');
 								this.show = false;
 								return 'App will be installed shortly';
 							},
-							error: e => getToastErrorMessage(e)
-						}
+							error: (e) => getToastErrorMessage(e),
+						},
 					);
 				}
 			};
@@ -121,19 +121,19 @@ export default {
 						fieldname: 'title',
 						class: 'font-medium',
 						width: 2,
-						format: (value, row) => value || row.app_title
+						format: (value, row) => value || row.app_title,
 					},
 					{
 						label: 'Repo',
 						fieldname: 'repository_owner',
 						class: 'text-gray-600',
-						width: '10rem'
+						width: '10rem',
 					},
 					{
 						label: 'Branch',
 						fieldname: 'branch',
 						class: 'text-gray-600',
-						width: '20rem'
+						width: '20rem',
 					},
 					{
 						label: '',
@@ -146,22 +146,22 @@ export default {
 								label: 'Install',
 								onClick: () => {
 									handleInstall(row);
-								}
+								},
 							};
-						}
-					}
+						},
+					},
 				],
 				resource: () => {
 					return {
 						url: 'press.api.site.available_apps',
 						params: {
-							name: this.site
+							name: this.site,
 						},
-						auto: true
+						auto: true,
 					};
-				}
+				},
 			};
-		}
-	}
+		},
+	},
 };
 </script>
