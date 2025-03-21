@@ -271,6 +271,7 @@ scheduler_events = {
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 			"press.press.doctype.site.site.sync_sites_setup_wizard_complete_status",
+			"press.press.doctype.database_server.database_server.monitor_disk_performance",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
