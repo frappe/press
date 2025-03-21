@@ -194,7 +194,7 @@ class DeployCandidate(Document):
 					{
 						**job[0],
 						"title": f"Deploying {bench.bench}",
-						"duration": get_job_duration_in_seconds(job[0].duration) if job else 0,
+						"duration": get_job_duration_in_seconds(getattr(job[0], "duration", 0)) if job else 0,
 					}
 				)
 
