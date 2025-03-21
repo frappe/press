@@ -40,7 +40,7 @@ def send_emails(columns, data):
 
 def check_repository_visibility(repository_url, personal_access_token):
 	try:
-		repo_parts = repository_url.split("github.com/")[1].rstrip(".git").split("/")
+		repo_parts = repository_url.split("github.com/")[1].removesuffix(".git").split("/")
 		owner = repo_parts[0]
 		repo_name = repo_parts[1]
 	except IndexError:
