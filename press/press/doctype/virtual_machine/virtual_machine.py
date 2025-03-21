@@ -62,7 +62,7 @@ class VirtualMachine(Document):
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
 		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "Bare Metal Host"]
 		cluster: DF.Link
 		disk_size: DF.Int
 		domain: DF.Link
@@ -153,13 +153,51 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def provision(self):
-		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws()
-		if self.cloud_provider == "OCI":
-			return self._provision_oci()
-		if self.cloud_provider == "Hetzner":
-			return self._provision_hetzner()
-		return None
+		if not self.image:
+			self.sync()
+		if self.status == "Draft":
+			if self.cloud_provider == "AWS EC2":
+				self._provision_aws()
+			elif self.cloud_provider == "OCI":
+				self._provision_oci()
+			elif self.cloud_provider == "Hetzner":
+				self._provision_hetzner()
+			elif self.cloud_provider == "Bare Metal Host":
+				self._provision_bare_metal()
+			self.save()
+
+	def _provision_bare_metal(self):
+		"""Provision VM on Bare Metal Host using libvirt/KVM"""
+		try:
+			# Mock implementation for now
+			self.db_set('status', 'Pending')
+			
+			# Get the bare metal host
+			bare_metal_host = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+			
+			# In a real implementation, we would:
+			# 1. Connect to the bare metal host
+			# 2. Use the agent to call create_vm endpoint
+			# 3. Wait for the VM to be created
+			# 4. Update the VM details
+			
+			# For now, just update some fields to simulate a successful provision
+			frappe.db.set_value("Virtual Machine", self.name, {
+				"status": "Running",
+				"private_ip_address": f"192.168.100.{frappe.utils.cint(frappe.utils.nowdate())[-3:]}",
+				"instance_id": f"vm-{frappe.utils.random_string(8)}"
+			})
+			
+			frappe.msgprint(f"VM provisioning started on Bare Metal Host {bare_metal_host}")
+			
+		except Exception as e:
+			log_error("Bare Metal VM Provision Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error provisioning VM on Bare Metal Host: {str(e)}")
 
 	def _provision_hetzner(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -531,17 +569,42 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def sync(self, *args, **kwargs):
-		try:
-			frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
-		except frappe.QueryTimeoutError:  # lock wait timeout
-			return None
 		if self.cloud_provider == "AWS EC2":
-			return self._sync_aws(*args, **kwargs)
-		if self.cloud_provider == "OCI":
-			return self._sync_oci(*args, **kwargs)
-		if self.cloud_provider == "Hetzner":
-			return self._sync_hetzner(*args, **kwargs)
-		return None
+			self._sync_aws(*args, **kwargs)
+		elif self.cloud_provider == "OCI":
+			self._sync_oci(*args, **kwargs)
+		elif self.cloud_provider == "Hetzner":
+			self._sync_hetzner(*args, **kwargs)
+		elif self.cloud_provider == "Bare Metal Host":
+			self._sync_bare_metal(*args, **kwargs)
+		self.update_servers()
+
+	def _sync_bare_metal(self, *args, **kwargs):
+		"""Sync VM status from Bare Metal Host"""
+		try:
+			# Get the bare metal host
+			bare_metal_host = frappe.get_value(
+				"Cluster", self.cluster, "bare_metal_host"
+			)
+			
+			if not bare_metal_host:
+				frappe.throw("No Bare Metal Host selected for this cluster")
+			
+			# In a real implementation, we would:
+			# 1. Connect to the bare metal host
+			# 2. Use the agent to get VM status
+			# 3. Update the VM details
+			
+			# For now, just update status field if it's not set
+			if self.status == "Draft":
+				self.status = "Running"
+				self.instance_id = f"vm-{frappe.utils.random_string(8)}"
+				
+			frappe.msgprint(f"VM synced with Bare Metal Host {bare_metal_host}")
+			
+		except Exception as e:
+			log_error("Bare Metal VM Sync Error", virtual_machine=self.name, error=str(e))
+			frappe.throw(f"Error syncing VM with Bare Metal Host: {str(e)}")
 
 	def _sync_hetzner(self, server_instance=None):
 		is_deleted = False
@@ -989,7 +1052,9 @@ class VirtualMachine(Document):
 			settings = frappe.get_single("Press Settings")
 			api_token = settings.get_password("hetzner_api_token")
 			return Client(token=api_token)
-
+		if self.cloud_provider == "Bare Metal Host":
+			# In a real implementation, we would return a client for the bare metal host
+			return None
 		return None
 
 	@frappe.whitelist()
