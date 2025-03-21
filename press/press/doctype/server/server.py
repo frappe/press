@@ -11,7 +11,6 @@ from functools import cached_property
 
 import boto3
 import frappe
-import frappe.utils
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
