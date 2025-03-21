@@ -981,5 +981,4 @@ def monitor_disk_performance():
 		queue="long",
 		job_id="monitor_disk_performance||database",
 		timeout=3600,
-		now=True,
 	)
