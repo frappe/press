@@ -83,6 +83,7 @@
   "clone_directory",
   "build_directory",
   "build_server",
+  "minimum_rebuild_memory",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1377,31 +1378,16 @@
    "label": "Max Concurrent Physical Restorations"
   },
   {
-   "default": "1",
-   "fieldname": "send_telegram_notifications",
-   "fieldtype": "Check",
-   "label": "Send Telegram Notifications"
-  },
-  {
-   "fieldname": "column_break_jlzi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_email_notifications",
-   "fieldtype": "Check",
-   "label": "Send Email Notifications"
-  },
-  {
-   "depends_on": "eval: doc.send_email_notifications== true",
-   "fieldname": "email_recipients",
-   "fieldtype": "Small Text",
-   "label": "Email Recipients"
+   "default": "2",
+   "fieldname": "minimum_rebuild_memory",
+   "fieldtype": "Int",
+   "label": "Minimum Rebuild Memory",
+   "non_negative": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-19 11:06:43.919300",
+ "modified": "2025-03-20 16:17:47.701761",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1419,6 +1405,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

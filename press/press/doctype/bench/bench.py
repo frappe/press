@@ -18,6 +18,7 @@ from frappe.utils import get_system_timezone
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.api.server import usage
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
@@ -587,9 +588,28 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		candidate._create_deploy([self.server])
 
+	def should_rebuild(self) -> bool:
+		minimum_rebuild_memory = frappe.get_doc("Press Settings").minimum_rebuild_memory
+
+		if self.memory_max < minimum_rebuild_memory:
+			return False
+
+		free_memory = usage(self.server).get("free_memory")
+
+		if free_memory is None:
+			return True
+
+		free_memory_gb = free_memory / (1024**3)
+
+		return free_memory_gb >= minimum_rebuild_memory
+
 	@dashboard_whitelist()
-	def rebuild(self):
-		return Agent(self.server).rebuild_bench(self)
+	def rebuild(self, force: bool = False):
+		if force or self.should_rebuild():
+			return Agent(self.server).rebuild_bench(self)
+
+		frappe.throw("Provision more ram to allow bench rebuild!")
+		return None
 
 	@dashboard_whitelist()
 	def restart(self, web_only=False):
