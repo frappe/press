@@ -588,13 +588,20 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		candidate._create_deploy([self.server])
 
-	def should_rebuild(self):
+	def should_rebuild(self) -> bool:
 		minimum_rebuild_memory = frappe.get_doc("Press Settings").minimum_rebuild_memory
+
+		if self.memory_max < minimum_rebuild_memory:
+			return False
+
 		free_memory = usage(self.server).get("free_memory")
-		if not free_memory:
+
+		if free_memory is None:
 			return True
-		free_memory /= 1024**3
-		return free_memory >= minimum_rebuild_memory
+
+		free_memory_gb = free_memory / (1024**3)
+
+		return free_memory_gb >= minimum_rebuild_memory
 
 	@dashboard_whitelist()
 	def rebuild(self, force: bool = False):
