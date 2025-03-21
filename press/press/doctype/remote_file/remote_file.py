@@ -231,7 +231,8 @@ class RemoteFile(Document):
 		)
 
 	def on_trash(self):
-		self.delete_remote_object()
+		if self.status != "Unavailable":
+			self.delete_remote_object()
 
 	@frappe.whitelist()
 	def get_download_link(self):
