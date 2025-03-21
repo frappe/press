@@ -4,7 +4,7 @@ import frappe
 import requests
 
 
-def send_developer_email(email, app_name, branch, repository_url, version):
+def send_developer_email(email, app_name, repository_url):
 	dev = frappe.get_doc("User", {"email": email})
 	developer_name = dev.full_name
 	email_args = {
@@ -14,8 +14,6 @@ def send_developer_email(email, app_name, branch, repository_url, version):
 		"args": {
 			"developer_name": developer_name,
 			"app_name": app_name,
-			"branch": branch,
-			"version": version,
 			"repository_url": repository_url,
 		},
 	}
@@ -31,11 +29,9 @@ def send_emails(columns, data):
 		if visibility != "Private":
 			continue
 		app_name = row.get("app_name")
-		branch = row.get("branch")
 		repository_url = row.get("repository_url")
 		email = row.get("team")
-		version = row.get("version")
-		send_developer_email(email, app_name, branch, repository_url, version)
+		send_developer_email(email, app_name, repository_url)
 
 
 def check_repository_visibility(repository_url, personal_access_token):
