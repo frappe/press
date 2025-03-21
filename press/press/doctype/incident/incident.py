@@ -415,6 +415,9 @@ Likely due to insufficient balance or incorrect credentials""",
 		for human in self.get_humans():
 			if not (call := self.call_human(human)):
 				return  # can't twilio
+			print("*" * 10)
+			print(call.status)
+			print("*" * 10)
 			acknowledged = False
 			status = str(call.status)
 			try:
