@@ -21,7 +21,7 @@ class PartnerCertificate(Document):
 		evaluator_name: DF.Data | None
 		free: DF.Check
 		issue_date: DF.Date | None
-		partner_member_email: DF.Link | None
+		partner_member_email: DF.Data | None
 		partner_member_name: DF.Data | None
 		partner_team: DF.Link | None
 		template: DF.Data | None

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:PCR-{YYYY}{MM}-{#####}",
+ "autoname": "hash",
  "creation": "2025-03-01 11:27:40.991647",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -40,11 +40,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-20 11:53:59.787567",
+ "modified": "2025-03-23 16:09:57.201470",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Certificate Request",
- "naming_rule": "Expression",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -61,13 +61,15 @@
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
-   "role": "Partner Member",
-   "share": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "export": 1,
+   "read": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],

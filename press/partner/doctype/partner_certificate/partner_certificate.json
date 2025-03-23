@@ -70,9 +70,8 @@
   },
   {
    "fieldname": "partner_member_email",
-   "fieldtype": "Link",
-   "label": "Partner Member Email",
-   "options": "User"
+   "fieldtype": "Data",
+   "label": "Partner Member Email"
   },
   {
    "fetch_from": "partner_member_email.full_name",
@@ -90,7 +89,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-20 12:07:03.663512",
+ "modified": "2025-03-23 16:07:44.697486",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Certificate",
@@ -110,13 +109,8 @@
    "write": 1
   },
   {
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
-   "role": "Partner Member",
-   "share": 1
+   "role": "Partner Member"
   }
  ],
  "sort_field": "creation",
