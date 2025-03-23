@@ -46,21 +46,12 @@
 							/>
 						</div>
 						<div class="text-xl font-semibold py-2">
-							{{
-								formatCurrency(
-									partnerDetails.data
-										?.custom_ongoing_period_fc_invoice_contribution,
-								) || '0.0'
-							}}
+							{{ formatCurrency(currentMonthContribution.data) || '0.0' }}
 						</div>
 						<div class="text-sm text-gray-600">
 							<span
 								>Previous Month:
-								{{
-									formatCurrency(
-										partnerDetails.data?.custom_fc_invoice_contribution,
-									) || '0.0'
-								}}</span
+								{{ formatCurrency(prevMonthContribution.data) || '0.0' }}</span
 							>
 						</div>
 					</div>
@@ -201,20 +192,30 @@ function isRenewalPeriod() {
 	return Boolean(daysDifference >= 0 && daysDifference <= 15);
 }
 
+const currentMonthContribution = createResource({
+	url: 'press.api.partner.get_current_month_partner_contribution',
+	auto: true,
+	cache: 'currentMonthContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+	},
+});
+
+const prevMonthContribution = createResource({
+	url: 'press.api.partner.get_prev_month_partner_contribution',
+	auto: true,
+	cache: 'prevMonthContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+	},
+});
+
 const tierProgressValue = ref(0);
 const nextTier = ref('');
 const nextTierTarget = ref(0);
 
 function calculateTierProgress(next_tier_value) {
-	console.log(
-		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution,
-		next_tier_value,
-	);
-	return Math.ceil(
-		(partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution /
-			next_tier_value) *
-			100,
-	);
+	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100);
 }
 
 function calculateNextTier(tier) {
@@ -254,9 +255,7 @@ function calculateNextTier(tier) {
 	}
 	nextTier.value = next_tier;
 	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);
-	nextTierTarget.value =
-		nextTierTarget.value -
-		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution;
+	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data;
 }
 
 watch(

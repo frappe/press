@@ -25,7 +25,7 @@ export default {
 									company: d.billing_name,
 									email: d.partner_email,
 									country: d.country,
-									tier: d.tier || '',
+									tier: d.partner_tier || '',
 								};
 							});
 						},
