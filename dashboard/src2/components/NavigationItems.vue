@@ -17,6 +17,7 @@ import DatabaseZap from '~icons/lucide/database-zap';
 import Activity from '~icons/lucide/activity';
 import Logs from '~icons/lucide/scroll-text';
 import Globe from '~icons/lucide/globe';
+import Shield from '~icons/lucide/shield';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
 import { unreadNotificationsCount } from '../data/notifications';
@@ -175,7 +176,7 @@ export default {
 				},
 				{
 					name: 'Partner Admin',
-					icon: () => h(Globe),
+					icon: () => h(Shield),
 					route: '/partner-admin',
 					isActive: routeName === 'Partner Admin',
 					condition: Boolean(this.$team.doc.is_desk_user),
