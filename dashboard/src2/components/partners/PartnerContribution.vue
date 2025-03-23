@@ -32,7 +32,7 @@ export default {
 							status: d.status,
 							due_date: d.due_date,
 							currency: d.currency,
-							total: d.total,
+							total: d.total_before_discount,
 							partner_total: d.partner_total
 						};
 					});

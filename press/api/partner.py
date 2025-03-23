@@ -133,11 +133,11 @@ def get_partner_contribution_list(partner_email):
 	for d in invoices:
 		if partner_currency != d.currency:
 			if partner_currency == "USD":
-				d.update({"partner_total": flt(d.total / 83, 2)})
+				d.update({"partner_total": flt(d.total_before_discount / 83, 2)})
 			else:
-				d.update({"partner_total": flt(d.total * 83)})
+				d.update({"partner_total": flt(d.total_before_discount * 83)})
 		else:
-			d.update({"partner_total": d.total})
+			d.update({"partner_total": d.total_before_discount})
 	return invoices
 
 
