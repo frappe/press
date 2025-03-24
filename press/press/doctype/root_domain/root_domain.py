@@ -146,12 +146,13 @@ class RootDomain(Document):
 				if record["Type"] == "CNAME" and value in proxies:
 					domain = record["Name"].strip(".")
 					# Delete inactive records
-					if domain not in active_domains:
+					if domain not in active_domains:  # noqa: SIM114
 						record["Name"] = domain
 						to_delete.append(record)
 					# Delete records that point to a proxy in the default_cluster
 					# These are covered by * records
 					elif value in default_proxies:
+						record["Name"] = domain
 						to_delete.append(record)
 			if to_delete:
 				self.delete_dns_records(to_delete)
