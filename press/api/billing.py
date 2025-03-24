@@ -217,6 +217,25 @@ def details():
 
 
 @frappe.whitelist()
+def fetch_invoice_items(invoice):
+	return frappe.get_all(
+		"Invoice Item",
+		{"parent": invoice, "parenttype": "Invoice"},
+		[
+			"document_type",
+			"document_name",
+			"rate",
+			"quantity",
+			"amount",
+			"plan",
+			"description",
+			"discount",
+			"site",
+		],
+	)
+
+
+@frappe.whitelist()
 def get_customer_details(team):
 	"""This method is called by frappe.io for creating Customer and Address"""
 	team_doc = frappe.db.get_value("Team", team, "*")
@@ -429,7 +448,7 @@ def get_unpaid_invoices():
 		order_by="creation asc",
 	)
 
-	return unpaid_invoices
+	return unpaid_invoices  # noqa: RET504
 
 
 @frappe.whitelist()
@@ -446,7 +465,7 @@ def change_payment_mode(mode):
 	if team.billing_team and mode != "Paid By Partner":
 		team.billing_team = ""
 	team.save()
-	return None
+	return
 
 
 @frappe.whitelist()
