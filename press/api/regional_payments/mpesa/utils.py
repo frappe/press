@@ -384,8 +384,6 @@ def create_payment_partner_transaction(
 
 @frappe.whitelist()
 def fetch_payments(payment_gateway, partner, from_date, to_date):
-	print("fetching payments", payment_gateway)
-	partner = frappe.get_value("Team", {"user": partner}, "name")
 	filters = {
 		"docstatus": 1,
 		"submitted_to_frappe": 0,
@@ -395,7 +393,6 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 
 	if from_date and to_date:
 		filters["posting_date"] = ["between", [from_date, to_date]]
-
 	partner_payments = frappe.get_all(
 		"Payment Partner Transaction", filters=filters, fields=["name", "amount", "posting_date"]
 	)
