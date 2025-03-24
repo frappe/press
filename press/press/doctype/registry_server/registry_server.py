@@ -98,5 +98,12 @@ class RegistryServer(BaseServer):
 
 	def _prune_docker_system(self):
 		toggle_builds(True)
-		super()._prune_docker_system()
+		try:
+			ansible = Ansible(
+				playbook="docker_registry_prune.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Prune Docker Registry Exception", doc=self)
 		toggle_builds(False)
