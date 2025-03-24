@@ -283,9 +283,9 @@ class Site(Document, TagHelpers):
 		if broken_domain_tls_certificate := frappe.db.get_value(
 			"Site Domain", {"site": self.name, "status": "Broken"}, "tls_certificate"
 		):
-			doc.broken_domain_error = frappe.db.get_value(
-				"TLS Certificate", broken_domain_tls_certificate, "error"
-			)
+			doc.broken_domain_error, doc.tls_cert_retry_count = frappe.db.get_values(
+				"TLS Certificate", broken_domain_tls_certificate, ("error", "retry_count")
+			)[0]
 
 		return doc
 
@@ -3043,6 +3043,12 @@ class Site(Document, TagHelpers):
 			"message": "Database index will be added on site.",
 			"job_name": job.name,
 		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
+	def fetch_certificate(self, domain: str):
+		tls_certificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
+		tls_certificate.obtain_certificate()
 
 
 def site_cleanup_after_archive(site):

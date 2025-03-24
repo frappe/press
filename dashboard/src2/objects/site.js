@@ -47,6 +47,7 @@ export default {
 		redirectToPrimary: 'set_redirect',
 		removeRedirect: 'unset_redirect',
 		setPrimaryDomain: 'set_host_name',
+		fetchCertificate: 'fetch_certificate',
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
@@ -584,6 +585,37 @@ export default {
 													success: () => {
 														hide();
 														return 'Redirect removed';
+													},
+													error: (e) => getToastErrorMessage(e),
+												},
+											);
+										},
+									});
+								},
+							},
+							{
+								label: 'Fetch Certificate',
+								condition: () =>
+									row.status === 'Broken' &&
+									site.doc.broken_domain_error &&
+									site.doc.tls_cert_retry_count < 5,
+								onClick() {
+									confirmDialog({
+										title: `Fetch Certificate`,
+										message: `Are you sure you want to retry fetching the certificate for the domain <b>${row.domain}</b>?
+
+													<b>Note:</b> This action is rate limited. Please allow some time for dns changes (if any) to propagate before retrying.`,
+										onSuccess({ hide }) {
+											if (site.fetchCertificate.loading) return;
+											toast.promise(
+												site.fetchCertificate.submit({
+													domain: row.domain,
+												}),
+												{
+													loading: 'Fetching certificate...',
+													success: () => {
+														hide();
+														return 'Certificate fetch scheduled. Please wait a few minutes.';
 													},
 													error: (e) => getToastErrorMessage(e),
 												},

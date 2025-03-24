@@ -17,10 +17,13 @@ from frappe.model.document import Document
 from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
+	TLSRetryLimitExceeded,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+
+RETRY_LIMIT = 5
 
 
 class TLSCertificate(Document):
@@ -66,6 +69,8 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
+		if self.retry_count >= RETRY_LIMIT:
+			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
 		(
 			user,
 			session_data,
@@ -244,7 +249,7 @@ def renew_tls_certificates():
 		filters={
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
-			"retry_count": ("<", 5),
+			"retry_count": ("<", RETRY_LIMIT),
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.

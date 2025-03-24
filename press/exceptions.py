@@ -71,3 +71,7 @@ class MultipleARecords(DNSValidationError):
 
 class MultipleCNAMERecords(DNSValidationError):
 	pass
+
+
+class TLSRetryLimitExceeded(ValidationError):
+	pass
