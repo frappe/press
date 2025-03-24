@@ -106,36 +106,67 @@ class RootDomain(Document):
 		renaming_sites = frappe.get_all(
 			"Agent Job",
 			{"job_type": "Rename Site", "creation": (">=", last_hour)},
-			pluck="request_data",
+			["request_data", "server"],
 		)
-		return [json.loads(d_str)["new_name"] for d_str in renaming_sites]
+		server_map = {server.name: server.cluster for server in frappe.get_all("Server", ["name", "cluster"])}
+		return {json.loads(site.request_data)["new_name"]: server_map[site.server] for site in renaming_sites}
 
 	def get_active_site_domains(self):
-		return frappe.get_all(
-			"Site Domain", {"domain": ("like", f"%{self.name}"), "status": "Active"}, pluck="name"
+		Domain = frappe.qb.DocType("Site Domain")
+		Site = frappe.qb.DocType("Site")
+		query = (
+			frappe.qb.from_(Domain)
+			.left_join(Site)
+			.on(Domain.site == Site.name)
+			.where(Domain.domain.like(f"%{self.name}%"))
+			.where(Domain.status == "Active")
+			.select(Domain.domain, Site.cluster)
 		)
+		return {domain.domain: domain.cluster for domain in query.run(as_dict=True)}
 
 	def get_active_domains(self):
 		active_sites = frappe.get_all(
-			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
+			"Site", {"status": ("!=", "Archived"), "domain": self.name}, ["name", "cluster"]
 		)
-		active_sites.extend(self.get_sites_being_renamed())
-		active_sites.extend(self.get_active_site_domains())
-		return active_sites
+		active_domains = {site.name: site.cluster for site in active_sites}
+		active_domains.update(self.get_sites_being_renamed())
+		active_domains.update(self.get_active_site_domains())
+		return active_domains
+
+	def get_default_cluster_proxies(self):
+		proxy_map = {}
+		domains = frappe.get_all("Root Domain", ["name", "default_cluster"])
+		for domain in domains:
+			proxies = frappe.get_all(
+				"Proxy Server", {"status": "Active", "cluster": domain.default_cluster}, pluck="name"
+			)
+			proxy_map[domain.name] = proxies[0]
+		return proxy_map
 
 	def remove_unused_cname_records(self):
 		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+
+		default_proxies = self.get_default_cluster_proxies()
+
 		for page in self.get_dns_record_pages():
 			to_delete = []
 
 			frappe.db.commit()
-			active = self.get_active_domains()
+			active_domains = self.get_active_domains()
 
 			for record in page["ResourceRecordSets"]:
+				# Only look at CNAME records that point to a proxy server
 				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] in proxies:
 					domain = record["Name"].strip(".")
-					if domain not in active:
+					# Delete inactive records
+					if domain not in active_domains:
 						record["Name"] = domain
+						to_delete.append(record)
+					# Delete records that point to a proxy in the default_cluster
+					# These are covered by * records
+					elif record["ResourceRecords"][0]["Value"] in default_proxies.get(
+						active_domains[domain], []
+					):
 						to_delete.append(record)
 			if to_delete:
 				self.delete_dns_records(to_delete)
