@@ -12,6 +12,7 @@
   "status",
   "is_server_prepared",
   "is_server_setup",
+  "is_vm_host_setup",
   "column_break_5",
   "team",
   "cluster",
@@ -81,6 +82,12 @@
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
    "label": "Is Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_vm_host_setup",
+   "fieldtype": "Check",
+   "label": "Is VM Host Setup",
    "read_only": 1
   },
   {
