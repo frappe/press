@@ -244,7 +244,7 @@ def update_dns_type():  # noqa: C901
 	Certificate = frappe.qb.DocType("TLS Certificate")
 	query = (
 		frappe.qb.from_(Domain)
-		.inner_join(Certificate)
+		.left_join(Certificate)
 		.on(Domain.tls_certificate == Certificate.name)
 		.where(Domain.tls_certificate.isnotnull())  # Don't query wildcard subdomains
 		.select(
