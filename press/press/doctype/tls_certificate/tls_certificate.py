@@ -15,6 +15,9 @@ import OpenSSL
 from frappe.model.document import Document
 
 from press.api.site import check_dns_cname_a
+from press.exceptions import (
+	DNSValidationError,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
@@ -220,6 +223,19 @@ def should_renew(site: str | None, certificate: PendingCertificate) -> bool:
 	return False
 
 
+def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
+	frappe.db.rollback()
+	frappe.db.set_value(
+		"TLS Certificate",
+		certificate.name,
+		{
+			"status": "Failure",
+			"error": repr(e),
+			"retry_count": certificate.retry_count + 1,
+		},
+	)
+
+
 def renew_tls_certificates():
 	tls_renewal_queue_size = frappe.db.get_single_value("Press Settings", "tls_renewal_queue_size")
 	pending = frappe.get_all(
@@ -245,17 +261,16 @@ def renew_tls_certificates():
 			certificate_doc = TLSCertificate("TLS Certificate", certificate.name)
 			certificate_doc._obtain_certificate()
 			frappe.db.commit()
-		except Exception as e:
-			frappe.db.rollback()
+		except DNSValidationError as e:
+			rollback_and_fail_tls(certificate, e)  # has to come first as it has frappe.db.rollback()
 			frappe.db.set_value(
-				"TLS Certificate",
-				certificate.name,
-				{
-					"status": "Failure",
-					"error": repr(e),
-					"retry_count": certificate.retry_count + 1,
-				},
+				"Site Domain",
+				{"tls_certificate": certificate.name},
+				{"status": "Broken", "dns_response": str(e)},
 			)
+			frappe.db.commit()
+		except Exception as e:
+			rollback_and_fail_tls(certificate, e)
 			log_error("TLS Renewal Exception", certificate=certificate, site=site)
 			frappe.db.commit()
 
