@@ -10,6 +10,7 @@ import frappe.utils
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
@@ -167,6 +168,50 @@ class DatabaseServer(BaseServer):
 					).insert()
 				except Exception:
 					frappe.log_error("Database Subscription Creation Error")
+
+	def get_actions(self):
+		server_actions = super().get_actions()
+		server_type = "database server"
+		actions = [
+			{
+				"action": "Enable Performance Schema",
+				"description": "Activate for enhanced database insights",
+				"button_label": "Enable",
+				"condition": self.status == "Active" and not self.is_performance_schema_enabled,
+				"doc_method": "enable_performance_schema",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Disable Performance Schema",
+				"description": "Disable to reduce extra overhead",
+				"button_label": "Disable",
+				"condition": self.status == "Active" and self.is_performance_schema_enabled,
+				"doc_method": "disable_performance_schema",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Manage InnoDB Buffer Pool",
+				"description": "Increase/Decrease InnoDB Buffer Pool Size",
+				"button_label": "Manage",
+				"condition": self.status == "Active",
+				"doc_method": "update_innodb_buffer_size",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "Manage Max DB Connections",
+				"description": "Increase/Decrease Max DB Connections",
+				"button_label": "Manage",
+				"condition": self.status == "Active",
+				"doc_method": "update_max_db_connections",
+				"group": f"{server_type.title()} Actions",
+			},
+		]
+
+		for action in actions:
+			action["server_doctype"] = self.doctype
+			action["server_name"] = self.name
+
+		return [action for action in actions if action.get("condition", True)] + server_actions
 
 	def update_memory_limits(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True)
@@ -391,7 +436,10 @@ class DatabaseServer(BaseServer):
 		if save:
 			self.save()
 
-	def get_mariadb_variable_value(self, variable: str) -> str | int | float | None:
+	@dashboard_whitelist()
+	def get_mariadb_variable_value(
+		self, variable: str, return_default_if_not_found: bool = False
+	) -> str | int | float | None:
 		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
 		if not existing:
 			return None
@@ -403,10 +451,36 @@ class DatabaseServer(BaseServer):
 			return existing.value_float
 		if variable_datatype == "Str":
 			return existing.value_str
+
+		if return_default_if_not_found:
+			# Ref : https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+			match variable:
+				case "innodb_buffer_pool_size":
+					return int(self.ram_for_mariadb * 0.65)
+				case "max_connections":
+					return 200
 		return None
 
+	@dashboard_whitelist()
+	def update_innodb_buffer_size(self, size_mb: int):
+		# Hard limit 75% of Memory
+		if size_mb > int(self.ram_for_mariadb * 0.75):
+			frappe.throw(
+				f"InnoDB Buffer Size cannot be greater than {int(self.ram_for_mariadb * 0.75)}MB. If you need larger InnoDB Buffer Size, please increase memory of database server."
+			)
+		self.add_or_update_mariadb_variable("innodb_buffer_pool_size", "value_int", size_mb, save=True)
+
+	@dashboard_whitelist()
+	def update_max_db_connections(self, max_connections: int):
+		max_possible_connections = int(self.ram_for_mariadb / self.memory_per_db_connection)
+		if max_connections > max_possible_connections:
+			frappe.throw(
+				f"Max Connections cannot be greater than {max_possible_connections}. If you need more connections, please increase memory of database server."
+			)
+		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=True)
+
 	def validate_server_id(self):
-		if self.is_new() and not self.server_id:
+		if self.is_new() and not self.server_rid:
 			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
@@ -733,13 +807,13 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def enable_performance_schema(self):
 		self.add_or_update_mariadb_variable(
 			"performance_schema", "value_str", "1", skip=False, persist=True, save=True
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def disable_performance_schema(self):
 		self.add_or_update_mariadb_variable(
 			"performance_schema", "value_str", "OFF", skip=False, persist=True, save=True
@@ -953,8 +1027,8 @@ class DatabaseServer(BaseServer):
 		"""
 		return self.key_buffer_size + 32 + 16
 
-	@property
-	def recommended_max_connections(self):
+	@dashboard_whitelist()
+	def get_recommended_max_db_connections(self):
 		"""
 		Based on historical data, the simple formula for recommending max_connections is:
 		5 DB Users per GB of RAM
@@ -967,13 +1041,13 @@ class DatabaseServer(BaseServer):
 	def ram_for_mariadb(self):
 		return self.real_ram - self.system_reserved_memory
 
-	@property
-	def recommended_innodb_buffer_pool_size(self):
+	@dashboard_whitelist()
+	def get_recommended_innodb_buffer_pool_size(self):
 		return min(
 			int(
 				self.ram_for_mariadb
 				- self.base_memory_mariadb
-				- self.recommended_max_connections * self.memory_per_db_connection
+				- self.get_recommended_max_db_connections() * self.memory_per_db_connection
 			),
 			int(self.ram_for_mariadb * 0.65),
 		)
@@ -986,11 +1060,11 @@ class DatabaseServer(BaseServer):
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
-		max_connections = self.recommended_max_connections
+		max_connections = self.get_recommended_max_db_connections()
 		# Check if we can add some extra connections
-		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
+		if self.get_recommended_innodb_buffer_pool_size() < int(self.ram_for_mariadb * 0.65):
 			extra_connections = round(
-				(self.recommended_innodb_buffer_pool_size - int(self.ram_for_mariadb * 0.65))
+				(self.get_recommended_innodb_buffer_pool_size() - int(self.ram_for_mariadb * 0.65))
 				/ self.memory_per_db_connection
 			)
 			max_connections += extra_connections
@@ -998,7 +1072,7 @@ class DatabaseServer(BaseServer):
 		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			self.recommended_innodb_buffer_pool_size,
+			self.get_recommended_innodb_buffer_pool_size(),
 			save=False,
 		)
 

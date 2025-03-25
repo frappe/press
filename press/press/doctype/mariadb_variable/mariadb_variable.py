@@ -23,10 +23,8 @@ class MariaDBVariable(Document):
 		configurable_by_user: DF.Check
 		datatype: DF.Literal["Int", "Float", "Str"]
 		default_value: DF.Data | None
-		description: DF.SmallText | None
 		doc_section: DF.Literal["server", "replication-and-binary-log", "innodb"]
 		dynamic: DF.Check
-		options: DF.SmallText | None
 		set_on_new_servers: DF.Check
 		skippable: DF.Check
 		title: DF.Data | None

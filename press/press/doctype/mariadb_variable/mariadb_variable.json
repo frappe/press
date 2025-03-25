@@ -18,10 +18,7 @@
   "set_on_new_servers",
   "section_break_mhww",
   "configurable_by_user",
-  "options",
-  "column_break_gxod",
-  "title",
-  "description"
+  "title"
  ],
  "fields": [
   {
@@ -75,19 +72,8 @@
    "label": "Configurable By User"
   },
   {
-   "depends_on": "eval: doc.configurable_by_user",
-   "fieldname": "options",
-   "fieldtype": "Small Text",
-   "label": "Options",
-   "mandatory_depends_on": "eval: doc.configurable_by_user && doc.datatype == \"Str\""
-  },
-  {
    "fieldname": "section_break_mhww",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_gxod",
-   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval: doc.configurable_by_user",
@@ -95,18 +81,11 @@
    "fieldtype": "Data",
    "label": "Title",
    "mandatory_depends_on": "eval: doc.configurable_by_user"
-  },
-  {
-   "depends_on": "eval: doc.configurable_by_user",
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description",
-   "mandatory_depends_on": "eval: doc.configurable_by_user"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-25 18:24:18.522762",
+ "modified": "2025-03-25 22:21:06.165678",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",
