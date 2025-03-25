@@ -602,8 +602,7 @@ export default {
 								onClick() {
 									confirmDialog({
 										title: `Fetch Certificate`,
-										message: `Are you sure you want to retry fetching the certificate for the domain <b>${row.domain}</b>?
-
+										message: `Are you sure you want to retry fetching the certificate for the domain <b>${row.domain}</b>?<br><br>
 													<b>Note:</b> This action is rate limited. Please allow some time for dns changes (if any) to propagate before retrying.`,
 										onSuccess({ hide }) {
 											if (site.fetchCertificate.loading) return;
