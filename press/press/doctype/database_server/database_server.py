@@ -391,6 +391,20 @@ class DatabaseServer(BaseServer):
 		if save:
 			self.save()
 
+	def get_mariadb_variable_value(self, variable: str) -> str | int | float | None:
+		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
+		if not existing:
+			return None
+
+		variable_datatype = frappe.db.get_value("MariaDB Variable", existing.mariadb_variable, "datatype")
+		if variable_datatype == "Int":
+			return existing.value_int
+		if variable_datatype == "Float":
+			return existing.value_float
+		if variable_datatype == "Str":
+			return existing.value_str
+		return None
+
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
@@ -988,10 +1002,9 @@ class DatabaseServer(BaseServer):
 			save=False,
 		)
 
-		existing_max_connections = 0
-		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == "max_connections")
-		if existing and frappe.utils.cint(existing.value_int) > 0:
-			existing_max_connections = frappe.utils.cint(existing.value_int)
+		existing_max_connections = self.get_mariadb_variable_value("max_connections")
+		if existing_max_connections is None:
+			existing_max_connections = 0
 
 		# Avoid setting max_connections to a lower value, if it's already set to a higher value
 		# User might have changed the value in the past, and we don't want to override it
