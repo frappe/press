@@ -19,7 +19,6 @@
   "section_break_mhww",
   "configurable_by_user",
   "options",
-  "regex_validator",
   "column_break_gxod",
   "title",
   "description"
@@ -103,16 +102,11 @@
    "fieldtype": "Small Text",
    "label": "Description",
    "mandatory_depends_on": "eval: doc.configurable_by_user"
-  },
-  {
-   "fieldname": "regex_validator",
-   "fieldtype": "Data",
-   "label": "Regex Validator"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-25 11:39:44.253205",
+ "modified": "2025-03-25 18:24:18.522762",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

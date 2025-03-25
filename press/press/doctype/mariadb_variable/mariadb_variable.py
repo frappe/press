@@ -27,7 +27,6 @@ class MariaDBVariable(Document):
 		doc_section: DF.Literal["server", "replication-and-binary-log", "innodb"]
 		dynamic: DF.Check
 		options: DF.SmallText | None
-		regex_validator: DF.Data | None
 		set_on_new_servers: DF.Check
 		skippable: DF.Check
 		title: DF.Data | None

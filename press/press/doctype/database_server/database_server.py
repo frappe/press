@@ -45,6 +45,7 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_limit_reconfiguration_required: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -890,9 +891,78 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	"""
+	OS : 500 MB
+	Agent + Redis Server : ~100 MB
+	Filebeat : ~100 MB
+	"""
+	system_reserved_memory: int = 700
+
+	"""
+	Per DB Connection Memory : ~35MB
+	- sort_buffer_size : 2MB
+	- read_buffer_size : 0.13MB
+	- read_rnd_buffer_size : 0.26MB
+	- join_buffer_size : 0.26MB
+	- thread_stack : 0.29MB
+	- binlog_cache_size : 0.03MB
+	- max_heap_table_size : 32MB
+
+	https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+	"""
+	memory_per_db_connection: int = 35
+
+	@property
+	def key_buffer_size(self):
+		"""
+		key-buffer-size :
+		- If server has 4GB Ram, set to 32MB (Default set by press)
+		- Else set to 128MB
+
+		Database Server should have 1:100 ratio for Key Reads and Key Read Requests on MyISAM tables
+		"""
+		if self.ram_for_mariadb > 4096:
+			return 128
+
+		return 32
+
+	@property
+	def base_memory_mariadb(self):
+		"""
+		Base Memory
+		- key_buffer_size +
+		- query_cache_size : 0MB
+		- tmp_table_size : 32MB (applies to internal temporary tables created during query execution)
+		- innodb_log_buffer_size : 16MB
+
+		https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
+		"""
+		return self.key_buffer_size + 32 + 16
+
+	@property
+	def recommended_max_connections(self):
+		"""
+		Based on historical data, the simple formula for recommending max_connections is:
+		5 DB Users per GB of RAM
+
+		e.g. For 4GB of server, this will be 20
+		"""
+		return 5 * round(self.ram / 1024)
+
 	@property
 	def ram_for_mariadb(self):
-		return self.real_ram - 700  # OS and other services
+		return self.real_ram - self.system_reserved_memory
+
+	@property
+	def recommended_innodb_buffer_pool_size(self):
+		return min(
+			int(
+				self.ram_for_mariadb
+				- self.base_memory_mariadb
+				- self.recommended_max_connections * self.memory_per_db_connection
+			),
+			int(self.ram_for_mariadb * 0.65),
+		)
 
 	@frappe.whitelist()
 	def adjust_memory_config(self):
@@ -902,13 +972,25 @@ class DatabaseServer(BaseServer):
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
+		max_connections = self.recommended_max_connections
+		# Check if we can add some extra connections
+		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
+			extra_connections = round(
+				(self.recommended_innodb_buffer_pool_size - int(self.ram_for_mariadb * 0.65))
+				/ self.memory_per_db_connection
+			)
+			max_connections += extra_connections
+
 		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
+			self.recommended_innodb_buffer_pool_size,
 			save=False,
 		)
-
+		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=False)
+		self.add_or_update_mariadb_variable(
+			"key_buffer_size", "value_str", str(self.key_buffer_size), save=False
+		)
 		self.save()
 
 	@frappe.whitelist()
