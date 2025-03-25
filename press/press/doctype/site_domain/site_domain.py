@@ -240,11 +240,24 @@ def process_add_domain_to_upstream_job_update(job):
 
 
 def update_dns_type():  # noqa: C901
-	domains = frappe.get_all(
-		"Site Domain",
-		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
-		fields=["name", "domain", "dns_type", "site"],
+	Domain = frappe.qb.DocType("Site Domain")
+	Certificate = frappe.qb.DocType("TLS Certificate")
+	query = (
+		frappe.qb.from_(Domain)
+		.left_join(Certificate)
+		.on(Domain.tls_certificate == Certificate.name)
+		.where(Domain.tls_certificate.isnotnull())  # Don't query wildcard subdomains
+		.select(
+			Domain.name,
+			Domain.domain,
+			Domain.dns_type,
+			Domain.site,
+			Domain.tls_certificate,
+			Certificate.retry_count,
+		)
 	)
+
+	domains = query.run(as_dict=1)
 	for domain in domains:
 		if has_job_timeout_exceeded():
 			return
@@ -254,6 +267,13 @@ def update_dns_type():  # noqa: C901
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
 				)
+			if domain.retry_count > 0 and response["matched"]:
+				# In the past we failed to obtain the certificate (likely because of DNS issues).
+				# Since the DNS is now correct, we can retry obtaining the certificate.
+				frappe.db.set_value(
+					"TLS Certificate", domain.tls_certificate, "retry_count", 0, update_modified=False
+				)
+
 			pretty_response = json.dumps(response, indent=4, default=str)
 			frappe.db.set_value(
 				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False

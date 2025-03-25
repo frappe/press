@@ -1,0 +1,12 @@
+---
+- name: Restart docker registry
+  command: docker restart registry-registry-1
+
+- name: Run garbage collection on Docker Registry
+  command: docker exec -i registry-registry-1 registry garbage-collect /etc/docker/registry/config.yml
+  async: 7200
+  poll: 30
+
+- name: Restart docker registry
+  command: docker restart registry-registry-1
+

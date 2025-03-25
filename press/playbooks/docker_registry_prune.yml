@@ -1,0 +1,10 @@
+---
+- name: Prune Docker System
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  roles:
+    - docker_system_prune
+    - docker_registry_gc
