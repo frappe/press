@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 import frappe
 from frappe.core.doctype.version.version import get_diff
@@ -89,6 +89,28 @@ class DatabaseServer(BaseServer):
 		title: DF.Data | None
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	"""
+	`dynamic` is used to indicate if the variable can be applied on running server
+	For applying non-dynamic variables, we need to restart the server
+
+	---
+
+	`skippable` is used to indicate if the variable is of `skip` type
+	skip is to add a `skip_` prefix to the variable.
+
+	It basically enables/disables something.
+	Only some variables have it.
+
+	Eg: log_bin . Putting skip_log_bin in config turns off binary logging
+
+	---
+
+	`persist` is to make the variable persist in config file.
+	Otherwise, mariadb restart will make config change go away.
+
+	In hindsight, persist should be on by default
+	"""
 
 	def validate(self):
 		super().validate()
@@ -312,31 +334,61 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
 
-	def add_mariadb_variable(
+	def add_or_update_mariadb_variable(  # noqa: C901
 		self,
 		variable: str,
-		value_type: str,
-		value: Any,
+		value_type: Literal["value_int", "value_float", "value_str"],
+		value: Any = None,
 		skip: bool = False,
 		persist: bool = True,
+		save: bool = True,
+		avoid_update_if_exists: bool = False,
 	):
 		"""Add or update MariaDB variable on the server"""
+		if not skip and not value:
+			frappe.throw("For non-skippable variables, value is mandatory")
+
 		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == variable)
 		if existing:
-			existing.set(value_type, value)
-			existing.set("skip", skip)
-			existing.set("persist", persist)
+			if not avoid_update_if_exists:
+				existing.set("skip", skip)
+				if not skip:
+					existing.set(value_type, value)
+				existing.set("persist", persist)
 		else:
+			data = {
+				"mariadb_variable": variable,
+				"skip": skip,
+				"persist": persist,
+			}
+			if not skip:
+				data.update({value_type: value})
+
 			self.append(
 				"mariadb_system_variables",
-				{
-					"mariadb_variable": variable,
-					value_type: value,
-					"skip": skip,
-					"persist": persist,
-				},
+				data,
 			)
-		self.save()
+
+		"""
+		If it's `performance_schema` variable and set to 1 or ON
+		ensure to set other variables if not available
+		"""
+		if variable == "performance_schema":
+			if value in (1, "1", "ON"):
+				for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
+					if key == "performance_schema":
+						continue
+
+					self.add_or_update_mariadb_variable(
+						key, "value_str", value, skip=False, persist=True, avoid_update_if_exists=True
+					)
+
+				self.is_performance_schema_enabled = True
+			elif value in (0, "0", "OFF"):
+				self.is_performance_schema_enabled = False
+
+		if save:
+			self.save()
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
@@ -668,40 +720,15 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def enable_performance_schema(self):
-		for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
-			if isinstance(value, int):
-				type_key = "value_int"
-			elif isinstance(value, str):
-				type_key = "value_str"
-
-			existing_variable = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == key)
-
-			if existing_variable:
-				existing_variable.set(type_key, value)
-			else:
-				self.append(
-					"mariadb_system_variables",
-					{"mariadb_variable": key, type_key: value, "persist": True},
-				)
-
-		self.is_performance_schema_enabled = True
-		self.save()
+		self.add_or_update_mariadb_variable(
+			"performance_schema", "value_str", "1", skip=False, persist=True, save=True
+		)
 
 	@frappe.whitelist()
 	def disable_performance_schema(self):
-		existing_variable = find(
-			self.mariadb_system_variables, lambda x: x.mariadb_variable == "performance_schema"
+		self.add_or_update_mariadb_variable(
+			"performance_schema", "value_str", "OFF", skip=False, persist=True, save=True
 		)
-		if existing_variable:
-			existing_variable.value_str = "OFF"
-		else:
-			self.append(
-				"mariadb_system_variables",
-				{"mariadb_variable": "performance_schema", "value_str": "OFF", "persist": True},
-			)
-
-		self.is_performance_schema_enabled = False
-		self.save()
 
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
@@ -874,13 +901,15 @@ class DatabaseServer(BaseServer):
 
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
-		self.save()
 
-		self.add_mariadb_variable(
+		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
 			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
+			save=False,
 		)
+
+		self.save()
 
 	@frappe.whitelist()
 	def reconfigure_mariadb_exporter(self):
