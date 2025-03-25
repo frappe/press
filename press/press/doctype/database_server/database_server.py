@@ -12,6 +12,7 @@ from frappe.core.utils import find
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
@@ -1149,6 +1150,26 @@ class DatabaseServer(BaseServer):
 				self.memory_allocator = memory_allocator
 				self.memory_allocator_version = query_result[0][0]["Value"]
 				self.save()
+
+	@dashboard_whitelist()
+	def get_mariadb_variables(self):
+		try:
+			result = AnsibleAdHoc(sources=f"{self.name},").run(
+				"mariadb -e 'SHOW VARIABLES;' --batch --skip-column-names", self.name
+			)[0]
+			if result["status"] != "Success":
+				raise Exception("Failed to fetch MariaDB Variables")
+			# Result is tab seperated
+			variables = {}
+			for line in result["output"].split("\n"):
+				if not line:
+					continue
+				key, value = line.split("\t")
+				variables[key] = value
+
+			return variables
+		except Exception:
+			frappe.throw("Failed to fetch MariaDB Variables. Please try again.")
 
 	@property
 	def mariadb_depends_on_mounts(self):
