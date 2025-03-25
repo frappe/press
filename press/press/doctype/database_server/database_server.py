@@ -6,6 +6,7 @@ import json
 from typing import Any, Literal
 
 import frappe
+import frappe.utils
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 
@@ -986,7 +987,18 @@ class DatabaseServer(BaseServer):
 			self.recommended_innodb_buffer_pool_size,
 			save=False,
 		)
-		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=False)
+
+		existing_max_connections = 0
+		existing = find(self.mariadb_system_variables, lambda x: x.mariadb_variable == "max_connections")
+		if existing and frappe.utils.cint(existing.value_int) > 0:
+			existing_max_connections = frappe.utils.cint(existing.value_int)
+
+		# Avoid setting max_connections to a lower value, if it's already set to a higher value
+		# User might have changed the value in the past, and we don't want to override it
+		if max_connections <= existing_max_connections:
+			self.add_or_update_mariadb_variable(
+				"max_connections", "value_str", str(max_connections), save=False
+			)
 		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
 		self.save()
 
