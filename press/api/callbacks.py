@@ -7,8 +7,10 @@ import typing
 
 import frappe
 
+from press.press.doctype.agent_job.agent_job import handle_polled_job
+
 if typing.TYPE_CHECKING:
-	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.server.server import Server
 
 
 Status = typing.Literal["Running", "Failure", "Success"]
@@ -40,20 +42,26 @@ def verify_job_id(server: str, job_id: str):
 	return frappe.db.get_value("Agent Job", {"server": server, "job_id": job_id})
 
 
-def update_status(job: str, status: Status):
-	agent_job: AgentJob = frappe.get_doc("Agent Job", job)
-
-	agent_job.status = status
-	agent_job.save(ignore_permissions=True)
-
-	frappe.db.commit()
-	return {"status": agent_job.status}
+def handle_job_updates(server: str, job_id: str):
+	server: Server = frappe.get_doc("Server", server)
+	agent = server.agent
+	job = frappe.get_value(
+		"Agent Job",
+		fieldname=["name", "job_id", "status", "callback_failure_count"],
+		filters={"job_id": job_id},
+		as_dict=True,
+	)
+	polled_job = agent.get_job_status(job.job_id)
+	handle_polled_job(polled_job=polled_job, job=job)
 
 
 @frappe.whitelist(allow_guest=True)
-def callback(job_id: str, status: Status):
+def callback(job_id: str):
 	remote_addr = frappe.request.environ["HTTP_X_FORWARDED_FOR"]
 	server = validate_server_request(remote_addr)
+
+	# TODO: There should be something better.
+	frappe.set_user("Administrator")
 
 	# Request origin not authorized to update job status.
 	if not server:
@@ -63,4 +71,6 @@ def callback(job_id: str, status: Status):
 	if not job:
 		return "Invalid job id!"
 
-	return update_status(job, status)
+	handle_job_updates(server, job_id)
+	frappe.set_user("guest")
+	return "Success"
