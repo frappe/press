@@ -65,7 +65,7 @@
 				<Button
 					v-else-if="!tryingMicroCharge"
 					variant="solid"
-					@click="submit"
+					@click="verifyWithMicroChargeIfApplicable"
 					:loading="addingCard"
 				>
 					Verify & Save Card
@@ -87,7 +87,7 @@ export default {
 	emits: ['complete'],
 	components: {
 		AddressForm,
-		StripeLogo
+		StripeLogo,
 	},
 	data() {
 		return {
@@ -98,13 +98,13 @@ export default {
 			billingInformation: {
 				cardHolderName: '',
 				country: '',
-				gstin: ''
+				gstin: '',
 			},
 			gstNotApplicable: false,
 			addingCard: false,
 			tryingMicroCharge: false,
 			showAddAnotherCardButton: false,
-			microChargeCompleted: false
+			microChargeCompleted: false,
 		};
 	},
 	async mounted() {
@@ -128,31 +128,31 @@ export default {
 							fontSmoothing: 'antialiased',
 							fontSize: '13px',
 							'::placeholder': {
-								color: theme.colors.gray['400']
-							}
+								color: theme.colors.gray['400'],
+							},
 						},
 						invalid: {
 							color: theme.colors.red['600'],
-							iconColor: theme.colors.red['600']
-						}
+							iconColor: theme.colors.red['600'],
+						},
 					};
 					this.card = this.elements.create('card', {
 						hidePostalCode: true,
 						style: style,
 						classes: {
 							complete: '',
-							focus: 'bg-gray-100'
-						}
+							focus: 'bg-gray-100',
+						},
 					});
 					this.card.mount(this.$refs['card-element']);
 
-					this.card.addEventListener('change', event => {
+					this.card.addEventListener('change', (event) => {
 						this.cardErrorMessage = event.error?.message || null;
 					});
 					this.card.addEventListener('ready', () => {
 						this.ready = true;
 					});
-				}
+				},
 			};
 		},
 		countryList: 'press.api.account.country_list',
@@ -160,7 +160,7 @@ export default {
 			return {
 				url: 'press.api.account.get_billing_information',
 				params: {
-					timezone: this.browserTimezone
+					timezone: this.browserTimezone,
 				},
 				auto: true,
 				onSuccess(data) {
@@ -169,7 +169,7 @@ export default {
 					this.billingInformation.city = data?.city;
 					this.billingInformation.state = data?.state;
 					this.billingInformation.postal_code = data?.pincode;
-				}
+				},
 			};
 		},
 		setupIntentSuccess() {
@@ -178,21 +178,16 @@ export default {
 				makeParams({ setupIntent }) {
 					return {
 						setup_intent: setupIntent,
-						address: this.withoutAddress ? null : this.billingInformation
+						address: this.withoutAddress ? null : this.billingInformation,
 					};
-				}
+				},
 			};
 		},
 		verifyCardWithMicroCharge() {
 			return {
 				url: 'press.api.billing.create_payment_intent_for_micro_debit',
-				makeParams({ paymentMethodName }) {
-					return {
-						payment_method_name: paymentMethodName
-					};
-				}
 			};
-		}
+		},
 	},
 	methods: {
 		async setupStripeIntent() {
@@ -229,11 +224,11 @@ export default {
 								city: this.billingInformation.city,
 								state: this.billingInformation.state,
 								postal_code: this.billingInformation.postal_code,
-								country: this.getCountryCode(this.billingInformation.country)
-							}
-						}
-					}
-				}
+								country: this.getCountryCode(this.billingInformation.country),
+							},
+						},
+					},
+				},
 			);
 
 			if (error) {
@@ -258,28 +253,26 @@ export default {
 				if (setupIntent?.status === 'succeeded') {
 					this.$resources.setupIntentSuccess.submit(
 						{
-							setupIntent
+							setupIntent,
 						},
 						{
-							onSuccess: async ({ payment_method_name }) => {
-								await this.verifyWithMicroChargeIfApplicable(
-									payment_method_name
-								);
+							onSuccess: async () => {
 								this.addingCard = false;
 								toast.success('Card added successfully');
+								this.$emit('complete');
 							},
-							onError: error => {
+							onError: (error) => {
 								console.error(error);
 								this.addingCard = false;
 								this.errorMessage = error.messages.join('\n');
 								toast.error(this.errorMessage);
-							}
-						}
+							},
+						},
 					);
 				}
 			}
 		},
-		async verifyWithMicroChargeIfApplicable(paymentMethodName) {
+		async verifyWithMicroChargeIfApplicable() {
 			const teamCurrency = this.$team.doc.currency;
 			const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
 
@@ -289,38 +282,38 @@ export default {
 				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
 
 			if (isMicroChargeApplicable) {
-				await this._verifyWithMicroCharge(paymentMethodName);
+				await this._verifyWithMicroCharge();
 			} else {
-				this.$emit('complete');
+				this.submit();
 			}
 		},
 
-		_verifyWithMicroCharge(paymentMethodName) {
+		_verifyWithMicroCharge() {
 			this.tryingMicroCharge = true;
-			return this.$resources.verifyCardWithMicroCharge.submit(
-				{ paymentMethodName },
-				{
-					onSuccess: async paymentIntent => {
-						let { client_secret } = paymentIntent;
-						let payload = await this.stripe.confirmCardPayment(client_secret, {
-							payment_method: { card: this.card }
-						});
-						if (payload.paymentIntent?.status === 'succeeded') {
-							this.microChargeCompleted = true;
-							this.$emit('complete');
-						}
-					},
-					onError: error => {
-						console.error(error);
+			return this.$resources.verifyCardWithMicroCharge.submit({
+				onSuccess: async (paymentIntent) => {
+					let { client_secret } = paymentIntent;
+					let payload = await this.stripe.confirmCardPayment(client_secret, {
+						payment_method: { card: this.card },
+					});
+					if (payload.paymentIntent?.status === 'succeeded') {
+						this.microChargeCompleted = true;
+						this.submit();
+					} else {
 						this.tryingMicroCharge = false;
-						this.errorMessage = error.messages.join('\n');
+						this.errorMessage = payload.error?.message;
 					}
-				}
-			);
+				},
+				onError: (error) => {
+					console.error(error);
+					this.tryingMicroCharge = false;
+					this.errorMessage = error.messages.join('\n');
+				},
+			});
 		},
 		getCountryCode(country) {
 			let code = this.$resources.countryList.data.find(
-				d => d.name === country
+				(d) => d.name === country,
 			).code;
 			return code.toUpperCase();
 		},
@@ -330,12 +323,12 @@ export default {
 			this.showAddAnotherCardButton = false;
 			this.card = null;
 			this.setupStripeIntent();
-		}
+		},
 	},
 	computed: {
 		formattedMicroChargeAmount() {
 			return this.$format.userCurrency(
-				this.$team.doc.billing_info.micro_debit_charge_amount
+				this.$team.doc.billing_info.micro_debit_charge_amount,
 			);
 		},
 		browserTimezone() {
@@ -343,7 +336,7 @@ export default {
 				return null;
 			}
 			return Intl.DateTimeFormat().resolvedOptions().timeZone;
-		}
-	}
+		},
+	},
 };
 </script>

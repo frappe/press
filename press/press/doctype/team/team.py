@@ -718,6 +718,7 @@ class Team(Document):
 		mandate_id,
 		mandate_reference,
 		set_default=False,
+		verified_with_micro_charge=False,
 	):
 		stripe = get_stripe()
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
@@ -735,6 +736,7 @@ class Team(Document):
 				"stripe_setup_intent_id": setup_intent_id,
 				"stripe_mandate_id": mandate_id if mandate_id else None,
 				"stripe_mandate_reference": mandate_reference if mandate_reference else None,
+				"is_verified_with_micro_charge": verified_with_micro_charge,
 			}
 		)
 		doc.insert()
