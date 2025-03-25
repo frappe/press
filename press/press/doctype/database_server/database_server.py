@@ -195,7 +195,7 @@ class DatabaseServer(BaseServer):
 				"description": "Increase/Decrease InnoDB Buffer Pool Size",
 				"button_label": "Manage",
 				"condition": self.status == "Active",
-				"doc_method": "update_innodb_buffer_size",
+				"doc_method": "update_innodb_buffer_pool_size",
 				"group": f"{server_type.title()} Actions",
 			},
 			{
@@ -463,7 +463,7 @@ class DatabaseServer(BaseServer):
 		return None
 
 	@dashboard_whitelist()
-	def update_innodb_buffer_size(self, size_mb: int):
+	def update_innodb_buffer_pool_size(self, size_mb: int):
 		# Hard limit 75% of Memory
 		if size_mb > int(self.ram_for_mariadb * 0.75):
 			frappe.throw(
