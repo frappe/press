@@ -1343,6 +1343,7 @@ class Server(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
+		ipv6: DF.Data | None
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check

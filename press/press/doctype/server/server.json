@@ -29,6 +29,7 @@
   "auto_add_storage_max",
   "networking_section",
   "ip",
+  "ipv6",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -545,10 +546,15 @@
    "fieldtype": "Check",
    "label": "Has Data Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "ipv6",
+   "fieldtype": "Data",
+   "label": "IPv6"
   }
  ],
  "links": [],
- "modified": "2025-01-02 16:52:55.927591",
+ "modified": "2025-03-24 20:32:15.778728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -579,6 +585,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
