@@ -13,9 +13,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 
 
-Status = typing.Literal["Running", "Failure", "Success"]
-
-
 def check_ip_version(remote_addr: str):
 	try:
 		return ipaddress.ip_interface(remote_addr).version
