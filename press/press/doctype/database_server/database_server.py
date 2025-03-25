@@ -45,7 +45,6 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
-		is_limit_reconfiguration_required: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -988,9 +987,7 @@ class DatabaseServer(BaseServer):
 			save=False,
 		)
 		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=False)
-		self.add_or_update_mariadb_variable(
-			"key_buffer_size", "value_str", str(self.key_buffer_size), save=False
-		)
+		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
 		self.save()
 
 	@frappe.whitelist()

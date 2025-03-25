@@ -80,9 +80,7 @@
   "column_break_objb",
   "stalk_interval",
   "stalk_cycles",
-  "stalk_sleep",
-  "section_break_uzuj",
-  "is_limit_reconfiguration_required"
+  "stalk_sleep"
  ],
  "fields": [
   {
@@ -548,17 +546,6 @@
    "fieldname": "enable_physical_backup",
    "fieldtype": "Check",
    "label": "Enable Physical Backup"
-  },
-  {
-   "fieldname": "section_break_uzuj",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "description": "This flag should be checked, if you want that press should  reconfigure memory limits and innodb buffer size once the server is accesible",
-   "fieldname": "is_limit_reconfiguration_required",
-   "fieldtype": "Check",
-   "label": "Is Limit Reconfiguration Required"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -569,7 +556,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-03-25 17:01:17.096487",
+ "modified": "2025-03-25 20:37:53.186326",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
