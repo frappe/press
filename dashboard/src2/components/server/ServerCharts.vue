@@ -759,12 +759,57 @@ export default {
 		innodbBufferPoolSizeOfTotalRamData() {
 			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, true);
+			let payload = this.transformSingleLineChartData(data, true);
+			payload['markLine'] = {
+				data: [
+					{
+						name: 'Too Low InnoDB Buffer Pool',
+						yAxis: 15,
+						label: {
+							formatter: '{b} ({c}%)',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+					{
+						name: 'Too High InnoDB Buffer Pool',
+						yAxis: 65,
+						label: {
+							formatter: '{b} ({c}%)',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+				],
+				symbol: ['none', 'none'],
+			};
+			return payload;
 		},
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
 			if (!data) return;
-			return this.transformSingleLineChartData(data, false);
+			let payload = this.transformSingleLineChartData(data, false);
+			payload['markLine'] = {
+				data: [
+					{
+						name: 'Accepted Range',
+						yAxis: 1,
+						label: {
+							formatter: '{b} < {c}%',
+							position: 'middle',
+						},
+						lineStyle: {
+							color: '#f5222d',
+						},
+					},
+				],
+				symbol: ['none', 'none'],
+			};
+			return payload;
 		},
 		innodbAvgRowLockTimeData() {
 			let data = this.$resources.innodbAvgRowLockTime.data;
