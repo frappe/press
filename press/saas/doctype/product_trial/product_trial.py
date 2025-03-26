@@ -88,7 +88,6 @@ class ProductTrial(Document):
 			for field in self.signup_fields
 		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
-		doc.site = self.get_standby_site()
 		return doc
 
 	def validate(self):

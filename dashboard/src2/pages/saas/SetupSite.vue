@@ -51,7 +51,13 @@
 								>
 									Checking...
 								</div>
-								<template v-else-if="!$resources.subdomainExists.error">
+								<template
+									v-else-if="
+										!$resources.subdomainExists.error &&
+										$resources.subdomainExists.fetched &&
+										subdomain
+									"
+								>
 									<div
 										v-if="$resources.subdomainExists.data"
 										class="text-sm text-green-600"
@@ -129,18 +135,13 @@ export default {
 			findingClosestServer: false,
 			closestCluster: null,
 			signupValues: {},
-			initialSubdomain: '',
 			subdomain: '',
 		};
 	},
 	watch: {
 		subdomain: {
-			handler: debounce(function (value) {
-				let invalidMessage = validateSubdomain(value);
-				this.$resources.subdomainExists.error = invalidMessage;
-				if (!invalidMessage && value !== this.initialSubdomain) {
-					this.$resources.subdomainExists.submit();
-				}
+			handler: debounce(function () {
+				this.$resources.subdomainExists.submit();
 			}, 500),
 		},
 	},
@@ -176,13 +177,6 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-				onSuccess: (doc) => {
-					if (doc.site) {
-						this.subdomain = doc.site.split('.')[0];
-						this.initialSubdomain = doc.site.split('.')[0];
-						this.$resources.subdomainExists.submit();
-					}
-				},
 			};
 		},
 		subdomainExists() {
@@ -201,9 +195,6 @@ export default {
 					}
 				},
 				transform(data) {
-					if (data && this.subdomain === this.initialSubdomain) {
-						return true;
-					}
 					return !Boolean(data);
 				},
 			};
