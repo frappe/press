@@ -42,13 +42,33 @@ def verify_job_id(server: str, job_id: str):
 def handle_job_updates(server: str, job_id: str):
 	server: Server = frappe.get_doc("Server", server)
 	agent = server.agent
+
 	job = frappe.get_value(
 		"Agent Job",
-		fieldname=["name", "job_id", "status", "callback_failure_count"],
+		fieldname=[
+			"name",
+			"job_id",
+			"status",
+			"callback_failure_count",
+			"job_type",
+		],
 		filters={"job_id": job_id},
 		as_dict=True,
 	)
+
 	polled_job = agent.get_job_status(job.job_id)
+
+	callback = frappe.get_doc(
+		{
+			"doctype": "Callback",
+			"caller": job.job_type,
+			"job_id": job.job_id,
+			"status": polled_job["status"],
+		}
+	)
+	callback.insert()
+	frappe.db.commit()
+
 	handle_polled_job(polled_job=polled_job, job=job)
 
 
