@@ -790,8 +790,13 @@ class VirtualMachine(Document):
 			self._create_snapshots_oci(exclude_boot_volume)
 
 	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool):
+		temporary_volume_ids = self.get_temporary_volume_ids()
+		instance_specification = {"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume}
+		if temporary_volume_ids:
+			instance_specification["ExcludeDataVolumeIds"] = temporary_volume_ids
+
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
+			InstanceSpecification=instance_specification,
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -857,6 +862,22 @@ class VirtualMachine(Document):
 				pass
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
+
+	def get_temporary_volume_ids(self) -> list[str]:
+		tmp_volume_ids = set()
+		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
+
+		def get_volume_id_by_device(device):
+			for volume in self.volumes:
+				if volume.device == device:
+					return volume.volume_id
+			return None
+
+		for device in tmp_volumes_devices:
+			volume_id = get_volume_id_by_device(device)
+			if volume_id:
+				tmp_volume_ids.add(volume_id)
+		return list(tmp_volume_ids)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -1401,7 +1422,7 @@ def snapshot_virtual_machines():
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"virtual_machine": machine.name, "creation": (">=", frappe.utils.today())},
+			{"virtual_machine": machine.name, "physical_backup": 0, "creation": (">=", frappe.utils.today())},
 			limit=1,
 		):
 			continue
