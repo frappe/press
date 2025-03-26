@@ -176,7 +176,7 @@ class DatabaseServer(BaseServer):
 				"innodb_buffer_pool_size", return_default_if_not_found=True
 			),
 			"max_connections": frappe.utils.cint(
-				self.get_mariadb_variable_value("max_connections"), return_default_if_not_found=True
+				self.get_mariadb_variable_value("max_connections", return_default_if_not_found=True)
 			),
 		}
 		doc.mariadb_variables_recommended_values = {
