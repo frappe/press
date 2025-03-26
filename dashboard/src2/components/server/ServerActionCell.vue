@@ -23,9 +23,15 @@
 <script setup>
 import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { confirmDialog } from '../../utils/components';
+import {
+	confirmDialog,
+	renderDialog,
+	renderInDialog,
+} from '../../utils/components';
 import router from '../../router';
 import { getToastErrorMessage } from '../../utils/toast';
+import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
+import { h } from 'vue';
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -48,6 +54,7 @@ function getServerActionHandler(action) {
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Update InnoDB Buffer Pool Size': onUpdateInnodbBufferPoolSize,
 		'Update Max DB Connections': onUpdateMaxDBConnections,
+		'View Database Configuration': onViewDatabaseConfiguration,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -319,5 +326,13 @@ function onUpdateMaxDBConnections() {
 			);
 		},
 	});
+}
+
+function onViewDatabaseConfiguration() {
+	renderDialog(
+		h(DatabaseConfigurationDialog, {
+			name: server.doc.name,
+		}),
+	);
 }
 </script>

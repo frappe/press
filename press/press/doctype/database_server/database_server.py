@@ -173,8 +173,9 @@ class DatabaseServer(BaseServer):
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
 		doc.mariadb_variables = {
-			"innodb_buffer_pool_size": self.get_mariadb_variable_value("innodb_buffer_pool_size"),
-			"max_connections": frappe.utils.cint(self.get_mariadb_variable_value("max_connections")),
+			"innodb_buffer_pool_size": self.get_mariadb_variable_value("innodb_buffer_pool_size")
+			or int(self.ram_for_mariadb * 0.65),
+			"max_connections": frappe.utils.cint(self.get_mariadb_variable_value("max_connections")) or 200,
 		}
 		doc.mariadb_variables_recommended_values = {
 			"innodb_buffer_pool_size": self.recommended_innodb_buffer_pool_size,
@@ -216,6 +217,14 @@ class DatabaseServer(BaseServer):
 				"button_label": "Update",
 				"condition": self.status == "Active",
 				"doc_method": "update_max_db_connections",
+				"group": f"{server_type.title()} Actions",
+			},
+			{
+				"action": "View Database Configuration",
+				"description": "View Database Configuration",
+				"button_label": "View",
+				"condition": self.status == "Active",
+				"doc_method": "get_mariadb_variables",
 				"group": f"{server_type.title()} Actions",
 			},
 		]
