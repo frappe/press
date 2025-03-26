@@ -54,6 +54,7 @@ def get_partner_details(partner_email):
 		"Partner",
 		filters={"email": partner_email, "enabled": 1},
 		fields=[
+			"name",
 			"email",
 			"partner_type",
 			"company_name",
@@ -127,16 +128,16 @@ def get_partner_contribution_list(partner_email):
 	invoices = frappe.get_all(
 		"Invoice",
 		{"partner_email": partner_email, "due_date": month_end, "type": "Subscription"},
-		["due_date", "customer_name", "total", "currency", "status"],
+		["due_date", "customer_name", "total_before_discount", "currency", "status"],
 	)
 	for d in invoices:
 		if partner_currency != d.currency:
 			if partner_currency == "USD":
-				d.update({"partner_total": flt(d.total / 83, 2)})
+				d.update({"partner_total": flt(d.total_before_discount / 83, 2)})
 			else:
-				d.update({"partner_total": flt(d.total * 83)})
+				d.update({"partner_total": flt(d.total_before_discount * 83)})
 		else:
-			d.update({"partner_total": d.total})
+			d.update({"partner_total": d.total_before_discount})
 	return invoices
 
 
@@ -155,12 +156,12 @@ def get_current_month_partner_contribution(partner_email):
 	invoice = frappe.qb.DocType("Invoice")
 	query = (
 		frappe.qb.from_(invoice)
-		.select(invoice.total, invoice.currency, invoice.total_before_discount)
+		.select(invoice.currency, invoice.total_before_discount)
 		.where(
 			(invoice.partner_email == partner_email)
 			& (invoice.due_date == month_end)
 			& (invoice.type == "Subscription")
-			& (invoice.status == "Draft")
+			& (invoice.docstatus < 2)
 		)
 	)
 	invoices = query.run(as_dict=True)
@@ -189,7 +190,7 @@ def get_prev_month_partner_contribution(partner_email):
 	invoice = frappe.qb.DocType("Invoice")
 	query = (
 		frappe.qb.from_(invoice)
-		.select(invoice.total, invoice.currency, invoice.total_before_discount)
+		.select(invoice.currency, invoice.total_before_discount)
 		.where(
 			(invoice.partner_email == partner_email)
 			& (invoice.due_date == last_month_end)
@@ -197,7 +198,7 @@ def get_prev_month_partner_contribution(partner_email):
 		)
 	)
 
-	if today() >= first_day and frappe.utils.getdate() <= frappe.utils.getdate(two_weeks):
+	if frappe.utils.getdate() >= first_day and frappe.utils.getdate() <= frappe.utils.getdate(two_weeks):
 		# till 15th of the current month unpaid invoices can also be counted in contribution
 		query = query.where((invoice.status).isin(["Unpaid", "Paid"]))
 	else:
@@ -207,14 +208,13 @@ def get_prev_month_partner_contribution(partner_email):
 
 	total = 0
 	for d in invoices:
-		total = 0
 		if partner_currency != d.currency:
 			if partner_currency == "USD":
-				total += flt(d.total / 83, 2)
+				total += flt(d.total_before_discount / 83, 2)
 			else:
-				total += flt(d.total * 83, 2)
+				total += flt(d.total_before_discount * 83, 2)
 		else:
-			total += d.total
+			total += d.total_before_discount
 	return total
 
 
@@ -289,7 +289,7 @@ def get_partner_members(partner):
 	return client.get_list(
 		"LMS Certificate",
 		filters={"partner": partner},
-		fields=["member_name", "member_email"],
+		fields=["member_name", "member_email", "course", "version"],
 	)
 
 
@@ -309,6 +309,30 @@ def remove_partner():
 		team.remove(member_to_remove)
 	team.partner_email = ""
 	team.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def apply_for_certificate(member_name, certificate_type):
+	team = get_current_team(get_doc=True)
+	doc = frappe.new_doc("Partner Certificate Request")
+	doc.update(
+		{
+			"partner_team": team.name,
+			"partner_member_email": member_name,
+			"course": certificate_type,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_partner_teams():
+	teams = frappe.get_all(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 1},
+		["partner_email", "billing_name", "country", "partner_tier"],
+	)
+	return teams  # noqa: RET504
 
 
 @frappe.whitelist()

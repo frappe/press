@@ -9,7 +9,7 @@ import type {
 	DialogConfig,
 	FilterField,
 	Tab,
-	TabList
+	TabList,
 } from './types';
 import { getUpsellBanner } from '.';
 import { isMobile } from '../../utils/device';
@@ -21,8 +21,9 @@ export function getAppsTab(forSite: boolean) {
 		icon: icon('grid'),
 		route: 'apps',
 		type: 'list',
-		condition: docResource => forSite && docResource.doc?.status !== 'Archived',
-		list: getAppsTabList(forSite)
+		condition: (docResource) =>
+			forSite && docResource.doc?.status !== 'Archived',
+		list: getAppsTabList(forSite),
 	} satisfies Tab as Tab;
 }
 
@@ -34,7 +35,7 @@ function getAppsTabList(forSite: boolean) {
 		...options,
 		columns: getAppsTabColumns(forSite),
 		searchField: !forSite ? 'title' : undefined,
-		filterControls: r => {
+		filterControls: (r) => {
 			if (forSite) return [];
 			else
 				return [
@@ -45,8 +46,10 @@ function getAppsTabList(forSite: boolean) {
 						fieldname: 'branch',
 						options: [
 							'',
-							...new Set(r.listResource.data?.map(i => String(i.branch)) || [])
-						]
+							...new Set(
+								r.listResource.data?.map((i) => String(i.branch)) || []
+							),
+						],
 					},
 					{
 						type: 'select',
@@ -57,13 +60,13 @@ function getAppsTabList(forSite: boolean) {
 							'',
 							...new Set(
 								r.listResource.data?.map(
-									i => String(i.repository_url).split('/').at(-2) || ''
+									(i) => String(i.repository_url).split('/').at(-2) || ''
 								) || []
-							)
-						]
-					}
+							),
+						],
+					},
 				] satisfies FilterField[];
-		}
+		},
 	};
 
 	return list;
@@ -84,12 +87,12 @@ function getAppsTabColumns(forSite: boolean) {
 					'div',
 					{
 						title: 'App has been patched',
-						class: 'rounded-full bg-gray-100 p-1'
+						class: 'rounded-full bg-gray-100 p-1',
 					},
 					h(icon('hash', 'w-3 h-3'))
 				);
 			},
-			format: (value, row) => value || row.app_title
+			format: (value, row) => value || row.app_title,
 		},
 		{
 			label: 'Plan',
@@ -99,13 +102,13 @@ function getAppsTabColumns(forSite: boolean) {
 				const planText = planTitle(row.plan_info);
 				if (planText) return `${planText}/mo`;
 				else return 'Free';
-			}
+			},
 		},
 		{
 			label: 'Repository',
 			fieldname: 'repository_url',
-			format: value => String(value).split('/').slice(-2).join('/'),
-			link: value => String(value)
+			format: (value) => String(value).split('/').slice(-2).join('/'),
+			link: (value) => String(value),
 		},
 		{
 			label: 'Branch',
@@ -114,7 +117,7 @@ function getAppsTabColumns(forSite: boolean) {
 			width: 1,
 			link: (value, row) => {
 				return `${row.repository_url}/tree/${value}`;
-			}
+			},
 		},
 		{
 			label: 'Commit',
@@ -126,22 +129,22 @@ function getAppsTabColumns(forSite: boolean) {
 			},
 			format(value) {
 				return String(value).slice(0, 7);
-			}
+			},
 		},
 		{
 			label: 'Commit Message',
 			fieldname: 'commit_message',
-			width: '30rem'
-		}
+			width: '30rem',
+		},
 	];
 
 	if (forSite) return appTabColumns;
-	return appTabColumns.filter(c => c.label !== 'Plan');
+	return appTabColumns.filter((c) => c.label !== 'Plan');
 }
 
 const siteAppListOptions: Partial<TabList> = {
 	doctype: 'Site App',
-	filters: res => {
+	filters: (res) => {
 		return { parenttype: 'Site', parent: res.doc?.name };
 	},
 	banner({ documentResource: site }) {
@@ -154,7 +157,7 @@ const siteAppListOptions: Partial<TabList> = {
 		return {
 			label: 'Install App',
 			slots: {
-				prefix: icon('plus')
+				prefix: icon('plus'),
 			},
 			onClick() {
 				const InstallAppDialog = defineAsyncComponent(
@@ -166,10 +169,10 @@ const siteAppListOptions: Partial<TabList> = {
 						site: site.name,
 						onInstalled() {
 							apps.reload();
-						}
+						},
 					})
 				);
-			}
+			},
 		};
 	},
 	rowActions({ row, listResource: apps, documentResource: site }) {
@@ -181,7 +184,7 @@ const siteAppListOptions: Partial<TabList> = {
 				condition: () => $team.doc?.is_desk_user,
 				onClick() {
 					window.open(`/app/app-source/${row.name}`, '_blank');
-				}
+				},
 			},
 			{
 				label: 'Change Plan',
@@ -198,53 +201,33 @@ const siteAppListOptions: Partial<TabList> = {
 							),
 							onPlanChanged() {
 								apps.reload();
-							}
+							},
 						})
 					);
-				}
+				},
 			},
 			{
 				label: 'Uninstall',
 				condition: () => row.app !== 'frappe',
 				onClick() {
-					const dialogConfig: DialogConfig = {
-						title: `Uninstall App`,
-						message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc?.name}</b>?<br>
-										All doctypes and modules related to this app will be removed.`,
-						onSuccess({ hide }) {
-							if (site.uninstallApp.loading) return;
-							toast.promise(
-								site.uninstallApp.submit({
-									app: row.app
-								}),
-								{
-									loading: 'Scheduling app uninstall...',
-									success: (jobId: string) => {
-										hide();
-										router.push({
-											name: 'Site Job',
-											params: {
-												name: site.name,
-												id: jobId
-											}
-										});
-										return 'App uninstall scheduled';
-									},
-									error: (e: Error) => getToastErrorMessage(e)
-								}
-							);
-						}
-					};
-					confirmDialog(dialogConfig);
-				}
-			}
+					const UninstallAppDialog = defineAsyncComponent(
+						() => import('../../components/site/UninstallAppDialog.vue')
+					);
+					renderDialog(
+						h(UninstallAppDialog, {
+							app: row,
+							site: site,
+						})
+					);
+				},
+			},
 		];
-	}
+	},
 };
 
 const benchAppListOptions: Partial<TabList> = {
 	doctype: 'Bench App',
-	filters: res => {
+	filters: (res) => {
 		return { parenttype: 'Bench', parent: res.doc?.name };
 	},
 	rowActions({ row }) {
@@ -255,8 +238,8 @@ const benchAppListOptions: Partial<TabList> = {
 				condition: () => $team.doc?.is_desk_user,
 				onClick() {
 					window.open(`/app/app-release/${row.release}`, '_blank');
-				}
-			}
+				},
+			},
 		];
-	}
+	},
 };

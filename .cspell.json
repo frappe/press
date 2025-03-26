@@ -504,6 +504,7 @@
 		"FADV",
 		"DONTNEED",
 		"iour",
-		"FWUP"
+		"FWUP",
+		"prm"
 	]
 }

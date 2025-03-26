@@ -573,7 +573,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50, mountpoint=None) -> bool:
+	def increase_disk_size(self, increment=50, mountpoint=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:

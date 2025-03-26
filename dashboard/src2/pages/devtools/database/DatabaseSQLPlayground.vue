@@ -33,7 +33,10 @@
 			<div class="flex flex-row gap-2">
 				<LinkControl
 					class="cursor-pointer"
-					:options="{ doctype: 'Site', filters: { status: 'Active' } }"
+					:options="{
+						doctype: 'Site',
+						filters: { status: ['!=', 'Archived'] },
+					}"
 					placeholder="Select a site"
 					v-model="site"
 				/>

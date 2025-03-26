@@ -24,8 +24,12 @@
 					<div class="flex items-center justify-between">
 						<div class="flex w-full items-center text-lg">
 							<span class="truncate font-medium text-gray-900">
-								{{ $format.planTitle(plan)
-								}}<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
+								<!-- Needed for app plan selector -->
+								<template v-if="plan.label">{{ plan.label }}</template>
+								<template v-else>
+									{{ $format.planTitle(plan) }}
+									<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
+								</template>
 							</span>
 							<Tooltip text="Support included">
 								<i-lucide-badge-check
