@@ -346,9 +346,8 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 10241)
-
-		Mock_Ansible.assert_called_once()
+			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", value=10241)
+			Mock_Ansible.assert_called_once()
 
 		server.reload()
 		self.assertEqual(1, len(server.mariadb_system_variables))
@@ -359,9 +358,8 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 10242)
-
-		Mock_Ansible.assert_called_once()
+			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", value=10242)
+			Mock_Ansible.assert_called_once()
 
 		self.assertEqual(1, len(server.mariadb_system_variables))
 		self.assertEqual("tmp_disk_table_size", server.mariadb_system_variables[0].mariadb_variable)
@@ -372,11 +370,4 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			wraps=Ansible,
 		) as Mock_Ansible:
 			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 10242)  # no change
-		Mock_Ansible.assert_not_called()
-
-		with patch(
-			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
-			wraps=Ansible,
-		) as Mock_Ansible:
-			server.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 10242)  # no change
-		Mock_Ansible.assert_called_once()
+			Mock_Ansible.assert_not_called()

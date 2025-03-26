@@ -258,6 +258,9 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Update Memory Limits Error", server=self.name)
 
 	def update_mariadb_system_variables(self):
+		variables_to_update = self.get_variables_to_update()
+		if not variables_to_update:
+			return
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
