@@ -11,7 +11,7 @@
 			>
 				<div class="flex flex-row items-center gap-2 text-gray-700">
 					<Spinner class="w-4" />
-					It can take up to 20 seconds to load
+					Loading database configurations...
 				</div>
 			</div>
 			<div v-else>
@@ -49,12 +49,6 @@ export default {
 				},
 				initialData: [],
 				auto: true,
-				transform: (data) => {
-					return Object.entries(data?.message ?? {}).map(([key, value]) => ({
-						variable_name: key,
-						value: value,
-					}));
-				},
 				onError: () => {
 					toast.error(
 						'Failed to fetch database configurations. Please try again later.',
@@ -67,16 +61,16 @@ export default {
 	computed: {
 		listOptions() {
 			return {
-				data: () => his.$resources?.mariadbVariables?.data || [],
+				data: () => this.$resources?.mariadbVariables?.data?.message || [],
 				columns: [
 					{
 						label: 'Variable Name',
-						fieldname: 'variable_name',
+						fieldname: 'Variable_name',
 						width: '400px',
 					},
 					{
 						label: 'Value',
-						fieldname: 'value',
+						fieldname: 'Value',
 						width: '300px',
 					},
 				],
