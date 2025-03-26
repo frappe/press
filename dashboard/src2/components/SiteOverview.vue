@@ -357,7 +357,7 @@ export default {
 				},
 				{
 					label: 'Created by',
-					value: this.$site.doc?.owner,
+					value: this.$site.doc?.signup_by || this.$site.doc?.owner,
 				},
 				{
 					label: 'Created on',
