@@ -84,7 +84,11 @@
 											<template v-else> No plan set </template>
 											<div
 												class="ml-2 text-sm leading-3 text-gray-600"
-												v-if="currentPlan && currentPlan.support_included"
+												v-if="
+													currentPlan &&
+													currentPlan.support_included &&
+													!currentPlan.is_trial_plan
+												"
 											>
 												<Tooltip text="Support included">
 													<i-lucide-badge-check class="h-4 w-4" />
@@ -353,7 +357,7 @@ export default {
 				},
 				{
 					label: 'Created by',
-					value: this.$site.doc?.owner,
+					value: this.$site.doc?.signup_by || this.$site.doc?.owner,
 				},
 				{
 					label: 'Created on',
