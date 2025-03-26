@@ -2,19 +2,19 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import _io  # type: ignore
 import json
 import os
 from contextlib import suppress
 from datetime import date
-from datetime import timezone as tz
 from typing import TYPE_CHECKING
 
-import _io  # type: ignore
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
-from press.utils import get_mariadb_root_password, log_error, sanitize_config
 from requests.exceptions import HTTPError
+
+from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
 if TYPE_CHECKING:
 	from io import BufferedReader
