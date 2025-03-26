@@ -508,7 +508,7 @@ class DatabaseServer(BaseServer):
 		self.add_or_update_mariadb_variable("max_connections", "value_str", str(max_connections), save=True)
 
 	def validate_server_id(self):
-		if self.is_new() and not self.server_rid:
+		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
@@ -1007,13 +1007,14 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	system_reserved_memory: int = 700
 	"""
 	OS : 500 MB
 	Agent + Redis Server : ~100 MB
 	Filebeat : ~100 MB
 	"""
-	system_reserved_memory: int = 700
 
+	memory_per_db_connection: int = 35
 	"""
 	Per DB Connection Memory : ~35MB
 	- sort_buffer_size : 2MB
@@ -1026,7 +1027,6 @@ class DatabaseServer(BaseServer):
 
 	https://github.com/frappe/press/blob/master/press/playbooks/roles/mariadb/templates/mariadb.cnf
 	"""
-	memory_per_db_connection: int = 35
 
 	@property
 	def key_buffer_size(self):
