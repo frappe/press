@@ -4,6 +4,7 @@ import frappe
 import requests
 from frappe import _
 from frappe.query_builder import DocType
+from frappe.utils import format_date
 from frappe.utils.password import get_decrypted_password
 
 from press.utils import get_current_team
@@ -384,15 +385,20 @@ def create_payment_partner_transaction(
 
 @frappe.whitelist()
 def fetch_payments(payment_gateway, partner, from_date, to_date):
+	partner = (
+		partner if frappe.db.exists("Team", partner) else frappe.get_value("Team", {"user": partner}, "name")
+	)
 	filters = {
 		"docstatus": 1,
 		"submitted_to_frappe": 0,
 		"payment_gateway": payment_gateway,
 		"payment_partner": partner,
 	}
-
+	from_date = format_date(from_date)
+	to_date = format_date(to_date)
 	if from_date and to_date:
 		filters["posting_date"] = ["between", [from_date, to_date]]
+
 	partner_payments = frappe.get_all(
 		"Payment Partner Transaction", filters=filters, fields=["name", "amount", "posting_date"]
 	)
@@ -401,38 +407,9 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 
 
 @frappe.whitelist()
-def create_payment_partner_payout(from_date, to_date, payment_gateway, payment_partner, payments):
-	"""Create a Payment Partner Payout record."""
-	partner_commission = frappe.get_value("Team", {"user": payment_partner}, "partner_commission")
-
-	# Initialize the main document
-	payout_doc = frappe.get_doc(
-		{
-			"doctype": "Partner Payment Payout",
-			"from_date": from_date,
-			"to_date": to_date,
-			"payment_gateway": payment_gateway,
-			"partner": payment_partner,
-			"partner_commission": partner_commission,
-			"transfer_items": [],  # Initialize an empty child table
-		}
-	)
-
-	# Add each payment to the child table
-	for payment in payments:
-		payout_doc.append(
-			"transfer_items",
-			{
-				"transaction_id": payment.get("name"),
-				"amount": payment.get("amount"),
-				"posting_date": payment.get("posting_date"),
-			},
-		)
-	# Save and submit the document
-	payout_doc.insert()
-	payout_doc.submit()
-
-	return payout_doc.name
+def fetch_percentage_commission(partner):
+	"""Fetch the percentage commission for the partner."""
+	return frappe.get_value("Team", {"user": partner}, "partner_commission")
 
 
 @frappe.whitelist()
@@ -479,3 +456,34 @@ def create_invoice_partner_site(data, gateway_controller):
 	except requests.exceptions.RequestException as e:
 		frappe.log_error(f"Error calling API: {e}")
 		frappe.throw(_("There was an issue connecting to the API."))
+
+
+@frappe.whitelist()
+def display_payment_gateways(payment_partner):
+	"""Display the list of payment gateways for the partner."""
+	Team = DocType("Team")
+	PaymentGateway = DocType("Payment Gateway")
+
+	query = (
+		frappe.qb.from_(Team)
+		.join(PaymentGateway)
+		.on(Team.name == PaymentGateway.team)
+		.select(PaymentGateway.name)
+		.where(Team.user == payment_partner)
+	)
+
+	payment_gateways = query.run(as_dict=True)
+
+	return [gateway["name"] for gateway in payment_gateways]
+
+
+@frappe.whitelist()
+def fetch_payouts():
+	team = get_current_team()
+	payouts = frappe.get_all(
+		"Partner Payment Payout",
+		filters={"partner": team},
+		fields=["name", "total_amount", "commission", "net_amount", "posting_date"],
+	)
+	print("here", len(payouts))
+	return payouts
