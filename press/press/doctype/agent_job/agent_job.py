@@ -531,6 +531,7 @@ def handle_polled_job(polled_job, pending_jobs=None, job=None):
 		process_job_updates(job.name, polled_job)
 
 		frappe.db.commit()
+		print("COMMITING CHANGES!")
 		publish_update(job.name)
 	except AgentCallbackException:
 		# Don't log error for AgentCallbackException

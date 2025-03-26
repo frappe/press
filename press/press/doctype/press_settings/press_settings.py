@@ -161,6 +161,7 @@ class PressSettings(Document):
 		twilio_phone_number: DF.Phone | None
 		usage_record_creation_batch_size: DF.Int
 		usd_rate: DF.Float
+		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check

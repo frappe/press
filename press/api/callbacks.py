@@ -10,6 +10,7 @@ import frappe
 from press.press.doctype.agent_job.agent_job import handle_polled_job
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server.server import Server
 
 
@@ -42,6 +43,13 @@ def verify_job_id(server: str, job_id: str):
 def handle_job_updates(server: str, job_id: str):
 	server: Server = frappe.get_doc("Server", server)
 	agent = server.agent
+	press_settings: PressSettings = frappe.get_doc("Press Settings")
+
+	if not press_settings.use_agent_job_callbacks or not server.use_agent_job_callbacks:
+		return
+
+	# For some reason output is not returned when job returns from rq callback
+	polled_job = agent.get_job_status(job_id)
 
 	job = frappe.get_value(
 		"Agent Job",
@@ -55,8 +63,6 @@ def handle_job_updates(server: str, job_id: str):
 		filters={"job_id": job_id},
 		as_dict=True,
 	)
-
-	polled_job = agent.get_job_status(job.job_id)
 
 	callback = frappe.get_doc(
 		{
@@ -84,10 +90,10 @@ def callback(job_id: str):
 	if not server:
 		return "Invalid request!"
 
-	job = verify_job_id(server, job_id)
+	job = verify_job_id(server, job_id=job_id)
 	if not job:
 		return "Invalid job id!"
 
-	handle_job_updates(server, job_id)
+	handle_job_updates(server=server, job_id=job_id)
 	frappe.set_user("guest")
 	return "Success"

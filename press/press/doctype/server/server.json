@@ -21,6 +21,7 @@
   "is_self_hosted",
   "is_server_renamed",
   "public",
+  "use_agent_job_callbacks",
   "billing_section",
   "team",
   "column_break_11",
@@ -551,10 +552,16 @@
    "fieldname": "ipv6",
    "fieldtype": "Data",
    "label": "IPv6"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
   }
  ],
  "links": [],
- "modified": "2025-03-24 20:32:15.778728",
+ "modified": "2025-03-26 12:49:49.214409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
