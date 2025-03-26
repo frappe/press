@@ -297,6 +297,17 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{
+							name: 'Server Detail Actions',
+							params: { name: this.serverName },
+						}"
+					>
+						Manage InnoDB Buffer →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard
@@ -315,6 +326,17 @@
 					:showCard="false"
 					class="h-[15.55rem] p-2 pb-3"
 				/>
+				<template #action>
+					<router-link
+						class="text-base text-gray-600 hover:text-gray-700"
+						:to="{
+							name: 'Server Detail Actions',
+							params: { name: this.serverName },
+						}"
+					>
+						Manage InnoDB Buffer →
+					</router-link>
+				</template>
 			</AnalyticsCard>
 
 			<AnalyticsCard
