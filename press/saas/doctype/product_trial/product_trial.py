@@ -268,12 +268,14 @@ class ProductTrial(Document):
 	def create_standby_site(self, cluster):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
+		server = self.get_server_from_cluster(cluster)
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
 			domain=self.domain,
 			group=self.release_group,
 			cluster=cluster,
+			server=server,
 			is_standby=True,
 			standby_for_product=self.name,
 			team=administrator,
@@ -314,6 +316,36 @@ class ProductTrial(Document):
 		while frappe.db.exists("Site", filters):
 			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		return subdomain
+
+	def get_server_from_cluster(self, cluster):
+		"""Return the server with the least number of standby sites in the cluster"""
+
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+		Server = frappe.qb.DocType("Server")
+
+		servers = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.server)
+			.where(ReleaseGroupServer.parent == self.release_group)
+			.join(Server)
+			.on(Server.name == ReleaseGroupServer.server)
+			.where(Server.cluster == cluster)
+			.run(pluck="server")
+		)
+
+		server_sites = {}
+		for server in servers:
+			server_sites[server] = frappe.db.count(
+				"Site",
+				{
+					"server": server,
+					"status": ("!=", "Archived"),
+					"is_standby": 1,
+				},
+			)
+
+		# get the server with the least number of sites
+		return min(server_sites, key=server_sites.get)
 
 
 def get_app_subscriptions_site_config(apps: list[str]):
