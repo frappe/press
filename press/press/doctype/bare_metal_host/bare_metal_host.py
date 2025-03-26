@@ -325,9 +325,8 @@ class BareMetalHost(BaseServer):
             play = ansible.run()
             self.reload()
             if play.status == "Success":
-                self.is_vm_host_setup = True
-                self.status = "Active"
-                self.save()
+                self.db_set("is_vm_host_setup", 1)
+                self.db_set("status", "Active")
             return play
         except Exception:
             log_error("Bare Metal VM Host Setup Exception", server=self.as_dict())
@@ -421,15 +420,42 @@ class BareMetalHost(BaseServer):
                 "group": "Bare Metal Host Actions",
             })
             
-        # Add setup VM host action if not active
-        actions.append({
-            "action": "Setup as VM Host",
-            "description": "Configure host for KVM virtualization",
-            "button_label": "Setup VM Host",
-            "condition": self.status != "Active",
-            "doc_method": "setup_vm_host",
-            "group": "Bare Metal Host Actions",
-        })
+        # Add setup VM host actions if not active
+        if self.status != "Active":
+            actions.extend([
+                {
+                    "action": "Setup as VM Host",
+                    "description": "Configure host for KVM virtualization",
+                    "button_label": "Setup VM Host",
+                    "condition": True,
+                    "doc_method": "setup_vm_host",
+                    "group": "Bare Metal Host Actions",
+                },
+                {
+                    "action": "Setup as VM Host with NFS",
+                    "description": "Configure host for KVM virtualization with NFS storage",
+                    "button_label": "Setup VM Host with NFS",
+                    "condition": True,
+                    "doc_method": "setup_vm_host_with_nfs",
+                    "group": "Bare Metal Host Actions",
+                },
+                {
+                    "action": "Setup as NFS Server",
+                    "description": "Configure host as NFS server for VM storage",
+                    "button_label": "Setup NFS Server",
+                    "condition": True,
+                    "doc_method": "setup_nfs_server",
+                    "group": "Bare Metal Host Actions",
+                },
+                {
+                    "action": "Setup as NFS Client",
+                    "description": "Configure host as NFS client for VM storage",
+                    "button_label": "Setup NFS Client",
+                    "condition": True,
+                    "doc_method": "setup_nfs_client",
+                    "group": "Bare Metal Host Actions",
+                }
+            ])
         
         # Add server doctype and name to all actions
         for action in actions:
@@ -491,4 +517,122 @@ class BareMetalHost(BaseServer):
             return f"Ping status: {play.status}"
         except Exception as e:
             log_error("Bare Metal Host Unprepared Ping Exception", server=self.as_dict())
-            return f"Ping failed: {str(e)}" 
+            return f"Ping failed: {str(e)}"
+
+    @frappe.whitelist()
+    def setup_nfs_server(self):
+        """
+        Set up this host as an NFS server for VM storage
+        """
+        self.status = "Installing"
+        self.save()
+        frappe.enqueue_doc(self.doctype, self.name, "_setup_nfs_server", queue="long", timeout=1200)
+
+    def _setup_nfs_server(self):
+        try:
+            class ServerObj:
+                def __init__(self, doc):
+                    self.name = doc.name
+                    self.ip = doc.ip
+                    self.doctype = doc.doctype
+            
+            server_obj = ServerObj(self)
+            
+            ansible = Ansible(
+                playbook="nfs_server.yml",
+                server=server_obj,
+                user=self.ssh_user or "root",
+                port=self.ssh_port or 22,
+            )
+            play = ansible.run()
+            self.reload()
+            if play.status == "Success":
+                self.db_set("is_nfs_server", 1)
+            return play
+        except Exception:
+            log_error("NFS Server Setup Exception", server=self.as_dict())
+
+    @frappe.whitelist()
+    def setup_nfs_client(self):
+        """
+        Set up this host as an NFS client for VM storage
+        """
+        self.status = "Installing"
+        self.save()
+        frappe.enqueue_doc(self.doctype, self.name, "_setup_nfs_client", queue="long", timeout=1200)
+
+    def _setup_nfs_client(self):
+        try:
+            class ServerObj:
+                def __init__(self, doc):
+                    self.name = doc.name
+                    self.ip = doc.ip
+                    self.doctype = doc.doctype
+            
+            server_obj = ServerObj(self)
+            
+            # Get NFS server details from settings
+            nfs_server = frappe.db.get_single_value("Press Settings", "nfs_server")
+            if not nfs_server:
+                frappe.throw("NFS server not configured in Press Settings")
+            
+            ansible = Ansible(
+                playbook="nfs_client.yml",
+                server=server_obj,
+                user=self.ssh_user or "root",
+                port=self.ssh_port or 22,
+                variables={
+                    "nfs_server": nfs_server,
+                }
+            )
+            play = ansible.run()
+            self.reload()
+            if play.status == "Success":
+                self.is_nfs_client = True
+                self.save()
+            return play
+        except Exception:
+            log_error("NFS Client Setup Exception", server=self.as_dict())
+
+    @frappe.whitelist()
+    def setup_vm_host_with_nfs(self):
+        """
+        Set up server for KVM virtualization with NFS storage
+        """
+        self.status = "Installing"
+        self.save()
+        frappe.enqueue_doc(self.doctype, self.name, "_setup_vm_host_with_nfs", queue="long", timeout=2400)
+
+    def _setup_vm_host_with_nfs(self):
+        try:
+            class ServerObj:
+                def __init__(self, doc):
+                    self.name = doc.name
+                    self.ip = doc.ip
+                    self.doctype = doc.doctype
+            
+            server_obj = ServerObj(self)
+            
+            # Get NFS server details from settings
+            nfs_server = frappe.db.get_single_value("Press Settings", "nfs_server")
+            if not nfs_server:
+                frappe.throw("NFS server not configured in Press Settings")
+            
+            ansible = Ansible(
+                playbook="bare_metal_vm_host_with_nfs.yml",
+                server=server_obj,
+                user=self.ssh_user or "root",
+                port=self.ssh_port or 22,
+                variables={
+                    "nfs_server": nfs_server,
+                }
+            )
+            play = ansible.run()
+            self.reload()
+            if play.status == "Success":
+                self.db_set("is_vm_host_setup", 1)
+                self.db_set("is_nfs_client", 1)
+                self.db_set("status", "Active")
+            return play
+        except Exception:
+            log_error("VM Host with NFS Setup Exception", server=self.as_dict()) 

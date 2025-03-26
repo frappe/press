@@ -1,0 +1,87 @@
+---
+- name: Setup NFS Server for VM Storage
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  
+  vars:
+    nfs_exports_directory: "{{ shared_storage_path | default('/exports/vm_storage') }}"
+    nfs_exports_options: "*(rw,sync,no_root_squash,no_subtree_check)"
+    firewall_zone: "public"
+    configure_firewall: true
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install NFS server packages for Ubuntu
+      apt:
+        name:
+          - nfs-kernel-server
+          - nfs-common
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create NFS exports directory
+      file:
+        path: "{{ nfs_exports_directory }}"
+        state: directory
+        mode: '0755'
+        owner: nobody
+        group: nogroup
+
+    - name: Configure NFS exports
+      lineinfile:
+        path: /etc/exports
+        line: "{{ nfs_exports_directory }} {{ nfs_exports_options }}"
+        state: present
+        create: yes
+      register: nfs_exports_modified
+
+    - name: Refresh NFS exports
+      command: exportfs -ra
+      when: nfs_exports_modified.changed
+
+    - name: Enable and start NFS server service
+      systemd:
+        name: nfs-kernel-server
+        enabled: yes
+        state: started
+      when: ansible_os_family == "Debian"
+
+    - name: Allow NFS through UFW (Ubuntu)
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items:
+        - 111   # rpcbind
+        - 2049  # nfs
+        - 4045  # nlockmgr
+      when: configure_firewall and ansible_os_family == "Debian"
+
+    - name: Allow NFS UDP through UFW (Ubuntu)
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: udp
+      with_items:
+        - 111   # rpcbind
+        - 2049  # nfs
+        - 4045  # nlockmgr
+      when: configure_firewall and ansible_os_family == "Debian"
+
+    - name: Check NFS server status
+      command: systemctl status nfs-kernel-server
+      register: nfs_status
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family == "Debian"
+
+    - name: Display NFS server status
+      debug:
+        var: nfs_status.stdout_lines
+      when: ansible_os_family == "Debian" 

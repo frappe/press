@@ -42,6 +42,10 @@
   include_tasks: storage.yml
   when: configure_storage | default(true)
 
+- name: Configure shared storage for VM host (if enabled)
+  include_tasks: shared_storage.yml
+  when: configure_shared_storage | default(false) and nfs_server_host is defined
+
 - name: Create VM directories
   file:
     path: "{{ item }}"
@@ -79,6 +83,7 @@
         - "/opt/vm_configs/** rwk,"
         - "/opt/vm_templates/** rwk,"
         - "/tmp/cloud-init-*.iso rwk,"
+        - "{{ nfs_mount_point | default('/mnt/vm_storage') }}/** rwk,"
       when: apparmor_status.rc == 0
 
     - name: Restart AppArmor service

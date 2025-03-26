@@ -13,6 +13,8 @@
   "is_server_prepared",
   "is_server_setup",
   "is_vm_host_setup",
+  "is_nfs_server",
+  "is_nfs_client",
   "column_break_5",
   "team",
   "cluster",
@@ -27,6 +29,9 @@
   "available_cpu",
   "available_memory",
   "available_disk",
+  "nfs_section",
+  "nfs_exports_directory",
+  "nfs_mount_point",
   "ssh_section",
   "ip",
   "private_ip",
@@ -89,6 +94,38 @@
    "fieldtype": "Check",
    "label": "Is VM Host Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "is_nfs_server",
+   "fieldtype": "Check",
+   "label": "Is NFS Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_nfs_client",
+   "fieldtype": "Check",
+   "label": "Is NFS Client",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nfs_section",
+   "fieldtype": "Section Break",
+   "label": "NFS Configuration",
+   "depends_on": "eval:doc.is_nfs_server || doc.is_nfs_client"
+  },
+  {
+   "fieldname": "nfs_exports_directory",
+   "fieldtype": "Data",
+   "label": "NFS Exports Directory",
+   "default": "/exports/vm_storage",
+   "depends_on": "eval:doc.is_nfs_server"
+  },
+  {
+   "fieldname": "nfs_mount_point",
+   "fieldtype": "Data",
+   "label": "NFS Mount Point",
+   "default": "/mnt/vm_storage",
+   "depends_on": "eval:doc.is_nfs_client"
   },
   {
    "fieldname": "column_break_5",

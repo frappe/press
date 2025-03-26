@@ -1,0 +1,32 @@
+---
+- name: Check if shared storage pool exists
+  shell: virsh pool-list --all | grep {{ shared_storage_pool_name | default('shared_storage') }}
+  register: shared_storage_pool_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create temporary shared storage pool XML
+  template:
+    src: shared_storage_pool.xml.j2
+    dest: /tmp/shared_storage_pool.xml
+    mode: '0644'
+  when: shared_storage_pool_exists.rc != 0
+
+- name: Define shared storage pool
+  command: virsh pool-define /tmp/shared_storage_pool.xml
+  when: shared_storage_pool_exists.rc != 0
+
+- name: Set shared storage pool to autostart
+  command: virsh pool-autostart {{ shared_storage_pool_name | default('shared_storage') }}
+  when: shared_storage_pool_exists.rc != 0
+
+- name: Start shared storage pool
+  command: virsh pool-start {{ shared_storage_pool_name | default('shared_storage') }}
+  when: shared_storage_pool_exists.rc != 0
+  failed_when: false  # It might already be running
+
+- name: Clean up temporary shared storage pool XML file
+  file:
+    path: /tmp/shared_storage_pool.xml
+    state: absent
+  when: shared_storage_pool_exists.rc != 0 

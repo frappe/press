@@ -1,0 +1,15 @@
+---
+- name: Configure NFS Client for VM Host
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  
+  vars:
+    nfs_server_host: "{{ nfs_server | mandatory }}"
+    nfs_server_export: "{{ nfs_export_path | default('/exports/vm_storage') }}"
+    nfs_mount_point: "{{ vm_storage_mount | default('/mnt/vm_storage') }}"
+    nfs_mount_options: "rw,sync,hard,intr"
+  
+  roles:
+    - nfs_client 

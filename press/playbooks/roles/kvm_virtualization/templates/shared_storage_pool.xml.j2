@@ -1,0 +1,11 @@
+<pool type="dir">
+  <name>{{ shared_storage_pool_name | default('shared_storage') }}</name>
+  <target>
+    <path>{{ nfs_mount_point | default('/mnt/vm_storage') }}/images</path>
+    <permissions>
+      <mode>0755</mode>
+      <owner>0</owner>
+      <group>0</group>
+    </permissions>
+  </target>
+</pool> 
