@@ -115,26 +115,43 @@ class RootDomain(Document):
 			"Site Domain", {"domain": ("like", f"%{self.name}"), "status": "Active"}, pluck="name"
 		)
 
+	def get_active_sites(self):
+		return frappe.get_all("Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name")
+
 	def get_active_domains(self):
-		active_sites = frappe.get_all(
-			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
+		active_domains = self.get_active_sites()
+		active_domains.extend(self.get_sites_being_renamed())
+		active_domains.extend(self.get_active_site_domains())
+		return set(active_domains)
+
+	def get_default_cluster_proxies(self):
+		return frappe.get_all(
+			"Proxy Server", {"status": "Active", "cluster": self.default_cluster}, pluck="name"
 		)
-		active_sites.extend(self.get_sites_being_renamed())
-		active_sites.extend(self.get_active_site_domains())
-		return active_sites
 
 	def remove_unused_cname_records(self):
 		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+
+		default_proxies = self.get_default_cluster_proxies()
+
 		for page in self.get_dns_record_pages():
 			to_delete = []
 
 			frappe.db.commit()
-			active = self.get_active_domains()
+			active_domains = self.get_active_domains()
 
 			for record in page["ResourceRecordSets"]:
-				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] in proxies:
+				# Only look at CNAME records that point to a proxy server
+				value = record["ResourceRecords"][0]["Value"]
+				if record["Type"] == "CNAME" and value in proxies:
 					domain = record["Name"].strip(".")
-					if domain not in active:
+					# Delete inactive records
+					if domain not in active_domains:  # noqa: SIM114
+						record["Name"] = domain
+						to_delete.append(record)
+					# Delete records that point to a proxy in the default_cluster
+					# These are covered by * records
+					elif value in default_proxies:
 						record["Name"] = domain
 						to_delete.append(record)
 			if to_delete:

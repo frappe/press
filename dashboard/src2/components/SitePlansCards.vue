@@ -99,7 +99,7 @@ export default {
 						{
 							label: 'Database',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_database_usage, 0, 2),
+							value: this.$format.bytes(plan.max_database_usage, 1, 2),
 						},
 						{
 							label: 'Disk',

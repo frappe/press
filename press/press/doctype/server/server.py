@@ -329,7 +329,10 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def prepare_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_prepare_server", queue="long", timeout=2400)
+		if self.provider == "Generic":
+			self._prepare_server()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "_prepare_server", queue="long", timeout=2400)
 
 	def _prepare_server(self):
 		try:
@@ -348,8 +351,9 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 			elif self.provider == "OCI":
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
+			if self.provider != "Generic":
+				ansible.run()
 
-			ansible.run()
 			self.reload()
 			self.is_server_prepared = True
 			self.save()
@@ -569,7 +573,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50, mountpoint=None) -> bool:
+	def increase_disk_size(self, increment=50, mountpoint=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:

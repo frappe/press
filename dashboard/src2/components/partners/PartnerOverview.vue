@@ -46,21 +46,12 @@
 							/>
 						</div>
 						<div class="text-xl font-semibold py-2">
-							{{
-								formatCurrency(
-									partnerDetails.data
-										?.custom_ongoing_period_fc_invoice_contribution
-								) || '0.0'
-							}}
+							{{ formatCurrency(currentMonthContribution.data) || '0.0' }}
 						</div>
 						<div class="text-sm text-gray-600">
 							<span
 								>Previous Month:
-								{{
-									formatCurrency(
-										partnerDetails.data?.custom_fc_invoice_contribution
-									) || '0.0'
-								}}</span
+								{{ formatCurrency(prevMonthContribution.data) || '0.0' }}</span
 							>
 						</div>
 					</div>
@@ -150,10 +141,10 @@
 		<Dialog
 			:show="showPartnerMembersDialog"
 			v-model="showPartnerMembersDialog"
-			:options="{ size: 'xl', title: 'Certified Members' }"
+			:options="{ size: '3xl', title: 'Certified Members' }"
 		>
 			<template #body-content>
-				<PartnerMembers :partnerName="partnerDetails.data?.company_name" />
+				<PartnerMembers :partnerName="partnerDetails.data?.name" />
 			</template>
 		</Dialog>
 	</div>
@@ -179,11 +170,11 @@ const partnerDetails = createResource({
 	auto: true,
 	cache: 'partnerDetails',
 	params: {
-		partner_email: team.doc.partner_email
+		partner_email: team.doc.partner_email,
 	},
 	onSuccess() {
 		calculateNextTier(partnerDetails.data.partner_type);
-	}
+	},
 });
 
 const daysUntilRenewal = computed(() => {
@@ -201,32 +192,42 @@ function isRenewalPeriod() {
 	return Boolean(daysDifference >= 0 && daysDifference <= 15);
 }
 
+const currentMonthContribution = createResource({
+	url: 'press.api.partner.get_current_month_partner_contribution',
+	auto: true,
+	cache: 'currentMonthContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+	},
+});
+
+const prevMonthContribution = createResource({
+	url: 'press.api.partner.get_prev_month_partner_contribution',
+	auto: true,
+	cache: 'prevMonthContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+	},
+});
+
 const tierProgressValue = ref(0);
 const nextTier = ref('');
 const nextTierTarget = ref(0);
 
 function calculateTierProgress(next_tier_value) {
-	console.log(
-		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution,
-		next_tier_value
-	);
-	return Math.ceil(
-		(partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution /
-			next_tier_value) *
-			100
-	);
+	return Math.ceil((currentMonthContribution.data / next_tier_value) * 100);
 }
 
 function calculateNextTier(tier) {
 	const target_inr = {
 		Gold: 500000,
 		Silver: 200000,
-		Bronze: 50000
+		Bronze: 50000,
 	};
 	const target_usd = {
 		Gold: 6000,
 		Silver: 2500,
-		Bronze: 600
+		Bronze: 600,
 	};
 
 	const current_tier = partnerDetails.data?.partner_type;
@@ -254,9 +255,7 @@ function calculateNextTier(tier) {
 	}
 	nextTier.value = next_tier;
 	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);
-	nextTierTarget.value =
-		nextTierTarget.value -
-		partnerDetails.data?.custom_ongoing_period_fc_invoice_contribution;
+	nextTierTarget.value = nextTierTarget.value - currentMonthContribution.data;
 }
 
 watch(
@@ -269,26 +268,26 @@ watch(
 	{ deep: true },
 );
 
-const formatDate = dateString => {
+const formatDate = (dateString) => {
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
-		day: 'numeric'
+		day: 'numeric',
 	});
 };
 
-const formatCurrency = amount => {
+const formatCurrency = (amount) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
-		maximumFractionDigits: 2
+		maximumFractionDigits: 2,
 	}).format(amount);
 };
 
-const formatNumber = value => {
+const formatNumber = (value) => {
 	return new Intl.NumberFormat('en-US', {
 		notation: 'compact',
-		compactDisplay: 'short'
+		compactDisplay: 'short',
 	}).format(value);
 };
 </script>

@@ -549,8 +549,14 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-01-27 10:45:05.652361",
+ "links": [
+  {
+   "group": "Analytics",
+   "link_doctype": "Disk Performance",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2025-03-21 18:33:58.661421",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
