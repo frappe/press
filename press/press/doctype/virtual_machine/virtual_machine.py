@@ -1422,7 +1422,12 @@ def snapshot_virtual_machines():
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"virtual_machine": machine.name, "physical_backup": 0, "creation": (">=", frappe.utils.today())},
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
 			limit=1,
 		):
 			continue
@@ -1432,6 +1437,54 @@ def snapshot_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def rolling_snapshot_database_server_virtual_machines():
+	# For now, let's keep it specific to database servers having physical backup enabled
+	virtual_machines = frappe.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"enable_physical_backup": 1,
+		},
+		pluck="name",
+	)
+
+	# Find out virtual machines with snapshot explicitly skipped
+	ignorable_virtual_machines = set(
+		frappe.get_all("Virtual Machine", {"skip_automated_snapshot": 1}, pluck="name")
+	)
+
+	for virtual_machine_name in virtual_machines:
+		if has_job_timeout_exceeded():
+			return
+
+		if virtual_machine_name in ignorable_virtual_machines:
+			continue
+
+		# Skip if a valid snapshot has already existed within last 2 hours
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"status": [
+					"in",
+					["Pending", "Completed"],
+				],
+				"virtual_machine": virtual_machine_name,
+				"physical_backup": 0,
+				"rolling_snapshot": 1,
+				"creation": (">=", frappe.utils.add_to_date(None, hours=-2)),
+			},
+			limit=1,
+		):
+			continue
+
+		try:
+			# Also, if vm has multiple volumes, then exclude boot volume
+			frappe.get_doc("Virtual Machine", virtual_machine_name).create_snapshots(exclude_boot_volume=True)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
 
 
 AWS_SERIAL_CONSOLE_ENDPOINT_MAP = {

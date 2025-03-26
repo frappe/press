@@ -2,12 +2,11 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import time
-
 import boto3
 import frappe
 import frappe.utils
 import pytz
+from apps.press.press.utils.jobs import has_job_timeout_exceeded
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
@@ -30,6 +29,7 @@ class VirtualDiskSnapshot(Document):
 		physical_backup: DF.Check
 		progress: DF.Data | None
 		region: DF.Link
+		rolling_snapshot: DF.Check
 		size: DF.Int
 		snapshot_id: DF.Data
 		start_time: DF.Datetime | None
@@ -188,8 +188,12 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0})
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 0}
+	)
 	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
@@ -198,19 +202,30 @@ def sync_snapshots():
 			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)
 
 
+def sync_rolling_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1}
+	)
+	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Disk Rolling Snapshot Sync Error", virtual_snapshot=snapshot.name)
+
+
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "physical_backup": 1},
+		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0},
 		order_by="modified asc",
 	)
-	start_time = time.time()
 	for snapshot in snapshots:
-		# if already spent more than 1 minute, then don't do sync anymore
-		# because this function will be executed every minute
-		# we don't want to run two syncs at the same time
-		if time.time() - start_time > 60:
-			break
+		if has_job_timeout_exceeded():
+			return
 
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
