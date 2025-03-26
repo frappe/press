@@ -1202,7 +1202,7 @@ def sync_benches():
 
 
 def sync_bench(name):
-	bench = frappe.get_doc("Bench", name)
+	bench = Bench("Bench", name)
 	try:
 		active_archival_jobs = frappe.get_all(
 			"Agent Job",
