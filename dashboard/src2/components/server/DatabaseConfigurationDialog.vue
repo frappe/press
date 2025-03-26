@@ -11,7 +11,7 @@
 			>
 				<div class="flex flex-row items-center gap-2 text-gray-700">
 					<Spinner class="w-4" />
-					Loading database configurations...
+					Loading database configurations
 				</div>
 			</div>
 			<div v-else>
