@@ -1381,13 +1381,35 @@
    "default": "2",
    "fieldname": "minimum_rebuild_ram",
    "fieldtype": "Int",
-   "label": "Minimum Rebuild Ram",
+   "label": "Minimum Rebuild Memory (GB)",
    "non_negative": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "send_telegram_notifications",
+   "fieldtype": "Check",
+   "label": "Send Telegram Notifications"
+  },
+  {
+   "fieldname": "column_break_jlzi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_email_notifications",
+   "fieldtype": "Check",
+   "label": "Send Email Notifications"
+  },
+  {
+   "depends_on": "eval: doc.send_email_notifications== true",
+   "fieldname": "email_recipients",
+   "fieldtype": "Small Text",
+   "label": "Email Recipients"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-20 11:45:51.355172",
+ "modified": "2025-03-26 12:07:26.560397",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
