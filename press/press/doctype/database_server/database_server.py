@@ -1110,7 +1110,7 @@ class DatabaseServer(BaseServer):
 			save=False,
 		)
 
-		existing_max_connections = self.get_mariadb_variable_value("max_connections")
+		existing_max_connections = frappe.utils.cint(self.get_mariadb_variable_value("max_connections"))
 		if existing_max_connections is None:
 			existing_max_connections = 0
 
