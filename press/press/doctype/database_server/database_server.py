@@ -172,9 +172,12 @@ class DatabaseServer(BaseServer):
 	def get_doc(self, doc):
 		doc = super().get_doc(doc)
 		doc.mariadb_variables = {
-			"innodb_buffer_pool_size": self.get_mariadb_variable_value("innodb_buffer_pool_size")
-			or int(self.ram_for_mariadb * 0.65),
-			"max_connections": frappe.utils.cint(self.get_mariadb_variable_value("max_connections")) or 200,
+			"innodb_buffer_pool_size": self.get_mariadb_variable_value(
+				"innodb_buffer_pool_size", return_default_if_not_found=True
+			),
+			"max_connections": frappe.utils.cint(
+				self.get_mariadb_variable_value("max_connections"), return_default_if_not_found=True
+			),
 		}
 		doc.mariadb_variables_recommended_values = {
 			"innodb_buffer_pool_size": self.recommended_innodb_buffer_pool_size,
@@ -1091,14 +1094,14 @@ class DatabaseServer(BaseServer):
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
-		max_connections = self.recommended_max_db_connections
+		max_recommended_connections = self.recommended_max_db_connections
 		# Check if we can add some extra connections
 		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
 			extra_connections = round(
 				(self.recommended_innodb_buffer_pool_size - int(self.ram_for_mariadb * 0.65))
 				/ self.memory_per_db_connection
 			)
-			max_connections += extra_connections
+			max_recommended_connections += extra_connections
 
 		self.add_or_update_mariadb_variable(
 			"innodb_buffer_pool_size",
@@ -1113,9 +1116,9 @@ class DatabaseServer(BaseServer):
 
 		# Avoid setting max_connections to a lower value, if it's already set to a higher value
 		# User might have changed the value in the past, and we don't want to override it
-		if max_connections <= existing_max_connections:
+		if max_recommended_connections > existing_max_connections:
 			self.add_or_update_mariadb_variable(
-				"max_connections", "value_str", str(max_connections), save=False
+				"max_connections", "value_str", str(max_recommended_connections), save=False
 			)
 		self.add_or_update_mariadb_variable("key_buffer_size", "value_int", self.key_buffer_size, save=False)
 		self.save()
