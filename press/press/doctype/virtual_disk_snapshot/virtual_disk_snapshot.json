@@ -122,7 +122,8 @@
    "fieldname": "volume_id",
    "fieldtype": "Data",
    "label": "Volume ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "duration",
@@ -159,7 +160,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-03-27 00:10:35.681800",
+ "modified": "2025-03-27 01:35:12.859467",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

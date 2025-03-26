@@ -6,11 +6,11 @@ import boto3
 import frappe
 import frappe.utils
 import pytz
-from apps.press.press.utils.jobs import has_job_timeout_exceeded
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
 
+from press.press.utils.jobs import has_job_timeout_exceeded
 from press.utils import log_error
 
 
@@ -51,7 +51,7 @@ class VirtualDiskSnapshot(Document):
 				"mariadb_root_password"
 			)
 
-	def on_update(self):
+	def on_update(self):  # noqa: C901
 		if self.has_value_changed("status") and self.status == "Unavailable":
 			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
 			if site_backup_name:
@@ -74,6 +74,29 @@ class VirtualDiskSnapshot(Document):
 				)
 				if physical_restore_name:
 					frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
+
+			if self.rolling_snapshot:
+				# Find older snapshots than current snapshot
+				# If exists, delete that
+				older_snapshots = frappe.db.get_all(
+					self.doctype,
+					{
+						"virtual_machine": self.virtual_machine,
+						"volume_id": self.volume_id,
+						"name": ["!=", self.name],
+						"creation": ["<", self.creation],
+					},
+					pluck="name",
+				)
+				for older_snapshot_name in older_snapshots:
+					frappe.enqueue_doc(
+						self.doctype,
+						name=older_snapshot_name,
+						method="delete_snapshot",
+						enqueue_after_commit=True,
+						deduplicate=True,
+						job_id=f"virtual_disk_snapshot||delete_snapshot||{older_snapshot_name}",
+					)
 
 	@frappe.whitelist()
 	def sync(self):
