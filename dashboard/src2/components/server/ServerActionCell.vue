@@ -175,6 +175,7 @@ function onDropServer() {
 }
 
 function onEnablePerformanceSchema() {
+	if (!server.enablePerformanceSchema) return;
 	confirmDialog({
 		title: 'Enable Performance Schema',
 		message: `Are you sure you want to enable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
@@ -209,6 +210,7 @@ function onEnablePerformanceSchema() {
 }
 
 function onDisablePerformanceSchema() {
+	if (!server.disablePerformanceSchema) return;
 	confirmDialog({
 		title: 'Disable Performance Schema',
 		message: `Are you sure you want to disable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
@@ -243,9 +245,10 @@ function onDisablePerformanceSchema() {
 }
 
 function onUpdateInnodbBufferPoolSize() {
+	if (!server.updateInnodbBufferPoolSize) return;
 	confirmDialog({
 		title: 'Update InnoDB Buffer Pool Size',
-		message: `Are you sure you want to change the InnoDB Buffer Pool Size of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Buffer Pool Size is <b>${server.doc.mariadb_variables_recommended_values.innodb_buffer_pool_size}MB</b>`,
+		message: `Are you sure you want to change the InnoDB Buffer Pool Size of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Buffer Pool Size is <b>${server.doc.mariadb_variables_recommended_values.innodb_buffer_pool_size} MB</b>`,
 		fields: [
 			{
 				label: 'Enter the new InnoDB Buffer Pool Size (MB)',
@@ -286,6 +289,7 @@ function onUpdateInnodbBufferPoolSize() {
 }
 
 function onUpdateMaxDBConnections() {
+	if (!server.updateMaxDbConnections) return;
 	confirmDialog({
 		title: 'Update Max DB Connections',
 		message: `Are you sure you want to change the Max DB Connections of the database server <b>${server.doc.name}</b> ?<br><br> Recommended Max DB Connections is <b>${server.doc.mariadb_variables_recommended_values.max_connections}</b>`,
