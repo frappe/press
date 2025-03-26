@@ -83,7 +83,7 @@
   "clone_directory",
   "build_directory",
   "build_server",
-  "minimum_rebuild_ram",
+  "minimum_rebuild_memory",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1378,13 +1378,6 @@
    "label": "Max Concurrent Physical Restorations"
   },
   {
-   "default": "2",
-   "fieldname": "minimum_rebuild_ram",
-   "fieldtype": "Int",
-   "label": "Minimum Rebuild Memory (GB)",
-   "non_negative": 1
-  },
-  {
    "default": "1",
    "fieldname": "send_telegram_notifications",
    "fieldtype": "Check",
@@ -1405,11 +1398,18 @@
    "fieldname": "email_recipients",
    "fieldtype": "Small Text",
    "label": "Email Recipients"
+  },
+  {
+   "default": "2",
+   "fieldname": "minimum_rebuild_memory",
+   "fieldtype": "Int",
+   "label": "Minimum Rebuild Memory (GB)",
+   "non_negative": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-26 12:07:26.560397",
+ "modified": "2025-03-26 12:38:52.559322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
