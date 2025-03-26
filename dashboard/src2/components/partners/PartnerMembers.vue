@@ -9,7 +9,7 @@ import GenericList from '../GenericList.vue';
 import { createResource } from 'frappe-ui';
 
 const props = defineProps({
-	partnerName: String
+	partnerName: String,
 });
 
 const partnerMembers = createResource({
@@ -17,17 +17,22 @@ const partnerMembers = createResource({
 	cache: 'partnerMembers',
 	auto: true,
 	params: {
-		partner: props.partnerName
+		partner: props.partnerName,
 	},
 	transform(data) {
-		data = data.map(d => {
+		data = data.map((d) => {
 			return {
 				full_name: d.member_name,
-				email: d.member_email
+				email: d.member_email,
+				course:
+					d.course == 'frappe-developer-certification'
+						? 'Framework'
+						: 'ERPNext',
+				version: d.version,
 			};
 		});
 		return data;
-	}
+	},
 });
 
 const partnerMembersList = computed(() => {
@@ -37,13 +42,24 @@ const partnerMembersList = computed(() => {
 		columns: [
 			{
 				label: 'Name',
-				fieldname: 'full_name'
+				fieldname: 'full_name',
 			},
 			{
 				label: 'Email',
-				fieldname: 'email'
-			}
-		]
+				fieldname: 'email',
+			},
+			{
+				label: 'Course',
+				fieldname: 'course',
+				width: 0.6,
+			},
+			{
+				label: 'Version',
+				fieldname: 'version',
+				width: 0.5,
+				align: 'center',
+			},
+		],
 	};
 });
 </script>

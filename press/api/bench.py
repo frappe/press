@@ -275,6 +275,9 @@ def options():
 
 	clusters = Cluster.get_all_for_new_bench()
 
+	if not versions:
+		frappe.throw("Only enabled and public app sources will reflect here!")
+
 	return {"versions": versions, "clusters": clusters}
 
 
@@ -440,11 +443,14 @@ def apps(name):
 		hash = latest_deployed_app.hash if latest_deployed_app else None
 		tag = get_app_tag(source.repository, source.repository_owner, hash)
 
+		marketplace_app_title = frappe.db.get_value("Marketplace App", app.name, "title")
+		app_title = marketplace_app_title or app.title
+
 		apps.append(
 			{
 				"name": app.name,
 				"frappe": app.frappe,
-				"title": app.title,
+				"title": app_title,
 				"branch": source.branch,
 				"repository_url": source.repository_url,
 				"repository": source.repository,

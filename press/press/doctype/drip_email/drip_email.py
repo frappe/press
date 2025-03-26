@@ -49,11 +49,11 @@ class DripEmail(Document):
 		subject: DF.SmallText
 	# end: auto-generated types
 
-	def send(self, site_name=None):
+	def send(self, site_name: str | None = None):
 		if self.evaluate_condition(site_name) and self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
-	def send_drip_email(self, site_name):
+	def send_drip_email(self, site_name: str, email: str | None = None):
 		site = frappe.get_doc("Site", site_name)
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
 			return
@@ -62,7 +62,7 @@ class DripEmail(Document):
 			return
 
 		account_request = frappe.get_doc("Account Request", site.account_request)
-		if account_request.unsubscribed_from_drip_emails:
+		if not email and account_request.unsubscribed_from_drip_emails:
 			return
 
 		if self.send_by_consultant:
@@ -73,7 +73,7 @@ class DripEmail(Document):
 		self.send_mail(
 			context=dict(
 				full_name=account_request.full_name,
-				email=account_request.email,
+				email=email or account_request.email,
 				domain=site.host_name or site.name,
 				consultant=consultant,
 				site=site,
@@ -85,7 +85,6 @@ class DripEmail(Document):
 	def send_mail(self, context, recipient):
 		# build the message
 		message = frappe.render_template(self.message, context)
-		title = frappe.db.get_value("Marketplace App", self.saas_app, "title")
 		account_request = context.get("account_request", "")
 		app = frappe.db.get_value("Marketplace App", self.saas_app, ["title", "image"], as_dict=True)
 
@@ -217,6 +216,11 @@ class DripEmail(Document):
 			except Exception:
 				frappe.db.rollback()
 				log_error("Drip Email Error", drip_email=self.name, site=site)
+
+	@frappe.whitelist()
+	def send_test_email(self, site: str, email: str):
+		"""Send test email to the given email address."""
+		self.send_drip_email(site, email)
 
 
 def send_drip_emails():

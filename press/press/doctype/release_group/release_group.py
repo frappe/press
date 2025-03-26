@@ -1397,7 +1397,7 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 				},
 				distinct=True,
 			)
-			server = frappe.get_all(
+			servers = frappe.get_all(
 				"Server",
 				{
 					"status": "Active",
@@ -1407,7 +1407,13 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 				},
 				pluck="name",
 				limit=1,
-			)[0]
+			)
+
+			if not servers:
+				frappe.throw("No servers found for new benches!")
+			else:
+				server = servers[0]
+
 		servers = [{"server": server}]
 	elif server:
 		servers = [{"server": server}]

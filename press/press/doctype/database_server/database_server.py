@@ -965,3 +965,20 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-waits-history": "ON",
 	"performance-schema-consumer-events-waits-history-long": "ON",
 }
+
+
+def monitor_disk_performance():
+	databases = frappe.db.get_all(
+		"Database Server",
+		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0},
+		pluck="name",
+	)
+	frappe.enqueue(
+		"press.press.doctype.disk_performance.disk_performance.check_disk_read_write_latency",
+		servers=databases,
+		server_type="db",
+		deduplicate=True,
+		queue="long",
+		job_id="monitor_disk_performance||database",
+		timeout=3600,
+	)
