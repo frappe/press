@@ -188,6 +188,9 @@ class PressSettings(Document):
 			else:
 				frappe.throw("Email Recipients List can not be empty")
 
+		if self.minimum_rebuild_memory < 2:
+			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
