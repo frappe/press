@@ -11,6 +11,7 @@ import rq.exceptions
 import rq.timeouts
 from frappe import _
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils.make_random import get_random
 
 from press.utils import log_error
@@ -267,6 +268,7 @@ def send_welcome_email():
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def unsubscribe(email: str, account_request: str) -> None:
 	"""
 	Unsubscribe from drip emails of a site.
