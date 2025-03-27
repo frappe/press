@@ -1017,7 +1017,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
-		if self.status in ["Updating", "Pending", "Installing"]:
+		if self.status in ["Updating", "Recovering", "Pending", "Installing"]:
 			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
 		elif self.status == "Archived":
 			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
