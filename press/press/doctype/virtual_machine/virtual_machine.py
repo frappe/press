@@ -774,7 +774,7 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False):
+	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False, rolling_snapshot=False):
 		"""
 		exclude_boot_volume is applicable only for Servers with data volume
 		"""
@@ -785,13 +785,18 @@ class VirtualMachine(Document):
 		# So that, we can get the correct reference of snapshots created in current session
 		self.flags.created_snapshots = []
 		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws(exclude_boot_volume, physical_backup)
+			self._create_snapshots_aws(exclude_boot_volume, physical_backup, rolling_snapshot)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
 
-	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool):
+	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool, rolling_snapshot: bool):
+		temporary_volume_ids = self.get_temporary_volume_ids()
+		instance_specification = {"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume}
+		if temporary_volume_ids:
+			instance_specification["ExcludeDataVolumeIds"] = temporary_volume_ids
+
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume},
+			InstanceSpecification=instance_specification,
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -808,6 +813,7 @@ class VirtualMachine(Document):
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
 						"physical_backup": physical_backup,
+						"rolling_snapshot": rolling_snapshot,
 					}
 				).insert()
 				self.flags.created_snapshots.append(doc.name)
@@ -857,6 +863,22 @@ class VirtualMachine(Document):
 				pass
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
+
+	def get_temporary_volume_ids(self) -> list[str]:
+		tmp_volume_ids = set()
+		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
+
+		def get_volume_id_by_device(device):
+			for volume in self.volumes:
+				if volume.device == device:
+					return volume.volume_id
+			return None
+
+		for device in tmp_volumes_devices:
+			volume_id = get_volume_id_by_device(device)
+			if volume_id:
+				tmp_volume_ids.add(volume_id)
+		return list(tmp_volume_ids)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -1401,7 +1423,12 @@ def snapshot_virtual_machines():
 		# Skip if a snapshot has already been created today
 		if frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"virtual_machine": machine.name, "creation": (">=", frappe.utils.today())},
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
 			limit=1,
 		):
 			continue
@@ -1411,6 +1438,61 @@ def snapshot_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def rolling_snapshot_database_server_virtual_machines():
+	# For now, let's keep it specific to database servers having physical backup enabled
+	virtual_machines = frappe.get_all(
+		"Database Server",
+		filters={
+			"status": "Active",
+			"enable_physical_backup": 1,
+		},
+		pluck="name",
+	)
+
+	# Find out virtual machines with snapshot explicitly skipped
+	ignorable_virtual_machines = set(
+		frappe.get_all("Virtual Machine", {"skip_automated_snapshot": 1}, pluck="name")
+	)
+
+	start_time = time.time()
+	for virtual_machine_name in virtual_machines:
+		if has_job_timeout_exceeded():
+			return
+
+		# Don't spend more than 10 minutes in snapshotting
+		if time.time() - start_time > 900:
+			break
+
+		if virtual_machine_name in ignorable_virtual_machines:
+			continue
+
+		# Skip if a valid snapshot has already existed within last 2 hours
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"status": [
+					"in",
+					["Pending", "Completed"],
+				],
+				"virtual_machine": virtual_machine_name,
+				"physical_backup": 0,
+				"rolling_snapshot": 1,
+				"creation": (">=", frappe.utils.add_to_date(None, hours=-2)),
+			},
+			limit=1,
+		):
+			continue
+
+		try:
+			# Also, if vm has multiple volumes, then exclude boot volume
+			frappe.get_doc("Virtual Machine", virtual_machine_name).create_snapshots(
+				exclude_boot_volume=True, rolling_snapshot=True
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
 
 
 AWS_SERIAL_CONSOLE_ENDPOINT_MAP = {

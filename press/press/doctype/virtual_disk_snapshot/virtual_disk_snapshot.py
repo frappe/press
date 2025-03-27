@@ -8,11 +8,13 @@ import boto3
 import frappe
 import frappe.utils
 import pytz
+import rq
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
 
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class VirtualDiskSnapshot(Document):
@@ -30,6 +32,7 @@ class VirtualDiskSnapshot(Document):
 		physical_backup: DF.Check
 		progress: DF.Data | None
 		region: DF.Link
+		rolling_snapshot: DF.Check
 		size: DF.Int
 		snapshot_id: DF.Data
 		start_time: DF.Datetime | None
@@ -51,7 +54,7 @@ class VirtualDiskSnapshot(Document):
 				"mariadb_root_password"
 			)
 
-	def on_update(self):
+	def on_update(self):  # noqa: C901
 		if self.has_value_changed("status") and self.status == "Unavailable":
 			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
 			if site_backup_name:
@@ -67,12 +70,37 @@ class VirtualDiskSnapshot(Document):
 			)
 			self.save(ignore_version=True)
 
-			# Trigger execution of restoration
-			physical_restore_name = frappe.db.exists(
-				"Physical Backup Restoration", {"disk_snapshot": self.name, "status": "Running"}
-			)
-			if physical_restore_name:
-				frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
+			if self.physical_backup:
+				# Trigger execution of restoration
+				physical_restore_name = frappe.db.exists(
+					"Physical Backup Restoration", {"disk_snapshot": self.name, "status": "Running"}
+				)
+				if physical_restore_name:
+					frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
+
+			if self.rolling_snapshot:
+				# Find older snapshots than current snapshot
+				# If exists, delete that
+				older_snapshots = frappe.db.get_all(
+					self.doctype,
+					{
+						"virtual_machine": self.virtual_machine,
+						"volume_id": self.volume_id,
+						"name": ["!=", self.name],
+						"creation": ["<", self.creation],
+						"status": ["in", ("Pending", "Completed")],
+					},
+					pluck="name",
+				)
+				for older_snapshot_name in older_snapshots:
+					frappe.enqueue_doc(
+						self.doctype,
+						name=older_snapshot_name,
+						method="delete_snapshot",
+						enqueue_after_commit=True,
+						deduplicate=True,
+						job_id=f"virtual_disk_snapshot||delete_snapshot||{older_snapshot_name}",
+					)
 
 	@frappe.whitelist()
 	def sync(self):
@@ -188,33 +216,62 @@ class VirtualDiskSnapshot(Document):
 
 
 def sync_snapshots():
-	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0})
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 0}
+	)
 	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)
 
 
+def sync_rolling_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1}
+	)
+	start_time = time.time()
+	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
+		if time.time() - start_time > 600:
+			break
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
+			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Disk Rolling Snapshot Sync Error", virtual_snapshot=snapshot.name)
+
+
 def sync_physical_backup_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Pending", "physical_backup": 1},
+		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0},
 		order_by="modified asc",
 	)
 	start_time = time.time()
 	for snapshot in snapshots:
+		if has_job_timeout_exceeded():
+			return
 		# if already spent more than 1 minute, then don't do sync anymore
 		# because this function will be executed every minute
 		# we don't want to run two syncs at the same time
 		if time.time() - start_time > 60:
 			break
-
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(
