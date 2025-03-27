@@ -133,6 +133,9 @@ class PhysicalBackupRestoration(Document):
 			if self.physical_restoration_test:
 				trigger_next_restoration(self.physical_restoration_test)
 
+		if self.has_value_changed("volume") and self.volume:
+			self.add_comment(text=f"{self.volume} - Volume Allocated")
+
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
