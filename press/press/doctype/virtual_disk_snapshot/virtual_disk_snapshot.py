@@ -286,6 +286,7 @@ def delete_old_snapshots():
 			"status": "Completed",
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
 			"physical_backup": 0,
+			"rolling_snapshot": 0,
 		},
 		pluck="name",
 		order_by="creation asc",
