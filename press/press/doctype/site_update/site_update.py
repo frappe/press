@@ -837,7 +837,9 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 		if site_enable_step_status == "Success":
 			SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
-		update_status(site_update.name, updated_status)
+		if updated_status != "Delivery Failure":
+			update_status(site_update.name, updated_status)
+
 		if log_touched_tables_step and log_touched_tables_step.status == "Success":
 			frappe.db.set_value(
 				"Site Update", site_update.name, "touched_tables", log_touched_tables_step.data
@@ -847,6 +849,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 		elif updated_status == "Success":
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		elif updated_status == "Delivery Failure":
+			update_status(site_update.name, "Fatal")
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
