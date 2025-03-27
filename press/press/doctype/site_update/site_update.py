@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import frappe
 import frappe.utils
@@ -328,12 +328,14 @@ class SiteUpdate(Document):
 		if site_activity:
 			frappe.db.set_value("Site Activity", site_activity, "job", job.name)
 
-	def activate_site(self):
+	def activate_site(self, backup_failed=False):
 		agent = Agent(self.server)
 		job = agent.activate_site(
 			frappe.get_doc("Site", self.site), reference_doctype="Site Update", reference_name=self.name
 		)
 		frappe.db.set_value("Site Update", self.name, "activate_site_job", job.name)
+		if backup_failed:
+			update_status(self.name, "Failure")
 
 	def deactivate_site(self):
 		agent = Agent(self.server)
@@ -547,7 +549,12 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "status", status)
 
 
-def update_status(name, status):
+def update_status(
+	name: str,
+	status: Literal[
+		"Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal", "Scheduled"
+	],
+):
 	frappe.db.set_value("Site Update", name, "status", status)
 	if status in ("Success", "Failure", "Fatal", "Recovered"):
 		frappe.db.set_value("Site Update", name, "update_end", frappe.utils.now())
@@ -766,8 +773,14 @@ def process_activate_site_job_update(job):
 	if job.reference_doctype != "Site Update":
 		return
 	if job.status == "Success":
-		# Mark the site as active
-		frappe.db.set_value("Site", job.site, "status", "Active")
+		# If `Site Update` successful, then mark site as `Active`
+		if frappe.db.get_value(job.reference_doctype, job.reference_name, "status") == "Success":
+			frappe.db.set_value("Site", job.site, "status", "Active")
+		else:
+			# Set status to `status_before_update`
+			frappe.db.set_value(
+				"Site", job.site, "status", frappe.db.get_value("Site", job.site, "status_before_update")
+			)
 	elif job.status == "Failure":
 		# Mark the site as broken
 		frappe.db.set_value("Site", job.site, "status", "Broken")

@@ -18,6 +18,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
 	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -151,11 +152,11 @@ class SiteBackup(Document):
 				If site backup was trigerred for Site Update,
 				Then, trigger Site Update to proceed with the next steps
 				"""
-				site_update = frappe.get_doc("Site Update", site_update_doc_name)
+				site_update: SiteUpdate = frappe.get_doc("Site Update", site_update_doc_name)
 				if self.status == "Success":
 					site_update.create_update_site_agent_request()
 				elif self.status == "Failure":
-					site_update.activate_site()
+					site_update.activate_site(backup_failed=True)
 
 			frappe.enqueue_doc(
 				self.doctype,
