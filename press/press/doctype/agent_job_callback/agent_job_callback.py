@@ -1,12 +1,11 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
-from __future__ import annotations
 
 # import frappe
 from frappe.model.document import Document
 
 
-class Callback(Document):
+class AgentJobCallback(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -15,9 +14,9 @@ class Callback(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		caller: DF.SmallText | None
-		job_id: DF.Int
-		status: DF.SmallText | None
+		agent_job: DF.Link
+		job_name: DF.Data
+		status: DF.Literal["Success", "Failure"]
 	# end: auto-generated types
 
 	pass

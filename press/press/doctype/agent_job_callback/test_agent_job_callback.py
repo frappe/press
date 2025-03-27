@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestCallback(UnitTestCase):
+class UnitTestAgentJobCallback(UnitTestCase):
 	"""
-	Unit tests for Callback.
+	Unit tests for AgentJobCallback.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestCallback(IntegrationTestCase):
+class IntegrationTestAgentJobCallback(IntegrationTestCase):
 	"""
-	Integration tests for Callback.
+	Integration tests for AgentJobCallback.
 	Use this class for testing interactions between multiple components.
 	"""
 

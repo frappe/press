@@ -66,9 +66,9 @@ def handle_job_updates(server: str, job_id: str):
 
 	callback = frappe.get_doc(
 		{
-			"doctype": "Callback",
-			"caller": job.job_type,
-			"job_id": job.job_id,
+			"doctype": "Agent Job Callback",
+			"job_name": job.job_type,
+			"agent_job": polled_job["agent_job_id"],
 			"status": polled_job["status"],
 		}
 	)
