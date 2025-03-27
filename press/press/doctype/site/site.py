@@ -2704,6 +2704,10 @@ class Site(Document, TagHelpers):
 					"status": ("!=", "Archived"),
 				},
 			)
+			or frappe.db.exists(
+				"Site Domain",
+				f"{subdomain}.{domain}",
+			)
 		)
 
 	@frappe.whitelist()
