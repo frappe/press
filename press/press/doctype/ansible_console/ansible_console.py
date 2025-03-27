@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 
 import frappe
 from ansible import constants, context
@@ -178,8 +177,6 @@ class AnsibleAdHoc:
 		finally:
 			tqm.cleanup()
 			self.loader.cleanup_all_tmp_files()
-
-		shutil.rmtree(constants.DEFAULT_LOCAL_TMP, True)
 
 		self.callback.publish_update()
 		return list(self.callback.hosts.values())
