@@ -10,8 +10,8 @@ from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
 
-from press.press.utils.jobs import has_job_timeout_exceeded
 from press.utils import log_error
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class VirtualDiskSnapshot(Document):
