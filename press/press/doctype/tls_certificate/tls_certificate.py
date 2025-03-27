@@ -44,6 +44,7 @@ class TLSCertificate(Document):
 		intermediate_chain: DF.Code | None
 		issued_on: DF.Datetime | None
 		private_key: DF.Code | None
+		provider: DF.Literal["Let's Encrypt", "Other"]
 		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
@@ -69,6 +70,8 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def obtain_certificate(self):
+		if self.provider != "Let's Encrypt":
+			return
 		if self.retry_count >= RETRY_LIMIT:
 			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
 		(
@@ -94,6 +97,8 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def _obtain_certificate(self):
+		if self.provider != "Let's Encrypt":
+			return
 		try:
 			settings = frappe.get_doc("Press Settings", "Press Settings")
 			ca = LetsEncrypt(settings)
@@ -250,6 +255,7 @@ def renew_tls_certificates():
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
 			"retry_count": ("<", RETRY_LIMIT),
+			"provider": "Let's Encrypt",
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
