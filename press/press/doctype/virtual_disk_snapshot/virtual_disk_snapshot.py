@@ -6,6 +6,7 @@ import boto3
 import frappe
 import frappe.utils
 import pytz
+import rq
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
 from oci.core import BlockstorageClient
@@ -222,6 +223,8 @@ def sync_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)
@@ -237,6 +240,8 @@ def sync_rolling_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Disk Rolling Snapshot Sync Error", virtual_snapshot=snapshot.name)
@@ -255,6 +260,8 @@ def sync_physical_backup_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error(
