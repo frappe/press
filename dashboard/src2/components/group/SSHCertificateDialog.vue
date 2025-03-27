@@ -7,7 +7,7 @@
 		v-model="show"
 	>
 		<template #body-content v-if="$bench.doc">
-			<div v-if="!certificate" class="space-y-4">
+			<div v-if="certificate" class="space-y-4">
 				<div class="space-y-2" v-if="isWindows">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
 					<div class="space-y-2">
