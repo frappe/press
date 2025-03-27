@@ -308,7 +308,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
-			skip_backups=self.skipped_backups,  # In physical backup also take logical backup for failover case
+			skip_backups=self.skipped_backups or self.backup_type == "Physical",
 			before_migrate_scripts=self.get_before_migrate_scripts(),
 			skip_search_index=self.is_destination_above_v12,
 		)
