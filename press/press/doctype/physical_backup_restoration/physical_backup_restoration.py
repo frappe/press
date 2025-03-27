@@ -207,7 +207,7 @@ class PhysicalBackupRestoration(Document):
 
 	def attach_volume_to_instance(self) -> StepStatus:
 		"""Attach volume to instance"""
-		self.device = self.virtual_machine.attach_volume(self.volume)
+		self.device = self.virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
 		return StepStatus.Success
 
 	def create_mount_point(self) -> StepStatus:
