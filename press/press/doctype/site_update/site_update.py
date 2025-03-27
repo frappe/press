@@ -362,7 +362,7 @@ class SiteUpdate(Document):
 			"Site Update",
 			{
 				"site": self.site,
-				"status": ("in", ("Pending", "Running", "Failure", "Scheduled")),
+				"status": ("in", ("Pending", "Running", "Failure", "Scheduled", "Recovering")),
 			},
 		)
 
