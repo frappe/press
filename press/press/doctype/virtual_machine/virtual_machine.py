@@ -774,7 +774,7 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
-	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False):
+	def create_snapshots(self, exclude_boot_volume=False, physical_backup=False, rolling_snapshot=False):
 		"""
 		exclude_boot_volume is applicable only for Servers with data volume
 		"""
@@ -785,11 +785,11 @@ class VirtualMachine(Document):
 		# So that, we can get the correct reference of snapshots created in current session
 		self.flags.created_snapshots = []
 		if self.cloud_provider == "AWS EC2":
-			self._create_snapshots_aws(exclude_boot_volume, physical_backup)
+			self._create_snapshots_aws(exclude_boot_volume, physical_backup, rolling_snapshot)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
 
-	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool):
+	def _create_snapshots_aws(self, exclude_boot_volume: bool, physical_backup: bool, rolling_snapshot: bool):
 		temporary_volume_ids = self.get_temporary_volume_ids()
 		instance_specification = {"InstanceId": self.instance_id, "ExcludeBootVolume": exclude_boot_volume}
 		if temporary_volume_ids:
@@ -813,6 +813,7 @@ class VirtualMachine(Document):
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
 						"physical_backup": physical_backup,
+						"rolling_snapshot": rolling_snapshot,
 					}
 				).insert()
 				self.flags.created_snapshots.append(doc.name)
@@ -1481,7 +1482,9 @@ def rolling_snapshot_database_server_virtual_machines():
 
 		try:
 			# Also, if vm has multiple volumes, then exclude boot volume
-			frappe.get_doc("Virtual Machine", virtual_machine_name).create_snapshots(exclude_boot_volume=True)
+			frappe.get_doc("Virtual Machine", virtual_machine_name).create_snapshots(
+				exclude_boot_volume=True, rolling_snapshot=True
+			)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
