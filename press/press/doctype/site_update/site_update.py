@@ -422,6 +422,7 @@ class SiteUpdate(Document):
 		if site.bench == self.destination_bench:
 			# The site is already on destination bench
 			update_status(self.name, "Recovering")
+			frappe.db.set_value("Site", job.site, "status", "Recovering")
 
 			# If physical backup is enabled, we need to first perform physical backup restoration
 			if self.use_physical_backup and not self.physical_backup_restoration:
@@ -446,16 +447,17 @@ class SiteUpdate(Document):
 				# via site_update.process_physical_backup_restoration_status_update(...) method
 				return
 
-			restore_touched_tables = not self.skipped_backups
 			if not self.skipped_backups and self.physical_backup_restoration:
 				physical_backup_restoration_status = frappe.get_value(
 					"Physical Backup Restoration", self.physical_backup_restoration, "status"
 				)
-				if physical_backup_restoration_status == "Success":
-					restore_touched_tables = False
-				elif physical_backup_restoration_status == "Failure":
-					restore_touched_tables = True
-				else:
+				if physical_backup_restoration_status == "Failure":
+					# mark site update as Fatal
+					update_status(self.name, "Fatal")
+					# mark site as broken
+					frappe.db.set_value("Site", job.site, "status", "Broken")
+					return
+				if physical_backup_restoration_status != "Success":
 					# just to be safe
 					frappe.throw("Physical Backup Restoration is still in progress")
 
@@ -469,7 +471,7 @@ class SiteUpdate(Document):
 				self.deploy_type,
 				activate,
 				rollback_scripts=self.get_before_migrate_scripts(rollback=True),
-				restore_touched_tables=restore_touched_tables,
+				restore_touched_tables=(not self.skipped_backups and self.backup_type == "Logical"),
 			)
 		else:
 			# Site is already on the source bench
@@ -904,7 +906,10 @@ def process_update_site_recover_job_update(job):
 			frappe.db.set_value("Site", job.site, "group", site_update.group)
 
 		update_status(site_update.name, updated_status)
-		if updated_status == "Recovered":
+
+		if updated_status == "Recovering":
+			frappe.db.set_value("Site", job.site, "status", "Recovering")
+		elif updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
