@@ -335,7 +335,7 @@ class SiteUpdate(Document):
 		)
 		frappe.db.set_value("Site Update", self.name, "activate_site_job", job.name)
 		if backup_failed:
-			update_status(self.name, "Failure")
+			update_status(self.name, "Fatal")
 
 	def deactivate_site(self):
 		agent = Agent(self.server)
