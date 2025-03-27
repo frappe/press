@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Subscribe Now',
-			size: '2xl'
+			size: '2xl',
 		}"
 		v-model="showDialog"
 	>
@@ -106,7 +106,7 @@
 									<div
 										class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 										:class="{
-											'bg-gray-100': isAutomatedBilling
+											'bg-gray-100': isAutomatedBilling,
 										}"
 										@click="isAutomatedBilling = true"
 									>
@@ -115,7 +115,7 @@
 									<div
 										class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 										:class="{
-											'bg-gray-100': !isAutomatedBilling
+											'bg-gray-100': !isAutomatedBilling,
 										}"
 										@click="isAutomatedBilling = false"
 									>
@@ -127,8 +127,8 @@
 									<!-- Automated Billing Section -->
 									<div v-if="isAutomatedBilling">
 										<!-- Stripe Card -->
-										<StripeCard2
-											@complete="onAddCardSuccess"
+										<StripeCard
+											@success="onAddCardSuccess"
 											:withoutAddress="true"
 										/>
 									</div>
@@ -253,20 +253,20 @@ export default {
 	name: 'AppTrialSubscriptionDialog',
 	components: {
 		SitePlansCards: defineAsyncComponent(() => import('./SitePlansCards.vue')),
-		StripeCard2: defineAsyncComponent(() =>
-			import('../components/StripeCard.vue')
+		StripeCard: defineAsyncComponent(
+			() => import('../components/billing/CardForm.vue'),
 		),
-		UpdateBillingDetailsForm: defineAsyncComponent(() =>
-			import('./UpdateBillingDetailsForm.vue')
+		UpdateBillingDetailsForm: defineAsyncComponent(
+			() => import('./UpdateBillingDetailsForm.vue'),
 		),
-		CardWithDetails: defineAsyncComponent(() =>
-			import('../../src/components/CardWithDetails.vue')
+		CardWithDetails: defineAsyncComponent(
+			() => import('../../src/components/CardWithDetails.vue'),
 		),
-		BuyPrepaidCreditsForm: defineAsyncComponent(() =>
-			import('./BuyPrepaidCreditsForm.vue')
+		BuyPrepaidCreditsForm: defineAsyncComponent(
+			() => import('./BuyPrepaidCreditsForm.vue'),
 		),
 		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
-		TextInsideCircle
+		TextInsideCircle,
 	},
 	props: ['site', 'currentPlan', 'trialPlan'],
 	data() {
@@ -276,17 +276,17 @@ export default {
 			billingInformation: {
 				cardHolderName: '',
 				country: '',
-				gstin: ''
+				gstin: '',
 			},
 			isAutomatedBilling: true,
-			isChangingPlan: false
+			isChangingPlan: false,
 		};
 	},
 	emits: ['update:modelValue', 'success'],
 	mounted() {
 		if (this.trialPlan && this.currentPlan !== this.trialPlan) {
 			this.selectedPlan = {
-				name: this.trialPlan
+				name: this.trialPlan,
 			};
 		} else {
 			this.selectedPlan = null;
@@ -330,10 +330,10 @@ export default {
 					dn: this.site,
 					method: 'set_plan',
 					args: {
-						plan: plan_name
-					}
+						plan: plan_name,
+					},
 				},
-				onSuccess: res => {
+				onSuccess: (res) => {
 					this.isChangingPlan = false;
 					this.$team.reload();
 					this.$emit('success');
@@ -342,10 +342,10 @@ export default {
 					this.isChangingPlan = false;
 					toast.error('Failed to change the plan. Please try again later.');
 					this.showDialog = false;
-				}
+				},
 			});
 			request.submit();
-		}
+		},
 	},
 	computed: {
 		isBillingDetailsSet() {
@@ -360,8 +360,8 @@ export default {
 			},
 			set(value) {
 				this.$emit('update:modelValue', value);
-			}
-		}
-	}
+			},
+		},
+	},
 };
 </script>
