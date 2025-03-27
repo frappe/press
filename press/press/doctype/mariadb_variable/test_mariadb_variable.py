@@ -16,8 +16,8 @@ class TestMariaDBVariable(FrappeTestCase):
 	def test_set_on_all_servers_sets_on_all_servers(self):
 		db_1 = create_test_database_server()
 		db_2 = create_test_database_server()
-		db_1.add_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
-		db_1.add_mariadb_variable("innodb_old_blocks_time", "value_str", "1000")
+		db_1.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
+		db_1.add_or_update_mariadb_variable("innodb_old_blocks_time", "value_str", "1000")
 
 		variable = frappe.get_doc("MariaDB Variable", "tmp_disk_table_size")  # in fixture
 		variable.default_value = "5120"
@@ -42,9 +42,9 @@ class TestMariaDBVariable(FrappeTestCase):
 	def test_set_on_server_sets_on_one_server(self):
 		db_1 = create_test_database_server()
 		db_2 = create_test_database_server()
-		db_2.add_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
-		db_1.add_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
-		db_1.add_mariadb_variable("innodb_old_blocks_time", "value_str", "1000")
+		db_2.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
+		db_1.add_or_update_mariadb_variable("tmp_disk_table_size", "value_int", 1024)
+		db_1.add_or_update_mariadb_variable("innodb_old_blocks_time", "value_str", "1000")
 
 		variable = frappe.get_doc("MariaDB Variable", "tmp_disk_table_size")
 		variable.default_value = "5120"

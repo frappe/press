@@ -76,6 +76,7 @@ export default {
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
 			'trial_end_date',
+			'creation',
 		],
 		orderBy: 'creation desc',
 		searchField: 'host_name',
@@ -213,6 +214,7 @@ export default {
 							'cluster_title',
 							'group_title',
 							'version',
+							'creation',
 						];
 
 						const data = sites.data.map((site) => {

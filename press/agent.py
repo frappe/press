@@ -10,6 +10,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
@@ -1321,6 +1322,19 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
 			data={
 				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def fetch_database_variables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+		return self.post(
+			"database/variables",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
 			},
 		)
 
