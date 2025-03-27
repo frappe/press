@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import time
+
 import boto3
 import frappe
 import frappe.utils
@@ -234,9 +236,12 @@ def sync_rolling_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot", {"status": "Pending", "physical_backup": 0, "rolling_snapshot": 1}
 	)
+	start_time = time.time()
 	for snapshot in snapshots:
 		if has_job_timeout_exceeded():
 			return
+		if time.time() - start_time > 600:
+			break
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()
@@ -253,10 +258,15 @@ def sync_physical_backup_snapshots():
 		{"status": "Pending", "physical_backup": 1, "rolling_snapshot": 0},
 		order_by="modified asc",
 	)
+	start_time = time.time()
 	for snapshot in snapshots:
 		if has_job_timeout_exceeded():
 			return
-
+		# if already spent more than 1 minute, then don't do sync anymore
+		# because this function will be executed every minute
+		# we don't want to run two syncs at the same time
+		if time.time() - start_time > 60:
+			break
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
 			frappe.db.commit()

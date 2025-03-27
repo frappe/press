@@ -1456,9 +1456,14 @@ def rolling_snapshot_database_server_virtual_machines():
 		frappe.get_all("Virtual Machine", {"skip_automated_snapshot": 1}, pluck="name")
 	)
 
+	start_time = time.time()
 	for virtual_machine_name in virtual_machines:
 		if has_job_timeout_exceeded():
 			return
+
+		# Don't spend more than 10 minutes in snapshotting
+		if time.time() - start_time > 900:
+			break
 
 		if virtual_machine_name in ignorable_virtual_machines:
 			continue
