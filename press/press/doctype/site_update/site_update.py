@@ -775,12 +775,10 @@ def process_activate_site_job_update(job):
 	if job.status == "Success":
 		# If `Site Update` successful, then mark site as `Active`
 		if frappe.db.get_value(job.reference_doctype, job.reference_name, "status") == "Success":
-			frappe.db.set_value("Site", job.site, "status", "Active")
+			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			# Set status to `status_before_update`
-			frappe.db.set_value(
-				"Site", job.site, "status", frappe.db.get_value("Site", job.site, "status_before_update")
-			)
+			frappe.get_doc("Site", job.site).reset_previous_status()
 	elif job.status == "Failure":
 		# Mark the site as broken
 		frappe.db.set_value("Site", job.site, "status", "Broken")
@@ -806,7 +804,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "destination_bench", "destination_group"],
+		fields=["name", "status", "destination_bench", "destination_group", "backup_type"],
 		filters={"update_job": job.name},
 	)
 
@@ -850,7 +848,10 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		elif updated_status == "Delivery Failure":
 			update_status(site_update.name, "Fatal")
-			frappe.get_doc("Site", job.site).reset_previous_status()
+			if site_update.backup_type == "Physical":
+				frappe.get_doc("Site Update", site_update.name).activate_site()
+			else:
+				frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value(
