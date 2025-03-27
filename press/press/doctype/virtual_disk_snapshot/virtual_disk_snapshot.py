@@ -85,6 +85,7 @@ class VirtualDiskSnapshot(Document):
 						"volume_id": self.volume_id,
 						"name": ["!=", self.name],
 						"creation": ["<", self.creation],
+						"status": ["in", ("Pending", "Completed")],
 					},
 					pluck="name",
 				)
