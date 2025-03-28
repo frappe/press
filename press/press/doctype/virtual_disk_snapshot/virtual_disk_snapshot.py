@@ -89,6 +89,7 @@ class VirtualDiskSnapshot(Document):
 						"name": ["!=", self.name],
 						"creation": ["<", self.creation],
 						"status": ["in", ("Pending", "Completed")],
+						"physical_backup": 0,
 						"rolling_snapshot": 1,
 					},
 					pluck="name",
