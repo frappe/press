@@ -79,7 +79,7 @@ class VirtualDiskSnapshot(Document):
 					frappe.get_doc("Physical Backup Restoration", physical_restore_name).next()
 
 			if self.rolling_snapshot:
-				# Find older snapshots than current snapshot
+				# Find older rolling snapshots than current snapshot
 				# If exists, delete that
 				older_snapshots = frappe.db.get_all(
 					self.doctype,
@@ -89,6 +89,7 @@ class VirtualDiskSnapshot(Document):
 						"name": ["!=", self.name],
 						"creation": ["<", self.creation],
 						"status": ["in", ("Pending", "Completed")],
+						"rolling_snapshot": 1,
 					},
 					pluck="name",
 				)
