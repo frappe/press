@@ -16,6 +16,7 @@ from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils import cint
+from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
@@ -855,14 +856,14 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_increase_swap",
+			"increase_swap_locked",
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
 		)
 
 	def _increase_swap(self, swap_size=4):
-		"""Increase swap by size defined in playbook"""
+		"""Increase swap by size defined"""
 		from press.api.server import calculate_swap
 
 		existing_swap_size = calculate_swap(self.name).get("swap", 0)
@@ -881,19 +882,27 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Increase swap exception", doc=self)
 
+	def increase_swap_locked(self, swap_size=4):
+		with filelock(f"{self.name}-swap-update"):
+			self._increase_swap(swap_size)
+
 	@frappe.whitelist()
 	def reset_swap(self, swap_size=1):
 		"""
-		swap_size: size of swap to be created (in addition to swap.default of 1024)
+		Replace existing swap files with new swap file of given size
 		"""
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_reset_swap",
+			"reset_swap_locked",
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
 		)
+
+	def reset_swap_locked(self, swap_size=1):
+		with filelock(f"{self.name}-swap-update"):
+			self._reset_swap(swap_size)
 
 	def _reset_swap(self, swap_size=1):
 		"""Reset swap by removing existing swap files and creating new swap"""
