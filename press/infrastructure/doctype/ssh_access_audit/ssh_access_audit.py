@@ -279,7 +279,6 @@ class AnsibleAdHoc:
 			tqm.run(self.play)
 		finally:
 			tqm.cleanup()
-			self.loader.cleanup_all_tmp_files()
 
 		return list(self.callback.hosts.values())
 
