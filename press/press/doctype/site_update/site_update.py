@@ -422,7 +422,7 @@ class SiteUpdate(Document):
 		if site.bench == self.destination_bench:
 			# The site is already on destination bench
 			update_status(self.name, "Recovering")
-			frappe.db.set_value("Site", job.site, "status", "Recovering")
+			frappe.db.set_value("Site", self.site, "status", "Recovering")
 
 			# If physical backup is enabled, we need to first perform physical backup restoration
 			if self.use_physical_backup and not self.physical_backup_restoration:
