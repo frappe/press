@@ -252,7 +252,12 @@ class ReleaseGroup(Document, TagHelpers):
 				"App Source", filters={"repository_url": ("in", missing_urls)}, pluck="name"
 			)
 			frappe.throw(
-				f"Please add the following sources <br> <strong>{'<br>'.join(missing_app_source)}<strong>"
+				f"""
+				Please add the following sources <br>
+				<strong>
+				{"<br>".join(missing_app_source) or "<br>".join(missing_urls)}
+				</strong>
+				"""
 			)
 
 	def before_insert(self):
