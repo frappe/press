@@ -4,7 +4,7 @@
 			<p class="text-sm mb-5 text-gray-700" v-if="message">
 				{{ message }}
 			</p>
-			<StripeCard @success="show = false" />
+			<CardForm @success="show = false" />
 		</template>
 	</Dialog>
 </template>
@@ -15,7 +15,7 @@ export default {
 	props: ['modelValue', 'message'],
 	emits: ['update:modelValue'],
 	components: {
-		StripeCard: CardForm,
+		CardForm,
 	},
 	data() {
 		return {
