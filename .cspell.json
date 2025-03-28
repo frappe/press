@@ -505,6 +505,7 @@
 		"DONTNEED",
 		"iour",
 		"FWUP",
-		"prm"
+		"prm",
+		"mbps"
 	]
 }

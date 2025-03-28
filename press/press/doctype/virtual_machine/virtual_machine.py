@@ -1360,7 +1360,12 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-	def attach_volume(self, volume_id) -> str:
+	def attach_volume(self, volume_id, is_temporary_volume: bool = False) -> str:
+		"""
+		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
+
+		Then, snapshot and other stuff will be ignored for this volume.
+		"""
 		if self.cloud_provider != "AWS EC2":
 			raise NotImplementedError
 		# Attach a volume to the instance and return the device name
@@ -1370,8 +1375,9 @@ class VirtualMachine(Document):
 			InstanceId=self.instance_id,
 			VolumeId=volume_id,
 		)
-		# add the volume to the list of temporary volumes
-		self.append("temporary_volumes", {"device": device_name})
+		if is_temporary_volume:
+			# add the volume to the list of temporary volumes
+			self.append("temporary_volumes", {"device": device_name})
 		self.save()
 		# sync
 		self.sync()

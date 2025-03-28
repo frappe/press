@@ -23,7 +23,7 @@ class PartnerCertificate(Document):
 		issue_date: DF.Date | None
 		partner_member_email: DF.Data | None
 		partner_member_name: DF.Data | None
-		partner_team: DF.Link | None
+		team: DF.Link | None
 		template: DF.Data | None
 		version: DF.Data | None
 	# end: auto-generated types

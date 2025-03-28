@@ -861,16 +861,6 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
-	def add_glass_file(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
-
-	def _add_glass_file(self):
-		try:
-			ansible = Ansible(playbook="glass_file.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Add Glass File Exception", doc=self)
-
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
@@ -890,6 +880,52 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Increase swap exception", doc=self)
+
+	@frappe.whitelist()
+	def reset_swap(self, swap_size=1):
+		"""
+		swap_size: size of swap to be created (in addition to swap.default of 1024)
+		"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_reset_swap",
+			queue="long",
+			timeout=1200,
+			**{"swap_size": swap_size},
+		)
+
+	def _reset_swap(self, swap_size=1):
+		"""Reset swap by removing existing swap files and creating new swap"""
+		from press.api.server import calculate_swap
+
+		existing_swap_size = calculate_swap(self.name).get("swap", 0)
+		# list of swap files to remove assuming minimum swap size of 1 GB to be safe. Wrong names are handled in playbook
+		swap_files_to_remove = ["swap.default", "swap"]
+		swap_files_to_remove += ["swap" + str(i) for i in range(1, int(existing_swap_size))]
+		try:
+			ansible = Ansible(
+				playbook="reset_swap.yml",
+				server=self,
+				variables={
+					"swap_size": swap_size,
+					"swap_file": "swap",
+					"swap_files_to_remove": swap_files_to_remove,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Reset swap exception", doc=self)
+
+	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", doc=self)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):

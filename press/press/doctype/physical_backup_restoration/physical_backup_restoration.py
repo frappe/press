@@ -133,6 +133,9 @@ class PhysicalBackupRestoration(Document):
 			if self.physical_restoration_test:
 				trigger_next_restoration(self.physical_restoration_test)
 
+		if self.has_value_changed("volume") and self.volume:
+			self.add_comment(text=f"{self.volume} - Volume Allocated")
+
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
@@ -191,7 +194,7 @@ class PhysicalBackupRestoration(Document):
 		"""Create volume from snapshot"""
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.disk_snapshot)
 		self.volume = snapshot.create_volume(
-			availability_zone=self.virtual_machine.availability_zone, throughput=600, iops=3000
+			availability_zone=self.virtual_machine.availability_zone, throughput=300, iops=3000
 		)
 		return StepStatus.Success
 
@@ -207,7 +210,7 @@ class PhysicalBackupRestoration(Document):
 
 	def attach_volume_to_instance(self) -> StepStatus:
 		"""Attach volume to instance"""
-		self.device = self.virtual_machine.attach_volume(self.volume)
+		self.device = self.virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
 		return StepStatus.Success
 
 	def create_mount_point(self) -> StepStatus:

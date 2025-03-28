@@ -167,7 +167,15 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
+			"Pending",
+			"Installing",
+			"Updating",
+			"Recovering",
+			"Active",
+			"Inactive",
+			"Broken",
+			"Archived",
+			"Suspended",
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -1017,7 +1025,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
-		if self.status in ["Updating", "Pending", "Installing"]:
+		if self.status in ["Updating", "Recovering", "Pending", "Installing"]:
 			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
 		elif self.status == "Archived":
 			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
