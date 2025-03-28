@@ -167,7 +167,15 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
+			"Pending",
+			"Installing",
+			"Updating",
+			"Recovering",
+			"Active",
+			"Inactive",
+			"Broken",
+			"Archived",
+			"Suspended",
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
