@@ -12,11 +12,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.api.site import check_dns
 from press.exceptions import (
-	AAAARecordExists,
-	ConflictingCAARecord,
-	ConflictingDNSRecord,
-	MultipleARecords,
-	MultipleCNAMERecords,
+	DNSValidationError,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
@@ -239,7 +235,7 @@ def process_add_domain_to_upstream_job_update(job):
 		)
 
 
-def update_dns_type():  # noqa: C901
+def update_dns_type():
 	Domain = frappe.qb.DocType("Site Domain")
 	Certificate = frappe.qb.DocType("TLS Certificate")
 	query = (
@@ -279,15 +275,7 @@ def update_dns_type():  # noqa: C901
 				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
 			)
 			frappe.db.commit()
-		except AAAARecordExists:
-			pass
-		except ConflictingCAARecord:
-			pass
-		except ConflictingDNSRecord:
-			pass
-		except MultipleARecords:
-			pass
-		except MultipleCNAMERecords:
+		except DNSValidationError:
 			pass
 		except rq.timeouts.JobTimeoutException:
 			return
