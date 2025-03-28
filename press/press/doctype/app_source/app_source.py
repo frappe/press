@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ from frappe.model.naming import make_autoname
 from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
+
+REQUIRED_APPS_PATTERN = re.compile(r"required_apps = \[(.*?)\]")
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -29,6 +32,7 @@ class AppSource(Document):
 		from frappe.types import DF
 
 		from press.press.doctype.app_source_version.app_source_version import AppSourceVersion
+		from press.press.doctype.required_apps.required_apps import RequiredApps
 
 		app: DF.Link
 		app_title: DF.Data
@@ -43,12 +47,41 @@ class AppSource(Document):
 		repository: DF.Data | None
 		repository_owner: DF.Data | None
 		repository_url: DF.Data
+		required_apps: DF.Table[RequiredApps]
 		team: DF.Link
 		uninstalled: DF.Check
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
 
 	dashboard_fields = ("repository_owner", "repository", "branch")
+
+	def set_required_apps(self, match: str):
+		# In the format frappe/erpnext
+		apps = match.replace("'", "").replace('"', "").replace(" ", "").split(",")
+
+		for app in apps:
+			try:
+				owner, repo = app.split("/")
+			except ValueError:
+				owner = "frappe"
+
+			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
+
+	def validate_dependant_apps(self):
+		raw_content_url = (
+			f"https://raw.githubusercontent.com/{self.repository_owner}/"
+			f"{self.app}/{self.branch}/{self.app}/hooks.py"
+		)
+		response = requests.get(raw_content_url)
+
+		if not response.ok:
+			return
+
+		required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
+		if required_apps:
+			required_apps = required_apps[0]
+
+		self.set_required_apps(match=required_apps)
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
@@ -98,6 +131,7 @@ class AppSource(Document):
 		self.repository_url = self.repository_url.removesuffix(".git")
 
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
+		self.validate_dependant_apps()
 		# self.create_release()
 
 	@frappe.whitelist()
@@ -258,6 +292,7 @@ def create_app_source(app: str, repository_url: str, branch: str, versions: list
 			"branch": branch,
 			"team": team,
 			"versions": [{"version": version} for version in versions],
+			"required_apps": None,
 		}
 	)
 

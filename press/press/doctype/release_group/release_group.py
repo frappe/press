@@ -225,12 +225,33 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
+		self.validate_dependant_apps()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+
+	def check_existing_sources(self, required_app_urls: list):
+		for url in required_app_urls:
+			# This exists but isn't in the self.apps list!
+			for app in self.apps:
+				if app.source:
+					frappe.db.get_value("App Source", {"name": app.source}, fieldname=["repository_url"])
+
+			frappe.throw(f"Please add an app source with repo url {url}", frappe.ValidationError)
+
+	def validate_dependant_apps(self):
+		for app in self.apps:
+			app_source_data = frappe.get_value(
+				"App Source",
+				filters={"name": app.source},
+				fieldname=["required_apps"],
+			)
+			if app_source_data:
+				required_app_urls = json.loads(app_source_data)["apps"]
+				self.check_existing_sources(required_app_urls)
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
