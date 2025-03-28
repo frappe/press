@@ -233,25 +233,27 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
 
-	def check_existing_sources(self, required_app_urls: list):
-		for url in required_app_urls:
-			# This exists but isn't in the self.apps list!
-			for app in self.apps:
-				if app.source:
-					frappe.db.get_value("App Source", {"name": app.source}, fieldname=["repository_url"])
-
-			frappe.throw(f"Please add an app source with repo url {url}", frappe.ValidationError)
-
 	def validate_dependant_apps(self):
+		required_repository_urls = set()
+		existing_repository_urls = set()
+
 		for app in self.apps:
-			app_source_data = frappe.get_value(
-				"App Source",
-				filters={"name": app.source},
-				fieldname=["required_apps"],
+			app_source: AppSource = frappe.get_doc("App Source", app.source)
+			existing_repository_urls.add(
+				frappe.get_value("App Source", filters={"name": app.source}, fieldname=["repository_url"])
 			)
-			if app_source_data:
-				required_app_urls = json.loads(app_source_data)["apps"]
-				self.check_existing_sources(required_app_urls)
+
+			for required_app in app_source.required_apps:
+				required_repository_urls.add(required_app.repository_url)
+
+		missing_urls = required_repository_urls - existing_repository_urls
+		if missing_urls:
+			missing_app_source = frappe.db.get_values(
+				"App Source", filters={"repository_url": ("in", missing_urls)}, pluck="name"
+			)
+			frappe.throw(
+				f"Please add the following sources <br> <strong>{'<br>'.join(missing_app_source)}<strong>"
+			)
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
@@ -1186,9 +1188,14 @@ class ReleaseGroup(Document, TagHelpers):
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
 			)
-
+			required_apps = frappe.get_all(
+				"Required Apps",
+				filters={"parent": current_app_source.name},
+				fields=["repository_url"],
+				pluck="repository_url",
+			)
 			required_app_source = create_app_source(
-				app, current_app_source.repository_url, to_branch, versions
+				app, current_app_source.repository_url, to_branch, versions, required_apps
 			)
 			required_app_source.reload()
 			required_app_source.github_installation_id = current_app_source.github_installation_id

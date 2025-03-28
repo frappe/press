@@ -280,7 +280,9 @@ class AppSource(Document):
 		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
 
 
-def create_app_source(app: str, repository_url: str, branch: str, versions: list[str]) -> AppSource:
+def create_app_source(
+	app: str, repository_url: str, branch: str, versions: list[str], required_apps: list[str]
+) -> AppSource:
 	team = get_current_team()
 
 	app_source = frappe.get_doc(
@@ -291,7 +293,7 @@ def create_app_source(app: str, repository_url: str, branch: str, versions: list
 			"branch": branch,
 			"team": team,
 			"versions": [{"version": version} for version in versions],
-			"required_apps": None,
+			"required_apps": [{"repository_url": required_app} for required_app in required_apps],
 		}
 	)
 
