@@ -18,6 +18,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
 	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -151,31 +152,41 @@ class SiteBackup(Document):
 				If site backup was trigerred for Site Update,
 				Then, trigger Site Update to proceed with the next steps
 				"""
-				site_update = frappe.get_doc("Site Update", site_update_doc_name)
+				site_update: SiteUpdate = frappe.get_doc("Site Update", site_update_doc_name)
 				if self.status == "Success":
 					site_update.create_update_site_agent_request()
 				elif self.status == "Failure":
-					site_update.activate_site()
+					site_update.activate_site(backup_failed=True)
 
-			"""
-			Rollback the permission changes made to the database directory
-			Change it back to 770 from 700
-
-			Check `_create_physical_backup` method for more information
-			"""
-			success = self.run_ansible_command_in_database_server(
-				f"chmod 700 /var/lib/mysql/{self.database_name}"
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				method="_rollback_db_directory_permissions",
+				enqueue_after_commit=True,
 			)
-			if not success:
-				"""
-				Don't throw an error here, Because the backup is already created
-				And keeping the permission as 770 will not cause issue in database operations
-				"""
-				frappe.log_error(
-					"Failed to rollback the permission changes of the database directory",
-					reference_doctype=self.doctype,
-					reference_name=self.name,
-				)
+
+	def _rollback_db_directory_permissions(self):
+		if not self.physical:
+			return
+		"""
+		Rollback the permission changes made to the database directory
+		Change it back to 770 from 700
+
+		Check `_create_physical_backup` method for more information
+		"""
+		success = self.run_ansible_command_in_database_server(
+			f"chmod 700 /var/lib/mysql/{self.database_name}"
+		)
+		if not success:
+			"""
+			Don't throw an error here, Because the backup is already created
+			And keeping the permission as 770 will not cause issue in database operations
+			"""
+			frappe.log_error(
+				"Failed to rollback the permission changes of the database directory",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
 
 	def _create_physical_backup(self):
 		site = frappe.get_doc("Site", self.site)
