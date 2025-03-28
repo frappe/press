@@ -20,7 +20,7 @@ from press.press.doctype.tls_certificate.tls_certificate import (
 
 @patch.object(TLSCertificate, "obtain_certificate", new=Mock())
 def create_test_tls_certificate(
-	domain: str, wildcard: bool = False, provider: Literal["Let's Encrypt", "Others"] = "Let's Encrypt"
+	domain: str, wildcard: bool = False, provider: Literal["Let's Encrypt", "Other"] = "Let's Encrypt"
 ) -> TLSCertificate:
 	certificate = frappe.get_doc(
 		{
