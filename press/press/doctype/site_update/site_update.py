@@ -455,7 +455,7 @@ class SiteUpdate(Document):
 					# mark site update as Fatal
 					update_status(self.name, "Fatal")
 					# mark site as broken
-					frappe.db.set_value("Site", job.site, "status", "Broken")
+					frappe.db.set_value("Site", self.site, "status", "Broken")
 					return
 				if physical_backup_restoration_status != "Success":
 					# just to be safe
@@ -772,7 +772,7 @@ def process_physical_backup_restoration_status_update(name: str):
 			site_update.trigger_recovery_job()
 
 
-def process_activate_site_job_update(job):
+def process_activate_site_job_update(job: AgentJob):
 	if job.reference_doctype != "Site Update":
 		return
 	if job.status == "Success":
@@ -883,7 +883,7 @@ def process_update_site_job_update(job: AgentJob):  # noqa: C901
 				SiteUpdate("Site Update", site_update.name).reallocate_workers()
 
 
-def process_update_site_recover_job_update(job):
+def process_update_site_recover_job_update(job: AgentJob):
 	updated_status = {
 		"Pending": "Recovering",
 		"Running": "Recovering",
