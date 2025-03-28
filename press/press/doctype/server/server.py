@@ -882,7 +882,7 @@ class BaseServer(Document, TagHelpers):
 			log_error("Increase swap exception", doc=self)
 
 	@frappe.whitelist()
-	def reset_swap(self, swap_size=0):
+	def reset_swap(self, swap_size=1):
 		"""
 		swap_size: size of swap to be created (in addition to swap.default of 1024)
 		"""
