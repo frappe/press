@@ -80,8 +80,7 @@ class AppSource(Document):
 		required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
 		if required_apps:
 			required_apps = required_apps[0]
-
-		self.set_required_apps(match=required_apps)
+			self.set_required_apps(match=required_apps)
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
