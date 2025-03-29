@@ -88,6 +88,7 @@ class MockTwilioClient:
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+@patch("tenacity.nap.time", new=Mock())  # no sleep
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		self.from_ = "+911234567892"
@@ -122,7 +123,6 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList,
 		"create",
@@ -149,7 +149,6 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_incident_calls_only_one_person_if_first_person_picks_up(self, mock_calls_create: Mock):
 		frappe.get_doc(
@@ -160,7 +159,6 @@ class TestIncident(FrappeTestCase):
 		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
@@ -174,7 +172,6 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(len(incident.updates), 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
 	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
 		frappe.get_doc(
@@ -211,7 +208,6 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	def test_call_event_creates_acknowledgement_update(self):
 		with patch.object(MockTwilioCallList, "create", new=MockTwilioCallList("completed").create):
 			incident = frappe.get_doc(
@@ -235,7 +231,6 @@ class TestIncident(FrappeTestCase):
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
 
-	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create)
 	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(self, mock_calls_create):
 		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 0)
