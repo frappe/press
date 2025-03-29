@@ -225,12 +225,40 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
+		self.validate_dependant_apps()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+
+	def validate_dependant_apps(self):
+		required_repository_urls = set()
+		existing_repository_urls = set()
+
+		for app in self.apps:
+			app_source: AppSource = frappe.get_doc("App Source", app.source)
+			existing_repository_urls.add(
+				frappe.get_value("App Source", filters={"name": app.source}, fieldname=["repository_url"])
+			)
+
+			for required_app in app_source.required_apps:
+				required_repository_urls.add(required_app.repository_url)
+
+		missing_urls = required_repository_urls - existing_repository_urls
+		if missing_urls:
+			missing_app_source = frappe.db.get_values(
+				"App Source", filters={"repository_url": ("in", missing_urls)}, pluck="name"
+			)
+			frappe.throw(
+				f"""
+				Please add the following sources <br>
+				<strong>
+				{"<br>".join(missing_app_source) or "<br>".join(missing_urls)}
+				</strong>
+				"""
+			)
 
 	def before_insert(self):
 		# to avoid adding deps while cloning a release group
@@ -1165,9 +1193,14 @@ class ReleaseGroup(Document, TagHelpers):
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
 			)
-
+			required_apps = frappe.get_all(
+				"Required Apps",
+				filters={"parent": current_app_source.name},
+				fields=["repository_url"],
+				pluck="repository_url",
+			)
 			required_app_source = create_app_source(
-				app, current_app_source.repository_url, to_branch, versions
+				app, current_app_source.repository_url, to_branch, versions, required_apps
 			)
 			required_app_source.reload()
 			required_app_source.github_installation_id = current_app_source.github_installation_id

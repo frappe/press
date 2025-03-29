@@ -22,6 +22,8 @@
   "github_installation_id",
   "uninstalled",
   "section_break_12",
+  "required_apps",
+  "section_break_8n2m",
   "versions",
   "github_section",
   "last_github_poll_failed",
@@ -161,6 +163,17 @@
    "fieldtype": "Check",
    "label": "Uninstalled",
    "read_only": 1
+  },
+  {
+   "fieldname": "required_apps",
+   "fieldtype": "Table",
+   "label": "Required Apps",
+   "options": "Required Apps",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8n2m",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -170,7 +183,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-04-05 10:12:54.374115",
+ "modified": "2025-03-28 13:03:14.221027",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",
@@ -201,6 +214,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
