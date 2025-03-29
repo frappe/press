@@ -185,9 +185,9 @@
 							<!-- Automated Billing Section -->
 							<div v-if="isAutomatedBilling">
 								<!-- Stripe Card -->
-								<StripeCard2
-									@complete="onAddCardSuccess"
-									:withoutAddress="true"
+								<CardForm
+									@success="onAddCardSuccess"
+									:disableAddressForm="true"
 								/>
 							</div>
 							<!-- Purchase Prepaid Credit -->
@@ -244,9 +244,6 @@ export default {
 	name: 'Onboarding',
 	emits: ['payment-mode-added'],
 	components: {
-		StripeCard2: defineAsyncComponent(
-			() => import('../components/StripeCard.vue'),
-		),
 		UpdateBillingDetailsForm: defineAsyncComponent(
 			() => import('./UpdateBillingDetailsForm.vue'),
 		),
@@ -261,6 +258,9 @@ export default {
 		),
 		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
 		TextInsideCircle,
+		CardForm: defineAsyncComponent(
+			() => import('../components/billing/CardForm.vue'),
+		),
 	},
 	data() {
 		return {
