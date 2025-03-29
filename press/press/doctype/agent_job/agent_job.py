@@ -462,7 +462,7 @@ def handle_polled_jobs(polled_jobs, pending_jobs):
 	for polled_job in polled_jobs:
 		if not polled_job:
 			continue
-		handle_polled_job(pending_jobs, polled_job)
+		handle_polled_job(pending_jobs=pending_jobs, polled_job=polled_job)
 
 
 def add_timer_data_to_monitor(server):
@@ -511,8 +511,8 @@ def poll_pending_jobs_server(server):
 	add_timer_data_to_monitor(server.server)
 
 
-def handle_polled_job(pending_jobs, polled_job):
-	job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
+def handle_polled_job(polled_job, pending_jobs=None, job=None):
+	job = job or find(pending_jobs, lambda x: x.job_id == polled_job["id"])
 	try:
 		# Update Job Status
 		# If it is worthy of an update

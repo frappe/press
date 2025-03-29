@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "creation": "2025-03-27 09:16:28.629290",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_name",
+  "status",
+  "agent_job"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Success\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Agent Job",
+   "options": "Agent Job",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-27 09:22:13.862830",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Job Callback",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "job_name"
+}
