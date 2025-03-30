@@ -68,12 +68,15 @@ class AppSource(Document):
 			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
 
 	def validate_dependant_apps(self):
+		hooks_uri = f"{self.repository_owner}/{self.app}/{self.branch}/{self.app}/hooks.py"
 		raw_content_url = (
-			f"https://raw.githubusercontent.com/{self.repository_owner}/"
-			f"{self.app}/{self.branch}/{self.app}/hooks.py"
+			f"https://{get_access_token(self.github_installation_id)}@raw.githubusercontent.com/"
+			if self.github_installation_id
+			else "https://raw.githubusercontent.com/"
 		)
-		response = requests.get(raw_content_url)
+		uri = raw_content_url + hooks_uri
 
+		response = requests.get(uri)
 		if not response.ok:
 			return
 
