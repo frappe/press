@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import os
 from functools import partial
 
 import frappe
@@ -109,6 +110,10 @@ def cleanup_ansible_tmp_files():
 	import time
 
 	if not hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		return
+
+	if os.environ.get("FRAPPE_BACKGROUND_WORKERS_NOFORK"):
+		# Long running processes, don't cleanup
 		return
 
 	threshold = time.time() - 60 * 60  # >One hour old
