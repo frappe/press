@@ -1,7 +1,7 @@
 - name: Disable Swap
   command: swapoff -av
-  async: 600
-  poll: 5
+  async: 1200
+  poll: 30
 
 - name: Remove Swap from fstab
   mount:
