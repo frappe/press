@@ -265,7 +265,7 @@ class BaseServer(Document, TagHelpers):
 		for group_name in groups:
 			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
 			with suppress(frappe.ValidationError):
-				group.add_server(self.name, deploy=True)
+				group.add_server(str(self.name), deploy=True)
 
 	@frappe.whitelist()
 	def enable_server_for_new_benches_and_site(self):
@@ -295,7 +295,7 @@ class BaseServer(Document, TagHelpers):
 				"public": True,
 				"cluster": self.cluster,
 			},
-			pluck="name",
+			pluck=True,
 		)
 
 	@frappe.whitelist()
