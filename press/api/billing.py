@@ -246,7 +246,7 @@ def get_customer_details(team):
 
 
 @frappe.whitelist()
-def create_payment_intent_for_micro_debit(payment_method_name):
+def create_payment_intent_for_micro_debit():
 	team = get_current_team(True)
 	stripe = get_stripe()
 
@@ -262,7 +262,6 @@ def create_payment_intent_for_micro_debit(payment_method_name):
 		description="Micro-Debit Card Test Charge",
 		metadata={
 			"payment_for": "micro_debit_test_charge",
-			"payment_method_name": payment_method_name,
 		},
 	)
 	return {"client_secret": intent["client_secret"]}
@@ -574,6 +573,7 @@ def setup_intent_success(setup_intent, address=None):
 		setup_intent.mandate,
 		mandate_reference,
 		set_default=True,
+		verified_with_micro_charge=True,
 	)
 	if address:
 		address = frappe._dict(address)
