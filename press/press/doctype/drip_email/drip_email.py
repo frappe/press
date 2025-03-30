@@ -80,7 +80,7 @@ class DripEmail(Document):
 				site=site,
 				account_request=account_request,
 			),
-			recipient=account_request.email,
+			recipient=email or account_request.email,
 		)
 
 	def send_mail(self, context, recipient):
