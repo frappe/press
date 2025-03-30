@@ -46,10 +46,12 @@
    "set_only_once": 1
   },
   {
+   "description": "Output of openssl req -noout -text -in request.csr\n",
    "fieldname": "decoded_certificate",
    "fieldtype": "Code",
    "label": "Decoded Certificate",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "status",
@@ -104,26 +106,31 @@
    "fieldname": "certificate",
    "fieldtype": "Code",
    "label": "Certificate",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "full_chain",
    "fieldtype": "Code",
    "label": "Full Chain",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider == \"Let's Encrypt\""
   },
   {
    "fieldname": "intermediate_chain",
    "fieldtype": "Code",
    "label": "Intermediate Chain",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
+   "depends_on": "eval: doc.provider !== \"Let's Encrypt\"",
+   "description": "Output of openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:4096\n",
    "fieldname": "private_key",
    "fieldtype": "Code",
-   "hidden": 1,
    "label": "Private Key",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
   },
   {
    "fieldname": "team",
@@ -162,7 +169,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-27 16:17:10.957073",
+ "modified": "2025-03-30 18:03:13.270000",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
