@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import shlex
 import typing
+from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 
@@ -16,6 +17,7 @@ from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils import cint
+from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
@@ -29,6 +31,7 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -257,11 +260,19 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
+	def add_server_to_public_groups(self):
+		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		for group_name in groups:
+			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
+			with suppress(frappe.ValidationError):
+				group.add_server(str(self.name), deploy=True)
+
 	@frappe.whitelist()
 	def enable_server_for_new_benches_and_site(self):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
+		self.add_server_to_public_groups()
 		server = self.get_server_enabled_for_new_benches_and_sites()
 
 		if server:
@@ -284,7 +295,7 @@ class BaseServer(Document, TagHelpers):
 				"public": True,
 				"cluster": self.cluster,
 			},
-			pluck="name",
+			pluck=True,
 		)
 
 	@frappe.whitelist()
@@ -855,24 +866,14 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_increase_swap",
+			"increase_swap_locked",
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
 		)
 
-	def add_glass_file(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
-
-	def _add_glass_file(self):
-		try:
-			ansible = Ansible(playbook="glass_file.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Add Glass File Exception", doc=self)
-
 	def _increase_swap(self, swap_size=4):
-		"""Increase swap by size defined in playbook"""
+		"""Increase swap by size defined"""
 		from press.api.server import calculate_swap
 
 		existing_swap_size = calculate_swap(self.name).get("swap", 0)
@@ -890,6 +891,60 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Increase swap exception", doc=self)
+
+	def increase_swap_locked(self, swap_size=4):
+		with filelock(f"{self.name}-swap-update"):
+			self._increase_swap(swap_size)
+
+	@frappe.whitelist()
+	def reset_swap(self, swap_size=1):
+		"""
+		Replace existing swap files with new swap file of given size
+		"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"reset_swap_locked",
+			queue="long",
+			timeout=1200,
+			**{"swap_size": swap_size},
+		)
+
+	def reset_swap_locked(self, swap_size=1):
+		with filelock(f"{self.name}-swap-update"):
+			self._reset_swap(swap_size)
+
+	def _reset_swap(self, swap_size=1):
+		"""Reset swap by removing existing swap files and creating new swap"""
+		from press.api.server import calculate_swap
+
+		existing_swap_size = calculate_swap(self.name).get("swap", 0)
+		# list of swap files to remove assuming minimum swap size of 1 GB to be safe. Wrong names are handled in playbook
+		swap_files_to_remove = ["swap.default", "swap"]
+		swap_files_to_remove += ["swap" + str(i) for i in range(1, int(existing_swap_size))]
+		try:
+			ansible = Ansible(
+				playbook="reset_swap.yml",
+				server=self,
+				variables={
+					"swap_size": swap_size,
+					"swap_file": "swap",
+					"swap_files_to_remove": swap_files_to_remove,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Reset swap exception", doc=self)
+
+	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", doc=self)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):

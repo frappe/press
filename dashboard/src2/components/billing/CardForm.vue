@@ -60,7 +60,7 @@
 					variant="solid"
 					label="Verify & Save Card"
 					:loading="addingCard"
-					@click="submit"
+					@click="verifyWithMicroChargeIfApplicable"
 				/>
 
 				<Button
@@ -214,9 +214,9 @@ const setupIntentSuccess = createResource({
 		};
 	},
 	onSuccess: async ({ payment_method_name }) => {
-		await verifyWithMicroChargeIfApplicable(payment_method_name);
 		addingCard.value = false;
 		toast.success('Card added successfully');
+		emit('success');
 	},
 	onError: (error) => {
 		console.error(error);
@@ -228,9 +228,6 @@ const setupIntentSuccess = createResource({
 
 const verifyCardWithMicroCharge = createResource({
 	url: 'press.api.billing.create_payment_intent_for_micro_debit',
-	makeParams: ({ paymentMethodName }) => {
-		return { payment_method_name: paymentMethodName };
-	},
 	onSuccess: async (paymentIntent) => {
 		let { client_secret } = paymentIntent;
 
@@ -240,7 +237,10 @@ const verifyCardWithMicroCharge = createResource({
 
 		if (payload.paymentIntent?.status === 'succeeded') {
 			microChargeCompleted.value = true;
-			emit('success');
+			submit();
+		} else {
+			tryingMicroCharge.value = false;
+			errorMessage.value = payload.error?.message;
 		}
 	},
 	onError: (error) => {
@@ -311,7 +311,7 @@ async function submit() {
 	}
 }
 
-async function verifyWithMicroChargeIfApplicable(paymentMethodName) {
+async function verifyWithMicroChargeIfApplicable() {
 	const teamCurrency = team.doc?.currency;
 	const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
 	const isMicroChargeApplicable =
@@ -319,17 +319,15 @@ async function verifyWithMicroChargeIfApplicable(paymentMethodName) {
 		(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
 		(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
 	if (isMicroChargeApplicable) {
-		await _verifyWithMicroCharge(paymentMethodName);
+		await _verifyWithMicroCharge();
 	} else {
-		emit('success');
+		submit();
 	}
 }
 
-async function _verifyWithMicroCharge(paymentMethodName) {
+async function _verifyWithMicroCharge() {
 	tryingMicroCharge.value = true;
-	return verifyCardWithMicroCharge.submit({
-		paymentMethodName,
-	});
+	return verifyCardWithMicroCharge.submit();
 }
 
 function getCountryCode(country) {

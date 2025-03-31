@@ -310,5 +310,23 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-03-30 17:33:29.170125",
+  "name": "Reset Swap",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Resetting swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.reset_swap()",
+    "step_name": "Reset swap on server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Reset Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "step_name": "Wait for swap to be reset",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]
