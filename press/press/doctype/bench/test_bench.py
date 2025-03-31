@@ -38,6 +38,7 @@ from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.team.team import Team
 
 
@@ -78,6 +79,35 @@ class TestBench(FrappeTestCase):
 			site = create_test_site(bench=bench)
 			create_test_subscription(site.name, plan.name, site.team)
 		return Bench("Bench", bench)
+
+	def test_minimum_rebuild_memory(self):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		bench.memory_swap = 5000
+		press_settings: PressSettings = frappe.get_doc("Press Settings")
+
+		if not press_settings.minimum_rebuild_memory:
+			press_settings.certbot_directory = "./"
+			press_settings.eff_registration_email = "test"
+			press_settings.minimum_rebuild_memory = 2
+			press_settings.save()
+
+		bench.memory_high = 928
+		bench.memory_max = 1029  # Memory max set to below requried should exit
+		bench.save()
+
+		with patch.object(
+			Bench, "get_free_memory", new=lambda x: 1073741182
+		):  # Testing with 1GB from prometheus query
+			self.assertEqual(bench.has_rebuild_memory(), False)
+
+		bench.memory_high = 2000
+		bench.memory_max = 4020  # Memory max set to more that required should not fail.
+		bench.save()
+
+		with patch.object(
+			Bench, "get_free_memory", new=lambda x: 3073741182
+		):  # Testing with 3GB from prometheus query
+			self.assertEqual(bench.has_rebuild_memory(), True)
 
 	def test_workload_is_calculated_correctly(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
