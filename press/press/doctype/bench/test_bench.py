@@ -83,6 +83,13 @@ class TestBench(FrappeTestCase):
 	def test_minimum_rebuild_memory(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
 		bench.memory_swap = 5000
+		bench.memory_high = 928
+
+		high_prometheus_memory = 3073741182
+		low_prometheus_memeory = 1073741182
+		high_memory_max = 4020
+		low_memory_max = 1029
+
 		press_settings: PressSettings = frappe.get_doc("Press Settings")
 
 		if not press_settings.minimum_rebuild_memory:
@@ -91,21 +98,25 @@ class TestBench(FrappeTestCase):
 			press_settings.minimum_rebuild_memory = 2
 			press_settings.save()
 
-		bench.memory_high = 928
-		bench.memory_max = 1029  # Memory max set to below requried should exit
+		bench.memory_max = low_memory_max
 		bench.save()
 
-		with patch.object(
-			Bench, "get_free_memory", new=lambda x: 1073741182
-		):  # Testing with 1GB from prometheus query
+		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
+			# Low memory_max should not rebuild
 			self.assertEqual(bench.has_rebuild_memory(), False)
 
-		bench.memory_high = 2000
-		bench.memory_max = 4020  # Memory max set to more that required should not fail.
+		bench.memory_max = high_memory_max
+		bench.save()
+
+		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory):
+			# Should not rebuild due to low server mem
+			self.assertEqual(bench.has_rebuild_memory(), False)
+
+		bench.memory_max = high_memory_max
 		bench.save()
 
 		with patch.object(
-			Bench, "get_free_memory", new=lambda x: 3073741182
+			Bench, "get_free_memory", new=lambda x: high_prometheus_memory
 		):  # Testing with 3GB from prometheus query
 			self.assertEqual(bench.has_rebuild_memory(), True)
 
