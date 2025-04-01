@@ -88,11 +88,11 @@ def callback(job_id: str):
 
 	# Request origin not authorized to update job status.
 	if not server:
-		return "Invalid request!"
+		frappe.throw("Not permitted", frappe.ValidationError)
 
 	job = verify_job_id(server, job_id=job_id)
 	if not job:
-		return "Invalid job id!"
+		frappe.throw("Invalid Job Id", frappe.ValidationError)
 
 	handle_job_updates(server=server, job_id=job_id)
 	frappe.set_user("guest")
