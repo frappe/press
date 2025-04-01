@@ -1149,6 +1149,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 	def fetch_bench_status(self, bench):
 		return self.get(f"benches/{bench}/status")
 
+	def get_snapshot(self, bench: str):
+		return self.get(f"snapshot/{bench}")
+
 	def run_after_migrate_steps(self, site):
 		data = {
 			"admin_password": site.get_password("admin_password"),
