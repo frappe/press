@@ -155,7 +155,7 @@ class DeployCandidate(Document):
 
 	def _get_trigger_condition(condition: str) -> str:
 		if condition == "on_end":
-			return "doc.status == 'Failure' or doc.status == 'Success'"
+			return "(doc.status == 'Failure' or doc.status == 'Success')"
 		return "doc.status == 'Running'"
 
 	def _create_webhook(self, endpoint: str, method: str, data: str, condition: str):
