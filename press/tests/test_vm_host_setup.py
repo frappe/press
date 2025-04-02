@@ -21,6 +21,7 @@ class TestVMHostSetup(unittest.TestCase):
             "nfs_exports_directory": "/exports/vm_storage",
             "status": "Active"
         }).insert()
+        frappe.db.commit()
 
         cls.vm_host = frappe.get_doc({
             "doctype": "Bare Metal Host",
@@ -35,25 +36,16 @@ class TestVMHostSetup(unittest.TestCase):
             "is_vm_host": 1,
             "status": "Active"
         }).insert()
+        frappe.db.commit()
 
-        # Create test region and availability zone
-        if not frappe.db.exists("press.press.doctype.region.Region", "test-region"):
+        # Create test region
+        if not frappe.db.exists("Cloud Region", "test-region"):
             frappe.get_doc({
-                "doctype": "press.press.doctype.region.Region",
-                "name": "test-region",
-                "title": "Test Region",
+                "doctype": "Cloud Region",
                 "region_name": "test-region",
-                "status": "Active"
+                "provider": "Bare Metal Host",
             }).insert()
-
-        if not frappe.db.exists("press.press.doctype.availability_zone.Availability Zone", "test-zone"):
-            frappe.get_doc({
-                "doctype": "press.press.doctype.availability_zone.Availability Zone",
-                "name": "test-zone",
-                "region": "test-region",
-                "title": "Test Zone",
-                "status": "Active"
-            }).insert()
+            frappe.db.commit()
 
         # Create test SSH key
         if not frappe.db.exists("SSH Key", "test-key"):
@@ -64,6 +56,7 @@ class TestVMHostSetup(unittest.TestCase):
                 "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0 test@example.com",
                 "status": "Active"
             }).insert()
+            frappe.db.commit()
 
         # Create cluster with correct cloud provider
         cluster_name = f"test-cluster-{random_string(6)}"
@@ -73,8 +66,10 @@ class TestVMHostSetup(unittest.TestCase):
             "cloud_provider": "Bare Metal Host",
             "bare_metal_host": cls.vm_host.name,
             "title": f"Test Cluster {cluster_name}",
+            "region": "test-region",  # Use the test region
             "status": "Active"
         }).insert()
+        frappe.db.commit()
 
         # Create test domain
         if not frappe.db.exists("Root Domain", "fc.dev"):
@@ -86,9 +81,11 @@ class TestVMHostSetup(unittest.TestCase):
                 "is_active": 1,
                 "default_cluster": cls.cluster.name
             }).insert()
+            frappe.db.commit()
 
         # Configure NFS server in settings
         frappe.db.set_single_value("Press Settings", "nfs_server", cls.nfs_server.ip)
+        frappe.db.commit()
 
     @patch('press.runner.Ansible.run')
     def test_01_nfs_server_setup(self, mock_run):
@@ -135,7 +132,6 @@ class TestVMHostSetup(unittest.TestCase):
             "disk_size": 20,
             "root_disk_size": 20,
             "region": "test-region",  # Add required field
-            "availability_zone": "test-zone",  # Add required field
             "ssh_key": "test-key"  # Add required field
         }).insert()
         
@@ -211,22 +207,26 @@ class TestVMHostSetup(unittest.TestCase):
         
         # Delete Root Domain first since it depends on Cluster
         if frappe.db.exists("Root Domain", "fc.dev"):
-            frappe.delete_doc("Root Domain", "fc.dev")
+            frappe.delete_doc("Root Domain", "fc.dev", force=True)
+            frappe.db.commit()
             
         # Now we can delete the Cluster
         if frappe.db.exists("Cluster", cls.cluster.name):
-            frappe.delete_doc("Cluster", cls.cluster.name)
+            frappe.delete_doc("Cluster", cls.cluster.name, force=True)
+            frappe.db.commit()
             
         # Delete the hosts
         if frappe.db.exists("Bare Metal Host", cls.nfs_server.name):
-            frappe.delete_doc("Bare Metal Host", cls.nfs_server.name)
+            frappe.delete_doc("Bare Metal Host", cls.nfs_server.name, force=True)
+            frappe.db.commit()
         if frappe.db.exists("Bare Metal Host", cls.vm_host.name):
-            frappe.delete_doc("Bare Metal Host", cls.vm_host.name)
+            frappe.delete_doc("Bare Metal Host", cls.vm_host.name, force=True)
+            frappe.db.commit()
             
-        # Delete test region, zone and SSH key
+        # Delete test region and SSH key
         if frappe.db.exists("SSH Key", "test-key"):
-            frappe.delete_doc("SSH Key", "test-key")
-        if frappe.db.exists("Availability Zone", "test-zone"):
-            frappe.delete_doc("Availability Zone", "test-zone")
-        if frappe.db.exists("Region", "test-region"):
-            frappe.delete_doc("Region", "test-region") 
+            frappe.delete_doc("SSH Key", "test-key", force=True)
+            frappe.db.commit()
+        if frappe.db.exists("Cloud Region", "test-region"):
+            frappe.delete_doc("Cloud Region", "test-region", force=True)
+            frappe.db.commit() 

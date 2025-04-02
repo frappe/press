@@ -301,11 +301,25 @@ class BareMetalHost(BaseServer):
         """
         Set up server for KVM virtualization
         """
+        # Validate required fields
+        if not self.ip:
+            frappe.throw("IP address is required")
+        if not self.ssh_user:
+            frappe.throw("SSH user is required")
+        if not self.ssh_port:
+            frappe.throw("SSH port is required")
+            
+        # Check if server is prepared
+        if not self.is_server_prepared:
+            frappe.throw("Server must be prepared before setting up as VM host. Please run 'Prepare Server' first.")
+            
+        # Update status and enqueue setup
         self.status = "Installing"
         self.save()
         frappe.enqueue_doc(self.doctype, self.name, "_setup_vm_host", queue="long", timeout=2400)
 
     def _setup_vm_host(self):
+        """Run ansible playbook to set up KVM virtualization"""
         try:
             # Create a server-like object with the properties Ansible needs
             class ServerObj:
@@ -316,20 +330,53 @@ class BareMetalHost(BaseServer):
             
             server_obj = ServerObj(self)
             
+            # Set up variables for the playbook
+            variables = {
+                "configure_network": True,
+                "configure_storage": True,
+                "configure_firewall": True,
+                "setup_vm_storage": True,
+                "optimize_io": True,
+                "storage_path": "/var/lib/libvirt/images",
+                "vm_directory": "/opt/vms",
+                "vm_images_directory": "/opt/vm_images",
+                "vm_config_directory": "/opt/vm_configs",
+                "vm_templates_directory": "/opt/vm_templates",
+                "bridge_network": {
+                    "name": "br0",
+                    "ip": "192.168.100.1",
+                    "netmask": "255.255.255.0",
+                    "dhcp_start": "192.168.100.100",
+                    "dhcp_end": "192.168.100.200"
+                }
+            }
+            
             ansible = Ansible(
                 playbook="bare_metal_vm_host.yml",
                 server=server_obj,
                 user=self.ssh_user or "root",
                 port=self.ssh_port or 22,
+                variables=variables
             )
+            
             play = ansible.run()
             self.reload()
+            
             if play.status == "Success":
                 self.db_set("is_vm_host_setup", 1)
+                self.db_set("is_vm_host", 1)  # Mark as VM host
                 self.db_set("status", "Active")
+                frappe.msgprint("VM host setup completed successfully")
+            else:
+                self.db_set("status", "Broken")
+                frappe.throw(f"VM host setup failed: {play.status}")
+                
             return play
-        except Exception:
-            log_error("Bare Metal VM Host Setup Exception", server=self.as_dict())
+            
+        except Exception as e:
+            self.db_set("status", "Broken")
+            log_error("Bare Metal VM Host Setup Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"VM host setup failed: {str(e)}")
 
     @frappe.whitelist()
     def install_nginx(self):
@@ -599,11 +646,32 @@ class BareMetalHost(BaseServer):
         """
         Set up server for KVM virtualization with NFS storage
         """
+        # Validate required fields
+        if not self.ip:
+            frappe.throw("IP address is required")
+        if not self.ssh_user:
+            frappe.throw("SSH user is required")
+        if not self.ssh_port:
+            frappe.throw("SSH port is required")
+        if not self.nfs_mount_point:
+            frappe.throw("NFS mount point is required")
+            
+        # Check if server is prepared
+        if not self.is_server_prepared:
+            frappe.throw("Server must be prepared before setting up as VM host. Please run 'Prepare Server' first.")
+            
+        # Get NFS server details from settings
+        nfs_server = frappe.db.get_single_value("Press Settings", "nfs_server")
+        if not nfs_server:
+            frappe.throw("NFS server not configured in Press Settings")
+            
+        # Update status and enqueue setup
         self.status = "Installing"
         self.save()
         frappe.enqueue_doc(self.doctype, self.name, "_setup_vm_host_with_nfs", queue="long", timeout=2400)
 
     def _setup_vm_host_with_nfs(self):
+        """Run ansible playbook to set up KVM virtualization with NFS storage"""
         try:
             class ServerObj:
                 def __init__(self, doc):
@@ -618,21 +686,56 @@ class BareMetalHost(BaseServer):
             if not nfs_server:
                 frappe.throw("NFS server not configured in Press Settings")
             
+            # Set up variables for the playbook
+            variables = {
+                "configure_network": True,
+                "configure_storage": True,
+                "configure_firewall": True,
+                "configure_shared_storage": True,
+                "setup_vm_storage": True,
+                "optimize_io": True,
+                "storage_path": "/var/lib/libvirt/images",
+                "vm_directory": "/opt/vms",
+                "vm_images_directory": "/opt/vm_images",
+                "vm_config_directory": "/opt/vm_configs",
+                "vm_templates_directory": "/opt/vm_templates",
+                "nfs_server": nfs_server,
+                "nfs_server_export": "/exports/vm_storage",
+                "nfs_mount_point": self.nfs_mount_point,
+                "shared_storage_pool_name": "shared_storage",
+                "bridge_network": {
+                    "name": "br0",
+                    "ip": "192.168.100.1",
+                    "netmask": "255.255.255.0",
+                    "dhcp_start": "192.168.100.100",
+                    "dhcp_end": "192.168.100.200"
+                }
+            }
+            
             ansible = Ansible(
                 playbook="bare_metal_vm_host_with_nfs.yml",
                 server=server_obj,
                 user=self.ssh_user or "root",
                 port=self.ssh_port or 22,
-                variables={
-                    "nfs_server": nfs_server,
-                }
+                variables=variables
             )
+            
             play = ansible.run()
             self.reload()
+            
             if play.status == "Success":
                 self.db_set("is_vm_host_setup", 1)
+                self.db_set("is_vm_host", 1)  # Mark as VM host
                 self.db_set("is_nfs_client", 1)
                 self.db_set("status", "Active")
+                frappe.msgprint("VM host setup with NFS completed successfully")
+            else:
+                self.db_set("status", "Broken")
+                frappe.throw(f"VM host setup with NFS failed: {play.status}")
+                
             return play
-        except Exception:
-            log_error("VM Host with NFS Setup Exception", server=self.as_dict()) 
+            
+        except Exception as e:
+            self.db_set("status", "Broken")
+            log_error("VM Host with NFS Setup Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"VM host setup with NFS failed: {str(e)}") 
