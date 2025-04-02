@@ -73,9 +73,7 @@ class DeployCandidate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-			DeployCandidateApp,
-		)
+		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
 		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 			DeployCandidateBuildStep,
 		)
@@ -114,6 +112,12 @@ class DeployCandidate(Document):
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		no_cache: DF.Check
+		on_end_data: DF.JSON | None
+		on_end_endpoint: DF.Data | None
+		on_end_method: DF.Literal["POST", "GET", "DELETE", "PATCH"]
+		on_start_data: DF.JSON | None
+		on_start_endpoint: DF.Data | None
+		on_start_method: DF.Literal["POST", "GET", "DELETE", "PATCH"]
 		packages: DF.Table[DeployCandidatePackage]
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None

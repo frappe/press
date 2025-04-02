@@ -44,6 +44,14 @@
   "merge_default_and_short_rq_queues",
   "use_rq_workerpool",
   "gunicorn_threads_per_worker",
+  "webhooks_section",
+  "on_start_endpoint",
+  "on_start_method",
+  "on_start_data",
+  "column_break_wtuv",
+  "on_end_endpoint",
+  "on_end_method",
+  "on_end_data",
   "parameters_tab",
   "section_break_4",
   "apps",
@@ -423,6 +431,47 @@
    "fieldname": "redis_cache_size",
    "fieldtype": "Int",
    "label": "Redis Cache Size (MB)"
+  },
+  {
+   "fieldname": "webhooks_section",
+   "fieldtype": "Section Break",
+   "label": "WebHooks"
+  },
+  {
+   "fieldname": "on_start_endpoint",
+   "fieldtype": "Data",
+   "label": "On Start Endpoint"
+  },
+  {
+   "fieldname": "on_start_method",
+   "fieldtype": "Select",
+   "label": "On Start Method",
+   "options": "POST\nGET\nDELETE\nPATCH"
+  },
+  {
+   "fieldname": "on_start_data",
+   "fieldtype": "JSON",
+   "label": "On Start Data"
+  },
+  {
+   "fieldname": "column_break_wtuv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "on_end_endpoint",
+   "fieldtype": "Data",
+   "label": "On End Endpoint"
+  },
+  {
+   "fieldname": "on_end_method",
+   "fieldtype": "Select",
+   "label": "On End Method",
+   "options": "POST\nGET\nDELETE\nPATCH"
+  },
+  {
+   "fieldname": "on_end_data",
+   "fieldtype": "JSON",
+   "label": "On End Data"
   }
  ],
  "links": [
@@ -439,7 +488,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-12-27 11:59:09.917364",
+ "modified": "2025-04-02 10:53:59.599282",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -470,6 +519,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
