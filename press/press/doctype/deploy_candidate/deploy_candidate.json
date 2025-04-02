@@ -45,13 +45,13 @@
   "use_rq_workerpool",
   "gunicorn_threads_per_worker",
   "webhooks_section",
-  "on_start_endpoint",
-  "on_start_method",
-  "on_start_data",
+  "webhook_on_start_endpoint",
+  "webhook_on_start_method",
+  "webhook_on_start_data",
   "column_break_wtuv",
-  "on_end_endpoint",
-  "on_end_method",
-  "on_end_data",
+  "webhook_on_end_endpoint",
+  "webhook_on_end_method",
+  "webhook_on_end_data",
   "parameters_tab",
   "section_break_4",
   "apps",
@@ -438,38 +438,39 @@
    "label": "WebHooks"
   },
   {
-   "fieldname": "on_start_endpoint",
-   "fieldtype": "Data",
-   "label": "On Start Endpoint"
-  },
-  {
-   "fieldname": "on_start_method",
-   "fieldtype": "Select",
-   "label": "On Start Method",
-   "options": "POST\nGET\nDELETE\nPATCH"
-  },
-  {
-   "fieldname": "on_start_data",
-   "fieldtype": "JSON",
-   "label": "On Start Data"
-  },
-  {
    "fieldname": "column_break_wtuv",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "on_end_endpoint",
+   "fieldname": "webhook_on_start_endpoint",
+   "fieldtype": "Data",
+   "label": "On Start Endpoint"
+  },
+  {
+   "default": "POST",
+   "fieldname": "webhook_on_start_method",
+   "fieldtype": "Select",
+   "label": "On Start Method",
+   "options": "POST\nDELETE\nPATCH"
+  },
+  {
+   "fieldname": "webhook_on_start_data",
+   "fieldtype": "JSON",
+   "label": "On Start Data"
+  },
+  {
+   "fieldname": "webhook_on_end_endpoint",
    "fieldtype": "Data",
    "label": "On End Endpoint"
   },
   {
-   "fieldname": "on_end_method",
+   "fieldname": "webhook_on_end_method",
    "fieldtype": "Select",
    "label": "On End Method",
-   "options": "POST\nGET\nDELETE\nPATCH"
+   "options": "POST\nDELETE\nPATCH"
   },
   {
-   "fieldname": "on_end_data",
+   "fieldname": "webhook_on_end_data",
    "fieldtype": "JSON",
    "label": "On End Data"
   }
@@ -488,7 +489,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-02 10:53:59.599282",
+ "modified": "2025-04-02 12:53:25.253314",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

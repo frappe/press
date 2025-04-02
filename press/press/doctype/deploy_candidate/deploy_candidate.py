@@ -112,12 +112,6 @@ class DeployCandidate(Document):
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		no_cache: DF.Check
-		on_end_data: DF.JSON | None
-		on_end_endpoint: DF.Data | None
-		on_end_method: DF.Literal["POST", "GET", "DELETE", "PATCH"]
-		on_start_data: DF.JSON | None
-		on_start_endpoint: DF.Data | None
-		on_start_method: DF.Literal["POST", "GET", "DELETE", "PATCH"]
 		packages: DF.Table[DeployCandidatePackage]
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
@@ -133,6 +127,12 @@ class DeployCandidate(Document):
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
+		webhook_on_end_data: DF.JSON | None
+		webhook_on_end_endpoint: DF.Data | None
+		webhook_on_end_method: DF.Literal["POST", "DELETE", "PATCH"]
+		webhook_on_start_data: DF.JSON | None
+		webhook_on_start_endpoint: DF.Data | None
+		webhook_on_start_method: DF.Literal["POST", "DELETE", "PATCH"]
 		# end: auto-generated types
 
 		build_output_parser: DockerBuildOutputParser | None
@@ -152,6 +152,58 @@ class DeployCandidate(Document):
 		"group",
 		"retry_count",
 	)
+
+	def _get_trigger_condition(condition: str) -> str:
+		if condition == "on_end":
+			return "doc.status == 'Failure' or doc.status == 'Success'"
+		return "doc.status == 'Running'"
+
+	def _create_webhook(self, endpoint: str, method: str, data: str, condition: str):
+		trigger_condition = self._get_trigger_condition(condition)
+
+		webhook = frappe.get_doc(
+			{
+				"doctype": "Webhook",
+				"name": "Test Webhook App",
+				"webhook_doctype": "App",
+				"enabled": 1,
+				"request_url": endpoint,
+				"request_method": method,
+				"request_structure": "JSON",
+				"webhook_docevent": "after_insert",
+				"webhook_json": data,
+				"condition": f"""doc.name == {self.name} and {trigger_condition}""",
+				"webhook_headers": [
+					{"key": "Content-Type", "value": "application/json"},
+				],
+			}
+		)
+		webhook.insert()
+
+	def create_on_start_webhook(self):
+		self._create_webhook(
+			self.webhook_on_start_endpoint,
+			self.webhook_on_start_method,
+			self.webhook_on_start_data,
+			"on_start",
+		)
+
+	def create_on_end_webhook(self):
+		self._create_webhook(
+			self.webhook_on_end_endpoint,
+			self.webhook_on_end_method,
+			self.webhook_on_end_data,
+			"on_end",
+		)
+
+	def create_webhooks(self):
+		if self.webhook_on_start_endpoint:
+			self.create_on_start_webhook()
+		if self.webhook_on_end_endpoint:
+			self.create_on_end_webhook()
+
+	def after_insert(self):
+		self.create_webhooks()
 
 	@staticmethod
 	def get_list_query(query):
