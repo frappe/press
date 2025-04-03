@@ -128,7 +128,7 @@ class TLSCertificate(Document):
 					)
 					return
 				if re.search(r"Detail: .*: Invalid response", out):
-					self.error = "Suggestion: You may have updated your DNS records recently. Please wait for the changes to propagate. Please remove and add the domain after some time."
+					self.error = "Suggestion: You may have updated your DNS records recently. Please wait for the changes to propagate. Please try fetching certificate after some time."
 					self.error += "\n" + out
 				else:
 					self.error = out

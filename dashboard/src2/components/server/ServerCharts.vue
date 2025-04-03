@@ -701,7 +701,7 @@ export default {
 			];
 
 			cpu.datasets = cpu.datasets.sort((a, b) => {
-				if (order.indexOf(a.name) > order.indexOf(b.name)) return 1;
+				return order.indexOf(a.name) - order.indexOf(b.name);
 			});
 
 			return this.transformMultiLineChartData(cpu, 'cpu', true);
