@@ -390,19 +390,18 @@ class TestReleaseGroup(unittest.TestCase):
 				"version": "Nightly",
 				"enabled": True,
 				"title": f"Test ReleaseGroup {frappe.mock('name')}",
-				"team": create_test_team().name,
+				"team": self.team,
 				"public": True,
 			}
 		)
 		frappe_app = create_test_app()
 		hrms_app = create_test_app(name="hrms", title="test-hrms")
-		team = create_test_team().name
 
 		hrms_app_source = create_test_app_source(
-			"Nightly", hrms_app, "https://github.com/frappe/hrms", "master", team=team
+			"Nightly", hrms_app, "https://github.com/frappe/hrms", "master", team=self.team
 		)
 		frappe_app_source = create_test_app_source(
-			"Nightly", frappe_app, "https://github.com/frappe/frappe", "master", team=team
+			"Nightly", frappe_app, "https://github.com/frappe/frappe", "master", team=self.team
 		)
 
 		for app, app_source in [(frappe_app, frappe_app_source), (hrms_app, hrms_app_source)]:
@@ -416,7 +415,7 @@ class TestReleaseGroup(unittest.TestCase):
 		# Insert dependant app and check if it works
 		erpnext = create_test_app("erpnext", "ERPNext")
 		erpnext_app_source = create_test_app_source(
-			"Nightly", erpnext, "https://github.com/frappe/erpnext", "master", team
+			"Nightly", erpnext, "https://github.com/frappe/erpnext", "master", self.team
 		)
 
 		release_group.append("apps", {"app": erpnext.name, "source": erpnext_app_source.name})
