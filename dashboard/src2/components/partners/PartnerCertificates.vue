@@ -122,7 +122,7 @@ export default {
 					};
 				},
 				filters: {
-					partner_team: this.$team.doc.name,
+					team: this.$team.doc.name,
 				},
 				orderBy: 'creation desc',
 			};

@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2025-01-02 15:31:03.095292",
+  "modified": "2025-03-25 17:08:45.166320",
   "name": "Create Server",
   "steps": [
    {
@@ -61,7 +61,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\nserver.update_filebeat()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n\nserver.validate_mounts()\nserver.save()",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\nserver.add_glass_file()\nserver.update_filebeat()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n    \nif doc.server_type == \"Database Server\":\n    server.adjust_memory_config()\n\nserver.validate_mounts()\nserver.save()",
     "step_name": "Set additional config",
     "wait_until_true": 0
    }
@@ -307,6 +307,24 @@
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2025-03-30 17:33:29.170125",
+  "name": "Reset Swap",
+  "steps": [
+   {
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Resetting swap on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.reset_swap()",
+    "step_name": "Reset swap on server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Reset Swap\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "step_name": "Wait for swap to be reset",
     "wait_until_true": 1
    }
   ]

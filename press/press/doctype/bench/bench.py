@@ -18,6 +18,7 @@ from frappe.utils import get_system_timezone
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
+from press.api.server import usage
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
@@ -587,9 +588,31 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		candidate._create_deploy([self.server])
 
+	def get_free_memory(self):
+		return usage(self.server).get("free_memory")
+
+	def has_rebuild_memory(self) -> bool:
+		minimum_rebuild_memory = frappe.get_doc("Press Settings").minimum_rebuild_memory
+		memory_max = self.memory_max / 1000  # Memory max stored in mb
+
+		if memory_max < minimum_rebuild_memory:
+			return False
+
+		free_memory = self.get_free_memory()
+
+		if not free_memory:
+			return True
+
+		free_memory /= 1024**3
+		return free_memory >= minimum_rebuild_memory
+
 	@dashboard_whitelist()
-	def rebuild(self):
-		return Agent(self.server).rebuild_bench(self)
+	def rebuild(self, force: bool = False):
+		if force or self.has_rebuild_memory():
+			return Agent(self.server).rebuild_bench(self)
+
+		frappe.throw("Provision more ram to allow bench rebuild!")
+		return None
 
 	@dashboard_whitelist()
 	def restart(self, web_only=False):
@@ -1202,7 +1225,7 @@ def sync_benches():
 
 
 def sync_bench(name):
-	bench = frappe.get_doc("Bench", name)
+	bench = Bench("Bench", name)
 	try:
 		active_archival_jobs = frappe.get_all(
 			"Agent Job",

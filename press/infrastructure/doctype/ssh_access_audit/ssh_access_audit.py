@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from functools import cached_property
 
 import frappe
@@ -280,9 +279,6 @@ class AnsibleAdHoc:
 			tqm.run(self.play)
 		finally:
 			tqm.cleanup()
-			self.loader.cleanup_all_tmp_files()
-
-		shutil.rmtree(constants.DEFAULT_LOCAL_TMP, True)
 
 		return list(self.callback.hosts.values())
 

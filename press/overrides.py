@@ -2,10 +2,10 @@
 # For license information, please see license.txt
 
 
+import os
 from functools import partial
 
 import frappe
-from ansible.utils.path import cleanup_tmp_file
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
@@ -105,12 +105,27 @@ def before_request():
 
 
 def cleanup_ansible_tmp_files():
-	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
-		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+	import pathlib
+	import shutil
+	import time
 
+	if not hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		return
 
-def after_job():
-	cleanup_ansible_tmp_files()
+	if os.environ.get("FRAPPE_BACKGROUND_WORKERS_NOFORK"):
+		# Long running processes, don't cleanup
+		return
+
+	threshold = time.time() - 60 * 60  # >One hour old
+
+	temp_dir = pathlib.Path(constants.DEFAULT_LOCAL_TMP).parent
+	ansible_dir = pathlib.Path.home() / ".ansible"
+	# Avoid clearing unknown directories
+	assert temp_dir.is_relative_to(ansible_dir) and temp_dir != ansible_dir
+
+	for folder in temp_dir.iterdir():
+		if folder.is_dir() and folder.stat().st_mtime < threshold:
+			shutil.rmtree(folder)
 
 
 def update_website_context(context):

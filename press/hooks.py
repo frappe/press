@@ -200,6 +200,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
+		"press.overrides.cleanup_ansible_tmp_files",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -266,6 +267,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
 			"press.press.doctype.database_server.database_server.monitor_disk_performance",
+			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
@@ -282,6 +284,7 @@ scheduler_events = {
 		"*/10 * * * *": [
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
@@ -352,7 +355,7 @@ on_login = "press.overrides.on_login"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
-after_job = "press.overrides.after_job"
+# after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 

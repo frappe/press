@@ -239,8 +239,8 @@ frappe.ui.form.on('Server', {
 						fields: [
 							{
 								fieldtype: 'Int',
-								label: __('Swap Size'),
-								description: __('Size in GB'),
+								label: __('Swap Size (GB)'),
+								description: __('Add additional swap'),
 								fieldname: 'swap_size',
 								default: 4,
 							},
@@ -249,6 +249,34 @@ frappe.ui.form.on('Server', {
 
 					dialog.set_primary_action(__('Increase Swap'), (args) => {
 						frm.call('increase_swap', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
+			frm.add_custom_button(
+				__('Reset Swap'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Swap Size'),
+						fields: [
+							{
+								fieldtype: 'Int',
+								label: __('Swap Size (GB)'),
+								description: __(
+									'This will reset swap space to specified size. 0 or empty to remove all.',
+								),
+								fieldname: 'swap_size',
+								default: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Reset Swap'), (args) => {
+						frm.call('reset_swap', args).then(() => {
 							dialog.hide();
 							frm.refresh();
 						});

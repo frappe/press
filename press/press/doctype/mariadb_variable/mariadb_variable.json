@@ -15,7 +15,10 @@
   "skippable",
   "column_break_yrfg",
   "default_value",
-  "set_on_new_servers"
+  "set_on_new_servers",
+  "section_break_mhww",
+  "configurable_by_user",
+  "title"
  ],
  "fields": [
   {
@@ -61,11 +64,28 @@
    "fieldname": "set_on_new_servers",
    "fieldtype": "Check",
    "label": "Set on new servers"
+  },
+  {
+   "default": "0",
+   "fieldname": "configurable_by_user",
+   "fieldtype": "Check",
+   "label": "Configurable By User"
+  },
+  {
+   "fieldname": "section_break_mhww",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.configurable_by_user",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "mandatory_depends_on": "eval: doc.configurable_by_user"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-07-03 07:14:39.263413",
+ "modified": "2025-03-25 22:21:06.165678",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

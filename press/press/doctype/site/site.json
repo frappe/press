@@ -125,7 +125,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
+   "options": "Pending\nInstalling\nUpdating\nRecovering\nActive\nInactive\nBroken\nArchived\nSuspended",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -688,7 +688,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-03-18 10:11:29.472701",
+ "modified": "2025-03-28 09:42:59.328564",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

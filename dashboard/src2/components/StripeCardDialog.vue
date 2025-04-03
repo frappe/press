@@ -4,22 +4,22 @@
 			<p class="text-sm mb-5 text-gray-700" v-if="message">
 				{{ message }}
 			</p>
-			<StripeCard2 @complete="show = false" />
+			<CardForm @success="show = false" />
 		</template>
 	</Dialog>
 </template>
 <script>
-import StripeCard from './StripeCard.vue';
+import CardForm from './billing/CardForm.vue';
 export default {
 	name: 'StripeCardDialog',
 	props: ['modelValue', 'message'],
 	emits: ['update:modelValue'],
 	components: {
-		StripeCard2: StripeCard
+		CardForm,
 	},
 	data() {
 		return {
-			_show: true
+			_show: true,
 		};
 	},
 	computed: {
@@ -33,8 +33,8 @@ export default {
 					return;
 				}
 				this.$emit('update:modelValue', value);
-			}
-		}
-	}
+			},
+		},
+	},
 };
 </script>

@@ -1,6 +1,7 @@
 ---
 - name: Wait for Cloud Init to finish
   command: 'cloud-init status --wait'
+  ignore_errors: yes
 
 - name: Wait for SSH to be available
   ansible.builtin.shell: systemctl is-active ssh

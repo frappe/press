@@ -167,7 +167,15 @@ class Site(Document, TagHelpers):
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
 		status: DF.Literal[
-			"Pending", "Installing", "Updating", "Active", "Inactive", "Broken", "Archived", "Suspended"
+			"Pending",
+			"Installing",
+			"Updating",
+			"Recovering",
+			"Active",
+			"Inactive",
+			"Broken",
+			"Archived",
+			"Suspended",
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
@@ -207,6 +215,7 @@ class Site(Document, TagHelpers):
 		"additional_system_user_created",
 		"label",
 		"signup_time",
+		"account_request",
 	)
 
 	@staticmethod
@@ -279,6 +288,9 @@ class Site(Document, TagHelpers):
 		doc.server_title = server.title
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+
+		if doc.owner == "Administrator":
+			doc.signup_by = frappe.db.get_value("Account Request", doc.account_request, "email")
 
 		if broken_domain_tls_certificate := frappe.db.get_value(
 			"Site Domain", {"site": self.name, "status": "Broken"}, "tls_certificate"
@@ -1013,7 +1025,7 @@ class Site(Document, TagHelpers):
 			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")
 
 	def ready_for_move(self):
-		if self.status in ["Updating", "Pending", "Installing"]:
+		if self.status in ["Updating", "Recovering", "Pending", "Installing"]:
 			frappe.throw(f"Site is in {self.status} state. Cannot Update", SiteUnderMaintenance)
 		elif self.status == "Archived":
 			frappe.throw("Site is archived. Cannot Update", SiteAlreadyArchived)
@@ -2699,6 +2711,10 @@ class Site(Document, TagHelpers):
 					"domain": domain,
 					"status": ("!=", "Archived"),
 				},
+			)
+			or frappe.db.exists(
+				"Site Domain",
+				f"{subdomain}.{domain}",
 			)
 		)
 
