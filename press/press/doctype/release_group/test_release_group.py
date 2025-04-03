@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
+
+import typing
 import unittest
 from unittest.mock import Mock, patch
 
@@ -11,7 +13,6 @@ from frappe.core.utils import find
 from press.api.bench import deploy_information
 from press.api.client import get_list
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
@@ -22,13 +23,16 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.team.test_team import create_test_team
 
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app.app import App
+
 
 def create_test_release_group(
 	apps: list[App],
-	user: str = None,
+	user: str | None = None,
 	public=False,
 	frappe_version="Version 14",
-	servers: list[str] = None,
+	servers: list[str] | None = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -196,9 +200,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 		new_app_source = frappe.get_doc("App Source", rg.apps[0].source)
 		self.assertEqual(new_app_source.branch, "develop")
-		self.assertEqual(
-			new_app_source.versions[0].version, previous_app_source.versions[0].version
-		)
+		self.assertEqual(new_app_source.versions[0].version, previous_app_source.versions[0].version)
 		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
 		self.assertEqual(new_app_source.app, app.name)
 
@@ -210,18 +212,14 @@ class TestReleaseGroup(unittest.TestCase):
 				"doctype": "Release Group",
 				"title": "Test Group",
 				"version": "Version 14",
-				"apps": [
-					{"app": app.name, "source": create_test_app_source("Version 14", app).name}
-				],
+				"apps": [{"app": app.name, "source": create_test_app_source("Version 14", app).name}],
 				"team": self.team,
 			}
 		).insert()
 
 		self.assertEqual(
 			find(group.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
-			find(
-				frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION"
-			).version,
+			find(frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION").version,
 		)
 
 	def test_cant_set_min_greater_than_max_workers(self):
@@ -268,9 +266,7 @@ class TestReleaseGroup(unittest.TestCase):
 			filters={"parenttype": "Release Group", "parent": rg.name},
 		)
 		self.assertEqual(len(fetched_environment_variable_list), 2)
-		internal_environment_variables_keys = [
-			env["key"] for env in environment_variables if env["internal"]
-		]
+		internal_environment_variables_keys = [env["key"] for env in environment_variables if env["internal"]]
 		non_internal_environment_variables_keys = [
 			env["key"] for env in environment_variables if not env["internal"]
 		]
@@ -288,9 +284,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_update_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 0})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -301,9 +295,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_update_internal_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 1})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -319,9 +311,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_delete_internal_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 1})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -331,9 +321,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_delete_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
-		rg.append(
-			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
-		)
+		rg.append("environment_variables", {"key": "test_key", "value": "test_value", "internal": 0})
 		rg.save()
 		rg.reload()
 		self.assertEqual(len(rg.environment_variables), 1)
@@ -394,3 +382,41 @@ class TestReleaseGroup(unittest.TestCase):
 		)
 		new_group = frappe.get_doc("Release Group", group_name)
 		self.assertEqual(new_group.servers[0].server, f1_server.name)
+
+	def test_validate_dependant_apps(self):
+		release_group: ReleaseGroup = frappe.get_doc(
+			{
+				"doctype": "Release Group",
+				"version": "Nightly",
+				"enabled": True,
+				"title": f"Test ReleaseGroup {frappe.mock('name')}",
+				"team": self.team,
+				"public": True,
+			}
+		)
+		frappe_app = create_test_app()
+		hrms_app = create_test_app(name="hrms", title="test-hrms")
+
+		hrms_app_source = create_test_app_source(
+			"Nightly", hrms_app, "https://github.com/frappe/hrms", "master", team=self.team
+		)
+		frappe_app_source = create_test_app_source(
+			"Nightly", frappe_app, "https://github.com/frappe/frappe", "master", team=self.team
+		)
+
+		for app, app_source in [(frappe_app, frappe_app_source), (hrms_app, hrms_app_source)]:
+			release_group.append("apps", {"app": app.name, "source": app_source.name})
+
+		release_group.check_dependant_apps = True
+
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			release_group.insert()
+
+		# Insert dependant app and check if it works
+		erpnext = create_test_app("erpnext", "ERPNext")
+		erpnext_app_source = create_test_app_source(
+			"Nightly", erpnext, "https://github.com/frappe/erpnext", "master", self.team
+		)
+
+		release_group.append("apps", {"app": erpnext.name, "source": erpnext_app_source.name})
+		release_group.insert()

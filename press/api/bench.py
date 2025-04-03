@@ -199,8 +199,8 @@ def get_default_apps():
 
 	version_based_default_apps = {v.version: [] for v in versions}
 
-	for row in rows:
-		if row.app in default_apps:
+	for app in default_apps:
+		for row in filter(lambda x: x.app == app, rows):
 			version_based_default_apps[row.version].append(row)
 
 	return version_based_default_apps

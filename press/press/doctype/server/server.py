@@ -916,12 +916,9 @@ class BaseServer(Document, TagHelpers):
 
 	def _reset_swap(self, swap_size=1):
 		"""Reset swap by removing existing swap files and creating new swap"""
-		from press.api.server import calculate_swap
-
-		existing_swap_size = calculate_swap(self.name).get("swap", 0)
 		# list of swap files to remove assuming minimum swap size of 1 GB to be safe. Wrong names are handled in playbook
 		swap_files_to_remove = ["swap.default", "swap"]
-		swap_files_to_remove += ["swap" + str(i) for i in range(1, int(existing_swap_size))]
+		swap_files_to_remove += ["swap" + str(i) for i in range(1, 30)]
 		try:
 			ansible = Ansible(
 				playbook="reset_swap.yml",
