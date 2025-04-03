@@ -90,6 +90,7 @@
   "use_app_cache",
   "compress_app_cache",
   "use_delta_builds",
+  "use_agent_job_callbacks",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1398,6 +1399,12 @@
    "fieldname": "email_recipients",
    "fieldtype": "Small Text",
    "label": "Email Recipients"
+  },
+  {
+   "default": "1",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
   },
   {
    "default": "2",
