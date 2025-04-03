@@ -72,26 +72,17 @@ class ReleaseGroup(Document, TagHelpers):
 		from press.press.doctype.release_group_dependency.release_group_dependency import (
 			ReleaseGroupDependency,
 		)
-		from press.press.doctype.release_group_mount.release_group_mount import (
-			ReleaseGroupMount,
-		)
-		from press.press.doctype.release_group_package.release_group_package import (
-			ReleaseGroupPackage,
-		)
-		from press.press.doctype.release_group_server.release_group_server import (
-			ReleaseGroupServer,
-		)
-		from press.press.doctype.release_group_variable.release_group_variable import (
-			ReleaseGroupVariable,
-		)
-		from press.press.doctype.resource_tag.resource_tag import (
-			ResourceTag,
-		)
+		from press.press.doctype.release_group_mount.release_group_mount import ReleaseGroupMount
+		from press.press.doctype.release_group_package.release_group_package import ReleaseGroupPackage
+		from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
+		from press.press.doctype.release_group_variable.release_group_variable import ReleaseGroupVariable
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 		apps: DF.Table[ReleaseGroupApp]
 		bench_config: DF.Code | None
 		build_server: DF.Link | None
 		central_bench: DF.Check
+		check_dependant_apps: DF.Check
 		common_site_config: DF.Code | None
 		common_site_config_table: DF.Table[CommonSiteConfig]
 		compress_app_cache: DF.Check
@@ -225,13 +216,14 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
-		self.validate_dependant_apps()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+		if self.check_dependant_apps:
+			self.validate_dependant_apps()
 
 	def validate_dependant_apps(self):
 		required_repository_urls = set()

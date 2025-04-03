@@ -20,6 +20,7 @@
   "section_break_keov",
   "build_server",
   "apps_tab",
+  "check_dependant_apps",
   "apps",
   "config_tab",
   "bench_configuration_section",
@@ -374,10 +375,16 @@
    "fieldname": "redis_cache_size",
    "fieldtype": "Int",
    "label": "Redis Cache Size (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_dependant_apps",
+   "fieldtype": "Check",
+   "label": "Check Dependant Apps"
   }
  ],
  "links": [],
- "modified": "2024-12-27 11:58:29.907938",
+ "modified": "2025-04-03 12:05:48.538308",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
@@ -409,6 +416,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
