@@ -1,0 +1,123 @@
+---
+- name: Check if default storage pool exists
+  shell: virsh pool-list --all | grep default
+  register: default_storage_pool
+  failed_when: false
+  changed_when: false
+
+- name: Create default storage pool if it doesn't exist
+  block:
+    - name: Create directory for default storage pool
+      file:
+        path: "{{ storage_path | default('/var/lib/libvirt/images') }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create storage pool XML
+      template:
+        src: default_storage_pool.xml.j2
+        dest: /tmp/default_storage_pool.xml
+        mode: '0644'
+
+    - name: Define default storage pool
+      command: virsh pool-define /tmp/default_storage_pool.xml
+      when: default_storage_pool.rc != 0
+
+    - name: Build default storage pool
+      command: virsh pool-build default
+      when: default_storage_pool.rc != 0
+
+    - name: Set default storage pool to autostart
+      command: virsh pool-autostart default
+      when: default_storage_pool.rc != 0
+
+    - name: Start default storage pool
+      command: virsh pool-start default
+      when: default_storage_pool.rc != 0
+
+    - name: Clean up temporary storage pool XML file
+      file:
+        path: /tmp/default_storage_pool.xml
+        state: absent
+  when: default_storage_pool.rc != 0
+
+- name: Configure additional VM storage pools
+  block:
+    - name: Create VM storage directory
+      file:
+        path: "{{ vm_directory | default('/opt/vms') }}"
+        state: directory
+        mode: '0755'
+        owner: libvirt-qemu
+        group: kvm
+
+    - name: Check if VM storage pool exists
+      shell: virsh pool-list --all | grep vm_storage
+      register: vm_storage_pool
+      failed_when: false
+      changed_when: false
+
+    - name: Create VM storage pool XML
+      copy:
+        content: |
+          <pool type="dir">
+            <name>vm_storage</name>
+            <target>
+              <path>{{ vm_directory | default('/opt/vms') }}</path>
+              <permissions>
+                <mode>0755</mode>
+                <owner>64055</owner>
+                <group>108</group>
+              </permissions>
+            </target>
+          </pool>
+        dest: /tmp/vm_storage_pool.xml
+        mode: '0644'
+      when: vm_storage_pool.rc != 0
+
+    - name: Define VM storage pool
+      command: virsh pool-define /tmp/vm_storage_pool.xml
+      when: vm_storage_pool.rc != 0
+
+    - name: Set VM storage pool to autostart
+      command: virsh pool-autostart vm_storage
+      when: vm_storage_pool.rc != 0
+
+    - name: Start VM storage pool
+      command: virsh pool-start vm_storage
+      when: vm_storage_pool.rc != 0 and vm_storage_pool.stdout.find("active") == -1
+
+    - name: Clean up temporary VM storage pool XML file
+      file:
+        path: /tmp/vm_storage_pool.xml
+        state: absent
+      when: vm_storage_pool.rc != 0
+  when: setup_vm_storage | default(true)
+
+- name: Configure system for improved VM I/O performance
+  block:
+    - name: Set I/O scheduler to mq-deadline for better VM performance
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT="(.*)"'
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="\1 elevator=mq-deadline"'
+        backrefs: yes
+      register: grub_updated
+      failed_when: false
+
+    - name: Update GRUB if configuration changed
+      command: update-grub
+      when: grub_updated.changed
+
+    - name: Configure I/O scheduler for current session
+      shell: echo mq-deadline > /sys/block/{{ item }}/queue/scheduler
+      with_items:
+        - "sda"  # Default disk, might need to be adjusted
+      failed_when: false
+      changed_when: false
+
+    - name: Install thin-provisioning-tools for LVM
+      apt:
+        name: thin-provisioning-tools
+        state: present
+  when: optimize_io | default(true) 

@@ -1,0 +1,14 @@
+---
+- name: Verify network configuration
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Run network verification command
+      shell: "{{ command }}"
+      register: command_output
+      ignore_errors: yes
+
+    - name: Set command output
+      set_fact:
+        output: "{{ command_output.stdout }}" 
