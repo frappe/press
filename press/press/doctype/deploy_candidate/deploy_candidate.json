@@ -439,7 +439,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-12-27 11:59:09.917364",
+ "modified": "2025-04-02 22:39:37.680324",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -470,6 +470,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
