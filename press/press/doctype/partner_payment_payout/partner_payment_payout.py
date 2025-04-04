@@ -26,6 +26,7 @@ class PartnerPaymentPayout(Document):
 		partner: DF.Link
 		partner_commission: DF.Percent
 		payment_gateway: DF.Link
+		posting_date: DF.Date | None
 		to_date: DF.Date | None
 		total_amount: DF.Currency
 		transfer_items: DF.Table[PartnerPaymentPayoutItem]
@@ -63,3 +64,54 @@ class PartnerPaymentPayout(Document):
 				0,
 			)
 			frappe.db.commit()
+
+
+@frappe.whitelist()
+def submit_payment_payout(partner, payment_gateway, from_date, to_date, partner_commission, transactions):
+	partner = (
+		partner if frappe.db.exists("Team", partner) else frappe.get_value("Team", {"user": partner}, "name")
+	)
+
+	try:
+		payout = frappe.new_doc("Partner Payment Payout")
+		payout.partner = partner
+		payout.payment_gateway = payment_gateway
+		payout.from_date = from_date
+		payout.to_date = to_date
+		payout.partner_commission = partner_commission
+
+		for transaction in transactions:
+			payout.append(
+				"transfer_items",
+				{
+					"transaction_id": transaction.get("name"),
+					"amount": transaction.get("amount"),
+					"posting_date": transaction.get("posting_date"),
+				},
+			)
+
+		payout.total_amount = sum(t.get("amount", 0) for t in transactions)
+		payout.commission = payout.total_amount * (payout.partner_commission / 100)
+		payout.net_amount = payout.total_amount - payout.commission
+
+		payout.insert()
+		payout.submit()
+
+		transaction_names = [t.get("name") for t in transactions]
+		if transaction_names:
+			frappe.db.set_value(
+				"Payment Partner Transaction",
+				{"name": ["in", transaction_names], "submitted_to_frappe": 0},
+				"submitted_to_frappe",
+				1,
+			)
+
+		return {
+			"name": payout.name,
+			"total_amount": payout.total_amount,
+			"commission": payout.commission,
+			"net_amount": payout.net_amount,
+		}
+
+	except Exception as e:
+		frappe.log_error(f"Failed to create payout: {e!s}")
