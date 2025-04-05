@@ -37,10 +37,11 @@ def validate_server_request(remote_addr: str):
 
 
 def verify_job_id(server: str, job_id: str):
-	return frappe.db.get_value("Agent Job", {"server": server, "job_id": job_id})
+	return frappe.get_value("Agent Job", {"server": server, "job_id": job_id})
 
 
-def handle_job_updates(server: str, job_id: str):
+def handle_job_updates(server: str, job_identifier: str):
+	job_id = job_identifier
 	server: Server = frappe.get_doc("Server", server)
 	agent = server.agent
 	press_settings: PressSettings = frappe.get_doc("Press Settings")
@@ -80,6 +81,9 @@ def handle_job_updates(server: str, job_id: str):
 
 @frappe.whitelist(allow_guest=True)
 def callback(job_id: str):
+	"""
+	Handle job updates sent from agent.
+	"""
 	remote_addr = frappe.request.environ["HTTP_X_FORWARDED_FOR"]
 	server = validate_server_request(remote_addr)
 
@@ -90,10 +94,9 @@ def callback(job_id: str):
 	if not server:
 		frappe.throw("Not permitted", frappe.ValidationError)
 
-	job = verify_job_id(server, job_id=job_id)
+	job = verify_job_id(server, job_id)
 	if not job:
 		frappe.throw("Invalid Job Id", frappe.ValidationError)
 
-	handle_job_updates(server=server, job_id=job_id)
-	frappe.set_user("guest")
-	return "Success"
+	frappe.enqueue(handle_job_updates, server=server, job_identifier=job_id)
+	frappe.set_user("Guest")
