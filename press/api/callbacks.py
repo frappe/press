@@ -105,8 +105,6 @@ def callback(job_id: str):
 	remote_addr = frappe.request.environ["HTTP_X_FORWARDED_FOR"]
 	server = validate_server_request(remote_addr)
 
-	# TODO: There should be something better.
-
 	# Request origin not authorized to update job status.
 	if not server:
 		frappe.throw("Not permitted", frappe.ValidationError)
