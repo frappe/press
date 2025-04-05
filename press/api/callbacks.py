@@ -8,6 +8,7 @@ import typing
 import frappe
 
 from press.press.doctype.agent_job.agent_job import handle_polled_job
+from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_settings.press_settings import PressSettings
@@ -41,42 +42,50 @@ def verify_job_id(server: str, job_id: str):
 
 
 def handle_job_updates(server: str, job_identifier: str):
-	job_id = job_identifier
-	server: Server = frappe.get_doc("Server", server)
-	agent = server.agent
-	press_settings: PressSettings = frappe.get_doc("Press Settings")
+	current_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		job_id = job_identifier
+		server: Server = frappe.get_doc("Server", server)
+		agent = server.agent
+		press_settings: PressSettings = frappe.get_doc("Press Settings")
 
-	if not press_settings.use_agent_job_callbacks or not server.use_agent_job_callbacks:
-		return
+		if not press_settings.use_agent_job_callbacks or not server.use_agent_job_callbacks:
+			return
 
-	# For some reason output is not returned when job returns from rq callback
-	polled_job = agent.get_job_status(job_id)
+		# For some reason output is not returned when job returns from rq callback
+		polled_job = agent.get_job_status(job_id)
 
-	job = frappe.get_value(
-		"Agent Job",
-		fieldname=[
-			"name",
-			"job_id",
-			"status",
-			"callback_failure_count",
-			"job_type",
-		],
-		filters={"job_id": job_id},
-		as_dict=True,
-	)
+		job = frappe.get_value(
+			"Agent Job",
+			fieldname=[
+				"name",
+				"job_id",
+				"status",
+				"callback_failure_count",
+				"job_type",
+			],
+			filters={"job_id": job_id},
+			as_dict=True,
+		)
 
-	callback = frappe.get_doc(
-		{
-			"doctype": "Agent Job Callback",
-			"job_name": job.job_type,
-			"agent_job": polled_job["agent_job_id"],
-			"status": polled_job["status"],
-		}
-	)
-	callback.insert()
-	frappe.db.commit()
+		callback = frappe.get_doc(
+			{
+				"doctype": "Agent Job Callback",
+				"job_name": job.job_type,
+				"agent_job": polled_job["agent_job_id"],
+				"status": polled_job["status"],
+			}
+		)
+		callback.insert()
+		frappe.db.commit()
 
-	handle_polled_job(polled_job=polled_job, job=job)
+		handle_polled_job(polled_job=polled_job, job=job)
+	except Exception as e:
+		log_error("Failed to process agent job callback", data=e)
+		raise
+	finally:
+		frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -88,7 +97,6 @@ def callback(job_id: str):
 	server = validate_server_request(remote_addr)
 
 	# TODO: There should be something better.
-	frappe.set_user("Administrator")
 
 	# Request origin not authorized to update job status.
 	if not server:
@@ -99,4 +107,3 @@ def callback(job_id: str):
 		frappe.throw("Invalid Job Id", frappe.ValidationError)
 
 	frappe.enqueue(handle_job_updates, server=server, job_identifier=job_id)
-	frappe.set_user("Guest")
