@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 import ipaddress
-import typing
 
 import frappe
 
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import handle_polled_job
 from press.utils import log_error
-
-if typing.TYPE_CHECKING:
-	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
 
 
 def check_ip_version(remote_addr: str):
@@ -42,15 +38,29 @@ def verify_job_id(server: str, job_id: str):
 
 
 def handle_job_updates(server: str, job_identifier: str):
+	server_info = frappe.get_value(
+		"Server",
+		{"name": server},
+		fieldname=[
+			"use_for_build",
+			"use_agent_job_callbacks",
+		],
+		as_dict=True,
+	)
+
+	if not server_info.use_for_build:
+		return
+
 	current_user = frappe.session.user
 	try:
 		frappe.set_user("Administrator")
 		job_id = job_identifier
-		server: Server = frappe.get_doc("Server", server)
-		agent = server.agent
-		press_settings: PressSettings = frappe.get_doc("Press Settings")
+		agent = Agent(server, "Server")
+		press_settings_use_callbacks = frappe.get_value(
+			"Press Settings", fieldname=["use_agent_job_callbacks"]
+		)
 
-		if not press_settings.use_agent_job_callbacks or not server.use_agent_job_callbacks:
+		if not press_settings_use_callbacks or not server_info.use_agent_job_callbacks:
 			return
 
 		# For some reason output is not returned when job returns from rq callback
@@ -78,8 +88,6 @@ def handle_job_updates(server: str, job_identifier: str):
 			}
 		)
 		callback.insert()
-		frappe.db.commit()
-
 		handle_polled_job(polled_job=polled_job, job=job)
 	except Exception as e:
 		log_error("Failed to process agent job callback", data=e)
@@ -92,6 +100,7 @@ def handle_job_updates(server: str, job_identifier: str):
 def callback(job_id: str):
 	"""
 	Handle job updates sent from agent.
+	This api should ideally only be hit from a build server.
 	"""
 	remote_addr = frappe.request.environ["HTTP_X_FORWARDED_FOR"]
 	server = validate_server_request(remote_addr)
