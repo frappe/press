@@ -1,0 +1,12 @@
+ARG BASE_IMAGE
+
+FROM BASE_IMAGE
+
+# Install Redis from PPA
+RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
+  && apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  redis-server \
+  && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
+
