@@ -66,6 +66,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.remote_build.remote_build import RemoteBuild
 
 
 class DeployCandidate(Document):
@@ -309,12 +310,28 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		no_cache: bool = False,
 	):
-		self.pre_build(
-			method="_build",
-			no_push=no_push,
-			no_build=no_build,
-			no_cache=no_cache,
+		remote_build: RemoteBuild = frappe.get_doc(
+			{
+				"doctype": "Remote Build",
+				"deploy_candidate": self.name,
+				"no_build": no_build,
+				"no_push": no_push,
+				"no_cache": no_cache,
+			}
 		)
+		print(
+			remote_build.deploy_candidate,
+			remote_build.no_build,
+			remote_build.no_cache,
+			remote_build.no_push,
+		)
+		remote_build.insert()
+		# self.pre_build(
+		# 	method="_build",
+		# 	no_push=no_push,
+		# 	no_build=no_build,
+		# 	no_cache=no_cache,
+		# )
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
