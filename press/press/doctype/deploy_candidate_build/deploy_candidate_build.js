@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Frappe and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Remote Build", {
+// frappe.ui.form.on("Deploy Candidate Build", {
 // 	refresh(frm) {
 
 // 	},
