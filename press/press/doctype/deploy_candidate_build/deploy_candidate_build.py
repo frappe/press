@@ -1,5 +1,6 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
+# We currently don't take build steps into account.
 from __future__ import annotations
 
 import os
