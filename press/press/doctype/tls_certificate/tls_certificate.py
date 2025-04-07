@@ -37,7 +37,6 @@ class TLSCertificate(Document):
 		from frappe.types import DF
 
 		certificate: DF.Code | None
-		custom: DF.Check
 		decoded_certificate: DF.Code | None
 		domain: DF.Data
 		error: DF.Code | None
@@ -64,14 +63,14 @@ class TLSCertificate(Document):
 		self.obtain_certificate()
 
 	def validate(self):
-		if self.custom:
+		if self.provider == "Other":
 			if not self.team:
-				frappe.throw("Team is mandatory for custom certificates")
+				frappe.throw("Team is mandatory for custom TLS certificates.")
 
 			self.configure_full_chain()
 			self.validate_key_length()
 			self.validate_key_certificate_association()
-			# self._extract_certificate_details()
+			self._extract_certificate_details()
 
 	def on_update(self):
 		if self.is_new():
@@ -84,6 +83,7 @@ class TLSCertificate(Document):
 	def obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
 			return
+
 		if self.retry_count >= RETRY_LIMIT:
 			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
 		(
@@ -95,9 +95,6 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
-
-		if self.custom:
-			return
 
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
@@ -316,7 +313,6 @@ def renew_tls_certificates():
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
 			"retry_count": ("<", RETRY_LIMIT),
 			"provider": "Let's Encrypt",
-			"retry_count": ("<", 5)
 		},
 		ignore_ifnull=True,
 		order_by="expires_on ASC, status DESC",  # Oldest first, then prefer failures.
@@ -349,7 +345,7 @@ def renew_tls_certificates():
 			frappe.db.commit()
 
 
-def notify_custom_tls_renewal():
+def alert_custom_provider_tls_renewal():
 	seven_days = frappe.utils.add_days(None, 7).date()
 	fifteen_days = frappe.utils.add_days(None, 15).date()
 
@@ -362,7 +358,7 @@ def notify_custom_tls_renewal():
 		.select(tls_cert.name, tls_cert.domain, tls_cert.team, tls_cert.expires_on)
 		.where(tls_cert.status.isin(["Active", "Failure"]))
 		.where((Date(tls_cert.expires_on) == seven_days) | (Date(tls_cert.expires_on) == fifteen_days))
-		.where(tls_cert.custom == 1)
+		.where(tls_cert.provider == "Other")
 	)
 
 	pending = query.run(as_dict=True)

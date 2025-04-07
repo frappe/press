@@ -19,8 +19,14 @@ frappe.ui.form.on('TLS Certificate', {
 		frm.trigger('toggle_copy_private_key');
 	},
 
-	custom: function (frm) {
+	provider: function (frm) {
 		frm.trigger('show_obtain_certificate');
+		frm.trigger('toggle_read_only');
+		frm.trigger('toggle_hidden');
+		frm.trigger('toggle_copy_private_key');
+	},
+
+	wildcard: function (frm) {
 		frm.trigger('toggle_read_only');
 		frm.trigger('toggle_hidden');
 		frm.trigger('toggle_copy_private_key');
@@ -38,15 +44,16 @@ frappe.ui.form.on('TLS Certificate', {
 					() => frappe.utils.copy_to_clipboard(frm.doc.private_key),
 				);
 			});
-		}
-
-		if (frm.doc.custom) {
-			frm.remove_custom_button('Copy Private Key');
+		} else {
+			if (frm.doc.provider == "Let's Encrypt") {
+				console.log("Let's Encrypt");
+				frm.remove_custom_button('Copy Private Key');
+			}
 		}
 	},
 
 	show_obtain_certificate: function (frm) {
-		if (!frm.doc.custom) {
+		if (frm.doc.provider == "Let's Encrypt") {
 			frm.add_custom_button(__('Obtain Certificate'), () => {
 				frm.call({
 					method: 'obtain_certificate',
@@ -54,6 +61,8 @@ frappe.ui.form.on('TLS Certificate', {
 					callback: (result) => frm.refresh(),
 				});
 			});
+		} else {
+			frm.remove_custom_button(__('Obtain Certificate'));
 		}
 	},
 
@@ -68,13 +77,21 @@ frappe.ui.form.on('TLS Certificate', {
 			'team',
 		];
 		fields.forEach(function (field) {
-			frm.set_df_property(field, 'read_only', !frm.doc.custom);
+			frm.set_df_property(
+				field,
+				'read_only',
+				frm.doc.provider == "Let's Encrypt",
+			);
 			frm.refresh_field(field);
 		});
 	},
 
 	toggle_hidden: function (frm) {
-		frm.set_df_property('private_key', 'hidden', !frm.doc.custom);
+		frm.set_df_property(
+			'private_key',
+			'hidden',
+			frm.doc.provider == "Let's Encrypt",
+		);
 		frm.refresh_field('private_key');
 	},
 });
