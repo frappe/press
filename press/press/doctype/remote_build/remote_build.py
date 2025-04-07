@@ -78,36 +78,6 @@ class RemoteBuild(Document):
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
 
-	def _handle_older_bench_deps(self):
-		# Now now let older bench versions run as it is.
-		dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
-		with open(os.path.join(self.candidate.build_directory, "Dockerfile"), "w") as f:
-			content = frappe.render_template(dockerfile_template, {"doc": self.candidate}, is_path=True)
-			f.write(content)
-			return content
-
-	def _generate_dockerfile(self):
-		for d in self.candidate.dependencies:
-			if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
-				return self._handle_older_bench_deps()
-
-		docker_folder = os.path.join(self.candidate.build_directory, "docker")
-		if os.path.exists(docker_folder):
-			shutil.rmtree(docker_folder)
-
-		os.mkdir(docker_folder)
-		context_required_for = ["Dockerfile.frappe", "Dockerfile.wkhtmltopdf"]
-
-		for docker_step in os.scandir("press/docker/docker_steps"):
-			if docker_step.name in context_required_for:
-				with open(os.path.join(docker_folder, docker_step.name), "w") as docker_step_file:
-					content = frappe.render_template(docker_step.path, {"doc": self.candidate}, is_path=True)
-					docker_step_file.write(content)
-			else:
-				shutil.copy(docker_step.path, os.path.join(docker_folder, docker_step.name))
-
-		return None
-
 	def _clone_app(self, app: DeployCandidateApp):
 		step_name = f"Clone Repository {app.app}"
 		command = f"git clone {app.app}"
@@ -164,10 +134,9 @@ class RemoteBuild(Document):
 		self.candidate._set_container_mounts()
 
 		# Dockerfile generation
-		dockerfile = self._generate_dockerfile()
-		if dockerfile:
-			# Older bench version
-			self.candidate._add_build_steps(dockerfile)
+		self.candidate._generate_dockerfile()
+		# For now we don't add steps here.
+		# self.candidate._add_build_steps(dockerfile)
 
 		self.candidate._copy_config_files()
 		self.candidate._generate_redis_cache_config()
