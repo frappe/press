@@ -1,0 +1,62 @@
+# syntax = docker/dockerfile:experimental
+FROM ubuntu:20.04
+
+ENV LANG C.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+
+ENV OPENBLAS_NUM_THREADS 1
+ENV MKL_NUM_THREADS 1
+
+# Install essential packages
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  # Essentials
+  build-essential \
+  git \
+  mariadb-client \
+  libmariadb-dev \
+  pkg-config \
+  pv \
+  ntp \
+  wget \
+  curl \
+  supervisor \
+  file \
+  # Dependencies for SSH access
+  openssh-server \
+  nano \
+  vim \
+  less \
+  htop \
+  iputils-ping \
+  telnet \
+  # Dependencies for adding Python PPA
+  software-properties-common \
+  gnupg \
+  # weasyprint dependencies
+  libpango-1.0-0 \
+  libharfbuzz0b \
+  libpangoft2-1.0-0 \
+  libpangocairo-1.0-0 \
+  # wkhtmltopdf dependencies
+  ca-certificates \
+  fontconfig \
+  libfreetype6 \
+  libjpeg-turbo8 \
+  libpng16-16 \
+  libx11-6 \
+  libxcb1 \
+  libxext6 \
+  libxrender1 \
+  xfonts-75dpi \
+  xfonts-base \
+  # pycups dependencies
+  gcc \
+  libcups2-dev \
+  # s3-attachment dependencies
+  libmagic1 \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-essentials`
+
+COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
+
