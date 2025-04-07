@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestRemoteBuild(UnitTestCase):
+class UnitTestDeployCandidateBuild(UnitTestCase):
 	"""
-	Unit tests for RemoteBuild.
+	Unit tests for DeployCandidateBuild.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestRemoteBuild(IntegrationTestCase):
+class IntegrationTestDeployCandidateBuild(IntegrationTestCase):
 	"""
-	Integration tests for RemoteBuild.
+	Integration tests for DeployCandidateBuild.
 	Use this class for testing interactions between multiple components.
 	"""
 

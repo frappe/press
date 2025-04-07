@@ -1,26 +1,29 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
-
 from __future__ import annotations
 
 import os
 import shutil
 import typing
-from functools import cached_property
 
 import frappe
 from frappe.model.document import Document
 
 from press.press.doctype.deploy_candidate.utils import get_package_manager_files
+from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
+	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+		DeployCandidateApp,
+	)
+
+from functools import cached_property
 
 
-class RemoteBuild(Document):
+class DeployCandidateBuild(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -29,73 +32,29 @@ class RemoteBuild(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.build_steps.build_steps import BuildSteps
+		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+			DeployCandidateBuildStep,
+		)
 
-		build_steps: DF.Table[BuildSteps]
+		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_candidate: DF.Link
-		name: DF.Int | None
 		no_build: DF.Check
 		no_cache: DF.Check
 		no_push: DF.Check
-		status: DF.Literal["Pending", "Preparing", "Running", "Success", "Failure"]
 	# end: auto-generated types
-
-	def set_build_step(
-		self,
-		step_name: str,
-		step_status: str,
-		step_cached: bool = False,
-		step_output: str | None = None,
-		step_command: str | None = None,
-	):
-		"""Update the step or add the step to the build steps list"""
-		step_data = {
-			"step": step_name,
-			"step_output": step_output,
-			"step_cached": step_cached,
-			"step_status": step_status,
-			"step_command": step_command,
-		}
-
-		for idx, step in enumerate(self.build_steps):
-			if step.get("step") == step_name:
-				step_data["step_output"] = step_output if step_output is not None else step.get("step_output")
-				step_data["step_cached"] = (
-					step_cached if step_cached is not None else step.get("step_cached", False)
-				)
-				step_data["step_status"] = (
-					step_status if step_status is not None else step.get("step_status", "Pending")
-				)
-				step_data["step_command"] = (
-					step_command if step_command is not None else step.get("step_command")
-				)
-				self.build_steps[idx] = step_data
-				return
-
-		self.append("build_steps", step_data)
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
 
 	def _clone_app(self, app: DeployCandidateApp):
-		step_name = f"Clone Repository {app.app}"
-		command = f"git clone {app.app}"
 		source, cloned = frappe.get_value("App Release", app.release, ["clone_directory", "cloned"])
 
 		if cloned and os.path.exists(source):
-			self.set_build_step(
-				step_name=step_name,
-				step_status="Success",
-				step_cached=True,
-				step_command=command,
-				step_output="",
-			)
+			...
 		else:
-			self.set_build_step(step_name, "Running", command=command)
 			release: AppRelease = frappe.get_doc("App Release", app.release, for_update=True)
 			source = release._clone(force=True)
-			self.set_build_step(step_name, "Success", command=command)
 
 		target = os.path.join(self.candidate.build_directory, "apps", app.app)
 		shutil.copytree(source, target, symlinks=True)
@@ -113,13 +72,17 @@ class RemoteBuild(Document):
 
 		for app in self.candidate.apps:
 			repo_path_map[app.app] = self._clone_app(app)
+			app.app_name = self.candidate._get_app_name(app.app)
 
 		return repo_path_map
+
+	def _run_pre_build_validation(self, pmf):
+		PreBuildValidations(self.candidate, pmf).validate()
 
 	def _prepare_build_context(self):
 		repo_path_map = self._clone_repositories()
 		pmf = get_package_manager_files(repo_path_map)
-		self.candidate._run_prebuild_validations_and_update_step(pmf)
+		self._run_pre_build_validation(pmf)
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml

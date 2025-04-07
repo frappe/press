@@ -23,7 +23,7 @@ class BuildSteps(Document):
 		parentfield: DF.Data
 		parenttype: DF.Data
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
-		step: DF.Data | None
+		step: DF.Data
 	# end: auto-generated types
 
 	pass

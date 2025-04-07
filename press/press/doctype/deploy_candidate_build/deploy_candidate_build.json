@@ -1,42 +1,17 @@
 {
  "actions": [],
- "autoname": "autoincrement",
- "creation": "2025-04-07 12:01:33.290921",
+ "allow_rename": 1,
+ "creation": "2025-04-07 23:10:49.524879",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "deploy_candidate",
-  "status",
-  "build_steps",
-  "no_push",
+  "no_build",
   "no_cache",
-  "no_build"
+  "no_push",
+  "build_steps"
  ],
  "fields": [
-  {
-   "default": "0",
-   "fieldname": "no_push",
-   "fieldtype": "Check",
-   "label": "No Push"
-  },
-  {
-   "default": "0",
-   "fieldname": "no_cache",
-   "fieldtype": "Check",
-   "label": "No Cache"
-  },
-  {
-   "default": "0",
-   "fieldname": "no_build",
-   "fieldtype": "Check",
-   "label": "No Build"
-  },
-  {
-   "fieldname": "build_steps",
-   "fieldtype": "Table",
-   "label": "Build Steps",
-   "options": "Build Steps"
-  },
   {
    "fieldname": "deploy_candidate",
    "fieldtype": "Link",
@@ -46,21 +21,36 @@
    "reqd": 1
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Pending\nPreparing\nRunning\nSuccess\nFailure"
+   "default": "0",
+   "fieldname": "no_build",
+   "fieldtype": "Check",
+   "label": "No Build"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_cache",
+   "fieldtype": "Check",
+   "label": "No Cache"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_push",
+   "fieldtype": "Check",
+   "label": "No Push"
+  },
+  {
+   "fieldname": "build_steps",
+   "fieldtype": "Table",
+   "options": "Deploy Candidate Build Step"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-07 15:37:34.279219",
+ "modified": "2025-04-07 23:21:57.026719",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Remote Build",
- "naming_rule": "Autoincrement",
+ "name": "Deploy Candidate Build",
  "owner": "Administrator",
  "permissions": [
   {
@@ -79,6 +69,5 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": [],
- "title_field": "deploy_candidate"
+ "states": []
 }
