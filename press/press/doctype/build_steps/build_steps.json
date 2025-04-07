@@ -8,6 +8,7 @@
  "field_order": [
   "step",
   "status",
+  "command",
   "output",
   "cached"
  ],
@@ -33,13 +34,18 @@
    "fieldname": "cached",
    "fieldtype": "Check",
    "label": "Cached"
+  },
+  {
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "label": "Command"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-07 12:26:33.587989",
+ "modified": "2025-04-07 17:11:22.754979",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Build Steps",

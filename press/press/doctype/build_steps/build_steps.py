@@ -17,6 +17,7 @@ class BuildSteps(Document):
 		from frappe.types import DF
 
 		cached: DF.Check
+		command: DF.Code | None
 		output: DF.SmallText | None
 		parent: DF.Data
 		parentfield: DF.Data
