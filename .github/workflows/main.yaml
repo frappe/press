@@ -1,12 +1,12 @@
 name: Press Tests
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - '*'
+  # push:
+  #   branches:
+  #     - master
+  # pull_request:
+  #   branches:
+  #     - '*'
   workflow_dispatch:
 
 env:
