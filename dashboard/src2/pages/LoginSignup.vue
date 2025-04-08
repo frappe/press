@@ -205,7 +205,7 @@
 							class="flex flex-col"
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
-							<div class="-mb-2 mt-6 border-t text-center">
+							<div class="-mb-2 mt-6 border-t text-center" v-if="isLogin">
 								<div class="-translate-y-1/2 transform">
 									<span
 										class="relative bg-white px-2 text-sm font-medium leading-8 text-gray-800"
@@ -239,6 +239,7 @@
 								<Button
 									:loading="$resources.googleLogin.loading"
 									@click="$resources.googleLogin.submit()"
+									v-if="isLogin"
 								>
 									<div class="flex items-center">
 										<GoogleIconSolid class="w-4" />
