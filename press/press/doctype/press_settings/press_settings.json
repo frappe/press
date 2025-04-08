@@ -83,12 +83,14 @@
   "clone_directory",
   "build_directory",
   "build_server",
+  "minimum_rebuild_memory",
   "column_break_66",
   "code_server",
   "code_server_password",
   "use_app_cache",
   "compress_app_cache",
   "use_delta_builds",
+  "use_agent_job_callbacks",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1397,11 +1399,24 @@
    "fieldname": "email_recipients",
    "fieldtype": "Small Text",
    "label": "Email Recipients"
+  },
+  {
+   "default": "1",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
+  },
+  {
+   "default": "2",
+   "fieldname": "minimum_rebuild_memory",
+   "fieldtype": "Int",
+   "label": "Minimum Rebuild Memory (GB)",
+   "non_negative": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-19 11:06:43.919300",
+ "modified": "2025-03-26 12:38:52.559322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -1419,6 +1434,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
