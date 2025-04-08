@@ -102,6 +102,7 @@ class PressSettings(Document):
 		max_concurrent_physical_restorations: DF.Int
 		micro_debit_charge_inr: DF.Currency
 		micro_debit_charge_usd: DF.Currency
+		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
 		ngrok_auth_token: DF.Data | None
@@ -161,6 +162,7 @@ class PressSettings(Document):
 		twilio_phone_number: DF.Phone | None
 		usage_record_creation_batch_size: DF.Int
 		usd_rate: DF.Float
+		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
 		use_staging_ca: DF.Check
@@ -186,6 +188,9 @@ class PressSettings(Document):
 						frappe.throw(f"Invalid email address: {email}")
 			else:
 				frappe.throw("Email Recipients List can not be empty")
+
+		if self.minimum_rebuild_memory < 2:
+			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
