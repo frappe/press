@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 
 
-class ProcessSnapshots(Document):
+class ProcessSnapshot(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 

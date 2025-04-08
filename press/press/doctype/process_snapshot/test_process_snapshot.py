@@ -11,18 +11,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestProcessSnapshots(UnitTestCase):
+class UnitTestProcessSnapshot(UnitTestCase):
 	"""
-	Unit tests for ProcessSnapshots.
+	Unit tests for ProcessSnapshot.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestProcessSnapshots(IntegrationTestCase):
+class IntegrationTestProcessSnapshot(IntegrationTestCase):
 	"""
-	Integration tests for ProcessSnapshots.
+	Integration tests for ProcessSnapshot.
 	Use this class for testing interactions between multiple components.
 	"""
 

@@ -1150,7 +1150,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return self.get(f"benches/{bench}/status")
 
 	def get_snapshot(self, bench: str):
-		return self.get(f"snapshot/{bench}")
+		return self.get(f"process-snapshot/{bench}")
 
 	def run_after_migrate_steps(self, site):
 		data = {
