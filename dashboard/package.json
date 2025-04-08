@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "yarn generate-theme-config && vite",
-		"build": "yarn generate-theme-config && vite build --base=/assets/press/dashboard/ && yarn copy-html-entry",
+		"build": "yarn generate-theme-config && vite build --base=/assets/press/dashboard/ && yarn branding && yarn copy-html-entry",
+		"branding": "node replace.cjs",
 		"copy-html-entry": "cp ../press/public/dashboard/index.html ../press/www/dashboard.html",
 		"generate-theme-config": "node ./generateThemeConfig.cjs",
 		"test": "vitest",
