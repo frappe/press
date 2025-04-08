@@ -627,9 +627,9 @@ class DeployCandidate(Document):
 	@staticmethod
 	def process_run_build(job: "AgentJob", response_data: "dict | None"):
 		request_data = json.loads(job.request_data)
-		dc: DeployCandidate = frappe.get_doc(
-			"Deploy Candidate",
-			request_data["deploy_candidate"],
+		dc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build",
+			request_data["deploy_candidate_build"],
 		)
 		dc._process_run_build(job, request_data, response_data)
 
