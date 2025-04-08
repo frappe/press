@@ -9,7 +9,9 @@
   "no_build",
   "no_cache",
   "no_push",
-  "build_steps"
+  "build_steps",
+  "build_output",
+  "build_error"
  ],
  "fields": [
   {
@@ -42,12 +44,22 @@
    "fieldname": "build_steps",
    "fieldtype": "Table",
    "options": "Deploy Candidate Build Step"
+  },
+  {
+   "fieldname": "build_output",
+   "fieldtype": "Code",
+   "label": "Output"
+  },
+  {
+   "fieldname": "build_error",
+   "fieldtype": "Code",
+   "label": "Error"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-07 23:21:57.026719",
+ "modified": "2025-04-08 15:09:39.892799",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
