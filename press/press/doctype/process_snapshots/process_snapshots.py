@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
 
 
-class Snapshots(Document):
+class ProcessSnapshots(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -22,9 +22,9 @@ class Snapshots(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		bench: DF.Data
+		bench: DF.Link
 		dump: DF.JSON | None
-		server: DF.Data
+		server: DF.Link
 	# end: auto-generated types
 
 	def after_insert(self):

@@ -12,16 +12,18 @@
  "fields": [
   {
    "fieldname": "server",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Server",
+   "options": "Server",
    "reqd": 1
   },
   {
    "fieldname": "bench",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Bench",
+   "options": "Bench",
    "reqd": 1
   },
   {
@@ -34,10 +36,10 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-01 16:26:01.320350",
+ "modified": "2025-04-08 16:43:12.154769",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Snapshots",
+ "name": "Process Snapshots",
  "owner": "Administrator",
  "permissions": [
   {
