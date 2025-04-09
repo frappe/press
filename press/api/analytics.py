@@ -369,7 +369,7 @@ class SlowLogGroupByChart(StackedGroupByChart):
 			self.group_by_field = "mysql.slowlog.current_user"
 
 	def run(self):
-		if not self.database_name:
+		if not self.database_name and ResourceType(self.resource_type) is ResourceType.SITE:
 			return {"datasets": [], "labels": []}
 		return super().run()
 
