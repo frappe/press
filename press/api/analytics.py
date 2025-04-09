@@ -371,7 +371,20 @@ class SlowLogGroupByChart(StackedGroupByChart):
 	def run(self):
 		if not self.database_name and ResourceType(self.resource_type) is ResourceType.SITE:
 			return {"datasets": [], "labels": []}
-		return super().run()
+		res = super().run()
+		if ResourceType(self.resource_type) is not ResourceType.SERVER:
+			return res
+		for path_data in res["datasets"]:
+			site_name = frappe.db.get_value(
+				"Site",
+				{
+					"database_name": path_data["path"],
+				},
+				"name",
+			)
+			path_data["path"] = site_name or path_data["path"]
+
+		return res
 
 
 @frappe.whitelist()
