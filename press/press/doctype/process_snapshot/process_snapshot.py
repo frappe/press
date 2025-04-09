@@ -7,6 +7,7 @@ import json
 import typing
 
 import frappe
+import requests
 from frappe.model.document import Document
 
 if typing.TYPE_CHECKING:
@@ -29,5 +30,8 @@ class ProcessSnapshot(Document):
 
 	def after_insert(self):
 		server: Server = frappe.get_doc("Server", self.server)
-		self.dump = json.dumps(server.agent.get_snapshot(self.bench), indent=2)
+		try:
+			self.dump = json.dumps(server.agent.get_snapshot(self.bench), indent=2)
+		except requests.exceptions.HTTPError as e:
+			self.dump = json.dumps({"error": str(e)}, indent=2)
 		self.save()
