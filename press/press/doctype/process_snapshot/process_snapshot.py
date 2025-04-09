@@ -28,6 +28,13 @@ class ProcessSnapshot(Document):
 		server: DF.Link
 	# end: auto-generated types
 
+	def check_bench_on_server(self):
+		if not frappe.get_value("Bench", {"name": self.bench, "server": self.server}):
+			frappe.throw(f"{self.bench} does not exist on server {self.server}")
+
+	def validate(self):
+		self.check_bench_on_server()
+
 	def after_insert(self):
 		server: Server = frappe.get_doc("Server", self.server)
 		try:
