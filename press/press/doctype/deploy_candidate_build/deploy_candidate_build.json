@@ -6,9 +6,13 @@
  "engine": "InnoDB",
  "field_order": [
   "deploy_candidate",
+  "build_directory",
+  "column_break_9sga",
   "no_build",
   "no_cache",
   "no_push",
+  "deploy_after_build",
+  "section_break_bfxt",
   "build_steps",
   "build_output",
   "build_error"
@@ -54,12 +58,31 @@
    "fieldname": "build_error",
    "fieldtype": "Code",
    "label": "Error"
+  },
+  {
+   "default": "0",
+   "fieldname": "deploy_after_build",
+   "fieldtype": "Check",
+   "label": "Deploy After Build"
+  },
+  {
+   "fieldname": "column_break_9sga",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_bfxt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Directory"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-08 15:09:39.892799",
+ "modified": "2025-04-09 11:35:22.209593",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
@@ -81,5 +104,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "deploy_candidate"
 }

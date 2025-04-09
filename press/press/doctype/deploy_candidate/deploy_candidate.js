@@ -70,16 +70,6 @@ frappe.ui.form.on('Deploy Candidate', {
 			set_handler(frm, 'Stop and Fail', 'stop_and_fail', {}, 'Build');
 			set_handler(frm, 'Fail and Redeploy', 'fail_and_redeploy', {}, 'Deploy');
 		}
-
-		if (frm.doc.status !== 'Draft') {
-			set_handler(
-				frm,
-				'Cleanup Directory',
-				'cleanup_build_directory',
-				{},
-				'Build',
-			);
-		}
 	},
 });
 
@@ -107,6 +97,16 @@ function get_handler(frm, method, args) {
 				indicator: 'green',
 				message: __(`Duplicate {0} created and redeploy triggered.`, [
 					`<a href="/app/deploy-candidate/${data?.message}">Deploy Candidate</a>`,
+				]),
+			});
+		}
+
+		if (method === 'build' && data) {
+			frappe.msgprint({
+				title: 'Deploy Candidate Build Created',
+				indicator: 'green',
+				message: __(`{0} has been created`, [
+					`<a href="/app/deploy-candidate-build/${data.message}">Build</a>`,
 				]),
 			});
 		}

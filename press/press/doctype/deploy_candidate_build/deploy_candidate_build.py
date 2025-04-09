@@ -6,10 +6,13 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shlex
 import shutil
+import subprocess
 import tarfile
 import tempfile
 import typing
+from subprocess import Popen
 
 import frappe
 from frappe.core.utils import find
@@ -22,11 +25,13 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
-from press.press.doctype.deploy_candidate.utils import get_package_manager_files
+from press.press.doctype.deploy_candidate.utils import get_package_manager_files, load_pyproject
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
+	from datetime import datetime
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -85,7 +90,7 @@ def get_build_stage_and_step(
 
 
 def get_remote_step_output(
-	step_name: Literal["build", "push"],
+	step_name: typing.Literal["build", "push"],
 	output_data: dict,
 	response_data: dict | None,
 ):
@@ -134,9 +139,11 @@ class DeployCandidateBuild(Document):
 			DeployCandidateBuildStep,
 		)
 
+		build_directory: DF.Data | None
 		build_error: DF.Code | None
 		build_output: DF.Code | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
+		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
 		no_build: DF.Check
 		no_cache: DF.Check
@@ -146,6 +153,175 @@ class DeployCandidateBuild(Document):
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
+
+	def _generate_dockerfile(self):
+		dockerfile = os.path.join(self.build_directory, "Dockerfile")
+		with open(dockerfile, "w") as f:
+			dockerfile_template = "press/docker/Dockerfile"
+
+			for d in self.candidate.dependencies:
+				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
+					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
+
+			content = frappe.render_template(dockerfile_template, {"doc": self.candidate}, is_path=True)
+			f.write(content)
+			return content
+
+	def _generate_redis_cache_config(self):
+		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
+		with open(redis_cache_conf, "w") as f:
+			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
+			content = frappe.render_template(redis_cache_conf_template, {"doc": self.candidate}, is_path=True)
+			f.write(content)
+
+	def _generate_redis_queue_config(self):
+		redis_queue_conf = os.path.join(self.build_directory, "config", "redis-queue.conf")
+		with open(redis_queue_conf, "w") as f:
+			redis_queue_conf_template = "press/docker/config/redis-queue.conf"
+			content = frappe.render_template(redis_queue_conf_template, {"doc": self.candidate}, is_path=True)
+			f.write(content)
+
+	def _generate_supervisor_config(self):
+		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
+		with open(supervisor_conf, "w") as f:
+			supervisor_conf_template = "press/docker/config/supervisor.conf"
+			content = frappe.render_template(supervisor_conf_template, {"doc": self.candidate}, is_path=True)
+			f.write(content)
+
+	def _generate_apps_txt(self):
+		apps_txt = os.path.join(self.build_directory, "apps.txt")
+		with open(apps_txt, "w") as f:
+			content = "\n".join([app.app_name for app in self.candidate.apps])
+			f.write(content)
+
+	def _copy_config_files(self):
+		for target in ["common_site_config.json", "supervisord.conf", ".vimrc"]:
+			shutil.copy(os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory)
+
+		for target in ["config", "redis"]:
+			shutil.copytree(
+				os.path.join(frappe.get_app_path("press", "docker"), target),
+				os.path.join(self.build_directory, target),
+				symlinks=True,
+			)
+
+	def run(self, command, environment=None, directory=None):
+		process = Popen(
+			shlex.split(command),
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			env=environment,
+			cwd=directory or self.build_directory,
+			universal_newlines=True,
+		)
+		yield from process.stdout
+		process.stdout.close()
+		return_code = process.wait()
+		if return_code:
+			raise subprocess.CalledProcessError(return_code, command)
+
+	def generate_ssh_keys(self):
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
+			return
+
+		ca = frappe.get_doc("SSH Certificate Authority", ca)
+		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
+
+		self.generate_host_keys(ca, ssh_directory)
+		self.generate_user_keys(ca, ssh_directory)
+
+		ca_public_key = os.path.join(ssh_directory, "ca.pub")
+		with open(ca_public_key, "w") as f:
+			f.write(ca.public_key)
+
+		# Generate authorized principal file
+		principals = os.path.join(ssh_directory, "principals")
+		with open(principals, "w") as f:
+			f.write(f"restrict,pty {self.candidate.group}")
+
+	def generate_host_keys(self, ca, ssh_directory):
+		# Generate host keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate host Certificate
+		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
+
+	def generate_user_keys(self, ca, ssh_directory):
+		# Generate user keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate user certificates
+		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+		ca.sign(self.name, [self.candidate.group], "+52w", user_public_key_path, 0)
+
+		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
+		with open(user_private_key_path) as f:
+			self.user_private_key = f.read()
+
+		with open(user_public_key_path) as f:
+			self.user_public_key = f.read()
+
+		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
+		with open(user_certificate_path) as f:
+			self.user_certificate = f.read()
+
+		# Remove user key files
+		os.remove(user_private_key_path)
+		os.remove(user_public_key_path)
+		os.remove(user_certificate_path)
+
+	def _get_app_name(self, app):
+		"""Retrieves `name` attribute of app - equivalent to distribution name
+		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
+		whichever defines it in that order.
+		"""
+		app_name = None
+		apps_path = os.path.join(self.build_directory, "apps")
+
+		config_py_path = os.path.join(apps_path, app, "setup.cfg")
+		setup_py_path = os.path.join(apps_path, app, "setup.py")
+
+		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
+
+		if not app_name and os.path.exists(config_py_path):
+			from setuptools.config import read_configuration
+
+			config = read_configuration(config_py_path)
+			app_name = config.get("metadata", {}).get("name")
+
+		if not app_name and os.path.exists(setup_py_path):
+			# retrieve app name from setup.py as fallback
+			with open(setup_py_path, "rb") as f:
+				contents = f.read().decode("utf-8")
+				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
+
+			if search:
+				app_name = search[1]
+
+		if app_name and app != app_name:
+			return app_name
+
+		return app
+
+	def _get_app_pyproject(self, app):
+		apps_path = os.path.join(self.build_directory, "apps")
+		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
+		if not os.path.exists(pyproject_path):
+			return {}
+
+		return load_pyproject(app, pyproject_path)
 
 	def _clone_release_and_update_step(self, release, step):
 		step.cached = False
@@ -173,12 +349,12 @@ class DeployCandidateBuild(Document):
 		else:
 			source = self._clone_release_and_update_step(app.release, step)
 
-		target = os.path.join(self.candidate.build_directory, "apps", app.app)
+		target = os.path.join(self.build_directory, "apps", app.app)
 		shutil.copytree(source, target, symlinks=True)
 
 		if app.pullable_release:
 			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
-			target = os.path.join(self.candidate.build_directory, "app_updates", app.app)
+			target = os.path.join(self.build_directory, "app_updates", app.app)
 			# don't know why
 			shutil.copytree(source, target, symlinks=True)
 
@@ -189,7 +365,7 @@ class DeployCandidateBuild(Document):
 
 		for app in self.candidate.apps:
 			repo_path_map[app.app] = self._clone_app(app)
-			app.app_name = self.candidate._get_app_name(app.app)
+			app.app_name = self._get_app_name(app.app)
 
 		return repo_path_map
 
@@ -206,14 +382,24 @@ class DeployCandidateBuild(Document):
 		step.status = "Success"
 		self.save(ignore_version=True)
 
+	def add_post_build_steps(self):
+		slugs = []
+
+		if not self.no_push:
+			slugs.append(("upload", "image"))
+
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(stage_slug, step_slug, {})
+			step = dict(
+				status="Pending",
+				stage_slug=stage_slug,
+				step_slug=step_slug,
+				stage=stage,
+				step=step,
+			)
+			self.append("build_steps", step)
+
 	def add_pre_build_steps(self):
-		"""
-		This function just adds build steps that occur before
-		a docker build, rest of the steps are updated after the
-		Dockerfile is generated in:
-		- `_update_build_steps`
-		- `_update_post_build_steps`
-		"""
 		app_titles = {a.app: a.title for a in self.candidate.apps}
 
 		# Clone app slugs
@@ -357,6 +543,21 @@ class DeployCandidateBuild(Document):
 		if self.candidate.status == "Success" and request_data.get("deploy_after_build"):
 			self.candidate.create_deploy()
 
+	def _prepare_build_directory(self):
+		build_directory = frappe.get_value("Press Settings", None, "build_directory")
+		if not os.path.exists(build_directory):
+			os.mkdir(build_directory)
+
+		group_directory = os.path.join(build_directory, self.candidate.group)
+		if not os.path.exists(group_directory):
+			os.mkdir(group_directory)
+
+		self.build_directory = os.path.join(build_directory, self.candidate.group, self.name)
+		if os.path.exists(self.build_directory):
+			shutil.rmtree(self.build_directory)
+
+		os.mkdir(self.build_directory)
+
 	def _prepare_build_context(self):
 		repo_path_map = self._clone_repositories()
 		pmf = get_package_manager_files(repo_path_map)
@@ -375,15 +576,16 @@ class DeployCandidateBuild(Document):
 		self.candidate._set_container_mounts()
 
 		# Dockerfile generation
-		dockerfile = self.candidate._generate_dockerfile()
+		dockerfile = self._generate_dockerfile()
 		self.add_build_steps(dockerfile)
+		self.add_post_build_steps()
 
-		self.candidate._copy_config_files()
-		self.candidate._generate_redis_cache_config()
-		self.candidate._generate_redis_queue_config()
-		self.candidate._generate_supervisor_config()
-		self.candidate._generate_apps_txt()
-		self.candidate.generate_ssh_keys()
+		self._copy_config_files()
+		self._generate_redis_cache_config()
+		self._generate_redis_queue_config()
+		self._generate_supervisor_config()
+		self._generate_apps_txt()
+		self.generate_ssh_keys()
 
 	def _prepare_build(self):
 		if not self.no_cache:
@@ -392,7 +594,7 @@ class DeployCandidateBuild(Document):
 		if not self.no_cache:
 			self.candidate._set_app_cached_flags()
 
-		self.candidate._prepare_build_directory()
+		self._prepare_build_directory()
 		self._prepare_build_context()
 
 	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
@@ -435,9 +637,9 @@ class DeployCandidateBuild(Document):
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
 		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
 			if frappe.conf.developer_mode:
-				tar.add(self.candidate.build_directory, arcname=".", filter=fix_content_permission)
+				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
 			else:
-				tar.add(self.candidate.build_directory, arcname=".")
+				tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
 		step.duration = get_duration(start_time)
@@ -454,7 +656,7 @@ class DeployCandidateBuild(Document):
 		os.remove(context_filepath)
 		return context_filename
 
-	def _run_agent_jobs(self, deploy_after_build):
+	def _run_agent_jobs(self):
 		context_filename = self._package_and_upload_context()
 		settings = self.candidate._fetch_registry_settings()
 
@@ -473,19 +675,19 @@ class DeployCandidateBuild(Document):
 				# Next few values are not used by agent but are
 				# read in `process_run_build`
 				"deploy_candidate_build": self.name,
-				"deploy_after_build": deploy_after_build,
+				"deploy_after_build": self.deploy_after_build,
 			}
 		)
 		self.last_updated = now()
 		self.candidate._set_status_running()
 
-	def _start_build(self, deploy_after_build: bool = False):
+	def _start_build(self):
 		self.candidate._update_docker_image_metadata()  # we just assing a docker image tag
 
 		if self.no_build:
 			return
 
-		self._run_agent_jobs(deploy_after_build)
+		self._run_agent_jobs()
 
 	def _build(self):
 		self._prepare_build()
@@ -522,3 +724,14 @@ class DeployCandidateBuild(Document):
 
 	def after_insert(self):
 		self.pre_build()
+
+	@frappe.whitelist()
+	def cleanup_build_directory(self):
+		if not self.build_directory:
+			return
+
+		if os.path.exists(self.build_directory):
+			shutil.rmtree(self.build_directory)
+
+		self.build_directory = None
+		self.save()
