@@ -6,28 +6,34 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import typing
+from datetime import timedelta
 from subprocess import Popen
 
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
 
 from press.agent import Agent
+from press.press.doctype.deploy_candidate.deploy_notifications import (
+	create_build_failed_notification,
+)
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
 from press.press.doctype.deploy_candidate.utils import get_package_manager_files, load_pyproject
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
-from press.utils import get_current_team
+from press.utils import get_current_team, log_error
 
 if typing.TYPE_CHECKING:
 	from datetime import datetime
@@ -457,6 +463,13 @@ class DeployCandidateBuild(Document):
 
 		self.save()
 
+	def _flush_output_parsers(self, commit=False):
+		if self.build_output_parser:
+			self.build_output_parser.flush_output(commit)
+
+		if self.upload_step_updater:
+			self.upload_step_updater.flush_output(commit)
+
 	def _set_output_parsers(self):
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
@@ -499,6 +512,66 @@ class DeployCandidateBuild(Document):
 
 		return False
 
+	def should_build_retry(
+		self,
+		exc: Exception | None,
+		job: "AgentJob | None",
+	) -> bool:
+		if self.status != "Failure":
+			return False
+
+		# Retry twice before giving up
+		if self.retry_count >= 3:
+			return False
+
+		bo = self.build_output
+		if isinstance(bo, str) and should_build_retry_build_output(bo):
+			return True
+
+		if exc and should_build_retry_exc(exc):
+			return True
+
+		if job and should_build_retry_job(job):
+			return True
+
+		return False
+
+	def handle_build_failure(
+		self,
+		exc: Exception | None = None,
+		job: "AgentJob | None" = None,
+	) -> None:
+		self._flush_output_parsers()
+		self.candidate._set_status_failure()
+		should_retry = self.should_build_retry(exc=exc, job=job)
+
+		if not should_retry:
+			self.candidate._fail_site_group_deploy_if_exists()
+
+		# Do not send a notification if the build is being retried.
+		if not should_retry and create_build_failed_notification(self, exc):
+			self.candidate.user_addressable_failure = True
+			self.save(ignore_permissions=True)
+			frappe.db.commit()
+			return
+
+		if should_retry:
+			self.schedule_build_retry()
+			return
+
+		if exc:
+			# Log and raise error if build failure is not actionable or no retry
+			log_error("Deploy Candidate Build Exception", doc=self)
+
+	def schedule_build_retry(self):
+		self.candidate.retry_count += 1
+		minutes = min(5**self.candidate.retry_count, 125)
+		scheduled_time = now() + timedelta(minutes=minutes)
+		self.candidate.schedule_build_and_deploy(
+			run_now=False,
+			scheduled_time=scheduled_time,
+		)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
@@ -532,8 +605,7 @@ class DeployCandidateBuild(Document):
 			self.upload_step_updater.process(output)
 
 		if self.has_remote_build_failed(job, job_data):
-			# self.handle_build_failure(exc=None, job=job)
-			...
+			self.handle_build_failure(exc=None, job=job)
 		else:
 			self.candidate._update_status_from_remote_build_job(job)
 
@@ -678,7 +750,7 @@ class DeployCandidateBuild(Document):
 				"deploy_after_build": self.deploy_after_build,
 			}
 		)
-		self.last_updated = now()
+		self.candidate.last_updated = now()
 		self.candidate._set_status_running()
 
 	def _start_build(self):
@@ -690,18 +762,56 @@ class DeployCandidateBuild(Document):
 		self._run_agent_jobs()
 
 	def _build(self):
-		self._prepare_build()
-		self._start_build()
+		self.candidate._set_status_preparing()
+		self._set_output_parsers()
+		try:
+			self._prepare_build()
+			self._start_build()
+		except Exception as exc:
+			self.handle_build_failure(exc)
 
-	def reset_build_steps(self):
+	def reset_build_state(self):
 		self.build_steps.clear()
+		self.build_directory = None
+		self.build_error = ""
+		self.build_output = ""
+		# Failure flags
+		self.candidate.user_addressable_failure = False
+		self.candidate.manually_failed = False
+		# Build times
+		self.candidate.build_start = None
+		self.candidate.build_end = None
+		self.candidate.build_duration = None
+		# Pending times
+		self.candidate.pending_start = None
+		self.candidate.pending_end = None
+		self.candidate.pending_duration = None
 
-	def pre_build(self):
-		self.reset_build_steps()
+	def validate_status(self):
+		if self.candidate.status in ["Draft", "Success", "Failure", "Scheduled"]:
+			return True
+
+		frappe.msgprint(
+			f"Build is in <b>{self.candidate.status}</b> state. "
+			"Please wait for build to succeed or fail before retrying."
+		)
+		return False
+
+	def pre_build(self, **kwargs):
+		self.reset_build_state()
 		self.add_pre_build_steps()
 
-		# VALIDATE STATUS
+		if not self.validate_status():
+			return
+
+		if "no_cache" in kwargs:
+			self.no_cache = kwargs.get("no_cache")
+			del kwargs["no_cache"]
+
+		self.no_build = kwargs.get("no_build", False)
 		self.candidate.set_build_server(self.no_build)
+		self.candidate._set_status_pending()
+
 		(
 			user,
 			session_data,
@@ -712,11 +822,9 @@ class DeployCandidateBuild(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		# queue = "default" if frappe.conf.developer_mode else "build"
+		queue = "default" if frappe.conf.developer_mode else "build"
 
-		# ENQUEUE!
-		self._build()
-		# frappe.enqueue(self._build, queue=queue, timeout=2400, enqueue_after_commit=True)
+		frappe.enqueue(self._build, queue=queue, timeout=2400, enqueue_after_commit=True)
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -724,6 +832,11 @@ class DeployCandidateBuild(Document):
 
 	def after_insert(self):
 		self.pre_build()
+
+	def autoname(self):
+		candidate_name = self.candidate.name[7:]
+		series = f"build-{candidate_name}-.######"
+		self.name = make_autoname(series)
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
@@ -735,3 +848,77 @@ class DeployCandidateBuild(Document):
 
 		self.build_directory = None
 		self.save()
+
+
+def should_build_retry_build_output(build_output: str):
+	# Build failed cause APT could not get lock.
+	if "Could not get lock /var/cache/apt/archives/lock" in build_output:
+		return True
+
+	# Build failed cause Docker could not find a mounted file/folder
+	if "failed to compute cache key: failed to calculate checksum of ref" in build_output:
+		return True
+
+	# Failed to pull package from pypi
+	if "Connection to pypi.org timed out" in build_output:
+		return True
+
+	# Caused when fetching Python from deadsnakes/ppa
+	if "Error: retrieving gpg key timed out" in build_output:
+		return True
+
+	# Yarn registry bad gateway
+	if (
+		"error https://registry.yarnpkg.com/" in build_output
+		and 'Request failed "502 Bad Gateway"' in build_output
+	):
+		return True
+
+	# NPM registry internal server error
+	if (
+		"Error: https://registry.npmjs.org/" in build_output
+		and 'Request failed "500 Internal Server Error"' in build_output
+	):
+		return True
+
+	return False
+
+
+def should_build_retry_exc(exc: Exception):
+	error = frappe.get_traceback(False)
+	if not error and len(exc.args) == 0:
+		return False
+
+	error = error or "\n".join(str(a) for a in exc.args)
+
+	# Failed to upload build context (Mostly 502)
+	if "Failed to upload build context" in error:
+		return True
+
+	# Redis refused connection (press side)
+	if "redis.exceptions.ConnectionError: Error 111" in error:
+		return True
+
+	if "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error:
+		return True
+
+	return False
+
+
+def should_build_retry_job(job: "AgentJob"):
+	if not job.traceback:
+		return False
+
+	# Failed to upload docker image
+	if "TimeoutError: timed out" in job.traceback:
+		return True
+
+	# Redis connection reset
+	if "ConnectionResetError: [Errno 104] Connection reset by peer" in job.traceback:
+		return True
+
+	# Redis connection refused
+	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
+		return True
+
+	return False

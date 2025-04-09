@@ -81,8 +81,21 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-04-09 11:35:22.209593",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Error Log",
+   "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2025-04-09 14:01:03.913980",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
