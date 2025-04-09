@@ -7,6 +7,7 @@
  "field_order": [
   "deploy_candidate",
   "build_directory",
+  "status",
   "column_break_9sga",
   "no_build",
   "no_cache",
@@ -14,6 +15,10 @@
   "deploy_after_build",
   "section_break_bfxt",
   "build_steps",
+  "times_section",
+  "build_start",
+  "column_break_5m9f",
+  "build_end",
   "output_tab",
   "build_output",
   "build_error"
@@ -93,6 +98,35 @@
    "fieldname": "output_tab",
    "fieldtype": "Tab Break",
    "label": "Output"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Preparing\nRunning\nSuccess\nFailure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "times_section",
+   "fieldtype": "Section Break",
+   "label": "Times"
+  },
+  {
+   "fieldname": "build_start",
+   "fieldtype": "Datetime",
+   "label": "Build Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5m9f",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "build_end",
+   "fieldtype": "Datetime",
+   "label": "Build End",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -111,7 +145,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-09 15:44:11.439684",
+ "modified": "2025-04-09 17:30:33.593328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
