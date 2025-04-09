@@ -84,7 +84,7 @@ class CertificateAuthority(Document):
 			f" {self.openssl_config_file} -key {self.private_key_file} -out"
 			f" {self.certificate_file}"
 		)
-		os.chmod(self.certificate_file, 444)
+		os.chmod(self.certificate_file, 400)
 
 	def generate_certificate_signing_request(self):
 		self.run(
