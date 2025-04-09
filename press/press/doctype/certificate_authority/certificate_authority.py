@@ -36,7 +36,7 @@ class CertificateAuthority(Document):
 		organization: DF.Data
 		organizational_unit: DF.Data
 		parent_authority: DF.Link | None
-		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		# rsa_key_size: DF.Literal["2048", "3072", "4096"]
 		validity_days: DF.Int
 	# end: auto-generated types
 
@@ -75,7 +75,7 @@ class CertificateAuthority(Document):
 		return subprocess.check_output(shlex.split(command)).decode()
 
 	def generate_private_key(self):
-		self.run(f"openssl genrsa -out {self.private_key_file} {self.rsa_key_size}")
+		self.run(f"openssl genpkey --algorithm ED25519 {self.private_key_file}")
 		os.chmod(self.private_key_file, 400)
 
 	def generate_root_certificate(self):
