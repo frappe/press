@@ -383,6 +383,14 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
+	@dashboard_whitelist()
+	def take_process_snapshot(self):
+		process_snapshot = frappe.get_doc(
+			{"doctype": "Process Snapshot", "bench": self.name, "server": self.server}
+		)
+		process_snapshot.insert()
+		return process_snapshot.name
+
 	def check_ongoing_job(self):
 		ongoing_jobs = frappe.db.exists(
 			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending"])}
