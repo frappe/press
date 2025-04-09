@@ -10,7 +10,7 @@
 		<h3 class="text-lg font-medium text-gray-900">
 			{{ role.doc?.title }}
 		</h3>
-		<Tooltip text="Admin Role" v-if="role.doc.admin_access">
+		<Tooltip text="Admin Role" v-if="role.doc?.admin_access">
 			<FeatherIcon name="shield" class="h-5 w-5 text-gray-700" />
 		</Tooltip>
 	</div>

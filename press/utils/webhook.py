@@ -63,12 +63,18 @@ def create_webhook_event(event: str, payload: dict | Document, team: str) -> boo
 		return False
 
 
+UNNECESSARY_FIELDS_OF_PAYLOAD = ("build_steps", "apps")
+
+
 def _process_document_payload(payload: Document):
 	# convert payload to dict
 	# send fields mentioned in dashboard_fields, as other fields can have sensitive information
 	fields = list(default_fields)
 	if hasattr(payload, "dashboard_fields"):
 		fields += payload.dashboard_fields
+
+	fields = [field for field in fields if field not in UNNECESSARY_FIELDS_OF_PAYLOAD]
+
 	_doc = frappe._dict()
 	for fieldname in fields:
 		_doc[fieldname] = payload.get(fieldname)

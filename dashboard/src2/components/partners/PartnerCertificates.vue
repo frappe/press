@@ -109,6 +109,7 @@ export default {
 						slots: {
 							prefix: icon('plus'),
 						},
+						disabled: true,
 						onClick: () => {
 							renderDialog(
 								h(PartnerCertificateRequest, {
