@@ -147,14 +147,17 @@ class DeployCandidateBuild(Document):
 		)
 
 		build_directory: DF.Data | None
+		build_end: DF.Datetime | None
 		build_error: DF.Code | None
 		build_output: DF.Code | None
+		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
 		no_build: DF.Check
 		no_cache: DF.Check
 		no_push: DF.Check
+		status: DF.Literal["Preparing", "Running", "Success", "Failure"]
 	# end: auto-generated types
 
 	@cached_property
@@ -559,6 +562,8 @@ class DeployCandidateBuild(Document):
 		job: "AgentJob | None" = None,
 	) -> None:
 		self._flush_output_parsers()
+		self.build_end = now()
+		self.status = "Failure"
 		self.candidate._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
@@ -645,6 +650,10 @@ class DeployCandidateBuild(Document):
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
 		else:
+			if job.status == "Success":
+				self.status = "Success"
+				self.build_end = now()
+
 			self.candidate._update_status_from_remote_build_job(job)
 
 		# Fallback case cause upload step can be left hanging
@@ -788,6 +797,9 @@ class DeployCandidateBuild(Document):
 				"deploy_after_build": self.deploy_after_build,
 			}
 		)
+
+		self.status = "Running"
+		self.save(ignore_permissions=True)
 		self.candidate.last_updated = now()
 		self.candidate._set_status_running()
 
@@ -800,6 +812,8 @@ class DeployCandidateBuild(Document):
 		self._run_agent_jobs()
 
 	def _build(self):
+		self.build_start = now()
+		self.status = "Preparing"
 		self.candidate._set_status_preparing()
 		self._set_output_parsers()
 		try:
