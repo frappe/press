@@ -14,6 +14,7 @@
   "deploy_after_build",
   "section_break_bfxt",
   "build_steps",
+  "output_tab",
   "build_output",
   "build_error"
  ],
@@ -24,46 +25,55 @@
    "in_list_view": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "default": "0",
    "fieldname": "no_build",
    "fieldtype": "Check",
-   "label": "No Build"
+   "label": "No Build",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "no_cache",
    "fieldtype": "Check",
-   "label": "No Cache"
+   "label": "No Cache",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "no_push",
    "fieldtype": "Check",
-   "label": "No Push"
+   "label": "No Push",
+   "read_only": 1
   },
   {
    "fieldname": "build_steps",
    "fieldtype": "Table",
-   "options": "Deploy Candidate Build Step"
+   "label": "Build Steps",
+   "options": "Deploy Candidate Build Step",
+   "read_only": 1
   },
   {
    "fieldname": "build_output",
    "fieldtype": "Code",
-   "label": "Output"
+   "label": "Build Output",
+   "read_only": 1
   },
   {
    "fieldname": "build_error",
    "fieldtype": "Code",
-   "label": "Error"
+   "label": "Build Error",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "deploy_after_build",
    "fieldtype": "Check",
-   "label": "Deploy After Build"
+   "label": "Deploy After Build",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_9sga",
@@ -76,7 +86,13 @@
   {
    "fieldname": "build_directory",
    "fieldtype": "Data",
-   "label": "Directory"
+   "label": "Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_tab",
+   "fieldtype": "Tab Break",
+   "label": "Output"
   }
  ],
  "grid_page_length": 50,
@@ -95,7 +111,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-09 14:01:03.913980",
+ "modified": "2025-04-09 15:44:11.439684",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

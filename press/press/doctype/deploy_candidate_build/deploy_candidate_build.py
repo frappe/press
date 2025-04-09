@@ -22,6 +22,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
 from press.press.doctype.deploy_candidate.deploy_notifications import (
@@ -159,6 +160,22 @@ class DeployCandidateBuild(Document):
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
+
+	def _get_dockerfile_checkpoints(self, dockerfile: str) -> list[str]:
+		"""
+		Returns checkpoint slugs from a generated Dockerfile
+		"""
+
+		# Example: "`#stage-pre-essentials`", "`#stage-apps-print_designer`"
+		rx = re.compile(r"`#stage-([^`]+)`")
+
+		# Example: "pre-essentials", "apps-print_designer"
+		checkpoints = []
+		for line in dockerfile.split("\n"):
+			matches = rx.findall(line)
+			checkpoints.extend(matches)
+
+		return checkpoints
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -439,7 +456,7 @@ class DeployCandidateBuild(Document):
 	def add_build_steps(self, dockerfile: str):
 		app_titles = {a.app: a.title for a in self.candidate.apps}
 
-		checkpoints = self.candidate._get_dockerfile_checkpoints(dockerfile)
+		checkpoints = self._get_dockerfile_checkpoints(dockerfile)
 		for checkpoint in checkpoints:
 			splits = checkpoint.split("-", 1)
 			if len(splits) != 2:
@@ -572,6 +589,27 @@ class DeployCandidateBuild(Document):
 			scheduled_time=scheduled_time,
 		)
 
+	@retry(
+		reraise=True,
+		wait=wait_fixed(300),
+		stop=stop_after_attempt(3),
+	)
+	def upload_build_context_for_docker_build(
+		self,
+		context_filepath: str,
+		build_server: str,
+	):
+		agent = Agent(build_server)
+		with open(context_filepath, "rb") as file:
+			if upload_filename := agent.upload_build_context_for_docker_build(file, self.name):
+				return upload_filename
+
+		message = "Failed to upload build context to remote docker builder"
+		if agent.response:
+			message += f"\nagent response: {agent.response.text}"
+
+		raise Exception(message)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
@@ -682,7 +720,7 @@ class DeployCandidateBuild(Document):
 		self.save(ignore_version=True)
 
 		try:
-			upload_filename = self.candidate.upload_build_context_for_docker_build(
+			upload_filename = self.upload_build_context_for_docker_build(
 				context_filepath,
 				build_server,
 			)
@@ -754,7 +792,7 @@ class DeployCandidateBuild(Document):
 		self.candidate._set_status_running()
 
 	def _start_build(self):
-		self.candidate._update_docker_image_metadata()  # we just assing a docker image tag
+		self.candidate._update_docker_image_metadata()
 
 		if self.no_build:
 			return
