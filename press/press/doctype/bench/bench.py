@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Generator, Iterable, Literal
 
 import frappe
 import pytz
-from apps.press.press.utils.webhook import create_webhook_event
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
@@ -27,6 +26,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import SupervisorProcess, flatten, log_error, parse_supervisor_status
+from press.utils.webhook import create_webhook_event
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -976,6 +976,9 @@ def process_new_bench_job_update(job):
 		return
 
 	frappe.db.set_value("Bench", job.bench, "status", updated_status)
+	if bench.team != "Administrator":
+		bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
+		create_webhook_event("Bench Status Update", bench, bench.team)
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
@@ -1021,7 +1024,7 @@ def process_new_bench_job_update(job):
 
 
 def process_archive_bench_job_update(job):
-	bench_status = frappe.get_value("Bench", job.bench, "status")
+	bench = frappe.get_doc("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1036,11 +1039,15 @@ def process_archive_bench_job_update(job):
 			updated_status = "Active"
 		frappe.db.set_value("Bench", job.bench, "last_archive_failure", frappe.utils.now_datetime())
 
-	if updated_status != bench_status:
+	if updated_status != bench.status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		is_ssh_proxy_setup = frappe.db.get_value("Bench", job.bench, "is_ssh_proxy_setup")
 		if updated_status == "Archived" and is_ssh_proxy_setup:
 			frappe.get_doc("Bench", job.bench).remove_ssh_user()
+
+		if bench.team != "Administrator":
+			bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
+			create_webhook_event("Bench Status Update", bench, bench.team)
 
 
 def process_add_ssh_user_job_update(job):
