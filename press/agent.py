@@ -867,9 +867,7 @@ class Agent:
 				for key, value in files.items()
 			}
 			file_objects["json"] = json.dumps(data).encode()
-			return requests.request(
-				method, url, headers=headers, files=file_objects, verify=verify, timeout=(10, 40)
-			)
+			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
