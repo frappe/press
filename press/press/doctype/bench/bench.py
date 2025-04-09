@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Generator, Iterable, Literal
 
 import frappe
 import pytz
+from apps.press.press.utils.webhook import create_webhook_event
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
@@ -343,6 +344,8 @@ class Bench(Document):
 
 	def on_update(self):
 		self.update_bench_config()
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Status Update", self, self.team)
 
 	def update_bench_config(self, force=False):
 		if force:

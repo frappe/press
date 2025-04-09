@@ -1432,8 +1432,8 @@ class DeployCandidate(Document):
 				docname=self.name,
 			)
 
-		if self.has_value_changed("status"):
-			create_webhook_event("Deploy Status Update", self, self.team)
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def get_dependency_version(self, dependency: str, as_env: bool = False):
 		if dependency.islower():
