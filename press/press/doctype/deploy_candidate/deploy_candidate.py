@@ -445,30 +445,6 @@ class DeployCandidate(Document):
 			# Log and raise error if build failure is not actionable or no retry
 			log_error("Deploy Candidate Build Exception", doc=self)
 
-	def should_build_retry(
-		self,
-		exc: Exception | None,
-		job: "AgentJob | None",
-	) -> bool:
-		if self.status != "Failure":
-			return False
-
-		# Retry twice before giving up
-		if self.retry_count >= 3:
-			return False
-
-		bo = self.build_output
-		if isinstance(bo, str) and should_build_retry_build_output(bo):
-			return True
-
-		if exc and should_build_retry_exc(exc):
-			return True
-
-		if job and should_build_retry_job(job):
-			return True
-
-		return False
-
 	def schedule_build_retry(self):
 		self.retry_count += 1
 		minutes = min(5**self.retry_count, 125)
@@ -1745,80 +1721,6 @@ def correct_status(dc_name: str):
 		return
 
 	dc._stop_and_fail(False)
-
-
-def should_build_retry_build_output(build_output: str):
-	# Build failed cause APT could not get lock.
-	if "Could not get lock /var/cache/apt/archives/lock" in build_output:
-		return True
-
-	# Build failed cause Docker could not find a mounted file/folder
-	if "failed to compute cache key: failed to calculate checksum of ref" in build_output:
-		return True
-
-	# Failed to pull package from pypi
-	if "Connection to pypi.org timed out" in build_output:
-		return True
-
-	# Caused when fetching Python from deadsnakes/ppa
-	if "Error: retrieving gpg key timed out" in build_output:
-		return True
-
-	# Yarn registry bad gateway
-	if (
-		"error https://registry.yarnpkg.com/" in build_output
-		and 'Request failed "502 Bad Gateway"' in build_output
-	):
-		return True
-
-	# NPM registry internal server error
-	if (
-		"Error: https://registry.npmjs.org/" in build_output
-		and 'Request failed "500 Internal Server Error"' in build_output
-	):
-		return True
-
-	return False
-
-
-def should_build_retry_exc(exc: Exception):
-	error = frappe.get_traceback(False)
-	if not error and len(exc.args) == 0:
-		return False
-
-	error = error or "\n".join(str(a) for a in exc.args)
-
-	# Failed to upload build context (Mostly 502)
-	if "Failed to upload build context" in error:
-		return True
-
-	# Redis refused connection (press side)
-	if "redis.exceptions.ConnectionError: Error 111" in error:
-		return True
-
-	if "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error:
-		return True
-
-	return False
-
-
-def should_build_retry_job(job: "AgentJob"):
-	if not job.traceback:
-		return False
-
-	# Failed to upload docker image
-	if "TimeoutError: timed out" in job.traceback:
-		return True
-
-	# Redis connection reset
-	if "ConnectionResetError: [Errno 104] Connection reset by peer" in job.traceback:
-		return True
-
-	# Redis connection refused
-	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
-		return True
-
-	return False
 
 
 def throw_no_build_server():
