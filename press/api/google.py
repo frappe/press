@@ -3,15 +3,11 @@
 
 from __future__ import annotations
 
-import json
-
 import frappe
 from frappe import _
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
-from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
 from oauthlib.oauth2 import AccessDeniedError
 
 from press.api.product_trial import _get_active_site as get_active_site_of_product_trial
@@ -72,15 +68,6 @@ def callback(code=None, state=None):  # noqa: C901
 
 	email = id_info.get("email")
 
-	# phone (this may return nothing if info doesn't exists)
-	phone_number = ""
-	if flow.credentials.refresh_token:  # returns only for the first authorization
-		credentials = Credentials.from_authorized_user_info(json.loads(flow.credentials.to_json()))
-		service = build("people", "v1", credentials=credentials)
-		person = service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-		if person and person.get("phoneNumbers"):
-			phone_number = person.get("phoneNumbers")[0].get("value")
-
 	team_name, team_enabled = frappe.db.get_value("Team", {"user": email}, ["name", "enabled"]) or [0, 0]
 
 	if team_name and not team_enabled:
@@ -101,7 +88,6 @@ def callback(code=None, state=None):  # noqa: C901
 		email=email,
 		first_name=id_info.get("given_name"),
 		last_name=id_info.get("family_name"),
-		phone_number=phone_number,
 		role="Press Admin",
 		oauth_signup=True,
 		product_trial=product_trial.name if product_trial else None,

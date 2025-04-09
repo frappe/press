@@ -63,7 +63,7 @@ class AppSource(Document):
 			try:
 				owner, repo = app.split("/")
 			except ValueError:
-				owner = "frappe"
+				owner, repo = "frappe", app
 
 			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
 
