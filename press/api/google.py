@@ -10,7 +10,6 @@ from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from oauthlib.oauth2 import AccessDeniedError
 
-from press.api.product_trial import _get_active_site as get_active_site_of_product_trial
 from press.utils import log_error
 
 
@@ -97,17 +96,8 @@ def callback(code=None, state=None):  # noqa: C901
 
 	if team_name and product_trial:
 		frappe.local.login_manager.login_as(email)
-		active_site = get_active_site_of_product_trial(product_trial.name, team_name)
 		frappe.local.response.type = "redirect"
-		if active_site:
-			product_trial_request = frappe.get_value(
-				"Product Trial Request", {"site": active_site, "product_trial": product}, ["name"], as_dict=1
-			)
-			frappe.local.response.location = f"/dashboard/saas/{product_trial.name}/login-to-site?product_trial_request={product_trial_request.name}"
-		else:
-			frappe.local.response.location = (
-				f"/dashboard/saas/{product_trial.name}/setup?account_request={account_request.name}"
-			)
+		frappe.local.response.location = f"/dashboard/create-site/{product_trial.name}/setup"
 	else:
 		# create/setup account
 		frappe.local.response.type = "redirect"
