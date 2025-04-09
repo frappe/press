@@ -105,8 +105,8 @@ function get_handler(frm, method, args) {
 			frappe.msgprint({
 				title: 'Deploy Candidate Build Created',
 				indicator: 'green',
-				message: __(`{0} has been created`, [
-					`<a href="/app/deploy-candidate-build/${data.message}">Build</a>`,
+				message: __(`New {0} has been created`, [
+					`<a href="/app/deploy-candidate-build/${data.message}">Deploy Candidate Build</a>`,
 				]),
 			});
 		}
