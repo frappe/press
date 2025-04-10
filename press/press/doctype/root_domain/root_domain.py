@@ -50,6 +50,7 @@ class RootDomain(Document):
 					"wildcard": True,
 					"domain": self.name,
 					"rsa_key_size": rsa_key_size,
+					"provider": "Let's Encrypt",
 				}
 			).insert()
 		except Exception:
