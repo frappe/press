@@ -258,6 +258,22 @@
  {
   "configurable_by_user": 0,
   "datatype": "Str",
+  "default_value": "600",
+  "description": null,
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2025-04-09 15:51:36.032112",
+  "name": "wait_timeout",
+  "options": null,
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
   "default_value": null,
   "description": null,
   "doc_section": "server",
