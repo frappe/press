@@ -767,7 +767,6 @@ class DeployCandidateBuild(Document):
 
 	def _start_build(self):
 		self.candidate._update_docker_image_metadata()
-
 		if self.no_build:
 			return
 
@@ -837,6 +836,8 @@ class DeployCandidateBuild(Document):
 		self.set_build_server()
 		self.pending_start = now()
 		self.candidate._set_status_pending()
+
+		self.save()
 
 		(
 			user,
