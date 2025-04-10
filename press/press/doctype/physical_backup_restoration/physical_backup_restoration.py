@@ -640,7 +640,8 @@ class PhysicalBackupRestoration(Document):
 				frappe.throw("Cleanup steps are not completed. Please clean up before retrying.")
 		# Reset the states
 		self.status = "Scheduled"
-		self.start = None
+		self.start = frappe.utils.now_datetime()
+		self.volume = None
 		self.end = None
 		self.duration = None
 		self.job = None
