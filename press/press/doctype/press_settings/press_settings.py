@@ -100,6 +100,7 @@ class PressSettings(Document):
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int
+		max_failed_backup_attempts_in_a_day: DF.Int
 		micro_debit_charge_inr: DF.Currency
 		micro_debit_charge_usd: DF.Currency
 		minimum_rebuild_memory: DF.Int
