@@ -7,7 +7,8 @@ frappe.ui.form.on('Deploy Candidate Build', {
 			[
 				__('Cleanup Directory'),
 				'cleanup_build_directory',
-				typeof frm.doc.build_directory !== 'undefined',
+				typeof frm.doc.build_directory !== 'undefined' &&
+					frm.doc.status !== 'Running',
 			],
 			[
 				__('Stop And Fail'),
