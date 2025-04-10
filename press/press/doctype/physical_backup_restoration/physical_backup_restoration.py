@@ -135,9 +135,6 @@ class PhysicalBackupRestoration(Document):
 			if self.physical_restoration_test:
 				trigger_next_restoration(self.physical_restoration_test)
 
-		if self.has_value_changed("volume") and self.volume:
-			self.add_comment(text=f"{self.volume} - Volume Allocated")
-
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
@@ -198,6 +195,7 @@ class PhysicalBackupRestoration(Document):
 		self.volume = snapshot.create_volume(
 			availability_zone=self.virtual_machine.availability_zone, throughput=300, iops=3000
 		)
+		self.add_comment(text=f"{self.volume} - Volume Created")
 		return StepStatus.Success
 
 	def wait_for_volume_to_be_available(self) -> StepStatus:
@@ -471,6 +469,7 @@ class PhysicalBackupRestoration(Document):
 		if state in ["deleting", "deleted"]:
 			return StepStatus.Success
 		self.virtual_machine.client().delete_volume(VolumeId=self.volume)
+		self.add_comment(text=f"{self.volume} - Volume Deleted")
 		return StepStatus.Success
 
 	def is_db_files_modified_during_failed_restoration(self):
