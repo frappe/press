@@ -64,11 +64,11 @@ class Status(Enum):
 
 	@classmethod
 	def terminal(cls):
-		return [cls.FAILURE, cls.SUCCESS]
+		return [cls.FAILURE.value, cls.SUCCESS.value]
 
 	@classmethod
 	def intermediate(cls):
-		return [cls.PENDING, cls.RUNNING, cls.SCHEDULED, cls.PREPARING]
+		return [cls.PENDING.value, cls.RUNNING.value, cls.SCHEDULED.value, cls.PREPARING.value]
 
 
 STAGE_SLUG_MAP = {
@@ -197,7 +197,7 @@ class DeployCandidateBuild(Document):
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
 
-	def set_status(self, status: Status, timestamp_field: str | None = None):
+	def set_status(self, status: Status, timestamp_field: str | None = None, commit: bool = True):
 		self.status = status.value
 
 		if self.status == Status.FAILURE.value:
@@ -207,6 +207,9 @@ class DeployCandidateBuild(Document):
 			setattr(self, timestamp_field, now())
 
 		self.db_update()
+
+		if commit:
+			frappe.db.commit()
 
 	def _get_dockerfile_checkpoints(self, dockerfile: str) -> list[str]:
 		"""
@@ -935,11 +938,10 @@ class DeployCandidateBuild(Document):
 
 	@frappe.whitelist()
 	def stop_and_fail(self):
-		not_failable = ["Draft", "Failure", "Success"]
-		if (self.candidate.status in not_failable) and (self.status in not_failable):
+		if self.status in Status.terminal():
 			return dict(
 				error=True,
-				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
+				message=f"Cannot stop and fail if status one of [{', '.join(Status.terminal())}]",
 			)
 		self.manually_failed = True
 		self._stop_and_fail()
