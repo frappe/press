@@ -115,11 +115,7 @@ class ProductTrial(Document):
 
 		site_domain = f"{subdomain}.{self.domain}"
 
-		# if user didn't change the subdomain, and is picking the provided site
-		if frappe.db.exists("Site", {"name": site_domain, "is_standby": 1, "standby_for_product": self.name}):
-			standby_site = site_domain
-		else:
-			standby_site = self.get_standby_site(cluster)
+		standby_site = self.get_standby_site(cluster)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
