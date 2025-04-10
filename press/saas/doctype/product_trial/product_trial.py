@@ -346,6 +346,8 @@ class ProductTrial(Document):
 
 
 def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+	from press.utils import get_current_team
+
 	subscriptions = []
 	site_config = {}
 
@@ -365,7 +367,7 @@ def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) 
 					"plan": free_plan[0],
 					"site": site,
 					"enabled": 1,
-					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+					"team": get_current_team(),
 				}
 			).insert(ignore_permissions=True)
 
