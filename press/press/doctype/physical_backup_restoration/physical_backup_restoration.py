@@ -65,11 +65,13 @@ class PhysicalBackupRestoration(Document):
 	# end: auto-generated types
 
 	@property
+	def virtual_machine_name(self) -> str:
+		return frappe.get_value("Database Server", self.destination_server, "virtual_machine")
+
+	@property
 	def virtual_machine(self) -> VirtualMachine:
 		"""Get virtual machine of destination server."""
-		return frappe.get_doc(
-			"Virtual Machine", frappe.get_value("Database Server", self.destination_server, "virtual_machine")
-		)
+		return frappe.get_doc("Virtual Machine", self.virtual_machine_name)
 
 	@property
 	def migration_steps(self):
@@ -133,9 +135,6 @@ class PhysicalBackupRestoration(Document):
 			if self.physical_restoration_test:
 				trigger_next_restoration(self.physical_restoration_test)
 
-		if self.has_value_changed("volume") and self.volume:
-			self.add_comment(text=f"{self.volume} - Volume Allocated")
-
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
@@ -196,6 +195,7 @@ class PhysicalBackupRestoration(Document):
 		self.volume = snapshot.create_volume(
 			availability_zone=self.virtual_machine.availability_zone, throughput=300, iops=3000
 		)
+		self.add_comment(text=f"{self.volume} - Volume Created")
 		return StepStatus.Success
 
 	def wait_for_volume_to_be_available(self) -> StepStatus:
@@ -210,7 +210,12 @@ class PhysicalBackupRestoration(Document):
 
 	def attach_volume_to_instance(self) -> StepStatus:
 		"""Attach volume to instance"""
-		self.device = self.virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
+		# Used `for_update` to take lock on the record to avoid race condition
+		# and make this step failure due to VersionMismatch or TimestampMismatchError
+		virtual_machine: VirtualMachine = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine_name, for_update=True
+		)
+		self.device = virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
 		return StepStatus.Success
 
 	def create_mount_point(self) -> StepStatus:
@@ -431,7 +436,13 @@ class PhysicalBackupRestoration(Document):
 		state = self.virtual_machine.get_state_of_volume(self.volume)
 		if state != "in-use":
 			return StepStatus.Success
-		self.virtual_machine.detach(self.volume)
+
+		# Used `for_update` to take lock on the record to avoid race condition
+		# and make this step failure due to VersionMismatch or TimestampMismatchError
+		virtual_machine: VirtualMachine = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine_name, for_update=True
+		)
+		virtual_machine.detach(self.volume)
 		return StepStatus.Success
 
 	def wait_for_volume_to_be_detached(self) -> StepStatus:
@@ -458,6 +469,7 @@ class PhysicalBackupRestoration(Document):
 		if state in ["deleting", "deleted"]:
 			return StepStatus.Success
 		self.virtual_machine.client().delete_volume(VolumeId=self.volume)
+		self.add_comment(text=f"{self.volume} - Volume Deleted")
 		return StepStatus.Success
 
 	def is_db_files_modified_during_failed_restoration(self):
@@ -627,7 +639,8 @@ class PhysicalBackupRestoration(Document):
 				frappe.throw("Cleanup steps are not completed. Please clean up before retrying.")
 		# Reset the states
 		self.status = "Scheduled"
-		self.start = None
+		self.start = frappe.utils.now_datetime()
+		self.volume = None
 		self.end = None
 		self.duration = None
 		self.job = None
