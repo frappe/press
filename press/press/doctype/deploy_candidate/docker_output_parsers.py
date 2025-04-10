@@ -134,7 +134,7 @@ class DockerBuildOutputParser:
 		self.flush_output(True)
 
 	def _set_docker_image_id(self, line: str):
-		self.dc.candidate.docker_image_id = line.split()[2].split(":")[1]
+		self.dc.docker_image_id = line.split()[2].split(":")[1]
 
 	def _update_dc_build_step(self, split: "IndexSplit"):
 		step = self.steps.get(split["index"])
