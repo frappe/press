@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import contextlib
-
-# Copyright (c) 2021, Frappe and contributors
-# For license information, please see license.txt
 import glob
 import json
 import os
 import re
+
+# Copyright (c) 2021, Frappe and contributors
+# For license information, please see license.txt
+import shlex
 import shutil
+import subprocess
 import tarfile
 import tempfile
 import typing
 from datetime import datetime, timedelta
+from subprocess import Popen
 from typing import Any, Literal
 
 import frappe
@@ -805,6 +808,83 @@ class DeployCandidate(Document):
 		# self._generate_supervisor_config()
 		# self._generate_apps_txt()
 		self.generate_ssh_keys()
+
+	def run(self, command, environment=None, directory=None):
+		process = Popen(
+			shlex.split(command),
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			env=environment,
+			cwd=directory or self.build_directory,
+			universal_newlines=True,
+		)
+		yield from process.stdout
+		process.stdout.close()
+		return_code = process.wait()
+		if return_code:
+			raise subprocess.CalledProcessError(return_code, command)
+
+	def generate_ssh_keys(self):
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
+			return
+
+		ca = frappe.get_doc("SSH Certificate Authority", ca)
+		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
+
+		self.generate_host_keys(ca, ssh_directory)
+		self.generate_user_keys(ca, ssh_directory)
+
+		ca_public_key = os.path.join(ssh_directory, "ca.pub")
+		with open(ca_public_key, "w") as f:
+			f.write(ca.public_key)
+
+		# Generate authorized principal file
+		principals = os.path.join(ssh_directory, "principals")
+		with open(principals, "w") as f:
+			f.write(f"restrict,pty {self.candidate.group}")
+
+	def generate_host_keys(self, ca, ssh_directory):
+		# Generate host keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate host Certificate
+		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
+
+	def generate_user_keys(self, ca, ssh_directory):
+		# Generate user keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate user certificates
+		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+		ca.sign(self.name, [self.candidate.group], "+52w", user_public_key_path, 0)
+
+		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
+		with open(user_private_key_path) as f:
+			self.user_private_key = f.read()
+
+		with open(user_public_key_path) as f:
+			self.user_public_key = f.read()
+
+		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
+		with open(user_certificate_path) as f:
+			self.user_certificate = f.read()
+
+		# Remove user key files
+		os.remove(user_private_key_path)
+		os.remove(user_public_key_path)
+		os.remove(user_certificate_path)
 
 	def _clone_repos(self):
 		apps_directory = os.path.join(self.build_directory, "apps")
