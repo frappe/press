@@ -65,11 +65,13 @@ class PhysicalBackupRestoration(Document):
 	# end: auto-generated types
 
 	@property
+	def virtual_machine_name(self) -> str:
+		return frappe.get_value("Database Server", self.destination_server, "virtual_machine")
+
+	@property
 	def virtual_machine(self) -> VirtualMachine:
 		"""Get virtual machine of destination server."""
-		return frappe.get_doc(
-			"Virtual Machine", frappe.get_value("Database Server", self.destination_server, "virtual_machine")
-		)
+		return frappe.get_doc("Virtual Machine", self.virtual_machine_name)
 
 	@property
 	def migration_steps(self):
@@ -210,7 +212,12 @@ class PhysicalBackupRestoration(Document):
 
 	def attach_volume_to_instance(self) -> StepStatus:
 		"""Attach volume to instance"""
-		self.device = self.virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
+		# Used `for_update` to take lock on the record to avoid race condition
+		# and make this step failure due to VersionMismatch or TimestampMismatchError
+		virtual_machine: VirtualMachine = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine_name, for_update=True
+		)
+		self.device = virtual_machine.attach_volume(self.volume, is_temporary_volume=True)
 		return StepStatus.Success
 
 	def create_mount_point(self) -> StepStatus:
@@ -431,7 +438,13 @@ class PhysicalBackupRestoration(Document):
 		state = self.virtual_machine.get_state_of_volume(self.volume)
 		if state != "in-use":
 			return StepStatus.Success
-		self.virtual_machine.detach(self.volume)
+
+		# Used `for_update` to take lock on the record to avoid race condition
+		# and make this step failure due to VersionMismatch or TimestampMismatchError
+		virtual_machine: VirtualMachine = frappe.get_doc(
+			"Virtual Machine", self.virtual_machine_name, for_update=True
+		)
+		virtual_machine.detach(self.volume)
 		return StepStatus.Success
 
 	def wait_for_volume_to_be_detached(self) -> StepStatus:
