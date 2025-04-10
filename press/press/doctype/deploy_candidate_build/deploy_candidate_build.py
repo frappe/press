@@ -14,6 +14,7 @@ import tarfile
 import tempfile
 import typing
 from datetime import timedelta
+from functools import cached_property
 from subprocess import Popen
 
 import frappe
@@ -39,9 +40,12 @@ from press.press.doctype.deploy_candidate.utils import (
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
+from press.utils.jobs import get_background_jobs, stop_background_job
 
 if typing.TYPE_CHECKING:
 	from datetime import datetime
+
+	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -50,7 +54,6 @@ if typing.TYPE_CHECKING:
 		DeployCandidateApp,
 	)
 
-from functools import cached_property
 
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
@@ -460,6 +463,8 @@ class DeployCandidateBuild(Document):
 			)
 			self.append("build_steps", step_dict)
 
+		self.save()
+
 	def add_build_steps(self, dockerfile: str):
 		app_titles = {a.app: a.title for a in self.candidate.apps}
 
@@ -545,7 +550,7 @@ class DeployCandidateBuild(Document):
 			return False
 
 		# Retry twice before giving up
-		if self.retry_count >= 3:
+		if self.candidate.retry_count >= 3:
 			return False
 
 		bo = self.build_output
@@ -568,6 +573,7 @@ class DeployCandidateBuild(Document):
 		self._flush_output_parsers()
 		self.build_end = now()
 		self.status = "Failure"
+		self.save()
 		self.candidate._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
@@ -890,7 +896,9 @@ class DeployCandidateBuild(Document):
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
 		queue = "default" if frappe.conf.developer_mode else "build"
 
-		frappe.enqueue(self._build, queue=queue, timeout=2400, enqueue_after_commit=True)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_build", queue=queue, timeout=2400, enqueue_after_commit=True
+		)
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -904,6 +912,14 @@ class DeployCandidateBuild(Document):
 		series = f"build-{candidate_name}-.######"
 		self.name = make_autoname(series)
 
+	def _stop_and_fail(self):
+		for job in get_background_jobs(self.doctype, self.name, status="started"):
+			if is_build_job(job):
+				stop_background_job(job)
+
+		self.status = "Failure"
+		self.candidate._set_status_failure()
+
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
 		if not self.build_directory:
@@ -914,6 +930,23 @@ class DeployCandidateBuild(Document):
 
 		self.build_directory = None
 		self.save()
+
+	@frappe.whitelist()
+	def stop_and_fail(self):
+		not_failable = ["Draft", "Failure", "Success"]
+		if (self.candidate.status in not_failable) or (self.status in not_failable):
+			return dict(
+				error=True,
+				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
+			)
+		self.candidate.manually_failed = True
+		self._stop_and_fail()
+		return dict(error=False, message="Failed successfully")
+
+
+def is_build_job(job: Job) -> bool:
+	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
+	return doc_method.startswith("_build")
 
 
 def should_build_retry_build_output(build_output: str):

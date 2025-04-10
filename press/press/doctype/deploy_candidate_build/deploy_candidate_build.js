@@ -3,12 +3,24 @@
 
 frappe.ui.form.on('Deploy Candidate Build', {
 	refresh(frm) {
-		[[__('Cleanup Directory'), 'cleanup_build_directory']].forEach(
-			([label, method, condition]) => {
+		[
+			[__('Cleanup Directory'), 'cleanup_build_directory'],
+			[
+				__('Stop And Fail'),
+				'stop_and_fail',
+				!['Success', 'Failure'].includes(frm.doc.status),
+				,
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(label, () => {
-					frm.call(method).then((r) => frm.refresh());
+					frm.call(method).then((r) => {
+						if (r.message.error) {
+							frappe.msgprint(__(r.message.message));
+						}
+					});
 				});
-			},
-		);
+			}
+		});
 	},
 });
