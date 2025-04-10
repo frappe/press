@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import functools
 from collections import deque
@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from functools import wraps
 from itertools import groupby
 from time import time
-from typing import Dict, List
 
 import frappe
 import pytz
@@ -28,7 +27,7 @@ def timing(f):
 		ts = time()
 		result = f(*args, **kw)
 		te = time()
-		print(f"Took {te-ts}s")
+		print(f"Took {te - ts}s")
 		return result
 
 	return wrap
@@ -41,9 +40,7 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
-	def _expire_and_get_remote_files(
-		self, offsite_backups: List[Dict[str, str]]
-	) -> List[str]:
+	def _expire_and_get_remote_files(self, offsite_backups: list[dict[str, str]]) -> list[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
@@ -77,11 +74,11 @@ class BackupRotationScheme:
 				sites.append(site_conf.name)
 			self._expire_backups_of_site_in_bench(sites, config)
 
-	@functools.lru_cache(maxsize=128)
+	@functools.lru_cache(maxsize=128)  # noqa: B019
 	def _get_expiry(self, config: str):
 		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
 
-	def _expire_backups_of_site_in_bench(self, sites: List[str], expiry: int):
+	def _expire_backups_of_site_in_bench(self, sites: list[str], expiry: int):
 		if sites:
 			frappe.db.set_value(
 				"Site Backup",
@@ -96,7 +93,7 @@ class BackupRotationScheme:
 				"Unavailable",
 			)
 
-	def expire_offsite_backups(self) -> List[str]:
+	def expire_offsite_backups(self) -> list[str]:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
@@ -114,7 +111,7 @@ class FIFO(BackupRotationScheme):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self) -> List[str]:
+	def expire_offsite_backups(self) -> list[str]:
 		offsite_expiry = self.offsite_backups_count
 		to_be_expired_backups = []
 		sites = frappe.get_all("Site", {"status": ("!=", "Archived")}, pluck="name")
@@ -147,7 +144,7 @@ class GFS(BackupRotationScheme):
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
 
-	def expire_offsite_backups(self) -> List[str]:
+	def expire_offsite_backups(self) -> list[str]:
 		today = frappe.utils.getdate()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
@@ -191,11 +188,11 @@ class ScheduledBackupJob:
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
-		self.offset: int = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
-		)
-		self.limit = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
+		self.offset: int = frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+		self.limit = frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
+		self.max_failed_backup_attempts_in_a_day = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "max_failed_backup_attempts_in_a_day")
+			or 6
 		)
 
 		self.offsite_setup = PressSettings.is_offsite_setup()
@@ -210,7 +207,7 @@ class ScheduledBackupJob:
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
-	def get_site_time(self, site: Dict[str, str]) -> datetime:
+	def get_site_time(self, site: dict[str, str]) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
 		site_timezone = pytz.timezone(timezone)
 		return self.server_time.astimezone(site_timezone)
@@ -246,7 +243,7 @@ class ScheduledBackupJob:
 
 	def _take_backups_in_round_robin(self, sites_by_server_cycle: ModifiableCycle):
 		limit = min(len(self.sites), self.limit)
-		for server, sites in sites_by_server_cycle:
+		for _server, sites in sites_by_server_cycle:
 			try:
 				site = next(sites)
 				while not self.backup(site):
@@ -262,7 +259,21 @@ class ScheduledBackupJob:
 		"""Return true if backup was taken."""
 		try:
 			site_time = self.get_site_time(site)
-			if self.is_backup_hour(site_time.hour):
+			failed_backup_attempts_in_a_day = frappe.db.count(
+				"Site Backup",
+				{
+					"site": site.name,
+					"status": "Failure",
+					"creation": [
+						">=",
+						frappe.utils.add_days(None, -1),
+					],
+				},
+			)
+			if (
+				self.is_backup_hour(site_time.hour)
+				and failed_backup_attempts_in_a_day <= self.max_failed_backup_attempts_in_a_day
+			):
 				today = frappe.utils.getdate()
 
 				offsite = self.take_offsite(site, today)
@@ -301,15 +312,11 @@ def schedule():
 
 def cleanup_offsite():
 	"""Delete expired (based on policy) offsite backups and mark em as Unavailable."""
-	frappe.enqueue(
-		"press.press.doctype.site.backups._cleanup_offsite", queue="long", timeout=3600
-	)
+	frappe.enqueue("press.press.doctype.site.backups._cleanup_offsite", queue="long", timeout=3600)
 
 
 def _cleanup_offsite():
-	scheme = (
-		frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
-	)
+	scheme = frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
 	if scheme == "FIFO":
 		rotation = FIFO()
 	elif scheme == "Grandfather-father-son":
