@@ -15,10 +15,23 @@
   "deploy_after_build",
   "section_break_bfxt",
   "build_steps",
+  "docker_meta_section",
+  "docker_image_id",
   "times_section",
   "build_start",
+  "build_duration",
+  "pending_start",
   "column_break_5m9f",
   "build_end",
+  "pending_duration",
+  "build_server",
+  "pending_end",
+  "failure_section",
+  "user_addressable_failure",
+  "retry_count",
+  "column_break_3jie",
+  "manually_failed",
+  "error_key",
   "output_tab",
   "build_output",
   "build_error"
@@ -110,7 +123,7 @@
   {
    "fieldname": "times_section",
    "fieldtype": "Section Break",
-   "label": "Times"
+   "label": "Build Meta"
   },
   {
    "fieldname": "build_start",
@@ -126,6 +139,83 @@
    "fieldname": "build_end",
    "fieldtype": "Datetime",
    "label": "Build End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_duration",
+   "fieldtype": "Time",
+   "label": "Pending Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "docker_meta_section",
+   "fieldtype": "Section Break",
+   "label": "Docker Config"
+  },
+  {
+   "fieldname": "failure_section",
+   "fieldtype": "Section Break",
+   "label": "Failure"
+  },
+  {
+   "default": "0",
+   "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
+   "fieldname": "user_addressable_failure",
+   "fieldtype": "Check",
+   "label": "User Addressable Failure",
+   "read_only": 1
+  },
+  {
+   "description": "Under certain failure conditions, a build will be retried.",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3jie",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Set if the build was manually failed or cancelled.",
+   "fieldname": "manually_failed",
+   "fieldtype": "Check",
+   "label": "Manually Failed",
+   "read_only": 1
+  },
+  {
+   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
+   "fieldname": "error_key",
+   "fieldtype": "Data",
+   "label": "Error Key"
+  },
+  {
+   "fieldname": "build_duration",
+   "fieldtype": "Time",
+   "label": "Build Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_start",
+   "fieldtype": "Datetime",
+   "label": "Pending Start"
+  },
+  {
+   "fieldname": "pending_end",
+   "fieldtype": "Datetime",
+   "label": "Pending End"
+  },
+  {
+   "fieldname": "docker_image_id",
+   "fieldtype": "Data",
+   "label": "Docker Image Id",
    "read_only": 1
   }
  ],
@@ -145,7 +235,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-10 09:50:13.479645",
+ "modified": "2025-04-10 14:57:03.114596",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

@@ -7,15 +7,12 @@ import contextlib
 import json
 import os
 import re
-import shlex
 import shutil
-import subprocess
 import tarfile
 import tempfile
 import typing
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import cached_property
-from subprocess import Popen
 
 import frappe
 from frappe.core.utils import find
@@ -43,8 +40,6 @@ from press.utils import get_current_team, log_error
 from press.utils.jobs import get_background_jobs, stop_background_job
 
 if typing.TYPE_CHECKING:
-	from datetime import datetime
-
 	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -54,6 +49,8 @@ if typing.TYPE_CHECKING:
 		DeployCandidateApp,
 	)
 
+# build_duration, pending_duration are Time fields, >= 1 day is invalid
+MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
@@ -154,17 +151,27 @@ class DeployCandidateBuild(Document):
 		)
 
 		build_directory: DF.Data | None
+		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
 		build_error: DF.Code | None
 		build_output: DF.Code | None
+		build_server: DF.Link | None
 		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
+		docker_image_id: DF.Data | None
+		error_key: DF.Data | None
+		manually_failed: DF.Check
 		no_build: DF.Check
 		no_cache: DF.Check
 		no_push: DF.Check
+		pending_duration: DF.Time | None
+		pending_end: DF.Datetime | None
+		pending_start: DF.Datetime | None
+		retry_count: DF.Int
 		status: DF.Literal["Preparing", "Running", "Success", "Failure"]
+		user_addressable_failure: DF.Check
 	# end: auto-generated types
 
 	@cached_property
@@ -237,83 +244,6 @@ class DeployCandidateBuild(Document):
 				os.path.join(self.build_directory, target),
 				symlinks=True,
 			)
-
-	def run(self, command, environment=None, directory=None):
-		process = Popen(
-			shlex.split(command),
-			stdout=subprocess.PIPE,
-			stderr=subprocess.STDOUT,
-			env=environment,
-			cwd=directory or self.build_directory,
-			universal_newlines=True,
-		)
-		yield from process.stdout
-		process.stdout.close()
-		return_code = process.wait()
-		if return_code:
-			raise subprocess.CalledProcessError(return_code, command)
-
-	def generate_ssh_keys(self):
-		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
-		if not ca:
-			return
-
-		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
-
-		self.generate_host_keys(ca, ssh_directory)
-		self.generate_user_keys(ca, ssh_directory)
-
-		ca_public_key = os.path.join(ssh_directory, "ca.pub")
-		with open(ca_public_key, "w") as f:
-			f.write(ca.public_key)
-
-		# Generate authorized principal file
-		principals = os.path.join(ssh_directory, "principals")
-		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.candidate.group}")
-
-	def generate_host_keys(self, ca, ssh_directory):
-		# Generate host keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate host Certificate
-		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
-
-	def generate_user_keys(self, ca, ssh_directory):
-		# Generate user keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate user certificates
-		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.candidate.group], "+52w", user_public_key_path, 0)
-
-		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
-		with open(user_private_key_path) as f:
-			self.user_private_key = f.read()
-
-		with open(user_public_key_path) as f:
-			self.user_public_key = f.read()
-
-		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
-		with open(user_certificate_path) as f:
-			self.user_certificate = f.read()
-
-		# Remove user key files
-		os.remove(user_private_key_path)
-		os.remove(user_public_key_path)
-		os.remove(user_certificate_path)
 
 	def _get_app_name(self, app):
 		"""Retrieves `name` attribute of app - equivalent to distribution name
@@ -573,6 +503,7 @@ class DeployCandidateBuild(Document):
 		self._flush_output_parsers()
 		self.build_end = now()
 		self.status = "Failure"
+		self._set_build_duration()
 		self.save()
 		self.candidate._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
@@ -582,7 +513,7 @@ class DeployCandidateBuild(Document):
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
-			self.candidate.user_addressable_failure = True
+			self.user_addressable_failure = True
 			self.save(ignore_permissions=True)
 			frappe.db.commit()
 			return
@@ -625,6 +556,26 @@ class DeployCandidateBuild(Document):
 
 		raise Exception(message)
 
+	def _set_pending_duration(self):
+		self.pending_end = now()
+		if not isinstance(self.pending_start, datetime):
+			return
+
+		self.pending_duration = min(
+			self.pending_end - self.pending_start,
+			MAX_DURATION,
+		)
+
+	def _set_build_duration(self):
+		self.build_end = now()
+		if not isinstance(self.build_start, datetime):
+			return
+
+		self.build_duration = min(
+			self.build_end - self.build_start,
+			MAX_DURATION,
+		)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
@@ -663,6 +614,7 @@ class DeployCandidateBuild(Document):
 			if job.status == "Success":
 				self.status = "Success"
 				self.build_end = now()
+				self._set_build_duration()
 
 			self.candidate._update_status_from_remote_build_job(job)
 
@@ -714,7 +666,7 @@ class DeployCandidateBuild(Document):
 		self._generate_redis_queue_config()
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
-		self.generate_ssh_keys()
+		self.candidate.generate_ssh_keys()
 
 	def _prepare_build(self):
 		if not self.no_cache:
@@ -780,7 +732,7 @@ class DeployCandidateBuild(Document):
 		context_filepath = self._package_build_context()
 		context_filename = self._upload_build_context(
 			context_filepath,
-			self.candidate.build_server,
+			self.build_server,
 		)
 		os.remove(context_filepath)
 		return context_filename
@@ -789,7 +741,7 @@ class DeployCandidateBuild(Document):
 		context_filename = self._package_and_upload_context()
 		settings = self.candidate._fetch_registry_settings()
 
-		Agent(self.candidate.build_server).run_build(
+		Agent(self.build_server).run_build(
 			{
 				"filename": context_filename,
 				"image_repository": self.candidate.docker_image_repository,
@@ -824,8 +776,10 @@ class DeployCandidateBuild(Document):
 	def _build(self):
 		self.build_start = now()
 		self.status = "Preparing"
+		self._set_pending_duration()
 		self.candidate._set_status_preparing()
 		self._set_output_parsers()
+
 		try:
 			self._prepare_build()
 			self._start_build()
@@ -839,22 +793,22 @@ class DeployCandidateBuild(Document):
 		self.build_error = ""
 		self.build_output = ""
 		# Failure flags
-		self.candidate.user_addressable_failure = False
-		self.candidate.manually_failed = False
+		self.user_addressable_failure = False
+		self.manually_failed = False
 		# Build times
-		self.candidate.build_start = None
-		self.candidate.build_end = None
-		self.candidate.build_duration = None
+		self.build_start = None
+		self.build_end = None
+		self.build_duration = None
 		# Pending times
-		self.candidate.pending_start = None
-		self.candidate.pending_end = None
-		self.candidate.pending_duration = None
+		self.pending_start = None
+		self.pending_end = None
+		self.pending_duration = None
 
 	def set_build_server(self):
-		if not self.candidate.build_server:
-			self.candidate.build_server = get_build_server(self.candidate.group)
+		if not self.build_server:
+			self.build_server = get_build_server(self.candidate.group)
 
-		if self.candidate.build_server or self.no_build:
+		if self.build_server or self.no_build:
 			return
 
 		throw_no_build_server()
@@ -881,6 +835,7 @@ class DeployCandidateBuild(Document):
 			del kwargs["no_cache"]
 
 		self.set_build_server()
+		self.pending_start = now()
 		self.candidate._set_status_pending()
 
 		(
@@ -939,7 +894,7 @@ class DeployCandidateBuild(Document):
 				error=True,
 				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
 			)
-		self.candidate.manually_failed = True
+		self.manually_failed = True
 		self._stop_and_fail()
 		return dict(error=False, message="Failed successfully")
 
