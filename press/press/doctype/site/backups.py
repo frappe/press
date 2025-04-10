@@ -263,7 +263,7 @@ class ScheduledBackupJob:
 				"Site Backup",
 				{
 					"site": site.name,
-					"status": "Failure",
+					"status": ("in", ["Failure", "Delivery Failure"]),
 					"creation": [
 						">=",
 						frappe.utils.add_days(None, -1),
