@@ -32,7 +32,11 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
-from press.press.doctype.deploy_candidate.utils import get_package_manager_files, load_pyproject
+from press.press.doctype.deploy_candidate.utils import (
+	get_build_server,
+	get_package_manager_files,
+	load_pyproject,
+)
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
 
@@ -823,6 +827,7 @@ class DeployCandidateBuild(Document):
 			self.handle_build_failure(exc)
 
 	def reset_build_state(self):
+		self.cleanup_build_directory()
 		self.build_steps.clear()
 		self.build_directory = None
 		self.build_error = ""
@@ -838,6 +843,15 @@ class DeployCandidateBuild(Document):
 		self.candidate.pending_start = None
 		self.candidate.pending_end = None
 		self.candidate.pending_duration = None
+
+	def set_build_server(self):
+		if not self.candidate.build_server:
+			self.candidate.build_server = get_build_server(self.candidate.group)
+
+		if self.candidate.build_server or self.no_build:
+			return
+
+		throw_no_build_server()
 
 	def validate_status(self):
 		if self.candidate.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -860,8 +874,7 @@ class DeployCandidateBuild(Document):
 			self.no_cache = kwargs.get("no_cache")
 			del kwargs["no_cache"]
 
-		self.no_build = kwargs.get("no_build", False)
-		self.candidate.set_build_server(self.no_build)
+		self.set_build_server()
 		self.candidate._set_status_pending()
 
 		(
@@ -873,6 +886,7 @@ class DeployCandidateBuild(Document):
 			frappe.session.data,
 			get_current_team(True),
 		)
+
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
 		queue = "default" if frappe.conf.developer_mode else "build"
 
@@ -974,3 +988,10 @@ def should_build_retry_job(job: "AgentJob"):
 		return True
 
 	return False
+
+
+def throw_no_build_server():
+	frappe.throw(
+		"Server not found to run builds. "
+		"Please set <b>Build Server</b> under <b>Press Settings > Docker > Docker Build</b>."
+	)
