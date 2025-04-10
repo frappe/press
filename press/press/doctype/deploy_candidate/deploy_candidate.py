@@ -842,7 +842,7 @@ class DeployCandidate(Document):
 		# Generate authorized principal file
 		principals = os.path.join(ssh_directory, "principals")
 		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.candidate.group}")
+			f.write(f"restrict,pty {self.group}")
 
 	def generate_host_keys(self, ca, ssh_directory):
 		# Generate host keys
@@ -868,7 +868,7 @@ class DeployCandidate(Document):
 
 		# Generate user certificates
 		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.candidate.group], "+52w", user_public_key_path, 0)
+		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
 
 		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
 		with open(user_private_key_path) as f:
