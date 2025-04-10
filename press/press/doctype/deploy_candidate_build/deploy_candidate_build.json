@@ -117,7 +117,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Preparing\nRunning\nSuccess\nFailure",
+   "options": "Pending\nPreparing\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -235,7 +235,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-10 14:57:03.114596",
+ "modified": "2025-04-10 22:27:05.340796",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

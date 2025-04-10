@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 import typing
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import cached_property
 
 import frappe
@@ -51,6 +52,24 @@ if typing.TYPE_CHECKING:
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
+
+
+class Status(Enum):
+	FAILURE = "Failure"
+	SUCCESS = "Success"
+	PENDING = "Pending"
+	RUNNING = "Running"
+	SCHEDULED = "Scheduled"
+	PREPARING = "Preparing"
+
+	@classmethod
+	def terminal(cls):
+		return [cls.FAILURE, cls.SUCCESS]
+
+	@classmethod
+	def intermediate(cls):
+		return [cls.PENDING, cls.RUNNING, cls.SCHEDULED, cls.PREPARING]
+
 
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
@@ -170,13 +189,24 @@ class DeployCandidateBuild(Document):
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
 		retry_count: DF.Int
-		status: DF.Literal["Preparing", "Running", "Success", "Failure"]
+		status: DF.Literal["Pending", "Preparing", "Running", "Success", "Failure"]
 		user_addressable_failure: DF.Check
 	# end: auto-generated types
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
+
+	def set_status(self, status: Status, timestamp_field: str | None = None):
+		self.status = status.value
+
+		if self.status == Status.FAILURE.value:
+			self._fail_last_running_step()
+
+		if timestamp_field and hasattr(self, timestamp_field):
+			setattr(self, timestamp_field, now())
+
+		self.db_update()
 
 	def _get_dockerfile_checkpoints(self, dockerfile: str) -> list[str]:
 		"""
@@ -437,10 +467,10 @@ class DeployCandidateBuild(Document):
 		if not (usu := self.upload_step_updater) or not usu.upload_step:
 			return
 
-		if self.candidate.status == "Success" and usu.upload_step.status == "Running":
+		if self.status == "Success" and usu.upload_step.status == "Running":
 			self.upload_step_updater.end("Success")
 
-		elif self.candidate.status == "Failure" and usu.upload_step.status not in [
+		elif self.status == "Failure" and usu.upload_step.status not in [
 			"Failure",
 			"Pending",
 		]:
@@ -501,11 +531,9 @@ class DeployCandidateBuild(Document):
 		job: "AgentJob | None" = None,
 	) -> None:
 		self._flush_output_parsers()
-		self.build_end = now()
-		self.status = "Failure"
+		self.set_status(Status.FAILURE)
 		self._set_build_duration()
-		self.save()
-		self.candidate._set_status_failure()
+		# self.candidate._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
 		if not should_retry:
@@ -566,6 +594,8 @@ class DeployCandidateBuild(Document):
 			MAX_DURATION,
 		)
 
+		self.db_update()
+
 	def _set_build_duration(self):
 		self.build_end = now()
 		if not isinstance(self.build_start, datetime):
@@ -575,6 +605,30 @@ class DeployCandidateBuild(Document):
 			self.build_end - self.build_start,
 			MAX_DURATION,
 		)
+
+		self.db_update()
+
+	def _fail_last_running_step(self):
+		for step in self.build_steps:
+			if step.status == "Failure":
+				return
+
+			if step.status == "Running":
+				step.status = "Failure"
+				break
+
+	def _update_status_from_remote_build_job(self, job: "AgentJob"):
+		match job.status:
+			case "Pending" | "Running":
+				return self.set_status(Status.RUNNING)
+			case "Failure" | "Undelivered" | "Delivery Failure":
+				self._set_build_duration()
+				return self.set_status(Status.FAILURE)
+			case "Success":
+				self._set_build_duration()
+				return self.set_status(Status.SUCCESS)
+			case _:
+				raise Exception("unreachable code execution")
 
 	def _process_run_build(
 		self,
@@ -611,12 +665,7 @@ class DeployCandidateBuild(Document):
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
 		else:
-			if job.status == "Success":
-				self.status = "Success"
-				self.build_end = now()
-				self._set_build_duration()
-
-			self.candidate._update_status_from_remote_build_job(job)
+			self._update_status_from_remote_build_job(job)
 
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
@@ -760,10 +809,8 @@ class DeployCandidateBuild(Document):
 			}
 		)
 
-		self.status = "Running"
-		self.save(ignore_permissions=True)
-		self.candidate.last_updated = now()
-		self.candidate._set_status_running()
+		self.set_status(Status.RUNNING)
+		# self.candidate._set_status_running()
 
 	def _start_build(self):
 		self.candidate._update_docker_image_metadata()
@@ -773,10 +820,9 @@ class DeployCandidateBuild(Document):
 		self._run_agent_jobs()
 
 	def _build(self):
-		self.build_start = now()
-		self.status = "Preparing"
+		self.set_status(Status.PREPARING, "build_start")
 		self._set_pending_duration()
-		self.candidate._set_status_preparing()
+		# self.candidate._set_status_preparing()
 		self._set_output_parsers()
 
 		try:
@@ -834,8 +880,7 @@ class DeployCandidateBuild(Document):
 			del kwargs["no_cache"]
 
 		self.set_build_server()
-		self.pending_start = now()
-		self.candidate._set_status_pending()
+		self.set_status(Status.PENDING, timestamp_field="pending_start")
 
 		self.save()
 
@@ -873,8 +918,9 @@ class DeployCandidateBuild(Document):
 			if is_build_job(job):
 				stop_background_job(job)
 
-		self.status = "Failure"
-		self.candidate._set_status_failure()
+		self.set_status(Status.FAILURE)
+		self._set_build_duration()
+		# self.candidate._set_status_failure()
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
@@ -890,7 +936,7 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def stop_and_fail(self):
 		not_failable = ["Draft", "Failure", "Success"]
-		if (self.candidate.status in not_failable) or (self.status in not_failable):
+		if (self.candidate.status in not_failable) and (self.status in not_failable):
 			return dict(
 				error=True,
 				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
