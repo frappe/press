@@ -24,6 +24,8 @@
   "column_break_5",
   "ssh_key",
   "availability_zone",
+  "bare_metal_section",
+  "bare_metal_host",
   "aws_section",
   "aws_access_key_id",
   "column_break_qpia",
@@ -64,7 +66,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nBare Metal Host",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -283,6 +285,22 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.cloud_provider === \"Bare Metal Host\"",
+   "fieldname": "bare_metal_section",
+   "fieldtype": "Section Break",
+   "label": "Bare Metal Host"
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"Bare Metal Host\"",
+   "fieldname": "bare_metal_host",
+   "fieldtype": "Link",
+   "label": "Bare Metal Host",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"Bare Metal Host\"",
+   "options": "Bare Metal Host",
+   "set_only_once": 1
   }
  ],
  "image_field": "image",

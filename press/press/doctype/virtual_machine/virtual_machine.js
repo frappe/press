@@ -281,6 +281,16 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		}
+		if (frm.doc.cloud_provider === "Bare Metal Host") {
+			frm.add_custom_button(__('View on Bare Metal Host'), function() {
+				let bare_metal_host = frappe.db.get_value('Cluster', frm.doc.cluster, 'bare_metal_host');
+				if(bare_metal_host) {
+					frappe.set_route('Form', 'Bare Metal Host', bare_metal_host);
+				} else {
+					frappe.msgprint(__('No Bare Metal Host found for this cluster'));
+				}
+			}, __('View'));
+		}
 	},
 });
 

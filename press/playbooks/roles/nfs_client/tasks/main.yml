@@ -1,0 +1,53 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install NFS client packages for Ubuntu
+  apt:
+    name:
+      - nfs-common
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create NFS mount directory
+  file:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+    state: directory
+    mode: '0755'
+
+- name: Configure NFS mount in fstab
+  mount:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+    src: "{{ nfs_server_host }}:{{ nfs_server_export | default('/exports/vm_storage') }}"
+    fstype: nfs
+    opts: "{{ nfs_mount_options | default('rw,sync,hard,intr') }}"
+    state: mounted
+  when: nfs_server_host is defined
+
+- name: Check if NFS mount is accessible
+  command: df -h "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+  register: nfs_mount_check
+  changed_when: false
+  failed_when: false
+  when: nfs_server_host is defined
+
+- name: Display NFS mount status
+  debug:
+    var: nfs_mount_check.stdout_lines
+  when: nfs_server_host is defined
+
+- name: Create VM images directory on NFS mount
+  file:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}/images"
+    state: directory
+    mode: '0755'
+  when: nfs_server_host is defined
+
+- name: Create VM snapshots directory on NFS mount
+  file:
+    path: "{{ nfs_mount_point | default('/mnt/vm_storage') }}/snapshots"
+    state: directory
+    mode: '0755'
+  when: nfs_server_host is defined 

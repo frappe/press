@@ -1,0 +1,10 @@
+<network>
+  <name>{{ bridge_network.name | default('br0') }}</name>
+  <forward mode="nat"/>
+  <bridge name="{{ bridge_network.name | default('br0') }}" stp="on" delay="0"/>
+  <ip address="{{ bridge_network.ip | default('192.168.100.1') }}" netmask="{{ bridge_network.netmask | default('255.255.255.0') }}">
+    <dhcp>
+      <range start="{{ bridge_network.dhcp_start | default('192.168.100.100') }}" end="{{ bridge_network.dhcp_end | default('192.168.100.200') }}"/>
+    </dhcp>
+  </ip>
+</network> 
