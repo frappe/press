@@ -56,6 +56,8 @@ MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
+PYTHON_VERSION_REGEX = re.compile(r"(\d+\.\d+)")
+
 if typing.TYPE_CHECKING:
 	from rq.job import Job
 
@@ -1133,16 +1135,35 @@ class DeployCandidate(Document):
 			order_by="idx",
 		)
 
+	def get_python_version(self, version: str):
+		"""
+		Supports major.minor version extraction
+		Also supports ambiguous version information (>=;~=)
+		"""
+		if match := PYTHON_VERSION_REGEX.search(version):
+			return float(match.group(1))
+		return None
+
+	def _remove_distutils(self, version: float) -> bool:
+		return version >= 3.12
+
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
+			remove_distutils = False
 
 			for d in self.dependencies:
+				if d.dependency == "PYTHON_VERSION":
+					python_version = self.get_python_version(d.version)
+					remove_distutils = self._remove_distutils(python_version)
+
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
+			content = frappe.render_template(
+				dockerfile_template, {"doc": self, "remove_distutils": remove_distutils}, is_path=True
+			)
 			f.write(content)
 			return content
 
