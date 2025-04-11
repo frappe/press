@@ -81,6 +81,7 @@ class SiteBackup(Document):
 		"remote_private_file",
 		"remote_config_file",
 		"physical",
+		"database_snapshot",
 	)
 
 	@property
@@ -90,8 +91,25 @@ class SiteBackup(Document):
 
 	@staticmethod
 	def get_list_query(query):
-		results = query.run(as_dict=True)
-		return [result for result in results if not result.get("physical")]
+		results = [
+			result
+			for result in query.run(as_dict=True)
+			if not (result.get("physical") and result.get("for_site_update"))
+		]
+
+		return [
+			{
+				**result,
+				"type": "Physical" if result.get("physical") else "Logical",
+				"ready_to_restore": True
+				if result.get("physical") == 0
+				else frappe.get_cached_value(
+					"Virtual Disk Snapshot", result.get("database_snapshot"), "status"
+				)
+				== "Completed",
+			}
+			for result in results
+		]
 
 	def validate(self):
 		if self.physical and self.with_files:
