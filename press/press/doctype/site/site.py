@@ -117,6 +117,7 @@ class Site(Document, TagHelpers):
 
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.site_app.site_app import SiteApp
+		from press.press.doctype.site_backup_time.site_backup_time import SiteBackupTime
 		from press.press.doctype.site_config.site_config import SiteConfig
 
 		_keys_removed_in_last_update: DF.Data | None
@@ -124,10 +125,10 @@ class Site(Document, TagHelpers):
 		account_request: DF.Link | None
 		additional_system_user_created: DF.Check
 		admin_password: DF.Password | None
+		allow_physical_backup_by_user: DF.Check
 		apps: DF.Table[SiteApp]
 		archive_failed: DF.Check
 		auto_update_last_triggered_on: DF.Datetime | None
-		backup_time: DF.Time | None
 		bench: DF.Link
 		cluster: DF.Link
 		config: DF.Code | None
@@ -147,14 +148,18 @@ class Site(Document, TagHelpers):
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
 		label: DF.Data | None
+		logical_backup_times: DF.Table[SiteBackupTime]
 		notify_email: DF.Data | None
 		only_update_at_specified_time: DF.Check
+		physical_backup_times: DF.Table[SiteBackupTime]
 		plan: DF.Link | None
 		remote_config_file: DF.Link | None
 		remote_database_file: DF.Link | None
 		remote_private_file: DF.Link | None
 		remote_public_file: DF.Link | None
 		saas_communication_secret: DF.Data | None
+		schedule_logical_backup_at_custom_time: DF.Check
+		schedule_physical_backup_at_custom_time: DF.Check
 		server: DF.Link
 		setup_wizard_complete: DF.Check
 		setup_wizard_status_check_next_retry_on: DF.Datetime | None
@@ -216,6 +221,7 @@ class Site(Document, TagHelpers):
 		"label",
 		"signup_time",
 		"account_request",
+		"allow_physical_backup_by_user",
 	)
 
 	@staticmethod
@@ -957,6 +963,16 @@ class Site(Document, TagHelpers):
 		return self.backup(physical=True, for_site_update=for_site_update)
 
 	@dashboard_whitelist()
+	def schedule_backup(self, with_files=False, physical=False):
+		"""
+		This function meant to be called from dashboard only
+		Allow only few params which can be passed to backup(....) function
+		"""
+		if physical and not self.allow_physical_backup_by_user:
+			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
+		return self.backup(with_files=with_files, physical=physical)
+
+	@frappe.whitelist()
 	def backup(
 		self, with_files=False, offsite=False, force=False, physical=False, for_site_update: bool = False
 	):

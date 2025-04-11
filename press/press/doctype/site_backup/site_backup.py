@@ -86,11 +86,17 @@ class SiteBackup(Document):
 
 	@property
 	def database_server(self):
-		server = frappe.get_value("Site", self.site, "server")
-		return frappe.get_value("Server", server, "database_server")
+		return frappe.get_value(
+			"Server", frappe.get_cached_value("Site", self.site, "server"), "database_server"
+		)
 
 	@staticmethod
 	def get_list_query(query):
+		"""
+		Remove records with `Success` but files_availability is `Unavailable`
+		"""
+		sb = frappe.qb.DocType("Site Backup")
+		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
 		results = [
 			result
 			for result in query.run(as_dict=True)
@@ -135,6 +141,15 @@ class SiteBackup(Document):
 			frappe.throw("Too many pending backups")
 
 		if self.physical:
+			# validate physical backup enabled on database server
+			if not bool(
+				frappe.utils.cint(
+					frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
+				)
+			):
+				frappe.throw(
+					"Physical backup is not enabled for this database server. Please reach out to support."
+				)
 			# Set some default values
 			site = frappe.get_doc("Site", self.site)
 			if not site.database_name:

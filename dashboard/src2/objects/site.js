@@ -29,7 +29,7 @@ export default {
 		activate: 'activate',
 		addDomain: 'add_domain',
 		archive: 'archive',
-		backup: 'backup',
+		backup: 'schedule_backup',
 		clearSiteCache: 'clear_site_cache',
 		deactivate: 'deactivate',
 		disableReadWrite: 'disable_read_write',
@@ -639,7 +639,6 @@ export default {
 					filters: (site) => {
 						return {
 							site: site.doc?.name,
-							files_availability: 'Available',
 							status: ['in', ['Pending', 'Running', 'Success']],
 						};
 					},
@@ -672,6 +671,13 @@ export default {
 							fieldname: 'type',
 							width: '150px',
 							align: 'center',
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							width: '150px',
+							align: 'center',
+							type: 'Badge',
 						},
 						{
 							label: 'Database',
@@ -944,30 +950,17 @@ export default {
 							},
 							loading: site.backup.loading,
 							onClick() {
-								confirmDialog({
-									title: 'Schedule Backup',
-									message:
-										'Are you sure you want to schedule a backup? This will create an onsite backup.',
-									onSuccess({ hide }) {
-										toast.promise(
-											site.backup.submit({
-												with_files: true,
-											}),
-											{
-												loading: 'Scheduling backup...',
-												success: () => {
-													hide();
-													router.push({
-														name: 'Site Jobs',
-														params: { name: site.name },
-													});
-													return 'Backup scheduled successfully.';
-												},
-												error: (e) => getToastErrorMessage(e),
-											},
-										);
-									},
-								});
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteScheduleBackup.vue'),
+										),
+										{
+											site: site.name,
+											onScheduleBackupSuccess: () => backups.reload(),
+										},
+									),
+								);
 							},
 						};
 					},

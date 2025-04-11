@@ -52,6 +52,16 @@
   "column_break_34",
   "remote_private_file",
   "remote_public_file",
+  "backup_tab",
+  "skip_scheduled_backups",
+  "logical_backup_section",
+  "schedule_logical_backup_at_custom_time",
+  "logical_backup_times",
+  "physical_backup_section",
+  "schedule_physical_backup_at_custom_time",
+  "physical_backup_times",
+  "flags1_section",
+  "allow_physical_backup_by_user",
   "tab_break_46",
   "notifications_section",
   "notify_email",
@@ -82,10 +92,6 @@
   "hybrid_saas_pool",
   "saas_communication_secret",
   "label",
-  "backups_section",
-  "backup_time",
-  "column_break_zgig",
-  "skip_scheduled_backups",
   "tags_section",
   "tags"
  ],
@@ -521,12 +527,6 @@
    "label": "Hide Config"
   },
   {
-   "collapsible": 1,
-   "fieldname": "backups_section",
-   "fieldtype": "Section Break",
-   "label": "Backups"
-  },
-  {
    "default": "0",
    "fieldname": "skip_scheduled_backups",
    "fieldtype": "Check",
@@ -549,15 +549,6 @@
    "fieldtype": "Link",
    "label": "Standby for Product",
    "options": "Product Trial"
-  },
-  {
-   "fieldname": "backup_time",
-   "fieldtype": "Time",
-   "label": "Backup Time"
-  },
-  {
-   "fieldname": "column_break_zgig",
-   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -614,6 +605,62 @@
    "fieldname": "signup_time",
    "fieldtype": "Datetime",
    "label": "Signup Time"
+  },
+  {
+   "fieldname": "backup_tab",
+   "fieldtype": "Tab Break",
+   "label": "Backup"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_physical_backup_by_user",
+   "fieldtype": "Check",
+   "label": "Allow Physical Backup By User"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval: doc.schedule_logical_backup_at_custom_time",
+   "depends_on": "eval: !doc.skip_scheduled_backups",
+   "fieldname": "logical_backup_section",
+   "fieldtype": "Section Break",
+   "label": "Logical Backup"
+  },
+  {
+   "fieldname": "logical_backup_times",
+   "fieldtype": "Table",
+   "label": "Logical Backup Times",
+   "options": "Site Backup Time"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval: doc.schedule_physical_backup_at_custom_time",
+   "depends_on": "eval: !doc.skip_scheduled_backups",
+   "fieldname": "physical_backup_section",
+   "fieldtype": "Section Break",
+   "label": "Physical Backup"
+  },
+  {
+   "default": "0",
+   "fieldname": "schedule_physical_backup_at_custom_time",
+   "fieldtype": "Check",
+   "label": "Schedule Physical Backup at Custom Time"
+  },
+  {
+   "fieldname": "physical_backup_times",
+   "fieldtype": "Table",
+   "label": "Physical Backup Times",
+   "options": "Site Backup Time"
+  },
+  {
+   "fieldname": "flags1_section",
+   "fieldtype": "Section Break",
+   "label": "Flags"
+  },
+  {
+   "default": "0",
+   "fieldname": "schedule_logical_backup_at_custom_time",
+   "fieldtype": "Check",
+   "label": "Schedule Logical Backup at Custom Time"
   }
  ],
  "links": [
@@ -688,7 +735,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-03-28 09:42:59.328564",
+ "modified": "2025-04-11 15:39:49.809975",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
