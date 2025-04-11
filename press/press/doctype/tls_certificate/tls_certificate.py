@@ -418,16 +418,24 @@ class LetsEncrypt(BaseCA):
 		self.run(self._certbot_command())
 
 	def _certbot_command(self):
+		# Use appropriate plugin (Route53 or cloudflare) depending
+		# on the value for DNS Provider.
+		domain = frappe.get_doc("Root Domain", self.domain)
+
 		if self.wildcard or frappe.conf.developer_mode:
-			plugin = "--dns-route53"
+			if domain.dns_provider == "AWS Route 53":
+				plugin = "--dns-route53"
+			elif domain.dns_provider == "Cloudflare" and domain.cf_cred_path is not None:
+				plugin = "--dns-cloudflare"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
 
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"
+		cf_creds = f"--dns-credentials-path {domain.cf_cred_path}" if plugin == "--dns-cloudflare" else ""
 
 		return (
-			f"certbot certonly {plugin} {staging} --logs-dir"
+			f"certbot certonly {plugin} {cf_creds} {staging} --logs-dir"
 			f" {self.directory}/logs --work-dir {self.directory} --config-dir"
 			f" {self.directory} {force_renewal} --agree-tos --eff-email --email"
 			f" {self.eff_registration_email} --staple-ocsp"
