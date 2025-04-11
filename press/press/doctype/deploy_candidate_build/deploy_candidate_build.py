@@ -254,7 +254,7 @@ class DeployCandidateBuild(Document):
 		self,
 		status: Status,
 		timestamp_field: str | None = None,
-		commit: bool = False,
+		commit: bool = True,
 	):
 		self.status = status.value
 
@@ -263,8 +263,6 @@ class DeployCandidateBuild(Document):
 
 		if timestamp_field and hasattr(self, timestamp_field):
 			setattr(self, timestamp_field, now())
-
-		self.db_update()
 
 		if commit:
 			frappe.db.commit()
@@ -649,8 +647,6 @@ class DeployCandidateBuild(Document):
 			MAX_DURATION,
 		)
 
-		self.db_update()
-
 	def _set_build_duration(self):
 		self.build_end = now()
 		if not isinstance(self.build_start, datetime):
@@ -660,8 +656,6 @@ class DeployCandidateBuild(Document):
 			self.build_end - self.build_start,
 			MAX_DURATION,
 		)
-
-		self.db_update()
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:
@@ -879,8 +873,8 @@ class DeployCandidateBuild(Document):
 		self._run_agent_jobs()
 
 	def _build(self):
-		self.set_status(Status.PREPARING, "build_start")
 		self._set_pending_duration()
+		self.set_status(Status.PREPARING, "build_start")
 		# self.candidate._set_status_preparing()
 		self._set_output_parsers()
 
