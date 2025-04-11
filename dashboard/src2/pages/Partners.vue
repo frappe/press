@@ -59,6 +59,11 @@ export default {
 								this.$team.doc.mpesa_enabled,
 						),
 				},
+				{
+					label: 'Partner Payout',
+					route: { name: 'PartnerPayout' },
+					condition: () => Boolean(this.$team.doc.erpnext_partner),
+				},
 			],
 		};
 	},
