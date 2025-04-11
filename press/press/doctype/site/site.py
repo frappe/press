@@ -2291,6 +2291,10 @@ class Site(Document, TagHelpers):
 		proxy_servers_names = frappe.db.get_all(
 			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
 		)
+		if not proxy_servers_names:
+			frappe.throw("Set domain(s) for proxy server before creating a new site!")
+			return
+
 		proxy_servers = frappe.db.get_all(
 			"Proxy Server",
 			{"status": "Active", "name": ("in", proxy_servers_names)},
