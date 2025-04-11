@@ -35,34 +35,37 @@ const props = defineProps({
 	method: { type: String, required: true },
 	description: { type: String, required: true },
 	buttonLabel: { type: String, required: true },
-	group: { type: String, required: false }
+	group: { type: String, required: false },
 });
 
 const site = getCachedDocumentResource('Site', props.siteName);
 
 function getSiteActionHandler(action) {
 	const actionDialogs = {
-		'Restore with files': defineAsyncComponent(() =>
-			import('./SiteDatabaseRestoreDialog.vue')
+		'Restore with files': defineAsyncComponent(
+			() => import('./SiteDatabaseRestoreDialog.vue'),
 		),
-		'Restore from an existing site': defineAsyncComponent(() =>
-			import('./site/SiteDatabaseRestoreFromURLDialog.vue')
+		'Restore from an existing site': defineAsyncComponent(
+			() => import('./site/SiteDatabaseRestoreFromURLDialog.vue'),
 		),
-		'Manage database users': defineAsyncComponent(() =>
-			import('./SiteDatabaseAccessDialog.vue')
+		'Manage database users': defineAsyncComponent(
+			() => import('./SiteDatabaseAccessDialog.vue'),
 		),
-		'Version upgrade': defineAsyncComponent(() =>
-			import('./site/SiteVersionUpgradeDialog.vue')
+		'Version upgrade': defineAsyncComponent(
+			() => import('./site/SiteVersionUpgradeDialog.vue'),
 		),
-		'Change bench group': defineAsyncComponent(() =>
-			import('./site/SiteChangeGroupDialog.vue')
+		'Change bench group': defineAsyncComponent(
+			() => import('./site/SiteChangeGroupDialog.vue'),
 		),
-		'Change region': defineAsyncComponent(() =>
-			import('./site/SiteChangeRegionDialog.vue')
+		'Change region': defineAsyncComponent(
+			() => import('./site/SiteChangeRegionDialog.vue'),
 		),
-		'Change server': defineAsyncComponent(() =>
-			import('./site/SiteChangeServerDialog.vue')
-		)
+		'Change server': defineAsyncComponent(
+			() => import('./site/SiteChangeServerDialog.vue'),
+		),
+		'Schedule backup': defineAsyncComponent(
+			() => import('./site/SiteScheduleBackup.vue'),
+		),
 	};
 	if (actionDialogs[action]) {
 		const dialog = h(actionDialogs[action], { site: site.doc.name });
@@ -75,10 +78,9 @@ function getSiteActionHandler(action) {
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
 		'Migrate site': onMigrateSite,
-		'Schedule backup': onScheduleBackup,
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
-		'Clear cache': onClearCache
+		'Clear cache': onClearCache,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -102,8 +104,8 @@ function onDeactivateSite() {
 			theme: 'red',
 			onClick({ hide }) {
 				return site.deactivate.submit().then(hide);
-			}
-		}
+			},
+		},
 	});
 }
 
@@ -120,8 +122,8 @@ function onActivateSite() {
 			variant: 'solid',
 			onClick({ hide }) {
 				return site.activate.submit().then(hide);
-			}
-		}
+			},
+		},
 	});
 }
 
@@ -136,13 +138,13 @@ function onDropSite() {
 		fields: [
 			{
 				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName'
+				fieldname: 'confirmSiteName',
 			},
 			{
 				label: 'Force drop site',
 				fieldname: 'force',
-				type: 'checkbox'
-			}
+				type: 'checkbox',
+			},
 		],
 		primaryAction: {
 			label: 'Drop Site',
@@ -156,8 +158,8 @@ function onDropSite() {
 				}
 
 				const val = await isLastSite(site.doc.team);
-				const FeedbackDialog = defineAsyncComponent(() =>
-					import('./ChurnFeedbackDialog.vue')
+				const FeedbackDialog = defineAsyncComponent(
+					() => import('./ChurnFeedbackDialog.vue'),
 				);
 
 				return site.archive.submit({ force: values.force }).then(() => {
@@ -169,15 +171,15 @@ function onDropSite() {
 								onUpdated() {
 									router.replace({ name: 'Site List' });
 									toast.success('Site dropped successfully');
-								}
-							})
+								},
+							}),
 						);
 					} else {
 						router.replace({ name: 'Site List' });
 					}
 				});
-			}
-		}
+			},
+		},
 	});
 }
 
@@ -193,12 +195,12 @@ function onMigrateSite() {
 			{
 				label: 'Skip patches if they fail during migration (Not recommended)',
 				fieldname: 'skipFailingPatches',
-				type: 'checkbox'
+				type: 'checkbox',
 			},
 			{
 				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName'
-			}
+				fieldname: 'confirmSiteName',
+			},
 		],
 		primaryAction: {
 			label: 'Migrate',
@@ -211,8 +213,8 @@ function onMigrateSite() {
 				return site.migrate
 					.submit({ skip_failing_patches: values.skipFailingPatches })
 					.then(hide);
-			}
-		}
+			},
+		},
 	});
 }
 
@@ -225,8 +227,8 @@ function onSiteReset() {
 		fields: [
 			{
 				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName'
-			}
+				fieldname: 'confirmSiteName',
+			},
 		],
 		primaryAction: {
 			label: 'Reset',
@@ -237,35 +239,8 @@ function onSiteReset() {
 					throw new Error('Site name does not match.');
 				}
 				return site.reinstall.submit().then(hide);
-			}
-		}
-	});
-}
-
-function onScheduleBackup() {
-	return confirmDialog({
-		title: 'Schedule Backup',
-		message:
-			'Are you sure you want to schedule a backup? This will create an onsite backup.',
-		onSuccess({ hide }) {
-			toast.promise(
-				site.backup.submit({
-					with_files: true
-				}),
-				{
-					loading: 'Scheduling backup...',
-					success: () => {
-						hide();
-						router.push({
-							name: 'Site Jobs',
-							params: { name: site.name }
-						});
-						return 'Backup scheduled successfully';
-					},
-					error: e => getToastErrorMessage(e)
-				}
-			);
-		}
+			},
+		},
 	});
 }
 
@@ -275,13 +250,13 @@ function onTransferSite() {
 		fields: [
 			{
 				label: 'Enter email address of the team for transfer of site ownership',
-				fieldname: 'email'
+				fieldname: 'email',
 			},
 			{
 				label: 'Reason for transfer',
 				fieldname: 'reason',
-				type: 'textarea'
-			}
+				type: 'textarea',
+			},
 		],
 		primaryAction: {
 			label: 'Transfer',
@@ -292,11 +267,11 @@ function onTransferSite() {
 					.then(() => {
 						hide();
 						toast.success(
-							`Transfer request sent to ${values.email} successfully.`
+							`Transfer request sent to ${values.email} successfully.`,
 						);
 					});
-			}
-		}
+			},
+		},
 	});
 }
 
@@ -311,8 +286,8 @@ function onClearCache() {
 			variant: 'solid',
 			onClick: ({ hide }) => {
 				return site.clearSiteCache.submit().then(hide);
-			}
-		}
+			},
+		},
 	});
 }
 </script>
