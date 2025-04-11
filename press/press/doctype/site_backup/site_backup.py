@@ -40,6 +40,7 @@ class SiteBackup(Document):
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
 		files_availability: DF.Literal["", "Available", "Unavailable"]
+		for_site_update: DF.Check
 		job: DF.Link | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None

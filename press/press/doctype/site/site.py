@@ -953,11 +953,13 @@ class Site(Document, TagHelpers):
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
 
 	@frappe.whitelist()
-	def physical_backup(self):
-		return self.backup(physical=True)
+	def physical_backup(self, for_site_update: bool = False):
+		return self.backup(physical=True, for_site_update=for_site_update)
 
 	@dashboard_whitelist()
-	def backup(self, with_files=False, offsite=False, force=False, physical=False):
+	def backup(
+		self, with_files=False, offsite=False, force=False, physical=False, for_site_update: bool = False
+	):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
 				"Site Activity",
@@ -988,6 +990,7 @@ class Site(Document, TagHelpers):
 				"offsite": offsite,
 				"force": force,
 				"physical": physical,
+				"for_site_update": for_site_update,
 			}
 		).insert()
 
@@ -1324,6 +1327,7 @@ class Site(Document, TagHelpers):
 
 		self.db_set("host_name", None)
 
+		self.delete_physical_backups()
 		self.delete_offsite_backups()
 		frappe.db.set_value(
 			"Site Backup",
@@ -1340,6 +1344,26 @@ class Site(Document, TagHelpers):
 	def cleanup_after_archive(self):
 		site_cleanup_after_archive(self.name)
 
+	def delete_physical_backups(self):
+		log_site_activity(self.name, "Drop Physical Backups")
+
+		site_db_snapshots = frappe.get_all(
+			"Site Backup",
+			filters={
+				"site": self.name,
+				"physical": True,
+				"files_availability": "Available",
+				"for_site_update": False,
+			},
+			pluck="database_snapshot",
+			order_by="creation desc",
+		)
+
+		for snapshot in site_db_snapshots:
+			# Take lock on the row, because in case of Pending snapshot
+			# the background sync job might cause timestamp mismatch error or version error
+			frappe.get_doc("Virtual Disk Snapshot", snapshot, for_update=True).delete_snapshot()
+
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
@@ -1353,6 +1377,7 @@ class Site(Document, TagHelpers):
 			filters={
 				"site": self.name,
 				"offsite": True,
+				"physical": False,
 				"files_availability": "Available",
 			},
 			pluck="name",

@@ -13,6 +13,7 @@
   "job",
   "files_availability",
   "physical",
+  "for_site_update",
   "with_files",
   "offsite",
   "data_7",
@@ -283,10 +284,17 @@
   {
    "fieldname": "column_break_obsx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.physical == 1",
+   "fieldname": "for_site_update",
+   "fieldtype": "Check",
+   "label": "For Site Update"
   }
  ],
  "links": [],
- "modified": "2025-02-06 13:21:10.061731",
+ "modified": "2025-04-11 10:27:39.445778",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
