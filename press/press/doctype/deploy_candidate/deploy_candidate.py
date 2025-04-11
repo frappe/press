@@ -20,6 +20,7 @@ from typing import Any, Literal
 
 import frappe
 import frappe.utils
+import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -57,7 +58,7 @@ MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
-PYTHON_VERSION_REGEX = re.compile(r"(\d+\.\d+)")
+DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
 
 if typing.TYPE_CHECKING:
 	from rq.job import Job
@@ -1135,34 +1136,33 @@ class DeployCandidate(Document):
 			order_by="idx",
 		)
 
-	def get_python_version(self, version: str):
+	def check_distutils_support(self, version: str):
 		"""
-		Supports major.minor version extraction
-		Also supports ambiguous version information (>=;~=)
+		Checks if specified python version supports distutils.
 		"""
-		if match := PYTHON_VERSION_REGEX.search(version):
-			return float(match.group(1))
-		return None
+		try:
+			python_version = semantic_version.Version(version)
+		except ValueError:
+			python_version = semantic_version.Version(f"{version}.0")
 
-	def _remove_distutils(self, version: float) -> bool:
-		return version >= 3.12
+		return python_version in DISTUTILS_SUPPORTED_VERSION
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
-			remove_distutils = False
-
+			is_distutils_supported = True
 			for d in self.dependencies:
 				if d.dependency == "PYTHON_VERSION":
-					python_version = self.get_python_version(d.version)
-					remove_distutils = self._remove_distutils(python_version)
+					is_distutils_supported = self.check_distutils_support(d.version)
 
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
 			content = frappe.render_template(
-				dockerfile_template, {"doc": self, "remove_distutils": remove_distutils}, is_path=True
+				dockerfile_template,
+				{"doc": self, "remove_distutils": not is_distutils_supported},
+				is_path=True,
 			)
 			f.write(content)
 			return content
