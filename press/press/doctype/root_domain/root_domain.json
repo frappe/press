@@ -10,6 +10,7 @@
   "team",
   "column_break_4",
   "dns_provider",
+  "cloudflare_credentials_path",
   "aws_access_key_id",
   "aws_secret_access_key"
  ],
@@ -52,6 +53,13 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "depends_on": "eval:doc.dns_provider=='Cloudflare';",
+   "fieldname": "cloudflare_credentials_path",
+   "fieldtype": "Data",
+   "label": "Cloudflare credentials path",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -87,7 +95,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-04-12 00:06:30.178081",
+ "modified": "2025-04-12 00:35:25.818004",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
