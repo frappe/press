@@ -19,6 +19,7 @@ import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -61,6 +62,7 @@ class Status(Enum):
 	RUNNING = "Running"
 	SCHEDULED = "Scheduled"
 	PREPARING = "Preparing"
+	DRAFT = "Draft"
 
 	@classmethod
 	def terminal(cls):
@@ -69,6 +71,12 @@ class Status(Enum):
 	@classmethod
 	def intermediate(cls):
 		return [cls.PENDING.value, cls.RUNNING.value, cls.SCHEDULED.value, cls.PREPARING.value]
+
+
+class ConfigFileTemplate(Enum):
+	REDIS_CACHE = "press/docker/config/redis-cache.conf"
+	REDIS_QUEUE = "press/docker/config/redis-queue.conf"
+	SUPERVISOR = "press/docker/config/supervisor.conf"
 
 
 STAGE_SLUG_MAP = {
@@ -181,6 +189,7 @@ class DeployCandidateBuild(Document):
 		deploy_candidate: DF.Link
 		docker_image_id: DF.Data | None
 		error_key: DF.Data | None
+		group: DF.Link
 		manually_failed: DF.Check
 		no_build: DF.Check
 		no_cache: DF.Check
@@ -189,15 +198,64 @@ class DeployCandidateBuild(Document):
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
 		retry_count: DF.Int
-		status: DF.Literal["Pending", "Preparing", "Running", "Success", "Failure"]
+		status: DF.Literal["Draft", "Pending", "Preparing", "Running", "Success", "Failure"]
 		user_addressable_failure: DF.Check
 	# end: auto-generated types
+
+	dashboard_fields = (
+		"name",
+		"status",
+		"creation",
+		"deployed",
+		"build_steps",
+		"build_start",
+		"build_end",
+		"build_duration",
+		"build_error",
+		"group",
+		"retry_count",
+	)
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		DeployCandidate, DeployCandidateBuild, DeployCandidateApp = (
+			frappe.qb.DocType("Deploy Candidate"),
+			frappe.qb.DocType("Deploy Candidate Build"),
+			frappe.qb.DocType("Deploy Candidate App"),
+		)
+		query = (
+			query.left_join(DeployCandidate)
+			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
+			.left_join(DeployCandidateApp)
+			.on(DeployCandidateApp.parent == DeployCandidate.name)
+			.select(
+				DeployCandidateBuild.name,
+				DeployCandidateBuild.creation,
+				DeployCandidateBuild.status,
+				DeployCandidateBuild.build_duration,
+				DeployCandidateBuild.owner,
+				GROUP_CONCAT(DeployCandidateApp.app).as_("apps"),
+			)
+			.groupby(DeployCandidateBuild.name)
+		)
+		results = query.run(as_dict=True)
+
+		for deploy in results:
+			if not isinstance(deploy["apps"], list):
+				deploy["apps"] = [deploy["apps"]]
+
+		return results
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
 
-	def set_status(self, status: Status, timestamp_field: str | None = None, commit: bool = True):
+	def set_status(
+		self,
+		status: Status,
+		timestamp_field: str | None = None,
+		commit: bool = False,
+	):
 		self.status = status.value
 
 		if self.status == Status.FAILURE.value:
@@ -240,25 +298,16 @@ class DeployCandidateBuild(Document):
 			f.write(content)
 			return content
 
-	def _generate_redis_cache_config(self):
-		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
-		with open(redis_cache_conf, "w") as f:
-			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
-			content = frappe.render_template(redis_cache_conf_template, {"doc": self.candidate}, is_path=True)
-			f.write(content)
+	def _generate_config_from_template(self, template: ConfigFileTemplate):
+		_, template_conf_name = os.path.split(template.value)
+		conf_file = os.path.join(self.build_directory, "config", template_conf_name)
 
-	def _generate_redis_queue_config(self):
-		redis_queue_conf = os.path.join(self.build_directory, "config", "redis-queue.conf")
-		with open(redis_queue_conf, "w") as f:
-			redis_queue_conf_template = "press/docker/config/redis-queue.conf"
-			content = frappe.render_template(redis_queue_conf_template, {"doc": self.candidate}, is_path=True)
-			f.write(content)
-
-	def _generate_supervisor_config(self):
-		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
-		with open(supervisor_conf, "w") as f:
-			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(supervisor_conf_template, {"doc": self.candidate}, is_path=True)
+		with open(conf_file, "w") as f:
+			content = frappe.render_template(
+				template.value,
+				{"doc": self.candidate},
+				is_path=True,
+			)
 			f.write(content)
 
 	def _generate_apps_txt(self):
@@ -557,10 +606,13 @@ class DeployCandidateBuild(Document):
 			# Log and raise error if build failure is not actionable or no retry
 			log_error("Deploy Candidate Build Exception", doc=self)
 
+	# Fix scheduled status
 	def schedule_build_retry(self):
 		self.retry_count += 1
 		minutes = min(5**self.retry_count, 125)
 		scheduled_time = now() + timedelta(minutes=minutes)
+		# Add scheduled time to this.
+		self.set_status(Status.SCHEDULED)
 		self.candidate.schedule_build_and_deploy(
 			run_now=False,
 			scheduled_time=scheduled_time,
@@ -714,9 +766,13 @@ class DeployCandidateBuild(Document):
 		self.add_post_build_steps()
 
 		self._copy_config_files()
-		self._generate_redis_cache_config()
-		self._generate_redis_queue_config()
-		self._generate_supervisor_config()
+		for config_template in [
+			ConfigFileTemplate.REDIS_CACHE,
+			ConfigFileTemplate.REDIS_QUEUE,
+			ConfigFileTemplate.SUPERVISOR,
+		]:
+			self._generate_config_from_template(config_template)
+
 		self._generate_apps_txt()
 		self.candidate.generate_ssh_keys()
 
@@ -862,11 +918,11 @@ class DeployCandidateBuild(Document):
 		throw_no_build_server()
 
 	def validate_status(self):
-		if self.candidate.status in ["Draft", "Success", "Failure", "Scheduled"]:
+		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
 			return True
 
-		frappe.msgprint(
-			f"Build is in <b>{self.candidate.status}</b> state. "
+		frappe.throw(
+			f"Build is in <b>{self.status}</b> state. "
 			"Please wait for build to succeed or fail before retrying."
 		)
 		return False
@@ -901,12 +957,20 @@ class DeployCandidateBuild(Document):
 		queue = "default" if frappe.conf.developer_mode else "build"
 
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_build", queue=queue, timeout=2400, enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"_build",
+			queue=queue,
+			timeout=2400,
+			enqueue_after_commit=True,
 		)
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	def before_insert(self):
+		self.set_status(Status.DRAFT)
 
 	def after_insert(self):
 		self.pre_build()
@@ -917,6 +981,7 @@ class DeployCandidateBuild(Document):
 		self.name = make_autoname(series)
 
 	def _stop_and_fail(self):
+		self.manually_failed = True
 		for job in get_background_jobs(self.doctype, self.name, status="started"):
 			if is_build_job(job):
 				stop_background_job(job)
@@ -935,17 +1000,6 @@ class DeployCandidateBuild(Document):
 
 		self.build_directory = None
 		self.save()
-
-	@frappe.whitelist()
-	def stop_and_fail(self):
-		if self.status in Status.terminal():
-			return dict(
-				error=True,
-				message=f"Cannot stop and fail if status one of [{', '.join(Status.terminal())}]",
-			)
-		self.manually_failed = True
-		self._stop_and_fail()
-		return dict(error=False, message="Failed successfully")
 
 
 def is_build_job(job: Job) -> bool:
