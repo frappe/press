@@ -78,6 +78,7 @@ ALLOWED_DOCTYPES = [
 	"Press Settings",
 	"Mpesa Payment Record",
 	"Partner Certificate",
+	"Deploy Candidate Build",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import contextlib
-
-# Copyright (c) 2021, Frappe and contributors
-# For license information, please see license.txt
 import glob
 import json
 import os
 import re
+
+# Copyright (c) 2021, Frappe and contributors
+# For license information, please see license.txt
 import shlex
 import shutil
 import subprocess
@@ -25,7 +25,6 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -45,7 +44,6 @@ from press.press.doctype.deploy_candidate.utils import (
 	get_build_server,
 	get_package_manager_files,
 	is_suspended,
-	load_pyproject,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error, reconnect_on_failure
@@ -61,7 +59,7 @@ if typing.TYPE_CHECKING:
 	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
@@ -306,12 +304,23 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		no_cache: bool = False,
 	):
-		self.pre_build(
-			method="_build",
-			no_push=no_push,
-			no_build=no_build,
-			no_cache=no_cache,
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.name,
+				"no_build": no_build,
+				"no_push": no_push,
+				"no_cache": no_cache,
+			}
 		)
+		deploy_candidate_build.insert()
+		return dict(error=False, message=deploy_candidate_build.name)
+		# self.pre_build(
+		# 	method="_build",
+		# 	no_push=no_push,
+		# 	no_build=no_build,
+		# 	no_cache=no_cache,
+		# )
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
@@ -370,12 +379,17 @@ class DeployCandidate(Document):
 			return
 		self.build_and_deploy()
 
-	def build_and_deploy(self, no_cache: bool = False):
-		self.pre_build(
-			method="_build",
-			deploy_after_build=True,
-			no_cache=no_cache,
+	def build_and_deploy(self, no_cache: bool = False) -> str:
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.name,
+				"no_cache": no_cache,
+				"deploy_after_build": True,
+			}
 		)
+		deploy_candidate_build.insert()
+		return deploy_candidate_build.name
 
 	@frappe.whitelist()
 	def deploy(self):
@@ -429,30 +443,6 @@ class DeployCandidate(Document):
 		if exc:
 			# Log and raise error if build failure is not actionable or no retry
 			log_error("Deploy Candidate Build Exception", doc=self)
-
-	def should_build_retry(
-		self,
-		exc: Exception | None,
-		job: "AgentJob | None",
-	) -> bool:
-		if self.status != "Failure":
-			return False
-
-		# Retry twice before giving up
-		if self.retry_count >= 3:
-			return False
-
-		bo = self.build_output
-		if isinstance(bo, str) and should_build_retry_build_output(bo):
-			return True
-
-		if exc and should_build_retry_exc(exc):
-			return True
-
-		if job and should_build_retry_job(job):
-			return True
-
-		return False
 
 	def schedule_build_retry(self):
 		self.retry_count += 1
@@ -589,106 +579,14 @@ class DeployCandidate(Document):
 		step.duration = get_duration(start_time)
 		return upload_filename
 
-	@retry(
-		reraise=True,
-		wait=wait_fixed(300),
-		stop=stop_after_attempt(3),
-	)
-	def upload_build_context_for_docker_build(
-		self,
-		context_filepath: str,
-		build_server: str,
-	):
-		agent = Agent(build_server)
-		with open(context_filepath, "rb") as file:
-			if upload_filename := agent.upload_build_context_for_docker_build(file, self.name):
-				return upload_filename
-
-		message = "Failed to upload build context to remote docker builder"
-		if agent.response:
-			message += f"\nagent response: {agent.response.text}"
-
-		raise Exception(message)
-
 	@staticmethod
 	def process_run_build(job: "AgentJob", response_data: "dict | None"):
 		request_data = json.loads(job.request_data)
-		dc: DeployCandidate = frappe.get_doc(
-			"Deploy Candidate",
-			request_data["deploy_candidate"],
+		dc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build",
+			request_data["deploy_candidate_build"],
 		)
 		dc._process_run_build(job, request_data, response_data)
-
-	def _process_run_build(
-		self,
-		job: "AgentJob",
-		request_data: dict,
-		response_data: dict | None,
-	):
-		job_data = json.loads(job.data or "{}")
-		output_data = json.loads(job_data.get("output", "{}"))
-
-		"""
-		Due to how agent - press communication takes place, every time an
-		output is published all of it has to be re-parsed from the start.
-
-		This is due to a method of streaming agent output to press not
-		existing.
-		"""
-		self._set_output_parsers()
-		if output := get_remote_step_output(
-			"build",
-			output_data,
-			response_data,
-		):
-			self.build_output_parser.parse_and_update(output)
-
-		if output := get_remote_step_output(
-			"push",
-			output_data,
-			response_data,
-		):
-			self.upload_step_updater.start()
-			self.upload_step_updater.process(output)
-
-		if self.has_remote_build_failed(job, job_data):
-			self.handle_build_failure(exc=None, job=job)
-		else:
-			self._update_status_from_remote_build_job(job)
-
-		# Fallback case cause upload step can be left hanging
-		self.correct_upload_step_status()
-
-		if self.status == "Success" and request_data.get("deploy_after_build"):
-			self.create_deploy()
-
-	def has_remote_build_failed(self, job: "AgentJob", job_data: dict) -> bool:
-		if job.status == "Failure":
-			return True
-
-		if job_data.get("build_failure"):
-			return True
-
-		if (usu := self.upload_step_updater) and usu.upload_step and usu.upload_step.status == "Failure":
-			return True
-
-		if self.get_first_step("status", "Failure"):
-			return True
-
-		return False
-
-	def correct_upload_step_status(self):
-		if not (usu := self.upload_step_updater) or not usu.upload_step:
-			return
-
-		if self.status == "Success" and usu.upload_step.status == "Running":
-			self.upload_step_updater.end("Success")
-
-		elif self.status == "Failure" and usu.upload_step.status not in [
-			"Failure",
-			"Pending",
-		]:
-			self.upload_step_updater.end("Pending")
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob"):
 		match job.status:
@@ -856,32 +754,6 @@ class DeployCandidate(Document):
 		for app in self.apps:
 			app.use_cached = bool(self.use_app_cache)
 
-	def _prepare_build_directory(self):
-		build_directory = frappe.get_value("Press Settings", None, "build_directory")
-		if not os.path.exists(build_directory):
-			os.mkdir(build_directory)
-
-		group_directory = os.path.join(build_directory, self.group)
-		if not os.path.exists(group_directory):
-			os.mkdir(group_directory)
-
-		self.build_directory = os.path.join(build_directory, self.group, self.name)
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		os.mkdir(self.build_directory)
-
-	@frappe.whitelist()
-	def cleanup_build_directory(self):
-		if not self.build_directory:
-			return
-
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		self.build_directory = None
-		self.save()
-
 	def _update_app_releases(self) -> None:
 		if not frappe.get_value("Release Group", self.group, "use_delta_builds"):
 			return
@@ -928,11 +800,88 @@ class DeployCandidate(Document):
 		self._add_post_build_steps(no_push)
 
 		self._copy_config_files()
-		self._generate_redis_cache_config()
-		self._generate_redis_queue_config()
-		self._generate_supervisor_config()
-		self._generate_apps_txt()
+		# self._generate_redis_cache_config()
+		# self._generate_redis_queue_config()
+		# self._generate_supervisor_config()
+		# self._generate_apps_txt()
 		self.generate_ssh_keys()
+
+	def run(self, command, environment=None, directory=None):
+		process = Popen(
+			shlex.split(command),
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			env=environment,
+			cwd=directory or self.build_directory,
+			universal_newlines=True,
+		)
+		yield from process.stdout
+		process.stdout.close()
+		return_code = process.wait()
+		if return_code:
+			raise subprocess.CalledProcessError(return_code, command)
+
+	def generate_ssh_keys(self):
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
+			return
+
+		ca = frappe.get_doc("SSH Certificate Authority", ca)
+		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
+
+		self.generate_host_keys(ca, ssh_directory)
+		self.generate_user_keys(ca, ssh_directory)
+
+		ca_public_key = os.path.join(ssh_directory, "ca.pub")
+		with open(ca_public_key, "w") as f:
+			f.write(ca.public_key)
+
+		# Generate authorized principal file
+		principals = os.path.join(ssh_directory, "principals")
+		with open(principals, "w") as f:
+			f.write(f"restrict,pty {self.group}")
+
+	def generate_host_keys(self, ca, ssh_directory):
+		# Generate host keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate host Certificate
+		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
+
+	def generate_user_keys(self, ca, ssh_directory):
+		# Generate user keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate user certificates
+		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
+
+		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
+		with open(user_private_key_path) as f:
+			self.user_private_key = f.read()
+
+		with open(user_public_key_path) as f:
+			self.user_public_key = f.read()
+
+		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
+		with open(user_certificate_path) as f:
+			self.user_certificate = f.read()
+
+		# Remove user key files
+		os.remove(user_private_key_path)
+		os.remove(user_public_key_path)
+		os.remove(user_certificate_path)
 
 	def _clone_repos(self):
 		apps_directory = os.path.join(self.build_directory, "apps")
@@ -974,71 +923,6 @@ class DeployCandidate(Document):
 		step.status = "Success"
 		self.save(ignore_permissions=True, ignore_version=True)
 		frappe.db.commit()
-
-	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
-		"""
-		Clones the app repository if it has not been cloned and
-		copies it into the build context directory.
-
-		Returned path points to the repository that needs to be
-		validated.
-		"""
-		if not (step := self.get_step("clone", app.app)):
-			raise frappe.ValidationError(f"App {app.app} clone step not found")
-
-		if not self.build_directory:
-			raise frappe.ValidationError("Build Directory not set")
-
-		step.command = f"git clone {app.app}"
-		source, cloned = frappe.db.get_value(
-			"App Release",
-			app.release,
-			["clone_directory", "cloned"],
-		)
-
-		if cloned and os.path.exists(source):
-			step.cached = True
-			step.status = "Success"
-		else:
-			source = self._clone_release_and_update_step(app.release, step)
-
-		target = os.path.join(self.build_directory, "apps", app.app)
-		shutil.copytree(source, target, symlinks=True)
-
-		"""
-		Pullable updates don't need cloning as they get cloned when
-		the app is checked for possible pullable updates in:
-
-		self.get_pull_update_dict
-			└─ app_release.get_changed_files_between_hashes
-		"""
-		if app.pullable_release:
-			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
-			target = os.path.join(self.build_directory, "app_updates", app.app)
-			shutil.copytree(source, target, symlinks=True)
-
-		return target
-
-	def _clone_release_and_update_step(self, release: str, step: "DeployCandidateBuildStep"):
-		# Start step
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-		frappe.db.commit()
-
-		# Clone Release
-		release: AppRelease = frappe.get_doc(
-			"App Release",
-			release,
-			for_update=True,
-		)
-		release._clone(force=True)
-
-		# End step
-		step.duration = get_duration(start_time)
-		step.output = release.output
-		step.status = "Success"
-		return release.clone_directory
 
 	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()
@@ -1133,19 +1017,6 @@ class DeployCandidate(Document):
 			order_by="idx",
 		)
 
-	def _generate_dockerfile(self):
-		dockerfile = os.path.join(self.build_directory, "Dockerfile")
-		with open(dockerfile, "w") as f:
-			dockerfile_template = "press/docker/Dockerfile"
-
-			for d in self.dependencies:
-				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
-					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
-
-			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
-			f.write(content)
-			return content
-
 	def _add_build_steps(self, dockerfile: str):
 		"""
 		This function adds build steps that take place inside docker build.
@@ -1225,151 +1096,6 @@ class DeployCandidate(Document):
 				os.path.join(self.build_directory, target),
 				symlinks=True,
 			)
-
-	def _generate_redis_cache_config(self):
-		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
-		with open(redis_cache_conf, "w") as f:
-			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
-			content = frappe.render_template(redis_cache_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_redis_queue_config(self):
-		redis_queue_conf = os.path.join(self.build_directory, "config", "redis-queue.conf")
-		with open(redis_queue_conf, "w") as f:
-			redis_queue_conf_template = "press/docker/config/redis-queue.conf"
-			content = frappe.render_template(redis_queue_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_supervisor_config(self):
-		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
-		with open(supervisor_conf, "w") as f:
-			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(supervisor_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_apps_txt(self):
-		apps_txt = os.path.join(self.build_directory, "apps.txt")
-		with open(apps_txt, "w") as f:
-			content = "\n".join([app.app_name for app in self.apps])
-			f.write(content)
-
-	def _get_app_name(self, app):
-		"""Retrieves `name` attribute of app - equivalent to distribution name
-		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
-		whichever defines it in that order.
-		"""
-		app_name = None
-		apps_path = os.path.join(self.build_directory, "apps")
-
-		config_py_path = os.path.join(apps_path, app, "setup.cfg")
-		setup_py_path = os.path.join(apps_path, app, "setup.py")
-
-		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
-
-		if not app_name and os.path.exists(config_py_path):
-			from setuptools.config import read_configuration
-
-			config = read_configuration(config_py_path)
-			app_name = config.get("metadata", {}).get("name")
-
-		if not app_name and os.path.exists(setup_py_path):
-			# retrieve app name from setup.py as fallback
-			with open(setup_py_path, "rb") as f:
-				contents = f.read().decode("utf-8")
-				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
-
-			if search:
-				app_name = search[1]
-
-		if app_name and app != app_name:
-			return app_name
-
-		return app
-
-	def _get_app_pyproject(self, app):
-		apps_path = os.path.join(self.build_directory, "apps")
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
-		if not os.path.exists(pyproject_path):
-			return {}
-
-		return load_pyproject(app, pyproject_path)
-
-	def run(self, command, environment=None, directory=None):
-		process = Popen(
-			shlex.split(command),
-			stdout=subprocess.PIPE,
-			stderr=subprocess.STDOUT,
-			env=environment,
-			cwd=directory or self.build_directory,
-			universal_newlines=True,
-		)
-		yield from process.stdout
-		process.stdout.close()
-		return_code = process.wait()
-		if return_code:
-			raise subprocess.CalledProcessError(return_code, command)
-
-	def generate_ssh_keys(self):
-		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
-		if not ca:
-			return
-
-		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
-
-		self.generate_host_keys(ca, ssh_directory)
-		self.generate_user_keys(ca, ssh_directory)
-
-		ca_public_key = os.path.join(ssh_directory, "ca.pub")
-		with open(ca_public_key, "w") as f:
-			f.write(ca.public_key)
-
-		# Generate authorized principal file
-		principals = os.path.join(ssh_directory, "principals")
-		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.group}")
-
-	def generate_host_keys(self, ca, ssh_directory):
-		# Generate host keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate host Certificate
-		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
-
-	def generate_user_keys(self, ca, ssh_directory):
-		# Generate user keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate user certificates
-		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
-
-		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
-		with open(user_private_key_path) as f:
-			self.user_private_key = f.read()
-
-		with open(user_public_key_path) as f:
-			self.user_public_key = f.read()
-
-		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
-		with open(user_certificate_path) as f:
-			self.user_certificate = f.read()
-
-		# Remove user key files
-		os.remove(user_private_key_path)
-		os.remove(user_public_key_path)
-		os.remove(user_certificate_path)
 
 	def get_certificate(self):
 		return {
@@ -1856,6 +1582,7 @@ def check_builds_status(
 	frappe.db.commit()
 
 
+# TODO Update this
 def fail_or_retry_stuck_builds(
 	last_n_days=0,
 	last_n_hours=4,
@@ -1948,80 +1675,6 @@ def correct_status(dc_name: str):
 		return
 
 	dc._stop_and_fail(False)
-
-
-def should_build_retry_build_output(build_output: str):
-	# Build failed cause APT could not get lock.
-	if "Could not get lock /var/cache/apt/archives/lock" in build_output:
-		return True
-
-	# Build failed cause Docker could not find a mounted file/folder
-	if "failed to compute cache key: failed to calculate checksum of ref" in build_output:
-		return True
-
-	# Failed to pull package from pypi
-	if "Connection to pypi.org timed out" in build_output:
-		return True
-
-	# Caused when fetching Python from deadsnakes/ppa
-	if "Error: retrieving gpg key timed out" in build_output:
-		return True
-
-	# Yarn registry bad gateway
-	if (
-		"error https://registry.yarnpkg.com/" in build_output
-		and 'Request failed "502 Bad Gateway"' in build_output
-	):
-		return True
-
-	# NPM registry internal server error
-	if (
-		"Error: https://registry.npmjs.org/" in build_output
-		and 'Request failed "500 Internal Server Error"' in build_output
-	):
-		return True
-
-	return False
-
-
-def should_build_retry_exc(exc: Exception):
-	error = frappe.get_traceback(False)
-	if not error and len(exc.args) == 0:
-		return False
-
-	error = error or "\n".join(str(a) for a in exc.args)
-
-	# Failed to upload build context (Mostly 502)
-	if "Failed to upload build context" in error:
-		return True
-
-	# Redis refused connection (press side)
-	if "redis.exceptions.ConnectionError: Error 111" in error:
-		return True
-
-	if "rq.timeouts.JobTimeoutException: Task exceeded maximum timeout value" in error:
-		return True
-
-	return False
-
-
-def should_build_retry_job(job: "AgentJob"):
-	if not job.traceback:
-		return False
-
-	# Failed to upload docker image
-	if "TimeoutError: timed out" in job.traceback:
-		return True
-
-	# Redis connection reset
-	if "ConnectionResetError: [Errno 104] Connection reset by peer" in job.traceback:
-		return True
-
-	# Redis connection refused
-	if "ConnectionRefusedError: [Errno 111] Connection refused" in job.traceback:
-		return True
-
-	return False
 
 
 def throw_no_build_server():
