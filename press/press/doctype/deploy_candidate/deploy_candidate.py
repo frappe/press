@@ -50,6 +50,7 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
+from press.utils.webhook import create_webhook_event
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -75,9 +76,7 @@ class DeployCandidate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-			DeployCandidateApp,
-		)
+		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
 		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 			DeployCandidateBuildStep,
 		)
@@ -131,6 +130,7 @@ class DeployCandidate(Document):
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
+
 		# end: auto-generated types
 
 		build_output_parser: DockerBuildOutputParser | None
@@ -1452,6 +1452,9 @@ class DeployCandidate(Document):
 				doctype=self.doctype,
 				docname=self.name,
 			)
+
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def get_dependency_version(self, dependency: str, as_env: bool = False):
 		if dependency.islower():

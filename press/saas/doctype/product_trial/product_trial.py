@@ -115,16 +115,11 @@ class ProductTrial(Document):
 
 		site_domain = f"{subdomain}.{self.domain}"
 
-		# if user didn't change the subdomain, and is picking the provided site
-		if frappe.db.exists("Site", {"name": site_domain, "is_standby": 1, "standby_for_product": self.name}):
-			standby_site = site_domain
-		else:
-			standby_site = self.get_standby_site(cluster)
+		standby_site = self.get_standby_site(cluster)
 
 		trial_end_date = frappe.utils.add_days(None, self.trial_days or 14)
 		site = None
 		agent_job_name = None
-		apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps])
 		plan = self.trial_plan
 
 		if standby_site:
@@ -133,6 +128,7 @@ class ProductTrial(Document):
 			site.team = team
 			site.trial_end_date = trial_end_date
 			site.account_request = account_request
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], standby_site)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.signup_time = frappe.utils.now()
@@ -165,6 +161,7 @@ class ProductTrial(Document):
 				trial_end_date=trial_end_date,
 				signup_time=frappe.utils.now(),
 			)
+			apps_site_config = get_app_subscriptions_site_config([d.app for d in self.apps], site.name)
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
@@ -348,7 +345,9 @@ class ProductTrial(Document):
 		return min(server_sites, key=server_sites.get)
 
 
-def get_app_subscriptions_site_config(apps: list[str]):
+def get_app_subscriptions_site_config(apps: list[str], site: str | None = None) -> dict:
+	from press.utils import get_current_team
+
 	subscriptions = []
 	site_config = {}
 
@@ -366,8 +365,9 @@ def get_app_subscriptions_site_config(apps: list[str]):
 					"document_name": app,
 					"plan_type": "Marketplace App Plan",
 					"plan": free_plan[0],
-					"enabled": 0,
-					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+					"site": site,
+					"enabled": 1,
+					"team": get_current_team(),
 				}
 			).insert(ignore_permissions=True)
 

@@ -68,6 +68,7 @@
   "backup_offset",
   "column_break_48",
   "backup_limit",
+  "max_failed_backup_attempts_in_a_day",
   "physical_backups_section",
   "disable_physical_backup",
   "max_concurrent_physical_restorations",
@@ -1412,11 +1413,17 @@
    "fieldtype": "Int",
    "label": "Minimum Rebuild Memory (GB)",
    "non_negative": 1
+  },
+  {
+   "description": "Max attempts we will do on a site with failed attempts",
+   "fieldname": "max_failed_backup_attempts_in_a_day",
+   "fieldtype": "Int",
+   "label": "Max Failed Backup Attempts In A Day"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-03-26 12:38:52.559322",
+ "modified": "2025-04-10 16:23:12.109443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

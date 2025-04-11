@@ -14,6 +14,7 @@ from frappe.model.naming import make_autoname
 from press.exceptions import InsufficientSpaceOnServer
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -478,6 +479,7 @@ class TestSite(unittest.TestCase):
 		site.save(ignore_permissions=True)
 
 	@responses.activate
+	@patch.object(AppSource, "validate_dependant_apps", new=Mock())
 	def test_sync_apps_updates_apps_child_table(self):
 		app1 = create_test_app()
 		app2 = create_test_app("erpnext", "ERPNext")

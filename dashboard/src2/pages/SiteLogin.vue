@@ -60,8 +60,11 @@
 					<form v-else-if="!sites.fetched">
 						<FormControl
 							label="Email"
-							:disabled="showOTPField"
+							type="email"
 							class="w-full"
+							:class="{
+								'pointer-events-none': showOTPField,
+							}"
 							v-model="email"
 							placeholder="johndoe@mail.com"
 						/>
@@ -215,6 +218,7 @@ import { getToastErrorMessage } from '../utils/toast';
 import { trialDays } from '../utils/site';
 import { userCurrency } from '../utils/format';
 import { useRoute } from 'vue-router';
+import { DashboardError } from '../utils/error';
 
 const team = inject('team');
 const session = inject('session');
@@ -311,6 +315,14 @@ function loginToSite(siteName) {
 
 const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
+	validate: (data) => {
+		if (!data.email) {
+			throw new DashboardError('Please enter email');
+		}
+		if (!data.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+			throw new DashboardError('Please enter a valid email');
+		}
+	},
 	onSuccess: () => {
 		showOTPField.value = true;
 		otpResendCountdown.value = 30;

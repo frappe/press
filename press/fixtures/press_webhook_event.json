@@ -16,5 +16,23 @@
   "modified": "2024-09-23 11:47:30.206054",
   "name": "Site Status Update",
   "title": "Site Status Update"
+ },
+ {
+  "description": "Draft, Scheduled, Pending, Preparing, Running, Success, Failure",
+  "docstatus": 0,
+  "doctype": "Press Webhook Event",
+  "enabled": 1,
+  "modified": "2025-04-09 12:16:17.266946",
+  "name": "Bench Deploy Status Update",
+  "title": "Bench Deploy Status Update"
+ },
+ {
+  "description": "Pending, Installing, Updating, Active, Broken, Archived",
+  "docstatus": 0,
+  "doctype": "Press Webhook Event",
+  "enabled": 1,
+  "modified": "2024-09-23 12:16:32.881258",
+  "name": "Bench Status Update",
+  "title": "Bench Status Update"
  }
 ]
