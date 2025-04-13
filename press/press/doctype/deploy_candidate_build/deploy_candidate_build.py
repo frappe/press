@@ -585,7 +585,7 @@ class DeployCandidateBuild(Document):
 		self._flush_output_parsers()
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
-		# self.candidate._set_status_failure()
+
 		should_retry = self.should_build_retry(exc=exc, job=job)
 
 		if not should_retry:
@@ -865,7 +865,6 @@ class DeployCandidateBuild(Document):
 		)
 
 		self.set_status(Status.RUNNING)
-		# self.candidate._set_status_running()
 
 	def _start_build(self):
 		self.candidate._update_docker_image_metadata()
@@ -877,7 +876,7 @@ class DeployCandidateBuild(Document):
 	def _build(self):
 		self._set_pending_duration()
 		self.set_status(Status.PREPARING, "build_start")
-		# self.candidate._set_status_preparing()
+
 		self._set_output_parsers()
 
 		try:
@@ -906,7 +905,7 @@ class DeployCandidateBuild(Document):
 
 	def set_build_server(self):
 		if not self.build_server:
-			self.build_server = get_build_server(self.candidate.group)
+			self.build_server = get_build_server(self.group)
 
 		if self.build_server or self.no_build:
 			return
@@ -982,7 +981,6 @@ class DeployCandidateBuild(Document):
 
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
-		# self.candidate._set_status_failure()
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
