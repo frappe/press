@@ -40,6 +40,7 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
 from press.utils.jobs import get_background_jobs, stop_background_job
+from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
 	from rq.job import Job
@@ -963,6 +964,24 @@ class DeployCandidateBuild(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	def on_update(self):
+		if self.status == "Running":
+			frappe.publish_realtime(
+				f"bench_deploy:{self.name}:steps",
+				doctype=self.doctype,
+				docname=self.name,
+				message={"steps": self.build_steps, "name": self.name},
+			)
+		else:
+			frappe.publish_realtime(
+				f"bench_deploy:{self.name}:finished",
+				doctype=self.doctype,
+				docname=self.name,
+			)
+
+		if self.has_value_changed("status") and self.candidate.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.candidate.team)
 
 	def after_insert(self):
 		self.set_status(Status.DRAFT)
