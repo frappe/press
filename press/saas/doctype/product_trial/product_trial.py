@@ -25,12 +25,8 @@ class ProductTrial(Document):
 		from frappe.types import DF
 
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
-		from press.saas.doctype.product_trial_signup_field.product_trial_signup_field import (
-			ProductTrialSignupField,
-		)
 
 		apps: DF.Table[ProductTrialApp]
-		create_additional_system_user: DF.Check
 		domain: DF.Link
 		email_account: DF.Link | None
 		email_full_logo: DF.AttachImage | None
@@ -41,9 +37,6 @@ class ProductTrial(Document):
 		published: DF.Check
 		redirect_to_after_login: DF.Data
 		release_group: DF.Link
-		setup_wizard_completion_mode: DF.Literal["manual", "auto"]
-		setup_wizard_payload_generator_script: DF.Code | None
-		signup_fields: DF.Table[ProductTrialSignupField]
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
 		suspension_email_content: DF.HTMLEditor | None
@@ -62,8 +55,6 @@ class ProductTrial(Document):
 		"redirect_to_after_login",
 	)
 
-	USER_LOGIN_PASSWORD_FIELD = "user_login_password"
-
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
@@ -77,16 +68,6 @@ class ProductTrial(Document):
 				return []
 			return [option for option in ((field.options or "").split("\n")) if option]
 
-		doc.signup_fields = [
-			{
-				"label": field.label,
-				"fieldname": field.fieldname,
-				"fieldtype": field.fieldtype,
-				"options": _parse_options(field),
-				"required": field.required,
-			}
-			for field in self.signup_fields
-		]
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 
@@ -96,13 +77,6 @@ class ProductTrial(Document):
 			frappe.throw("Selected plan is not for site")
 		if not plan.is_trial_plan:
 			frappe.throw("Selected plan is not a trial plan")
-
-		for field in self.signup_fields:
-			if field.fieldname == self.USER_LOGIN_PASSWORD_FIELD:
-				if not field.required:
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be marked as required")
-				if field.fieldtype != "Password":
-					frappe.throw(f"{self.USER_LOGIN_PASSWORD_FIELD} field should be of type Password")
 
 		if not self.redirect_to_after_login.startswith("/"):
 			frappe.throw("Redirection route after login should start with /")
@@ -135,8 +109,6 @@ class ProductTrial(Document):
 			site.generate_saas_communication_secret(create_agent_job=True, save=False)
 			site.save()  # Save is needed for create_subscription to work TODO: remove this
 			site.create_subscription(plan)
-			if self.create_additional_system_user:
-				agent_job_name = site.create_user_with_team_info()
 			site.reload()
 			self.set_site_domain(site, site_domain)
 		else:
@@ -165,8 +137,6 @@ class ProductTrial(Document):
 			site._update_configuration(apps_site_config, save=False)
 			site._update_configuration(get_plan_config(plan), save=False)
 			site.generate_saas_communication_secret(create_agent_job=False, save=False)
-			if self.setup_wizard_completion_mode == "auto" or not self.create_additional_system_user:
-				site.flags.ignore_additional_system_user_creation = True
 			site.insert()
 			agent_job_name = site.flags.get("new_site_agent_job_name", None)
 
