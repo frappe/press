@@ -9,7 +9,6 @@ import frappe
 import frappe.utils
 from frappe.model.document import Document
 from frappe.utils.data import get_url
-from frappe.utils.momentjs import get_all_timezones
 
 from press.utils import log_error, validate_subdomain
 from press.utils.unique_name_generator import generate as generate_random_name
@@ -58,15 +57,6 @@ class ProductTrial(Document):
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
-
-		def _parse_options(field):
-			if field.fieldtype != "Select":
-				return []
-			if field.fieldname.endswith("_tz"):
-				return get_all_timezones()
-			if not field.options:
-				return []
-			return [option for option in ((field.options or "").split("\n")) if option]
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc

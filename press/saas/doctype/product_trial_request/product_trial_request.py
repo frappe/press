@@ -231,10 +231,6 @@ class ProductTrialRequest(Document):
 		return {"progress": current_progress + 0.1}
 
 	def prefill_setup_wizard_data(self):
-		import time
-
-		benchmark = time.time()
-		print("start prefill setup wizard time", benchmark)
 		if self.status == "Prefilling Setup Wizard":
 			return
 		site = frappe.get_doc("Site", self.site)
@@ -243,7 +239,6 @@ class ProductTrialRequest(Document):
 			site.prefill_setup_wizard(payload)
 			self.status = "Prefilling Setup Wizard"
 			self.save()
-			print("prefill setup wizard time", time.time() - benchmark)
 		except Exception as e:
 			log_error(
 				title="Product Trial Request Prefill Setup Wizard Error",
