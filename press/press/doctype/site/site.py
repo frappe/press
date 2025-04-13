@@ -2279,7 +2279,7 @@ class Site(Document, TagHelpers):
 		config = get_plan_config(plan)
 		if plan in UNLIMITED_PLANS:
 			# PERF: do not enable usage tracking on unlimited sites.
-			config.pop("rate_limit", None)
+			config["rate_limit"] = {}
 		return config
 
 	def set_latest_bench(self):
