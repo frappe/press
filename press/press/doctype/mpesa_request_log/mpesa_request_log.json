@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "creation": "2025-01-18 10:47:18.786442",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "request_id",
+  "integration_request_service",
+  "is_remote_request",
+  "column_break_5",
+  "request_description",
+  "status",
+  "section_break_8",
+  "url",
+  "request_headers",
+  "data",
+  "response_section",
+  "output",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "integration_request_service",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Service",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_remote_request",
+   "fieldtype": "Check",
+   "label": "Is Remote Request?",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "request_description",
+   "fieldtype": "Data",
+   "label": "Request Description",
+   "read_only": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "\nQueued\nAuthorized\nCompleted\nCancelled\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Small Text",
+   "label": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_headers",
+   "fieldtype": "Code",
+   "label": "Request Headers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "Code",
+   "label": "Request Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_section",
+   "fieldtype": "Section Break",
+   "label": "Response"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "links": [],
+ "modified": "2025-02-02 18:48:36.387604",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Mpesa Request Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "request_id",
+ "track_changes": 1
+}

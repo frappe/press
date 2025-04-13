@@ -14,7 +14,7 @@ class CloudRegion(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		provider: DF.Literal["AWS EC2", "OCI"]
+		provider: DF.Literal["AWS EC2", "OCI", "Hetzner"]
 		region_name: DF.Data
 	# end: auto-generated types
 

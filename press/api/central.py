@@ -173,4 +173,3 @@ def send_login_link(site):
 	# send link to site owner
 	email = frappe.db.get_value("Site", site, "team")
 	send_link(email)
-	return email

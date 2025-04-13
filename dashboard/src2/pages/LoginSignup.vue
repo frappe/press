@@ -6,84 +6,10 @@
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
 			>
 				<template v-slot:default>
-					<div v-if="!(resetPasswordEmailSent || accountRequestCreated)">
+					<div v-if="!(resetPasswordEmailSent || otpRequested)">
 						<form class="flex flex-col" @submit.prevent="submitForm">
-							<!-- Forgot Password Section -->
-							<template v-if="hasForgotPassword && !is2FA">
-								<FormControl
-									label="Email"
-									type="email"
-									placeholder="johndoe@mail.com"
-									autocomplete="email"
-									:modelValue="email"
-									required
-								/>
-								<router-link
-									class="mt-2 text-sm"
-									v-if="hasForgotPassword"
-									:to="{
-										name: 'Login',
-										query: { ...$route.query, forgot: undefined }
-									}"
-								>
-									I remember my password
-								</router-link>
-								<Button
-									class="mt-4"
-									:loading="$resources.resetPassword.loading"
-									variant="solid"
-								>
-									Reset Password
-								</Button>
-							</template>
-
-							<!-- Login Section -->
-							<template v-else-if="isLogin && !is2FA">
-								<FormControl
-									label="Email"
-									placeholder="johndoe@mail.com"
-									autocomplete="email"
-									v-model="email"
-									required
-								/>
-								<FormControl
-									v-if="!isOauthLogin"
-									class="mt-4"
-									label="Password"
-									type="password"
-									placeholder="•••••"
-									v-model="password"
-									name="password"
-									autocomplete="current-password"
-									required
-								/>
-								<div class="mt-2" v-if="isLogin && !isOauthLogin">
-									<router-link
-										class="text-sm"
-										:to="{
-											name: 'Login',
-											query: { ...$route.query, forgot: 1 }
-										}"
-									>
-										Forgot Password?
-									</router-link>
-								</div>
-								<Button v-if="!isOauthLogin" class="mt-4" variant="solid">
-									Log in with email
-								</Button>
-								<Button v-else class="mt-4" variant="solid">
-									Log in with {{ oauthProviderName }}
-								</Button>
-								<ErrorMessage
-									class="mt-2"
-									:message="
-										$session.login.error || $resources.is2FAEnabled.error
-									"
-								/>
-							</template>
-
 							<!-- 2FA Section -->
-							<template v-else-if="is2FA">
+							<template v-if="is2FA">
 								<FormControl
 									label="2FA Code from your Authenticator App"
 									placeholder="123456"
@@ -101,7 +27,7 @@
 									@click="
 										$resources.verify2FA.submit({
 											user: email,
-											totp_code: twoFactorCode
+											totp_code: twoFactorCode,
 										})
 									"
 								>
@@ -110,6 +36,147 @@
 								<ErrorMessage
 									class="mt-2"
 									:message="$resources.verify2FA.error"
+								/>
+							</template>
+
+							<!-- Forgot Password Section -->
+							<template v-else-if="hasForgotPassword">
+								<FormControl
+									label="Email"
+									type="email"
+									placeholder="johndoe@mail.com"
+									autocomplete="email"
+									v-model="email"
+									required
+								/>
+								<router-link
+									class="mt-2 text-sm"
+									v-if="hasForgotPassword"
+									:to="{
+										name: 'Login',
+										query: { ...$route.query, forgot: undefined },
+									}"
+								>
+									I remember my password
+								</router-link>
+								<Button
+									class="mt-4"
+									:loading="$resources.resetPassword.loading"
+									variant="solid"
+								>
+									Reset Password
+								</Button>
+							</template>
+
+							<!-- Login Section -->
+							<template v-else-if="isLogin">
+								<FormControl
+									label="Email"
+									placeholder="johndoe@mail.com"
+									autocomplete="email"
+									v-model="email"
+									:disabled="otpSent && !usePassword"
+									required
+								/>
+
+								<!-- Password Authentication -->
+								<template v-if="!isOauthLogin && usePassword">
+									<FormControl
+										class="mt-4"
+										label="Password"
+										type="password"
+										placeholder="•••••"
+										v-model="password"
+										name="password"
+										autocomplete="current-password"
+										required
+									/>
+									<div class="mt-2 flex flex-col gap-2">
+										<router-link
+											class="text-sm"
+											:to="{
+												name: 'Login',
+												query: { ...$route.query, forgot: 1 },
+											}"
+										>
+											Forgot Password?
+										</router-link>
+									</div>
+									<Button
+										class="mt-4"
+										variant="solid"
+										:loading="$session.login.loading"
+									>
+										Log In
+									</Button>
+								</template>
+
+								<!-- OTP Authentication -->
+								<template v-else-if="!usePassword">
+									<!-- OTP Verification Input (when OTP is sent) -->
+									<template v-if="otpSent">
+										<FormControl
+											class="mt-4"
+											label="Verification Code"
+											placeholder="123456"
+											v-model="otp"
+											required
+										/>
+										<div class="mt-4 space-y-2">
+											<Button
+												class="w-full"
+												:loading="$resources.verifyOTPAndLogin.loading"
+												variant="solid"
+												@click="verifyOTPAndLogin"
+											>
+												Submit verification code
+											</Button>
+											<Button
+												class="w-full"
+												:loading="$resources.sendOTP.loading"
+												variant="outline"
+												:disabled="otpResendCountdown > 0"
+												@click="$resources.sendOTP.submit()"
+											>
+												Resend verification code
+												{{
+													otpResendCountdown > 0
+														? `in ${otpResendCountdown} seconds`
+														: ''
+												}}
+											</Button>
+										</div>
+									</template>
+
+									<!-- Initial OTP Request Button -->
+									<template v-else>
+										<Button
+											class="mt-4"
+											:loading="$resources.sendOTP.loading"
+											variant="solid"
+											@click="$resources.sendOTP.submit()"
+										>
+											Send verification code
+										</Button>
+									</template>
+								</template>
+
+								<!-- OAuth Authentication -->
+								<template v-else>
+									<Button class="mt-4" variant="solid">
+										Log in with {{ oauthProviderName }}
+									</Button>
+								</template>
+
+								<!-- Error Messages -->
+								<ErrorMessage
+									class="mt-2"
+									:message="
+										$session.login.error ||
+										$resources.is2FAEnabled.error ||
+										$resources.sendOTP.error ||
+										$resources.verifyOTPAndLogin.error
+									"
 								/>
 							</template>
 
@@ -124,7 +191,7 @@
 									required
 								/>
 								<Button
-									class="mt-2"
+									class="mt-4"
 									:loading="$resources.signup.loading"
 									variant="solid"
 								>
@@ -143,29 +210,51 @@
 									<span
 										class="relative bg-white px-2 text-sm font-medium leading-8 text-gray-800"
 									>
-										Or continue with
+										Or
 									</span>
 								</div>
 							</div>
-							<Button
-								variant="solid"
-								:loading="$resources.googleLogin.loading"
-								@click="$resources.googleLogin.submit()"
-							>
-								<div class="flex items-center">
-									<GoogleIconSolid class="w-4" />
-									<span class="ml-2">Google</span>
-								</div>
-							</Button>
+
+							<div class="flex flex-col gap-2">
+								<Button
+									v-if="isLogin && !usePassword"
+									:route="{
+										name: 'Login',
+										query: { ...$route.query, use_password: 1 },
+									}"
+									icon-left="key"
+								>
+									Continue with password
+								</Button>
+								<Button
+									v-else-if="isLogin && usePassword"
+									:route="{
+										name: 'Login',
+										query: { ...$route.query, use_password: undefined },
+									}"
+									icon-left="mail"
+								>
+									Continue with verification code
+								</Button>
+								<Button
+									:loading="$resources.googleLogin.loading"
+									@click="$resources.googleLogin.submit()"
+								>
+									<div class="flex items-center">
+										<GoogleIconSolid class="w-4" />
+										<span class="ml-2">Continue with Google</span>
+									</div>
+								</Button>
+							</div>
 							<div
 								class="mt-6 text-center"
-								v-if="!(accountRequestCreated || resetPasswordEmailSent)"
+								v-if="!(otpRequested || resetPasswordEmailSent)"
 							>
 								<router-link
 									class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
-										query: { ...$route.query, forgot: undefined }
+										query: { ...$route.query, forgot: undefined },
 									}"
 								>
 									{{
@@ -177,7 +266,7 @@
 							</div>
 						</div>
 					</div>
-					<div v-else-if="accountRequestCreated">
+					<div v-else-if="otpRequested">
 						<form class="flex flex-col">
 							<FormControl
 								label="Email"
@@ -188,11 +277,11 @@
 								required
 							/>
 							<FormControl
-								label="OTP (Sent to your email)"
+								label="Verification code"
 								type="text"
 								class="mt-4"
-								placeholder="5 digit OTP"
-								maxlength="5"
+								placeholder="123456"
+								maxlength="6"
 								v-model="otp"
 								required
 							/>
@@ -206,15 +295,21 @@
 								:loading="$resources.verifyOTP.loading"
 								@click="$resources.verifyOTP.submit()"
 							>
-								Verify & Next
+								Verify
 							</Button>
 							<Button
 								class="mt-2"
 								variant="outline"
 								:loading="$resources.resendOTP.loading"
 								@click="$resources.resendOTP.submit()"
+								:disabled="otpResendCountdown > 0"
 							>
-								Didn't receive otp? Resend
+								Resend verification code
+								{{
+									otpResendCountdown > 0
+										? `in ${otpResendCountdown} seconds`
+										: ''
+								}}
 							</Button>
 						</form>
 						<div class="mt-6 text-center">
@@ -222,7 +317,7 @@
 								class="text-center text-base font-medium text-gray-900 hover:text-gray-700"
 								:to="{
 									name: $route.name == 'Login' ? 'Signup' : 'Login',
-									query: { ...$route.query, forgot: undefined }
+									query: { ...$route.query, forgot: undefined },
 								}"
 							>
 								{{
@@ -257,6 +352,13 @@
 						</span>
 					</div>
 				</template>
+				<template v-slot:footer v-if="saasProduct">
+					<div
+						class="mt-2 flex w-full items-center justify-center text-sm text-gray-600"
+					>
+						Powered by Frappe Cloud
+					</div>
+				</template>
 			</LoginBox>
 		</div>
 	</div>
@@ -266,31 +368,39 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../utils/toast';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
-		GoogleIconSolid
+		GoogleIconSolid,
 	},
 	data() {
 		return {
 			email: '',
 			account_request: '',
-			accountRequestCreated: false,
+			otpRequested: false,
 			otp: '',
+			otpSent: false,
 			twoFactorCode: '',
 			password: null,
-			resetPasswordEmailSent: false
+			otpResendCountdown: 0,
+			resetPasswordEmailSent: false,
 		};
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
+		setInterval(() => {
+			if (this.otpResendCountdown > 0) {
+				this.otpResendCountdown -= 1;
+			}
+		}, 1000);
 	},
 	watch: {
 		email() {
 			this.resetSignupState();
-		}
+		},
 	},
 	resources: {
 		signup() {
@@ -299,12 +409,40 @@ export default {
 				params: {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
-					product: this.$route.query.product
+					product: this.$route.query.product,
 				},
 				onSuccess(account_request) {
 					this.account_request = account_request;
-					this.accountRequestCreated = true;
-				}
+					this.otpRequested = true;
+					this.otpResendCountdown = 30;
+					toast.success('Verification code sent to your email');
+				},
+				onError: (error) => {
+					if (error?.exc_type !== 'ValidationError') {
+						return;
+					}
+					let errorMessage = '';
+					if ((error?.messages ?? []).length) {
+						errorMessage = error?.messages?.[0];
+					}
+					// check if error message has `is already registered` substring
+					if (errorMessage.includes('is already registered')) {
+						localStorage.setItem('login_email', this.email);
+
+						if (this.$route.query?.product) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
+								},
+							});
+						} else {
+							this.$router.push({
+								name: 'Login',
+							});
+						}
+					}
+				},
 			};
 		},
 		verifyOTP() {
@@ -312,23 +450,59 @@ export default {
 				url: 'press.api.account.verify_otp',
 				params: {
 					account_request: this.account_request,
-					otp: this.otp
+					otp: this.otp,
 				},
 				onSuccess(key) {
 					window.open(`/dashboard/setup-account/${key}`, '_self');
-				}
+				},
 			};
 		},
 		resendOTP() {
 			return {
 				url: 'press.api.account.resend_otp',
 				params: {
-					account_request: this.account_request
+					account_request: this.account_request,
 				},
 				onSuccess() {
 					this.otp = '';
-					toast.success('Resent OTP to your email');
-				}
+					this.otpResendCountdown = 30;
+					toast.success('Verification code sent to your email');
+				},
+				onError(err) {
+					toast.error(
+						getToastErrorMessage(err, 'Failed to resend verification code'),
+					);
+				},
+			};
+		},
+		sendOTP() {
+			return {
+				url: 'press.api.account.send_otp',
+				params: {
+					email: this.email,
+				},
+				onSuccess() {
+					this.otpSent = true;
+					this.otpResendCountdown = 30;
+					toast.success('Verification code sent to your email');
+				},
+				onError(err) {
+					toast.error(
+						getToastErrorMessage(err, 'Failed to send verification code'),
+					);
+				},
+			};
+		},
+		verifyOTPAndLogin() {
+			return {
+				url: 'press.api.account.verify_otp_and_login',
+				params: {
+					email: this.email,
+					otp: this.otp,
+				},
+				onSuccess(res) {
+					this.afterLogin(res);
+				},
 			};
 		},
 		oauthLogin() {
@@ -337,7 +511,7 @@ export default {
 				onSuccess(url) {
 					localStorage.setItem('login_email', this.email);
 					window.location.href = url;
-				}
+				},
 			};
 		},
 		googleLogin() {
@@ -345,12 +519,12 @@ export default {
 				url: 'press.api.google.login',
 				makeParams() {
 					return {
-						product: this.$route.query.product
+						product: this.$route.query.product,
 					};
 				},
 				onSuccess(url) {
 					window.location.href = url;
-				}
+				},
 			};
 		},
 		resetPassword() {
@@ -358,21 +532,21 @@ export default {
 				url: 'press.api.account.send_reset_password_email',
 				onSuccess() {
 					this.resetPasswordEmailSent = true;
-				}
+				},
 			};
 		},
 		signupSettings() {
 			return {
 				url: 'press.api.account.signup_settings',
 				params: {
-					product: this.$route.query.product
+					product: this.$route.query.product,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		is2FAEnabled() {
 			return {
-				url: 'press.api.account.is_2fa_enabled'
+				url: 'press.api.account.is_2fa_enabled',
 			};
 		},
 		verify2FA() {
@@ -380,24 +554,24 @@ export default {
 				url: 'press.api.account.verify_2fa',
 				onSuccess: async () => {
 					if (this.isLogin) {
-						await this.login();
+						if (!this.usePassword) {
+							await this.$resources.verifyOTPAndLogin.submit();
+						} else {
+							await this.login();
+						}
 					} else if (this.hasForgotPassword) {
 						await this.$resources.resetPassword.submit({
-							email: this.email
+							email: this.email,
 						});
 					}
-				}
+				},
 			};
-		}
+		},
 	},
 	methods: {
 		resetSignupState() {
-			if (
-				!this.isLogin &&
-				!this.hasForgotPassword &&
-				this.accountRequestCreated
-			) {
-				this.accountRequestCreated = false;
+			if (!this.isLogin && !this.hasForgotPassword && this.otpRequested) {
+				this.otpRequested = false;
 				this.account_request = '';
 				this.otp = '';
 			}
@@ -406,51 +580,84 @@ export default {
 			if (this.isLogin) {
 				if (this.isOauthLogin) {
 					this.$resources.oauthLogin.submit({
-						provider: this.socialLoginKey
+						provider: this.socialLoginKey,
 					});
+				} else if (!this.usePassword) {
+					// OTP login is handled by separate buttons
+					return;
 				} else if (this.email && this.password) {
-					await this.$resources.is2FAEnabled.submit(
-						{ user: this.email },
-						{
-							onSuccess: async two_factor_enabled => {
-								if (two_factor_enabled) {
-									this.$router.push({
-										name: 'Login',
-										query: {
-											two_factor: 1
-										}
-									});
-								} else {
-									await this.login();
-								}
-							}
-						}
-					);
+					await this.checkTwoFactorAndLogin();
 				}
 			} else if (this.hasForgotPassword) {
-				await this.$resources.is2FAEnabled.submit(
-					{ user: this.email },
-					{
-						onSuccess: async two_factor_enabled => {
-							if (two_factor_enabled) {
-								this.$router.push({
-									name: 'Login',
-									query: {
-										two_factor: 1,
-										forgot: 1
-									}
-								});
-							} else {
-								await this.$resources.resetPassword.submit({
-									email: this.email
-								});
-							}
-						}
-					}
-				);
+				await this.checkTwoFactorAndResetPassword();
 			} else {
 				this.$resources.signup.submit();
 			}
+		},
+
+		async checkTwoFactorAndLogin() {
+			await this.$resources.is2FAEnabled.submit(
+				{ user: this.email },
+				{
+					onSuccess: async (two_factor_enabled) => {
+						if (two_factor_enabled) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									...this.$route.query,
+									two_factor: 1,
+								},
+							});
+						} else {
+							await this.login();
+						}
+					},
+				},
+			);
+		},
+
+		async checkTwoFactorAndResetPassword() {
+			await this.$resources.is2FAEnabled.submit(
+				{ user: this.email },
+				{
+					onSuccess: async (two_factor_enabled) => {
+						if (two_factor_enabled) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									two_factor: 1,
+									forgot: 1,
+								},
+							});
+						} else {
+							await this.$resources.resetPassword.submit({
+								email: this.email,
+							});
+						}
+					},
+				},
+			);
+		},
+
+		verifyOTPAndLogin() {
+			this.$resources.is2FAEnabled.submit(
+				{ user: this.email },
+				{
+					onSuccess: async (two_factor_enabled) => {
+						if (two_factor_enabled) {
+							this.$router.push({
+								name: 'Login',
+								query: {
+									...this.$route.query,
+									two_factor: 1,
+								},
+							});
+						} else {
+							await this.$resources.verifyOTPAndLogin.submit();
+						}
+					},
+				},
+			);
 		},
 		getReferrerIfAny() {
 			const params = location.search;
@@ -461,31 +668,35 @@ export default {
 			await this.$session.login.submit(
 				{
 					email: this.email,
-					password: this.password
+					password: this.password,
 				},
 				{
-					onSuccess: res => {
-						let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-						if (this.$route.query.product) {
-							loginRoute = `/dashboard/app-trial/setup/${this.$route.query.product}`;
-						}
-						localStorage.setItem('login_email', this.email);
-						window.location.href = loginRoute;
+					onSuccess: (res) => {
+						this.afterLogin(res);
 					},
-					onError: err => {
+					onError: (err) => {
 						if (this.$route.name === 'Login' && this.$route.query.two_factor) {
 							this.$router.push({
 								name: 'Login',
 								query: {
-									two_factor: undefined
-								}
+									two_factor: undefined,
+								},
 							});
 							this.twoFactorCode = '';
 						}
-					}
-				}
+					},
+				},
 			);
-		}
+		},
+		afterLogin(res) {
+			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
+			// if query param redirect is present, redirect to that route
+			if (this.$route.query.redirect) {
+				loginRoute = this.$route.query.redirect;
+			}
+			localStorage.setItem('login_email', this.email);
+			window.location.href = loginRoute;
+		},
 	},
 	computed: {
 		error() {
@@ -518,17 +729,20 @@ export default {
 				this.emailDomain.length > 0
 			);
 		},
+		usePassword() {
+			return Boolean(this.$route.query.use_password);
+		},
 		oauthProviders() {
 			const domains = this.$resources.signupSettings.data?.oauth_domains;
 			let providers = {};
 
 			if (domains) {
 				domains.map(
-					d =>
+					(d) =>
 						(providers[d.email_domain] = {
 							social_login_key: d.social_login_key,
-							provider_name: d.provider_name
-						})
+							provider_name: d.provider_name,
+						}),
 				);
 			}
 
@@ -548,16 +762,16 @@ export default {
 				return 'Reset password';
 			} else if (this.isLogin) {
 				if (this.saasProduct) {
-					return `Sign in to your account to start using ${this.saasProduct.title}`;
+					return `Log in to your account to start using ${this.saasProduct.title}`;
 				}
-				return 'Sign in to your account';
+				return 'Log in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create ${this.saasProduct.title} site`;
+					return `Sign up to create your ${this.saasProduct.title} site`;
 				}
 				return 'Create a new account';
 			}
-		}
-	}
+		},
+	},
 };
 </script>

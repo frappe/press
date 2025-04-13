@@ -174,7 +174,7 @@ export default {
 					}
 				},
 				onSuccess(benchName) {
-					this.$router.push(`/benches/${benchName}`);
+					this.$router.push(`/groups/${benchName}`);
 				}
 			};
 		}

@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-12-15 14:26:26.029692",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "virtual_machine",
+  "status",
+  "column_break_pega",
+  "copied_virtual_machine",
+  "image",
+  "column_break_tjrh",
+  "start",
+  "end",
+  "duration",
+  "section_break_mjhg",
+  "steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Virtual Machine",
+   "link_filters": "[[\"Virtual Machine\",\"status\",\"not in\",[\"Draft\",\"Terminated\",null]]]",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pega",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "copied_virtual_machine",
+   "fieldtype": "Link",
+   "label": "Copied Virtual Machine",
+   "options": "Virtual Machine",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tjrh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mjhg",
+   "fieldtype": "Section Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Virtual Machine Migration Step"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Link",
+   "label": "Image",
+   "options": "Virtual Machine Image",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-12-15 14:46:02.689500",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine Replacement",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "virtual_machine",
+ "track_changes": 1
+}

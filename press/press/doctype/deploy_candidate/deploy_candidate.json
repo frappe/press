@@ -36,6 +36,7 @@
   "docker_image_tag",
   "feature_flags_section",
   "is_redisearch_enabled",
+  "redis_cache_size",
   "use_app_cache",
   "compress_app_cache",
   "column_break_tkdd",
@@ -415,6 +416,13 @@
    "fieldname": "no_cache",
    "fieldtype": "Check",
    "label": "No Cache"
+  },
+  {
+   "default": "512",
+   "fetch_from": "group.redis_cache_size",
+   "fieldname": "redis_cache_size",
+   "fieldtype": "Int",
+   "label": "Redis Cache Size (MB)"
   }
  ],
  "links": [
@@ -431,7 +439,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-06-21 14:12:47.335402",
+ "modified": "2025-04-02 22:39:37.680324",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -462,6 +470,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

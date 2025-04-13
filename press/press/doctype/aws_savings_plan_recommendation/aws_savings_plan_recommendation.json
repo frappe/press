@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-09-12 13:04:04.454139",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "savings_plan_type",
+  "term",
+  "payment_option",
+  "column_break_ykwh",
+  "lookback_period",
+  "currency",
+  "generated_at",
+  "section_break_ammq",
+  "monthly_commitment",
+  "hourly_commitment",
+  "column_break_aklc",
+  "monthly_on_demand_spend",
+  "hourly_on_demand_spend",
+  "monthly_savings_amount",
+  "column_break_ntqu",
+  "savings_percentage",
+  "roi_percentage",
+  "upfront_cost"
+ ],
+ "fields": [
+  {
+   "fieldname": "generated_at",
+   "fieldtype": "Datetime",
+   "label": "Generated At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lookback_period",
+   "fieldtype": "Data",
+   "label": "Lookback Period",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_option",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Payment Option",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "upfront_cost",
+   "fieldtype": "Currency",
+   "label": "Upfront Cost",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ykwh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ammq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ntqu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "term",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Term",
+   "read_only": 1
+  },
+  {
+   "fieldname": "savings_plan_type",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Savings Plan Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hourly_commitment",
+   "fieldtype": "Currency",
+   "label": "Hourly Commitment",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_on_demand_spend",
+   "fieldtype": "Currency",
+   "label": "Monthly On Demand Spend",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hourly_on_demand_spend",
+   "fieldtype": "Currency",
+   "label": "Hourly On Demand Spend",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "roi_percentage",
+   "fieldtype": "Float",
+   "label": "ROI Percentage",
+   "precision": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_savings_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Monthly Savings Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "savings_percentage",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Savings Percentage",
+   "precision": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_commitment",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Monthly Commitment",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_aklc",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-12 17:03:38.977549",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "AWS Savings Plan Recommendation",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "generated_at"
+}

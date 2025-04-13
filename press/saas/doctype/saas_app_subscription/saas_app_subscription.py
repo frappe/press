@@ -114,7 +114,7 @@ class SaasAppSubscription(Document):
 	def suspend(self):
 		self.status = "Suspended"
 		self.save(ignore_permissions=True)
-		frappe.get_doc("Site", self.site).suspend()
+		frappe.get_doc("Site", self.site).suspend(skip_reload=True)
 
 	def disable(self):
 		if self.status == "Disabled":

@@ -13,6 +13,7 @@
   "amount",
   "amended_from",
   "description",
+  "paid_via_local_pg",
   "ending_balance",
   "unallocated_amount",
   "allocated_to",
@@ -33,7 +34,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Adjustment\nApplied To Invoice"
+   "options": "Adjustment\nApplied To Invoice\nPartnership Fee"
   },
   {
    "fetch_from": "team.currency",
@@ -99,12 +100,18 @@
    "label": "Allocated To",
    "options": "Balance Transaction Allocation",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "paid_via_local_pg",
+   "fieldtype": "Check",
+   "label": "Paid via Local Payment Gateway"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-04 22:28:44.740627",
+ "modified": "2025-01-24 17:32:30.535457",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",

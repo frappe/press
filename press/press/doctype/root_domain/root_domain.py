@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable, List
+from typing import Iterable
 
 import boto3
 import frappe
@@ -24,14 +23,17 @@ class RootDomain(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		aws_access_key_id: DF.Data
-		aws_secret_access_key: DF.Password
+		aws_access_key_id: DF.Data | None
+		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
-		dns_provider: DF.Literal["AWS Route 53"]
+		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		team: DF.Link | None
 	# end: auto-generated types
 
 	def after_insert(self):
-		if not frappe.db.exists("TLS Certificate", {"wildcard": True, "domain": self.name}):
+		if self.dns_provider != "Generic" and not frappe.db.exists(
+			"TLS Certificate", {"wildcard": True, "domain": self.name}
+		):
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -41,19 +43,25 @@ class RootDomain(Document):
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
-			rsa_key_size = frappe.db.get_value(
-				"Press Settings", "Press Settings", "rsa_key_size"
-			)
+			rsa_key_size = frappe.db.get_value("Press Settings", "Press Settings", "rsa_key_size")
 			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
 					"wildcard": True,
 					"domain": self.name,
 					"rsa_key_size": rsa_key_size,
+					"provider": "Let's Encrypt",
 				}
 			).insert()
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
+
+	@property
+	def generic_dns_provider(self):
+		if not hasattr(self, "_generic_dns_provider"):
+			self._generic_dns_provider = self.dns_provider == "Generic"
+
+		return self._generic_dns_provider
 
 	@property
 	def boto3_client(self):
@@ -80,7 +88,7 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
 
-	def delete_dns_records(self, records: List[str]):
+	def delete_dns_records(self, records: list[str]):
 		try:
 			changes = []
 			for record in records:
@@ -103,36 +111,62 @@ class RootDomain(Document):
 		)
 		return [json.loads(d_str)["new_name"] for d_str in renaming_sites]
 
-	def get_active_domains(self):
-		active_sites = frappe.get_all(
-			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
+	def get_active_site_domains(self):
+		return frappe.get_all(
+			"Site Domain", {"domain": ("like", f"%{self.name}"), "status": "Active"}, pluck="name"
 		)
-		active_sites.extend(self.get_sites_being_renamed())
-		return active_sites
+
+	def get_active_sites(self):
+		return frappe.get_all("Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name")
+
+	def get_active_domains(self):
+		active_domains = self.get_active_sites()
+		active_domains.extend(self.get_sites_being_renamed())
+		active_domains.extend(self.get_active_site_domains())
+		return set(active_domains)
+
+	def get_default_cluster_proxies(self):
+		return frappe.get_all(
+			"Proxy Server", {"status": "Active", "cluster": self.default_cluster}, pluck="name"
+		)
 
 	def remove_unused_cname_records(self):
 		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+
+		default_proxies = self.get_default_cluster_proxies()
+
 		for page in self.get_dns_record_pages():
 			to_delete = []
 
 			frappe.db.commit()
-			active = self.get_active_domains()
+			active_domains = self.get_active_domains()
 
 			for record in page["ResourceRecordSets"]:
-				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] in proxies:
+				# Only look at CNAME records that point to a proxy server
+				value = record["ResourceRecords"][0]["Value"]
+				if record["Type"] == "CNAME" and value in proxies:
 					domain = record["Name"].strip(".")
-					if domain not in active:
+					# Delete inactive records
+					if domain not in active_domains:  # noqa: SIM114
+						record["Name"] = domain
+						to_delete.append(record)
+					# Delete records that point to a proxy in the default_cluster
+					# These are covered by * records
+					elif value in default_proxies:
 						record["Name"] = domain
 						to_delete.append(record)
 			if to_delete:
 				self.delete_dns_records(to_delete)
 
 	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+		if self.generic_dns_provider:
+			return
+
 		# update records in batches of 500
 		batch_size = 500
 		for i in range(0, len(sites), batch_size):
 			changes = []
-			for site in sites[i : i + batch_size]:  # noqa
+			for site in sites[i : i + batch_size]:
 				changes.append(
 					{
 						"Action": "UPSERT",
@@ -153,5 +187,8 @@ class RootDomain(Document):
 def cleanup_cname_records():
 	domains = frappe.get_all("Root Domain", pluck="name")
 	for domain_name in domains:
-		domain = frappe.get_doc("Root Domain", domain_name)
+		domain = RootDomain("Root Domain", domain_name)
+		if domain.generic_dns_provider:
+			continue
+
 		domain.remove_unused_cname_records()

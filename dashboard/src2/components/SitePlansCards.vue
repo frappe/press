@@ -15,11 +15,11 @@ export default {
 		'selectedCluster',
 		'selectedApps',
 		'selectedVersion',
-		'hideRestrictedPlans'
+		'hideRestrictedPlans',
 	],
 	emits: ['update:modelValue'],
 	components: {
-		PlansCards
+		PlansCards,
 	},
 	computed: {
 		currentPlan: {
@@ -28,61 +28,62 @@ export default {
 			},
 			set(value) {
 				this.$emit('update:modelValue', value);
-			}
+			},
 		},
 		plans() {
 			let plans = getPlans();
+
 			if (this.isPrivateBenchSite) {
-				plans = plans.filter(plan => plan.private_benches);
+				plans = plans.filter((plan) => plan.private_benches);
 			}
 			if (this.isPrivateBenchSite && this.isDedicatedServerSite) {
-				plans = plans.filter(plan => plan.dedicated_server_plan);
+				plans = plans.filter((plan) => plan.dedicated_server_plan);
 			} else {
-				plans = plans.filter(plan => !plan.dedicated_server_plan);
+				plans = plans.filter((plan) => !plan.dedicated_server_plan);
 			}
 			if (this.selectedCluster) {
-				plans = plans.map(plan => {
+				plans = plans.map((plan) => {
 					return {
 						...plan,
 						disabled:
 							plan.disabled ||
 							(plan.clusters.length == 0
 								? false
-								: !plan.clusters.includes(this.selectedCluster))
+								: !plan.clusters.includes(this.selectedCluster)),
 					};
 				});
 			}
 			if (this.selectedApps) {
-				plans = plans.map(plan => {
+				plans = plans.map((plan) => {
 					return {
 						...plan,
 						disabled:
 							plan.disabled ||
 							(plan.allowed_apps.length == 0
 								? false
-								: !this.selectedApps.every(app =>
-										plan.allowed_apps.includes(app.app)
-								  ))
+								: !this.selectedApps.every((app) =>
+										plan.allowed_apps.includes(app.app),
+									)),
 					};
 				});
 			}
 			if (this.selectedVersion) {
-				plans = plans.map(plan => {
+				plans = plans.map((plan) => {
 					return {
 						...plan,
 						disabled:
 							plan.disabled ||
 							(plan.bench_versions.length == 0
 								? false
-								: !plan.bench_versions.includes(this.selectedVersion))
+								: !plan.bench_versions.includes(this.selectedVersion)),
 					};
 				});
 			}
 			if (this.hideRestrictedPlans) {
-				plans = plans.filter(plan => !plan.restricted_plan);
+				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 
-			return plans.map(plan => {
+			return plans.map((plan) => {
 				return {
 					...plan,
 					features: [
@@ -90,40 +91,42 @@ export default {
 							label: `${this.$format.plural(
 								plan.cpu_time_per_day,
 								'compute hour',
-								'compute hours'
+								'compute hours',
 							)} / day`,
 							condition: !plan.name.includes('Unlimited'),
-							value: plan.cpu_time_per_day
+							value: plan.cpu_time_per_day,
 						},
 						{
 							label: 'Database',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_database_usage, 0, 2)
+							value: this.$format.bytes(plan.max_database_usage, 1, 2),
 						},
 						{
 							label: 'Disk',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_storage_usage, 1, 2)
+							value: this.$format.bytes(plan.max_storage_usage, 1, 2),
 						},
 						{
-							value: 'Product Warranty'
+							value: plan.name.includes('Unlimited - Low')
+								? 'Allocate fewer resources here (more for other benches)'
+								: '',
 						},
 						{
-							value: plan.support_included ? 'Support Included' : ''
+							value: plan.support_included ? 'Product Warranty' : '',
 						},
 						{
-							value: plan.database_access ? 'Database Access' : ''
+							value: plan.database_access ? 'Database Access' : '',
 						},
 						{
-							value: plan.offsite_backups ? 'Offsite Backups' : ''
+							value: plan.offsite_backups ? 'Offsite Backups' : '',
 						},
 						{
-							value: plan.monitor_access ? 'Advanced Monitoring' : ''
-						}
-					].filter(feature => feature.condition ?? true)
+							value: plan.monitor_access ? 'Advanced Monitoring' : '',
+						},
+					].filter((feature) => feature.condition ?? true),
 				};
 			});
-		}
-	}
+		},
+	},
 };
 </script>

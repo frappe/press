@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:title",
+ "creation": "2024-10-29 23:03:54.259118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "title",
+  "column_break_fnzp",
+  "target_in_inr",
+  "target_in_usd"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_fnzp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "target_in_inr",
+   "fieldtype": "Float",
+   "label": "Target in INR"
+  },
+  {
+   "fieldname": "target_in_usd",
+   "fieldtype": "Float",
+   "label": "Target in USD"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-29 23:08:37.110935",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Tier",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

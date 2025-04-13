@@ -68,7 +68,7 @@ export default {
 			route: '',
 			note: '',
 			show: true,
-			rating: 5
+			rating: 0
 		};
 	},
 	resources: {
@@ -89,6 +89,10 @@ export default {
 						throw new DashboardError('Please select a reason');
 					}
 
+					if (this.rating == 0) {
+						throw new DashboardError('Please rate your experience');
+					}
+
 					if (
 						[
 							'Payment issues',
@@ -103,6 +107,10 @@ export default {
 				onSuccess() {
 					this.show = false;
 					this.$emit('updated');
+
+					setTimeout(() => {
+						window.location.href = '/dashboard';
+					}, 1000);
 				}
 			};
 		}

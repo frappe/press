@@ -15,25 +15,19 @@ users:
 
 runcmd:
 - mkdir /etc/ssh/auth_principals
-- sed -i 's/^(#)?X11Forwarding.*/X11Forwarding no/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?MaxAuthTries.*/MaxAuthTries 6/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?PermitEmptyPasswords.*/PermitEmptyPasswords no/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?PermitUserEnvironment.*/PermitUserEnvironment no/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?ClientAliveInterval.*/ClientAliveInterval 300/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?ClientAliveCountMax.*/ClientAliveCountMax 3/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?Banner.*/Banner \/etc\/login.warn/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?MaxStartups.*/MaxStartups 10:30:60/g' /etc/ssh/sshd_config
-- sed -i 's/^(#)?MaxSessions.*/MaxSessions 10/g' /etc/ssh/sshd_config
 - curl https://frappecloud.com/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
-- systemctl restart sshd
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup config --name {{ server.name }} --workers 2"
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
 {% if server.doctype == 'Database Server' %}
+- resize2fs $(findmnt /opt/volumes/mariadb --noheadings --output SOURCE)
 - systemctl daemon-reload
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
+- systemctl restart deadlock_logger
+{% elif server.doctype == 'Server' %}
+- resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}
 - iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited
@@ -74,6 +68,14 @@ write_files:
 - path: /etc/systemd/system/mysqld_exporter.service
   content: |
     {{ mariadb_exporter_config | indent(4) }}
+
+- path: /root/.my.cnf
+  content: |
+    {{ mariadb_root_config | indent(4) }}
+
+- path: /etc/systemd/system/deadlock_logger.service
+  content: |
+    {{ deadlock_logger_config | indent(4) }}
 {% endif %}
 
 swap:

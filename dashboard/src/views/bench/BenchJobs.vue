@@ -31,7 +31,7 @@ export default {
 			};
 		},
 		jobRoute(job) {
-			return `/benches/${this.benchName}/jobs/${job.name}`;
+			return `/groups/${this.benchName}/jobs/${job.name}`;
 		}
 	}
 };

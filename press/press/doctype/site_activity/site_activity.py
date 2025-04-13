@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -37,13 +36,17 @@ class SiteActivity(Document):
 			"Drop Offsite Backups",
 			"Enable Database Access",
 			"Disable Database Access",
+			"Create Database User",
+			"Remove Database User",
+			"Modify Database User Permissions",
 		]
+		job: DF.Link | None
 		reason: DF.SmallText | None
 		site: DF.Link
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["action", "reason", "site"]
+	dashboard_fields = ("action", "reason", "site", "job")
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:
@@ -61,7 +64,7 @@ class SiteActivity(Document):
 				)
 
 
-def log_site_activity(site, action, reason=None):
+def log_site_activity(site, action, reason=None, job=None):
 	return frappe.get_doc(
-		{"doctype": "Site Activity", "site": site, "action": action, "reason": reason}
+		{"doctype": "Site Activity", "site": site, "action": action, "reason": reason, "job": job}
 	).insert()

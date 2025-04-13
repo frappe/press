@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "creation": "2024-09-19 09:33:43.941516",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_aqtt",
+  "timestamp",
+  "section_break_kvpa",
+  "column_break_uhnt",
+  "webhook",
+  "column_break_wpgi",
+  "endpoint",
+  "section_break_nnsg",
+  "response_status_code",
+  "response_body"
+ ],
+ "fields": [
+  {
+   "fieldname": "webhook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Webhook",
+   "options": "Press Webhook",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_uhnt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_aqtt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Sent\nFailed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_nnsg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "response_status_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Response Status Code"
+  },
+  {
+   "fieldname": "response_body",
+   "fieldtype": "Small Text",
+   "label": "Response Body",
+   "read_only": 1
+  },
+  {
+   "fieldname": "endpoint",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Endpoint",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_kvpa",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_wpgi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Timestamp",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-25 10:59:44.304591",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Webhook Attempt",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

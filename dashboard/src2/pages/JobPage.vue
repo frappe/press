@@ -1,6 +1,20 @@
 <template>
 	<div class="p-5" v-if="job">
-		<Button :route="{ name: `${object.doctype} Detail Jobs` }">
+		<AlertAddressableError
+			v-if="error"
+			class="mb-5"
+			:name="error.name"
+			:title="error.title"
+			@done="$resources.errors.reload()"
+		/>
+		<Button
+			:route="{
+				name:
+					object.doctype === 'Site'
+						? 'Site Jobs'
+						: `${object.doctype} Detail Jobs`,
+			}"
+		>
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
@@ -12,10 +26,10 @@
 				<div class="flex items-center">
 					<h2 class="text-lg font-medium text-gray-900">{{ job.job_type }}</h2>
 					<Badge class="ml-2" :label="job.status" />
-					<div class="ml-auto space-x-2">
+					<div class="ml-auto flex items-center space-x-2">
 						<Button
 							@click="$resources.job.reload()"
-							:loading="$resources.job.loading"
+							:loading="$resources.job.get.loading"
 						>
 							<template #icon>
 								<i-lucide-refresh-ccw class="h-4 w-4" />
@@ -78,6 +92,7 @@
 </template>
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
+import AlertAddressableError from '../components/AlertAddressableError.vue';
 import { duration } from '../utils/format';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
@@ -85,7 +100,7 @@ import JobStep from '../components/JobStep.vue';
 export default {
 	name: 'JobPage',
 	props: ['id', 'objectType'],
-	components: { Tooltip, FeatherIcon, JobStep },
+	components: { Tooltip, FeatherIcon, JobStep, AlertAddressableError },
 	resources: {
 		job() {
 			return {
@@ -97,7 +112,8 @@ export default {
 						step.title = step.step_name;
 						step.duration = duration(step.duration);
 						step.isOpen =
-							this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
+							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
+							false;
 					}
 
 					// on delivery failure, there'll be no output for any step
@@ -110,9 +126,26 @@ export default {
 				},
 				onSuccess() {
 					this.lastLoaded = Date.now();
-				}
+				},
 			};
-		}
+		},
+		errors() {
+			return {
+				type: 'list',
+				cache: ['Press Notification', 'Error', 'Agent Job', this.id],
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: 'Agent Job',
+					document_name: this.id,
+					is_actionable: true,
+					class: 'Error',
+				},
+				limit: 1,
+				orderBy: 'creation desc',
+			};
+		},
 	},
 	computed: {
 		object() {
@@ -121,37 +154,40 @@ export default {
 		job() {
 			return this.$resources.job.doc;
 		},
+		error() {
+			return this.$resources.errors?.data?.[0] ?? null;
+		},
 		dropdownOptions() {
 			return [
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					condition: () => this.$team.doc?.is_desk_user,
+					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
-							'_blank'
+							'_blank',
 						);
-					}
-				}
-			].filter(option => option.condition?.() ?? true);
-		}
+					},
+				},
+			].filter((option) => option.condition?.() ?? true);
+		},
 	},
 	mounted() {
 		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
-		this.$socket.on('agent_job_update', data => {
+		this.$socket.on('agent_job_update', (data) => {
 			if (data.id === this.id) {
-				data.steps = data.steps.map(step => {
+				data.steps = data.steps.map((step) => {
 					step.title = step.step_name;
 					step.duration = duration(step.duration);
 					step.isOpen =
-						this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
+						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false;
 					return step;
 				});
 
 				this.$resources.job.doc = {
 					...this.$resources.job.doc,
-					...data
+					...data,
 				};
 			}
 		});
@@ -174,7 +210,7 @@ export default {
 			) {
 				this.$resources.job.reload();
 			}
-		}
-	}
+		},
+	},
 };
 </script>

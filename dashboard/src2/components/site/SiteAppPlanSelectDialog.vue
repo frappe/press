@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import { getToastErrorMessage } from '../../utils/toast';
 import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
 import { toast } from 'vue-sonner';
 
@@ -43,9 +44,7 @@ export default {
 							this.$emit('plan-changed', plan);
 							return 'Plan changed successfully';
 						},
-						error: e => {
-							return e.messages.length ? e.messages.join('\n') : e.message;
-						}
+						error: e => getToastErrorMessage(e)
 					}
 				);
 			else this.$emit('plan-selected', plan);

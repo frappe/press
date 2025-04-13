@@ -1,0 +1,21 @@
+- name: Disable Swap
+  command: swapoff -av
+  async: 1200
+  poll: 30
+
+- name: Remove Swap from fstab
+  mount:
+    name: none
+    src: /{{ item }}
+    fstype: swap
+    opts: sw
+    passno: 0
+    dump: 0
+    state: absent
+  ignore_errors: yes
+  loop: '{{ swap_files_to_remove }}'
+
+- name: Remove Swap Files
+  command: rm /{{ item }}
+  ignore_errors: yes
+  loop: '{{ swap_files_to_remove }}'

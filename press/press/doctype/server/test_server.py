@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
 import typing
 import unittest
@@ -20,6 +20,7 @@ from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 from press.press.doctype.team.test_team import create_test_team
+from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
@@ -27,11 +28,12 @@ if typing.TYPE_CHECKING:
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(
-	proxy_server: str = None,
-	database_server: str = None,
+	proxy_server: str | None = None,
+	database_server: str | None = None,
 	cluster: str = "Default",
-	plan: str = None,
-	team: str = None,
+	plan: str | None = None,
+	team: str | None = None,
+	public: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -55,6 +57,8 @@ def create_test_server(
 			"ram": 16000,
 			"team": team,
 			"plan": plan,
+			"public": public,
+			"virtual_machine": create_test_virtual_machine(),
 		}
 	).insert()
 	server.reload()

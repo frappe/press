@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
 
+import os
 from functools import partial
 
 import frappe
-from ansible.utils.path import cleanup_tmp_file
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
@@ -18,7 +17,7 @@ from press.utils import _get_current_team, _system_user
 @frappe.whitelist(allow_guest=True)
 def upload_file():
 	if frappe.session.user == "Guest":
-		return
+		return None
 
 	files = frappe.request.files
 	is_private = frappe.form_dict.is_private
@@ -43,22 +42,21 @@ def upload_file():
 		method = frappe.get_attr(method)
 		is_whitelisted(method)
 		return method()
-	else:
-		ret = frappe.get_doc(
-			{
-				"doctype": "File",
-				"attached_to_doctype": doctype,
-				"attached_to_name": docname,
-				"attached_to_field": fieldname,
-				"folder": folder,
-				"file_name": filename,
-				"file_url": file_url,
-				"is_private": cint(is_private),
-				"content": content,
-			}
-		)
-		ret.save()
-		return ret
+	ret = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": doctype,
+			"attached_to_name": docname,
+			"attached_to_field": fieldname,
+			"folder": folder,
+			"file_name": filename,
+			"file_url": file_url,
+			"is_private": cint(is_private),
+			"content": content,
+		}
+	)
+	ret.save()
+	return ret
 
 
 def on_session_creation():
@@ -78,6 +76,24 @@ def on_session_creation():
 		pass
 
 
+def on_login(login_manager):
+	if frappe.session.user and frappe.session.data and frappe.session.data.user_type == "System User":
+		return
+	user = login_manager.user
+	has_2fa = frappe.db.get_value(
+		"User 2FA", {"user": user, "enabled": 1}, ["last_verified_at"], as_dict=True
+	)
+	if has_2fa and (
+		not has_2fa.get("last_verified_at")
+		or has_2fa.get("last_verified_at") < frappe.utils.add_to_date(None, seconds=-10)
+	):
+		frappe.throw("Please re-login to verify your identity.")
+
+	if frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 0}):
+		frappe.db.set_value("Team", {"user": frappe.session.user, "enabled": 0}, "enabled", 1)
+		frappe.db.commit()
+
+
 def before_job():
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
@@ -89,18 +105,33 @@ def before_request():
 
 
 def cleanup_ansible_tmp_files():
-	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
-		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+	import pathlib
+	import shutil
+	import time
 
+	if not hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		return
 
-def after_job():
-	cleanup_ansible_tmp_files()
+	if os.environ.get("FRAPPE_BACKGROUND_WORKERS_NOFORK"):
+		# Long running processes, don't cleanup
+		return
+
+	threshold = time.time() - 60 * 60  # >One hour old
+
+	temp_dir = pathlib.Path(constants.DEFAULT_LOCAL_TMP).parent
+	ansible_dir = pathlib.Path.home() / ".ansible"
+	# Avoid clearing unknown directories
+	assert temp_dir.is_relative_to(ansible_dir) and temp_dir != ansible_dir
+
+	for folder in temp_dir.iterdir():
+		if folder.is_dir() and folder.stat().st_mtime < threshold:
+			shutil.rmtree(folder)
 
 
 def update_website_context(context):
-	if (
-		frappe.request and frappe.request.path.startswith("/docs")
-	) and not frappe.db.get_single_value("Press Settings", "publish_docs"):
+	if (frappe.request and frappe.request.path.startswith("/docs")) and not frappe.db.get_single_value(
+		"Press Settings", "publish_docs"
+	):
 		raise frappe.DoesNotExistError
 
 
@@ -120,11 +151,9 @@ def has_permission(doc, ptype, user):
 	if has_role("Press Support Agent", user) and ptype == "read":
 		return True
 
-	team = get_current_team(True)
-	child_team_members = [
-		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
-	]
-	if doc.team == team.name or doc.team in child_team_members:
+	team = get_current_team()
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])]
+	if doc.team == team or doc.team in child_team_members:
 		return True
 
 	return False
@@ -150,7 +179,7 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
-	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+	dashboard_fields = ("full_name", "email", "user_image", "enabled", "user_type")
 
 	@staticmethod
 	def get_list_query(query):
@@ -182,10 +211,9 @@ class CustomUser(User):
 					has_fields.append(d.get("name"))
 			for field in has_fields:
 				frappe.db.sql(
-					"""UPDATE `%s`
-					SET `%s` = %s
-					WHERE `%s` = %s"""
-					% (tab, field, "%s", field, "%s"),
+					"""UPDATE `{}`
+					SET `{}` = {}
+					WHERE `{}` = {}""".format(tab, field, "%s", field, "%s"),
 					(new_name, old_name),
 				)
 
@@ -200,3 +228,8 @@ class CustomUser(User):
 			WHERE name = %s""",
 			(new_name, new_name),
 		)
+
+
+def before_after_migrate():
+	# frappe.clear_cache() on press doesn't clear everything. See hooks.py
+	frappe.cache.flushall()

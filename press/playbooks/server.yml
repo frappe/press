@@ -9,6 +9,7 @@
     - role: user
     - role: nginx
     - role: agent
+    - role: mount
     - role: bench
     - role: docker
     - role: node_exporter
@@ -24,3 +25,4 @@
     - role: sshd_hardening
     - role: pam
     - role: user_ssh_certificate
+    - role: earlyoom_memory_limits

@@ -1,0 +1,35 @@
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+<div class="p-8 bg-white">
+    <div class="from-markdown">
+        <p>Hi {{ developer_name }},</p>
+
+        <p>I hope this email finds you well.</p>
+
+        <p>I'm writing to inform you about an important policy update regarding Frappe Cloud Marketplace Apps. To
+            ensure continued availability on the Marketplace, all apps are now required to be fully open-source, meaning
+            the GitHub repository must be made public.</p>
+
+        <p>To comply with this new policy, please make your app's repository public by end of the month i.e. 31st March 2025. After this
+            period, non-compliant apps will be disabled or removed from the Frappe Cloud Marketplace.</p>
+
+        <p>Here are the details for your app:</p>
+
+        <ul>
+            <li><strong>App Name:</strong> {{ app_name }}</li>
+            <li><strong>Repository URL:</strong> {{ repository_url }}</li>
+        </ul>
+
+        <p>We understand that this change might require some adjustments, and we appreciate your prompt attention to
+            this
+            matter. If you have any questions or anticipate any challenges in making your repository public, please
+            raise a support ticket at support.frappe.io. We're here to help and ensure a smooth transition.</p>
+
+        <p>Thank you for your understanding and cooperation.</p>
+
+        <p>Regards,<br>
+            Team Frappe Cloud</p>
+    </div>
+</div>
+{% endblock %}

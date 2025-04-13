@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
@@ -12,6 +11,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
+from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 from press.runner import Ansible
 from press.utils.test import foreground_enqueue_doc
 
@@ -31,6 +31,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 			"hostname": f"m{make_autoname('.##')}",
 			"cluster": cluster,
 			"ram": 16384,
+			"virtual_machine": create_test_virtual_machine().name,
 		}
 	).insert(ignore_if_duplicate=True)
 	server.reload()
@@ -49,9 +50,7 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	def test_mariadb_service_restarted_on_restart_mariadb_fn_call(
-		self, Mock_Ansible: Mock
-	):
+	def test_mariadb_service_restarted_on_restart_mariadb_fn_call(self, Mock_Ansible: Mock):
 		server = create_test_database_server()
 		server.restart_mariadb()
 		server.reload()  # modified timestamp datatype
@@ -72,9 +71,7 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	def test_memory_limits_updated_on_update_of_corresponding_fields(
-		self, Mock_Ansible: MagicMock
-	):
+	def test_memory_limits_updated_on_update_of_corresponding_fields(self, Mock_Ansible: MagicMock):
 		server = create_test_database_server()
 		server.memory_high = 1
 		server.save()
@@ -103,9 +100,7 @@ class TestDatabaseServer(FrappeTestCase):
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	def test_reconfigure_mariadb_exporter_play_runs_on_reconfigure_fn_call(
-		self, Mock_Ansible: Mock
-	):
+	def test_reconfigure_mariadb_exporter_play_runs_on_reconfigure_fn_call(self, Mock_Ansible: Mock):
 		server = create_test_database_server()
 		server.reconfigure_mariadb_exporter()
 		server.reload()

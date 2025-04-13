@@ -11,6 +11,7 @@ import { getTeam } from '../../data/team';
 import { confirmDialog, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 const team = getTeam();
 team.getTeamMembers.submit();
@@ -34,7 +35,8 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam();
-		if (row.name === team.doc.user) return [];
+		if (row.name === team.doc.user || row.name === team.doc.user_info?.name)
+			return [];
 		return [
 			{
 				label: 'Remove Member',
@@ -55,8 +57,7 @@ const teamMembersListOptions = ref({
 										hide();
 										return 'Member Removed';
 									},
-									error: e =>
-										e.messages.length ? e.messages.join('\n') : e.message
+									error: e => getToastErrorMessage(e)
 								}
 							);
 						}
@@ -65,18 +66,30 @@ const teamMembersListOptions = ref({
 			}
 		];
 	},
-	primaryAction() {
-		return {
-			label: 'Add Member',
-			variant: 'solid',
-			iconLeft: 'plus',
-			onClick() {
-				const InviteTeamMemberDialog = defineAsyncComponent(() =>
-					import('./InviteTeamMemberDialog.vue')
-				);
-				renderDialog(h(InviteTeamMemberDialog));
+	actions() {
+		return [
+			{
+				label: 'Settings',
+				iconLeft: 'settings',
+				onClick() {
+					const TeamSettingsDialog = defineAsyncComponent(() =>
+						import('./TeamSettingsDialog.vue')
+					);
+					renderDialog(h(TeamSettingsDialog));
+				}
+			},
+			{
+				label: 'Add Member',
+				variant: 'solid',
+				iconLeft: 'plus',
+				onClick() {
+					const InviteTeamMemberDialog = defineAsyncComponent(() =>
+						import('./InviteTeamMemberDialog.vue')
+					);
+					renderDialog(h(InviteTeamMemberDialog));
+				}
 			}
-		};
+		];
 	}
 });
 </script>

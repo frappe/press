@@ -16,7 +16,7 @@
 				v-model="showAppPlanSelectorDialog"
 				:app="selectedApp"
 				@plan-select="
-					plan => {
+					(plan) => {
 						apps = [...apps, { ...selectedApp, plan }];
 						showAppPlanSelectorDialog = false;
 					}
@@ -41,18 +41,19 @@ import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
 import { Badge } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	props: ['availableApps', 'siteOnPublicBench', 'modelValue'],
 	emits: ['update:modelValue'],
 	components: {
 		ObjectList,
-		SiteAppPlanSelectorDialog
+		SiteAppPlanSelectorDialog,
 	},
 	data() {
 		return {
 			selectedApp: null,
-			showAppPlanSelectorDialog: false
+			showAppPlanSelectorDialog: false,
 		};
 	},
 	computed: {
@@ -62,15 +63,17 @@ export default {
 			},
 			set(newApps) {
 				this.$emit('update:modelValue', newApps);
-			}
+			},
 		},
 		publicApps() {
 			if (!this.availableApps) return;
-			let publicApps = this.availableApps.filter(
-				app => (app.public || app.plans?.length) && app.image
+			const publicApps = this.availableApps.filter(
+				(app) => (app.public || app.plans?.length) && app.image,
 			);
 
 			if (!publicApps.length) return;
+
+			this.apps = this.availableApps.filter((app) => app.preinstalled === true);
 
 			return {
 				data: () => publicApps,
@@ -85,24 +88,31 @@ export default {
 								{
 									class: 'flex items-center text-sm',
 									href: `/${row.route}`,
-									target: '_blank'
+									target: '_blank',
 								},
 								[
 									h('img', {
 										class: 'h-6 w-6 rounded-sm',
-										src: row.image
+										src: row.image,
 									}),
-									h('span', { class: 'ml-2' }, row.app_title),
+									h('span', { class: 'ml-2' }, row.title || row.app_title),
+									row?.preinstalled
+										? h(Badge, {
+												class: 'ml-2',
+												theme: 'green',
+												label: 'Pre-Installed',
+											})
+										: '',
 									row.subscription_type !== 'Free'
 										? h(Badge, {
 												class: 'ml-2',
 												theme: 'gray',
-												label: 'Paid'
-										  })
-										: ''
-								]
+												label: 'Paid',
+											})
+										: '',
+								],
 							);
-						}
+						},
 					},
 					{
 						label: 'Installs',
@@ -112,18 +122,18 @@ export default {
 							return h(
 								'div',
 								{
-									class: 'flex items-center text-sm text-gray-600'
+									class: 'flex items-center text-sm text-gray-600',
 								},
 								[
 									h(DownloadIcon, {
-										class: 'h-3 w-3'
+										class: 'h-3 w-3',
 									}),
 									h('span', { class: 'ml-0.5 leading-3' }, [
-										this.$format.numberK(row.total_installs || '0')
-									])
-								]
+										this.$format.numberK(row.total_installs || '0'),
+									]),
+								],
 							);
-						}
+						},
 					},
 					{
 						label: '',
@@ -131,29 +141,29 @@ export default {
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps.map(a => a.app).includes(app.app);
+							const isAppAdded = this.apps.map((a) => a.app).includes(app.app);
 
 							return {
 								label: isAppAdded ? 'check' : 'plus',
 								slots: {
-									icon: isAppAdded ? icon('check') : icon('plus')
+									icon: isAppAdded ? icon('check') : icon('plus'),
 								},
 								variant: isAppAdded ? 'outline' : 'subtle',
-								onClick: event => {
+								onClick: (event) => {
 									this.toggleApp(app);
 									event.stopPropagation();
-								}
+								},
 							};
-						}
-					}
-				]
+						},
+					},
+				],
 			};
 		},
 		privateApps() {
 			if (!this.availableApps) return;
 
 			let privateApps = this.availableApps.filter(
-				app => !((app.public || app.plans?.length) && app.image)
+				(app) => !((app.public || app.plans?.length) && app.image),
 			);
 
 			if (privateApps.length === 0) return;
@@ -163,46 +173,51 @@ export default {
 				columns: [
 					{
 						label: 'App',
-						fieldname: 'app_title'
+						fieldname: 'app_title',
 					},
 					{
 						label: '',
 						align: 'right',
 						type: 'Button',
 						Button: ({ row: app }) => {
-							let isAppAdded = this.apps
-								.map(a => a.app)
+							const isAppAdded = this.apps
+								.map((a) => a.app)
 								.includes(app.app || app.app_title);
 							return {
 								label: 'Add',
 								slots: {
-									icon: isAppAdded ? icon('check') : icon('plus')
+									icon: isAppAdded ? icon('check') : icon('plus'),
 								},
 								variant: isAppAdded ? 'outline' : 'subtle',
-								onClick: event => {
+								onClick: (event) => {
 									this.toggleApp(app);
 									event.stopPropagation();
-								}
+								},
 							};
-						}
-					}
-				]
+						},
+					},
+				],
 			};
-		}
+		},
 	},
 	methods: {
 		toggleApp(app) {
-			if (this.apps.map(a => a.app).includes(app.app)) {
-				this.apps = this.apps.filter(a => a.app !== app.app);
+			if (app.preinstalled) {
+				toast.error(app.title + ' is pre-installed and cannot be removed');
+			} else if (this.apps.map((a) => a.app).includes(app.app)) {
+				this.apps = this.apps.filter((a) => a.app !== app.app);
 			} else {
-				if (app.subscription_type && app.subscription_type !== 'Free') {
+				if (
+					app.subscription_type &&
+					app.plans.some((plan) => plan.price_inr > 0)
+				) {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
 					this.apps = [...this.apps, app];
 				}
 			}
-		}
-	}
+		},
+	},
 };
 </script>

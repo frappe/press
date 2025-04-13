@@ -1,21 +1,27 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
 import unittest
+from typing import TYPE_CHECKING
 
 import frappe
+
+if TYPE_CHECKING:
+	from frappe.types.DF import Data
 
 
 def create_test_ansible_play(
 	play: str = "",
 	playbook: str = "",
 	server_type: str = "Server",
-	server: str = "",
-	vars: dict = {},
+	server: Data | None = "",
+	vars: dict | None = None,
 	status: str = "Success",
 ):
+	if vars is None:
+		vars = {}
 	play = frappe.get_doc(
 		{
 			"doctype": "Ansible Play",

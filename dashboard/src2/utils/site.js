@@ -12,7 +12,7 @@ export function trialDays(_trialEndDate) {
 	} else if (diffHours < 24) {
 		endsIn = `today`;
 	} else {
-		let days = Math.round(diffHours / 24);
+		let days = Math.round(diffHours / 24) + 1;
 		endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
 	}
 	if (trialEndDate.isAfter(today) || trialEndDate.isSame(today, 'day')) {

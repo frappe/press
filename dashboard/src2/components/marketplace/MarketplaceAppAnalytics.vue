@@ -29,7 +29,7 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Benches</div>
+					<div class="text-base text-gray-700">Active Bench Groups</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">

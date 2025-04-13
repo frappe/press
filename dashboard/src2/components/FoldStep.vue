@@ -78,6 +78,8 @@ export default defineComponent({
 					return 'check';
 				case 'Failure':
 					return 'x';
+				case 'Delivery Failure':
+					return 'x';
 				case 'Pending':
 					return 'clock';
 				case 'Skipped':
@@ -91,6 +93,8 @@ export default defineComponent({
 				case 'Success':
 					return 'bg-green-500';
 				case 'Failure':
+					return 'bg-red-500';
+				case 'Delivery Failure':
 					return 'bg-red-500';
 				case 'Running':
 					return 'bg-transparent';

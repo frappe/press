@@ -48,9 +48,7 @@ states_with_tin = {
 	"West Bengal": "19",
 }
 
-GSTIN_FORMAT = re.compile(
-	"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
-)
+GSTIN_FORMAT = re.compile("^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$")
 
 
 def format_stripe_money(amount, currency):
@@ -61,13 +59,9 @@ def get_erpnext_com_connection():
 	from frappe.frappeclient import FrappeClient
 
 	press_settings = frappe.get_single("Press Settings")
-	erpnext_api_secret = press_settings.get_password(
-		"erpnext_api_secret", raise_exception=False
-	)
+	erpnext_api_secret = press_settings.get_password("erpnext_api_secret", raise_exception=False)
 
-	if not (
-		press_settings.erpnext_api_key and press_settings.erpnext_url and erpnext_api_secret
-	):
+	if not (press_settings.erpnext_api_key and press_settings.erpnext_url and erpnext_api_secret):
 		frappe.throw("ERPNext.com URL not set up in Press Settings", exc=CentralServerNotSet)
 
 	return FrappeClient(
@@ -85,9 +79,7 @@ def get_frappe_io_connection():
 
 	press_settings = frappe.get_single("Press Settings")
 	frappe_api_key = press_settings.frappeio_api_key
-	frappe_api_secret = press_settings.get_password(
-		"frappeio_api_secret", raise_exception=False
-	)
+	frappe_api_secret = press_settings.get_password("frappeio_api_secret", raise_exception=False)
 
 	if not (frappe_api_key and frappe_api_secret and press_settings.frappe_url):
 		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
@@ -170,11 +162,12 @@ def get_stripe():
 		)
 
 		if not secret_key:
-			frappe.throw(
-				"Setup stripe via Press Settings before using press.api.billing.get_stripe"
-			)
+			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
 
 		stripe.api_key = secret_key
+		# Set the maximum number of retries for network requests
+		# https://docs.stripe.com/rate-limits?lang=python#object-lock-timeouts
+		stripe.max_network_retries = 2
 		frappe.local.press_stripe_object = stripe
 
 	return frappe.local.press_stripe_object
@@ -198,9 +191,7 @@ def validate_gstin_check_digit(gstin, label="GSTIN"):
 		factor = 2 if factor == 1 else 1
 	if gstin[-1] != code_point_chars[((mod - (total % mod)) % mod)]:
 		frappe.throw(
-			"""Invalid {0}! The check digit validation has failed. Please ensure you've typed the {0} correctly.""".format(
-				label
-			)
+			f"""Invalid {label}! The check digit validation has failed. Please ensure you've typed the {label} correctly."""
 		)
 
 
@@ -215,8 +206,7 @@ def get_razorpay_client():
 
 		if not (key_id and key_secret):
 			frappe.throw(
-				"Setup razorpay via Press Settings before using"
-				" press.api.billing.get_razorpay_client"
+				"Setup razorpay via Press Settings before using press.api.billing.get_razorpay_client"
 			)
 
 		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
@@ -241,3 +231,38 @@ def process_micro_debit_test_charge(stripe_event):
 		).insert(ignore_permissions=True)
 	except Exception:
 		log_error("Error Processing Stripe Micro Debit Charge", body=stripe_event)
+
+
+def get_gateway_details(payment_record):
+	partner_team = frappe.db.get_value("Mpesa Payment Record", payment_record, "payment_partner")
+	return frappe.db.get_value(
+		"Payment Gateway", {"team": partner_team}, ["gateway_controller", "print_format"]
+	)
+
+
+# Get partners external connection
+def get_partner_external_connection(mpesa_setup):
+	# check if connection is already established
+	if hasattr(frappe.local, "_external_conn"):
+		return frappe.local.press_external_conn
+
+	from frappe.frappeclient import FrappeClient
+
+	# Fetch API from gateway
+	payment_gateway = frappe.get_all(
+		"Payment Gateway",
+		filters={"gateway_controller": mpesa_setup, "gateway_settings": "Mpesa Setup"},
+		fields=["name", "url", "api_key", "api_secret"],
+	)
+	if not payment_gateway:
+		frappe.throw("Mpesa Setup not set up in Payment Gateway")
+	# Fetch API key and secret
+	pg = frappe.get_doc("Payment Gateway", payment_gateway[0].name)
+	api_key = pg.api_key
+	api_secret = pg.get_password("api_secret")
+	url = pg.url
+
+	site_name = url.split("/api/method")[0]
+	# Establish connection
+	frappe.local._external_conn = FrappeClient(site_name, api_key=api_key, api_secret=api_secret)
+	return frappe.local._external_conn

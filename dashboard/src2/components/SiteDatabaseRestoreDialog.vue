@@ -89,8 +89,8 @@ export default {
 				onSuccess() {
 					this.selectedFiles = {};
 					this.$router.push({
-						name: 'Site Detail Jobs',
-						params: { objectType: 'Site', name: this.site }
+						name: 'Site Jobs',
+						params: { name: this.site }
 					});
 				}
 			};

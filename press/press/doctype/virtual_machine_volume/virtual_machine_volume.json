@@ -9,41 +9,54 @@
   "volume_id",
   "volume_type",
   "size",
+  "column_break_ygbk",
   "iops",
   "throughput",
-  "last_updated_at"
+  "last_updated_at",
+  "section_break_frlu",
+  "device",
+  "column_break_buwy",
+  "detach",
+  "delete_volume",
+  "increase_disk_size",
+  "update_ebs_performance"
  ],
  "fields": [
   {
+   "columns": 1,
    "fieldname": "volume_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Volume Type",
    "options": "gp3\ngp2",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.volume_type"
   },
   {
+   "columns": 1,
    "fieldname": "size",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Size",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.size"
   },
   {
+   "columns": 1,
    "fieldname": "iops",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "IOPS",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.iops"
   },
   {
+   "columns": 1,
    "fieldname": "throughput",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Throughput",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.throughput"
   },
   {
+   "columns": 4,
    "fieldname": "volume_id",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -53,13 +66,54 @@
   {
    "fieldname": "last_updated_at",
    "fieldtype": "Datetime",
-   "label": "Last updated at"
+   "label": "Last updated at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ygbk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_frlu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 2,
+   "fieldname": "device",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_buwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "detach",
+   "fieldtype": "Button",
+   "label": "Detach"
+  },
+  {
+   "fieldname": "increase_disk_size",
+   "fieldtype": "Button",
+   "label": "Increase Disk Size"
+  },
+  {
+   "fieldname": "delete_volume",
+   "fieldtype": "Button",
+   "label": "Delete Volume"
+  },
+  {
+   "fieldname": "update_ebs_performance",
+   "fieldtype": "Button",
+   "label": "Update EBS Performance"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-06-21 17:04:27.353105",
+ "modified": "2025-02-07 20:38:39.733552",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Volume",

@@ -2,7 +2,8 @@
 
 These APIs has been introduced with the release of SaaS v2. It will provide a interface to communicate back to Frappe Cloud from deployed site.
 
-### Authentication
+
+### Authentication using secret token
 
 In Site configuration, the authentication token will be provided - **fc_communication_secret**
 
@@ -15,6 +16,38 @@ X-Site-Token: 319f41d07d430ed77df3d41a82787f4edff1440f12e43784a7ce8b4e
 
 > All the api functions are wrapped in frappe.whitelist(allow_guest=True) .
 > However, due to the custom authentication wrapper, guest can't access the endpoints
+
+### Authentication using access token
+
+**Why ?**
+
+Sometimes, we may need to pass the secret token to frontend for some specific tasks (example - in-desk checkout). In those case, instead of using our authentication secret token, we can generate a temporary access token from frappe cloud and use that for the session.
+
+> Note: Generated access tokens are **valid for 15 minutes**.
+
+#### Generate Access Token
+
+**Request**
+
+```bash
+curl --location --request POST 'http://fc.local:8000/api/method/press.saas.api.auth.generate_access_token' \
+--header 'x-site: oka-hdz-qpj.tanmoy.fc.frappe.dev' \
+--header 'x-site-token: 004f85a3ae93927d2f0fcc668d11cb71'
+```
+
+**Response**
+
+```json
+{
+    "message": "fbk23eva6k:3e2882eff23d4145ddfefaebf5ac6135"
+}
+```
+
+After we generated our access token, set this specific header to any saas api requests to frappe cloud.
+```
+X-Site-Access-Token: fbk23eva6k:3e2882eff23d4145ddfefaebf5ac6135
+```
+
 
 ### Usage Guide
 

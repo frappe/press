@@ -1,0 +1,38 @@
+---
+- name: Create Frankfurter Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/frankfurter
+    state: directory
+
+- name: Create Frankfurter Compose File
+  become: yes
+  become_user: frappe
+  template:
+    src: docker-compose.yml
+    dest: /home/frappe/frankfurter/docker-compose.yml
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install Docker Compose
+  apt:
+    name: docker-compose-plugin
+    state: latest
+
+- name: Start Frankfurter
+  become: yes
+  become_user: frappe
+  command: docker-compose up -d
+  args:
+    chdir: /home/frappe/frankfurter
+
+- name: Setup NGINX Proxy for Frankfurter
+  become: yes
+  become_user: frappe
+  # This isn't implemented yet
+  command: /home/frappe/agent/env/bin/agent setup frankfurter
+  args:
+    chdir: /home/frappe/agent

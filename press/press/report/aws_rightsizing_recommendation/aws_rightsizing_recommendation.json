@@ -1,0 +1,175 @@
+{
+ "add_total_row": 1,
+ "columns": [
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "width": 0
+  },
+  {
+   "fieldname": "resource_type",
+   "fieldtype": "Data",
+   "label": "Resource Type",
+   "options": "",
+   "width": 0
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost",
+   "options": "currency",
+   "width": 0
+  },
+  {
+   "fieldname": "estimated_savings",
+   "fieldtype": "Currency",
+   "label": "Estimated Savings",
+   "options": "currency",
+   "width": 0
+  },
+  {
+   "fieldname": "estimated_savings_percentage",
+   "fieldtype": "Int",
+   "label": "Estimated Savings Percentage",
+   "width": 0
+  },
+  {
+   "fieldname": "current_iops",
+   "fieldtype": "Int",
+   "label": "Current IOPS",
+   "width": 0
+  },
+  {
+   "fieldname": "current_throughput",
+   "fieldtype": "Int",
+   "label": "Current Throughput",
+   "width": 0
+  },
+  {
+   "fieldname": "recommended_iops",
+   "fieldtype": "Int",
+   "label": "Recommended IOPS",
+   "width": 0
+  },
+  {
+   "fieldname": "recommended_throughput",
+   "fieldtype": "Int",
+   "label": "Recommended Throughput",
+   "width": 0
+  },
+  {
+   "fieldname": "current_instance_type",
+   "fieldtype": "Data",
+   "label": "Current Instance Type",
+   "width": 0
+  },
+  {
+   "fieldname": "recommended_instance_type",
+   "fieldtype": "Data",
+   "label": "Recommended Instance Type",
+   "width": 0
+  },
+  {
+   "fieldname": "current_usage",
+   "fieldtype": "Data",
+   "label": "Current Usage",
+   "width": 0
+  },
+  {
+   "fieldname": "recommended_usage",
+   "fieldtype": "Data",
+   "label": "Recommended Usage",
+   "width": 0
+  },
+  {
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "label": "Volume ID",
+   "width": 0
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "width": 0
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "label": "Server Type",
+   "options": "DocType",
+   "width": 0
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "label": "Server",
+   "options": "server_type",
+   "width": 0
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "width": 0
+  },
+  {
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public",
+   "width": 0
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "width": 0
+  }
+ ],
+ "creation": "2024-09-10 15:22:38.545636",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "default": "Compute",
+   "fieldname": "resource_type",
+   "fieldtype": "Select",
+   "label": "Resource Type",
+   "mandatory": 0,
+   "options": "\nCompute\nStorage",
+   "wildcard_filter": 0
+  },
+  {
+   "default": "Rightsize",
+   "fieldname": "action_type",
+   "fieldtype": "Select",
+   "label": "Action Type",
+   "mandatory": 1,
+   "options": "Rightsize\nMigrate to Graviton",
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "",
+ "letterhead": null,
+ "modified": "2024-09-17 15:45:42.606684",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "AWS Rightsizing Recommendation",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Virtual Machine",
+ "report_name": "AWS Rightsizing Recommendation",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ]
+}

@@ -1,7 +1,9 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import contextlib
+
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
 import glob
 import json
 import os
@@ -14,16 +16,17 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 import frappe
 import frappe.utils
+import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
-from rq.job import Job
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -46,18 +49,23 @@ from press.press.doctype.deploy_candidate.utils import (
 	load_pyproject,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
-from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
+from press.utils.webhook import create_webhook_event
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
+DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
+
 if typing.TYPE_CHECKING:
+	from rq.job import Job
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -69,9 +77,7 @@ class DeployCandidate(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-			DeployCandidateApp,
-		)
+		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
 		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 			DeployCandidateBuildStep,
 		)
@@ -114,11 +120,10 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
+		redis_cache_size: DF.Int
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
-		status: DF.Literal[
-			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
-		]
+		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
 		team: DF.Link
 		use_app_cache: DF.Check
 		use_rq_workerpool: DF.Check
@@ -126,12 +131,13 @@ class DeployCandidate(Document):
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
+
 		# end: auto-generated types
 
-		build_output_parser: Optional[DockerBuildOutputParser]
-		upload_step_updater: Optional[UploadStepUpdater]
+		build_output_parser: DockerBuildOutputParser | None
+		upload_step_updater: UploadStepUpdater | None
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"name",
 		"status",
 		"creation",
@@ -144,7 +150,7 @@ class DeployCandidate(Document):
 		"apps",
 		"group",
 		"retry_count",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):
@@ -169,6 +175,11 @@ class DeployCandidate(Document):
 		return results
 
 	def get_doc(self, doc):
+		def get_job_duration_in_seconds(duration):
+			if not duration:
+				return 0
+			return f"{float(rounded(duration.total_seconds(), 2))}s"
+
 		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
 		if deploys:
@@ -182,7 +193,17 @@ class DeployCandidate(Document):
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
 				) or [{}]
-				doc.jobs.append(job[0])
+				doc.jobs.append(
+					{
+						**job[0],
+						"title": f"Deploying {bench.bench}",
+						"duration": get_job_duration_in_seconds(getattr(job[0], "duration", 0)) if job else 0,
+					}
+				)
+
+		# if any job is in running, pending state, set the status to deploying
+		if any(job.get("status") in ["Running", "Pending"] for job in doc.jobs):
+			doc.status = "Deploying"
 
 	def autoname(self):
 		group = self.group[6:]
@@ -200,7 +221,7 @@ class DeployCandidate(Document):
 			{"document_type": self.doctype, "document_name": self.name},
 		)
 
-	def get_unpublished_marketplace_releases(self) -> List[str]:
+	def get_unpublished_marketplace_releases(self) -> list[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		marketplace_app_sources = rg.get_marketplace_app_sources()
 
@@ -215,13 +236,11 @@ class DeployCandidate(Document):
 		)
 
 		# Unapproved app releases for marketplace apps
-		unpublished_releases = frappe.get_all(
+		return frappe.get_all(
 			"App Release",
 			filters={"name": ("in", dc_app_releases), "status": ("!=", "Approved")},
 			pluck="name",
 		)
-
-		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
 		# This should always be the first call in pre-build
@@ -239,7 +258,11 @@ class DeployCandidate(Document):
 		self._set_status_pending()
 		self.add_pre_build_steps()
 		self.save()
-		(user, session_data, team,) = (
+		(
+			user,
+			session_data,
+			team,
+		) = (
 			frappe.session.user,
 			frappe.session.data,
 			get_current_team(True),
@@ -327,7 +350,7 @@ class DeployCandidate(Document):
 	def schedule_build_and_deploy(
 		self,
 		run_now: bool = True,
-		scheduled_time: Optional[datetime] = None,
+		scheduled_time: datetime | None = None,
 	):
 		if self.status == "Scheduled":
 			return
@@ -357,9 +380,10 @@ class DeployCandidate(Document):
 			no_cache=no_cache,
 		)
 
-	def _deploy(self):
+	@frappe.whitelist()
+	def deploy(self):
 		try:
-			self.create_deploy()
+			return self.create_deploy()
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 
@@ -385,11 +409,14 @@ class DeployCandidate(Document):
 	def handle_build_failure(
 		self,
 		exc: Exception | None = None,
-		job: "Optional[AgentJob]" = None,
+		job: "AgentJob | None" = None,
 	) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc, job=job)
+
+		if not should_retry:
+			self._fail_site_group_deploy_if_exists()
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
@@ -409,13 +436,13 @@ class DeployCandidate(Document):
 	def should_build_retry(
 		self,
 		exc: Exception | None,
-		job: "Optional[AgentJob]",
+		job: "AgentJob | None",
 	) -> bool:
 		if self.status != "Failure":
 			return False
 
 		# Retry twice before giving up
-		if self.retry_count >= 2:
+		if self.retry_count >= 3:
 			return False
 
 		bo = self.build_output
@@ -432,7 +459,8 @@ class DeployCandidate(Document):
 
 	def schedule_build_retry(self):
 		self.retry_count += 1
-		scheduled_time = now() + timedelta(minutes=5)
+		minutes = min(5**self.retry_count, 125)
+		scheduled_time = now() + timedelta(minutes=minutes)
 		self.schedule_build_and_deploy(
 			run_now=False,
 			scheduled_time=scheduled_time,
@@ -522,6 +550,8 @@ class DeployCandidate(Document):
 		step = self.get_step("package", "context") or frappe._dict()
 		step.status = "Running"
 		start_time = now()
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
 		# make sure to set ownership of build_directory and its contents to 1000:1000
 		def fix_content_permission(tarinfo):
@@ -530,39 +560,63 @@ class DeployCandidate(Document):
 			return tarinfo
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz") as tar:
-			tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
+			if frappe.conf.developer_mode:
+				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
+			else:
+				tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
 		step.duration = get_duration(start_time)
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 		return tmp_file_path
 
 	def _upload_build_context(self, context_filepath: str, build_server: str):
 		step = self.get_step("upload", "context") or frappe._dict()
 		step.status = "Running"
 		start_time = now()
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
-		agent = Agent(build_server)
-		with open(context_filepath, "rb") as file:
-			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
-
-		if not upload_filename:
+		try:
+			upload_filename = self.upload_build_context_for_docker_build(
+				context_filepath,
+				build_server,
+			)
+		except Exception:
 			step.status = "Failure"
+			raise
 
-			message = "Failed to upload build context to remote docker builder"
-			if agent.response:
-				message += f"\nagent response: {agent.response.text}"
-			raise Exception(message)
-		else:
-			step.status = "Success"
-
+		step.status = "Success"
 		step.duration = get_duration(start_time)
 		return upload_filename
 
+	@retry(
+		reraise=True,
+		wait=wait_fixed(300),
+		stop=stop_after_attempt(3),
+	)
+	def upload_build_context_for_docker_build(
+		self,
+		context_filepath: str,
+		build_server: str,
+	):
+		agent = Agent(build_server)
+		with open(context_filepath, "rb") as file:
+			if upload_filename := agent.upload_build_context_for_docker_build(file, self.name):
+				return upload_filename
+
+		message = "Failed to upload build context to remote docker builder"
+		if agent.response:
+			message += f"\nagent response: {agent.response.text}"
+
+		raise Exception(message)
+
 	@staticmethod
-	def process_run_build(job: "AgentJob", response_data: "Optional[dict]"):
+	def process_run_build(job: "AgentJob", response_data: "dict | None"):
 		request_data = json.loads(job.request_data)
-		dc: "DeployCandidate" = frappe.get_doc(
+		dc: DeployCandidate = frappe.get_doc(
 			"Deploy Candidate",
 			request_data["deploy_candidate"],
 		)
@@ -572,7 +626,7 @@ class DeployCandidate(Document):
 		self,
 		job: "AgentJob",
 		request_data: dict,
-		response_data: Optional[dict],
+		response_data: dict | None,
 	):
 		job_data = json.loads(job.data or "{}")
 		output_data = json.loads(job_data.get("output", "{}"))
@@ -603,7 +657,7 @@ class DeployCandidate(Document):
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
 		else:
-			self._update_status_from_remote_build_job(job, job_data)
+			self._update_status_from_remote_build_job(job)
 
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
@@ -618,11 +672,7 @@ class DeployCandidate(Document):
 		if job_data.get("build_failure"):
 			return True
 
-		if (
-			(usu := self.upload_step_updater)
-			and usu.upload_step
-			and usu.upload_step.status == "Failure"
-		):
+		if (usu := self.upload_step_updater) and usu.upload_step and usu.upload_step.status == "Failure":
 			return True
 
 		if self.get_first_step("status", "Failure"):
@@ -643,7 +693,7 @@ class DeployCandidate(Document):
 		]:
 			self.upload_step_updater.end("Pending")
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
+	def _update_status_from_remote_build_job(self, job: "AgentJob"):
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
@@ -662,9 +712,7 @@ class DeployCandidate(Document):
 		else:
 			namespace = f"{settings.domain}"
 
-		self.docker_image_repository = (
-			f"{settings.docker_registry_url}/{namespace}/{self.group}"
-		)
+		self.docker_image_repository = f"{settings.docker_registry_url}/{namespace}/{self.group}"
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
@@ -884,6 +932,7 @@ class DeployCandidate(Document):
 
 		self._copy_config_files()
 		self._generate_redis_cache_config()
+		self._generate_redis_queue_config()
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
@@ -926,6 +975,8 @@ class DeployCandidate(Document):
 		step.duration = get_duration(start_time)
 		step.output = "Pre-build validations passed"
 		step.status = "Success"
+		self.save(ignore_permissions=True, ignore_version=True)
+		frappe.db.commit()
 
 	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
 		"""
@@ -971,9 +1022,7 @@ class DeployCandidate(Document):
 
 		return target
 
-	def _clone_release_and_update_step(
-		self, release: str, step: "DeployCandidateBuildStep"
-	):
+	def _clone_release_and_update_step(self, release: str, step: "DeployCandidateBuildStep"):
 		# Start step
 		step.status = "Running"
 		start_time = now()
@@ -981,7 +1030,7 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 		# Clone Release
-		release: "AppRelease" = frappe.get_doc(
+		release: AppRelease = frappe.get_doc(
 			"App Release",
 			release,
 			for_update=True,
@@ -1024,6 +1073,7 @@ class DeployCandidate(Document):
 
 			app_packages = []
 			for p in pkgs:
+				p = p.strip()
 				if p in existing_apt_packages:
 					continue
 				existing_apt_packages.add(p)
@@ -1032,7 +1082,30 @@ class DeployCandidate(Document):
 			if not app_packages:
 				continue
 
-			package = dict(package_manager="apt", package=" ".join(app_packages))
+			self._add_packages(app_packages)
+
+	def __prepare_chunks(self, packages: list[str]):
+		"""Chunk packages into groups of 140 characters"""
+		# Start with one empty chunk
+		chunks = [[]]
+		for package in packages:
+			# Appending the package to the last chunk will keep it under 140
+			# Append package to last chunk
+			if len(" ".join(chunks[-1] + [package])) < 140:
+				chunks[-1].append(package)
+			# Appending the package to the last chunk will make it larger than 140
+			# Add package in a new chunk
+			else:
+				if len(package) > 140:
+					raise frappe.ValidationError(
+						f"Package {package} is too long to be added to the Dockerfile"
+					)
+				chunks.append([package])
+		return chunks
+
+	def _add_packages(self, packages: list[str]):
+		for chunk in self.__prepare_chunks(packages):
+			package = dict(package_manager="apt", package=" ".join(chunk))
 			self.append("packages", package)
 
 	def _set_additional_packages(self):
@@ -1043,9 +1116,7 @@ class DeployCandidate(Document):
 		dep_versions = {d.dependency: d.version for d in self.dependencies}
 		for p in self.packages:
 			#  second clause cause: '/opt/certbot/bin/pip'
-			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith(
-				"/pip"
-			):
+			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith("/pip"):
 				continue
 
 			prerequisites = frappe.render_template(p.package_prerequisites, dep_versions)
@@ -1065,16 +1136,34 @@ class DeployCandidate(Document):
 			order_by="idx",
 		)
 
+	def check_distutils_support(self, version: str):
+		"""
+		Checks if specified python version supports distutils.
+		"""
+		try:
+			python_version = semantic_version.Version(version)
+		except ValueError:
+			python_version = semantic_version.Version(f"{version}.0")
+
+		return python_version in DISTUTILS_SUPPORTED_VERSION
+
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
-
+			is_distutils_supported = True
 			for d in self.dependencies:
+				if d.dependency == "PYTHON_VERSION":
+					is_distutils_supported = self.check_distutils_support(d.version)
+
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
+			content = frappe.render_template(
+				dockerfile_template,
+				{"doc": self, "remove_distutils": not is_distutils_supported},
+				is_path=True,
+			)
 			f.write(content)
 			return content
 
@@ -1149,9 +1238,7 @@ class DeployCandidate(Document):
 
 	def _copy_config_files(self):
 		for target in ["common_site_config.json", "supervisord.conf", ".vimrc"]:
-			shutil.copy(
-				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory
-			)
+			shutil.copy(os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory)
 
 		for target in ["config", "redis"]:
 			shutil.copytree(
@@ -1164,18 +1251,21 @@ class DeployCandidate(Document):
 		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
 		with open(redis_cache_conf, "w") as f:
 			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
-			content = frappe.render_template(
-				redis_cache_conf_template, {"doc": self}, is_path=True
-			)
+			content = frappe.render_template(redis_cache_conf_template, {"doc": self}, is_path=True)
+			f.write(content)
+
+	def _generate_redis_queue_config(self):
+		redis_queue_conf = os.path.join(self.build_directory, "config", "redis-queue.conf")
+		with open(redis_queue_conf, "w") as f:
+			redis_queue_conf_template = "press/docker/config/redis-queue.conf"
+			content = frappe.render_template(redis_queue_conf_template, {"doc": self}, is_path=True)
 			f.write(content)
 
 	def _generate_supervisor_config(self):
 		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
 		with open(supervisor_conf, "w") as f:
 			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(
-				supervisor_conf_template, {"doc": self}, is_path=True
-			)
+			content = frappe.render_template(supervisor_conf_template, {"doc": self}, is_path=True)
 			f.write(content)
 
 	def _generate_apps_txt(self):
@@ -1234,16 +1324,15 @@ class DeployCandidate(Document):
 			cwd=directory or self.build_directory,
 			universal_newlines=True,
 		)
-		for line in process.stdout:
-			yield line
+		yield from process.stdout
 		process.stdout.close()
 		return_code = process.wait()
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
 
 	def generate_ssh_keys(self):
-		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
-		if ca is None:
+		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
+		if not ca:
 			return
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
@@ -1318,29 +1407,29 @@ class DeployCandidate(Document):
 		for key, value in update_dict.items():
 			step.set(key, value)
 
-	def get_step(
-		self, stage_slug: str, step_slug: str
-	) -> "Optional[DeployCandidateBuildStep]":
+	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
 		return find(
 			self.build_steps,
 			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
 		)
 
 	def create_deploy(self):
-		deploy_doc = None
 		servers = frappe.get_doc("Release Group", self.group).servers
 		servers = [server.server for server in servers]
+		if not servers:
+			return None
+
 		deploy_doc = frappe.db.exists(
 			"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
 		)
 
-		if deploy_doc or not servers:
-			return
+		if deploy_doc:
+			return str(deploy_doc)
 
-		return self._create_deploy(servers)
+		return self._create_deploy(servers).name
 
-	def _create_deploy(self, servers: List[str]):
-		deploy = frappe.get_doc(
+	def _create_deploy(self, servers: list[str]):
+		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
 				"group": self.group,
@@ -1348,7 +1437,6 @@ class DeployCandidate(Document):
 				"benches": [{"server": server} for server in servers],
 			}
 		).insert()
-		return deploy
 
 	def on_update(self):
 		if self.status == "Running":
@@ -1364,6 +1452,9 @@ class DeployCandidate(Document):
 				doctype=self.doctype,
 				docname=self.name,
 			)
+
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def get_dependency_version(self, dependency: str, as_env: bool = False):
 		if dependency.islower():
@@ -1388,9 +1479,7 @@ class DeployCandidate(Document):
 		"""
 
 		# Deployed Benches from current DC with (potentially) cached layers
-		benches = frappe.get_all(
-			"Bench", filters={"group": self.group, "status": "Active"}, limit=1
-		)
+		benches = frappe.get_all("Bench", filters={"group": self.group, "status": "Active"}, limit=1)
 		if not benches:
 			return {}
 
@@ -1452,9 +1541,7 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def get_first_step(
-		self, key: str, value: str | list[str]
-	) -> "Optional[DeployCandidateBuildStep]":
+	def get_first_step(self, key: str, value: str | list[str]) -> "DeployCandidateBuildStep | None":
 		if isinstance(value, str):
 			value = [value]
 
@@ -1464,10 +1551,10 @@ class DeployCandidate(Document):
 			return build_step
 		return None
 
-	def get_duplicate_dc(self) -> "Optional[DeployCandidate]":
-		rg: "ReleaseGroup" = frappe.get_doc("Release Group", self.group)
+	def get_duplicate_dc(self) -> "DeployCandidate | None":
+		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		if not (dc := rg.create_deploy_candidate()):
-			return
+			return None
 
 		# Set new DC apps to pull from the same sources
 		new_app_map = {a.app: a for a in dc.apps}
@@ -1516,6 +1603,20 @@ class DeployCandidate(Document):
 				continue
 			stop_background_job(job)
 
+	def _fail_site_group_deploy_if_exists(self):
+		site_group_deploy = frappe.db.get_value(
+			"Site Group Deploy",
+			{
+				"release_group": self.group,
+				"site": ("is", "not set"),
+				"bench": ("is", "not set"),
+			},
+		)
+		if site_group_deploy:
+			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
+				self,
+			)
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1554,8 +1655,7 @@ def pull_update_file_filter(file_path: str) -> bool:
 			return True
 
 		# Probably requires build
-		else:
-			return False
+		return False
 
 	return True
 
@@ -1574,7 +1674,7 @@ def cleanup_build_directories():
 		limit=100,
 	)
 	for dc in dcs:
-		doc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc)
+		doc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc)
 		try:
 			doc.cleanup_build_directory()
 			frappe.db.commit()
@@ -1622,27 +1722,22 @@ def delete_draft_candidates():
 
 	for dc in dcs:
 		if frappe.db.exists("Bench", {"candidate": dc}):
-			frappe.db.set_value(
-				"Deploy Candidate", dc, "status", "Success", update_modified=False
-			)
+			frappe.db.set_value("Deploy Candidate", dc, "status", "Success", update_modified=False)
 			frappe.db.commit()
 			continue
-		else:
-			try:
-				frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
-				frappe.db.commit()
-			except Exception:
-				log_error(
-					"Draft Deploy Candidate Deletion Error",
-					reference_doctype="Deploy Candidate",
-					reference_name=dc,
-				)
-				frappe.db.rollback()
+		try:
+			frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
+			frappe.db.commit()
+		except Exception:
+			log_error(
+				"Draft Deploy Candidate Deletion Error",
+				reference_doctype="Deploy Candidate",
+				reference_name=dc,
+			)
+			frappe.db.rollback()
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Deploy Candidate"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Deploy Candidate")
 
 
 @frappe.whitelist()
@@ -1665,7 +1760,7 @@ def run_scheduled_builds(max_builds: int = 5):
 		limit=max_builds,
 	)
 	for dc in dcs:
-		doc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc)
+		doc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc)
 		try:
 			doc.run_scheduled_build_and_deploy()
 			frappe.db.commit()
@@ -1712,8 +1807,8 @@ STEP_SLUG_MAP = {
 
 
 def get_build_stage_and_step(
-	stage_slug: str, step_slug: str, app_titles: dict[str, str] = None
-) -> Tuple[str, str]:
+	stage_slug: str, step_slug: str, app_titles: dict[str, str] | None = None
+) -> tuple[str, str]:
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug
 	if stage_slug == "clone" or stage_slug == "apps":
@@ -1726,7 +1821,7 @@ def get_build_stage_and_step(
 def get_remote_step_output(
 	step_name: Literal["build", "push"],
 	output_data: dict,
-	response_data: Optional[dict],
+	response_data: dict | None,
 ):
 	if output := output_data.get(step_name):
 		return output
@@ -1740,23 +1835,15 @@ def get_remote_step_output(
 			continue
 
 		commands = step.get("commands", [])
-		if (
-			not isinstance(commands, list)
-			or len(commands) == 0
-			or not isinstance(commands[0], dict)
-		):
+		if not isinstance(commands, list) or len(commands) == 0 or not isinstance(commands[0], dict):
 			continue
 
 		output = commands[0].get("output")
 		if not isinstance(output, str):
 			continue
 
-		try:
+		with contextlib.suppress(AttributeError, json.JSONDecodeError):
 			return json.loads(output).get(step_name, [])
-		except AttributeError:
-			continue
-		except json.JSONDecodeError:
-			continue
 
 	return None
 
@@ -1766,7 +1853,7 @@ def is_build_job(job: Job) -> bool:
 	return doc_method.startswith("_build")
 
 
-def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
+def get_duration(start_time: datetime, end_time: datetime | None = None):
 	end_time = end_time or now()
 	seconds_elapsed = (end_time - start_time).total_seconds()
 	value = rounded(seconds_elapsed, 3)
@@ -1813,7 +1900,7 @@ def fail_or_retry_stuck_builds(
 	)
 
 	for (name,) in result:
-		dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", name)
+		dc: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
 		dc.manually_failed = True
 		dc._stop_and_fail(False)
 		if can_retry_build(dc.name, dc.group, dc.build_start):
@@ -1866,7 +1953,7 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 
 
 def correct_status(dc_name: str):
-	dc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc_name)
+	dc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc_name)
 	found_failed = False
 	for bs in dc.build_steps:
 		if bs.status == "Failure":

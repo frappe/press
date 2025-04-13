@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "hash",
  "creation": "2024-05-13 11:44:03.637522",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -9,6 +10,7 @@
   "column_break_qnnn",
   "team",
   "section_break_yvqq",
+  "admin_access",
   "allow_billing",
   "allow_apps",
   "allow_partner",
@@ -16,6 +18,7 @@
   "allow_site_creation",
   "allow_bench_creation",
   "allow_server_creation",
+  "allow_webhook_configuration",
   "section_break_zdiv",
   "users"
  ],
@@ -92,14 +95,27 @@
    "fieldname": "allow_partner",
    "fieldtype": "Check",
    "label": "Allow Partner"
+  },
+  {
+   "default": "0",
+   "fieldname": "admin_access",
+   "fieldtype": "Check",
+   "label": "Admin Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_webhook_configuration",
+   "fieldtype": "Check",
+   "label": "Allow Webhook Configuration"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-13 14:15:20.587705",
+ "modified": "2024-09-26 15:51:19.122128",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {

@@ -1,39 +1,44 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import re
+import socket
+import ssl
 import time
 from datetime import datetime, timedelta
+from functools import wraps
 from pathlib import Path
-from typing import Union
-from typing import Optional, TypedDict, TypeVar
+from typing import TypedDict, TypeVar
 from urllib.parse import urljoin
+from urllib.request import urlopen
 
-from babel.dates import format_timedelta
 import frappe
 import pytz
 import requests
 import wrapt
+from babel.dates import format_timedelta
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
-from pymysql.err import InterfaceError
 
-SupervisorProcess = TypedDict(
-	"SupervisorProcess",
-	{
-		"program": str,  # group and name
-		"name": str,
-		"status": str,
-		"uptime": Optional[float],  # in seconds
-		"uptime_string": Optional[str],
-		"message": Optional[str],  # when not running
-		"group": Optional[str],
-		"pid": Optional[int],
-	},
-)
+from press.utils.email_validator import validate_email
+
+
+class SupervisorProcess(TypedDict):
+	program: str
+	name: str
+	status: str
+	uptime: float | None
+	uptime_string: str | None
+	message: str | None
+	group: str | None
+	pid: int | None
 
 
 def log_error(title, **kwargs):
@@ -59,11 +64,9 @@ def log_error(title, **kwargs):
 		reference_name = doc.name
 		del kwargs["doc"]
 
-	try:
+	with contextlib.suppress(Exception):
 		kwargs["user"] = frappe.session.user
 		kwargs["team"] = frappe.local.team()
-	except Exception:
-		pass
 
 	message = ""
 	if serialized := json.dumps(
@@ -78,15 +81,13 @@ def log_error(title, **kwargs):
 	if traceback := frappe.get_traceback(with_context=True):
 		message += f"Exception:\n{traceback}\n"
 
-	try:
+	with contextlib.suppress(Exception):
 		frappe.log_error(
 			title=title,
 			message=message,
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
-	except Exception:
-		pass
 
 
 def get_current_team(get_doc=False):
@@ -112,21 +113,14 @@ def get_current_team(get_doc=False):
 	system_user = frappe.session.data.user_type == "System User"
 
 	# get team passed via request header
-	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		# check if `team_name` is available in frappe.local
-		# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
-		team = getattr(frappe.local, "team_name", "")
+	x_press_team = frappe.get_request_header("X-Press-Team")
+	# In case if X-Press-Team is not passed, check if `team_name` is available in frappe.local
+	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
+	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	user_is_press_admin = frappe.db.exists(
-		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
-	)
+	user_is_press_admin = frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": "Press Admin"})
 
-	if (
-		not team
-		and user_is_press_admin
-		and frappe.db.exists("Team", {"user": frappe.session.user})
-	):
+	if not team and user_is_press_admin and frappe.db.exists("Team", {"user": frappe.session.user}):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
@@ -134,9 +128,8 @@ def get_current_team(get_doc=False):
 			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
 		)
 
-	if not team:
-		# if team is not passed via header, get the default team for user
-		team = get_default_team_for_user(frappe.session.user)
+	# if team is not passed via header, get the default team for user
+	team = team if team else get_default_team_for_user(frappe.session.user)
 
 	if not system_user and not is_user_part_of_team(frappe.session.user, team):
 		# if user is not part of the team, get the default team for user
@@ -164,18 +157,14 @@ def _get_current_team():
 
 
 def _system_user():
-	return (
-		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
-	)
+	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
 
 def has_role(role, user=None):
 	if not user:
 		user = frappe.session.user
 
-	return frappe.db.exists(
-		"Has Role", {"parenttype": "User", "parent": user, "role": role}
-	)
+	return frappe.db.exists("Has Role", {"parenttype": "User", "parent": user, "role": role})
 
 
 @functools.lru_cache(maxsize=1024)
@@ -202,21 +191,17 @@ def get_default_team_for_user(user):
 		# if user is part of multiple teams, send the first enabled one
 		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
 			return team
+	return None
 
 
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
-	valid_teams = frappe.db.get_all(
-		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
-	)
-	return valid_teams
+	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
 def is_user_part_of_team(user, team):
 	"""Returns True if user is part of the team"""
-	return frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": user}
-	)
+	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
 
 
 def get_country_info():
@@ -302,21 +287,21 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 def chunk(iterable, size):
 	"""Creates list of elements split into groups of n."""
 	for i in range(0, len(iterable), size):
-		yield iterable[i : i + size]  # noqa
+		yield iterable[i : i + size]
 
 
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	with open(migration_script) as f:
+		return f.read()
 
 
 @cache(seconds=1800)
 def get_minified_script_2():
 	migration_script = "../apps/press/press/scripts/migrate_2.py"
-	script_contents = open(migration_script).read()
-	return script_contents
+	with open(migration_script) as f:
+		return f.read()
 
 
 def get_frappe_backups(url, email, password):
@@ -382,7 +367,7 @@ class RemoteFrappeSite:
 
 	def _handle_backups_retrieval_failure(self, response):
 		log_error(
-			"Backups Retreival Error - Magic Migration",
+			"Backups Retrieval Error - Magic Migration",
 			response=response.text,
 			remote_site=self.site,
 		)
@@ -392,7 +377,7 @@ class RemoteFrappeSite:
 			side = "Client" if 400 <= response.status_code < 500 else "Server"
 			error_msg = (
 				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
-				f" recieved from {self.site}"
+				f" received from {self.site}"
 			)
 		frappe.throw(error_msg)
 
@@ -425,8 +410,7 @@ class RemoteFrappeSite:
 		if missing_files:
 			missing_config = "site config and " if not self.backup_links.get("config") else ""
 			missing_backups = (
-				f"Missing {missing_config}backup files:"
-				f" {', '.join([x.title() for x in missing_files])}"
+				f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
 			)
 			frappe.throw(missing_backups)
 
@@ -484,8 +468,9 @@ def is_json(string):
 	if isinstance(string, str):
 		string = string.strip()
 		return string.startswith("{") and string.endswith("}")
-	elif isinstance(string, (dict, list)):
+	if isinstance(string, (dict, list)):
 		return True
+	return None
 
 
 def guess_type(value):
@@ -501,10 +486,9 @@ def guess_type(value):
 
 	if value_type in type_dict:
 		return type_dict[value_type]
-	else:
-		if is_json(value):
-			return "JSON"
-		return "String"
+	if is_json(value):
+		return "JSON"
+	return "String"
 
 
 def convert(string):
@@ -615,9 +599,11 @@ def reconnect_on_failure():
 	def wrapper(wrapped, instance, args, kwargs):
 		try:
 			return wrapped(*args, **kwargs)
-		except InterfaceError:
-			frappe.db.connect()
-			return wrapped(*args, **kwargs)
+		except Exception as e:
+			if frappe.db.is_interface_error(e):
+				frappe.db.connect()
+				return wrapped(*args, **kwargs)
+			raise
 
 	return wrapper
 
@@ -685,9 +671,9 @@ def parse_supervisor_status(output: str) -> list["SupervisorProcess"]:
 	return parsed
 
 
-def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
-	pid: Optional[int] = None
-	uptime: Optional[float] = None
+def parse_pid_uptime(s: str) -> tuple[int | None, float | None]:
+	pid: int | None = None
+	uptime: float | None = None
 	splits = strip_split(s, ",", maxsplit=1)
 
 	if len(splits) != 2:
@@ -714,7 +700,7 @@ def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
 	return pid, uptime, uptime_string
 
 
-def parse_uptime(s: str) -> Optional[float]:
+def parse_uptime(s: str) -> float | None:
 	# example `s`: "uptime 68 days, 6:10:37"
 	days = 0
 	hours = 0
@@ -793,9 +779,10 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+	return None
 
 
-def fmt_timedelta(td: Union[timedelta, int]):
+def fmt_timedelta(td: timedelta | int):
 	locale = frappe.local.lang.replace("-", "_") if frappe.local.lang else None
 	return format_timedelta(td, locale=locale)
 
@@ -805,3 +792,135 @@ V = TypeVar("V")
 
 def flatten(value_lists: "list[list[V]]") -> "list[V]":
 	return [value for values in value_lists for value in values]
+
+
+def is_valid_hostname(hostname):
+	if len(hostname) > 255:
+		return False
+	allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+	return all(allowed.match(x) for x in hostname.split("."))
+
+
+def mask_email(email: str, percentage: float) -> str:
+	"""
+	Mask email address with 'x'
+
+	Example:
+	> mask_email("tanmoysarkar@gmail.com", 50)
+	> tanxxxxxxkar@gmxxxxcom
+
+	> mask_email("tanmoysarkar@gmail.com", 30)
+	> tanmxxxarkar@gmaxx.com
+	"""
+	if "@" not in email:
+		return "Invalid email address"
+
+	local_part, domain = email.split("@")
+
+	local_mask_length = int(len(local_part) * (percentage / 100))
+	domain_mask_length = int(len(domain) * (percentage / 100))
+
+	def mask_middle(s: str, mask_len: int) -> str:
+		if mask_len == 0:
+			return s
+		start_idx = (len(s) - mask_len) // 2
+		end_idx = start_idx + mask_len
+		return s[:start_idx] + "x" * mask_len + s[end_idx:]
+
+	masked_local_part = mask_middle(local_part, local_mask_length)
+	masked_domain = mask_middle(domain, domain_mask_length)
+
+	return masked_local_part + "@" + masked_domain
+
+
+def get_mariadb_root_password(site):
+	from frappe.utils.password import get_decrypted_password
+
+	database_server, managed_database_service = frappe.get_cached_value(
+		"Bench", site.bench, ["database_server", "managed_database_service"]
+	)
+
+	if managed_database_service:
+		doctype = "Managed Database Service"
+		name = managed_database_service
+		field = "root_user_password"
+	else:
+		doctype = "Database Server"
+		name = database_server
+		field = "mariadb_root_password"
+
+	return get_decrypted_password(doctype, name, field)
+
+
+def is_valid_email_address(email) -> bool:
+	if frappe.cache.exists(f"email_validity:{email}"):
+		return bool(frappe.utils.data.cint(frappe.cache.get_value(f"email_validity:{email}")))
+	try:
+		is_valid = bool(validate_email(email=email, check_mx=True, verify=True, smtp_timeout=10))
+		frappe.cache.set_value(f"email_validity:{email}", int(is_valid), expires_in_sec=3600)
+		if not is_valid:
+			log_error("Invalid email address on signup", data=email)
+		return bool(is_valid)
+	except Exception as e:
+		log_error("Email validation error on signup", data=e)
+		frappe.cache.set_value(f"email_validity:{email}", 0, expires_in_sec=3600)
+		return False
+
+
+def get_full_chain_cert_of_domain(domain: str) -> str:
+	cert_chain = []
+
+	# Get initial certificate
+	context = ssl.create_default_context()
+	with socket.create_connection((domain, 443)) as sock:  # noqa: SIM117
+		with context.wrap_socket(sock, server_hostname=domain) as ssl_socket:
+			cert_pem = ssl.DER_cert_to_PEM_cert(ssl_socket.getpeercert(True))
+			cert = x509.load_pem_x509_certificate(cert_pem.encode(), default_backend())
+			cert_chain.append(cert_pem)
+
+	# Walk up the chain via certificate authority information access (AIA)
+	while True:
+		try:
+			aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+			for access in aia.value:
+				if access.access_method._name == "caIssuers":
+					uri = access.access_location._value
+					with urlopen(uri) as response:
+						der_cert = response.read()
+						pem_cert = ssl.DER_cert_to_PEM_cert(der_cert)
+						cert = x509.load_pem_x509_certificate(pem_cert.encode(), default_backend())
+						cert_chain.append(pem_cert)
+						break
+		except:  # noqa: E722
+			break
+
+	cert_chain_str = ""
+	for cert in cert_chain:
+		cert_chain_str += cert + "\n"
+	return cert_chain_str
+
+
+def timer(f):
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		start_timestamp = time.time()
+		result = f(*args, **kwargs)
+		end_timestamp = time.time()
+		duration = end_timestamp - start_timestamp
+		if not hasattr(frappe.local, "timers"):
+			frappe.local.timers = {}
+		frappe.local.timers[f.__name__] = frappe.utils.rounded(duration, precision=3)
+		return result
+
+	return wrap
+
+
+def validate_subdomain(subdomain: str):
+	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+	if not re.match(site_regex, subdomain):
+		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+	if len(subdomain) > 32:
+		frappe.throw("Subdomain too long. Use 32 or less characters")
+
+	if len(subdomain) < 5:
+		frappe.throw("Subdomain too short. Use 5 or more characters")

@@ -43,24 +43,42 @@ frappe.ui.form.on('Invoice', {
 		}
 
 		if (frm.doc.status == 'Paid' && frm.doc.stripe_invoice_id) {
-			let btn = frm.add_custom_button('Refund Invoice', () =>
-				frappe.confirm(
-					'This will refund the total amount paid on this invoice from Stripe. Continue?',
-					() =>
-						frm
+			frm.add_custom_button('Refund Invoice', () => {
+				let d = new frappe.ui.Dialog({
+					title: 'Refund Invoice',
+					fields: [
+						{
+							label: 'Reason',
+							fieldname: 'reason',
+							fieldtype: 'Data',
+						},
+					],
+					primary_action({ reason }) {
+						if (!reason) {
+							frappe.msgprint('Please enter a reason for the refund.');
+							return;
+						}
+						d.hide();
+						frappe
 							.call({
 								doc: frm.doc,
 								method: 'refund',
-								btn,
+								args: {
+									reason,
+								},
+								btn: d.get_primary_btn(),
 							})
 							.then((r) => {
 								if (r.message) {
-									frappe.msgprint(`Refunded successfully.`);
+									frappe.msgprint('Refunded successfully.');
+									d.hide();
 								}
 								frm.refresh();
-							}),
-				),
-			);
+							});
+					},
+				});
+				d.show();
+			});
 		}
 
 		if (frm.doc.status == 'Invoice Created') {

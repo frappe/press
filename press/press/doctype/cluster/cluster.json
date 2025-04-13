@@ -64,7 +64,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -319,7 +319,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-03-14 18:20:04.856430",
+ "modified": "2024-09-14 13:52:58.308402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

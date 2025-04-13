@@ -112,7 +112,7 @@ export default {
 				},
 				{
 					label: 'Benches',
-					route: '/benches',
+					route: '/groups',
 					highlight: () => {
 						return this.$route.fullPath.endsWith('/sites');
 					}

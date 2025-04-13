@@ -1,5 +1,14 @@
 <template>
 	<div>
+		<div class="flex justify-end mb-3">
+			<Button
+				icon-left="download"
+				class="shrink-0"
+				@click="$resources.downloadInvoiceAsCSV.submit"
+			>
+				<span class="text-sm">Download as CSV</span>
+			</Button>
+		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
 				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
@@ -34,9 +43,12 @@
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
 								{{
-									['Site', 'Release Group', 'Server'].includes(
-										row.document_type
-									)
+									[
+										'Site',
+										'Release Group',
+										'Server',
+										'Database Server',
+									].includes(row.document_type)
 										? $format.plural(row.quantity, 'day', 'days')
 										: ''
 								}}
@@ -66,9 +78,9 @@
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								doc.partner_email && doc.partner_email != $team.doc.user
-									? formatCurrency(0)
-									: formatCurrency(doc.total_discount_amount)
+								$team.doc.erpnext_partner
+									? formatCurrency(doc.total_discount_amount)
+									: formatCurrency(0)
 							}}
 						</td>
 					</tr>
@@ -97,11 +109,7 @@
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{
-								doc.partner_email && doc.partner_email != $team.doc.user
-									? formatCurrency(doc.total_before_discount)
-									: formatCurrency(doc.total + doc.gst)
-							}}
+							{{ formatCurrency(doc.total + doc.gst) }}
 						</td>
 					</tr>
 					<template
@@ -146,9 +154,23 @@ export default {
 			return {
 				type: 'document',
 				doctype: 'Invoice',
-				name: this.invoiceId
+				name: this.invoiceId,
 			};
-		}
+		},
+		downloadInvoiceAsCSV() {
+			return {
+				url: 'press.api.billing.fetch_invoice_items',
+				makeParams() {
+					return {
+						invoice: this.invoiceId,
+					};
+				},
+				onSuccess(data) {
+					const filename = `${this.invoiceId}.csv`;
+					this.downloadAsCSV(data, filename);
+				},
+			};
+		},
 	},
 	computed: {
 		groupedLineItems() {
@@ -166,15 +188,15 @@ export default {
 		},
 		gstPercentage() {
 			return this.$team.doc.billing_info.gst_percentage;
-		}
+		},
 	},
 	methods: {
 		formatPlan(plan) {
-			let planDoc = getPlans().find(p => p.name === plan);
+			let planDoc = getPlans().find((p) => p.name === plan);
 			if (planDoc) {
 				let india = this.$team.doc.currency === 'INR';
 				return this.$format.userCurrency(
-					india ? planDoc.price_inr : planDoc.price_usd
+					india ? planDoc.price_inr : planDoc.price_usd,
 				);
 			}
 			return plan;
@@ -183,7 +205,23 @@ export default {
 			if (!this.doc) return;
 			let currency = this.doc.currency;
 			return this.$format.currency(value, currency);
-		}
-	}
+		},
+		downloadAsCSV(data, filename) {
+			if (!data || data.length === 0) return;
+			let result = [];
+			result[0] = Object.keys(data[0]);
+			data.forEach((row) => {
+				result.push(Object.values(row));
+			});
+			const csv = result.map((row) => Object.values(row).join(',')).join('\n');
+			const blob = new Blob([csv], { type: 'text/csv' });
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			window.URL.revokeObjectURL(url);
+		},
+	},
 };
 </script>

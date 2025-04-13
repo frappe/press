@@ -4,7 +4,7 @@
 frappe.ui.form.on('Deploy Candidate', {
 	refresh: function (frm) {
 		frm.add_web_link(
-			`/dashboard/benches/${frm.doc.group}/deploys/${frm.doc.name}`,
+			`/dashboard/groups/${frm.doc.group}/deploys/${frm.doc.name}`,
 			'Visit Dashboard',
 		);
 
@@ -14,6 +14,10 @@ frappe.ui.form.on('Deploy Candidate', {
 				filters: { release_group: doc.group },
 			};
 		};
+
+		if (frm.doc.status === 'Success') {
+			set_handler(frm, 'Deploy', 'deploy', {}, 'Deploy');
+		}
 
 		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
 			set_handler(
@@ -105,6 +109,19 @@ function get_handler(frm, method, args) {
 					`<a href="/app/deploy-candidate/${data?.message}">Deploy Candidate</a>`,
 				]),
 			});
+		}
+
+		if (method === 'deploy' && data) {
+			frappe.msgprint({
+				title: 'Deploy Created',
+				indicator: 'green',
+				message: __(
+					`{0} been created (or found) from current Deploy Candidate`,
+					[`<a href="/app/deploy/${data}">Deploy</a>`],
+				),
+			});
+		} else if (method === 'deploy' && !data) {
+			frappe.msgprint({ title: 'Deploy could not be created' });
 		}
 
 		frm.refresh();

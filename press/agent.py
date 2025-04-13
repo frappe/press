@@ -1,24 +1,32 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-from contextlib import suppress
-import _io
+from __future__ import annotations
+
+import _io  # type: ignore
 import json
 import os
+from contextlib import suppress
 from datetime import date
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 import requests
 from frappe.utils.password import get_decrypted_password
+from requests.exceptions import HTTPError
 
-from press.utils import log_error, sanitize_config
+from press.utils import get_mariadb_root_password, log_error, sanitize_config
 
 if TYPE_CHECKING:
 	from io import BufferedReader
 
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+		PhysicalBackupRestoration,
+	)
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 
 
 class Agent:
@@ -27,7 +35,7 @@ class Agent:
 
 		from requests import Response
 
-		response: "Optional[Response]"
+		response: Response | None
 
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
@@ -66,9 +74,7 @@ class Agent:
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
-		return self.create_agent_job(
-			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
-		)
+		return self.create_agent_job("Archive Bench", f"benches/{bench.name}/archive", bench=bench.name)
 
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
@@ -94,26 +100,8 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
-	def _get_mariadb_root_password(self, site):
-		database_server, managed_database_service = frappe.get_cached_value(
-			"Bench", site.bench, ["database_server", "managed_database_service"]
-		)
-
-		if database_server:
-			doctype = "Database Server"
-			name = database_server
-			field = "mariadb_root_password"
-		else:
-			doctype = "Managed Database Service"
-			name = managed_database_service
-			field = "root_user_password"
-
-		return get_decrypted_password(doctype, name, field)
-
 	def _get_managed_db_config(self, site):
-		managed_database_service = frappe.get_cached_value(
-			"Bench", site.bench, "managed_database_service"
-		)
+		managed_database_service = frappe.get_cached_value("Bench", site.bench, "managed_database_service")
 
 		if not managed_database_service:
 			return {}
@@ -122,17 +110,17 @@ class Agent:
 			"Managed Database Service",
 			managed_database_service,
 			["database_host", "database_root_user", "port"],
-			as_dict=1,
+			as_dict=True,
 		)
 
-	def new_site(self, site, create_user: dict = None):
+	def new_site(self, site, create_user: dict | None = None):
 		apps = [app.app for app in site.apps]
 
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -146,7 +134,7 @@ class Agent:
 
 	def reinstall_site(self, site):
 		data = {
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database_config": self._get_managed_db_config(site),
 		}
@@ -170,7 +158,7 @@ class Agent:
 
 		data = {
 			"apps": apps,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
@@ -187,9 +175,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(
-		self, site, new_name: str, create_user: dict = None, config: dict = None
-	):
+	def rename_site(self, site, new_name: str, create_user: dict | None = None, config: dict | None = None):
 		data = {"new_name": new_name}
 		if create_user:
 			data["create_user"] = create_user
@@ -235,7 +221,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
+	def rename_upstream_site(self, server: str, site, new_name: str, domains: list[str]):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"new_name": new_name, "domains": domains}
@@ -277,7 +263,7 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": self._get_mariadb_root_password(site),
+			"mariadb_root_password": get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
@@ -343,6 +329,26 @@ class Agent:
 			site=site.name,
 		)
 
+	def activate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Activate Site",
+			f"benches/{site.bench}/sites/{site.name}/activate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
+	def deactivate_site(self, site, reference_doctype=None, reference_name=None):
+		return self.create_agent_job(
+			"Deactivate Site",
+			f"benches/{site.bench}/sites/{site.name}/deactivate",
+			bench=site.bench,
+			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+
 	def update_site(
 		self,
 		site,
@@ -382,9 +388,20 @@ class Agent:
 		)
 
 	def update_site_recover_move(
-		self, site, target, deploy_type, activate, rollback_scripts=None
+		self,
+		site,
+		target,
+		deploy_type,
+		activate,
+		rollback_scripts=None,
+		restore_touched_tables=True,
 	):
-		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
+		data = {
+			"target": target,
+			"activate": activate,
+			"rollback_scripts": rollback_scripts,
+			"restore_touched_tables": restore_touched_tables,
+		}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
@@ -441,27 +458,77 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site, with_files=False, offsite=False):
+	def physical_backup_database(self, site: Site, site_backup: SiteBackup):
+		"""
+		For physical database backup, the flow :
+		- Create the agent job
+		- Agent job will lock the specific database + flush the changes to disk
+		- Take a database dump
+		- Use `fsync` to ensure the changes are written to disk
+		- Agent will send back a request to FC for taking the snapshot
+			- By calling `snapshot_create_callback` url
+		- Then, unlock the database
+		"""
+		press_public_base_url = frappe.utils.get_url()
+		data = {
+			"databases": [site_backup.database_name],
+			"mariadb_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"site_backup": {
+				"name": site_backup.name,
+				"snapshot_request_key": site_backup.snapshot_request_key,
+				"snapshot_trigger_url": f"{press_public_base_url}/api/method/press.api.site_backup.create_snapshot",
+			},
+		}
+		return self.create_agent_job(
+			"Physical Backup Database",
+			"/database/physical-backup",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def physical_restore_database(self, site, backup_restoration: PhysicalBackupRestoration):
+		data = {
+			"backup_db": backup_restoration.source_database,
+			"target_db": backup_restoration.destination_database,
+			"target_db_root_password": get_mariadb_root_password(site),
+			"private_ip": frappe.get_value(
+				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
+			),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"restore_specific_tables": backup_restoration.restore_specific_tables,
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+		}
+		return self.create_agent_job(
+			"Physical Restore Database",
+			"/database/physical-restore",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+			reference_name=backup_restoration.name,
+			reference_doctype=backup_restoration.doctype,
+		)
+
+	def backup_site(self, site, site_backup: SiteBackup):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
-		data = {"with_files": with_files}
+		data = {"with_files": site_backup.with_files}
 
-		if offsite:
+		if site_backup.offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
 			backup_bucket = get_backup_bucket(site.cluster, region=True)
-			bucket_name = (
-				backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-			)
+			bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
 			if settings.aws_s3_bucket or bucket_name:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
 					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
 					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
 				}
-				data.update(
-					{"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}}
-				)
+				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
 
 			else:
 				log_error("Offsite Backups aren't set yet")
@@ -512,17 +579,13 @@ class Agent:
 		)
 
 	def setup_wildcard_hosts(self, wildcards):
-		return self.create_agent_job(
-			"Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards
-		)
+		return self.create_agent_job("Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards)
 
-	def setup_redirects(self, site: str, domains: List[str], target: str):
+	def setup_redirects(self, site: str, domains: list[str], target: str):
 		data = {"domains": domains, "target": target}
-		return self.create_agent_job(
-			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site
-		)
+		return self.create_agent_job("Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site)
 
-	def remove_redirects(self, site: str, domains: List[str]):
+	def remove_redirects(self, site: str, domains: list[str]):
 		data = {"domains": domains}
 		return self.create_agent_job(
 			"Remove Redirects on Hosts",
@@ -544,16 +607,12 @@ class Agent:
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": ip}
-		return self.create_agent_job(
-			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
-		)
+		return self.create_agent_job("Add Upstream to Proxy", "proxy/upstreams", data, upstream=server)
 
 	def update_upstream_private_ip(self, server):
 		ip, private_ip = frappe.db.get_value("Server", server, ["ip", "private_ip"])
 		data = {"name": private_ip}
-		return self.create_agent_job(
-			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
-		)
+		return self.create_agent_job("Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server)
 
 	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
@@ -569,9 +628,19 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(
-		self, server, site=None, site_name=None, code_server=None, skip_reload=False
-	):
+	def add_domain_to_upstream(self, server, site=None, domain=None):
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"domain": domain}
+		return self.create_agent_job(
+			"Add Domain to Upstream",
+			f"proxy/upstreams/{ip}/domains",
+			data,
+			site=site,
+			upstream=server,
+		)
+
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None, skip_reload=False):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
@@ -639,15 +708,31 @@ class Agent:
 			upstream=bench.server,
 		)
 
-	def add_proxysql_user(self, site, database, username, password, database_server):
+	def add_proxysql_user(
+		self,
+		site,
+		database: str,
+		username: str,
+		password: str,
+		max_connections: int,
+		database_server,
+		reference_doctype=None,
+		reference_name=None,
+	):
 		data = {
 			"username": username,
 			"password": password,
 			"database": database,
+			"max_connections": max_connections,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
 		return self.create_agent_job(
-			"Add User to ProxySQL", "proxysql/users", data, site=site.name
+			"Add User to ProxySQL",
+			"proxysql/users",
+			data,
+			site=site.name,
+			reference_name=reference_name,
+			reference_doctype=reference_doctype,
 		)
 
 	def add_proxysql_backend(self, database_server):
@@ -656,12 +741,14 @@ class Agent:
 		}
 		return self.create_agent_job("Add Backend to ProxySQL", "proxysql/backends", data)
 
-	def remove_proxysql_user(self, site, username):
+	def remove_proxysql_user(self, site, username, reference_doctype=None, reference_name=None):
 		return self.create_agent_job(
 			"Remove User from ProxySQL",
 			f"proxysql/users/{username}",
 			method="DELETE",
 			site=site.name,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
 		)
 
 	def create_database_access_credentials(self, site, mode):
@@ -672,10 +759,7 @@ class Agent:
 				"Database Server", database_server, "mariadb_root_password"
 			),
 		}
-		credentials = self.post(
-			f"benches/{site.bench}/sites/{site.name}/credentials", data=data
-		)
-		return credentials
+		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials", data=data)
 
 	def revoke_database_access_credentials(self, site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
@@ -685,8 +769,60 @@ class Agent:
 				"Database Server", database_server, "mariadb_root_password"
 			),
 		}
-		return self.post(
-			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
+		return self.post(f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data)
+
+	def create_database_user(self, site, username, password, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"username": username,
+			"password": password,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Create Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users",
+			data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def remove_database_user(self, site, username, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			)
+		}
+		return self.create_agent_job(
+			"Remove Database User",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}",
+			method="DELETE",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
+		)
+
+	def modify_database_user_permissions(self, site, username, mode, permissions: dict, reference_name):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mode": mode,
+			"permissions": permissions,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.create_agent_job(
+			"Modify Database User Permissions",
+			f"benches/{site.bench}/sites/{site.name}/database/users/{username}/permissions",
+			method="POST",
+			data=data,
+			site=site.name,
+			reference_doctype="Site Database User",
+			reference_name=reference_name,
 		)
 
 	def update_site_status(self, server, site, status, skip_reload=False):
@@ -713,81 +849,67 @@ class Agent:
 	def post(self, path, data=None, raises=True):
 		return self.request("POST", path, data, raises=raises)
 
+	def _make_req(self, method, path, data, files, agent_job_id):
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
+		url = f"https://{self.server}:{self.port}/agent/{path}"
+		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
+		if frappe.conf.developer_mode and intermediate_ca:
+			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
+			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
+		else:
+			verify = True
+		if files:
+			file_objects = {
+				key: value
+				if isinstance(value, _io.BufferedReader)
+				else frappe.get_doc("File", {"file_url": url}).get_content()
+				for key, value in files.items()
+			}
+			file_objects["json"] = json.dumps(data).encode()
+			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
+		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
+
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
-		self.response = None
-		agent_job_id = agent_job.name if agent_job else None
-		headers = None
-		url = None
-
+		response = json_response = None
 		try:
-			url = f"https://{self.server}:{self.port}/agent/{path}"
-			password = get_decrypted_password(self.server_type, self.server, "agent_password")
-			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-			intermediate_ca = frappe.db.get_value(
-				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			agent_job_id = agent_job.name if agent_job else None
+			response = self._make_req(method, path, data, files, agent_job_id)
+			json_response = response.json()
+			if raises and response.status_code >= 400:
+				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
+				if output == "\n\n":
+					output = json.dumps(json_response, indent=2, sort_keys=True)
+				raise HTTPError(
+					f"{response.status_code} {response.reason}\n\n{output}",
+					response=response,
+				)
+			return json_response
+		except (HTTPError, TypeError, ValueError):
+			self.handle_request_failure(agent_job, response)
+			log_error(
+				title="Agent Request Result Exception",
+				result=json_response or getattr(response, "text", None),
 			)
-			if frappe.conf.developer_mode and intermediate_ca:
-				root_ca = frappe.db.get_value(
-					"Certificate Authority", intermediate_ca, "parent_authority"
-				)
-				verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-			else:
-				verify = True
-			if files:
-				file_objects = {
-					key: value
-					if isinstance(value, _io.BufferedReader)
-					else frappe.get_doc("File", {"file_url": url}).get_content()
-					for key, value in files.items()
-				}
-				file_objects["json"] = json.dumps(data).encode()
-				self.response = requests.request(
-					method, url, headers=headers, files=file_objects, verify=verify
-				)
-			else:
-				self.response = requests.request(
-					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
-				)
-			json_response = None
-			try:
-				json_response = self.response.json()
-				if raises:
-					self.response.raise_for_status()
-				return json_response
-			except Exception:
-				self.handle_request_failure(agent_job, self.response)
+		except requests.JSONDecodeError as exc:
+			if response and response.status_code >= 500:
+				self.log_request_failure(exc)
+				self.handle_exception(agent_job, exc)
 				log_error(
-					title="Agent Request Result Exception",
-					method=method,
-					url=url,
-					data=data,
-					files=files,
-					headers=headers,
-					result=json_response or self.response.text,
-					doc=agent_job,
+					title="Agent Request Exception",
 				)
 		except Exception as exc:
-			self.handle_exception(agent_job, exc)
 			self.log_request_failure(exc)
+			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
-				method=method,
-				url=url,
-				data=data,
-				files=files,
-				headers=headers,
-				doc=agent_job,
 			)
 
 	def raise_if_past_requests_have_failed(self):
-		failures = frappe.db.get_value(
-			"Agent Request Failure", {"server": self.server}, "failure_count"
-		)
+		failures = frappe.db.get_value("Agent Request Failure", {"server": self.server}, "failure_count")
 		if failures:
-			raise AgentRequestSkippedException(
-				f"Previous {failures} requests have failed. Try again later."
-			)
+			raise AgentRequestSkippedException(f"Previous {failures} requests have failed. Try again later.")
 
 	def log_request_failure(self, exc):
 		filters = {
@@ -826,27 +948,27 @@ class Agent:
 	def should_skip_requests(self):
 		return bool(frappe.db.count("Agent Request Failure", {"server": self.server}))
 
-	def handle_request_failure(self, agent_job, result: "Response"):
+	def handle_request_failure(self, agent_job, result: Response | None):
 		if not agent_job:
-			return
+			raise
 
-		reason = None
+		reason = status_code = None
 		with suppress(TypeError, ValueError):
-			reason = json.dumps(result.json(), indent=4, sort_keys=True)
+			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {getattr(result, 'status_code', 'Unknown')}\n
-Response: {reason or getattr(result, 'text', 'Unknown')}
+Status Code: {status_code or "Unknown"}\n
+Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
-		agent_job.flags.status_code = result.status_code
+		agent_job.flags.status_code = status_code
 
 	def handle_exception(self, agent_job, exception):
 		self.log_failure_reason(agent_job, exception)
 
 	def log_failure_reason(self, agent_job=None, message=None):
 		if not agent_job:
-			return
+			raise
 
 		agent_job.traceback = message
 		agent_job.output = message
@@ -868,7 +990,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 	):
 		"""
 		Check if job already exists in Undelivered, Pending, Running state
-		don't add new job until its gets comleted
+		don't add new job until its gets completed
 		"""
 
 		disable_agent_job_deduplication = frappe.db.get_single_value(
@@ -883,7 +1005,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 			if job:
 				return job
 
-		job = frappe.get_doc(
+		job: "AgentJob" = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"server_type": self.server_type,
@@ -948,12 +1070,13 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
-		status = self.post("monitor/rules", data=data)
-		return status
+		return self.post("monitor/rules", data=data)
 
 	def get_job_status(self, id):
-		status = self.get(f"jobs/{id}")
-		return status
+		return self.get(f"jobs/{id}")
+
+	def cancel_job(self, id):
+		return self.post(f"jobs/{id}/cancel")
 
 	def get_site_sid(self, site, user=None):
 		if user:
@@ -967,6 +1090,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
@@ -975,6 +1099,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		result = self.get(f"benches/{site.bench}/sites/{site.name}/analytics")
 		if result:
 			return result["data"]
+		return None
 
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
@@ -1016,16 +1141,16 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		return self.get("ping")["message"]
 
 	def fetch_monitor_data(self, bench):
-		data = self.post(f"benches/{bench}/monitor")["data"]
-		return data
+		return self.post(f"benches/{bench}/monitor")["data"]
 
 	def fetch_site_status(self, site):
-		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
-		return data
+		return self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
 
 	def fetch_bench_status(self, bench):
-		data = self.get(f"benches/{bench}/status")
-		return data
+		return self.get(f"benches/{bench}/status")
+
+	def get_snapshot(self, bench: str):
+		return self.get(f"process-snapshot/{bench}")
 
 	def run_after_migrate_steps(self, site):
 		data = {
@@ -1086,9 +1211,7 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		file: "BufferedReader",
 		dc_name: str,
 	) -> str | None:
-		if res := self.request(
-			"POST", f"builder/upload/{dc_name}", files={"build_context_file": file}
-		):
+		if res := self.request("POST", f"builder/upload/{dc_name}", files={"build_context_file": file}):
 			return res.get("filename")
 
 		return None
@@ -1138,10 +1261,85 @@ Response: {reason or getattr(result, 'text', 'Unknown')}
 		raw_apps_list = self.get(
 			f"benches/{site.bench}/sites/{site.name}/apps",
 		)
-		apps: list[str] = [
-			line.split()[0] for line in raw_apps_list["data"].splitlines() if line
-		]
+		apps: list[str] = [line.split()[0] for line in raw_apps_list["data"].splitlines() if line]
 		return apps
+
+	def fetch_database_table_schema(
+		self, site, include_table_size: bool = False, include_index_info: bool = False
+	):
+		return self.create_agent_job(
+			"Fetch Database Table Schema",
+			f"benches/{site.bench}/sites/{site.name}/database/schema",
+			bench=site.bench,
+			site=site.name,
+			data={
+				"include_table_size": include_table_size,
+				"include_index_info": include_index_info,
+			},
+			reference_doctype="Site",
+			reference_name=site.name,
+		)
+
+	def run_sql_query_in_database(self, site, query, commit):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/query/execute",
+			data={"query": query, "commit": commit, "as_dict": False},
+		)
+
+	def get_summarized_performance_report_of_database(self, site):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/performance-report",
+			data={"mariadb_root_password": get_mariadb_root_password(site)},
+		)
+
+	def analyze_slow_queries(self, site, normalized_queries: list[dict]):
+		"""
+		normalized_queries format:
+		[
+			{
+				"example": "",
+				"normalized" : "",
+			}
+		]
+		"""
+		return self.create_agent_job(
+			"Analyze Slow Queries",
+			f"benches/{site.bench}/sites/{site.name}/database/analyze-slow-queries",
+			data={
+				"queries": normalized_queries,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+			site=site.name,
+		)
+
+	def fetch_database_processes(self, site):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/processes",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def kill_database_process(self, site, id):
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
+			data={
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
+	def fetch_database_variables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("Only Database Server supports this method")
+		return self.post(
+			"database/variables",
+			data={
+				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
+				"mariadb_root_password": get_decrypted_password(
+					"Database Server", self.server, "mariadb_root_password"
+				),
+			},
+		)
 
 
 class AgentCallbackException(Exception):

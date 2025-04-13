@@ -33,7 +33,7 @@
 							:upload-args="{
 								doctype: 'Marketplace App',
 								docname: app.doc.name,
-								method: 'press.api.marketplace.update_app_image'
+								method: 'press.api.marketplace.update_app_image',
 							}"
 						>
 							<template
@@ -68,6 +68,7 @@
 								class="mt-4"
 								label="Documentation"
 								type="text"
+								@blur="validateLink('documentation')"
 								@input="editing = true"
 								v-model="marketplaceApp.documentation"
 							/>
@@ -75,6 +76,7 @@
 								class="mt-4"
 								label="Website"
 								type="text"
+								@blur="validateLink('website')"
 								@input="editing = true"
 								v-model="marketplaceApp.website"
 							/>
@@ -82,6 +84,7 @@
 								class="mt-4"
 								label="Support"
 								type="text"
+								@blur="validateLink('support')"
 								@input="editing = true"
 								v-model="marketplaceApp.support"
 							/>
@@ -89,6 +92,7 @@
 								class="mt-4"
 								label="Terms of Service"
 								type="text"
+								@blur="validateLink('terms_of_service')"
 								@input="editing = true"
 								v-model="marketplaceApp.terms_of_service"
 							/>
@@ -96,6 +100,7 @@
 								class="mt-4"
 								label="Privacy Policy"
 								type="text"
+								@blur="validateLink('privacy_policy')"
 								@input="editing = true"
 								v-model="marketplaceApp.privacy_policy"
 							/>
@@ -113,7 +118,7 @@
 							:upload-args="{
 								doctype: 'Marketplace App',
 								docname: app.name,
-								method: 'press.api.marketplace.add_app_screenshot'
+								method: 'press.api.marketplace.add_app_screenshot',
 							}"
 						>
 							<template
@@ -179,13 +184,14 @@
 import { TextEditor } from 'frappe-ui';
 import FileUploader from '@/components/FileUploader.vue';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../utils/toast';
 
 export default {
 	name: 'MarketplaceAppOverview',
 	props: ['app'],
 	components: {
 		FileUploader,
-		TextEditor
+		TextEditor,
 	},
 	data() {
 		return {
@@ -199,8 +205,8 @@ export default {
 				terms_of_service: '',
 				privacy_policy: '',
 				description: '',
-				long_description: ''
-			}
+				long_description: '',
+			},
 		};
 	},
 	resources: {
@@ -212,9 +218,9 @@ export default {
 						dt: 'Marketplace App',
 						dn: this.app.doc.name,
 						method: 'update_listing',
-						args: this.marketplaceApp
+						args: this.marketplaceApp,
 					};
-				}
+				},
 			};
 		},
 		listingData() {
@@ -224,7 +230,7 @@ export default {
 					return {
 						dt: 'Marketplace App',
 						dn: this.app.doc.name,
-						method: 'listing_details'
+						method: 'listing_details',
 					};
 				},
 				auto: true,
@@ -232,19 +238,15 @@ export default {
 					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
 				},
 				onError(e) {
-					toast.error(
-						e.messages.length
-							? e.messages.join('\n')
-							: e.message || 'Failed to fetch listing data'
-					);
-				}
+					toast.error(getToastErrorMessage(e, 'Failed to fetch listing data'));
+				},
 			};
 		},
 		removeScreenshot() {
 			return {
-				url: 'press.api.marketplace.remove_app_screenshot'
+				url: 'press.api.marketplace.remove_app_screenshot',
 			};
-		}
+		},
 	},
 	methods: {
 		imageAddSuccess(message) {
@@ -261,11 +263,11 @@ export default {
 					return 'Updated successfully';
 				},
 				loading: 'Updating listing...',
-				error: err => {
-					return err.messages.length
+				error: (err) => {
+					return err.messages?.length
 						? err.messages.join('\n')
 						: err.message || 'Failed to update listing';
-				}
+				},
 			});
 		},
 		dropdownOptions(image) {
@@ -277,7 +279,7 @@ export default {
 						toast.promise(
 							this.$resources.removeScreenshot.submit({
 								name: this.app.doc.name,
-								file: image
+								file: image,
 							}),
 							{
 								loading: 'Deleting screenshot...',
@@ -285,22 +287,42 @@ export default {
 									this.$resources.listingData.reload();
 									return 'Screenshot deleted successfully';
 								},
-								error: err => {
-									return err.messages.length
+								error: (err) => {
+									return err.messages?.length
 										? err.messages.join('\n')
 										: err.message || 'Failed to delete screenshot';
-								}
-							}
+								},
+							},
 						);
-					}
-				}
+					},
+				},
 			];
-		}
+		},
+		validateLink(link) {
+			const value = this.marketplaceApp[link] ?? '';
+
+			// Regular expression to validate URL format
+			const urlPattern =
+				/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:\/?#[\]@!$&'()*+,;=]*)?$/;
+
+			// Check if the link is empty
+			if (!value.trim()) {
+				this.$toast.error(`${link.replace('_', ' ')} link is empty`);
+				return false;
+			}
+
+			// Check if the link contains a valid URL
+			if (!urlPattern.test(value.trim())) {
+				this.$toast.error(`${link.replace('_', ' ')} contains an invalid URL`);
+				return false;
+			}
+			return true;
+		},
 	},
 	computed: {
 		profileImageUrl() {
 			return this.app.doc.image;
-		}
-	}
+		},
+	},
 };
 </script>

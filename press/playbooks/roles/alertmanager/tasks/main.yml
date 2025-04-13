@@ -11,11 +11,15 @@
     - /home/frappe/alertmanager/data
     - /home/frappe/.config/amtool
 
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
 - name: Download Alertmanager Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/prometheus/alertmanager/releases/download/v0.22.2/alertmanager-0.22.2.linux-amd64.tar.gz
+    src: "https://github.com/prometheus/alertmanager/releases/download/v0.27.0/alertmanager-0.27.0.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
@@ -23,7 +27,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: "/tmp/alertmanager-0.22.2.linux-amd64/{{ item }}"
+    src: "/tmp/alertmanager-0.27.0.linux-{{ arch }}/{{ item }}"
     dest: "/home/frappe/alertmanager/{{ item }}"
     mode: 0755
     remote_src: yes

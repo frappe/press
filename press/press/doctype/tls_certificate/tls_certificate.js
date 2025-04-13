@@ -19,5 +19,17 @@ frappe.ui.form.on('TLS Certificate', {
 				});
 			});
 		}
+		if (!frm.doc.wildcard) {
+			frm.add_custom_button('Copy Private Key', () => {
+				frappe.confirm(
+					`Are you sure you want to copy private
+					key. You should ONLY do this for custom
+					domains. And notify user of their
+					responsibility on handling private
+					key.`,
+					() => frappe.utils.copy_to_clipboard(frm.doc.private_key),
+				);
+			});
+		}
 	},
 });

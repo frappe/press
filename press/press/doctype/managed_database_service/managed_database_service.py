@@ -1,7 +1,8 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -23,3 +24,8 @@ class ManagedDatabaseService(Document):
 	# end: auto-generated types
 
 	pass
+
+	@frappe.whitelist()
+	def show_root_password(self):
+		frappe.only_for("System Manager")
+		return self.get_password("root_user_password")

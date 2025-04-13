@@ -1,21 +1,44 @@
 <template>
 	<div class="p-5">
 		<div class="flex items-center space-x-2">
-			<Button :route="{ name: `${object.doctype} Detail Logs` }">
+			<Button
+				:route="{
+					name:
+						object.doctype === 'Site'
+							? 'Site Logs'
+							: `${object.doctype} Detail Logs`
+				}"
+			>
 				<template #icon>
 					<i-lucide-arrow-left class="inline-block h-4 w-4" />
 				</template>
 			</Button>
 			<h2 class="text-lg font-medium text-gray-900">{{ logName }}</h2>
-			<Button
-				class="!ml-auto"
-				@click="$resources.log.reload()"
-				:loading="$resources.log.loading"
-			>
-				<template #icon>
-					<i-lucide-refresh-ccw class="h-4 w-4" />
-				</template>
-			</Button>
+			<div class="!ml-auto flex gap-2">
+				<Button
+					:route="{
+						name: 'Log Browser',
+						params: {
+							mode: object.doctype === 'Site' ? 'site' : 'bench',
+							docName: name,
+							logId: logName
+						}
+					}"
+				>
+					<template #prefix>
+						<i-lucide-sparkle class="h-4 w-4" />
+					</template>
+					View in Log Browser
+				</Button>
+				<Button
+					@click="$resources.log.reload()"
+					:loading="$resources.log.loading"
+				>
+					<template #icon>
+						<i-lucide-refresh-ccw class="h-4 w-4" />
+					</template>
+				</Button>
+			</div>
 		</div>
 
 		<div class="mt-3">
@@ -35,6 +58,7 @@
 <script>
 import { FeatherIcon } from 'frappe-ui';
 import { getObject } from '../objects';
+import { unreachable } from '../objects/common';
 
 export default {
 	name: 'LogPage',
@@ -42,9 +66,16 @@ export default {
 	components: { FeatherIcon },
 	resources: {
 		log() {
+			const url = this.forSite ? 'press.api.site.log' : 'press.api.bench.log';
+			const params = { log: this.logName, name: this.name };
+			if (!this.forSite) {
+				params.name = `bench-${this.name?.split('-')[1]}`;
+				params.bench = this.name;
+			}
+
 			return {
-				url: 'press.api.site.log',
-				params: { log: this.logName, name: this.name },
+				url,
+				params,
 				auto: true,
 				transform(log) {
 					return log[this.logName];
@@ -56,6 +87,11 @@ export default {
 		}
 	},
 	computed: {
+		forSite() {
+			if (this.objectType === 'Site') return true;
+			if (this.objectType === 'Bench') return false;
+			throw unreachable;
+		},
 		object() {
 			return getObject(this.objectType);
 		},

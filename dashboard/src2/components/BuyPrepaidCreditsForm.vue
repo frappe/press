@@ -93,7 +93,7 @@ import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
 
 export default {
-	name: 'BuyPrepaidCreditsDialog',
+	name: 'BuyPrepaidCreditsForm',
 	components: {
 		BuyPrepaidCreditsStripe,
 		BuyPrepaidCreditsRazorpay

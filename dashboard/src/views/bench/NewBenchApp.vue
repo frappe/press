@@ -49,7 +49,7 @@ export default {
 					}
 				},
 				onSuccess() {
-					this.$router.push(`/benches/${this.benchName}`);
+					this.$router.push(`/groups/${this.benchName}`);
 				}
 			};
 		}

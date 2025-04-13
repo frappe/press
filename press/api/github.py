@@ -1,6 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+
+from __future__ import annotations
 
 import re
 from base64 import b64decode
@@ -15,7 +16,6 @@ import requests
 from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
-	from typing import Optional
 
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 
@@ -39,17 +39,17 @@ def hook(*args, **kwargs):
 	try:
 		doc.insert()
 		frappe.db.commit()
-	except Exception:
+	except Exception as e:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Insert Error", args=args, kwargs=kwargs)
-		raise Exception
+		raise Exception from e
 
 	try:
 		doc.handle_events()
-	except Exception:
+	except Exception as e:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Error", doc=doc)
-		raise Exception
+		raise Exception from e
 
 
 def get_jwt_token():
@@ -58,11 +58,10 @@ def get_jwt_token():
 	now = datetime.now()
 	expiry = now + timedelta(minutes=9)
 	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
-	token = jwt.encode(payload, key.encode(), algorithm="RS256")
-	return token
+	return jwt.encode(payload, key.encode(), algorithm="RS256")
 
 
-def get_access_token(installation_id: "Optional[str]" = None):
+def get_access_token(installation_id: str | None = None):
 	if not installation_id:
 		return frappe.db.get_value(
 			"Press Settings",
@@ -100,12 +99,11 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	options = {
+	return {
 		"authorized": bool(token),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
 	}
-	return options
 
 
 def installations(token):
@@ -128,7 +126,7 @@ def installations(token):
 				}
 			)
 	else:
-		frappe.throw(data.get("message") or "An error occured")
+		frappe.throw(data.get("message") or "An error Occurred")
 
 	return installations
 
@@ -174,9 +172,7 @@ def repository(owner, name, installation=None):
 	headers = {
 		"Authorization": f"token {token}",
 	}
-	repo = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}", headers=headers
-	).json()
+	repo = requests.get(f"https://api.github.com/repos/{owner}/{name}", headers=headers).json()
 
 	current_page, is_last_page = 1, False
 	branches = []
@@ -261,11 +257,11 @@ def branches(owner, name, installation=None):
 
 	if response.ok:
 		return response.json()
-	else:
-		frappe.throw("Error fetching branch list from GitHub")
+	frappe.throw("Error fetching branch list from GitHub: " + response.text)
+	return None
 
 
-def get_auth_headers(installation_id: "Optional[str]" = None) -> "dict[str, str]":
+def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 	if token := get_access_token(installation_id):
 		return {"Authorization": f"token {token}"}
 	return {}
@@ -311,6 +307,7 @@ def _get_app_name_and_title_from_hooks(
 		break
 
 	frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
+	return None
 
 
 def _generate_files_tree(files):

@@ -8,8 +8,15 @@ frappe.ui.form.on('Virtual Machine', {
 			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
+			[__('Force Stop'), 'force_stop', true, frm.doc.status == 'Running'],
 			[__('Start'), 'start', true, frm.doc.status == 'Stopped'],
 			[__('Terminate'), 'terminate', true, !frm.doc.termination_protection],
+			[
+				__('Force Terminate'),
+				'force_terminate',
+				true,
+				Boolean(frappe.boot.developer_mode),
+			],
 			[
 				__('Disable Termination Protection'),
 				'disable_termination_protection',
@@ -65,7 +72,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
 				true,
-				frm.doc.status === 'Running',
+				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -103,7 +110,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -125,49 +132,6 @@ frappe.ui.form.on('Virtual Machine', {
 									.then((r) => frm.refresh());
 							},
 							__('Resize Virtual Machine'),
-						);
-					},
-					__('Actions'),
-				);
-			}
-		});
-		[
-			[
-				__('Update EBS Performance'),
-				'update_ebs_performance',
-				frm.doc.cloud_provider == 'AWS EC2',
-			],
-		].forEach(([label, method, condition]) => {
-			if (typeof condition === 'undefined' || condition) {
-				frm.add_custom_button(
-					label,
-					() => {
-						frappe.prompt(
-							[
-								{
-									fieldtype: 'Int',
-									label: 'IOPS',
-									fieldname: 'iops',
-									reqd: 1,
-									default: frm.doc.volumes[0].iops,
-								},
-								{
-									fieldtype: 'Int',
-									label: 'Throughput (MB/s)',
-									fieldname: 'throughput',
-									reqd: 1,
-									default: frm.doc.volumes[0].throughput,
-								},
-							],
-							({ iops, throughput }) => {
-								frm
-									.call(method, {
-										iops,
-										throughput,
-									})
-									.then((r) => frm.refresh());
-							},
-							__('Update EBS Performance'),
 						);
 					},
 					__('Actions'),
@@ -211,6 +175,99 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		[
+			[
+				__('Convert to ARM'),
+				'convert_to_arm',
+				frm.doc.cloud_provider == 'AWS EC2' && frm.doc.platform == 'x86_64',
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Link',
+									label: 'Virtual Machine Image',
+									fieldname: 'virtual_machine_image',
+									options: 'Virtual Machine Image',
+									reqd: 1,
+									get_query: function () {
+										return {
+											filters: {
+												platform: 'arm64',
+												cluster: frm.doc.cluster,
+												status: 'Available',
+												series: frm.doc.series,
+											},
+										};
+									},
+								},
+								{
+									fieldtype: 'Data',
+									label: 'Machine Type',
+									fieldname: 'machine_type',
+									reqd: 1,
+								},
+							],
+							({ virtual_machine_image, machine_type }) => {
+								frm
+									.call(method, {
+										virtual_machine_image,
+										machine_type,
+									})
+									.then((r) => frm.refresh());
+							},
+							__(label),
+						);
+					},
+					__('Actions'),
+				);
+			}
+		});
+		if (frm.doc.status == 'Running') {
+			frm.add_custom_button(
+				'Attach New Volume',
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldtype: 'Int',
+								label: 'Size',
+								fieldname: 'size',
+								reqd: 1,
+								default: 10,
+							},
+							{
+								fieldtype: 'Int',
+								label: 'IOPS',
+								fieldname: 'iops',
+								reqd: 1,
+								default: 3000,
+							},
+							{
+								fieldtype: 'Int',
+								label: 'Throughput (MB/s)',
+								fieldname: 'throughput',
+								reqd: 1,
+								default: 125,
+							},
+						],
+						({ size, iops, throughput }) => {
+							frm
+								.call('attach_new_volume', {
+									size, iops, throughput,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Attach New Volume'),
+					);
+				},
+				__('Actions'),
+			);
+		}
 		if (frm.doc.instance_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(
@@ -224,5 +281,79 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		}
+	},
+});
+
+frappe.ui.form.on('Virtual Machine Volume', {
+	detach(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to detach volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('detach', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
+	},
+	delete_volume(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.confirm(
+			`Are you sure you want to delete volume ${row.volume_id}?`,
+			() =>
+				frm
+					.call('delete_volume', { volume_id: row.volume_id })
+					.then((r) => frm.refresh()),
+		);
+	},
+	increase_disk_size(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.prompt(
+			{
+				fieldtype: 'Int',
+				label: 'Increment (GB)',
+				fieldname: 'increment',
+				reqd: 1,
+			},
+			({ increment }) => {
+				frm
+					.call('increase_disk_size', {
+						volume_id: row.volume_id,
+						increment,
+					})
+					.then((r) => frm.refresh());
+			},
+			__('Increase Disk Size'),
+		);
+	},
+	update_ebs_performance(frm, cdt, cdn) {
+		let row = frm.selected_doc;
+		frappe.prompt(
+			[
+				{
+					fieldtype: 'Int',
+					label: 'IOPS',
+					fieldname: 'iops',
+					reqd: 1,
+					default: row.iops,
+				},
+				{
+					fieldtype: 'Int',
+					label: 'Throughput (MB/s)',
+					fieldname: 'throughput',
+					reqd: 1,
+					default: row.throughput,
+				},
+			],
+			({ iops, throughput }) => {
+				frm
+					.call('update_ebs_performance', {
+						volume_id: row.volume_id,
+						iops,
+						throughput,
+					})
+					.then((r) => frm.refresh());
+			},
+			__('Update EBS Performance'),
+		);
 	},
 });

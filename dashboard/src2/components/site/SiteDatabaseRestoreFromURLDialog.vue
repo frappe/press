@@ -1,17 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Restore from an existing site',
-			actions: [
-				{
-					label: 'Restore',
-					variant: 'solid',
-					theme: 'red',
-					loading: $resources.restoreBackup.loading,
-					disabled: !$resources.getBackupLinks.data,
-					onClick: () => $resources.restoreBackup.submit()
-				}
-			]
+			title: 'Restore from an existing site'
 		}"
 		v-model="showRestoreDialog"
 	>
@@ -53,6 +43,17 @@
 				:message="
 					$resources.restoreBackup.error || $resources.getBackupLinks.error
 				"
+			/>
+		</template>
+		<template #actions>
+			<Button
+				class="w-full"
+				label="Restore"
+				variant="solid"
+				theme="red"
+				:loading="$resources.restoreBackup.loading"
+				:disabled="!$resources.getBackupLinks.data"
+				@click="$resources.restoreBackup.submit"
 			/>
 		</template>
 	</Dialog>
@@ -132,8 +133,8 @@ export default {
 					this.showRestoreDialog = false;
 
 					this.$router.push({
-						name: 'Site Detail Jobs',
-						params: { objectType: 'Site', name: this.site }
+						name: 'Site Jobs',
+						params: { name: this.site }
 					});
 				}
 			};

@@ -2,7 +2,7 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<FBreadcrumbs
-				:items="[{ label: 'Partners', route: { name: 'Partners' } }]"
+				:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
 			/>
 		</Header>
 		<TabsWithRouter
@@ -34,7 +34,7 @@ export default {
 		Header,
 		FBreadcrumbs: Breadcrumbs,
 		FTabs: Tabs,
-		TabsWithRouter
+		TabsWithRouter,
 	},
 	data() {
 		return {
@@ -44,10 +44,23 @@ export default {
 				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
 				{
 					label: 'Approval Requests',
-					route: { name: 'PartnerApprovalRequests' }
-				}
-			]
+					route: { name: 'PartnerApprovalRequests' },
+				},
+				{
+					label: 'Partner  Certificates',
+					route: { name: 'PartnerCertificates' },
+				},
+				{
+					label: 'Local Payment Setup',
+					route: { name: 'LocalPaymentSetup' },
+					condition: () =>
+						Boolean(
+							this.$team.doc.country === 'Kenya' &&
+								this.$team.doc.mpesa_enabled,
+						),
+				},
+			],
 		};
-	}
+	},
 };
 </script>

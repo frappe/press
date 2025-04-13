@@ -21,6 +21,7 @@
   "is_self_hosted",
   "is_server_renamed",
   "public",
+  "use_agent_job_callbacks",
   "billing_section",
   "team",
   "column_break_11",
@@ -29,6 +30,7 @@
   "auto_add_storage_max",
   "networking_section",
   "ip",
+  "ipv6",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -76,7 +78,10 @@
   "column_break_edyf",
   "is_standalone_setup",
   "tags_section",
-  "tags"
+  "tags",
+  "mounts_section",
+  "has_data_volume",
+  "mounts"
  ],
  "fields": [
   {
@@ -313,7 +318,7 @@
    "options": "Virtual Machine"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "new_worker_allocation",
    "fieldtype": "Check",
    "label": "New Worker Allocation"
@@ -444,7 +449,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "set_bench_memory_limits",
    "fieldtype": "Check",
    "label": "Set Bench Memory Limits"
@@ -471,7 +476,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "disable_agent_job_auto_retry",
    "fieldtype": "Check",
    "label": "Disable Agent Job Auto Retry"
@@ -523,10 +528,40 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "fieldname": "mounts_section",
+   "fieldtype": "Section Break",
+   "label": "Mounts"
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Server Mount"
+  },
+  {
+   "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ipv6",
+   "fieldtype": "Data",
+   "label": "IPv6"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_agent_job_callbacks",
+   "fieldtype": "Check",
+   "label": "Use Agent Job Callbacks"
   }
  ],
  "links": [],
- "modified": "2024-08-07 11:29:39.496368",
+ "modified": "2025-03-26 12:49:49.214409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -557,6 +592,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-09-19 16:14:46.399111",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "volume_id",
+  "status",
+  "device_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Volume ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device Name",
+   "reqd": 1
+  },
+  {
+   "default": "Unattached",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Unattached\nAttached",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-09-19 18:23:29.834905",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Machine Migration Volume",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

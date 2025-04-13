@@ -20,7 +20,7 @@ export default {
 	resources: {
 		getPartnerContribution() {
 			return {
-				url: 'press.api.partner.get_partner_contribution',
+				url: 'press.api.partner.get_partner_contribution_list',
 				auto: true,
 				params: {
 					partner_email: this.partnerEmail
@@ -32,7 +32,7 @@ export default {
 							status: d.status,
 							due_date: d.due_date,
 							currency: d.currency,
-							total: d.total,
+							total: d.total_before_discount,
 							partner_total: d.partner_total
 						};
 					});
@@ -52,7 +52,8 @@ export default {
 					},
 					{
 						label: 'Status',
-						fieldname: 'status'
+						fieldname: 'status',
+						width: 0.5
 					},
 					{
 						label: 'Date',
@@ -63,12 +64,14 @@ export default {
 								month: 'short',
 								day: 'numeric'
 							}).format(new Date(value));
-						}
+						},
+						width: 0.6
 					},
 					{
 						label: 'Currency',
 						fieldname: 'currency',
-						width: 0.5
+						width: 0.5,
+						align: 'center'
 					},
 					{
 						label: 'Total',
@@ -78,14 +81,18 @@ export default {
 								return '';
 							}
 							return currency(value, columns.currency);
-						}
+						},
+						align: 'right',
+						width: 0.6
 					},
 					{
 						label: 'Partner Total',
 						fieldname: 'partner_total',
 						format(value) {
 							return userCurrency(value);
-						}
+						},
+						align: 'right',
+						width: 0.6
 					}
 				]
 			};

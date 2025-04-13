@@ -1,17 +1,23 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from typing import ClassVar
 
 import frappe
+import rq
 from frappe.model.document import Document
 
 from press.agent import Agent
 from press.api.site import check_dns
-from press.exceptions import AAAARecordExists, ConflictingCAARecord
+from press.exceptions import (
+	DNSValidationError,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.utils.dns import create_dns_record
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class SiteDomain(Document):
@@ -34,7 +40,7 @@ class SiteDomain(Document):
 		tls_certificate: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
+	dashboard_fields: ClassVar = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -47,10 +53,21 @@ class SiteDomain(Document):
 					break
 			domains.sort(key=lambda domain: not domain.primary)
 			return domains
+		return None
 
 	def after_insert(self):
-		if not self.default:
-			self.create_tls_certificate()
+		if self.default:
+			return
+
+		if self.has_root_tls_certificate:
+			server = frappe.db.get_value("Site", self.site, "server")
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+
+			agent = Agent(server=proxy_server, server_type="Proxy Server")
+			agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			return
+
+		self.create_tls_certificate()
 
 	def validate(self):
 		if self.has_value_changed("redirect_to_primary"):
@@ -59,17 +76,26 @@ class SiteDomain(Document):
 			elif not self.is_new():
 				self.remove_redirect_in_proxy()
 
+	@frappe.whitelist()
+	def create_dns_record(self):
+		site = frappe.get_doc("Site", self.site)
+		if not self.domain.endswith(site.domain):
+			return
+		create_dns_record(site, self.domain)
+
 	@property
 	def default(self):
 		return self.domain == self.site
+
+	@property
+	def has_root_tls_certificate(self):
+		return bool(frappe.db.exists("Root Domain", self.domain.split(".", 1)[1], "name"))
 
 	def setup_redirect_in_proxy(self):
 		site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
-			frappe.throw(
-				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError
-			)
+			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
 		site.set_redirects_in_proxy([self.name])
 
 	def remove_redirect_in_proxy(self):
@@ -144,14 +170,10 @@ class SiteDomain(Document):
 
 	def on_trash(self):
 		if self.domain == frappe.db.get_value("Site", self.site, "host_name"):
-			frappe.throw(
-				msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError
-			)
+			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default:
-			self.create_remove_host_agent_request()
-		elif self.redirect_to_primary:
+		if not self.default or self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()
@@ -191,33 +213,75 @@ def process_new_host_job_update(job):
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
 
 
+def process_add_domain_to_upstream_job_update(job):
+	request_data = json.loads(job.request_data)
+	domain = request_data.get("domain")
+	domain_status = frappe.get_value("Site Domain", domain, "status")
+
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "In Progress",
+		"Success": "Active",
+		"Failure": "Broken",
+		"Delivery Failure": "Broken",
+	}[job.status]
+
+	if updated_status != domain_status:
+		frappe.db.set_value("Site Domain", domain, "status", updated_status)
+
+	if job.status in ["Failure", "Delivery Failure"]:
+		frappe.db.set_value(
+			"Product Trial Request", {"domain": request_data.get("domain")}, "status", "Error"
+		)
+
+
 def update_dns_type():
-	domains = frappe.get_all(
-		"Site Domain",
-		filters={"tls_certificate": ("is", "set")},  # Don't query wildcard subdomains
-		fields=["name", "domain", "dns_type", "site"],
+	Domain = frappe.qb.DocType("Site Domain")
+	Certificate = frappe.qb.DocType("TLS Certificate")
+	query = (
+		frappe.qb.from_(Domain)
+		.left_join(Certificate)
+		.on(Domain.tls_certificate == Certificate.name)
+		.where(Domain.tls_certificate.isnotnull())  # Don't query wildcard subdomains
+		.select(
+			Domain.name,
+			Domain.domain,
+			Domain.dns_type,
+			Domain.site,
+			Domain.tls_certificate,
+			Certificate.retry_count,
+		)
 	)
+
+	domains = query.run(as_dict=1)
 	for domain in domains:
+		if has_job_timeout_exceeded():
+			return
 		try:
 			response = check_dns(domain.site, domain.domain)
 			if response["matched"] and response["type"] != domain.dns_type:
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False
 				)
+			if domain.retry_count > 0 and response["matched"]:
+				# In the past we failed to obtain the certificate (likely because of DNS issues).
+				# Since the DNS is now correct, we can retry obtaining the certificate.
+				frappe.db.set_value(
+					"TLS Certificate", domain.tls_certificate, "retry_count", 0, update_modified=False
+				)
+
 			pretty_response = json.dumps(response, indent=4, default=str)
 			frappe.db.set_value(
 				"Site Domain", domain.name, "dns_response", pretty_response, update_modified=False
 			)
 			frappe.db.commit()
-		except AAAARecordExists:
+		except DNSValidationError:
 			pass
-		except ConflictingCAARecord:
-			pass
+		except rq.timeouts.JobTimeoutException:
+			return
 		except Exception:
 			frappe.db.rollback()
 			log_error("DNS Check Failed", domain=domain)
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype(
-	"Site Domain"
-)
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Domain")

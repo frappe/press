@@ -14,6 +14,7 @@
   "site_update",
   "destination_group",
   "skip_failing_patches",
+  "skip_backups",
   "section_break_8",
   "last_output",
   "last_traceback"
@@ -90,11 +91,17 @@
    "label": "Destination Group",
    "options": "Release Group",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_backups",
+   "fieldtype": "Check",
+   "label": "Skip Backups"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-24 13:17:52.110070",
+ "modified": "2024-10-23 22:33:56.984926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",

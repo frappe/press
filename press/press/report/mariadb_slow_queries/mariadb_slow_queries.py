@@ -1,31 +1,21 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import json
+from __future__ import annotations
+
 import re
 from collections import defaultdict
-from dataclasses import dataclass
 
 import frappe
 import requests
 import sqlparse
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import convert_utc_to_timezone, get_system_timezone
-from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
-
-from press.agent import Agent
-from press.api.site import protected
-from press.press.report.mariadb_slow_queries.db_optimizer import (
-	DBExplain,
-	DBIndex,
-	DBOptimizer,
-	DBTable,
-)
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager"])
+	frappe.only_for(["System Manager", "Site Manager", "Press Admin", "Press Member"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 
 	make_access_log(
@@ -87,15 +77,6 @@ def execute(filters=None):
 			},
 		)
 
-	if filters.analyze:
-		columns.append(
-			{
-				"fieldname": "suggested_index",
-				"label": frappe._("Suggest Index"),
-				"fieldtype": "Data",
-			},
-		)
-
 	data = get_data(filters)
 	return columns, data
 
@@ -111,19 +92,17 @@ def get_data(filters):
 		int(filters.max_lines) or 100,
 	)
 	for row in rows:
-		if filters.format_queries:
-			row["query"] = format_query(row["query"])
 		row["timestamp"] = convert_utc_to_timezone(
 			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
 			get_system_timezone(),
 		)
 
+	# Filter out queries starting with `SET`
+	dql_stmt = ("select", "update", "delete", "insert")
+	rows = [x for x in rows if x["query"].lower().lstrip().startswith(dql_stmt)]
+
 	if filters.normalize_queries:
 		rows = summarize_by_query(rows)
-
-	# You can not analyze a query unless it has been normalized.
-	if filters.analyze:
-		rows = analyze_queries(rows, filters.site)
 
 	return rows
 
@@ -150,9 +129,7 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	}
 
 	if search_pattern and search_pattern != ".*":
-		query["query"]["bool"]["filter"].append(
-			{"regexp": {"mysql.slowlog.query": search_pattern}}
-		)
+		query["query"]["bool"]["filter"].append({"regexp": {"mysql.slowlog.query": search_pattern}})
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
@@ -176,9 +153,7 @@ def normalize_query(query: str) -> str:
 	q = format_query(q, strip_comments=True)
 
 	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
-	q = re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
-
-	return q
+	return re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
 
 
 def format_query(q, strip_comments=False):
@@ -213,117 +188,5 @@ def summarize_by_query(data):
 	return result
 
 
-def analyze_queries(data, site):
-	# TODO: handle old framework and old agents and general failures
-	for row in data:
-		query = row["example"]
-		if not query.lower().startswith(("select", "update", "delete")):
-			continue
-		analyzer = OptimizeDatabaseQuery(site, query)
-		if index := analyzer.analyze():
-			row["suggested_index"] = f"{index.table}.{index.column}"
-	return data
-
-
-@dataclass
-class OptimizeDatabaseQuery:
-	site: str
-	query: str
-
-	def analyze(self) -> DBIndex | None:
-		explain_output = self.fetch_explain() or []
-
-		explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
-		optimizer = DBOptimizer(query=self.query, explain_plan=explain_output)
-		tables = optimizer.tables_examined
-
-		for table in tables:
-			stats = _fetch_table_stats(self.site, table)
-			if not stats:
-				# Old framework version
-				return
-			db_table = DBTable.from_frappe_ouput(stats)
-			column_stats = _fetch_column_stats(self.site, table)
-			if not column_stats:
-				# Failing due to large size, TODO: move this to a job
-				return
-			db_table.update_cardinality(column_stats)
-			optimizer.update_table_data(db_table)
-
-		return optimizer.suggest_index()
-
-	def fetch_explain(self) -> list[dict]:
-		site = frappe.get_cached_doc("Site", self.site)
-		db_server_name = frappe.db.get_value(
-			"Server", site.server, "database_server", cache=True
-		)
-		database_server = frappe.get_cached_doc("Database Server", db_server_name)
-		agent = Agent(database_server.name, "Database Server")
-
-		data = {
-			"schema": site.database_name,
-			"query": self.query,
-			"private_ip": database_server.private_ip,
-			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
-		}
-
-		return agent.post("database/explain", data=data)
-
-
-@redis_cache(ttl=60 * 5)
-def _fetch_table_stats(site: str, table: str):
-	site = frappe.get_cached_doc("Site", site)
-	agent = Agent(site.server)
-	return agent.describe_database_table(
-		site,
-		doctype=get_doctype_name(table),
-		columns=[],
-	)
-
-
-@redis_cache(ttl=60 * 5)
-def _fetch_column_stats(site, table, doc_name):
-	site = frappe.get_cached_doc("Site", site)
-	db_server_name = frappe.db.get_value(
-		"Server", site.server, "database_server", cache=True
-	)
-	database_server = frappe.get_cached_doc("Database Server", db_server_name)
-	agent = Agent(database_server.name, "Database Server")
-
-	data = {
-		# "site": site,
-		"doc_name": doc_name,
-		"schema": site.database_name,
-		"table": table,
-		"private_ip": database_server.private_ip,
-		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
-	}
-	agent.create_agent_job("Column Statistics", "/database/column-stats", data)
-
-
 def get_doctype_name(table_name: str) -> str:
 	return table_name.removeprefix("tab")
-
-
-@frappe.whitelist()
-@protected("Site")
-def add_suggested_index(name, indexes):
-	if isinstance(indexes, str):
-		indexes = json.loads(indexes)
-	frappe.enqueue(_add_suggested_index, indexes=indexes, site_name=name)
-
-
-def _add_suggested_index(site_name, indexes):
-	if not indexes:
-		frappe.throw("No index suggested")
-
-	for index in indexes:
-		table, column = index.split(".")
-		doctype = get_doctype_name(table)
-
-		site = frappe.get_cached_doc("Site", site_name)
-		agent = Agent(site.server)
-		agent.add_database_index(site, doctype=doctype, columns=[column])
-		frappe.msgprint(
-			f"Index {index} added on site {site_name} successfully", realtime=True
-		)

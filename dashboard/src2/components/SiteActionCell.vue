@@ -25,6 +25,7 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
+import { getToastErrorMessage } from '../utils/toast';
 import router from '../router';
 import { isLastSite } from '../data/team';
 
@@ -47,14 +48,14 @@ function getSiteActionHandler(action) {
 		'Restore from an existing site': defineAsyncComponent(() =>
 			import('./site/SiteDatabaseRestoreFromURLDialog.vue')
 		),
-		'Access site database': defineAsyncComponent(() =>
+		'Manage database users': defineAsyncComponent(() =>
 			import('./SiteDatabaseAccessDialog.vue')
 		),
 		'Version upgrade': defineAsyncComponent(() =>
 			import('./site/SiteVersionUpgradeDialog.vue')
 		),
-		'Change bench': defineAsyncComponent(() =>
-			import('./site/SiteChangeBenchDialog.vue')
+		'Change bench group': defineAsyncComponent(() =>
+			import('./site/SiteChangeGroupDialog.vue')
 		),
 		'Change region': defineAsyncComponent(() =>
 			import('./site/SiteChangeRegionDialog.vue')
@@ -74,6 +75,7 @@ function getSiteActionHandler(action) {
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
 		'Migrate site': onMigrateSite,
+		'Schedule backup': onScheduleBackup,
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache
@@ -87,8 +89,12 @@ function onDeactivateSite() {
 	return confirmDialog({
 		title: 'Deactivate Site',
 		message: `
-			Are you sure you want to deactivate this site? The site will go in an inactive state.
-			It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
+			Are you sure you want to deactivate this site?<br><br>
+			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+			The site will go in an <strong>inactive</strong> state.It won't be accessible and background jobs won't run. 
+			<br><br>
+			<div class="text-red-600">You will still be charged for it.</div>
+			</div>
 		`,
 		primaryAction: {
 			label: 'Deactivate',
@@ -118,10 +124,6 @@ function onActivateSite() {
 		}
 	});
 }
-
-const FeedbackDialog = defineAsyncComponent(() =>
-	import('./ChurnFeedbackDialog.vue')
-);
 
 function onDropSite() {
 	return confirmDialog({
@@ -153,7 +155,11 @@ function onDropSite() {
 					throw new Error('Site name does not match.');
 				}
 
-				let val = await isLastSite(site.doc.team);
+				const val = await isLastSite(site.doc.team);
+				const FeedbackDialog = defineAsyncComponent(() =>
+					import('./ChurnFeedbackDialog.vue')
+				);
+
 				return site.archive.submit({ force: values.force }).then(() => {
 					hide();
 					if (val) {
@@ -232,6 +238,33 @@ function onSiteReset() {
 				}
 				return site.reinstall.submit().then(hide);
 			}
+		}
+	});
+}
+
+function onScheduleBackup() {
+	return confirmDialog({
+		title: 'Schedule Backup',
+		message:
+			'Are you sure you want to schedule a backup? This will create an onsite backup.',
+		onSuccess({ hide }) {
+			toast.promise(
+				site.backup.submit({
+					with_files: true
+				}),
+				{
+					loading: 'Scheduling backup...',
+					success: () => {
+						hide();
+						router.push({
+							name: 'Site Jobs',
+							params: { name: site.name }
+						});
+						return 'Backup scheduled successfully';
+					},
+					error: e => getToastErrorMessage(e)
+				}
+			);
 		}
 	});
 }

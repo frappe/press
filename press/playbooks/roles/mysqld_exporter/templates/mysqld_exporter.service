@@ -9,6 +9,7 @@ ExecStart=/opt/mysqld_exporter/mysqld_exporter --web.listen-address=127.0.0.1:91
     --collect.binlog_size \
     --collect.perf_schema.eventswaits \
     --collect.perf_schema.file_events \
+    --config.my-cnf=/root/.my.cnf \
 
 SyslogIdentifier=mysqld_exporter
 Restart=always

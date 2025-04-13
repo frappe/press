@@ -137,7 +137,7 @@ export default {
 				{
 					label: 'View Versions',
 					onClick: () => {
-						this.$router.push(`/benches/${bench.name}/versions`);
+						this.$router.push(`/groups/${bench.name}/versions`);
 					}
 				}
 			];

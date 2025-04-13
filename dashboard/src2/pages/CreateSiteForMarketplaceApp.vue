@@ -35,11 +35,14 @@
 					<i-lucide-alert-circle class="inline-block h-5 w-5" />
 					<p>
 						Failed to install the app.
-						<router-link
-							class="underline"
-							:to="{ name: 'InstallApp', params: { app: app } }"
-							>Please try again </router-link
-						>.
+						<router-link class="underline" :to="failureRoute">
+							{{
+								$resources.siteGroupDeploy.doc?.status === 'Bench Deploy Failed'
+									? 'View Deploy'
+									: 'View Job'
+							}}
+						</router-link>
+						.
 					</p>
 				</div>
 				<div class="divide-y rounded-lg bg-gray-50 px-4">
@@ -145,8 +148,26 @@ export default {
 				this.$resources.siteGroupDeploy.doc?.status
 			);
 		},
+		failureRoute() {
+			if (this.$resources.siteGroupDeploy.doc?.status === 'Bench Deploy Failed')
+				return {
+					name: 'Release Group Detail Deploys',
+					params: {
+						name: this.$resources.siteGroupDeploy.doc.release_group
+					}
+				};
+			else if (
+				this.$resources.siteGroupDeploy.doc?.status === 'Site Creation Failed'
+			)
+				return {
+					name: 'Site Jobs',
+					params: { name: this.$resources.siteGroupDeploy.doc.site }
+				};
+		},
 		steps() {
 			const statusPosition = status => {
+				if (!status) return -1;
+
 				return [
 					'Pending',
 					'Deploying Bench',
@@ -157,7 +178,7 @@ export default {
 					'Site Creation Failed'
 				].indexOf(status);
 			};
-			const status = this.$resources.siteGroupDeploy.doc.status;
+			const status = this.$resources.siteGroupDeploy?.doc?.status;
 
 			return [
 				{

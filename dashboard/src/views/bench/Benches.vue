@@ -277,7 +277,7 @@ export default {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
 			} else {
-				this.$router.replace('/benches/new');
+				this.$router.replace('/groups/new');
 			}
 		},
 		dropdownItems(bench) {

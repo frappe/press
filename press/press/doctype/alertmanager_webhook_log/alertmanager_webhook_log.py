@@ -1,22 +1,25 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.utils.data import add_to_date
+from frappe.utils.synchronization import filelock
 
+from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
@@ -77,7 +80,9 @@ class AlertmanagerWebhookLog(Document):
 
 	def validate(self):
 		self.parsed = json.loads(self.payload)
-		self.alert = self.parsed["groupLabels"]["alertname"]
+		self.alert = self.parsed["groupLabels"].get("alertname")
+		if not self.alert:
+			raise AlertRuleNotEnabled("No alertname found in groupLabels")
 		self.status = self.parsed["status"].capitalize()
 		self.severity = self.parsed["commonLabels"]["severity"].capitalize()
 		self.group_key = self.parsed["groupKey"]
@@ -85,9 +90,7 @@ class AlertmanagerWebhookLog(Document):
 		self.truncated_alerts = self.parsed["truncatedAlerts"]
 		self.combined_alerts = len(self.parsed["alerts"])
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
-		self.common_annotations = json.dumps(
-			self.parsed["commonAnnotations"], indent=2, sort_keys=True
-		)
+		self.common_annotations = json.dumps(self.parsed["commonAnnotations"], indent=2, sort_keys=True)
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
@@ -108,9 +111,14 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
-			enqueue_doc(
-				self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-			)
+			send_telegram_notifs = frappe.db.get_single_value("Press Settings", "send_telegram_notifications")
+			if send_telegram_notifs:
+				enqueue_doc(self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True)
+
+			send_email_notifs = frappe.db.get_single_value("Press Settings", "send_email_notifications")
+			if send_email_notifs:
+				enqueue_doc(self.doctype, self.name, "send_email_notification", enqueue_after_commit=True)
+
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"
 		):
@@ -123,23 +131,38 @@ class AlertmanagerWebhookLog(Document):
 				deduplicate=True,
 			)
 
-	def react_for_instance(self, instance) -> "PressJob":
+	def react_for_instance(self, instance) -> dict:
 		instance_type = self.guess_doctype(instance)
+		if not instance_type:
+			# Prometheus is monitoring instances we don't know about
+			return {}
 		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
-		rule.react(instance_type, instance)
+		labels = self.get_labels_for_instance(instance)
+		job = rule.react(instance_type, instance, labels)
+		if job:
+			return {"press_job_type": job.job_type, "press_job": job.name}
+		return {}
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.append("reaction_jobs", self.react_for_instance(instance))
+			reaction_job = self.react_for_instance(instance)
+			if reaction_job:
+				self.append("reaction_jobs", reaction_job)
 		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:
 		instances = []
 		payload = json.loads(payload)
-		instances.extend(
-			[alert["labels"]["instance"] for alert in payload["alerts"]]
-		)  # sites
+		instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])  # sites
 		return set(instances)
+
+	def get_labels_for_instance(self, instance: str) -> dict:
+		# Find first alert that matches the instance
+		payload = json.loads(self.payload)
+		alert = find(payload["alerts"], lambda x: x["labels"]["instance"] == instance)
+		if alert:
+			return alert["labels"]
+		return {}
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
@@ -173,11 +196,11 @@ class AlertmanagerWebhookLog(Document):
 	def validate_and_create_incident(self):
 		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
 			return
-		if not (
-			self.alert == INCIDENT_ALERT
-			and self.severity == "Critical"
-			and self.status == "Firing"
-		):
+		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
+			return
+		cluster = frappe.get_value("Server", self.incident_scope, "cluster")
+		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
 
 		instances = self.get_past_alert_instances()
@@ -185,9 +208,7 @@ class AlertmanagerWebhookLog(Document):
 			self.create_incident()
 
 	def get_repeat_interval(self):
-		repeat_interval = frappe.db.get_value(
-			"Prometheus Alert Rule", self.alert, "repeat_interval"
-		)
+		repeat_interval = frappe.db.get_value("Prometheus Alert Rule", self.alert, "repeat_interval")
 		hours = repeat_interval.split("h")[0]  # assume hours
 		return int(hours)
 
@@ -199,9 +220,7 @@ class AlertmanagerWebhookLog(Document):
 		self.instances = [
 			{
 				"name": alert["labels"]["instance"],
-				"doctype": alert["labels"].get(
-					"doctype", self.guess_doctype(alert["labels"]["instance"])
-				),
+				"doctype": alert["labels"].get("doctype", self.guess_doctype(alert["labels"]["instance"])),
 			}
 			for alert in self.parsed["alerts"][:20]
 		]
@@ -214,9 +233,7 @@ class AlertmanagerWebhookLog(Document):
 				instance["link"] = get_url_to_form(instance["doctype"], instance["name"])
 
 		context.update({"instances": self.instances, "labels": labels, "rule": rule})
-		message = frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
-
-		return message
+		return frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
 
 	def guess_doctype(self, name):
 		doctypes = [
@@ -235,10 +252,21 @@ class AlertmanagerWebhookLog(Document):
 		for doctype in doctypes:
 			if frappe.db.exists(doctype, name):
 				return doctype
+		return None
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
 		TelegramMessage.enqueue(message=message, topic=self.severity)
+
+	def send_email_notification(self):
+		message = self.generate_telegram_message()
+		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients")
+		email_list = [email.strip() for email in recipient_emails.split(",")]
+		frappe.sendmail(
+			recipients=email_list,
+			subject=self.alert,
+			message=message,
+		)
 
 	@property
 	def bench(self):
@@ -254,8 +282,7 @@ class AlertmanagerWebhookLog(Document):
 
 	@cached_property
 	def parsed_group_labels(self) -> dict:
-		parsed = json.loads(self.group_labels)
-		return parsed
+		return json.loads(self.group_labels)
 
 	def ongoing_incident_exists(self) -> bool:
 		ongoing_incident_status = frappe.db.get_value(
@@ -272,12 +299,13 @@ class AlertmanagerWebhookLog(Document):
 
 	def create_incident(self):
 		try:
-			if self.ongoing_incident_exists():
-				return
-			incident = frappe.new_doc("Incident")
-			incident.alert = self.alert
-			incident.server = self.server
-			incident.cluster = self.cluster
-			incident.save()
+			with filelock(f"incident_creation_{self.server}"):
+				if self.ongoing_incident_exists():
+					return
+				incident = frappe.new_doc("Incident")
+				incident.alert = self.alert
+				incident.server = self.server
+				incident.cluster = self.cluster
+				incident.save()
 		except Exception:
 			log_error("Incident creation failed")

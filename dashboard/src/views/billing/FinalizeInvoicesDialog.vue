@@ -31,6 +31,7 @@
 			<Button
 				variant="solid"
 				class="w-full"
+				:loading="$resources.finalizeInvoices.loading"
 				@click="$resources.finalizeInvoices.submit()"
 			>
 				Finalize Invoices

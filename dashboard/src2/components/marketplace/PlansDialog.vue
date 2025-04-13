@@ -97,6 +97,7 @@
 <script>
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export default {
 	name: 'PlanDialog',
@@ -193,10 +194,7 @@ export default {
 							return 'Plan created successfully';
 						}
 					},
-					error: e => {
-						console.log(e);
-						return e.messages.length ? e.messages.join('\n') : e.message;
-					}
+					error: e => getToastErrorMessage(e)
 				}
 			);
 		},

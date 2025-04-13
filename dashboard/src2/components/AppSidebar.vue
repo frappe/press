@@ -8,6 +8,8 @@
 					{
 						label: 'Change Team',
 						icon: 'command',
+						condition: () =>
+							$team?.doc?.valid_teams?.length > 1 || $team?.doc?.is_desk_user,
 						onClick: () => (showTeamSwitcher = true)
 					},
 					{
@@ -56,28 +58,9 @@
 		<nav class="px-2">
 			<NavigationItems>
 				<template v-slot="{ navigation }">
-					<template v-for="(item, i) in navigation">
-						<template v-if="item.items">
-							<div
-								class="py-1 text-sm leading-5 text-gray-600"
-								:class="{ 'mt-2': i != 0 }"
-							>
-								{{ item.name }}
-							</div>
-							<div class="space-y-0.5">
-								<AppSidebarItem
-									v-for="subItem in item.items"
-									:key="subItem.name"
-									:item="subItem"
-								/>
-							</div>
-						</template>
-						<AppSidebarItem
-							class="mt-0.5"
-							v-else
-							:key="item.name"
-							:item="item"
-						/>
+					<template v-for="(item, i) in navigation" :key="item.name">
+						<AppSidebarItemGroup v-if="item.children" :item="item" />
+						<AppSidebarItem class="mt-0.5" v-else :item="item" />
 					</template>
 				</template>
 			</NavigationItems>
@@ -92,11 +75,13 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
+import AppSidebarItemGroup from './AppSidebarItemGroup.vue';
 
 export default {
 	name: 'AppSidebar',
 	components: {
 		AppSidebarItem,
+		AppSidebarItemGroup,
 		SwitchTeamDialog2: defineAsyncComponent(() =>
 			import('./SwitchTeamDialog.vue')
 		),

@@ -9,7 +9,7 @@ frappe.ui.form.on('Agent Job', {
 		);
 		frm.add_web_link(
 			frm.doc.site
-				? `/dashboard/sites/${frm.doc.site}/jobs/${frm.doc.name}`
+				? `/dashboard/sites/${frm.doc.site}/insights/jobs/${frm.doc.name}`
 				: `/dashboard/servers/${frm.doc.server}/jobs/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
@@ -52,6 +52,7 @@ frappe.ui.form.on('Agent Job', {
 				__('Succeed and Process Job Updates'),
 				'succeed_and_process_job_updates',
 			],
+			[__('Cancel Job'), 'cancel_job', ['Pending', "Running"].includes(frm.doc.status)],
 		].forEach(([label, method, condition]) => {
 			frm.add_custom_button(
 				label,

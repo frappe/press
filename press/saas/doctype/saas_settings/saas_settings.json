@@ -12,6 +12,7 @@
   "domain",
   "cluster",
   "group",
+  "email_account",
   "column_break_9",
   "apps",
   "multi_subscription",
@@ -150,11 +151,18 @@
    "fieldname": "multi_subscription",
    "fieldtype": "Check",
    "label": "Multi Subscription"
+  },
+  {
+   "description": "Email account for sending signup/verification mails",
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Email Account",
+   "options": "Email Account"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 23:05:21.977051",
+ "modified": "2024-09-13 09:55:11.473243",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",

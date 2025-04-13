@@ -13,7 +13,7 @@
 			<Combobox @update:model-value="onSelection">
 				<ComboboxInput
 					@keyup.enter="show = false"
-					placeholder="Search for sites, benches and servers"
+					placeholder="Search for sites, bench, groups and servers"
 					class="w-full border-none bg-transparent px-4 text-base text-gray-800 placeholder-gray-500 focus:ring-0"
 					@input="onInput"
 					autocomplete="off"

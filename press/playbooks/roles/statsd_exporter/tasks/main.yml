@@ -5,15 +5,19 @@
     state: directory
     mode: 0755
 
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
 - name: Download StatsD Exporter Archive
   unarchive:
-    src: https://github.com/prometheus/statsd_exporter/releases/download/v0.20.1/statsd_exporter-0.20.1.linux-amd64.tar.gz
+    src: "https://github.com/prometheus/statsd_exporter/releases/download/v0.27.1/statsd_exporter-0.27.1.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
 - name: Copy StatsD Exporter Binary
   copy:
-    src: /tmp/statsd_exporter-0.20.1.linux-amd64/statsd_exporter
+    src: "/tmp/statsd_exporter-0.27.1.linux-{{ arch }}/statsd_exporter"
     dest: /opt/statsd_exporter/statsd_exporter
     remote_src: yes
     mode: 0755

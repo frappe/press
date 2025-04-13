@@ -10,7 +10,7 @@
 				:class="logName === log.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				v-for="log in $resources.logs.data"
 				:key="log.name"
-				:to="`/benches/${bench.name}/logs/${instanceName}/${log.name}`"
+				:to="`/groups/${bench.name}/logs/${instanceName}/${log.name}`"
 			>
 				<ListItem
 					:title="log.name"

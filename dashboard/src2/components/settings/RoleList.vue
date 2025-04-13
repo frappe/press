@@ -5,21 +5,31 @@
 <script setup lang="jsx">
 import { h, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { FeatherIcon } from 'frappe-ui';
 import { icon, renderDialog, confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import RoleConfigureDialog from './RoleConfigureDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
+import { getToastErrorMessage } from '../../utils/toast';
 
 const listOptions = ref({
 	doctype: 'Press Role',
-	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
+	fields: [
+		{ users: ['user', 'user.full_name', 'user.user_image'] },
+		'admin_access',
+	],
 	documentation: 'https://frappecloud.com/docs/role-permissions',
 	columns: [
 		{
 			label: 'Role',
 			fieldname: 'title',
-			width: 1
+			width: 1,
+			suffix: (row) => {
+				return row.admin_access ? (
+					<FeatherIcon name="shield" class="ml-1 h-4 w-4 text-gray-700" />
+				) : null;
+			},
 		},
 		{
 			label: 'Members',
@@ -27,7 +37,7 @@ const listOptions = ref({
 			component: ({ row }) => {
 				return (
 					<div
-						onClick={e => {
+						onClick={(e) => {
 							e.preventDefault();
 							configureRole(row);
 						}}
@@ -40,8 +50,8 @@ const listOptions = ref({
 					</div>
 				);
 			},
-			width: 1
-		}
+			width: 1,
+		},
 	],
 	rowActions({ row, listResource: roleListResource }) {
 		return [
@@ -50,13 +60,13 @@ const listOptions = ref({
 				onClick() {
 					router.push({
 						name: 'SettingsPermissionRolePermissions',
-						params: { roleId: row.name }
+						params: { roleId: row.name },
 					});
-				}
+				},
 			},
 			{
 				label: 'Configure Role',
-				onClick: () => configureRole(row)
+				onClick: () => configureRole(row),
 			},
 			{
 				label: 'Delete Role',
@@ -74,19 +84,18 @@ const listOptions = ref({
 									hide();
 									return `Role ${row.title} deleted`;
 								},
-								error: e =>
-									e.messages.length ? e.messages.join('\n') : e.message
+								error: (e) => getToastErrorMessage(e),
 							});
-						}
+						},
 					});
-				}
-			}
+				},
+			},
 		];
 	},
 	route(row) {
 		return {
 			name: 'SettingsPermissionRolePermissions',
-			params: { roleId: row.name }
+			params: { roleId: row.name },
 		};
 	},
 	primaryAction({ listResource: groups }) {
@@ -94,7 +103,7 @@ const listOptions = ref({
 			label: 'New Role',
 			variant: 'solid',
 			slots: {
-				prefix: icon('plus')
+				prefix: icon('plus'),
 			},
 			onClick() {
 				confirmDialog({
@@ -103,22 +112,22 @@ const listOptions = ref({
 						{
 							fieldname: 'title',
 							label: 'Role',
-							autocomplete: 'off'
-						}
+							autocomplete: 'off',
+						},
 					],
 					onSuccess({ hide, values }) {
 						if (values.title) {
 							return groups.insert.submit(
 								{ title: values.title },
-								{ onSuccess: hide }
+								{ onSuccess: hide },
 							);
 						}
 						return null;
-					}
+					},
 				});
-			}
+			},
 		};
-	}
+	},
 });
 
 function configureRole(row) {

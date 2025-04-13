@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -13,6 +14,7 @@ class SiteGroupDeploy(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.site_group_deploy_app.site_group_deploy_app import (
 			SiteGroupDeployApp,
 		)
@@ -36,7 +38,7 @@ class SiteGroupDeploy(Document):
 		version: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["status", "site"]
+	dashboard_fields = ("status", "site", "release_group")
 
 	def before_insert(self):
 		self.set_latest_version()
@@ -52,15 +54,12 @@ class SiteGroupDeploy(Document):
 		self.save()
 
 		group.initial_deploy()
-		# creation of site is called from `process_new_bench_job_update`
 
 	def set_latest_version(self):
 		if self.version:
 			return
 
-		self.version = frappe.db.get_value(
-			"Frappe Version", {"status": "stable"}, order_by="number desc"
-		)
+		self.version = frappe.db.get_value("Frappe Version", {"status": "stable"}, order_by="number desc")
 
 	def check_if_rg_or_site_exists(self):
 		from press.press.doctype.site.site import Site
@@ -105,24 +104,34 @@ class SiteGroupDeploy(Document):
 		apps = [{"app": app.app} for app in self.apps]
 		app_plan_map = {app.app: {"name": app.plan} for app in self.apps if app.plan}
 
-		site = frappe.get_doc(
-			{
-				"doctype": "Site",
-				"team": self.team,
-				"subdomain": self.subdomain,
-				"apps": apps,
-				"cluster": self.cluster,
-				"release_group": self.release_group,
-				"bench": self.bench,
-				"domain": frappe.db.get_single_value("Press Settings", "domain"),
-				"subscription_plan": cheapest_private_bench_plan,
-				"app_plans": app_plan_map,
-			}
-		).insert()
+		try:
+			site = frappe.get_doc(
+				{
+					"doctype": "Site",
+					"team": self.team,
+					"subdomain": self.subdomain,
+					"apps": apps,
+					"cluster": self.cluster,
+					"release_group": self.release_group,
+					"bench": self.bench,
+					"domain": frappe.db.get_single_value("Press Settings", "domain"),
+					"subscription_plan": cheapest_private_bench_plan,
+					"app_plans": app_plan_map,
+				}
+			).insert()
 
-		self.site = site.name
-		self.status = "Creating Site"
+			self.site = site.name
+			self.status = "Creating Site"
+
+		except frappe.exceptions.ValidationError:
+			self.status = "Site Creation Failed"
+
 		self.save()
+
+	def update_site_group_deploy_on_deploy_failure(self, deploy):
+		if deploy and deploy.status == "Failure":
+			self.status = "Bench Deploy Failed"
+			self.save()
 
 	def update_site_group_deploy_on_process_job(self, job):
 		if job.job_type == "New Bench":

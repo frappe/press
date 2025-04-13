@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-10-28 17:06:07.172615",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "mount_type",
+  "volume_id",
+  "filesystem",
+  "column_break_ygbk",
+  "status",
+  "source",
+  "column_break_uvrc",
+  "uuid",
+  "mount_point",
+  "mount_options",
+  "permissions_section",
+  "mount_point_owner",
+  "mount_point_group",
+  "column_break_kwsz",
+  "mount_point_mode"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "volume_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Volume ID",
+   "mandatory_depends_on": "eval: doc.mount_type === \"Volume\"",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ygbk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "ext4",
+   "fieldname": "filesystem",
+   "fieldtype": "Select",
+   "label": "Filesystem",
+   "options": "ext4\nnone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mount_options",
+   "fieldtype": "Data",
+   "label": "Mount Options"
+  },
+  {
+   "columns": 1,
+   "default": "Volume",
+   "fieldname": "mount_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mount Type",
+   "options": "Volume\nBind",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "mount_point",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mount Point",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source",
+   "mandatory_depends_on": "eval: doc.mount_type === \"Bind\"",
+   "read_only_depends_on": "eval: doc.mount_type === \"Volume\"",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "uuid",
+   "fieldtype": "Data",
+   "label": "UUID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Permissions"
+  },
+  {
+   "default": "root",
+   "fieldname": "mount_point_owner",
+   "fieldtype": "Data",
+   "label": "Mount Point Owner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_kwsz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_uvrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0755",
+   "fieldname": "mount_point_mode",
+   "fieldtype": "Data",
+   "label": "Mount Point Mode",
+   "reqd": 1
+  },
+  {
+   "default": "root",
+   "fieldname": "mount_point_group",
+   "fieldtype": "Data",
+   "label": "Mount Point Group",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-11-15 17:24:16.761964",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Mount",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

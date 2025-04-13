@@ -20,34 +20,58 @@ concurrency:
 
 jobs:
   format:
-    name: 'Black and Flake8'
+    name: 'Lint and Format'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install dependencies
         run: |
-          pip install flake8 git+https://github.com/adityahase/black
-      - name: Black Test
+          pip install ruff
+
+      - name: Get changed files
+        id: changed-python-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **.py
+
+      - name: List all changed files
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          black --check ${GITHUB_WORKSPACE}/press/press
-      - name: Flake8 Test
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
+
+      - name: Lint Check
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
+          ruff check --output-format github ${ALL_CHANGED_FILES}
+
+      - name: Format Check
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
+        run: |
+          ruff format --check ${ALL_CHANGED_FILES} --diff
 
   semgrep:
     name: Semgrep Rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - name: Run Semgrep rules
@@ -80,7 +104,7 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check for valid Python & Merge Conflicts
         run: |
@@ -90,18 +114,18 @@ jobs:
               exit 1
           fi
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           check-latest: true
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -113,7 +137,7 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -129,10 +153,10 @@ jobs:
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           install: true
 
@@ -143,18 +167,19 @@ jobs:
           bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 2 --build-number ${{ matrix.container }}
         env:
           TYPE: server
+          COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
 
       - name: Upload coverage reports to Codecov
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
         if: always()
 
       - name: Upload bench start logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: bench-start-logs
+          name: bench-start-logs-${{ matrix.container }}
           path: /home/runner/frappe-bench/bench_start_logs.txt
         if: always()
 
@@ -165,13 +190,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false
           verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}

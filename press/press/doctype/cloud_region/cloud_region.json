@@ -23,13 +23,13 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "AWS EC2\nOCI",
+   "options": "AWS EC2\nOCI\nHetzner",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-11 15:29:40.542951",
+ "modified": "2024-09-14 12:04:26.561520",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cloud Region",

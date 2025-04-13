@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import frappe
 
@@ -97,6 +97,13 @@ class RegistryServer(BaseServer):
 		self.save()
 
 	def _prune_docker_system(self):
-		toggle_builds(False)
-		super()._prune_docker_system()
 		toggle_builds(True)
+		try:
+			ansible = Ansible(
+				playbook="docker_registry_prune.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Prune Docker Registry Exception", doc=self)
+		toggle_builds(False)

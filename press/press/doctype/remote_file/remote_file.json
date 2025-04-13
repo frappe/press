@@ -82,7 +82,8 @@
    "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_uzdq",
@@ -95,7 +96,7 @@
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2024-05-10 15:07:11.179229",
+ "modified": "2025-03-18 10:10:24.353402",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",

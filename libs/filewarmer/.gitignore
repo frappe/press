@@ -1,0 +1,9 @@
+*.h
+*.so
+*.json
+lib/**
+__pycache__
+build
+dist
+filewarmer.egg-info
+filewarmer/README.md

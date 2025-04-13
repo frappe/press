@@ -1,22 +1,26 @@
 # Copyright (c) 2022, Frappe and Contributors
 # See license.txt
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
 
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
+
 
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 def create_test_virtual_machine_image(
-	ip: str = None,
+	ip: str | None = None,
 	cluster: Cluster = None,
 	series: str = "m",
 ) -> VirtualMachineImage:

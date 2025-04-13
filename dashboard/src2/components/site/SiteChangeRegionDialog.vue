@@ -60,8 +60,24 @@
 					class="mt-4 text-sm text-gray-600"
 				>
 					If the region you're looking for isn't available, please add from the
-					Bench dashboard.
+					Bench Group dashboard.
 				</p>
+				<div
+					class="rounded border border-gray-200 bg-gray-100 p-2"
+					v-if="$resources.ARecords.data?.length == 0"
+				>
+					<p class="text-sm text-gray-700">
+						<strong>Note</strong>: This site seems to have custom domains with
+						<strong>A record</strong>. Please update the same after migration to
+						avoid downtime. To know more, refer
+						<a
+							href="https://frappecloud.com/docs/sites/custom-domains"
+							target="_blank"
+							class="underline"
+							>the documentation.</a
+						>
+					</p>
+				</div>
 			</div>
 			<ErrorMessage class="mt-3" :message="$resources.changeRegion.error" />
 		</template>
@@ -100,6 +116,19 @@ export default {
 		}
 	},
 	resources: {
+		ARecords() {
+			return {
+				type: 'list',
+				doctype: 'Site Domain',
+				filters: {
+					site: this.site,
+					dns_type: 'A',
+					domain: ['!=', this.site]
+				},
+				limit: 1,
+				auto: true
+			};
+		},
 		changeRegionOptions() {
 			return {
 				url: 'press.api.site.change_region_options',

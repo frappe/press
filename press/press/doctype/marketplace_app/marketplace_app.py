@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 from base64 import b64decode
-from typing import Dict, List
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
-from frappe.types.DF import Data
 import requests
 from frappe.query_builder.functions import Cast_
 from frappe.utils.caching import redis_cache
@@ -26,6 +26,9 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import get_current_team, get_last_doc
 
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
+
 
 class MarketplaceApp(WebsiteGenerator):
 	# begin: auto-generated types
@@ -35,14 +38,16 @@ class MarketplaceApp(WebsiteGenerator):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
 			MarketplaceAppCategories,
 		)
 		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import (
 			MarketplaceAppScreenshot,
 		)
-		from press.press.doctype.marketplace_app_version.marketplace_app_version import (
-			MarketplaceAppVersion,
+		from press.press.doctype.marketplace_app_version.marketplace_app_version import MarketplaceAppVersion
+		from press.press.doctype.marketplace_localisation_app.marketplace_localisation_app import (
+			MarketplaceLocalisationApp,
 		)
 
 		after_install_script: DF.Code | None
@@ -50,11 +55,13 @@ class MarketplaceApp(WebsiteGenerator):
 		app: DF.Link
 		average_rating: DF.Float
 		categories: DF.Table[MarketplaceAppCategories]
+		collect_feedback: DF.Check
 		custom_verify_template: DF.Check
 		description: DF.SmallText
 		documentation: DF.Data | None
 		frappe_approved: DF.Check
 		image: DF.AttachImage | None
+		localisation_apps: DF.Table[MarketplaceLocalisationApp]
 		long_description: DF.TextEditor | None
 		message: DF.TextEditor | None
 		outgoing_email: DF.Data | None
@@ -79,9 +86,7 @@ class MarketplaceApp(WebsiteGenerator):
 		signature: DF.TextEditor | None
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
-		status: DF.Literal[
-			"Draft", "Published", "In Review", "Attention Required", "Rejected"
-		]
+		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected", "Disabled"]
 		stop_auto_review: DF.Check
 		subject: DF.Data | None
 		subscription_type: DF.Literal["Free", "Paid", "Freemium"]
@@ -93,7 +98,7 @@ class MarketplaceApp(WebsiteGenerator):
 		website: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields: ClassVar = [
 		"image",
 		"title",
 		"status",
@@ -180,9 +185,7 @@ class MarketplaceApp(WebsiteGenerator):
 			app_source = frappe.get_doc("App Source", source.source)
 
 			if app_source.app != self.app:
-				frappe.throw(
-					f"App Source {frappe.bold(source.source)} does not belong to this app!"
-				)
+				frappe.throw(f"App Source {frappe.bold(source.source)} does not belong to this app!")
 
 			app_source_versions = [v.version for v in app_source.versions]
 			if source.version not in app_source_versions:
@@ -192,13 +195,9 @@ class MarketplaceApp(WebsiteGenerator):
 				)
 
 	def validate_number_of_screenshots(self):
-		max_allowed_screenshots = frappe.db.get_single_value(
-			"Press Settings", "max_allowed_screenshots"
-		)
+		max_allowed_screenshots = frappe.db.get_single_value("Press Settings", "max_allowed_screenshots")
 		if len(self.screenshots) > max_allowed_screenshots:
-			frappe.throw(
-				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
-			)
+			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
 
 	def change_branch(self, source, version, to_branch):
 		existing_source = frappe.db.exists(
@@ -206,9 +205,7 @@ class MarketplaceApp(WebsiteGenerator):
 			{
 				"name": ("!=", self.name),
 				"app": self.app,
-				"repository_url": frappe.db.get_value(
-					"App Source", {"name": source}, "repository_url"
-				),
+				"repository_url": frappe.db.get_value("App Source", {"name": source}, "repository_url"),
 				"branch": to_branch,
 				"team": self.team,
 			},
@@ -332,9 +329,7 @@ class MarketplaceApp(WebsiteGenerator):
 		context.app = self
 
 		supported_versions = []
-		public_rgs = frappe.get_all(
-			"Release Group", filters={"public": True}, fields=["version", "name"]
-		)
+		public_rgs = frappe.get_all("Release Group", filters={"public": True}, fields=["version", "name"])
 
 		unique_public_rgs = {}
 		for rg in public_rgs:
@@ -346,14 +341,21 @@ class MarketplaceApp(WebsiteGenerator):
 				continue
 
 			frappe_source_name = frappe.get_doc(
-				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+				"Release Group App",
+				{"app": "frappe", "parent": unique_public_rgs[source.version]},
 			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
+				"App Source",
+				frappe_source_name,
+				["repository_url", "branch"],
+				as_dict=True,
 			)
 
 			app_source = frappe.db.get_value(
-				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+				"App Source",
+				source.source,
+				["repository_url", "branch", "public"],
+				as_dict=True,
 			)
 
 			supported_versions.append(
@@ -399,7 +401,7 @@ class MarketplaceApp(WebsiteGenerator):
 		context.user_reviews = user_reviews
 		context.ratings_summary = ratings_summary
 
-	def get_user_reviews(self) -> List:
+	def get_user_reviews(self) -> list:
 		app_user_review = frappe.qb.DocType("App User Review")
 		user = frappe.qb.DocType("User")
 
@@ -420,7 +422,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return query.run(as_dict=True)
 
-	def get_user_ratings_summary(self, reviews: List) -> Dict:
+	def get_user_ratings_summary(self, reviews: list) -> dict:
 		total_num_reviews = len(reviews)
 		avg_rating = 0.0
 
@@ -454,9 +456,7 @@ class MarketplaceApp(WebsiteGenerator):
 				release_group = frappe.get_doc("Release Group", rg_name)
 				sources_on_rg = [a.source for a in release_group.apps]
 
-				latest_active_bench = get_last_doc(
-					"Bench", filters={"status": "Active", "group": rg_name}
-				)
+				latest_active_bench = get_last_doc("Bench", filters={"status": "Active", "group": rg_name})
 
 				if latest_active_bench:
 					sources_on_bench = [a.source for a in latest_active_bench.apps]
@@ -539,9 +539,7 @@ class MarketplaceApp(WebsiteGenerator):
 			.left_outer_join(site_plan)
 			.on(site_app.plan == site_plan.name)
 			.select(site.name, site.plan, team.user)
-			.where(
-				(site.status == "Active") & (site_app.app == self.app) & (site_plan.price_usd >= 0)
-			)
+			.where((site.status == "Active") & (site_app.app == self.app) & (site_plan.price_usd >= 0))
 		)
 		return query.run(as_dict=True)
 
@@ -587,7 +585,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"installs_active_benches": self.total_active_benches(),
 			"installs_last_week": frappe.db.count(
 				"Site Activity",
-				{"action": "Install App", "reason": self.app, "creation": (">=", last_week)},
+				{
+					"action": "Install App",
+					"reason": self.app,
+					"creation": (">=", last_week),
+				},
 			),
 			"total_payout": self.get_payout_amount(),
 			"paid_payout": self.get_payout_amount(status="Paid"),
@@ -595,15 +597,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"commission": self.get_payout_amount(total_for="commission"),
 		}
 
-	def get_plans(self, frappe_version: str = None) -> List:
+	def get_plans(self, frappe_version: str | None = None) -> list:
 		return get_plans_for_app(self.name, frappe_version)
 
 	def can_charge_for_subscription(self, subscription):
-		return (
-			subscription.enabled == 1
-			and subscription.team
-			and subscription.team != "Administrator"
-		)
+		return subscription.enabled == 1 and subscription.team and subscription.team != "Administrator"
 
 
 def get_plans_for_app(
@@ -642,9 +640,9 @@ def get_plans_for_app(
 	return plans
 
 
-def marketplace_app_hook(app=None, site: Data | None = "", op="install"):
+def marketplace_app_hook(app=None, site: Site | None = None, op="install"):
 	if app is None:
-		site_apps = frappe.get_all("Site App", filters={"parent": site}, pluck="app")
+		site_apps = frappe.get_all("Site App", filters={"parent": site.name}, pluck="app")
 		for app in site_apps:
 			run_script(app, site, op)
 	else:
@@ -652,24 +650,19 @@ def marketplace_app_hook(app=None, site: Data | None = "", op="install"):
 
 
 def get_script_name(app, op):
-	if op == "install" and frappe.db.get_value(
-		"Marketplace App", app, "run_after_install_script"
-	):
+	if op == "install" and frappe.db.get_value("Marketplace App", app, "run_after_install_script"):
 		return "after_install_script"
 
-	elif op == "uninstall" and frappe.db.get_value(
-		"Marketplace App", app, "run_after_uninstall_script"
-	):
+	if op == "uninstall" and frappe.db.get_value("Marketplace App", app, "run_after_uninstall_script"):
 		return "after_uninstall_script"
-	else:
-		return ""
+	return ""
 
 
-def run_script(app, site, op):
+def run_script(app, site: Site, op):
 	script = get_script_name(app, op)
 	if script:
 		script = frappe.db.get_value("Marketplace App", app, script)
-		local = {"doc": frappe.get_doc("Site", site)}
+		local = {"doc": site}
 		safe_exec(script, _locals=local)
 
 
@@ -679,5 +672,6 @@ def get_total_installs_by_app():
 		"Site App",
 		fields=["app", "count(*) as count"],
 		group_by="app",
+		order_by=None,
 	)
 	return {installs["app"]: installs["count"] for installs in total_installs}

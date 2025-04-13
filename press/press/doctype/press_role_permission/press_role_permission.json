@@ -37,7 +37,8 @@
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
-   "options": "Site"
+   "options": "Site",
+   "search_index": 1
   },
   {
    "fieldname": "release_group",
@@ -52,9 +53,10 @@
    "options": "Server"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-20 13:03:39.066144",
+ "modified": "2025-03-17 12:39:57.349710",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role Permission",
@@ -97,6 +99,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

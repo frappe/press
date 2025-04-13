@@ -7,6 +7,7 @@
 				{
 					label: 'Restore',
 					variant: 'solid',
+					theme: 'red',
 					disabled: !selectedSite,
 					onClick: () => {
 						this.$emit('restore', this.selectedSite.value);
@@ -31,11 +32,19 @@
 					})
 				"
 			/>
+			<AlertBanner
+				v-if="selectedSite"
+				class="mt-4"
+				type="warning"
+				:title="`Restoring will overwrite the current data of <strong>${selectedSite.value}</strong> with the backup data of <strong>${site}</strong>`"
+			/>
 		</template>
 	</Dialog>
 </template>
 
 <script>
+import AlertBanner from '../AlertBanner.vue';
+
 export default {
 	name: 'SelectSiteForRestore',
 	props: ['site'],
@@ -45,6 +54,9 @@ export default {
 			selectedSite: null,
 			showDialog: true
 		};
+	},
+	components: {
+		AlertBanner
 	},
 	resources: {
 		sites() {

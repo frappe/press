@@ -62,12 +62,12 @@ const routes = [
 		component: () => import('../views/notifications/Notifications.vue')
 	},
 	{
-		path: '/benches',
+		path: '/groups',
 		name: 'BenchesScreen',
 		component: () => import('../views/bench/Benches.vue')
 	},
 	{
-		path: '/benches/new/:saas_app?',
+		path: '/groups/new/:saas_app?',
 		name: 'NewBench',
 		meta: {
 			isSaasPage: true
@@ -82,7 +82,7 @@ const routes = [
 		props: true
 	},
 	{
-		path: '/benches/:benchName',
+		path: '/groups/:benchName',
 		name: 'Bench',
 		component: () => import('../views/bench/Bench.vue'),
 		props: true,
@@ -132,7 +132,7 @@ const routes = [
 		]
 	},
 	{
-		path: '/benches/:benchName/apps/new',
+		path: '/groups/:benchName/apps/new',
 		name: 'NewBenchApp',
 		component: () => import('../views/bench/NewBenchApp.vue'),
 		props: true
@@ -288,7 +288,7 @@ const routes = [
 			},
 			{
 				name: 'ServerBenches',
-				path: 'benches',
+				path: 'groups',
 				component: () => import('../views/server/ServerBenches.vue'),
 				props: true
 			},

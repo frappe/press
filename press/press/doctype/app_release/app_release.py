@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -11,25 +10,25 @@ from typing import Optional, TypedDict
 
 import frappe
 from frappe.model.document import Document
+
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
 
-AppReleaseDict = TypedDict(
-	"AppReleaseDict",
-	name=str,
-	source=str,
-	hash=str,
-	cloned=int,
-	clone_directory=str,
-	timestamp=Optional[datetime],
-	creation=datetime,
-)
-AppReleasePair = TypedDict(
-	"AppReleasePair",
-	old=AppReleaseDict,
-	new=AppReleaseDict,
-)
+
+class AppReleaseDict(TypedDict):
+	name: str
+	source: str
+	hash: str
+	cloned: int
+	clone_directory: str
+	timestamp: Optional[datetime]  # noqa
+	creation: datetime
+
+
+class AppReleasePair(TypedDict):
+	old: AppReleaseDict
+	new: AppReleaseDict
 
 
 class AppRelease(Document):
@@ -42,23 +41,23 @@ class AppRelease(Document):
 		from frappe.types import DF
 
 		app: DF.Link
-		author: DF.Data | None
-		clone_directory: DF.Text | None
+		author: DF.Data | None  # noqa
+		clone_directory: DF.Text | None  # noqa
 		cloned: DF.Check
-		code_server_url: DF.Text | None
+		code_server_url: DF.Text | None  # noqa
 		hash: DF.Data
 		invalid_release: DF.Check
-		invalidation_reason: DF.Code | None
-		message: DF.Code | None
-		output: DF.Code | None
+		invalidation_reason: DF.Code | None  # noqa
+		message: DF.Code | None  # noqa
+		output: DF.Code | None  # noqa
 		public: DF.Check
 		source: DF.Link
 		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
 		team: DF.Link
-		timestamp: DF.Datetime | None
+		timestamp: DF.Datetime | None  # noqa
 	# end: auto-generated types
 
-	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
+	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]  # noqa
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -90,7 +89,7 @@ class AppRelease(Document):
 			approval_request_name.as_("approval_request_name"),
 		)
 
-		return query
+		return query  # noqa
 
 	def validate(self):
 		if not self.clone_directory:
@@ -98,9 +97,7 @@ class AppRelease(Document):
 
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
-		teams = frappe.get_all(
-			"Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team"
-		)
+		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
 			self.status = "Approved"
 
@@ -132,16 +129,12 @@ class AppRelease(Document):
 		self.save(ignore_permissions=True)
 
 	def validate_repo(self):
-		if (
-			self.invalid_release
-			or not self.clone_directory
-			or not os.path.isdir(self.clone_directory)
-		):
+		if self.invalid_release or not self.clone_directory or not os.path.isdir(self.clone_directory):
 			return
 
-		if syntax_error := check_python_syntax(self.clone_directory):
-			self.set_invalid(syntax_error)
-		elif syntax_error := check_pyproject_syntax(self.clone_directory):
+		if (syntax_error := check_python_syntax(self.clone_directory)) or (
+			syntax_error := check_pyproject_syntax(self.clone_directory)
+		):
 			self.set_invalid(syntax_error)
 
 	def set_invalid(self, reason: str):
@@ -163,9 +156,7 @@ class AppRelease(Document):
 
 	def set_clone_directory(self):
 		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
-		self.clone_directory = os.path.join(
-			clone_directory, self.app, self.source, self.hash[:10]
-		)
+		self.clone_directory = os.path.join(clone_directory, self.app, self.source, self.hash[:10])
 
 	def _set_prepared_clone_directory(self, delete_if_exists: bool = False):
 		self.clone_directory = get_prepared_clone_directory(
@@ -177,12 +168,14 @@ class AppRelease(Document):
 
 	def _set_code_server_url(self) -> None:
 		code_server = frappe.db.get_single_value("Press Settings", "code_server")
-		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.app}/{self.source}/{self.hash[:10]}"
+		code_server_url = (
+			f"{code_server}/?folder=/home/coder/project/{self.app}/{self.source}/{self.hash[:10]}"
+		)
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):
-		source = frappe.get_doc("App Source", self.source)
-		url = self._get_repo_url(source)
+		source: "AppSource" = frappe.get_doc("App Source", self.source)
+		url = source.get_repo_url()
 
 		self.output = ""
 		self.output += self.run("git init")
@@ -216,7 +209,7 @@ class AppRelease(Document):
 			- If token is not received _get_repo_url throws
 			- Hence token was received, but app still cannot be cloned
 			"""
-			raise Exception("Repository could not be fetched", self.app)
+			raise Exception("Repository could not be fetched", self.app)  # noqa
 
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
@@ -355,10 +348,7 @@ def get_permission_query_conditions(user):
 
 	team = get_current_team()
 
-	return (
-		f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp"
-		" Release`.`public` = 1)"
-	)
+	return f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp" " Release`.`public` = 1)"
 
 
 def has_permission(doc, ptype, user):
@@ -411,7 +401,7 @@ def get_prepared_clone_directory(
 
 def get_changed_files_between_hashes(
 	source: str, deployed_hash: str, update_hash: str
-) -> Optional[tuple[list[str], AppReleasePair]]:
+) -> Optional[tuple[list[str], AppReleasePair]]:  # noqa
 	"""
 	Checks diff between two App Releases, if they have not been cloned
 	the App Releases are cloned this is because the commit needs to be
@@ -477,9 +467,7 @@ def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
 	return releases[0]
 
 
-def is_update_after_deployed(
-	update_release: AppReleaseDict, deployed_release: AppReleaseDict
-) -> bool:
+def is_update_after_deployed(update_release: AppReleaseDict, deployed_release: AppReleaseDict) -> bool:
 	update_timestamp = update_release["timestamp"]
 	deployed_timestamp = deployed_release["timestamp"]
 	if update_timestamp and deployed_timestamp:
@@ -489,9 +477,7 @@ def is_update_after_deployed(
 
 
 def run(command, cwd):
-	return subprocess.check_output(
-		shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd
-	).decode()
+	return subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd).decode()
 
 
 def check_python_syntax(dirpath: str) -> str:
@@ -505,8 +491,8 @@ def check_python_syntax(dirpath: str) -> str:
 	- -q: quiet, only print errors (stdout)
 	- -o: optimize level, 0 is no optimization
 	"""
-
-	command = f"python3 -m compileall -q -o 0 {dirpath}"
+	_python = _get_python_path()
+	command = f"{_python} -m compileall -q -o 0 {dirpath}"
 	proc = subprocess.run(
 		shlex.split(command),
 		text=True,
@@ -519,6 +505,22 @@ def check_python_syntax(dirpath: str) -> str:
 		return proc.stderr
 
 	return proc.stdout
+
+
+def _get_python_path() -> str:
+	try:
+		from frappe.utils import get_bench_path
+
+		bench_path = get_bench_path()
+		_python_path = f"{bench_path}/env/bin/python3"
+
+		if not os.path.exists(_python_path):
+			_python_path = "python3"
+
+	except ImportError:
+		_python_path = "python3"
+
+	return _python_path
 
 
 def check_pyproject_syntax(dirpath: str) -> str:

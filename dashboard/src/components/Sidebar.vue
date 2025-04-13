@@ -183,10 +183,10 @@ export default {
 					icon: FCIcons.SiteIcon
 				},
 				{
-					label: 'Benches',
-					route: '/benches',
+					label: 'Bench Groups',
+					route: '/groups',
 					highlight: () => {
-						return this.$route.fullPath.startsWith('/benches');
+						return this.$route.fullPath.startsWith('/groups');
 					},
 					icon: FCIcons.BenchIcon
 					//condition: () => this.$account.team?.benches_enabled

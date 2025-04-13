@@ -8,7 +8,8 @@
   "site",
   "team",
   "action",
-  "reason"
+  "reason",
+  "job"
  ],
  "fields": [
   {
@@ -28,7 +29,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nEnable Database Access\nDisable Database Access",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -44,11 +45,18 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "depends_on": "eval: doc.job",
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-15 12:25:18.275599",
+ "modified": "2024-11-26 11:53:47.035359",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

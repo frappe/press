@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus Redis Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/redis_exporter/redis_exporter --web.listen-address 127.0.0.1:9121 --redis.addr redis://127.0.0.1:13000
+SyslogIdentifier=redis_exporter
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

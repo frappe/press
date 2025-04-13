@@ -21,8 +21,10 @@
   "section_break_5",
   "machine_type",
   "instance_id",
+  "platform",
   "column_break_hgcr",
   "disk_size",
+  "root_disk_size",
   "vcpu",
   "ram",
   "column_break_8",
@@ -42,7 +44,11 @@
   "column_break_18",
   "termination_protection",
   "volumes_section",
-  "volumes"
+  "has_data_volume",
+  "volumes",
+  "temporary_volumes",
+  "snapshots_section",
+  "skip_automated_snapshot"
  ],
  "fields": [
   {
@@ -51,7 +57,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI",
+   "options": "\nAWS EC2\nOCI\nHetzner",
    "read_only": 1,
    "reqd": 1
   },
@@ -75,6 +81,7 @@
   {
    "fieldname": "cluster",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1,
@@ -97,13 +104,13 @@
    "fetch_if_empty": 1,
    "fieldname": "machine_image",
    "fieldtype": "Data",
-   "label": "Machine Image",
-   "set_only_once": 1
+   "label": "Machine Image"
   },
   {
    "fieldname": "machine_type",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Machine Type",
    "reqd": 1
   },
@@ -170,6 +177,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nPending\nRunning\nStopped\nTerminated",
    "read_only": 1,
@@ -192,14 +200,15 @@
    "fieldtype": "Table",
    "label": "Volumes",
    "options": "Virtual Machine Volume",
-   "read_only": 1
+   "read_only_depends_on": "eval: doc.volumes.length > 0"
   },
   {
    "fieldname": "virtual_machine_image",
    "fieldtype": "Link",
    "label": "Virtual Machine Image",
+   "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
    "options": "Virtual Machine Image",
-   "set_only_once": 1
+   "read_only_depends_on": "eval: doc.virtual_machine_image"
   },
   {
    "default": "0",
@@ -277,8 +286,47 @@
   {
    "fieldname": "instance_id",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Instance ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "x86_64\narm64",
+   "reqd": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "root_disk_size",
+   "fieldtype": "Int",
+   "label": "Root Disk Size",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_data_volume",
+   "fieldtype": "Check",
+   "label": "Has Data Volume"
+  },
+  {
+   "description": "Data volumes that have been temporarily attached for tasks such as Physical Backup Restoration.",
+   "fieldname": "temporary_volumes",
+   "fieldtype": "Table",
+   "label": "Temporary Volumes",
+   "options": "Virtual Machine Temporary Volume"
+  },
+  {
+   "fieldname": "snapshots_section",
+   "fieldtype": "Section Break",
+   "label": "Snapshots"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_automated_snapshot",
+   "fieldtype": "Check",
+   "label": "Skip Automated Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -307,9 +355,14 @@
    "group": "Snapshots",
    "link_doctype": "Virtual Machine Image",
    "link_fieldname": "virtual_machine"
+  },
+  {
+   "group": "Migration",
+   "link_doctype": "Virtual Machine Migration",
+   "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-12-12 12:18:00.680292",
+ "modified": "2025-03-19 11:19:06.067266",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

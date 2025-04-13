@@ -25,7 +25,8 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "document_type",
@@ -77,7 +78,8 @@
    "fieldtype": "Link",
    "label": "Plan Type",
    "options": "DocType",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "site",
@@ -95,7 +97,8 @@
   {
    "fieldname": "secret_key",
    "fieldtype": "Data",
-   "label": "Secret Key"
+   "label": "Secret Key",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -105,7 +108,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-08-30 12:55:23.639210",
+ "modified": "2025-03-18 10:11:04.918139",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

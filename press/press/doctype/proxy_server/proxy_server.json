@@ -17,6 +17,10 @@
   "is_server_setup",
   "is_self_hosted",
   "team",
+  "public",
+  "storage_section",
+  "auto_add_storage_min",
+  "auto_add_storage_max",
   "section_break_8",
   "ip",
   "enabled_default_routing",
@@ -390,10 +394,37 @@
    "fieldname": "disable_agent_job_auto_retry",
    "fieldtype": "Check",
    "label": "Disable Agent Job Auto Retry"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "default": "10",
+   "description": "Minimum storage to add automatically each time",
+   "fieldname": "auto_add_storage_min",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Min",
+   "non_negative": 1
+  },
+  {
+   "default": "50",
+   "description": "Maximum storage to add automatically each time",
+   "fieldname": "auto_add_storage_max",
+   "fieldtype": "Int",
+   "label": "Auto Add Storage Max",
+   "non_negative": 1
   }
  ],
  "links": [],
- "modified": "2024-03-22 12:13:59.734423",
+ "modified": "2024-12-26 13:20:05.120010",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

@@ -50,6 +50,12 @@ def execute(filters=None):
 			"fieldtype": "Long Text",
 			"width": 100,
 		},
+		{
+			"fieldname": "python",
+			"label": frappe._("Python Version"),
+			"fieldtype": "Data",
+			"width": 100,
+		},
 	]
 
 	data = get_data(filters)

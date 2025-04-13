@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -16,9 +15,7 @@ from press.utils import log_error
 
 class SitePool:
 	def __init__(self):
-		self.site_count = frappe.db.count(
-			"Site", filters={"is_standby": True, "status": "Active"}
-		)
+		self.site_count = frappe.db.count("Site", filters={"is_standby": True, "status": "Active"})
 		self.pool_size = frappe.db.get_single_value("Press Settings", "standby_pool_size")
 		self.queue_size = frappe.db.get_single_value("Press Settings", "standby_queue_size")
 
@@ -28,7 +25,6 @@ class SitePool:
 			sites_created = 0
 			while sites_created < self.queue_size:
 				self.create_one()
-				frappe.db.commit()
 				sites_created += 1
 
 	def create_one(self):

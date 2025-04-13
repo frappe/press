@@ -1,6 +1,7 @@
 import { h, defineAsyncComponent } from 'vue';
 import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../utils/toast';
 
 export function tagTab() {
 	return {
@@ -69,11 +70,7 @@ export function tagTab() {
 									toast.promise(documentResource.removeTag.promise, {
 										loading: 'Removing tag...',
 										success: () => `Tag ${row.tag_name} removed`,
-										error: e => {
-											return e.messages.length
-												? e.messages.join('\n')
-												: e.message;
-										}
+										error: e => getToastErrorMessage(e, 'Failed to remove tag')
 									});
 								}
 							});

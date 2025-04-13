@@ -5,6 +5,7 @@
 		:label="label"
 		:options="autocompleteOptions"
 		:modelValue="modelValue"
+		:placeholder="placeholder"
 		@update:query="onQuery"
 		@update:model-value="
 			option => {
@@ -22,7 +23,7 @@ import { FormControl, debounce } from 'frappe-ui';
 
 export default {
 	name: 'LinkControl',
-	props: ['label', 'options', 'modelValue'],
+	props: ['label', 'options', 'modelValue', 'placeholder'],
 	emits: ['update:modelValue'],
 	inheritAttrs: false,
 	components: {
@@ -46,6 +47,7 @@ export default {
 					query: this.query
 				},
 				auto: true,
+				initialData: this.options.initialData || [],
 				transform: data => {
 					return data.map(option => ({
 						label: option.label || option.value,
@@ -64,7 +66,7 @@ export default {
 	computed: {
 		autocompleteOptions() {
 			let options = this.$resources.options.data || [];
-			let currentValueInOptions = options.find(
+			const currentValueInOptions = options.find(
 				o => o.value === this.modelValue
 			);
 
@@ -72,9 +74,14 @@ export default {
 				this.currentValidValueInOptions = currentValueInOptions;
 			}
 
-			if (this.modelValue && !currentValueInOptions) {
+			if (
+				this.modelValue &&
+				!currentValueInOptions &&
+				this.currentValidValueInOptions
+			) {
 				options = [this.currentValidValueInOptions, ...options];
 			}
+
 			return options;
 		}
 	}

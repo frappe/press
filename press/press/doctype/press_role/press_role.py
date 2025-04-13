@@ -1,5 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
@@ -18,39 +19,68 @@ class PressRole(Document):
 
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
+		admin_access: DF.Check
 		allow_apps: DF.Check
 		allow_bench_creation: DF.Check
 		allow_billing: DF.Check
 		allow_partner: DF.Check
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
+		allow_webhook_configuration: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"users",
+		"admin_access",
 		"allow_billing",
 		"allow_apps",
 		"allow_partner",
 		"allow_site_creation",
 		"allow_bench_creation",
 		"allow_server_creation",
+		"allow_webhook_configuration",
 		"team",
-	]
+	)
 
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
-			frappe.throw(
-				"Role with title {0} already exists".format(self.title), frappe.DuplicateEntryError
-			)
+			frappe.throw(f"Role with title {self.title} already exists", frappe.DuplicateEntryError)
 
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
 		):
 			frappe.throw("Only the team owner can create roles")
+
+	def validate(self):
+		self.set_first_role_as_admin()
+		self.allow_only_one_admin_role()
+		self.set_admin_permissions()
+
+	def set_first_role_as_admin(self):
+		if not frappe.get_all("Press Role", filters={"team": self.team}):
+			self.admin_access = 1
+
+	def allow_only_one_admin_role(self):
+		admin_roles = frappe.get_all(
+			"Press Role",
+			filters={"team": self.team, "admin_access": 1, "name": ("!=", self.name)},
+		)
+		if admin_roles and self.admin_access:
+			frappe.throw("There can only be one admin role per team")
+
+	def set_admin_permissions(self):
+		if self.admin_access:
+			self.allow_apps = 1
+			self.allow_billing = 1
+			self.allow_partner = 1
+			self.allow_site_creation = 1
+			self.allow_bench_creation = 1
+			self.allow_server_creation = 1
+			self.allow_webhook_configuration = 1
 
 	@dashboard_whitelist()
 	def add_user(self, user):
@@ -94,7 +124,7 @@ class PressRole(Document):
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
 
-def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
+def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:  # noqa: C901
 	"""
 	Check if the user is permitted to access the document based on the role permissions
 	Expects the function to throw error for `get` if no permission and return a list of permitted roles for `get_list`
@@ -106,10 +136,20 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	"""
 	from press.utils import has_role
 
-	if doctype not in ["Site", "Release Group", "Server", "Marketplace App"]:
+	if doctype not in [
+		"Site",
+		"Release Group",
+		"Server",
+		"Marketplace App",
+		"Press Webhook",
+		"Press Webhook Log",
+		"Press Webhook Attempt",
+	]:
 		return []
 
-	if frappe.local.system_user() or has_role("Press Support Agent"):
+	if (hasattr(frappe.local, "system_user") and frappe.local.system_user()) or has_role(
+		"Press Support Agent"
+	):
 		return []
 
 	PressRoleUser = frappe.qb.DocType("Press Role User")
@@ -123,18 +163,35 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 		.where(PressRole.team == frappe.local.team().name)
 	)
 
-	if doctype == "Marketplace App":
-		if roles := query.select(PressRole.allow_apps).run(as_dict=1):
-			# throw error if any of the roles don't have permission for apps
-			if not any(perm.allow_apps for perm in roles):
-				frappe.throw("Not permitted", frappe.PermissionError)
+	if (
+		doctype == "Marketplace App"
+		and (roles := query.select(PressRole.allow_apps).run(as_dict=1))
+		and not any(perm.allow_apps for perm in roles)
+	):
+		# throw error if any of the roles don't have permission for apps
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+	elif (
+		doctype in ["Press Webhook", "Press Webhook Log", "Press Webhook Attempt"]
+		and (roles := query.select(PressRole.allow_webhook_configuration).run(as_dict=1))
+		and not any(perm.allow_webhook_configuration for perm in roles)
+	):
+		# throw error if any of the roles don't have permission for webhooks
+		frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")
-		if roles := query.run(as_dict=1, pluck="name"):
+		roles = query.select(PressRole.admin_access).run(as_dict=1)
+
+		# this is an admin that can access all sites, release groups, and servers
+		if any(perm.admin_access for perm in roles):
+			return []
+
+		if roles:
+			role_names = [perm.name for perm in roles]
 			perms = frappe.db.get_all(
 				"Press Role Permission",
-				filters={"role": ["in", roles], field: name},
+				filters={"role": ["in", role_names], field: name},
 			)
 			if not perms and name:
 				# throw error if the user is not permitted for the document
@@ -143,7 +200,7 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 					frappe.PermissionError,
 				)
 			else:
-				return roles
+				return role_names
 
 	return []
 

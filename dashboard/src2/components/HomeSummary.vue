@@ -24,7 +24,7 @@
 			</div>
 		</div>
 		<div class="rounded-lg border p-4">
-			<div class="text-xl font-semibold">Benches</div>
+			<div class="text-xl font-semibold">Bench Group</div>
 		</div>
 	</div>
 </template>

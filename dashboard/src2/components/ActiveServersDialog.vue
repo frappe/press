@@ -1,5 +1,5 @@
 <template>
-	<Dialog :options="{ title: 'Drop Active Servers' }" modelValue="show">
+	<Dialog :options="{ title: 'Drop Active Servers' }" v-model="showDialog">
 		<template #body-content>
 			<div class="prose text-base">
 				Please drop the following active servers before disabling the account:
@@ -23,8 +23,10 @@
 <script>
 export default {
 	name: 'ActiveServersDialog',
-	props: {
-		show: Boolean
+	data() {
+		return {
+			showDialog: true
+		};
 	},
 	resources: {
 		activeServers: {

@@ -18,15 +18,29 @@ export default function generateRoutes() {
 		}
 		if (object.detail) {
 			let children = object.detail.tabs.map(tab => {
-				let routeName = `${object.doctype} Detail ${tab.label}`;
+				const routeName = `${object.doctype} Detail ${tab.label}`;
 				tab.routeName = routeName;
+				const nestedChildren = [];
+
+				// nested children shouldn't be added to the main children array
+				for (let route of tab.nestedChildrenRoutes || []) {
+					nestedChildren.push({
+						...route,
+						props: route => {
+							return { objectType, ...route.params };
+						}
+					});
+				}
+
 				return {
 					name: routeName,
 					path: tab.route,
 					component: () => import('../pages/DetailTab.vue'),
 					props: route => {
 						return { ...route.params };
-					}
+					},
+					redirect: nestedChildren.length ? { name: tab.redirectTo } : null,
+					children: nestedChildren
 				};
 			});
 			if (object.routes) {

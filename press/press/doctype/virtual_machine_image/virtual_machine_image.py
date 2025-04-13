@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
-
-from typing import Optional
+from __future__ import annotations
 
 import boto3
 import frappe
@@ -22,19 +21,26 @@ class VirtualMachineImage(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.virtual_machine_image_volume.virtual_machine_image_volume import (
+			VirtualMachineImageVolume,
+		)
+
 		cluster: DF.Link
 		copied_from: DF.Link | None
+		has_data_volume: DF.Check
 		image_id: DF.Data | None
 		instance_id: DF.Data
 		mariadb_root_password: DF.Password | None
 		platform: DF.Data | None
 		public: DF.Check
 		region: DF.Link
+		root_size: DF.Int
 		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
 		size: DF.Int
 		snapshot_id: DF.Data | None
 		status: DF.Literal["Pending", "Available", "Unavailable"]
 		virtual_machine: DF.Link
+		volumes: DF.Table[VirtualMachineImageVolume]
 	# end: auto-generated types
 
 	DOCTYPE = "Virtual Machine Image"
@@ -49,9 +55,11 @@ class VirtualMachineImage(Document):
 	def create_image(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
+			volumes = self.get_volumes_from_virtual_machine()
 			response = self.client.create_image(
 				InstanceId=self.instance_id,
 				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+				BlockDeviceMappings=volumes,
 			)
 			self.image_id = response["ImageId"]
 		elif cluster.cloud_provider == "OCI":
@@ -77,12 +85,12 @@ class VirtualMachineImage(Document):
 
 	def set_credentials(self):
 		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
-			self.mariadb_root_password = frappe.get_doc(
-				"Database Server", self.virtual_machine
-			).get_password("mariadb_root_password")
+			self.mariadb_root_password = frappe.get_doc("Database Server", self.virtual_machine).get_password(
+				"mariadb_root_password"
+			)
 
 	@frappe.whitelist()
-	def sync(self):
+	def sync(self):  # noqa: C901
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if cluster.cloud_provider == "AWS EC2":
 			images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
@@ -90,11 +98,44 @@ class VirtualMachineImage(Document):
 				image = images[0]
 				self.status = self.get_aws_status_map(image["State"])
 				self.platform = image["Architecture"]
-				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
-				if volume and "VolumeSize" in volume["Ebs"]:
-					self.size = volume["Ebs"]["VolumeSize"]
+				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x)
+				# This information is not accurate for images created from multiple volumes
+				attached_snapshots = []
 				if volume and "SnapshotId" in volume["Ebs"]:
 					self.snapshot_id = volume["Ebs"]["SnapshotId"]
+				for volume in image["BlockDeviceMappings"]:
+					if "Ebs" not in volume:
+						# We don't care about non-EBS (instance store) volumes
+						continue
+					snapshot_id = volume["Ebs"].get("SnapshotId")
+					if not snapshot_id:
+						# We don't care about volumes without snapshots
+						continue
+					attached_snapshots.append(snapshot_id)
+					existing = find(self.volumes, lambda x: x.snapshot_id == snapshot_id)
+					device = volume["DeviceName"]
+					volume_type = volume["Ebs"]["VolumeType"]
+					size = volume["Ebs"]["VolumeSize"]
+					if existing:
+						existing.device = device
+						existing.volume_type = volume_type
+						existing.size = size
+					else:
+						self.append(
+							"volumes",
+							{
+								"snapshot_id": snapshot_id,
+								"device": device,
+								"volume_type": volume_type,
+								"size": size,
+							},
+						)
+				for volume in list(self.volumes):
+					if volume.snapshot_id not in attached_snapshots:
+						self.remove(volume)
+
+				self.size = self.get_data_volume().size
+				self.root_size = self.get_data_volume().size
 			else:
 				self.status = "Unavailable"
 		elif cluster.cloud_provider == "OCI":
@@ -149,6 +190,22 @@ class VirtualMachineImage(Document):
 			"DELETED": "Unavailable",
 		}.get(status, "Unavailable")
 
+	def get_volumes_from_virtual_machine(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		volumes = []
+		for volume in machine.volumes:
+			volumes.append(
+				{
+					"DeviceName": volume.device,
+					"Ebs": {
+						"DeleteOnTermination": True,
+						"VolumeSize": volume.size,
+						"VolumeType": volume.volume_type,
+					},
+				}
+			)
+		return volumes
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -159,13 +216,14 @@ class VirtualMachineImage(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
-		elif cluster.cloud_provider == "OCI":
+		if cluster.cloud_provider == "OCI":
 			return ComputeClient(cluster.get_oci_config())
+		return None
 
 	@classmethod
 	def get_available_for_series(
-		cls, series: str, region: Optional[str] = None
-	) -> Optional[str]:
+		cls, series: str, region: str | None = None, platform: str | None = None
+	) -> str | None:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
@@ -175,10 +233,36 @@ class VirtualMachineImage(Document):
 			.where(
 				images.series == series,
 			)
+			.orderby(images.creation, order=frappe.qb.desc)
 		)
 		if region:
 			get_available_images = get_available_images.where(images.region == region)
+		if platform:
+			get_available_images = get_available_images.where(images.platform == platform)
 		available_images = get_available_images.run(as_dict=True)
 		if not available_images:
 			return None
 		return available_images[0].name
+
+	def get_root_volume(self):
+		# This only works for AWS
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		volume = find(self.volumes, lambda v: v.device == "/dev/sda1")
+		if volume:
+			return volume
+		return frappe._dict({"size": 0})
+
+	def get_data_volume(self):
+		if not self.has_data_volume:
+			return self.get_root_volume()
+
+		# This only works for AWS
+		if len(self.volumes) == 1:
+			return self.volumes[0]
+
+		volume = find(self.volumes, lambda v: v.device != "/dev/sda1")
+		if volume:
+			return volume
+		return frappe._dict({"size": 0})

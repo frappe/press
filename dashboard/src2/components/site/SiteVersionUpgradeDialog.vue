@@ -13,7 +13,7 @@
 				<FormControl
 					v-else-if="privateReleaseGroups.length > 0 && nextVersion"
 					variant="outline"
-					:label="`Please select a ${nextVersion} bench to upgrade your site from ${$site.doc.version}`"
+					:label="`Please select a ${nextVersion} bench group to upgrade your site from ${$site.doc.version}`"
 					class="w-full"
 					type="autocomplete"
 					:options="privateReleaseGroups"
@@ -30,6 +30,21 @@
 					type="checkbox"
 					v-model="skipFailingPatches"
 				/>
+				<FormControl
+					v-if="($site.doc.group_public && nextVersion) || benchHasCommonServer"
+					label="Skip backups"
+					type="checkbox"
+					v-model="skipBackups"
+					class="ml-4"
+				/>
+				<div
+					v-if="skipBackups"
+					class="flex items-center rounded bg-gray-50 p-4 text-sm text-gray-700"
+				>
+					<i-lucide-info class="mr-2 h-4 w-8" />
+					Backups will not be taken during the upgrade process and incase of any
+					failure rollback will not be possible.
+				</div>
 				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
 				</p>
@@ -46,7 +61,7 @@
 				:disabled="
 					benchHasCommonServer || !privateReleaseGroup.value || !nextVersion
 				"
-				label="Add Server to Bench"
+				label="Add Server to Bench Group"
 				@click="$resources.addServerToReleaseGroup.submit()"
 				:loading="
 					$resources.addServerToReleaseGroup.loading ||
@@ -89,6 +104,7 @@ export default {
 				value: '',
 				label: ''
 			},
+			skipBackups: false,
 			skipFailingPatches: false,
 			benchHasCommonServer: false
 		};
@@ -96,10 +112,12 @@ export default {
 	watch: {
 		privateReleaseGroup: {
 			handler(privateReleaseGroup) {
-				this.$resources.validateGroupforUpgrade.submit({
-					name: this.site,
-					group_name: privateReleaseGroup.value
-				});
+				if (privateReleaseGroup?.value) {
+					this.$resources.validateGroupforUpgrade.submit({
+						name: this.site,
+						group_name: privateReleaseGroup.value
+					});
+				}
 			}
 		}
 	},
@@ -126,13 +144,13 @@ export default {
 				!this.$site.doc?.group_public &&
 				this.privateReleaseGroups.length === 0
 			)
-				return `Your team doesn't own any private benches available to upgrade this site to ${this.nextVersion}.`;
-			else if (!this.privateReleaseGroup.value) {
+				return `Your team doesn't own any private bench groups available to upgrade this site to ${this.nextVersion}.`;
+			else if (!this.privateReleaseGroup?.value) {
 				return '';
 			} else if (!this.$site.doc?.group_public && !this.benchHasCommonServer)
-				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
+				return `The selected bench group and your site doesn't have a common server. Please add site's server to the bench.`;
 			else if (!this.$site.doc?.group_public && this.benchHasCommonServer)
-				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
+				return `The selected bench group and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
 			else return '';
 		},
 		datetimeInIST() {
@@ -163,6 +181,7 @@ export default {
 					name: this.site,
 					destination_group: this.privateReleaseGroup.value,
 					skip_failing_patches: this.skipFailingPatches,
+					skip_backups: this.skipBackups,
 					scheduled_datetime: this.datetimeInIST
 				},
 				onSuccess() {
@@ -200,11 +219,11 @@ export default {
 					group_name: this.privateReleaseGroup.value
 				},
 				onSuccess(data) {
-					toast.success('Server Added to the Bench', {
-						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the bench to complete the deploy.`
+					toast.success('Server Added to the Bench Group', {
+						description: `Added a server to ${this.privateReleaseGroup.value} bench. Please wait for the deploy to be completed.`
 					});
 					this.$router.push({
-						name: 'Bench Job',
+						name: 'Release Group Job',
 						params: {
 							name: this.privateReleaseGroup.value,
 							id: data

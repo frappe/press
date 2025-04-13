@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   git \
   mariadb-client \
   libmariadb-dev \
+  pkg-config \
   pv \
   ntp \
   wget \
@@ -72,13 +73,14 @@ ENV {{ doc.get_dependency_version("python", True) }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-  python${PYTHON_VERSION} \
-  python${PYTHON_VERSION}-dev \
-  python${PYTHON_VERSION}-venv \
-  python${PYTHON_VERSION}-distutils \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    {% if not remove_distutils -%}
+    python${PYTHON_VERSION}-distutils \
+    {%- endif %}
+    python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
-
 
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
@@ -255,6 +257,7 @@ RUN mkdir -p {{ m.destination }} && \
 {% endfor %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
+ENV HISTTIMEFORMAT "%Y-%m-%d %T "
 
 EXPOSE 8000 9000 2200 8088
 CMD ["supervisord"]

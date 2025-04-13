@@ -30,14 +30,38 @@ export let session = reactive({
 			window.location.reload();
 		}
 	}),
+	logoutWithoutReload: createResource({
+		url: 'logout',
+		async onSuccess() {
+			session.user = getSessionUser();
+			localStorage.removeItem('current_team');
+			// On logout, reset posthog user identity and device id
+			if (window.posthog?.__loaded) {
+				posthog.reset(true);
+			}
+
+			clear();
+		}
+	}),
 	roles: createResource({
 		url: 'press.api.account.get_permission_roles',
 		cache: ['roles', localStorage.getItem('current_team')],
 		initialData: []
 	}),
+	isTeamAdmin: computed(
+		() =>
+			session.roles.data.length
+				? session.roles.data.some(role => role.admin_access)
+				: false // if no roles, assume not admin and has member access
+	),
 	hasBillingAccess: computed(() =>
 		session.roles.data.length
 			? session.roles.data.some(role => role.allow_billing)
+			: true
+	),
+	hasWebhookConfigurationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_webhook_configuration)
 			: true
 	),
 	hasAppsAccess: computed(() =>

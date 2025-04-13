@@ -158,7 +158,7 @@ export default {
 		},
 		isSaasLogin(app) {
 			if (localStorage.getItem('saas_login')) {
-				return `/saas/manage/${app}/benches`;
+				return `/saas/manage/${app}/groups`;
 			}
 
 			return '/sites';
@@ -171,7 +171,7 @@ export default {
 			}
 		},
 		tabs() {
-			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
+			let tabRoute = subRoute => `/groups/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{
 					label: 'Sites',

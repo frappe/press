@@ -62,5 +62,37 @@
   "name": "eu-central-1",
   "provider": "AWS EC2",
   "region_name": "eu-central-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2024-09-23 10:47:04.247556",
+  "name": "fsn1",
+  "provider": "Hetzner",
+  "region_name": "fsn1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2024-09-23 10:48:01.851504",
+  "name": "sin",
+  "provider": "Hetzner",
+  "region_name": "sin"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2024-09-23 10:47:41.953263",
+  "name": "ash",
+  "provider": "Hetzner",
+  "region_name": "ash"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2024-09-23 10:48:48.686461",
+  "name": "nbg1",
+  "provider": "Hetzner",
+  "region_name": "nbg1"
  }
 ]

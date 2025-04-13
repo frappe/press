@@ -1,0 +1,332 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-01-21 14:22:10.675196",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "virtual_machine",
+  "status",
+  "expected_disk_size",
+  "column_break_tjrh",
+  "start",
+  "end",
+  "duration",
+  "column_break_puhr",
+  "downtime_start",
+  "downtime_end",
+  "downtime_duration",
+  "volumes_section",
+  "column_break_qwbl",
+  "old_volume_id",
+  "old_volume_status",
+  "old_volume_size",
+  "old_volume_iops",
+  "old_volume_throughput",
+  "virtual_disk_snapshot",
+  "column_break_fzja",
+  "new_volume_id",
+  "new_volume_status",
+  "new_volume_size",
+  "new_volume_iops",
+  "new_volume_throughput",
+  "filesystems_section",
+  "filesystem_mount_point",
+  "filesystem_type",
+  "service",
+  "column_break_npqx",
+  "old_filesystem_uuid",
+  "old_filesystem_device",
+  "old_filesystem_size",
+  "old_filesystem_used",
+  "column_break_ublt",
+  "new_filesystem_uuid",
+  "new_filesystem_temporary_mount_point",
+  "section_break_mjhg",
+  "steps",
+  "section_break_nfeq",
+  "devices",
+  "filesystems"
+ ],
+ "fields": [
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Virtual Machine",
+   "link_filters": "[[\"Virtual Machine\",\"status\",\"not in\",[\"Draft\",\"Terminated\",null]]]",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_tjrh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mjhg",
+   "fieldtype": "Section Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Virtual Machine Migration Step",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_nfeq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "new_volume_id",
+   "fieldtype": "Data",
+   "label": "New Volume ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_volume_status",
+   "fieldtype": "Select",
+   "label": "New Volume Status",
+   "options": "Unprovisioned\nAttached",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_volume_size",
+   "fieldtype": "Int",
+   "label": "New Volume Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "volumes_section",
+   "fieldtype": "Section Break",
+   "label": "Volumes"
+  },
+  {
+   "fieldname": "column_break_qwbl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "old_volume_id",
+   "fieldtype": "Data",
+   "label": "Old Volume ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_volume_status",
+   "fieldtype": "Select",
+   "label": "Old Volume Status",
+   "options": "Attached\nDeleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_volume_size",
+   "fieldtype": "Int",
+   "label": "Old Volume Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_volume_iops",
+   "fieldtype": "Int",
+   "label": "New Volume IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_volume_throughput",
+   "fieldtype": "Int",
+   "label": "New Volume Throughput",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_volume_iops",
+   "fieldtype": "Int",
+   "label": "Old Volume IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_volume_throughput",
+   "fieldtype": "Int",
+   "label": "Old Volume Throughput",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fzja",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "filesystems_section",
+   "fieldtype": "Section Break",
+   "label": "Filesystems"
+  },
+  {
+   "fieldname": "old_filesystem_uuid",
+   "fieldtype": "Data",
+   "label": "Old Filesystem UUID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_npqx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_filesystem_uuid",
+   "fieldtype": "Data",
+   "label": "New Filesystem UUID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_filesystem_size",
+   "fieldtype": "Int",
+   "label": "Old Filesystem Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_filesystem_used",
+   "fieldtype": "Int",
+   "label": "Old Filesystem Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_filesystem_device",
+   "fieldtype": "Data",
+   "label": "Old Filesystem Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "filesystems",
+   "fieldtype": "Code",
+   "label": "Filesystems",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "devices",
+   "fieldtype": "Code",
+   "label": "Devices",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "filesystem_type",
+   "fieldtype": "Data",
+   "label": "Filesystem Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "filesystem_mount_point",
+   "fieldtype": "Data",
+   "label": "Filesystem Mount Point",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ublt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_filesystem_temporary_mount_point",
+   "fieldtype": "Data",
+   "label": "New Filesystem Temporary Mount Point",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "label": "Service",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_puhr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "downtime_start",
+   "fieldtype": "Datetime",
+   "label": "Downtime Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "downtime_end",
+   "fieldtype": "Datetime",
+   "label": "Downtime End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "downtime_duration",
+   "fieldtype": "Duration",
+   "label": "Downtime Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "virtual_disk_snapshot",
+   "fieldtype": "Link",
+   "label": "Virtual Disk Snapshot",
+   "options": "Virtual Disk Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_disk_size",
+   "fieldtype": "Int",
+   "label": "Expected Disk Size",
+   "set_only_once": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-11 11:05:05.107704",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Virtual Disk Resize",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "virtual_machine",
+ "track_changes": 1
+}

@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-21 13:23:38.463106",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "target_section",
+  "server_type",
+  "column_break_dwvk",
+  "server",
+  "section_break_cgxv",
+  "write_latency_ms",
+  "column_break_kpzg",
+  "read_latency_ms"
+ ],
+ "fields": [
+  {
+   "fieldname": "target_section",
+   "fieldtype": "Section Break",
+   "label": "Target"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server Type",
+   "options": "Server\nDatabase Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_dwvk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "server_type",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_cgxv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "write_latency_ms",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Write Latency (ms)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_kpzg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "read_latency_ms",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Read Latency (ms)",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-21 18:31:18.676867",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Disk Performance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

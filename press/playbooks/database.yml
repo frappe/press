@@ -7,7 +7,9 @@
   roles:
     - role: essentials
     - role: user
+    - role: mount
     - role: mariadb
+    - role: mariadb_memory_allocator
     - role: nginx
     - role: agent
     - role: node_exporter

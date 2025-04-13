@@ -1,7 +1,9 @@
 <template>
 	<div class="p-5">
 		<div class="grid grid-cols-1 gap-5">
-			<div class="space-y-6 rounded-md border p-4">
+			<div
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">API Access</div>
 					<Button @click="showCreateSecretDialog = true">{{
@@ -67,28 +69,73 @@
 					</template>
 				</Dialog>
 			</div>
-			<div class="space-y-6 rounded-md border p-4">
+			<div
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">SSH Keys</div>
 				</div>
 				<ObjectList :options="sshKeyListOptions" />
+			</div>
+			<div
+				v-if="$session.hasWebhookConfigurationAccess"
+				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
+			>
+				<div class="flex items-center justify-between">
+					<div class="text-xl font-semibold">Webhooks</div>
+				</div>
+				<ObjectList :options="webhookListOptions" />
+				<AddNewWebhookDialog
+					v-if="showAddWebhookDialog"
+					v-model="showAddWebhookDialog"
+					@success="onNewWebhookSuccess"
+				/>
+				<ActivateWebhookDialog
+					v-if="showActivateWebhookDialog"
+					v-model="showActivateWebhookDialog"
+					@success="onWebHookActivated"
+					:webhook="selectedWebhook"
+				/>
+				<EditWebhookDialog
+					v-if="showEditWebhookDialog"
+					v-model="showEditWebhookDialog"
+					@success="onWebHookUpdated"
+					:webhook="selectedWebhook"
+				/>
+				<WebhookAttemptsDialog
+					v-if="showWebhookAttempts"
+					v-model="showWebhookAttempts"
+					:name="selectedWebhook.name"
+				/>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
-import { createResource } from 'frappe-ui';
+import { Badge, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { confirmDialog, icon } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import { getTeam } from '../../data/team';
 import { date } from '../../utils/format';
 import ClickToCopyField from '../ClickToCopyField.vue';
+import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
+import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
+import EditWebhookDialog from './EditWebhookDialog.vue';
+import { useRouter } from 'vue-router';
+import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue';
+import { session } from '../../data/session';
 
 const $team = getTeam();
+const router = useRouter();
 let showCreateSecretDialog = ref(false);
+const showAddWebhookDialog = ref(false);
+const showActivateWebhookDialog = ref(false);
+const showEditWebhookDialog = ref(false);
+const showWebhookAttempts = ref(false);
+const selectedWebhook = ref(null);
 
 const createSecret = createResource({
 	url: 'press.api.account.create_api_secret',
@@ -156,22 +203,22 @@ const sshKeyListOptions = computed(() => ({
 			label: 'SSH Fingerprint',
 			fieldname: 'ssh_fingerprint',
 			class: 'font-mono',
-			format: value => `SHA256:${value}`
+			format: value => `SHA256:${value}`,
+			suffix(row) {
+				return row.is_default
+					? h(Badge, {
+							label: 'Default',
+							theme: 'green',
+							class: 'ml-2'
+					  })
+					: null;
+			}
 		},
 		{
 			label: 'Added On',
 			fieldname: 'creation',
-			width: 0.5,
-			format: value => date(value, 'lll')
-		},
-		{
-			label: 'Default',
-			fieldname: 'is_default',
-			type: 'Icon',
-			Icon(value) {
-				return value ? 'check' : '';
-			},
-			width: 0.1
+			width: 0.1,
+			format: value => date(value, 'll')
 		}
 	],
 	primaryAction({ listResource }) {
@@ -185,7 +232,6 @@ const sshKeyListOptions = computed(() => ({
 		return [
 			{
 				label: 'Mark as Default',
-				icon: 'check',
 				condition: () => !row.is_default,
 				onClick() {
 					makeKeyDefault.submit({
@@ -195,7 +241,6 @@ const sshKeyListOptions = computed(() => ({
 			},
 			{
 				label: 'Delete',
-				icon: 'trash-2',
 				onClick() {
 					deleteSSHKey.submit({
 						doctype: 'User SSH Key',
@@ -245,4 +290,186 @@ function renderAddNewKeyDialog(listResource) {
 		}
 	});
 }
+
+const webhookListResource = createResource({
+	url: 'press.api.client.get_list',
+	params: {
+		doctype: 'Press Webhook',
+		fields: ['name', 'enabled', 'endpoint']
+	},
+	initialData: [],
+	auto: false
+});
+
+const deleteWebhook = createResource({
+	url: 'press.api.client.delete',
+	onSuccess() {
+		toast.success('Webhook deleted successfully');
+		webhookListResource.reload();
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'Webhook could not be deleted'
+		);
+	}
+});
+
+const webhookListOptions = computed(() => ({
+	data: () => webhookListResource.data,
+	columns: [
+		{
+			label: 'Endpoint',
+			fieldname: 'endpoint',
+			width: 1,
+			format: value => value.substring(0, 50)
+		},
+		{
+			label: 'Status',
+			fieldname: 'enabled',
+			width: 0.1,
+			type: 'Component',
+			align: 'right',
+			component({ row }) {
+				return row.enabled
+					? h(Badge, {
+							label: 'Enabled',
+							theme: 'green'
+					  })
+					: h(Badge, {
+							label: 'Disabled',
+							theme: 'red'
+					  });
+			}
+		}
+	],
+	rowActions({ row }) {
+		return [
+			{
+				label: 'Activate',
+				condition: () => !Boolean(row.enabled),
+				onClick() {
+					selectedWebhook.value = row;
+					showActivateWebhookDialog.value = true;
+				}
+			},
+			{
+				label: 'Disable',
+				condition: () => Boolean(row.enabled),
+				onClick: () => {
+					confirmDialog({
+						title: 'Disable Webhook',
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to disable the webhook ?<br>`,
+						primaryAction: {
+							label: 'Disable',
+							variant: 'solid',
+							theme: 'red',
+							onClick({ hide }) {
+								disableWebhook
+									.submit({
+										dt: 'Press Webhook',
+										dn: row.name,
+										method: 'disable'
+									})
+									.then(hide);
+								return disableWebhook.promise;
+							}
+						}
+					});
+				}
+			},
+			{
+				label: 'Attempts',
+				onClick: () => {
+					selectedWebhook.value = row;
+					showWebhookAttempts.value = true;
+				}
+			},
+			{
+				label: 'Edit',
+				onClick() {
+					selectedWebhook.value = row;
+					showEditWebhookDialog.value = true;
+				}
+			},
+			{
+				label: 'Delete',
+				onClick() {
+					confirmDialog({
+						title: 'Delete Webhook',
+						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook ?<br>`,
+						primaryAction: {
+							label: 'Delete',
+							variant: 'solid',
+							theme: 'red',
+							onClick({ hide }) {
+								deleteWebhook
+									.submit({
+										doctype: 'Press Webhook',
+										name: row.name
+									})
+									.then(hide);
+								return deleteWebhook.promise;
+							}
+						}
+					});
+				}
+			}
+		];
+	},
+	primaryAction() {
+		return {
+			label: 'Add Webhook',
+			slots: { prefix: icon('plus') },
+			onClick: () => (showAddWebhookDialog.value = true)
+		};
+	},
+	secondaryAction() {
+		return {
+			label: 'Refresh',
+			icon: 'refresh-ccw',
+			onClick: () => webhookListResource.reload()
+		};
+	}
+}));
+
+const disableWebhook = createResource({
+	url: 'press.api.client.run_doc_method',
+	onSuccess() {
+		toast.success('Webhook disabled successfully');
+		webhookListResource.reload();
+	},
+	onError(err) {
+		toast.error(
+			err.messages.length
+				? err.messages.join('\n')
+				: 'Webhook could not be disabled'
+		);
+	}
+});
+
+const onNewWebhookSuccess = () => {
+	webhookListResource.reload();
+	showAddWebhookDialog.value = false;
+};
+
+const onWebHookActivated = () => {
+	webhookListResource.reload();
+	showActivateWebhookDialog.value = false;
+};
+
+const onWebHookUpdated = activationRequired => {
+	webhookListResource.reload();
+	showEditWebhookDialog.value = false;
+	if (activationRequired) {
+		showActivateWebhookDialog.value = true;
+	}
+};
+
+onMounted(() => {
+	if (session.hasWebhookConfigurationAccess) {
+		webhookListResource.fetch();
+	}
+});
 </script>

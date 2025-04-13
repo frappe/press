@@ -1,22 +1,25 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
 import shlex
 import typing
+from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
-from typing import List, Union
 
 import boto3
 import frappe
 from frappe import _
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
 from frappe.model.document import Document
+from frappe.utils import cint
+from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
+
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
@@ -27,12 +30,13 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.press_job.press_job import Bench
+	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class BaseServer(Document, TagHelpers):
-	dashboard_fields = [
+	dashboard_fields = (
 		"title",
 		"plan",
 		"cluster",
@@ -40,15 +44,15 @@ class BaseServer(Document, TagHelpers):
 		"team",
 		"database_server",
 		"is_self_hosted",
-	]
+		"auto_add_storage_min",
+		"auto_add_storage_max",
+	)
 
 	@staticmethod
 	def get_list_query(query):
 		Server = frappe.qb.DocType("Server")
 
-		query = query.where(Server.status != "Archived").where(
-			Server.team == frappe.local.team().name
-		)
+		query = query.where(Server.status != "Archived").where(Server.team == frappe.local.team().name)
 		results = query.run(as_dict=True)
 
 		for result in results:
@@ -87,26 +91,44 @@ class BaseServer(Document, TagHelpers):
 		)
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
-		doc.disk_size = frappe.db.get_value(
-			"Virtual Machine", self.virtual_machine, "disk_size"
-		)
+		doc.disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
 		doc.replication_server = frappe.db.get_value(
 			"Database Server",
 			{"primary": doc.database_server, "is_replication_setup": 1},
 			"name",
 		)
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 
 		return doc
 
 	@dashboard_whitelist()
-	def increase_disk_size_for_server(self, server: str, increment: int) -> None:
+	def increase_disk_size_for_server(
+		self, server: str, increment: int, mountpoint: str | None = None
+	) -> None:
 		if server == self.name:
-			self.increase_disk_size(increment)
-			self.create_subscription_for_storage()
+			self.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			self.create_subscription_for_storage(increment)
 		else:
 			server_doc = frappe.get_doc("Database Server", server)
-			server_doc.increase_disk_size(increment)
-			server_doc.create_subscription_for_storage()
+			server_doc.increase_disk_size(increment=increment, mountpoint=mountpoint)
+			server_doc.create_subscription_for_storage(increment)
+
+	@dashboard_whitelist()
+	def configure_auto_add_storage(self, server: str, min: int, max: int) -> None:
+		if min < 0 or max < 0:
+			frappe.throw(_("Minimum and maximum storage sizes must be positive"))
+		if min > max:
+			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
+
+		if server == self.name:
+			self.auto_add_storage_min = min
+			self.auto_add_storage_max = max
+			self.save()
+		else:
+			server_doc = frappe.get_doc("Database Server", server)
+			server_doc.auto_add_storage_min = min
+			server_doc.auto_add_storage_max = max
+			server_doc.save()
 
 	@staticmethod
 	def on_not_found(name):
@@ -164,9 +186,7 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def drop_server(self):
 		if self.doctype == "Database Server":
-			app_server_name = frappe.db.get_value(
-				"Server", {"database_server": self.name}, "name"
-			)
+			app_server_name = frappe.db.get_value("Server", {"database_server": self.name}, "name")
 			app_server = frappe.get_doc("Server", app_server_name)
 			db_server = self
 		else:
@@ -180,9 +200,7 @@ class BaseServer(Document, TagHelpers):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if (
-			self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted
-		):
+		if self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -194,21 +212,25 @@ class BaseServer(Document, TagHelpers):
 		if not self.hostname_abbreviation:
 			self._set_hostname_abbreviation()
 
+		self.validate_mounts()
+
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip:
-			if (
-				self.doctype not in ["Database Server", "Server", "Proxy Server"]
-				or not self.is_self_hosted
-			):
-				self.create_dns_record()
-				self.update_virtual_machine_name()
+		if self.ip and (
+			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
+		):
+			self.create_dns_record()
+			self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
+
+			if domain.generic_dns_provider:
+				return
+
 			client = boto3.client(
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
@@ -218,9 +240,7 @@ class BaseServer(Document, TagHelpers):
 			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
 			# i.e. x.example.com comes after example.com
 			# Name field has a trailing dot
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
+			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 			client.change_resource_record_sets(
 				ChangeBatch={
 					"Changes": [
@@ -240,17 +260,23 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
+	def add_server_to_public_groups(self):
+		groups = frappe.get_all("Release Group", {"public": True, "enabled": True}, "name")
+		for group_name in groups:
+			group: ReleaseGroup = frappe.get_doc("Release Group", group_name)
+			with suppress(frappe.ValidationError):
+				group.add_server(str(self.name), deploy=True)
+
 	@frappe.whitelist()
 	def enable_server_for_new_benches_and_site(self):
 		if not self.public:
 			frappe.throw("Action only allowed for public servers")
 
+		self.add_server_to_public_groups()
 		server = self.get_server_enabled_for_new_benches_and_sites()
 
 		if server:
-			frappe.msgprint(
-				_("Server {0} is already enabled for new benches and sites").format(server)
-			)
+			frappe.msgprint(_("Server {0} is already enabled for new benches and sites").format(server))
 
 		else:
 			self.use_for_new_benches = True
@@ -269,7 +295,7 @@ class BaseServer(Document, TagHelpers):
 				"public": True,
 				"cluster": self.cluster,
 			},
-			pluck="name",
+			pluck=True,
 		)
 
 	@frappe.whitelist()
@@ -291,18 +317,21 @@ class BaseServer(Document, TagHelpers):
 	def get_agent_repository_url(self):
 		settings = frappe.get_single("Press Settings")
 		repository_owner = settings.agent_repository_owner or "frappe"
-		url = f"https://github.com/{repository_owner}/agent"
-		return url
+		return f"https://github.com/{repository_owner}/agent"
 
 	def get_agent_repository_branch(self):
 		settings = frappe.get_single("Press Settings")
-		branch = settings.branch or "master"
-		return branch
+		return settings.branch or "master"
 
 	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
+
+	@frappe.whitelist()
+	def ping_agent_job(self):
+		agent = Agent(self.name, self.doctype)
+		return agent.create_agent_job("Ping Job", "ping_job").name
 
 	@frappe.whitelist()
 	def update_agent(self):
@@ -311,9 +340,10 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def prepare_server(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_prepare_server", queue="long", timeout=2400
-		)
+		if self.provider == "Generic":
+			self._prepare_server()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "_prepare_server", queue="long", timeout=2400)
 
 	def _prepare_server(self):
 		try:
@@ -332,8 +362,9 @@ class BaseServer(Document, TagHelpers):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 			elif self.provider == "OCI":
 				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
+			if self.provider != "Generic":
+				ansible.run()
 
-			ansible.run()
 			self.reload()
 			self.is_server_prepared = True
 			self.save()
@@ -344,17 +375,13 @@ class BaseServer(Document, TagHelpers):
 	def setup_server(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_server", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_server", queue="long", timeout=2400)
 
 	@frappe.whitelist()
 	def install_nginx(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_install_nginx", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nginx", queue="long", timeout=1200)
 
 	def _install_nginx(self):
 		try:
@@ -375,16 +402,12 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_filebeat(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200)
 
 	def _install_filebeat(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -395,6 +418,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
+					"server_type": self.doctype,
 					"server": self.name,
 					"log_server": log_server,
 					"kibana_password": kibana_password,
@@ -406,9 +430,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def install_exporters(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_install_exporters", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_install_exporters", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def ping_ansible(self):
@@ -454,14 +476,12 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def ping_ansible_unprepared(self):
 		try:
-			if self.provider == "Scaleway":
+			if self.provider == "Scaleway" or self.provider in ("AWS EC2", "OCI"):
 				ansible = Ansible(
 					playbook="ping.yml",
 					server=self,
 					user="ubuntu",
 				)
-			elif self.provider in ("AWS EC2", "OCI"):
-				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
@@ -471,9 +491,7 @@ class BaseServer(Document, TagHelpers):
 		if self.is_build_server():
 			return
 
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400)
 
 	def is_build_server(self) -> bool:
 		# Not a field in all subclasses
@@ -498,6 +516,8 @@ class BaseServer(Document, TagHelpers):
 
 	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
+		if agent.should_skip_requests():
+			return
 		agent.cleanup_unused_files()
 
 	def on_trash(self):
@@ -522,28 +542,34 @@ class BaseServer(Document, TagHelpers):
 			log_error(f"Error removing glassfile: {e.output.decode()}")
 
 	@frappe.whitelist()
-	def extend_ec2_volume(self):
+	def extend_ec2_volume(self, device=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
-		restart_mariadb = (
-			self.doctype == "Database Server" and self.is_disk_full()
+		# Restart MariaDB if MariaDB disk is full
+		mountpoint = self.guess_data_disk_mountpoint()
+		restart_mariadb = self.doctype == "Database Server" and self.is_disk_full(
+			mountpoint
 		)  # check before breaking glass to ensure state of mariadb
 		self.break_glass()
+		if not device:
+			# Try the best guess. Try extending the data volume
+			volume = self.find_mountpoint_volume(mountpoint)
+			device = self.get_device_from_volume_id(volume.volume_id)
 		try:
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
 				server=self,
-				variables={"restart_mariadb": restart_mariadb},
+				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			ansible.run()
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
-	def enqueue_extend_ec2_volume(self):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
+	def enqueue_extend_ec2_volume(self, device):
+		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device)
 
 	@cached_property
-	def time_to_wait_before_updating_volume(self) -> Union[timedelta, int]:
+	def time_to_wait_before_updating_volume(self) -> timedelta | int:
 		if self.provider != "AWS EC2":
 			return 0
 		if not (
@@ -558,7 +584,7 @@ class BaseServer(Document, TagHelpers):
 		return diff if diff < timedelta(hours=6) else 0
 
 	@frappe.whitelist()
-	def increase_disk_size(self, increment=50) -> bool:
+	def increase_disk_size(self, increment=50, mountpoint=None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
@@ -566,18 +592,55 @@ class BaseServer(Document, TagHelpers):
 				f"Please wait {fmt_timedelta(self.time_to_wait_before_updating_volume)} before resizing volume",
 				VolumeResizeLimitError,
 			)
-		virtual_machine: "VirtualMachine" = frappe.get_doc(
-			"Virtual Machine", self.virtual_machine
-		)
-		virtual_machine.increase_disk_size(increment)
+		if not mountpoint:
+			mountpoint = self.guess_data_disk_mountpoint()
+
+		volume = self.find_mountpoint_volume(mountpoint)
+
+		virtual_machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine.increase_disk_size(volume.volume_id, increment)
 		if self.provider == "AWS EC2":
-			self.enqueue_extend_ec2_volume()
+			device = self.get_device_from_volume_id(volume.volume_id)
+			self.enqueue_extend_ec2_volume(device)
 		elif self.provider == "OCI":
+			# TODO: Add support for volumes on OCI
+			# Non-boot volumes might not need resize
+			self.break_glass()
 			self.reboot()
+
+	def guess_data_disk_mountpoint(self) -> str:
+		if not self.has_data_volume:
+			return "/"
+
+		volumes = self.get_volume_mounts()
+		if volumes:
+			if self.doctype == "Server":
+				mountpoint = "/opt/volumes/benches"
+			elif self.doctype == "Database Server":
+				mountpoint = "/opt/volumes/mariadb"
+		else:
+			mountpoint = "/"
+		return mountpoint
+
+	def find_mountpoint_volume(self, mountpoint):
+		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		if len(machine.volumes) == 1:
+			# If there is only one volume,
+			# then all mountpoints are on the same volume
+			return machine.volumes[0]
+
+		volumes = self.get_volume_mounts()
+		volume = find(volumes, lambda x: x.mount_point == mountpoint)
+		if volume:
+			# If the volume is in `mounts`, that means it's a data volume
+			return volume
+		# Otherwise it's a root volume
+		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
-			return
+			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -623,15 +686,9 @@ class BaseServer(Document, TagHelpers):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def create_subscription_for_storage(self):
+	def create_subscription_for_storage(self, increment: int) -> None:
 		plan_type = "Server Storage Plan"
 		plan = frappe.get_value(plan_type, {"enabled": 1}, "name")
-
-		server_disk_size = frappe.db.get_value(
-			"Virtual Machine", self.virtual_machine, "disk_size"
-		)
-		plan_disk_size = frappe.db.get_value("Server Plan", self.plan, "disk")
-		current_additional_storage = int(server_disk_size) - int(plan_disk_size)
 
 		if existing_subscription := frappe.db.get_value(
 			"Subscription",
@@ -649,7 +706,7 @@ class BaseServer(Document, TagHelpers):
 				"Subscription",
 				existing_subscription.name,
 				"additional_storage",
-				current_additional_storage + int(existing_subscription.additional_storage),
+				increment + cint(existing_subscription.additional_storage),
 			)
 		else:
 			frappe.get_doc(
@@ -660,7 +717,7 @@ class BaseServer(Document, TagHelpers):
 					"team": self.team,
 					"plan_type": plan_type,
 					"plan": plan,
-					"additional_storage": current_additional_storage,
+					"additional_storage": increment,
 				}
 			).insert()
 
@@ -668,9 +725,7 @@ class BaseServer(Document, TagHelpers):
 	def rename_server(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_rename_server", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
 	@frappe.whitelist()
 	def archive(self):
@@ -693,9 +748,7 @@ class BaseServer(Document, TagHelpers):
 			self.save()
 
 			if self.doctype == "Server":
-				frappe.db.set_value(
-					"Self Hosted Server", {"server": self.name}, "status", "Archived"
-				)
+				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
@@ -735,14 +788,16 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
 		if not (team.default_payment_method or team.get_balance()):
-			frappe.throw(
-				"Cannot change plan because you haven't added a card and not have enough balance"
-			)
+			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
 
 	@dashboard_whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Server Plan", plan)
+		self._change_plan(plan)
+		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
+
+	def _change_plan(self, plan):
 		self.ram = plan.memory
 		self.save()
 		self.reload()
@@ -755,7 +810,6 @@ class BaseServer(Document, TagHelpers):
 				"to_plan": plan.name,
 			}
 		).insert()
-		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):
@@ -781,9 +835,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 		if not certificate_name and self.is_self_hosted:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"domain": f"{self.name}"}, "name"
-			)
+			certificate_name = frappe.db.get_value("TLS Certificate", {"domain": f"{self.name}"}, "name")
 
 			if not certificate_name:
 				self_hosted_server = frappe.db.get_value(
@@ -801,9 +853,7 @@ class BaseServer(Document, TagHelpers):
 	def get_log_server(self):
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 		return log_server, kibana_password
@@ -816,24 +866,14 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
-			"_increase_swap",
+			"increase_swap_locked",
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
 		)
 
-	def add_glass_file(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
-
-	def _add_glass_file(self):
-		try:
-			ansible = Ansible(playbook="glass_file.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Add Glass File Exception", doc=self)
-
 	def _increase_swap(self, swap_size=4):
-		"""Increase swap by size defined in playbook"""
+		"""Increase swap by size defined"""
 		from press.api.server import calculate_swap
 
 		existing_swap_size = calculate_swap(self.name).get("swap", 0)
@@ -851,6 +891,57 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Increase swap exception", doc=self)
+
+	def increase_swap_locked(self, swap_size=4):
+		with filelock(f"{self.name}-swap-update"):
+			self._increase_swap(swap_size)
+
+	@frappe.whitelist()
+	def reset_swap(self, swap_size=1):
+		"""
+		Replace existing swap files with new swap file of given size
+		"""
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"reset_swap_locked",
+			queue="long",
+			timeout=1200,
+			**{"swap_size": swap_size},
+		)
+
+	def reset_swap_locked(self, swap_size=1):
+		with filelock(f"{self.name}-swap-update"):
+			self._reset_swap(swap_size)
+
+	def _reset_swap(self, swap_size=1):
+		"""Reset swap by removing existing swap files and creating new swap"""
+		# list of swap files to remove assuming minimum swap size of 1 GB to be safe. Wrong names are handled in playbook
+		swap_files_to_remove = ["swap.default", "swap"]
+		swap_files_to_remove += ["swap" + str(i) for i in range(1, 30)]
+		try:
+			ansible = Ansible(
+				playbook="reset_swap.yml",
+				server=self,
+				variables={
+					"swap_size": swap_size,
+					"swap_file": "swap",
+					"swap_files_to_remove": swap_files_to_remove,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Reset swap exception", doc=self)
+
+	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", doc=self)
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
@@ -901,10 +992,13 @@ class BaseServer(Document, TagHelpers):
 
 		filters = {"wildcard": True, "status": "Active", "domain": self.domain}
 
-		if hasattr(self, "is_self_hosted") and self.is_self_hosted:
-			if self.domain != self.self_hosted_server_domain:
-				filters["domain"] = self.name
-				del filters["wildcard"]
+		if (
+			hasattr(self, "is_self_hosted")
+			and self.is_self_hosted
+			and self.domain != self.self_hosted_server_domain
+		):
+			filters["domain"] = self.name
+			del filters["wildcard"]
 
 		certificate = frappe.get_last_doc("TLS Certificate", filters)
 
@@ -942,15 +1036,16 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def reboot_with_serial_console(self):
-		if self.provider in ("AWS EC2",):
-			console = frappe.new_doc("Serial Console Log")
-			console.server_type = self.doctype
-			console.server = self.name
-			console.virtual_machine = self.virtual_machine
-			console.action = "reboot"
-			console.save()
-			console.reload()
-			console.run_sysrq()
+		if self.provider != "AWS EC2":
+			raise NotImplementedError
+		console = frappe.new_doc("Serial Console Log")
+		console.server_type = self.doctype
+		console.server = self.name
+		console.virtual_machine = self.virtual_machine
+		console.action = "reboot"
+		console.save()
+		console.reload()
+		console.run_sysrq()
 
 	@dashboard_whitelist()
 	def reboot(self):
@@ -962,6 +1057,155 @@ class BaseServer(Document, TagHelpers):
 	def rename(self, title):
 		self.title = title
 		self.save()
+
+	def validate_mounts(self):
+		if not self.virtual_machine:
+			return
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if machine.has_data_volume and len(machine.volumes) > 1 and not self.mounts:
+			self.fetch_volumes_from_virtual_machine()
+			self.set_default_mount_points()
+			self.set_mount_properties()
+
+	def fetch_volumes_from_virtual_machine(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		for volume in machine.volumes:
+			if volume.device == "/dev/sda1":
+				# Skip root volume. This is for AWS other providers may have different root volume
+				continue
+			self.append("mounts", {"volume_id": volume.volume_id})
+
+	def set_default_mount_points(self):
+		first = self.mounts[0]
+		if self.doctype == "Server":
+			first.mount_point = "/opt/volumes/benches"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/home/frappe/benches",
+					"source": "/opt/volumes/benches/home/frappe/benches",
+					"mount_point_owner": "frappe",
+					"mount_point_group": "frappe",
+				},
+			)
+		elif self.doctype == "Database Server":
+			first.mount_point = "/opt/volumes/mariadb"
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/var/lib/mysql",
+					"source": "/opt/volumes/mariadb/var/lib/mysql",
+				},
+			)
+			self.append(
+				"mounts",
+				{
+					"mount_type": "Bind",
+					"mount_point": "/etc/mysql",
+					"source": "/opt/volumes/mariadb/etc/mysql",
+				},
+			)
+
+	def set_mount_properties(self):
+		for mount in self.mounts:
+			# set_defaults doesn't seem to work on children in a controller hook
+			default_fields = find_all(frappe.get_meta("Server Mount").fields, lambda x: x.default)
+			for field in default_fields:
+				fieldname = field.fieldname
+				if not mount.get(fieldname):
+					mount.set(fieldname, field.default)
+
+			mount_options = "defaults,nofail"  # Set default mount options
+			if mount.mount_options:
+				mount_options = f"{mount_options},{mount.mount_options}"
+
+			mount.mount_options = mount_options
+			if mount.mount_type == "Bind":
+				mount.filesystem = "none"
+				mount.mount_options = f"{mount.mount_options},bind"
+
+			if mount.volume_id:
+				# EBS volumes are named by their volume id
+				# There's likely a better way to do this
+				# https://docs.aws.amazon.com/ebs/latest/userguide/ebs-using-volumes.html
+				stripped_id = mount.volume_id.replace("-", "")
+				mount.source = self.get_device_from_volume_id(mount.volume_id)
+				if not mount.mount_point:
+					# If we don't know where to mount, mount it in /mnt/<volume_id>
+					mount.mount_point = f"/mnt/{stripped_id}"
+
+	def get_device_from_volume_id(self, volume_id):
+		stripped_id = volume_id.replace("-", "")
+		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
+
+	def get_mount_variables(self):
+		return {
+			"all_mounts_json": json.dumps([mount.as_dict() for mount in self.mounts], indent=4, default=str),
+			"volume_mounts_json": json.dumps(
+				self.get_volume_mounts(),
+				indent=4,
+				default=str,
+			),
+			"bind_mounts_json": json.dumps(
+				[mount.as_dict() for mount in self.mounts if mount.mount_type == "Bind"],
+				indent=4,
+				default=str,
+			),
+		}
+
+	def get_volume_mounts(self):
+		return [mount.as_dict() for mount in self.mounts if mount.mount_type == "Volume"]
+
+	@frappe.whitelist()
+	def mount_volumes(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_mount_volumes", queue="short", timeout=1200)
+
+	def _mount_volumes(self):
+		try:
+			ansible = Ansible(
+				playbook="mount.yml",
+				server=self,
+				variables={**self.get_mount_variables()},
+			)
+			play = ansible.run()
+			self.reload()
+			if self._set_mount_status(play):
+				self.save()
+		except Exception:
+			log_error("Server Mount Exception", server=self.as_dict())
+
+	def _set_mount_status(self, play):
+		tasks = frappe.get_all(
+			"Ansible Task",
+			["result", "task"],
+			{
+				"play": play.name,
+				"status": ("in", ("Success", "Failure")),
+				"task": ("in", ("Mount Volumes", "Mount Bind Mounts", "Show Block Device UUIDs")),
+			},
+		)
+		mounts_changed = False
+		for task in tasks:
+			result = json.loads(task.result)
+			for row in result.get("results", []):
+				mount = find(self.mounts, lambda x: x.name == row.get("item", {}).get("name"))
+				if not mount:
+					mount = find(
+						self.mounts, lambda x: x.name == row.get("item", {}).get("item", {}).get("name")
+					)
+				if not mount:
+					continue
+				if task.task == "Show Block Device UUIDs":
+					mount.uuid = row.get("stdout", "").strip()
+					mounts_changed = True
+				else:
+					mount_status = {True: "Failure", False: "Success"}[row.get("failed", False)]
+					if mount.status != mount_status:
+						mount.status = mount_status
+						mounts_changed = True
+		return mounts_changed
 
 	def wait_for_cloud_init(self):
 		frappe.enqueue_doc(
@@ -981,12 +1225,11 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
-	@cached_property
-	def free_space(self):
+	def free_space(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			f"""node_filesystem_avail_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			60,
@@ -996,16 +1239,15 @@ class BaseServer(Document, TagHelpers):
 			return response[0]["values"][-1]
 		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
 
-	def is_disk_full(self) -> bool:
-		return self.free_space == 0
+	def is_disk_full(self, mountpoint: str) -> bool:
+		return self.free_space(mountpoint) == 0
 
-	@property
-	def space_available_in_6_hours(self):
+	def space_available_in_6_hours(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
 			f"""predict_linear(
-node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*3600
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}[3h], 6*3600
 			)""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
@@ -1016,12 +1258,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return -20 * 1024 * 1024 * 1024
 		return response[0]["values"][-1]
 
-	@property
-	def disk_capacity(self):
+	def disk_capacity(self, mountpoint: str) -> int:
 		from press.api.server import prometheus_query
 
 		response = prometheus_query(
-			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="{mountpoint}"}}""",
 			lambda x: x["mountpoint"],
 			"Asia/Kolkata",
 			120,
@@ -1029,21 +1270,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		)["datasets"]
 		if response:
 			return response[0]["values"][-1]
-		return (
-			frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
-			* 1024
-			* 1024
-			* 1024
-		)
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size") * 1024 * 1024 * 1024
 
-	@cached_property
-	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
+	def size_to_increase_by_for_20_percent_available(self, mountpoint: str):  # min 50 GB, max 250 GB
 		return int(
 			min(
 				self.auto_add_storage_max,
 				max(
 					self.auto_add_storage_min,
-					abs(self.disk_capacity - self.space_available_in_6_hours * 5)
+					abs(self.disk_capacity(mountpoint) - self.space_available_in_6_hours(mountpoint) * 5)
 					/ 4
 					/ 1024
 					/ 1024
@@ -1052,14 +1287,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			)
 		)
 
-	def calculated_increase_disk_size(self, additional: int = 0):
+	def calculated_increase_disk_size(
+		self,
+		additional: int = 0,
+		mountpoint: str | None = None,
+	):
 		telegram = Telegram("Information")
+		buffer = self.size_to_increase_by_for_20_percent_available(mountpoint)
 		telegram.send(
-			f"Increasing disk on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {self.size_to_increase_by_for_20_percent_available + additional}G"
+			f"Increasing disk (mount point {mountpoint})on [{self.name}]({frappe.utils.get_url_to_form(self.doctype, self.name)}) by {buffer + additional}G"
 		)
-		self.increase_disk_size_for_server(
-			self.name, self.size_to_increase_by_for_20_percent_available + additional
-		)
+		self.increase_disk_size_for_server(self.name, buffer + additional, mountpoint)
 
 	def prune_docker_system(self):
 		frappe.enqueue_doc(
@@ -1095,9 +1333,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		return self.ssh_port or 22
 
 	def get_primary_frappe_public_key(self):
-		if primary_public_key := frappe.db.get_value(
-			self.doctype, self.primary, "frappe_public_key"
-		):
+		if primary_public_key := frappe.db.get_value(self.doctype, self.primary, "frappe_public_key"):
 			return primary_public_key
 
 		primary = frappe.get_doc(self.doctype, self.primary)
@@ -1109,6 +1345,32 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		if play.status == "Success":
 			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
 		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+		return None
+
+	def copy_files(self, source, destination):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_copy_files",
+			source=source,
+			destination=destination,
+			queue="long",
+			timeout=7200,
+		)
+
+	def _copy_files(self, source, destination):
+		try:
+			ansible = Ansible(
+				playbook="copy.yml",
+				server=self,
+				variables={
+					"source": source,
+					"destination": destination,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Sever File Copy Exception", server=self.as_dict())
 
 
 class Server(BaseServer):
@@ -1119,7 +1381,9 @@ class Server(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.server_mount.server_mount import ServerMount
 
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
@@ -1130,10 +1394,12 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
+		has_data_volume: DF.Check
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents_since: DF.Datetime | None
 		ip: DF.Data | None
+		ipv6: DF.Data | None
 		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
@@ -1145,6 +1411,7 @@ class Server(BaseServer):
 		is_standalone_setup: DF.Check
 		is_upstream_setup: DF.Check
 		managed_database_service: DF.Link | None
+		mounts: DF.Table[ServerMount]
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		primary: DF.Link | None
@@ -1168,6 +1435,7 @@ class Server(BaseServer):
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
+		use_agent_job_callbacks: DF.Check
 		use_for_build: DF.Check
 		use_for_new_benches: DF.Check
 		use_for_new_sites: DF.Check
@@ -1180,12 +1448,9 @@ class Server(BaseServer):
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
-			self.has_value_changed("database_server")
-			or self.has_value_changed("managed_database_service")
+			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
 		):
-			benches = frappe.get_all(
-				"Bench", {"server": self.name, "status": ("!=", "Archived")}
-			)
+			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
 			for bench in benches:
 				bench = frappe.get_doc("Bench", bench)
 				bench.database_server = self.database_server
@@ -1193,15 +1458,17 @@ class Server(BaseServer):
 				bench.save()
 
 		if self.database_server:
-			database_server_public = frappe.db.get_value(
-				"Database Server", self.database_server, "public"
-			)
+			database_server_public = frappe.db.get_value("Database Server", self.database_server, "public")
 			if database_server_public != self.public:
 				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
+
+		# Enable bench memory limits for public servers
+		if self.public:
+			self.set_bench_memory_limits = True
 
 	def after_insert(self):
 		from press.press.doctype.press_role.press_role import (
@@ -1315,9 +1582,7 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="self_hosted.yml"
-				if getattr(self, "is_self_hosted", False)
-				else "server.yml",
+				playbook="self_hosted.yml" if getattr(self, "is_self_hosted", False) else "server.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
@@ -1335,10 +1600,13 @@ class Server(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"docker_depends_on_mounts": self.docker_depends_on_mounts,
+					**self.get_mount_variables(),
 				},
 			)
 			play = ansible.run()
 			self.reload()
+			self._set_mount_status(play)
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
@@ -1359,9 +1627,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_standalone(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_standalone", queue="short", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_standalone", queue="short", timeout=1200)
 
 	def _setup_standalone(self):
 		try:
@@ -1401,9 +1667,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def whitelist_ipaddress(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200)
 
 	def _whitelist_ip(self):
 		proxy_server = frappe.get_value("Server", self.name, "proxy_server")
@@ -1429,9 +1693,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def agent_set_proxy_ip(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200)
 
 	def _agent_set_proxy_ip(self):
 		agent_password = self.get_password("agent_password")
@@ -1458,9 +1720,7 @@ class Server(BaseServer):
 	def setup_fail2ban(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
 		try:
@@ -1483,9 +1743,7 @@ class Server(BaseServer):
 	def setup_replication(self):
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_replication", queue="long", timeout=1200)
 
 	def _setup_replication(self):
 		self._setup_secondary()
@@ -1535,9 +1793,7 @@ class Server(BaseServer):
 		self.save()
 
 	def _install_exporters(self):
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 		try:
 			ansible = Ansible(
 				playbook="server_exporters.yml",
@@ -1552,36 +1808,33 @@ class Server(BaseServer):
 			log_error("Exporters Install Exception", server=self.as_dict())
 
 	@classmethod
-	def get_all_prod(cls, **kwargs) -> List[str]:
+	def get_all_prod(cls, **kwargs) -> list[str]:
 		"""Active prod servers."""
 		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
 
 	@classmethod
-	def get_all_primary_prod(cls) -> List[str]:
+	def get_all_primary_prod(cls) -> list[str]:
 		"""Active primary prod servers."""
-		return frappe.get_all(
-			"Server", {"status": "Active", "is_primary": True}, pluck="name"
-		)
+		return frappe.get_all("Server", {"status": "Active", "is_primary": True}, pluck="name")
 
 	@classmethod
-	def get_all_staging(cls, **kwargs) -> List[str]:
+	def get_all_staging(cls, **kwargs) -> list[str]:
 		"""Active staging servers."""
-		return frappe.get_all(
-			"Server", {"status": "Active", "staging": True}, pluck="name", **kwargs
-		)
+		return frappe.get_all("Server", {"status": "Active", "staging": True}, pluck="name", **kwargs)
 
 	@classmethod
 	def get_one_staging(cls) -> str:
 		return cls.get_all_staging(limit=1)[0]
 
 	@classmethod
-	def get_prod_for_new_bench(cls, extra_filters={}) -> Union[str, None]:
+	def get_prod_for_new_bench(cls, extra_filters=None) -> str | None:
 		filters = {"status": "Active", "use_for_new_benches": True}
-		servers = frappe.get_all(
-			"Server", {**filters, **extra_filters}, pluck="name", limit=1
-		)
+		if extra_filters:
+			filters.update(extra_filters)
+		servers = frappe.get_all("Server", {**filters}, pluck="name", limit=1)
 		if servers:
 			return servers[0]
+		return None
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
@@ -1590,14 +1843,10 @@ class Server(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 		log_server = frappe.db.get_single_value("Press Settings", "log_server")
 		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password("kibana_password")
 		else:
 			kibana_password = None
 
@@ -1660,9 +1909,7 @@ class Server(BaseServer):
 
 	@cached_property
 	def usable_ram(self) -> float:
-		return max(
-			self.ram - 3000, self.ram * 0.75
-		)  # in MB (leaving some for disk cache + others)
+		return max(self.ram - 3000, self.ram * 0.75)  # in MB (leaving some for disk cache + others)
 
 	@cached_property
 	def max_gunicorn_workers(self) -> int:
@@ -1675,7 +1922,7 @@ class Server(BaseServer):
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
 	def _auto_scale_workers_new(self, commit):
-		for bench in self.bench_workloads.keys():
+		for bench in self.bench_workloads:
 			try:
 				bench.reload()
 				bench.allocate_workers(
@@ -1688,14 +1935,16 @@ class Server(BaseServer):
 				)
 				if commit:
 					frappe.db.commit()
+			except frappe.TimestampMismatchError:
+				if commit:
+					frappe.db.rollback()
+				continue
 			except Exception:
-				log_error(
-					"Bench Auto Scale Worker Error", bench=bench, workload=self.bench_workloads[bench]
-				)
+				log_error("Bench Auto Scale Worker Error", bench=bench, workload=self.bench_workloads[bench])
 				if commit:
 					frappe.db.rollback()
 
-	def _auto_scale_workers_old(self):
+	def _auto_scale_workers_old(self):  # noqa: C901
 		benches = frappe.get_all(
 			"Bench",
 			filters={"server": self.name, "status": "Active", "auto_scale_workers": True},
@@ -1762,13 +2011,10 @@ class Server(BaseServer):
 			log_error("Earlyoom Install Exception", server=self.as_dict())
 
 	@property
-	def is_shared(self) -> bool:
-		public_groups = frappe.get_all("Release Group", {"public": True}, pluck="name")
-		return bool(
-			frappe.db.exists(
-				"Release Group Server", {"server": self.name, "parent": ("in", public_groups)}
-			)
-		)
+	def docker_depends_on_mounts(self):
+		mount_points = set(mount.mount_point for mount in self.mounts)
+		bench_mount_points = set(["/home/frappe/benches"])
+		return bench_mount_points.issubset(mount_points)
 
 
 def scale_workers(now=False):

@@ -15,14 +15,8 @@
                 {{ header_content }}
             {% endautoescape %}
         {% endif %}
-        {% if otp %}
-        <p class="font-medium">OTP for E-Mail Verification</p>
+        <p class="font-medium">Verification Code</p>
         <div class="text-xl font-bold">{{ otp }}</div>
-        <p>Or click on the button to verify your account</p>
-        {% else %}
-        <p>Click on the button to verify your account</p>
-        {% endif %}
-        {{ utils.button('Verify Account', link, true) }}
         {{ utils.separator() }}
         <p class="my-0">Team Frappe</p>
     </div>

@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-16 16:18:15.770106",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "column_break_mgop",
+  "team",
+  "section_break_fnmu",
+  "query",
+  "committed"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mgop",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fnmu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Small Text",
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "committed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Committed",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-24 12:18:15.580077",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "SQL Playground Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

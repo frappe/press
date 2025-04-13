@@ -18,8 +18,13 @@
   "start_time",
   "column_break_7lcz",
   "progress",
+  "duration",
   "section_break_12",
-  "mariadb_root_password"
+  "mariadb_root_password",
+  "snapshot_purpose_section",
+  "physical_backup",
+  "column_break_xgrp",
+  "rolling_snapshot"
  ],
  "fields": [
   {
@@ -110,18 +115,52 @@
    "fieldtype": "Data",
    "label": "Snapshot ID",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "volume_id",
    "fieldtype": "Data",
    "label": "Volume ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "physical_backup",
+   "fieldtype": "Check",
+   "label": "Physical Backup"
+  },
+  {
+   "fieldname": "snapshot_purpose_section",
+   "fieldtype": "Section Break",
+   "label": "Snapshot Purpose"
+  },
+  {
+   "fieldname": "column_break_xgrp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "rolling_snapshot",
+   "fieldtype": "Check",
+   "label": "Rolling Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-08-26 14:00:36.492512",
+ "links": [
+  {
+   "link_doctype": "Site Backup",
+   "link_fieldname": "database_snapshot"
+  }
+ ],
+ "modified": "2025-03-27 01:35:12.859467",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
