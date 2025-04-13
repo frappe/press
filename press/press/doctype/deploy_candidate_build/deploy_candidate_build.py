@@ -254,7 +254,7 @@ class DeployCandidateBuild(Document):
 		self,
 		status: Status,
 		timestamp_field: str | None = None,
-		commit: bool = True,
+		commit: bool = False,
 	):
 		self.status = status.value
 
@@ -263,6 +263,8 @@ class DeployCandidateBuild(Document):
 
 		if timestamp_field and hasattr(self, timestamp_field):
 			setattr(self, timestamp_field, now())
+
+		self.save(ignore_version=True)
 
 		if commit:
 			frappe.db.commit()
@@ -963,10 +965,8 @@ class DeployCandidateBuild(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def before_insert(self):
-		self.set_status(Status.DRAFT)
-
 	def after_insert(self):
+		self.set_status(Status.DRAFT)
 		self.pre_build()
 
 	def autoname(self):
