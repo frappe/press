@@ -112,7 +112,7 @@ let router = createRouter({
 		},
 		{
 			name: 'PartnerNewPayout',
-			path: '/partner-payout/New',
+			path: '/payment-payout/New',
 			component: () => import('./pages/PartnerNewPayout.vue'),
 		},
 		{
@@ -234,14 +234,9 @@ let router = createRouter({
 				},
 				{
 					name: 'PartnerPayout',
-					path: 'partner-payout',
+					path: 'payment-payout',
 					component: () => import('./components/partners/PartnerPayout.vue'),
 				},
-				// {
-				// 	name: 'PartnerNewPayout',
-				// 	path: 'partner-payout/New',
-				// 	component: () => import('./pages/PartnerNewPayout.vue'),
-				// }
 			],
 		},
 		{
