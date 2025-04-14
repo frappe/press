@@ -191,7 +191,7 @@ def get_gateway_controller():
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
 	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", filters={"api_type": "Mpesa Express", "team": team}, fields=["name"]
+		"Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name"
 	)
 	taxes_and_charges = 0
 	for mpesa_setup in mpesa_setups:
