@@ -96,7 +96,7 @@ class TestDeployCandidate(unittest.TestCase):
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidate, "_build", new=Mock())
+	@patch.object(DeployCandidateBuild, "_build", new=Mock())
 	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if old style press admin team can pre build
