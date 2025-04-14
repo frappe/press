@@ -201,7 +201,8 @@ class DeployCandidateBuild(Document):
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
 		retry_count: DF.Int
-		status: DF.Literal["Draft", "Pending", "Preparing", "Running", "Success", "Failure"]
+		scheduled_time: DF.Datetime | None
+		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
 		user_addressable_failure: DF.Check
 	# end: auto-generated types
 
@@ -627,17 +628,12 @@ class DeployCandidateBuild(Document):
 			# Log and raise error if build failure is not actionable or no retry
 			log_error("Deploy Candidate Build Exception", doc=self)
 
-	# Fix scheduled status
 	def schedule_build_retry(self):
 		self.retry_count += 1
 		minutes = min(5**self.retry_count, 125)
 		scheduled_time = now() + timedelta(minutes=minutes)
-		# Add scheduled time to this.
 		self.set_status(Status.SCHEDULED)
-		self.candidate.schedule_build_and_deploy(
-			run_now=False,
-			scheduled_time=scheduled_time,
-		)
+		self.candidate.schedule_build_and_deploy(run_now=False, scheduled_time=scheduled_time)
 
 	@retry(
 		reraise=True,
@@ -1003,9 +999,14 @@ class DeployCandidateBuild(Document):
 		if self.has_value_changed("status") and self.candidate.team != "Administrator":
 			create_webhook_event("Bench Deploy Status Update", self, self.candidate.team)
 
-	def after_insert(self):
+	def run_scheduled_build_and_deploy(self):
 		self.set_status(Status.DRAFT)
 		self.pre_build()
+
+	def after_insert(self):
+		if self.status != Status.SCHEDULED.value:
+			self.set_status(Status.DRAFT)
+			self.pre_build()
 
 	def autoname(self):
 		candidate_name = self.candidate.name[7:]

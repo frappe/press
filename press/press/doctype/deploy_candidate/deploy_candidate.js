@@ -101,7 +101,10 @@ function get_handler(frm, method, args) {
 			});
 		}
 
-		if (method === 'build' && data) {
+		if (
+			(method === 'build' || method === 'schedule_build_and_deploy') &&
+			data
+		) {
 			frappe.msgprint({
 				title: 'Deploy Candidate Build Created',
 				indicator: 'green',

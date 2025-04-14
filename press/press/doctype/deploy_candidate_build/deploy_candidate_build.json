@@ -14,6 +14,7 @@
   "no_cache",
   "no_push",
   "deploy_after_build",
+  "scheduled_time",
   "section_break_bfxt",
   "build_steps",
   "docker_meta_section",
@@ -118,7 +119,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending\nPreparing\nRunning\nSuccess\nFailure",
+   "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -228,6 +229,12 @@
    "options": "Release Group",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -246,7 +253,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-11 17:46:55.953431",
+ "modified": "2025-04-14 10:34:09.669588",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

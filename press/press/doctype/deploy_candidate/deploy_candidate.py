@@ -344,26 +344,23 @@ class DeployCandidate(Document):
 		run_now: bool = True,
 		scheduled_time: datetime | None = None,
 	):
-		if self.status == "Scheduled":
-			return
-
+		# Here it's fine to call `self.build_and_deploy()`
+		# Since the doc has not been created yet.
 		if run_now and not is_suspended():
-			self.build_and_deploy()
-			return
+			return {"error": False, "message": self.build_and_deploy()}
 
-		self.status = "Scheduled"
-		self.scheduled_time = scheduled_time or now()
-		self.save()
-		frappe.db.commit()
-
-	def run_scheduled_build_and_deploy(self):
-		"""
-		Build and Deploy will run only if the build is Scheduled
-		and if builds have not been suspended.
-		"""
-		if self.status != "Scheduled" or is_suspended():
-			return
-		self.build_and_deploy()
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.name,
+				"no_cache": False,
+				"deploy_after_build": False,
+				"status": "Scheduled",
+				"scheduled_time": scheduled_time or now(),
+			}
+		)
+		deploy_candidate_build.insert()
+		return {"error": False, "message": deploy_candidate_build.name}
 
 	def build_and_deploy(self, no_cache: bool = False) -> str:
 		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
@@ -937,7 +934,7 @@ def run_scheduled_builds(max_builds: int = 5):
 		return
 
 	dcs = frappe.get_all(
-		"Deploy Candidate",
+		"Deploy Candidate Build",
 		{
 			"status": "Scheduled",
 			"scheduled_time": ("<=", frappe.utils.now_datetime()),
@@ -946,7 +943,7 @@ def run_scheduled_builds(max_builds: int = 5):
 		limit=max_builds,
 	)
 	for dc in dcs:
-		doc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc)
+		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
 		try:
 			doc.run_scheduled_build_and_deploy()
 			frappe.db.commit()
