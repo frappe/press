@@ -354,7 +354,7 @@ class DeployCandidate(Document):
 				"doctype": "Deploy Candidate Build",
 				"deploy_candidate": self.name,
 				"no_cache": False,
-				"deploy_after_build": False,
+				"deploy_after_build": True,
 				"status": "Scheduled",
 				"scheduled_time": scheduled_time or now(),
 			}
