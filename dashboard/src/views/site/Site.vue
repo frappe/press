@@ -18,7 +18,7 @@
 							v-if="site?.status === 'Active'"
 							icon-left="external-link"
 							label="Visit Site"
-							:link="`https://${site?.name}`"
+							:link="`https://${site?.name}/apps`"
 						/>
 						<Dropdown :options="siteActions">
 							<template v-slot="{ open }">
