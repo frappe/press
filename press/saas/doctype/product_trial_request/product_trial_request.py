@@ -116,7 +116,9 @@ class ProductTrialRequest(Document):
 			team_details = frappe.db.get_value(
 				"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
 			)
-			team_user = frappe.db.get_value("User", team_details.user, ["full_name", "email"], as_dict=True)
+			team_user = frappe.db.get_value(
+				"User", team_details.user, ["first_name", "last_name", "email"], as_dict=True
+			)
 			account_request_geo_data = frappe.db.get_value(
 				"Account Request", self.account_request, "geo_location"
 			)
@@ -125,9 +127,11 @@ class ProductTrialRequest(Document):
 			return json.dumps(
 				{
 					"email": team_user.email,
-					"full_name": team_user.full_name,
+					"first_name": team_user.first_name,
+					"last_name": team_user.last_name,
 					"country": team_details.country,
-					"timezone": timezone,
+					"time_zone": timezone,
+					"language": "en",
 					"currency": team_details.currency,
 					# setup wizard will override currency anyway
 					# but adding this since ERPNext will throw an error otherwise
