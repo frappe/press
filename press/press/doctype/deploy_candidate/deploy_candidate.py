@@ -1060,7 +1060,6 @@ def check_builds_status(
 	frappe.db.commit()
 
 
-# TODO Update this
 def fail_or_retry_stuck_builds(
 	last_n_days=0,
 	last_n_hours=4,
@@ -1070,11 +1069,11 @@ def fail_or_retry_stuck_builds(
 	# have not been updated for longer than `stuck_threshold_in_hours`.
 	result = frappe.db.sql(
 		"""
-	select dc.name as name
-	from  `tabDeploy Candidate` as dc
-	where  dc.modified between now() - interval %s day - interval %s hour and now()
-	and    dc.modified < now() - interval %s hour
-	and    dc.status not in ('Draft', 'Failure', 'Success')
+	select dcb.name as name
+	from  `tabDeploy Candidate Build` as dcb
+	where  dcb.modified between now() - interval %s day - interval %s hour and now()
+	and    dcb.modified < now() - interval %s hour
+	and    dcb.status not in ('Draft', 'Failure', 'Success')
 	""",
 		(
 			last_n_days,
@@ -1084,11 +1083,11 @@ def fail_or_retry_stuck_builds(
 	)
 
 	for (name,) in result:
-		dc: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
-		dc.manually_failed = True
-		dc._stop_and_fail(False)
-		if can_retry_build(dc.name, dc.group, dc.build_start):
-			dc.schedule_build_retry()
+		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
+		dcb.manually_failed = True
+		dcb._stop_and_fail(False)
+		if can_retry_build(dcb.name, dcb.group, dcb.build_start):
+			dcb.schedule_build_retry()
 
 
 def can_retry_build(name: str, group: str, build_start: datetime):
@@ -1098,7 +1097,7 @@ def can_retry_build(name: str, group: str, build_start: datetime):
 		return False
 
 	result = frappe.db.count(
-		"Deploy Candidate",
+		"Deploy Candidate Build",
 		filters={
 			"group": group,
 			"build_start": [">", build_start],
@@ -1115,16 +1114,16 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 	# Fails jobs non Failed jobs that have steps with Failure status
 	result = frappe.db.sql(
 		"""
-	with dc as (
-		select dc.name as name, dc.status as status
-		from  `tabDeploy Candidate` as dc
-		where  dc.modified between now() - interval %s day - interval %s hour and now()
-		and    dc.status != "Failure"
+	with dcb as (
+		select dcb.name as name, dcb.status as status
+		from  `tabDeploy Candidate Build` as dcb
+		where  dcb.modified between now() - interval %s day - interval %s hour and now()
+		and    dcb.status != "Failure"
 	)
-	select dc.name
-	from   dc join `tabDeploy Candidate Build Step` as dcb
-	on     dc.name = dcb.parent
-	where  dcb.status = "Failure"
+	select dcb.name
+	from   dcb join `tabDeploy Candidate Build Step` as dcbs
+	on     dcb.name = dcbs.parent
+	where  dcbs.status = "Failure"
 	""",
 		(
 			last_n_days,
@@ -1136,10 +1135,10 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 		correct_status(name)
 
 
-def correct_status(dc_name: str):
-	dc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc_name)
+def correct_status(dcb_name: str):
+	dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dcb_name)
 	found_failed = False
-	for bs in dc.build_steps:
+	for bs in dcb.build_steps:
 		if bs.status == "Failure":
 			found_failed = True
 			continue
@@ -1152,7 +1151,7 @@ def correct_status(dc_name: str):
 	if not found_failed:
 		return
 
-	dc._stop_and_fail(False)
+	dcb._stop_and_fail(False)
 
 
 def throw_no_build_server():
