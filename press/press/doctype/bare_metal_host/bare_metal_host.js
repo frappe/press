@@ -49,6 +49,9 @@ frappe.ui.form.on('Bare Metal Host', {
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Install Nginx'), 'install_nginx', true, frm.doc.is_server_prepared && !frm.doc.is_server_setup],
 			[__('Install Filebeat'), 'install_filebeat', true, frm.doc.is_server_setup],
+			[__('Setup VM Host'), 'setup_vm_host', true, frm.doc.is_server_setup && frm.doc.is_vm_host && !frm.doc.is_vm_host_setup],
+			[__('Setup NFS Server'), 'setup_nfs_server', true, frm.doc.is_server_setup && !frm.doc.is_nfs_server],
+			[__('Setup VM Host with NFS'), 'setup_vm_host_with_nfs', true, frm.doc.is_server_setup && frm.doc.is_vm_host && !frm.doc.is_vm_host_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

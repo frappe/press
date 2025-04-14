@@ -367,12 +367,12 @@ class BareMetalHost(BaseServer):
                 self.db_set("is_vm_host", 1)  # Mark as VM host
                 self.db_set("status", "Active")
                 frappe.msgprint("VM host setup completed successfully")
-            else:
+                else:
                 self.db_set("status", "Broken")
                 frappe.throw(f"VM host setup failed: {play.status}")
                 
             return play
-            
+
         except Exception as e:
             self.db_set("status", "Broken")
             log_error("Bare Metal VM Host Setup Exception", server=self.as_dict(), error=str(e))
@@ -590,14 +590,25 @@ class BareMetalHost(BaseServer):
                 server=server_obj,
                 user=self.ssh_user or "root",
                 port=self.ssh_port or 22,
+                variables={
+                    "nfs_exports_directory": self.nfs_exports_directory,
+                    "configure_firewall": True
+                }
             )
             play = ansible.run()
             self.reload()
             if play.status == "Success":
                 self.db_set("is_nfs_server", 1)
+                self.db_set("status", "Active")
+                frappe.msgprint("NFS server setup completed successfully")
+            else:
+                self.db_set("status", "Broken")
+                frappe.throw(f"NFS server setup failed: {play.status}")
             return play
-        except Exception:
-            log_error("NFS Server Setup Exception", server=self.as_dict())
+        except Exception as e:
+            self.db_set("status", "Broken")
+            log_error("NFS Server Setup Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"NFS server setup failed: {str(e)}")
 
     @frappe.whitelist()
     def setup_nfs_client(self):

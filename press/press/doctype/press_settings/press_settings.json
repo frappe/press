@@ -222,7 +222,8 @@
   "hybrid_domain",
   "tls_renewal_queue_size",
   "code_spaces_tab",
-  "spaces_domain"
+  "spaces_domain",
+  "nfs_server"
  ],
  "fields": [
   {

@@ -2,13 +2,13 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:hostname",
- "creation": "2025-03-20 10:54:25.505888",
+ "creation": "2023-03-20 10:54:25.505888",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "title",
   "hostname",
-  "hostname_abbreviation",
+  "hostname_abbreviation", 
   "status",
   "is_server_prepared",
   "is_server_setup",
@@ -81,36 +81,31 @@
    "fieldname": "is_server_prepared",
    "fieldtype": "Check",
    "label": "Is Server Prepared",
-   "read_only": 1,
-   "description": "Indicates if basic server setup has been completed"
+   "read_only": 1
   },
   {
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
    "label": "Is Server Setup",
-   "read_only": 1,
-   "description": "Indicates if server components have been installed and configured"
+   "read_only": 1
   },
   {
    "fieldname": "is_vm_host_setup",
    "fieldtype": "Check",
    "label": "Is VM Host Setup",
-   "read_only": 1,
-   "description": "Indicates if KVM virtualization has been configured"
+   "read_only": 1
   },
   {
    "fieldname": "is_nfs_server",
    "fieldtype": "Check",
    "label": "Is NFS Server",
-   "read_only": 1,
-   "description": "Indicates if this host is configured as an NFS server"
+   "read_only": 1
   },
   {
    "fieldname": "is_nfs_client",
    "fieldtype": "Check",
    "label": "Is NFS Client",
-   "read_only": 1,
-   "description": "Indicates if this host is configured as an NFS client"
+   "read_only": 1
   },
   {
    "fieldname": "nfs_section",
@@ -124,7 +119,7 @@
    "label": "NFS Exports Directory",
    "default": "/exports/vm_storage",
    "depends_on": "eval:doc.is_nfs_server",
-   "description": "Directory to export for VM storage when acting as NFS server"
+   "mandatory_depends_on": "eval:doc.is_nfs_server"
   },
   {
    "fieldname": "nfs_mount_point",
@@ -132,7 +127,7 @@
    "label": "NFS Mount Point",
    "default": "/mnt/vm_storage",
    "depends_on": "eval:doc.is_nfs_client",
-   "description": "Directory where NFS share will be mounted when acting as NFS client"
+   "mandatory_depends_on": "eval:doc.is_nfs_client"
   },
   {
    "fieldname": "column_break_5",
@@ -171,22 +166,19 @@
    "fieldname": "total_cpu",
    "fieldtype": "Int",
    "label": "Total CPU",
-   "reqd": 1,
-   "description": "Total number of CPU cores available"
+   "reqd": 1
   },
   {
    "fieldname": "total_memory",
    "fieldtype": "Int",
    "label": "Total Memory (MB)",
-   "reqd": 1,
-   "description": "Total RAM available in megabytes"
+   "reqd": 1
   },
   {
    "fieldname": "total_disk",
    "fieldtype": "Int",
    "label": "Total Disk (GB)",
-   "reqd": 1,
-   "description": "Total disk space available in gigabytes"
+   "reqd": 1
   },
   {
    "fieldname": "column_break_14",
@@ -195,20 +187,17 @@
   {
    "fieldname": "available_cpu",
    "fieldtype": "Int",
-   "label": "Available CPU",
-   "description": "Number of CPU cores still available for allocation"
+   "label": "Available CPU"
   },
   {
    "fieldname": "available_memory",
    "fieldtype": "Int",
-   "label": "Available Memory (MB)",
-   "description": "Amount of RAM still available for allocation in megabytes"
+   "label": "Available Memory (MB)"
   },
   {
    "fieldname": "available_disk",
    "fieldtype": "Int",
-   "label": "Available Disk (GB)",
-   "description": "Amount of disk space still available for allocation in gigabytes"
+   "label": "Available Disk (GB)"
   },
   {
    "fieldname": "ssh_section",
@@ -219,30 +208,26 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "label": "IP",
-   "reqd": 1,
-   "description": "IP address of the bare metal host"
+   "reqd": 1
   },
   {
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "description": "Private/internal IP address if applicable"
+   "label": "Private IP"
   },
   {
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User",
    "reqd": 1,
-   "default": "root",
-   "description": "Username for SSH access"
+   "default": "root"
   },
   {
    "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port",
-   "reqd": 1,
-   "description": "Port number for SSH access"
+   "reqd": 1
   },
   {
    "fieldname": "column_break_19",
@@ -307,8 +292,7 @@
    "default": "0",
    "fieldname": "is_vm_host",
    "fieldtype": "Check",
-   "label": "Is VM Host",
-   "description": "Indicates if this host can be used to create virtual machines"
+   "label": "Is VM Host"
   }
  ],
  "links": [
@@ -323,7 +307,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-03-20 10:54:25.505888",
+ "modified": "2024-09-15 10:54:25.505888",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bare Metal Host",
@@ -359,4 +343,4 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1
-} 
+}

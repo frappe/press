@@ -17,7 +17,7 @@ from press.api.bench import all as all_benches
 from press.api.site import protected
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.team.team import get_child_team_members
-from press.utils import get_current_team
+from press.utils import get_current_team, get_nfs_server
 
 if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
@@ -181,6 +181,7 @@ def new(server):
 	# to be used by app server
 	cluster.database_server = db_server.name
 	cluster.proxy_server = proxy_server.name
+	cluster.nfs_server = get_nfs_server()
 
 	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
 	app_server, job = cluster.create_server("Server", server["title"], app_plan, team=team.name)

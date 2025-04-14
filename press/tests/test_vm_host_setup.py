@@ -19,7 +19,8 @@ class TestVMHostSetup(unittest.TestCase):
             "total_memory": 16384,  # 16GB
             "total_disk": 500,  # 500GB
             "nfs_exports_directory": "/exports/vm_storage",
-            "status": "Active"
+            "status": "Active",
+            "is_server_prepared": 1  # Mark as prepared
         }).insert()
         frappe.db.commit()
 
@@ -34,7 +35,8 @@ class TestVMHostSetup(unittest.TestCase):
             "total_disk": 1000,  # 1TB
             "nfs_mount_point": "/mnt/vm_storage",
             "is_vm_host": 1,
-            "status": "Active"
+            "status": "Active",
+            "is_server_prepared": 1  # Mark as prepared
         }).insert()
         frappe.db.commit()
 
@@ -90,33 +92,74 @@ class TestVMHostSetup(unittest.TestCase):
     @patch('press.runner.Ansible.run')
     def test_01_nfs_server_setup(self, mock_run):
         """Test NFS server setup"""
-        mock_run.return_value = MagicMock(status="Success")
+        # Create a mock return value
+        mock_return = MagicMock()
+        mock_return.status = "Success"
+        mock_run.return_value = mock_return
+        
+        # Call setup
         self.nfs_server.setup_nfs_server()
         frappe.db.commit()  # Commit the changes
-        self.nfs_server.reload()  # Reload to get fresh values
+        
+        # Reload and verify
+        self.nfs_server.reload()
         self.assertTrue(self.nfs_server.is_nfs_server)
+        
+        # Verify mock was called with correct args
         mock_run.assert_called_once()
+        args = mock_run.call_args[0]
+        kwargs = mock_run.call_args[1]
+        self.assertEqual(kwargs.get('playbook'), 'nfs_server.yml')
 
     @patch('press.runner.Ansible.run')
     def test_02_vm_host_setup(self, mock_run):
         """Test basic VM host setup without NFS"""
-        mock_run.return_value = MagicMock(status="Success")
+        # Create a mock return value
+        mock_return = MagicMock()
+        mock_return.status = "Success"
+        mock_run.return_value = mock_return
+        
+        # Call setup
         self.vm_host.setup_vm_host()
         frappe.db.commit()  # Commit the changes
-        self.vm_host.reload()  # Reload to get fresh values
+        
+        # Reload and verify
+        self.vm_host.reload()
         self.assertTrue(self.vm_host.is_vm_host_setup)
+        self.assertTrue(self.vm_host.is_vm_host)
+        
+        # Verify mock was called with correct args
         mock_run.assert_called_once()
+        args = mock_run.call_args[0]
+        kwargs = mock_run.call_args[1]
+        self.assertEqual(kwargs.get('playbook'), 'bare_metal_vm_host.yml')
 
     @patch('press.runner.Ansible.run')
     def test_03_vm_host_with_nfs_setup(self, mock_run):
         """Test VM host setup with NFS"""
-        mock_run.return_value = MagicMock(status="Success")
+        # Create a mock return value
+        mock_return = MagicMock()
+        mock_return.status = "Success"
+        mock_run.return_value = mock_return
+        
+        # Set NFS server in settings
+        frappe.db.set_single_value("Press Settings", "nfs_server", self.nfs_server.ip)
+        
+        # Call setup
         self.vm_host.setup_vm_host_with_nfs()
         frappe.db.commit()  # Commit the changes
-        self.vm_host.reload()  # Reload to get fresh values
+        
+        # Reload and verify
+        self.vm_host.reload()
         self.assertTrue(self.vm_host.is_vm_host_setup)
+        self.assertTrue(self.vm_host.is_vm_host)
         self.assertTrue(self.vm_host.is_nfs_client)
+        
+        # Verify mock was called with correct args
         mock_run.assert_called_once()
+        args = mock_run.call_args[0]
+        kwargs = mock_run.call_args[1]
+        self.assertEqual(kwargs.get('playbook'), 'bare_metal_vm_host_with_nfs.yml')
 
     @patch('press.press.doctype.virtual_machine.virtual_machine.VirtualMachine.provision')
     def test_04_create_test_vm(self, mock_provision):
@@ -131,8 +174,13 @@ class TestVMHostSetup(unittest.TestCase):
             "platform": "x86_64",
             "disk_size": 20,
             "root_disk_size": 20,
-            "region": "test-region",  # Add required field
-            "ssh_key": "test-key"  # Add required field
+            "region": "test-region",
+            "availability_zone": "test-zone",
+            "ssh_key": "test-key",
+            "status": "Draft",
+            "vcpu": 2,
+            "ram": 4096,
+            "cloud_provider": "Bare Metal Host"  # Add cloud provider
         }).insert()
         
         mock_provision.return_value = None
