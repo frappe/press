@@ -8,14 +8,11 @@ import glob
 import json
 import os
 import re
-import shlex
 import shutil
-import subprocess
 import tarfile
 import tempfile
 import typing
 from datetime import datetime, timedelta
-from subprocess import Popen
 from typing import Any, Literal
 
 import frappe
@@ -46,7 +43,6 @@ from press.press.doctype.deploy_candidate.utils import (
 	get_build_server,
 	get_package_manager_files,
 	is_suspended,
-	load_pyproject,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error, reconnect_on_failure
@@ -64,7 +60,6 @@ if typing.TYPE_CHECKING:
 	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
@@ -320,6 +315,7 @@ class DeployCandidate(Document):
 			}
 		)
 		deploy_candidate_build.insert()
+		return dict(error=False, message=deploy_candidate_build.name)
 		# self.pre_build(
 		# 	method="_build",
 		# 	no_push=no_push,
@@ -384,12 +380,17 @@ class DeployCandidate(Document):
 			return
 		self.build_and_deploy()
 
-	def build_and_deploy(self, no_cache: bool = False):
-		self.pre_build(
-			method="_build",
-			deploy_after_build=True,
-			no_cache=no_cache,
+	def build_and_deploy(self, no_cache: bool = False) -> str:
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate Build",
+				"deploy_candidate": self.name,
+				"no_cache": no_cache,
+				"deploy_after_build": True,
+			}
 		)
+		deploy_candidate_build.insert()
+		return deploy_candidate_build.name
 
 	@frappe.whitelist()
 	def deploy(self):
@@ -870,32 +871,6 @@ class DeployCandidate(Document):
 		for app in self.apps:
 			app.use_cached = bool(self.use_app_cache)
 
-	def _prepare_build_directory(self):
-		build_directory = frappe.get_value("Press Settings", None, "build_directory")
-		if not os.path.exists(build_directory):
-			os.mkdir(build_directory)
-
-		group_directory = os.path.join(build_directory, self.group)
-		if not os.path.exists(group_directory):
-			os.mkdir(group_directory)
-
-		self.build_directory = os.path.join(build_directory, self.group, self.name)
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		os.mkdir(self.build_directory)
-
-	@frappe.whitelist()
-	def cleanup_build_directory(self):
-		if not self.build_directory:
-			return
-
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		self.build_directory = None
-		self.save()
-
 	def _update_app_releases(self) -> None:
 		if not frappe.get_value("Release Group", self.group, "use_delta_builds"):
 			return
@@ -942,10 +917,10 @@ class DeployCandidate(Document):
 		self._add_post_build_steps(no_push)
 
 		self._copy_config_files()
-		self._generate_redis_cache_config()
-		self._generate_redis_queue_config()
-		self._generate_supervisor_config()
-		self._generate_apps_txt()
+		# self._generate_redis_cache_config()
+		# self._generate_redis_queue_config()
+		# self._generate_supervisor_config()
+		# self._generate_apps_txt()
 		self.generate_ssh_keys()
 
 	def _clone_repos(self):
@@ -988,71 +963,6 @@ class DeployCandidate(Document):
 		step.status = "Success"
 		self.save(ignore_permissions=True, ignore_version=True)
 		frappe.db.commit()
-
-	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
-		"""
-		Clones the app repository if it has not been cloned and
-		copies it into the build context directory.
-
-		Returned path points to the repository that needs to be
-		validated.
-		"""
-		if not (step := self.get_step("clone", app.app)):
-			raise frappe.ValidationError(f"App {app.app} clone step not found")
-
-		if not self.build_directory:
-			raise frappe.ValidationError("Build Directory not set")
-
-		step.command = f"git clone {app.app}"
-		source, cloned = frappe.db.get_value(
-			"App Release",
-			app.release,
-			["clone_directory", "cloned"],
-		)
-
-		if cloned and os.path.exists(source):
-			step.cached = True
-			step.status = "Success"
-		else:
-			source = self._clone_release_and_update_step(app.release, step)
-
-		target = os.path.join(self.build_directory, "apps", app.app)
-		shutil.copytree(source, target, symlinks=True)
-
-		"""
-		Pullable updates don't need cloning as they get cloned when
-		the app is checked for possible pullable updates in:
-
-		self.get_pull_update_dict
-			└─ app_release.get_changed_files_between_hashes
-		"""
-		if app.pullable_release:
-			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
-			target = os.path.join(self.build_directory, "app_updates", app.app)
-			shutil.copytree(source, target, symlinks=True)
-
-		return target
-
-	def _clone_release_and_update_step(self, release: str, step: "DeployCandidateBuildStep"):
-		# Start step
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-		frappe.db.commit()
-
-		# Clone Release
-		release: AppRelease = frappe.get_doc(
-			"App Release",
-			release,
-			for_update=True,
-		)
-		release._clone(force=True)
-
-		# End step
-		step.duration = get_duration(start_time)
-		step.output = release.output
-		step.status = "Success"
-		return release.clone_directory
 
 	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()
@@ -1257,151 +1167,6 @@ class DeployCandidate(Document):
 				os.path.join(self.build_directory, target),
 				symlinks=True,
 			)
-
-	def _generate_redis_cache_config(self):
-		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
-		with open(redis_cache_conf, "w") as f:
-			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
-			content = frappe.render_template(redis_cache_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_redis_queue_config(self):
-		redis_queue_conf = os.path.join(self.build_directory, "config", "redis-queue.conf")
-		with open(redis_queue_conf, "w") as f:
-			redis_queue_conf_template = "press/docker/config/redis-queue.conf"
-			content = frappe.render_template(redis_queue_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_supervisor_config(self):
-		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
-		with open(supervisor_conf, "w") as f:
-			supervisor_conf_template = "press/docker/config/supervisor.conf"
-			content = frappe.render_template(supervisor_conf_template, {"doc": self}, is_path=True)
-			f.write(content)
-
-	def _generate_apps_txt(self):
-		apps_txt = os.path.join(self.build_directory, "apps.txt")
-		with open(apps_txt, "w") as f:
-			content = "\n".join([app.app_name for app in self.apps])
-			f.write(content)
-
-	def _get_app_name(self, app):
-		"""Retrieves `name` attribute of app - equivalent to distribution name
-		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
-		whichever defines it in that order.
-		"""
-		app_name = None
-		apps_path = os.path.join(self.build_directory, "apps")
-
-		config_py_path = os.path.join(apps_path, app, "setup.cfg")
-		setup_py_path = os.path.join(apps_path, app, "setup.py")
-
-		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
-
-		if not app_name and os.path.exists(config_py_path):
-			from setuptools.config import read_configuration
-
-			config = read_configuration(config_py_path)
-			app_name = config.get("metadata", {}).get("name")
-
-		if not app_name and os.path.exists(setup_py_path):
-			# retrieve app name from setup.py as fallback
-			with open(setup_py_path, "rb") as f:
-				contents = f.read().decode("utf-8")
-				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
-
-			if search:
-				app_name = search[1]
-
-		if app_name and app != app_name:
-			return app_name
-
-		return app
-
-	def _get_app_pyproject(self, app):
-		apps_path = os.path.join(self.build_directory, "apps")
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
-		if not os.path.exists(pyproject_path):
-			return {}
-
-		return load_pyproject(app, pyproject_path)
-
-	def run(self, command, environment=None, directory=None):
-		process = Popen(
-			shlex.split(command),
-			stdout=subprocess.PIPE,
-			stderr=subprocess.STDOUT,
-			env=environment,
-			cwd=directory or self.build_directory,
-			universal_newlines=True,
-		)
-		yield from process.stdout
-		process.stdout.close()
-		return_code = process.wait()
-		if return_code:
-			raise subprocess.CalledProcessError(return_code, command)
-
-	def generate_ssh_keys(self):
-		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
-		if not ca:
-			return
-
-		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
-
-		self.generate_host_keys(ca, ssh_directory)
-		self.generate_user_keys(ca, ssh_directory)
-
-		ca_public_key = os.path.join(ssh_directory, "ca.pub")
-		with open(ca_public_key, "w") as f:
-			f.write(ca.public_key)
-
-		# Generate authorized principal file
-		principals = os.path.join(ssh_directory, "principals")
-		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.group}")
-
-	def generate_host_keys(self, ca, ssh_directory):
-		# Generate host keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate host Certificate
-		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
-
-	def generate_user_keys(self, ca, ssh_directory):
-		# Generate user keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
-				directory=ssh_directory,
-			)
-		)
-
-		# Generate user certificates
-		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
-
-		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
-		with open(user_private_key_path) as f:
-			self.user_private_key = f.read()
-
-		with open(user_public_key_path) as f:
-			self.user_public_key = f.read()
-
-		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
-		with open(user_certificate_path) as f:
-			self.user_certificate = f.read()
-
-		# Remove user key files
-		os.remove(user_private_key_path)
-		os.remove(user_public_key_path)
-		os.remove(user_certificate_path)
 
 	def get_certificate(self):
 		return {
