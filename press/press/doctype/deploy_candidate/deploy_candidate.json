@@ -427,16 +427,16 @@
  ],
  "links": [
   {
-   "link_doctype": "Agent Job",
-   "link_fieldname": "reference_name"
-  },
-  {
    "link_doctype": "Error Log",
    "link_fieldname": "reference_name"
   },
   {
    "link_doctype": "Press Notification",
    "link_fieldname": "document_name"
+  },
+  {
+   "link_doctype": "Deploy Candidate Build",
+   "link_fieldname": "deploy_candidate"
   }
  ],
  "modified": "2025-04-02 22:39:37.680324",
