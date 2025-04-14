@@ -883,6 +883,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"server": self.name,
 					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"private_ip": self.private_ip,
 				},
 			)
 			ansible.run()
