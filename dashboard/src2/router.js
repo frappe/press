@@ -111,6 +111,11 @@ let router = createRouter({
 			component: () => import('./pages/NewServer.vue'),
 		},
 		{
+			name: 'PartnerNewPayout',
+			path: '/payment-payout/New',
+			component: () => import('./pages/PartnerNewPayout.vue'),
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
@@ -226,6 +231,11 @@ let router = createRouter({
 					path: 'local-payment-setup',
 					component: () =>
 						import('./components/partners/PartnerLocalPaymentSetup.vue'),
+				},
+				{
+					name: 'PartnerPayout',
+					path: 'payment-payout',
+					component: () => import('./components/partners/PartnerPayout.vue'),
 				},
 			],
 		},
