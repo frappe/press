@@ -16,6 +16,7 @@ from enum import Enum
 from functools import cached_property
 
 import frappe
+import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -54,6 +55,7 @@ if typing.TYPE_CHECKING:
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
+DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
 
 
 class Status(Enum):
@@ -286,16 +288,34 @@ class DeployCandidateBuild(Document):
 
 		return checkpoints
 
+	def check_distutils_support(self, version: str):
+		"""
+		Checks if specified python version supports distutils.
+		"""
+		try:
+			python_version = semantic_version.Version(version)
+		except ValueError:
+			python_version = semantic_version.Version(f"{version}.0")
+
+		return python_version in DISTUTILS_SUPPORTED_VERSION
+
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
+			is_distutils_supported = True
+			for d in self.dependencies:
+				if d.dependency == "PYTHON_VERSION":
+					is_distutils_supported = self.check_distutils_support(d.version)
 
-			for d in self.candidate.dependencies:
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			content = frappe.render_template(dockerfile_template, {"doc": self.candidate}, is_path=True)
+			content = frappe.render_template(
+				dockerfile_template,
+				{"doc": self, "remove_distutils": not is_distutils_supported},
+				is_path=True,
+			)
 			f.write(content)
 			return content
 
