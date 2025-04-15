@@ -8,6 +8,7 @@
   "deploy_candidate",
   "build_directory",
   "status",
+  "group",
   "column_break_9sga",
   "no_build",
   "no_cache",
@@ -117,7 +118,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nPreparing\nRunning\nSuccess\nFailure",
+   "options": "Draft\nPending\nPreparing\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -172,6 +173,7 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "description": "Under certain failure conditions, a build will be retried.",
    "fieldname": "retry_count",
    "fieldtype": "Int",
@@ -217,6 +219,15 @@
    "fieldtype": "Data",
    "label": "Docker Image Id",
    "read_only": 1
+  },
+  {
+   "fetch_from": "deploy_candidate.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -235,7 +246,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-10 22:27:05.340796",
+ "modified": "2025-04-11 17:46:55.953431",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

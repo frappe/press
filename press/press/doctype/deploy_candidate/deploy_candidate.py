@@ -1616,6 +1616,7 @@ def check_builds_status(
 	frappe.db.commit()
 
 
+# TODO Update this
 def fail_or_retry_stuck_builds(
 	last_n_days=0,
 	last_n_hours=4,
