@@ -749,11 +749,11 @@ class DeployCandidateBuild(Document):
 		if not os.path.exists(build_directory):
 			os.mkdir(build_directory)
 
-		group_directory = os.path.join(build_directory, self.candidate.group)
+		group_directory = os.path.join(build_directory, self.group)
 		if not os.path.exists(group_directory):
 			os.mkdir(group_directory)
 
-		self.build_directory = os.path.join(build_directory, self.candidate.group, self.name)
+		self.build_directory = os.path.join(build_directory, self.group, self.name)
 		if os.path.exists(self.build_directory):
 			shutil.rmtree(self.build_directory)
 
@@ -868,8 +868,8 @@ class DeployCandidateBuild(Document):
 		Agent(self.build_server).run_build(
 			{
 				"filename": context_filename,
-				"image_repository": self.candidate.docker_image_repository,
-				"image_tag": self.candidate.docker_image_tag,
+				"image_repository": self.docker_image_repository,
+				"image_tag": self.docker_image_tag,
 				"registry": {
 					"url": settings.docker_registry_url,
 					"username": settings.docker_registry_username,

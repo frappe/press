@@ -20,6 +20,7 @@
   "docker_meta_section",
   "docker_image_id",
   "docker_image_repository",
+  "column_break_gi6p",
   "docker_image_tag",
   "docker_image",
   "times_section",
@@ -242,17 +243,24 @@
   {
    "fieldname": "docker_image_repository",
    "fieldtype": "Data",
-   "label": "Docker Image Repository"
+   "label": "Docker Image Repository",
+   "read_only": 1
   },
   {
    "fieldname": "docker_image_tag",
    "fieldtype": "Data",
-   "label": "Docker Image Tag"
+   "label": "Docker Image Tag",
+   "read_only": 1
   },
   {
    "fieldname": "docker_image",
    "fieldtype": "Data",
-   "label": "Docker image"
+   "label": "Docker image",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gi6p",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -271,7 +279,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-15 14:30:39.399205",
+ "modified": "2025-04-15 16:51:47.423272",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
