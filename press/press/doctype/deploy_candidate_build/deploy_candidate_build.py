@@ -305,7 +305,7 @@ class DeployCandidateBuild(Document):
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
 			is_distutils_supported = True
-			for d in self.dependencies:
+			for d in self.candidate.dependencies:
 				if d.dependency == "PYTHON_VERSION":
 					is_distutils_supported = self.check_distutils_support(d.version)
 
@@ -314,7 +314,7 @@ class DeployCandidateBuild(Document):
 
 			content = frappe.render_template(
 				dockerfile_template,
-				{"doc": self, "remove_distutils": not is_distutils_supported},
+				{"doc": self.candidate, "remove_distutils": not is_distutils_supported},
 				is_path=True,
 			)
 			f.write(content)
@@ -738,7 +738,7 @@ class DeployCandidateBuild(Document):
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
 
-		if self.candidate.status == "Success" and request_data.get("deploy_after_build"):
+		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.candidate.create_deploy()
 
 	def _prepare_build_directory(self):
