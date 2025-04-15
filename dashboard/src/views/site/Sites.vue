@@ -412,7 +412,7 @@ export default {
 				{
 					label: 'Visit Site',
 					onClick: () => {
-						window.open(`https://${site.name}`, '_blank');
+						window.open(`https://${site.name}/apps`, '_blank');
 					}
 				},
 				{
