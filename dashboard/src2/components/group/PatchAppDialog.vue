@@ -196,7 +196,8 @@ export default {
 			}
 
 			if (!this.patchFileName && this.patchURL) {
-				this.patchFileName = this.patchURL.split('/').at(-1);
+				const patchURL = this.patchURL.split('?')[0];
+				this.patchFileName = patchURL.split('/').at(-1);
 			}
 
 			if (!this.patchFileName.endsWith('.patch')) {
