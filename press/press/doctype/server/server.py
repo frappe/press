@@ -30,6 +30,7 @@ from press.telegram_utils import Telegram
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -1005,11 +1006,11 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate)
 
 	@frappe.whitelist()
-	def show_agent_version(self) -> str:
+	def show_agent_version(self):
 		return self.agent.get_version()["commit"]
 
 	@frappe.whitelist()
-	def show_agent_password(self) -> str:
+	def show_agent_password(self):
 		return self.get_password("agent_password")
 
 	@property
@@ -1406,6 +1407,7 @@ class Server(BaseServer):
 		ipv6: DF.Data | None
 		is_managed_database: DF.Check
 		is_primary: DF.Check
+		is_pyspy_setup: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
 		is_server_prepared: DF.Check
@@ -1742,6 +1744,21 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Fail2ban Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def setup_pyspy(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_pyspy", queue="long")
+
+	def _setup_pyspy(self):
+		try:
+			ansible = Ansible(
+				playbook="setup_pyspy.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+			)
+			play: AnsiblePlay = ansible.run()
+			self.is_pyspy_setup = play.status == "Success"
+			self.save()
+		except Exception:
+			log_error("Setup PySpy Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_replication(self):

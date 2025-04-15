@@ -22,6 +22,7 @@
   "is_server_renamed",
   "public",
   "use_agent_job_callbacks",
+  "is_pyspy_setup",
   "billing_section",
   "team",
   "column_break_11",
@@ -558,10 +559,17 @@
    "fieldname": "use_agent_job_callbacks",
    "fieldtype": "Check",
    "label": "Use Agent Job Callbacks"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_pyspy_setup",
+   "fieldtype": "Check",
+   "label": "Is PySpy Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-03-26 12:49:49.214409",
+ "modified": "2025-04-15 08:54:08.455782",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
