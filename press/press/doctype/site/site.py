@@ -1740,7 +1740,7 @@ class Site(Document, TagHelpers):
 			return
 
 		conn = self.get_connection_as_admin()
-		method = "frappe.desk.page.setup_wizard.setup_wizard.prefill_setup_wizard"
+		method = "frappe.desk.page.setup_wizard.setup_wizard.initialize_system_settings_and_user"
 		params = {"args": payload}
 		conn.post_api(method, params)
 
