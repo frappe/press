@@ -39,7 +39,7 @@ class PaymentDueExtension(Document):
 def remove_payment_due_extension():
 	extensions = frappe.get_all(
 		"Payment Due Extension",
-		{"docstatus": 1, "extension_date": ("<", frappe.utils.getdate())},
+		{"docstatus": 1, "extension_date": ("<", frappe.utils.today())},
 		pluck="team",
 	)
 	for team in extensions:
