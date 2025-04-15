@@ -9,6 +9,7 @@
   "build_directory",
   "status",
   "group",
+  "team",
   "column_break_9sga",
   "no_build",
   "no_cache",
@@ -261,6 +262,14 @@
   {
    "fieldname": "column_break_gi6p",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "group.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -279,7 +288,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-15 16:51:47.423272",
+ "modified": "2025-04-15 17:33:33.921247",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

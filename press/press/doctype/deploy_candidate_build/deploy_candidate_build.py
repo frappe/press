@@ -206,6 +206,7 @@ class DeployCandidateBuild(Document):
 		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
+		team: DF.Link
 		user_addressable_failure: DF.Check
 	# end: auto-generated types
 
@@ -221,6 +222,7 @@ class DeployCandidateBuild(Document):
 		"build_error",
 		"group",
 		"retry_count",
+		"team",
 	)
 
 	@staticmethod
@@ -1011,8 +1013,8 @@ class DeployCandidateBuild(Document):
 				docname=self.name,
 			)
 
-		if self.has_value_changed("status") and self.candidate.team != "Administrator":
-			create_webhook_event("Bench Deploy Status Update", self, self.candidate.team)
+		if self.has_value_changed("status") and self.team != "Administrator":
+			create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def run_scheduled_build_and_deploy(self):
 		self.set_status(Status.DRAFT)

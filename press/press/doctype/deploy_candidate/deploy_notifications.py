@@ -248,7 +248,7 @@ def create_build_failed_notification(
 	details = get_details(dc, exc)
 	doc_dict = {
 		"doctype": "Press Notification",
-		"team": dc.candidate.team,
+		"team": dc.team,
 		"type": "Bench Deploy",
 		"document_type": dc.doctype,
 		"document_name": dc.name,
@@ -259,9 +259,7 @@ def create_build_failed_notification(
 	doc.insert()
 	frappe.db.commit()
 
-	frappe.publish_realtime(
-		"press_notification", doctype="Press Notification", message={"team": dc.candidate.team}
-	)
+	frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": dc.team})
 
 	return details["is_actionable"]
 
