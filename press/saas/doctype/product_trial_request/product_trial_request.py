@@ -129,6 +129,9 @@ class ProductTrialRequest(Document):
 					"email": team_user.email,
 					"first_name": team_user.first_name,
 					"last_name": team_user.last_name,
+				}
+			), json.dumps(
+				{
 					"country": team_details.country,
 					"time_zone": timezone,
 					"language": "en",
@@ -244,8 +247,8 @@ class ProductTrialRequest(Document):
 			return
 		site = frappe.get_doc("Site", self.site)
 		try:
-			payload = self.get_setup_wizard_payload()
-			site.prefill_setup_wizard(payload)
+			user_payload, system_settings_payload = self.get_setup_wizard_payload()
+			site.prefill_setup_wizard(system_settings_payload, user_payload)
 			self.status = "Prefilling Setup Wizard"
 			self.save()
 		except Exception as e:

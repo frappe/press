@@ -1731,17 +1731,17 @@ class Site(Document, TagHelpers):
 		if analytics:
 			create_user_for_product_site(self.name, analytics)
 
-	def prefill_setup_wizard(self, payload: dict):
+	def prefill_setup_wizard(self, system_settings_payload: dict, user_payload: dict):
 		"""Prefill setup wizard with the given payload.
 
 		:param payload: Payload to prefill setup wizard.
 		"""
-		if self.setup_wizard_complete or not payload:
+		if self.setup_wizard_complete or not system_settings_payload or not user_payload:
 			return
 
 		conn = self.get_connection_as_admin()
 		method = "frappe.desk.page.setup_wizard.setup_wizard.initialize_system_settings_and_user"
-		params = {"args": payload}
+		params = {"system_settings_data": system_settings_payload, "user_data": user_payload}
 		conn.post_api(method, params)
 
 	@dashboard_whitelist()
