@@ -13,7 +13,11 @@ frappe.ui.form.on('Deploy Candidate Build', {
 				typeof frm.doc.build_directory !== 'undefined' &&
 					frm.doc.status !== 'Running',
 			],
-			[__('Stop And Fail'), !['Success', 'Failure'].includes(frm.doc.status)],
+			[
+				__('Stop And Fail'),
+				null,
+				!['Success', 'Failure'].includes(frm.doc.status),
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(label, () => {
