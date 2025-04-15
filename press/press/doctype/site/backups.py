@@ -86,6 +86,7 @@ class BackupRotationScheme:
 					"site": ("in", sites),
 					"status": "Success",
 					"files_availability": "Available",
+					"physical": False,
 					"offsite": False,
 					"creation": ("<", frappe.utils.add_to_date(None, hours=-expiry)),
 				},
