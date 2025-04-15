@@ -19,6 +19,9 @@
   "build_steps",
   "docker_meta_section",
   "docker_image_id",
+  "docker_image_repository",
+  "docker_image_tag",
+  "docker_image",
   "times_section",
   "build_start",
   "build_duration",
@@ -235,6 +238,21 @@
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
    "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_repository",
+   "fieldtype": "Data",
+   "label": "Docker Image Repository"
+  },
+  {
+   "fieldname": "docker_image_tag",
+   "fieldtype": "Data",
+   "label": "Docker Image Tag"
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker image"
   }
  ],
  "grid_page_length": 50,
@@ -253,7 +271,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-14 10:34:09.669588",
+ "modified": "2025-04-15 14:30:39.399205",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",

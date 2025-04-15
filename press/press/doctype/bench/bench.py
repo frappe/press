@@ -233,7 +233,6 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		self.docker_image = candidate.docker_image
 
 		self.set_apps(candidate)
 

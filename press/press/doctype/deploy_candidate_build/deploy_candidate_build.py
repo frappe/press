@@ -190,7 +190,10 @@ class DeployCandidateBuild(Document):
 		build_steps: DF.Table[DeployCandidateBuildStep]
 		deploy_after_build: DF.Check
 		deploy_candidate: DF.Link
+		docker_image: DF.Data | None
 		docker_image_id: DF.Data | None
+		docker_image_repository: DF.Data | None
+		docker_image_tag: DF.Data | None
 		error_key: DF.Data | None
 		group: DF.Link
 		manually_failed: DF.Check
@@ -739,7 +742,7 @@ class DeployCandidateBuild(Document):
 		self.correct_upload_step_status()
 
 		if self.status == "Success" and request_data.get("deploy_after_build"):
-			self.candidate.create_deploy()
+			self.create_deploy()
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -883,8 +886,20 @@ class DeployCandidateBuild(Document):
 
 		self.set_status(Status.RUNNING)
 
+	def _update_docker_image_metadata(self):
+		settings = self.candidate._fetch_registry_settings()
+
+		if settings.docker_registry_namespace:
+			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
+		else:
+			namespace = f"{settings.domain}"
+
+		self.docker_image_repository = f"{settings.docker_registry_url}/{namespace}/{self.group}"
+		self.docker_image_tag = self.name
+		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
+
 	def _start_build(self):
-		self.candidate._update_docker_image_metadata()
+		self._update_docker_image_metadata()
 		if self.no_build:
 			return
 
@@ -1021,6 +1036,38 @@ class DeployCandidateBuild(Document):
 
 		self.set_status(Status.FAILURE)
 		self._set_build_duration()
+
+	def create_deploy(self):
+		servers = frappe.get_doc("Release Group", self.group).servers
+		servers = [server.server for server in servers]
+		if not servers:
+			return None
+
+		deploy_doc = frappe.db.exists(
+			"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
+		)
+
+		if deploy_doc:
+			return str(deploy_doc)
+
+		return self._create_deploy(servers).name
+
+	def _create_deploy(self, servers: list[str]):
+		return frappe.get_doc(
+			{
+				"doctype": "Deploy",
+				"group": self.group,
+				"candidate": self.candidate.name,
+				"benches": [{"server": server} for server in servers],
+			}
+		).insert()
+
+	@frappe.whitelist()
+	def deploy(self):
+		try:
+			self.create_deploy()
+		except Exception:
+			log_error("Deploy Creation Error", doc=self)
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):

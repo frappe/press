@@ -18,6 +18,7 @@ frappe.ui.form.on('Deploy Candidate Build', {
 				null,
 				!['Success', 'Failure'].includes(frm.doc.status),
 			],
+			[__('Deploy'), 'deploy', frm.doc.status === 'Success'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(label, () => {
