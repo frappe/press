@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import typing
+from typing import Literal
 
 import dockerfile
 import frappe
@@ -15,8 +16,6 @@ done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
 	from typing import Any, Generator
-
-	from frappe.types import DF
 
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
@@ -276,7 +275,7 @@ class UploadStepUpdater:
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: "DF.Literal['Success', 'Failure'] | None"):
+	def end(self, status: Literal["Success", "Failure"] | None):
 		if not self.upload_step:
 			return
 
