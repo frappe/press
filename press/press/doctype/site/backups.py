@@ -15,7 +15,7 @@ import pytz
 
 from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
-from press.press.doctype.site.site import Site
+from press.press.doctype.site.site import Literal, Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
@@ -172,6 +172,27 @@ class GFS(BackupRotationScheme):
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
+class ModifiableCycle:
+	def __init__(self, items=()):
+		self.deque = deque(items)
+
+	def __iter__(self):
+		return self
+
+	def __next__(self):
+		if not self.deque:
+			raise StopIteration
+		item = self.deque.popleft()
+		self.deque.append(item)
+		return item
+
+	def delete_next(self):
+		self.deque.popleft()
+
+	def delete_prev(self):
+		self.deque.pop()
+
+
 class ScheduledBackupJob:
 	"""Represents Scheduled Backup Job that takes backup for all active sites."""
 
@@ -184,7 +205,8 @@ class ScheduledBackupJob:
 		# return (hour + self.offset) % self.interval == 0
 		return True
 
-	def __init__(self):
+	def __init__(self, backup_type: Literal["Logical", "Physical"]):
+		self.backup_type: Literal["Logical", "Physical"] = backup_type
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
@@ -197,8 +219,11 @@ class ScheduledBackupJob:
 
 		self.offsite_setup = PressSettings.is_offsite_setup()
 		self.server_time = datetime.now()
-		self.sites = Site.get_sites_for_backup(self.interval)
-		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+		self.sites = Site.get_sites_for_backup(self.interval, backup_type=self.backup_type)
+		if self.backup_type == "Logical":
+			self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+		else:
+			self.sites_without_offsite = []
 
 	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
 		return (
@@ -212,33 +237,13 @@ class ScheduledBackupJob:
 		site_timezone = pytz.timezone(timezone)
 		return self.server_time.astimezone(site_timezone)
 
-	class ModifiableCycle:
-		def __init__(self, items=()):
-			self.deque = deque(items)
-
-		def __iter__(self):
-			return self
-
-		def __next__(self):
-			if not self.deque:
-				raise StopIteration
-			item = self.deque.popleft()
-			self.deque.append(item)
-			return item
-
-		def delete_next(self):
-			self.deque.popleft()
-
-		def delete_prev(self):
-			self.deque.pop()
-
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		sites_by_server = []
 		for server, sites in groupby(self.sites, lambda d: d.server):
 			sites_by_server.append((server, iter(list(sites))))
 
-		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
+		sites_by_server_cycle = ModifiableCycle(sites_by_server)
 		self._take_backups_in_round_robin(sites_by_server_cycle)
 
 	def _take_backups_in_round_robin(self, sites_by_server_cycle: ModifiableCycle):
@@ -264,6 +269,7 @@ class ScheduledBackupJob:
 				{
 					"site": site.name,
 					"status": ("in", ["Failure", "Delivery Failure"]),
+					"physical": self.backup_type == "Physical",
 					"creation": [
 						">=",
 						frappe.utils.add_days(None, -1),
@@ -276,10 +282,18 @@ class ScheduledBackupJob:
 			):
 				today = frappe.utils.getdate()
 
-				offsite = self.take_offsite(site, today)
-				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today)
+				"""
+				Offsite backup is applicable only for logical backups
+				In physical backup, we can't take backup with files
+				"""
+				offsite = self.backup_type == "Logical" and self.take_offsite(site, today)
+				with_files = self.backup_type == "Logical" and (
+					offsite or not SiteBackup.file_backup_exists(site.name, today)
+				)
 
-				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
+				frappe.get_doc("Site", site.name).backup(
+					with_files=with_files, offsite=offsite, physical=(self.backup_type == "Physical")
+				)
 				frappe.db.commit()
 				return True
 			return False
@@ -289,24 +303,39 @@ class ScheduledBackupJob:
 			frappe.db.rollback()
 
 
-def schedule_for_sites_with_backup_time():
+def schedule_logical_backups_for_sites_with_backup_time():
 	"""
-	Schedule backups for sites with backup time.
+	Schedule logical backups for sites with backup time.
 
 	Run this hourly only
 	"""
 	sites = Site.get_sites_with_backup_time()
-	now = frappe.utils.now_datetime()
 	for site in sites:
-		if now.hour != site.backup_time.total_seconds() // 3600:
-			continue
-		site_doc = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=True, offsite=True)
+		site_doc: Site = frappe.get_doc("Site", site.name)
+		site_doc.backup(with_files=True, offsite=True, physical=False)
 		frappe.db.commit()
 
 
-def schedule():
-	scheduled_backup_job = ScheduledBackupJob()
+def schedule_physical_backups_for_sites_with_backup_time():
+	"""
+	Schedule physical backups for sites with backup time.
+
+	Run this hourly only
+	"""
+	sites = Site.get_sites_with_backup_time()
+	for site in sites:
+		site_doc: Site = frappe.get_doc("Site", site.name)
+		site_doc.backup(with_files=True, offsite=True, physical=True)
+		frappe.db.commit()
+
+
+def schedule_logical_backups():
+	scheduled_backup_job = ScheduledBackupJob(backup_type="Logical")
+	scheduled_backup_job.start()
+
+
+def schedule_physical_backups():
+	scheduled_backup_job = ScheduledBackupJob(backup_type="Physical")
 	scheduled_backup_job.start()
 
 

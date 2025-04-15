@@ -53,11 +53,12 @@
   "remote_private_file",
   "remote_public_file",
   "backup_tab",
-  "skip_scheduled_backups",
   "logical_backup_section",
+  "skip_scheduled_logical_backups",
   "schedule_logical_backup_at_custom_time",
   "logical_backup_times",
   "physical_backup_section",
+  "skip_scheduled_physical_backups",
   "schedule_physical_backup_at_custom_time",
   "physical_backup_times",
   "flags1_section",
@@ -527,12 +528,6 @@
    "label": "Hide Config"
   },
   {
-   "default": "0",
-   "fieldname": "skip_scheduled_backups",
-   "fieldtype": "Check",
-   "label": "Skip Scheduled Backups"
-  },
-  {
    "collapsible": 1,
    "fieldname": "tags_section",
    "fieldtype": "Section Break",
@@ -618,7 +613,6 @@
    "label": "Allow Physical Backup By User"
   },
   {
-   "collapsible": 1,
    "collapsible_depends_on": "eval: doc.schedule_logical_backup_at_custom_time",
    "depends_on": "eval: !doc.skip_scheduled_backups",
    "fieldname": "logical_backup_section",
@@ -632,7 +626,6 @@
    "options": "Site Backup Time"
   },
   {
-   "collapsible": 1,
    "collapsible_depends_on": "eval: doc.schedule_physical_backup_at_custom_time",
    "depends_on": "eval: !doc.skip_scheduled_backups",
    "fieldname": "physical_backup_section",
@@ -661,6 +654,18 @@
    "fieldname": "schedule_logical_backup_at_custom_time",
    "fieldtype": "Check",
    "label": "Schedule Logical Backup at Custom Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_scheduled_logical_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Logical Backups"
+  },
+  {
+   "default": "1",
+   "fieldname": "skip_scheduled_physical_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Physical Backups"
   }
  ],
  "links": [
@@ -735,7 +740,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-04-11 15:39:49.809975",
+ "modified": "2025-04-14 10:58:10.766173",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

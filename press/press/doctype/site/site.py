@@ -8,7 +8,7 @@ import json
 from collections import defaultdict
 from contextlib import suppress
 from functools import cached_property, wraps
-from typing import Any
+from typing import Any, Literal
 
 import dateutil.parser
 import frappe
@@ -167,7 +167,8 @@ class Site(Document, TagHelpers):
 		signup_time: DF.Datetime | None
 		skip_auto_updates: DF.Check
 		skip_failing_patches: DF.Check
-		skip_scheduled_backups: DF.Check
+		skip_scheduled_logical_backups: DF.Check
+		skip_scheduled_physical_backups: DF.Check
 		staging: DF.Check
 		standby_for: DF.Link | None
 		standby_for_product: DF.Link | None
@@ -2658,33 +2659,70 @@ class Site(Document, TagHelpers):
 		return result[0] if result else None
 
 	@classmethod
-	def get_sites_with_backup_time(cls) -> list[dict]:
-		sites = frappe.qb.DocType(cls.DOCTYPE)
-		return (
-			frappe.qb.from_(sites)
-			.select(sites.name, sites.backup_time)
-			.where(sites.backup_time.isnotnull())
-			.where(sites.status == "Active")
-			.where(sites.skip_scheduled_backups == 0)
-			.run(as_dict=True)
+	def get_sites_with_backup_time(cls, backup_type: Literal["Logical", "Physical"]) -> list[dict]:
+		site_backup_times = frappe.qb.DocType("Site Backup Time")
+		site_filters = {"status": "Active"}
+		if backup_type == "Logical":
+			site_filters.update(
+				{"skip_scheduled_logical_backups": 0, "schedule_logical_backup_at_custom_time": 1}
+			)
+		elif backup_type == "Physical":
+			site_filters.update(
+				{"skip_scheduled_physical_backups": 0, "schedule_physical_backup_at_custom_time": 1}
+			)
+
+		sites = frappe.get_all("Site", filters=site_filters, pluck="name")
+		if not sites:
+			return []
+
+		query = (
+			frappe.qb.from_(site_backup_times)
+			.select(site_backup_times.parent.as_("name"), site_backup_times.backup_time)
+			.where(site_backup_times.parent.isin(sites))
 		)
 
+		if backup_type == "Logical":
+			query = query.where(site_backup_times.parentfield == "logical_backup_times")
+		elif backup_type == "Physical":
+			query = query.where(site_backup_times.parentfield == "physical_backup_times")
+
+		# check for backup time
+		"""
+		Backup time should be between current_hr:00:00 to current_hr:59:59
+		"""
+		current_hr = frappe.utils.get_datetime().hour
+		query = query.where(
+			(site_backup_times.backup_time >= f"{current_hr}:00:00")
+			& (site_backup_times.backup_time <= f"{current_hr}:59:59")
+		)
+
+		return query.run(as_dict=True)
+
 	@classmethod
-	def get_sites_for_backup(cls, interval: int):
+	def get_sites_for_backup(
+		cls, interval: int, backup_type: Literal["Logical", "Physical"] = "Logical"
+	) -> list[dict]:
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		servers_with_backups = frappe.get_all(
 			"Server",
 			{"status": "Active", "skip_scheduled_backups": False},
 			pluck="name",
 		)
+		filters = {
+			"name": ("in", sites),
+			"server": ("in", servers_with_backups),
+		}
+
+		if backup_type == "Logical":
+			filters["skip_scheduled_logical_backups"] = False
+			filters["schedule_logical_backup_at_custom_time"] = False
+		elif backup_type == "Physical":
+			filters["skip_scheduled_physical_backups"] = False
+			filters["schedule_physical_backup_at_custom_time"] = False
+
 		return frappe.get_all(
 			"Site",
-			{
-				"name": ("in", sites),
-				"skip_scheduled_backups": False,
-				"backup_time": ("is", "not set"),
-				"server": ("in", servers_with_backups),
-			},
+			filters,
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
