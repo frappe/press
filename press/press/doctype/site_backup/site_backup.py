@@ -18,6 +18,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.agent_job.agent_job import AgentJob
 	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
 	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -39,6 +40,7 @@ class SiteBackup(Document):
 		database_size: DF.Data | None
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
+		deactivate_site_during_backup: DF.Check
 		files_availability: DF.Literal["", "Available", "Unavailable"]
 		for_site_update: DF.Check
 		job: DF.Link | None
@@ -86,9 +88,11 @@ class SiteBackup(Document):
 
 	@property
 	def database_server(self):
-		return frappe.get_value(
-			"Server", frappe.get_cached_value("Site", self.site, "server"), "database_server"
-		)
+		return frappe.get_value("Server", self.server, "database_server")
+
+	@property
+	def server(self):
+		return frappe.get_cached_value("Site", self.site, "server")
 
 	@staticmethod
 	def get_list_query(query):
@@ -161,6 +165,13 @@ class SiteBackup(Document):
 			self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def after_insert(self):
+		if self.deactivate_site_during_backup:
+			agent = Agent(self.server)
+			agent.deactivate_site(self.site, reference_doctype=self.doctype, reference_name=self.name)
+		else:
+			self.start_backup()
+
+	def start_backup(self):
 		if self.physical:
 			frappe.enqueue_doc(
 				doctype=self.doctype,
@@ -198,6 +209,14 @@ class SiteBackup(Document):
 				method="_rollback_db_directory_permissions",
 				enqueue_after_commit=True,
 			)
+
+		if (
+			self.has_value_changed("status")
+			and self.status in ["Success", "Failure"]
+			and self.deactivate_site_during_backup
+		):
+			agent = Agent(self.server)
+			agent.activate_site(self.site, reference_doctype=self.doctype, reference_name=self.name)
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:
@@ -432,6 +451,30 @@ def get_backup_bucket(cluster, region=False):
 	if region:
 		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
 	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+
+
+def process_deactivate_site_job_update(job: AgentJob):
+	if job.reference_doctype != "Site Backup":
+		return
+
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+
+	status = {
+		"Success": "Success",
+		"Failure": "Failure",
+		"Delivery Failure": "Failure",
+	}[job.status]
+
+	if frappe.get_value("Site Backup", job.reference_name, "status") == status:
+		return
+
+	backup: SiteBackup = frappe.get_doc("Site Backup", job.reference_name)
+	if status == "Failure":
+		backup.status = "Failure"
+		backup.save()
+	elif status == "Success":
+		backup.start_backup()
 
 
 def on_doctype_update():

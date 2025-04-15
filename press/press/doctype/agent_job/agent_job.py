@@ -992,6 +992,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.site_backup.site_backup import (
+			process_deactivate_site_job_update as process_site_backup_deactivate_site_job_update,
+		)
 		from press.press.doctype.site_domain.site_domain import (
 			process_add_domain_to_upstream_job_update,
 			process_new_host_job_update,
@@ -1096,6 +1099,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_deactivate_site_job_update(job)
 		elif job.job_type == "Activate Site" and job.reference_doctype == "Site Update":
 			process_activate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Backup":
+			process_site_backup_deactivate_site_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
 

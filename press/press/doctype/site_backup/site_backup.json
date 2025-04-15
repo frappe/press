@@ -16,6 +16,7 @@
   "for_site_update",
   "with_files",
   "offsite",
+  "deactivate_site_during_backup",
   "data_7",
   "database_file",
   "database_url",
@@ -291,10 +292,16 @@
    "fieldname": "for_site_update",
    "fieldtype": "Check",
    "label": "For Site Update"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_backup",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Backup"
   }
  ],
  "links": [],
- "modified": "2025-04-11 10:27:39.445778",
+ "modified": "2025-04-15 16:44:55.500163",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

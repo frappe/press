@@ -971,11 +971,17 @@ class Site(Document, TagHelpers):
 		"""
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
-		return self.backup(with_files=with_files, physical=physical)
+		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=True)
 
 	@frappe.whitelist()
 	def backup(
-		self, with_files=False, offsite=False, force=False, physical=False, for_site_update: bool = False
+		self,
+		with_files=False,
+		offsite=False,
+		force=False,
+		physical=False,
+		for_site_update: bool = False,
+		deactivate_site_during_backup: bool = False,
 	):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
@@ -1008,6 +1014,7 @@ class Site(Document, TagHelpers):
 				"force": force,
 				"physical": physical,
 				"for_site_update": for_site_update,
+				"deactivate_site_during_backup": deactivate_site_during_backup,
 			}
 		).insert()
 

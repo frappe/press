@@ -329,7 +329,10 @@ class ScheduledBackupJob:
 				)
 
 				frappe.get_doc("Site", site.name).backup(
-					with_files=with_files, offsite=offsite, physical=(self.backup_type == "Physical")
+					with_files=with_files,
+					offsite=offsite,
+					physical=(self.backup_type == "Physical"),
+					deactivate_site_during_backup=(self.backup_type == "Physical"),
 				)
 				frappe.db.commit()
 				return True
