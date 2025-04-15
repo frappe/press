@@ -349,7 +349,7 @@ def schedule_logical_backups_for_sites_with_backup_time():
 
 	Run this hourly only
 	"""
-	sites = Site.get_sites_with_backup_time()
+	sites = Site.get_sites_with_backup_time("Logical")
 	for site in sites:
 		site_doc: Site = frappe.get_doc("Site", site.name)
 		site_doc.backup(with_files=True, offsite=True, physical=False)
@@ -362,10 +362,10 @@ def schedule_physical_backups_for_sites_with_backup_time():
 
 	Run this hourly only
 	"""
-	sites = Site.get_sites_with_backup_time()
+	sites = Site.get_sites_with_backup_time("Physical")
 	for site in sites:
 		site_doc: Site = frappe.get_doc("Site", site.name)
-		site_doc.backup(with_files=True, offsite=True, physical=True)
+		site_doc.backup(with_files=False, offsite=False, physical=True)
 		frappe.db.commit()
 
 
