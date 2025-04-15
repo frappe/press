@@ -774,9 +774,6 @@ class Site(Document, TagHelpers):
 				ignore_permissions=True
 			)
 
-		if self.backup_time:
-			self.backup_time = None  # because FF by default sets it to current time
-			self.save()
 		add_permission_for_newly_created_doc(self)
 
 		create_site_status_update_webhook_event(self.name)
