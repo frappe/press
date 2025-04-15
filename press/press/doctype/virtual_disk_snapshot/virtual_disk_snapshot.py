@@ -28,6 +28,7 @@ class VirtualDiskSnapshot(Document):
 
 		cluster: DF.Link | None
 		duration: DF.Duration | None
+		expired: DF.Check
 		mariadb_root_password: DF.Password | None
 		physical_backup: DF.Check
 		progress: DF.Data | None
@@ -287,9 +288,26 @@ def delete_old_snapshots():
 		{
 			"status": "Completed",
 			"creation": ("<=", frappe.utils.add_days(None, -2)),
-			"physical_backup": 0,
-			"rolling_snapshot": 0,
+			"physical_backup": False,
+			"rolling_snapshot": False,
 		},
+		pluck="name",
+		order_by="creation asc",
+		limit=500,
+	)
+	for snapshot in snapshots:
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
+			frappe.db.commit()
+		except Exception:
+			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
+			frappe.db.rollback()
+
+
+def delete_expired_snapshots():
+	snapshots = frappe.get_all(
+		"Virtual Disk Snapshot",
+		filters={"status": "Completed", "physical": True, "rolling_snapshot": False, "expired": True},
 		pluck="name",
 		order_by="creation asc",
 		limit=500,

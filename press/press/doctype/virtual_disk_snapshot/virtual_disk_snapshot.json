@@ -9,6 +9,7 @@
   "virtual_machine",
   "snapshot_id",
   "status",
+  "expired",
   "column_break_4",
   "cluster",
   "region",
@@ -151,6 +152,13 @@
    "fieldname": "rolling_snapshot",
    "fieldtype": "Check",
    "label": "Rolling Snapshot"
+  },
+  {
+   "default": "0",
+   "fieldname": "expired",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Expired"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -160,7 +168,7 @@
    "link_fieldname": "database_snapshot"
   }
  ],
- "modified": "2025-03-27 01:35:12.859467",
+ "modified": "2025-04-15 15:03:53.679351",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

@@ -33,6 +33,9 @@ def timing(f):
 	return wrap
 
 
+BACKUP_TYPES = Literal["Logical", "Physical"]
+
+
 class BackupRotationScheme:
 	"""
 	Represents backup rotation scheme for maintaining offsite backups.
@@ -94,14 +97,47 @@ class BackupRotationScheme:
 				"Unavailable",
 			)
 
+	def _mark_physical_backups_as_expired(self, backups: list[str]):
+		site_backups = frappe.get_all(
+			"Site Backup",
+			filters={
+				"name": ("in", backups),
+				"files_availability": "Available",
+				"physical": True,
+			},
+			fields=["name", "database_snapshot"],
+			pluck="name",
+		)
+		for backup in site_backups:
+			# set snapshot as Unavailable
+			frappe.db.set_value(
+				"Site Backup",
+				backup.name,
+				"files_availability",
+				"Unavailable",
+			)
+			frappe.db.set_value(
+				"Virtual Disk Snapshot",
+				backup.database_snapshot,
+				"expired",
+				True,
+			)
+
+	def get_backups_due_for_expiry(self, backup_type: BACKUP_TYPES) -> list[str]:
+		raise NotImplementedError
+
 	def expire_offsite_backups(self) -> list[str]:
 		"""Expire and return list of offsite backups to delete."""
-		raise NotImplementedError
+		return self._expire_and_get_remote_files(self.get_backups_due_for_expiry("Logical"))
 
 	def cleanup_offsite(self):
 		"""Expire backups according to the rotation scheme."""
 		expired_remote_files = self.expire_offsite_backups()
 		delete_remote_backup_objects(expired_remote_files)
+
+	def expire_physical_backups(self):
+		"""Expire backups according to the rotation scheme"""
+		self._mark_physical_backups_as_expired(self.get_backups_due_for_expiry("Physical"))
 
 
 class FIFO(BackupRotationScheme):
@@ -112,7 +148,7 @@ class FIFO(BackupRotationScheme):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self) -> list[str]:
+	def get_backups_due_for_expiry(self, backup_type: BACKUP_TYPES) -> list[str]:
 		offsite_expiry = self.offsite_backups_count
 		to_be_expired_backups = []
 		sites = frappe.get_all("Site", {"status": ("!=", "Archived")}, pluck="name")
@@ -123,11 +159,12 @@ class FIFO(BackupRotationScheme):
 					"site": site,
 					"status": "Success",
 					"files_availability": "Available",
-					"offsite": True,
+					"offsite": backup_type == "Logical",
+					"physical": backup_type == "Physical",
 				},
 				order_by="creation desc",
 			)[offsite_expiry:]
-		return self._expire_and_get_remote_files(to_be_expired_backups)
+		return to_be_expired_backups
 
 
 class GFS(BackupRotationScheme):
@@ -145,20 +182,21 @@ class GFS(BackupRotationScheme):
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
 
-	def expire_offsite_backups(self) -> list[str]:
+	def get_backups_due_for_expiry(self, backup_type: BACKUP_TYPES) -> list[str]:
 		today = frappe.utils.getdate()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
 		oldest_yearly = today - timedelta(days=3653)
-		to_be_expired_backups = frappe.db.sql(
+		return frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
 			WHERE
 				site in (select name from tabSite where status != "Archived") and
 				status="Success" and
 				files_availability="Available" and
-				offsite=True and
+				offsite={backup_type == "Logical"} and
+				physical={backup_type == "Physical"} and
 				creation < "{oldest_daily}" and
 				(DAYOFWEEK(creation) != {self.weekly_backup_day} or creation < "{oldest_weekly}") and
 				(DAYOFMONTH(creation) != {self.monthly_backup_day} or creation < "{oldest_monthly}") and
@@ -169,8 +207,6 @@ class GFS(BackupRotationScheme):
 		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
 		# datetime.weekday() in python gives 0-6 for MON-SUN
 		# datetime.isoweekday() in python gives 1-7 for MON-SUN
-
-		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
 class ModifiableCycle:
@@ -206,8 +242,8 @@ class ScheduledBackupJob:
 		# return (hour + self.offset) % self.interval == 0
 		return True
 
-	def __init__(self, backup_type: Literal["Logical", "Physical"]):
-		self.backup_type: Literal["Logical", "Physical"] = backup_type
+	def __init__(self, backup_type: BACKUP_TYPES):
+		self.backup_type: BACKUP_TYPES = backup_type
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
@@ -359,4 +395,19 @@ def cleanup_local():
 	"""Mark expired onsite backups as Unavailable."""
 	brs = BackupRotationScheme()
 	brs.expire_local_backups()
+	frappe.db.commit()
+
+
+def expire_physical():
+	"""Mark physical snapshot as expired (based on policy) and backups mark em as Unavailable."""
+	frappe.enqueue("press.press.doctype.site.backups._expire_physical_backups")
+
+
+def _expire_physical_backups():
+	scheme = frappe.db.get_value("Press Settings", "backup_rotation_scheme") or "FIFO"
+	if scheme == "FIFO":
+		rotation = FIFO()
+	elif scheme == "Grandfather-father-son":
+		rotation = GFS()
+	rotation.expire_physical_backups()
 	frappe.db.commit()
