@@ -57,7 +57,9 @@ class VirtualDiskSnapshot(Document):
 
 	def on_update(self):  # noqa: C901
 		if self.has_value_changed("status") and self.status == "Unavailable":
-			site_backup_name = frappe.db.exists("Site Backup", {"database_snapshot": self.name})
+			site_backup_name = frappe.db.exists(
+				"Site Backup", {"database_snapshot": self.name, "files_availability": ("!=", "Unavailable")}
+			)
 			if site_backup_name:
 				frappe.db.set_value("Site Backup", site_backup_name, "files_availability", "Unavailable")
 
