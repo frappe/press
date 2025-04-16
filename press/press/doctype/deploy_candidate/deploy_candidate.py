@@ -60,9 +60,6 @@ class DeployCandidate(Document):
 		from frappe.types import DF
 
 		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import DeployCandidateApp
-		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
-			DeployCandidateBuildStep,
-		)
 		from press.press.doctype.deploy_candidate_dependency.deploy_candidate_dependency import (
 			DeployCandidateDependency,
 		)
@@ -74,47 +71,23 @@ class DeployCandidate(Document):
 		)
 
 		apps: DF.Table[DeployCandidateApp]
-		build_directory: DF.Data | None
-		build_duration: DF.Time | None
-		build_end: DF.Datetime | None
-		build_error: DF.Code | None
-		build_output: DF.Code | None
-		build_server: DF.Link | None
-		build_start: DF.Datetime | None
-		build_steps: DF.Table[DeployCandidateBuildStep]
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
-		docker_image: DF.Data | None
-		docker_image_id: DF.Data | None
-		docker_image_repository: DF.Data | None
-		docker_image_tag: DF.Data | None
 		environment_variables: DF.Table[DeployCandidateVariable]
-		error_key: DF.Data | None
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
 		is_redisearch_enabled: DF.Check
-		last_updated: DF.Datetime | None
-		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
-		no_cache: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
-		pending_duration: DF.Time | None
-		pending_end: DF.Datetime | None
-		pending_start: DF.Datetime | None
 		redis_cache_size: DF.Int
-		retry_count: DF.Int
-		scheduled_time: DF.Datetime | None
-		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
 		team: DF.Link
 		use_app_cache: DF.Check
 		use_rq_workerpool: DF.Check
-		user_addressable_failure: DF.Check
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
-
-		# end: auto-generated types
+	# end: auto-generated types
 
 	dashboard_fields = (
 		"name",
@@ -188,11 +161,6 @@ class DeployCandidate(Document):
 		group = self.group[6:]
 		series = f"deploy-{group}-.######"
 		self.name = make_autoname(series)
-
-	def before_insert(self):
-		if self.status == "Draft":
-			self.pending_duration = 0
-			self.build_duration = 0
 
 	def on_trash(self):
 		frappe.db.delete(

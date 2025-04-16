@@ -5,35 +5,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "status",
-  "column_break_2",
   "group",
   "team",
-  "scheduled_time",
-  "section_break_xefr",
-  "user_addressable_failure",
-  "retry_count",
-  "column_break_rpow",
-  "manually_failed",
-  "error_key",
-  "section_break_6",
-  "build_start",
-  "build_duration",
-  "pending_start",
-  "build_directory",
-  "last_updated",
-  "column_break_7",
-  "build_end",
-  "pending_duration",
-  "pending_end",
-  "build_server",
-  "no_cache",
-  "section_break_11",
-  "docker_image",
-  "docker_image_id",
-  "column_break_13",
-  "docker_image_repository",
-  "docker_image_tag",
   "feature_flags_section",
   "is_redisearch_enabled",
   "redis_cache_size",
@@ -50,11 +23,6 @@
   "dependencies",
   "packages",
   "environment_variables",
-  "output_tab",
-  "section_break_9",
-  "build_error",
-  "build_steps",
-  "build_output",
   "ssh_tab",
   "ssh_section",
   "user_public_key",
@@ -73,97 +41,9 @@
    "set_only_once": 1
   },
   {
-   "default": "Draft",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
    "fieldname": "section_break_4",
    "fieldtype": "Section Break",
    "hide_border": 1
-  },
-  {
-   "fieldname": "build_directory",
-   "fieldtype": "Data",
-   "label": "Build Directory",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.status !== \"Draft\"",
-   "fieldname": "build_duration",
-   "fieldtype": "Time",
-   "label": "Build Duration",
-   "read_only": 1
-  },
-  {
-   "fieldname": "build_start",
-   "fieldtype": "Datetime",
-   "label": "Build Start",
-   "read_only": 1
-  },
-  {
-   "fieldname": "build_end",
-   "fieldtype": "Datetime",
-   "label": "Build End",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_9",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "build_steps",
-   "fieldtype": "Table",
-   "label": "Build Steps",
-   "options": "Deploy Candidate Build Step",
-   "read_only": 1
-  },
-  {
-   "fieldname": "build_output",
-   "fieldtype": "Code",
-   "label": "Build Output",
-   "read_only": 1
-  },
-  {
-   "fieldname": "docker_image_id",
-   "fieldtype": "Data",
-   "label": "Docker Image ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_7",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "docker_image_tag",
-   "fieldtype": "Data",
-   "label": "Docker Image Tag",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_11",
-   "fieldtype": "Section Break",
-   "label": "Docker Config"
-  },
-  {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_6",
-   "fieldtype": "Section Break",
-   "label": "Build Meta"
   },
   {
    "fieldname": "apps",
@@ -172,18 +52,6 @@
    "options": "Deploy Candidate App",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "fieldname": "docker_image_repository",
-   "fieldtype": "Data",
-   "label": "Docker Image Repository",
-   "read_only": 1
-  },
-  {
-   "fieldname": "docker_image",
-   "fieldtype": "Data",
-   "label": "Docker Image",
-   "read_only": 1
   },
   {
    "fetch_from": "group.team",
@@ -271,13 +139,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval: doc.scheduled_time",
-   "fieldname": "scheduled_time",
-   "fieldtype": "Datetime",
-   "label": "Scheduled Time",
-   "read_only": 1
-  },
-  {
    "fetch_from": "group.gunicorn_threads_per_worker",
    "fieldname": "gunicorn_threads_per_worker",
    "fieldtype": "Int",
@@ -306,116 +167,14 @@
    "label": "Compress App Cache"
   },
   {
-   "description": "Used when parsing build output.",
-   "fieldname": "last_updated",
-   "fieldtype": "Datetime",
-   "hidden": 1,
-   "label": "Last Updated",
-   "read_only": 1
-  },
-  {
    "fieldname": "parameters_tab",
    "fieldtype": "Tab Break",
    "label": "Apps & Deps"
   },
   {
-   "fieldname": "output_tab",
-   "fieldtype": "Tab Break",
-   "label": "Output"
-  },
-  {
    "fieldname": "ssh_tab",
    "fieldtype": "Tab Break",
    "label": "SSH"
-  },
-  {
-   "depends_on": "eval:doc.build_error",
-   "fieldname": "build_error",
-   "fieldtype": "Code",
-   "label": "Build Error",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.user_addressable_failure",
-   "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
-   "fieldname": "user_addressable_failure",
-   "fieldtype": "Check",
-   "label": "User Addressable Failure",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.manually_failed",
-   "description": "Set if the build was manually failed or cancelled.",
-   "fieldname": "manually_failed",
-   "fieldtype": "Check",
-   "label": "Manually Failed",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.status !== \"Draft\" && doc.status !== \"Pending\"",
-   "description": "Time spent by the build in queue, i.e. in status Pending.",
-   "fieldname": "pending_duration",
-   "fieldtype": "Time",
-   "label": "Pending Duration",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_xefr",
-   "fieldtype": "Section Break",
-   "label": "Failure"
-  },
-  {
-   "fieldname": "column_break_rpow",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "pending_start",
-   "fieldtype": "Datetime",
-   "hidden": 1,
-   "label": "Pending Start",
-   "read_only": 1
-  },
-  {
-   "fieldname": "pending_end",
-   "fieldtype": "Datetime",
-   "hidden": 1,
-   "label": "Pending End",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.retry_count",
-   "description": "Under certain failure conditions, a build will be retried.",
-   "fieldname": "retry_count",
-   "fieldtype": "Int",
-   "label": "Retry Count",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.build_server",
-   "fieldname": "build_server",
-   "fieldtype": "Link",
-   "label": "Build Server",
-   "options": "Server",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval: doc.user_addressable_failure",
-   "description": "Set if Failure is User Addressable. Used to prevent subsequent builds unless a valid change has been made.",
-   "fieldname": "error_key",
-   "fieldtype": "Data",
-   "label": "Error Key"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.no_cache",
-   "description": "Set if the Docker build was run with the <code>--no-cache</code> flag.",
-   "fieldname": "no_cache",
-   "fieldtype": "Check",
-   "label": "No Cache"
   },
   {
    "default": "512",
@@ -439,7 +198,7 @@
    "link_fieldname": "deploy_candidate"
   }
  ],
- "modified": "2025-04-02 22:39:37.680324",
+ "modified": "2025-04-16 15:09:54.321884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

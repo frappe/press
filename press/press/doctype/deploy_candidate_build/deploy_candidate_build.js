@@ -31,8 +31,8 @@ frappe.ui.form.on('Deploy Candidate Build', {
 						);
 					}
 					frm.call(method).then((r) => {
-						if (r.message.error) {
-							frappe.msgprint(__(r.message.message));
+						if (r.message) {
+							frappe.msgprint(__(r.message));
 						}
 					});
 				});
