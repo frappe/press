@@ -10,6 +10,7 @@
   "status",
   "group",
   "team",
+  "platform",
   "column_break_9sga",
   "no_build",
   "no_cache",
@@ -270,6 +271,12 @@
    "label": "Team",
    "options": "Team",
    "reqd": 1
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Data",
+   "label": "Platform",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -288,7 +295,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2025-04-15 17:33:33.921247",
+ "modified": "2025-04-16 11:57:41.221194",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
