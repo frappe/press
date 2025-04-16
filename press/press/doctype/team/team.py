@@ -59,6 +59,7 @@ class Team(Document):
 		enabled: DF.Check
 		enforce_2fa: DF.Check
 		erpnext_partner: DF.Check
+		extend_payment_due_suspension: DF.Check
 		frappe_partnership_date: DF.Date | None
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
