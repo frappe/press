@@ -167,7 +167,9 @@ class SiteBackup(Document):
 	def after_insert(self):
 		if self.deactivate_site_during_backup:
 			agent = Agent(self.server)
-			agent.deactivate_site(self.site, reference_doctype=self.doctype, reference_name=self.name)
+			agent.deactivate_site(
+				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
+			)
 		else:
 			self.start_backup()
 
@@ -216,7 +218,9 @@ class SiteBackup(Document):
 			and self.deactivate_site_during_backup
 		):
 			agent = Agent(self.server)
-			agent.activate_site(self.site, reference_doctype=self.doctype, reference_name=self.name)
+			agent.activate_site(
+				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
+			)
 
 	def _rollback_db_directory_permissions(self):
 		if not self.physical:

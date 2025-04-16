@@ -738,9 +738,14 @@
    "group": "Related Documents",
    "link_doctype": "Site Database User",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Physical Backup Restoration",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2025-04-14 10:58:10.766173",
+ "modified": "2025-04-16 12:14:32.384884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

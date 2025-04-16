@@ -968,6 +968,9 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 			process_job_update as process_physical_backup_restoration_job_update,
 		)
+		from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
+			process_physical_backup_restoration_deactivate_site_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -1101,6 +1104,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_activate_site_job_update(job)
 		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Site Backup":
 			process_site_backup_deactivate_site_job_update(job)
+		elif job.job_type == "Deactivate Site" and job.reference_doctype == "Physical Backup Restoration":
+			process_physical_backup_restoration_deactivate_site_job_update(job)
 		elif job.job_type == "Add Domain":
 			process_add_domain_job_update(job)
 

@@ -20,6 +20,8 @@ from press.press.doctype.physical_restoration_test.physical_restoration_test imp
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from apps.press.press.press.doctype.site.site import Site
+
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
 		PhysicalBackupRestorationStep,
 	)
@@ -43,6 +45,7 @@ class PhysicalBackupRestoration(Document):
 		)
 
 		cleanup_completed: DF.Check
+		deactivate_site_during_restoration: DF.Check
 		destination_database: DF.Data
 		destination_server: DF.Link
 		device: DF.Data | None
@@ -99,6 +102,9 @@ class PhysicalBackupRestoration(Document):
 			(self.delete_volume, SyncStep, NoWait, CleanupStep),
 		]
 
+		if self.deactivate_site_during_restoration:
+			methods.insert(0, (self.deactivate_site, AsyncStep, NoWait, GeneralStep))
+
 		steps = []
 		for method, is_async, wait_for_completion, is_cleanup_step in methods:
 			steps.append(
@@ -114,6 +120,7 @@ class PhysicalBackupRestoration(Document):
 
 	def before_insert(self):
 		self.validate_aws_only()
+		# validate database server has the checkbox checked
 		self.set_disk_snapshot()
 		self.validate_snapshot_region()
 		self.validate_snapshot_status()
@@ -130,6 +137,15 @@ class PhysicalBackupRestoration(Document):
 				process_physical_backup_restoration_status_update,
 			)
 
+			if self.deactivate_site_during_restoration and self.status == "Success":
+				self.activate_site()
+
+			if self.deactivate_site_during_restoration and self.status == "Failure":
+				if self.is_db_files_modified_during_failed_restoration():
+					frappe.db.set_value("Site", self.site, "status", "Broken")
+				else:
+					self.activate_site()
+
 			process_physical_backup_restoration_status_update(self.name)
 
 			if self.physical_restoration_test:
@@ -138,7 +154,7 @@ class PhysicalBackupRestoration(Document):
 	def validate_aws_only(self):
 		server_provider = frappe.db.get_value("Database Server", self.destination_server, "provider")
 		if server_provider != "AWS EC2":
-			frappe.throw("Only AWS provider is supported currently.")
+			frappe.throw("Only AWS hosted server is supported currently.")
 
 	def set_disk_snapshot(self):
 		if not self.disk_snapshot:
@@ -171,6 +187,30 @@ class PhysicalBackupRestoration(Document):
 
 	def set_mount_point(self):
 		self.mount_point = f"/mnt/{self.name}"
+
+	def deactivate_site(self):
+		"""Deactivate site"""
+		deactivate_site_job = frappe.db.get_value(
+			"Agent Job",
+			{"job_type": "Deactivate Site", "reference_doctype": self.doctype, "reference_name": self.name},
+			["name", "status"],
+		)
+		if not deactivate_site_job:
+			site: Site = frappe.get_doc("Site", self.site)
+			agent = Agent(site.server)
+			agent.deactivate_site(site, reference_doctype=self.doctype, reference_name=self.name)
+			# Send `Running` status to the queue
+			# So, that the current job can exit for now
+			# Once Snapshot status updated, someone will trigger this job again
+			return StepStatus.Running
+
+		if deactivate_site_job[1] == "Success":
+			return StepStatus.Success
+
+		if deactivate_site_job[1] in ("Failure", "Delivery Failure"):
+			return StepStatus.Failure
+
+		return StepStatus.Running
 
 	def wait_for_pending_snapshot_to_be_completed(self) -> StepStatus:
 		"""Wait for pending snapshot to be completed"""
@@ -471,6 +511,12 @@ class PhysicalBackupRestoration(Document):
 		self.virtual_machine.client().delete_volume(VolumeId=self.volume)
 		self.add_comment(text=f"{self.volume} - Volume Deleted")
 		return StepStatus.Success
+
+	def activate_site(self):
+		"""Activate site"""
+		site: Site = frappe.get_doc("Site", self.site)
+		agent = Agent(site.server)
+		agent.activate_site(site, reference_doctype=self.doctype, reference_name=self.name)
 
 	def is_db_files_modified_during_failed_restoration(self):
 		if self.status != "Failure":
@@ -859,6 +905,15 @@ def process_job_update(job):
 	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
 	if job.status in ["Success", "Failure", "Delivery Failure"]:
 		doc.next()
+
+
+def process_physical_backup_restoration_deactivate_site_job_update(job):
+	if job.reference_doctype != "Physical Backup Restoration":
+		return
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+	doc: PhysicalBackupRestoration = frappe.get_doc("Physical Backup Restoration", job.reference_name)
+	doc.next()
 
 
 def get_physical_backup_restoration_steps(name: str) -> list[dict]:

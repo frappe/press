@@ -21,6 +21,7 @@
   "destination_database",
   "destination_server",
   "section_break_gthb",
+  "deactivate_site_during_restoration",
   "restore_specific_tables",
   "tables_to_restore",
   "log_ansible_output",
@@ -206,11 +207,22 @@
    "fieldname": "log_ansible_output",
    "fieldtype": "Check",
    "label": "Log Ansible Output"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_restoration",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Restoration"
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-03-15 12:40:21.147676",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-04-16 12:18:33.380414",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",
