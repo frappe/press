@@ -1104,7 +1104,7 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		try:
-			self.create_deploy()
+			return self.create_deploy()
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 

@@ -14,6 +14,7 @@ from press.utils import log_error
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Deploy(Document):
@@ -40,16 +41,18 @@ class Deploy(Document):
 	def after_insert(self):
 		self.create_benches()
 
+	def get_server_platform(self, server: str) -> str:
+		"""
+		If the platform is not set we assume that the required platform image is x86_64
+		"""
+		virtual_machine_name = frappe.get_value("Server", server, "virtual_machine")
+		if virtual_machine_name:
+			virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
+			return virtual_machine.platform
+		return "x86_64"
+
 	def create_benches(self):
 		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		deploy_candidate_builds = frappe.db.get_values(
-			"Deploy Candidate Build", {"deploy_candidate": self.candidate}, pluck="name"
-		)
-
-		# For now let us take the most recent build and use that.
-		build = deploy_candidate_builds[0]
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build)
-
 		environment_variables = [
 			{"key": v.key, "value": v.value} for v in deploy_candidate.environment_variables
 		]
@@ -64,6 +67,13 @@ class Deploy(Document):
 			for v in group.mounts
 		]
 		for bench in self.benches:
+			platform = self.get_server_platform(bench.server)
+			deploy_candidate_build_name = frappe.db.get_value(
+				"Deploy Candidate Build", {"deploy_candidate": self.candidate, "platform": platform}
+			)
+			deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
+				"Deploy Candidate Build", deploy_candidate_build_name
+			)
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
