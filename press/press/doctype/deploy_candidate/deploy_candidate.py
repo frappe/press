@@ -46,7 +46,6 @@ DISTUTILS_SUPPORTED_VERSION = semantic_version.SimpleSpec("<3.12")
 if typing.TYPE_CHECKING:
 	from rq.job import Job
 
-	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
@@ -291,15 +290,6 @@ class DeployCandidate(Document):
 			return self.create_deploy()
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
-
-	@staticmethod
-	def process_run_build(job: "AgentJob", response_data: "dict | None"):
-		request_data = json.loads(job.request_data)
-		dc: DeployCandidateBuild = frappe.get_doc(
-			"Deploy Candidate Build",
-			request_data["deploy_candidate_build"],
-		)
-		dc._process_run_build(job, request_data, response_data)
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:

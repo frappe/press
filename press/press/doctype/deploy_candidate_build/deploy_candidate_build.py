@@ -704,6 +704,14 @@ class DeployCandidateBuild(Document):
 			case _:
 				raise Exception("unreachable code execution")
 
+	@staticmethod
+	def process_run_build(job: AgentJob, response_data: dict | None):
+		request_data = json.loads(job.request_data)
+		build: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", request_data["deploy_candidate_build"]
+		)
+		build._process_run_build(job, request_data, response_data)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
