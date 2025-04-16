@@ -866,7 +866,7 @@ class DeployCandidateBuild(Document):
 
 	def _run_agent_jobs(self):
 		context_filename = self._package_and_upload_context()
-		settings = self.candidate._fetch_registry_settings()
+		settings = self._fetch_registry_settings()
 
 		Agent(self.build_server).run_build(
 			{
@@ -921,8 +921,11 @@ class DeployCandidateBuild(Document):
 
 	def _build(self):
 		self._set_pending_duration()
-		self.set_status(Status.PREPARING, "build_start")
-
+		self.set_status(
+			Status.PREPARING,
+			timestamp_field="build_start",
+			commit=True,
+		)
 		self._set_output_parsers()
 
 		try:
