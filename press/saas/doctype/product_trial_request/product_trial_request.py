@@ -18,6 +18,7 @@ from press.utils import log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
+	from press.saas.doctype.product_trial.product_trial import ProductTrial
 
 
 class ProductTrialRequest(Document):
@@ -161,7 +162,7 @@ class ProductTrialRequest(Document):
 			frappe.throw("Subdomain is required to create a site.")
 
 		try:
-			product = frappe.get_doc("Product Trial", self.product_trial)
+			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
 			self.domain = f"{subdomain}.{product.domain}"
@@ -249,8 +250,9 @@ class ProductTrialRequest(Document):
 		try:
 			user_payload, system_settings_payload = self.get_setup_wizard_payload()
 			site.prefill_setup_wizard(system_settings_payload, user_payload)
-			self.status = "Prefilling Setup Wizard"
-			self.save()
+			if self.site != self.domain:
+				self.status = "Prefilling Setup Wizard"
+				self.save()
 		except Exception as e:
 			log_error(
 				title="Product Trial Request Prefill Setup Wizard Error",

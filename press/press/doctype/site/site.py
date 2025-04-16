@@ -830,7 +830,7 @@ class Site(Document, TagHelpers):
 
 			If `ignore_additional_system_user_creation` is set, don't create additional system user
 			"""
-			if (self.standby_for_product or self.standby_for) and not self.is_standby:
+			if (self.standby_for) and not self.is_standby:
 				user_details = self.get_user_details()
 				if self.flags.get("ignore_additional_system_user_creation", False):
 					user_details = None
@@ -3207,6 +3207,8 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
 		product_trial_request.prefill_setup_wizard_data()
+		product_trial_request.status = "Site Created"
+		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
