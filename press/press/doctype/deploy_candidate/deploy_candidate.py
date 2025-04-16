@@ -284,13 +284,6 @@ class DeployCandidate(Document):
 		deploy_candidate_build.insert()
 		return deploy_candidate_build.name
 
-	@frappe.whitelist()
-	def deploy(self):
-		try:
-			return self.create_deploy()
-		except Exception:
-			log_error("Deploy Creation Error", doc=self)
-
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
 			app.use_cached = bool(self.use_app_cache)

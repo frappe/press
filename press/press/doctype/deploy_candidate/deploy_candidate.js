@@ -14,11 +14,6 @@ frappe.ui.form.on('Deploy Candidate', {
 				filters: { release_group: doc.group },
 			};
 		};
-
-		if (frm.doc.status === 'Success') {
-			set_handler(frm, 'Deploy', 'deploy', {}, 'Deploy');
-		}
-
 		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
 			set_handler(
 				frm,

@@ -13,7 +13,6 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -68,17 +67,16 @@ class Deploy(Document):
 		]
 		for bench in self.benches:
 			platform = self.get_server_platform(bench.server)
-			deploy_candidate_build_name = frappe.db.get_value(
-				"Deploy Candidate Build", {"deploy_candidate": self.candidate, "platform": platform}
-			)
-			deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-				"Deploy Candidate Build", deploy_candidate_build_name
+			docker_image = frappe.db.get_value(
+				"Deploy Candidate Build",
+				{"deploy_candidate": self.candidate, "platform": platform},
+				"docker_image",
 			)
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
-					"docker_image": deploy_candidate_build.docker_image,
+					"docker_image": docker_image,
 					"group": self.group,
 					"candidate": self.candidate,
 					"workers": 1,
