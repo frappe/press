@@ -889,8 +889,22 @@ class DeployCandidateBuild(Document):
 
 		self.set_status(Status.RUNNING)
 
+	def _fetch_registry_settings(self):
+		return frappe.db.get_value(
+			"Press Settings",
+			None,
+			[
+				"domain",
+				"docker_registry_url",
+				"docker_registry_namespace",
+				"docker_registry_username",
+				"docker_registry_password",
+			],
+			as_dict=True,
+		)
+
 	def _update_docker_image_metadata(self):
-		settings = self.candidate._fetch_registry_settings()
+		settings = self._fetch_registry_settings()
 
 		if settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"

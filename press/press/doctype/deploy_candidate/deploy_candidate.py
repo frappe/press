@@ -32,10 +32,9 @@ from press.press.doctype.app_release.app_release import (
 )
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
-	get_build_server,
 	is_suspended,
 )
-from press.utils import get_current_team, log_error
+from press.utils import log_error
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
 MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
@@ -223,66 +222,6 @@ class DeployCandidate(Document):
 			pluck="name",
 		)
 
-	def pre_build(self, method, **kwargs):
-		# This should always be the first call in pre-build
-		self.reset_build_state()
-
-		if not self.validate_status():
-			return
-
-		if "no_cache" in kwargs:
-			self.no_cache = kwargs.get("no_cache")
-			del kwargs["no_cache"]
-
-		no_build = kwargs.get("no_build", False)
-		self.set_build_server(no_build)
-		self._set_status_pending()
-		self.add_pre_build_steps()
-		self.save()
-		(
-			user,
-			session_data,
-			team,
-		) = (
-			frappe.session.user,
-			frappe.session.data,
-			get_current_team(True),
-		)
-		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		queue = "default" if frappe.conf.developer_mode else "build"
-
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			method,
-			queue=queue,
-			timeout=2400,
-			enqueue_after_commit=True,
-			**kwargs,
-		)
-		frappe.set_user(user)
-		frappe.session.data = session_data
-		frappe.db.commit()
-
-	def set_build_server(self, no_build: bool):
-		if not self.build_server:
-			self.build_server = get_build_server(self.group)
-
-		if self.build_server or no_build:
-			return
-
-		throw_no_build_server()
-
-	def validate_status(self):
-		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
-			return True
-
-		frappe.msgprint(
-			f"Build is in <b>{self.status}</b> state. "
-			"Please wait for build to succeed or fail before retrying."
-		)
-		return False
-
 	def create_build(self, **kwargs) -> DeployCandidateBuild:
 		kwargs.update(
 			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},
@@ -312,22 +251,6 @@ class DeployCandidate(Document):
 		if (res := self.stop_and_fail()) and res["error"]:
 			return res
 		return self.redeploy()
-
-	@frappe.whitelist()
-	def stop_and_fail(self):
-		not_failable = ["Draft", "Failure", "Success"]
-		if self.status in not_failable:
-			return dict(
-				error=True,
-				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
-			)
-		self.manually_failed = True
-		self._stop_and_fail()
-		return dict(error=False, message="Failed successfully")
-
-	def _stop_and_fail(self, commit=True):
-		self.stop_build_jobs()
-		self._set_status_failure(commit)
 
 	@frappe.whitelist()
 	def redeploy(self, no_cache: bool = False):
@@ -369,15 +292,6 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
 
-	def schedule_build_retry(self):
-		self.retry_count += 1
-		minutes = min(5**self.retry_count, 125)
-		scheduled_time = now() + timedelta(minutes=minutes)
-		self.schedule_build_and_deploy(
-			run_now=False,
-			scheduled_time=scheduled_time,
-		)
-
 	@staticmethod
 	def process_run_build(job: "AgentJob", response_data: "dict | None"):
 		request_data = json.loads(job.request_data)
@@ -386,32 +300,6 @@ class DeployCandidate(Document):
 			request_data["deploy_candidate_build"],
 		)
 		dc._process_run_build(job, request_data, response_data)
-
-	def _update_docker_image_metadata(self):
-		settings = self._fetch_registry_settings()
-
-		if settings.docker_registry_namespace:
-			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
-		else:
-			namespace = f"{settings.domain}"
-
-		self.docker_image_repository = f"{settings.docker_registry_url}/{namespace}/{self.group}"
-		self.docker_image_tag = self.name
-		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
-
-	def _fetch_registry_settings(self):
-		return frappe.db.get_value(
-			"Press Settings",
-			None,
-			[
-				"domain",
-				"docker_registry_url",
-				"docker_registry_namespace",
-				"docker_registry_username",
-				"docker_registry_password",
-			],
-			as_dict=True,
-		)
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
