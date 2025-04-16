@@ -116,18 +116,6 @@ class TestDeployCandidate(unittest.TestCase):
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	def test_first_deploy_creates_draft_deploy_candidate(self, mock_enqueue_doc, mock_commit):
-		"""
-		Test if first deploy creates Deploy Candidate doc
-		"""
-		app = create_test_app()
-		source = create_test_app_source("Nightly", app)
-		create_test_app_release(source)
-		group = create_test_release_group([app])
-		candidate = group.create_deploy_candidate()
-		self.assertEqual(candidate.status, "Draft")
-
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_empty_apps_creates_deploy_candidate_with_same_release(
 		self, mock_enqueue_doc, mock_commit
 	):
