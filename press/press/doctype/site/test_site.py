@@ -77,6 +77,7 @@ def create_test_bench(
 			"apps": apps,
 			"candidate": candidate.name,
 			"server": server,
+			"docker_image": frappe.mock("url"),
 		}
 	).insert(ignore_if_duplicate=True)
 	bench.db_set("creation", creation)
