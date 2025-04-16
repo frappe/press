@@ -844,9 +844,9 @@ def pull_update_file_filter(file_path: str) -> bool:
 
 
 def cleanup_build_directories():
-	# Cleanup Build Directories for Deploy Candidates older than a day
+	# Cleanup Build Directories for Deploy Candidate Builds older than a day
 	dcs = frappe.get_all(
-		"Deploy Candidate",
+		"Deploy Candidate Build",
 		{
 			"status": ("!=", "Draft"),
 			"build_directory": ("is", "set"),
@@ -857,7 +857,7 @@ def cleanup_build_directories():
 		limit=100,
 	)
 	for dc in dcs:
-		doc: DeployCandidate = frappe.get_doc("Deploy Candidate", dc)
+		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
 		try:
 			doc.cleanup_build_directory()
 			frappe.db.commit()
