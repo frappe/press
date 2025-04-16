@@ -25,8 +25,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
 		PhysicalBackupRestorationStep,
 	)
+	from press.press.doctype.site_backup.site_backup import SiteBackup
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 StepStatus = Enum("StepStatus", ["Pending", "Running", "Skipped", "Success", "Failure"])
 
@@ -120,7 +122,6 @@ class PhysicalBackupRestoration(Document):
 
 	def before_insert(self):
 		self.validate_aws_only()
-		# validate database server has the checkbox checked
 		self.set_disk_snapshot()
 		self.validate_snapshot_region()
 		self.validate_snapshot_status()
@@ -139,12 +140,14 @@ class PhysicalBackupRestoration(Document):
 
 			if self.deactivate_site_during_restoration and self.status == "Success":
 				self.activate_site()
+				frappe.db.set_value("Site", self.site, "status", "Active")
 
 			if self.deactivate_site_during_restoration and self.status == "Failure":
 				if self.is_db_files_modified_during_failed_restoration():
 					frappe.db.set_value("Site", self.site, "status", "Broken")
 				else:
 					self.activate_site()
+					frappe.db.set_value("Site", self.site, "status", "Active")
 
 			process_physical_backup_restoration_status_update(self.name)
 
@@ -158,7 +161,17 @@ class PhysicalBackupRestoration(Document):
 
 	def set_disk_snapshot(self):
 		if not self.disk_snapshot:
-			self.disk_snapshot = frappe.get_value("Site Backup", self.site_backup, "database_snapshot")
+			site_backup: SiteBackup = frappe.get_doc("Site Backup", self.site_backup)
+			if not site_backup.physical:
+				frappe.throw("Provided site backup is not physical backup.")
+
+			if site_backup.status != "Success" or site_backup.files_availability != "Available":
+				frappe.throw("Provided site backup is not available.")
+
+			if not site_backup.database_snapshot:
+				frappe.throw("Disk Snapshot is not available in site backup")
+
+			self.disk_snapshot = site_backup.database_snapshot
 			if not self.disk_snapshot:
 				frappe.throw("Disk Snapshot is not available in site backup")
 

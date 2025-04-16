@@ -948,6 +948,35 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
+	def restore_site_from_physical_backup(self, backup: str):
+		if frappe.get_value("Press Settings", "Press Settings", "disable_physical_backup"):
+			frappe.throw("Currently, Physical Backup & Restoration is disabled system wide. Try again later.")
+
+		frappe.db.set_value("Site", self.name, "status", "Pending")
+		# fetch database_name if not available
+		if not self.database_name:
+			self.sync_info()
+			self.reload()
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Physical Backup Restoration",
+				"site": self.name,
+				"status": "Pending",
+				"site_backup": backup,
+				"source_database": self.database_name,
+				"destination_database": self.database_name,
+				"destination_server": frappe.get_value("Server", self.server, "database_server"),
+				"deactivate_site_during_restoration": True,
+				"restore_specific_tables": False,
+				"tables_to_restore": "[]",
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		doc.execute()
+
+	@dashboard_whitelist()
+	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
@@ -968,6 +997,9 @@ class Site(Document, TagHelpers):
 		"""
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
+
+		if frappe.get_value("Press Settings", "Press Settings", "disable_physical_backup"):
+			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=True)
 
 	@frappe.whitelist()

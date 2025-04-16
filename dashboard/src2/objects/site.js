@@ -50,6 +50,7 @@ export default {
 		fetchCertificate: 'fetch_certificate',
 		restoreSite: 'restore_site',
 		restoreSiteFromFiles: 'restore_site_from_files',
+		restoreSiteFromPhysicalBackup: 'restore_site_from_physical_backup',
 		scheduleUpdate: 'schedule_update',
 		editScheduledUpdate: 'edit_scheduled_update',
 		cancelUpdate: 'cancel_scheduled_update',
@@ -857,7 +858,34 @@ export default {
 											}
 
 											if (row.physical) {
-												// TODO: Restore Snapshot
+												confirmDialog({
+													title: 'Restore Physical Backup',
+													message: `Are you sure you want to restore your site's database from physical backup taken on <b>${dayjs(
+														row.creation,
+													).format('lll')}</b> ?`,
+													onSuccess({ hide }) {
+														toast.promise(
+															site.restoreSiteFromPhysicalBackup.submit({
+																backup: row.name,
+															}),
+															{
+																loading:
+																	'Scheduling physical backup restore...',
+																success: () => {
+																	hide();
+																	router.push({
+																		name: 'Site Jobs',
+																		params: {
+																			name: site.name,
+																		},
+																	});
+																	return 'Backup restore scheduled successfully.';
+																},
+																error: (e) => getToastErrorMessage(e),
+															},
+														);
+													},
+												});
 											} else {
 												confirmDialog({
 													title: 'Restore Backup',
