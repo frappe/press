@@ -903,9 +903,6 @@ class DeployCandidateBuild(Document):
 
 	def _start_build(self):
 		self._update_docker_image_metadata()
-		if self.no_build:
-			return
-
 		self._run_agent_jobs()
 
 	def _build(self):

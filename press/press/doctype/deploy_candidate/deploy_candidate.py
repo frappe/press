@@ -283,6 +283,12 @@ class DeployCandidate(Document):
 		)
 		return False
 
+	def create_build(self, **kwargs) -> DeployCandidateBuild:
+		kwargs.update(
+			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},
+		)
+		return frappe.get_doc(kwargs)
+
 	@frappe.whitelist()
 	def build(
 		self,
@@ -290,23 +296,16 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		no_cache: bool = False,
 	):
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate Build",
-				"deploy_candidate": self.name,
-				"no_build": no_build,
-				"no_push": no_push,
-				"no_cache": no_cache,
-			}
+		if no_build:
+			return None
+
+		deploy_candidate_build = self.create_build(
+			no_build=no_build,
+			no_push=no_push,
+			no_cache=no_cache,
 		)
 		deploy_candidate_build.insert()
 		return dict(error=False, message=deploy_candidate_build.name)
-		# self.pre_build(
-		# 	method="_build",
-		# 	no_push=no_push,
-		# 	no_build=no_build,
-		# 	no_cache=no_cache,
-		# )
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
@@ -349,28 +348,17 @@ class DeployCandidate(Document):
 		if run_now and not is_suspended():
 			return {"error": False, "message": self.build_and_deploy()}
 
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate Build",
-				"deploy_candidate": self.name,
-				"no_cache": False,
-				"deploy_after_build": True,
-				"status": "Scheduled",
-				"scheduled_time": scheduled_time or now(),
-			}
+		deploy_candidate_build = self.create_build(
+			no_cache=False,
+			deploy_after_build=True,
+			status="Scheduled",
+			scheduled_time=scheduled_time or now(),
 		)
 		deploy_candidate_build.insert()
 		return {"error": False, "message": deploy_candidate_build.name}
 
 	def build_and_deploy(self, no_cache: bool = False) -> str:
-		deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate Build",
-				"deploy_candidate": self.name,
-				"no_cache": no_cache,
-				"deploy_after_build": True,
-			}
-		)
+		deploy_candidate_build = self.create_build(no_cache=no_cache, deploy_after_build=True)
 		deploy_candidate_build.insert()
 		return deploy_candidate_build.name
 
