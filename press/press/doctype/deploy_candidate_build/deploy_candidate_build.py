@@ -36,6 +36,7 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 from press.press.doctype.deploy_candidate.utils import (
 	get_build_server,
 	get_package_manager_files,
+	is_suspended,
 	load_pyproject,
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
@@ -1160,6 +1161,29 @@ def should_build_retry_job(job: "AgentJob"):
 		return True
 
 	return False
+
+
+def run_scheduled_builds(max_builds: int = 5):
+	if is_suspended():
+		return
+
+	dcs = frappe.get_all(
+		"Deploy Candidate Build",
+		{
+			"status": "Scheduled",
+			"scheduled_time": ("<=", frappe.utils.now_datetime()),
+		},
+		pluck="name",
+		limit=max_builds,
+	)
+	for dc in dcs:
+		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
+		try:
+			doc.run_scheduled_build_and_deploy()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
 def throw_no_build_server():

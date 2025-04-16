@@ -929,29 +929,6 @@ def toggle_builds(suspend):
 	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
 
 
-def run_scheduled_builds(max_builds: int = 5):
-	if is_suspended():
-		return
-
-	dcs = frappe.get_all(
-		"Deploy Candidate Build",
-		{
-			"status": "Scheduled",
-			"scheduled_time": ("<=", frappe.utils.now_datetime()),
-		},
-		pluck="name",
-		limit=max_builds,
-	)
-	for dc in dcs:
-		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
-		try:
-			doc.run_scheduled_build_and_deploy()
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
-
-
 # Key: stage_slug
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
