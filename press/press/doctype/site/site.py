@@ -949,7 +949,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_physical_backup(self, backup: str):
-		if frappe.get_value("Press Settings", "Press Settings", "disable_physical_backup"):
+		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw("Currently, Physical Backup & Restoration is disabled system wide. Try again later.")
 
 		frappe.db.set_value("Site", self.name, "status", "Pending")
@@ -998,7 +998,7 @@ class Site(Document, TagHelpers):
 		if physical and not self.allow_physical_backup_by_user:
 			frappe.throw(_("Physical backup is not enabled for this site. Please reach out to support."))
 
-		if frappe.get_value("Press Settings", "Press Settings", "disable_physical_backup"):
+		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
 		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=True)
 

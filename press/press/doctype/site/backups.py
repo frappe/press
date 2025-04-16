@@ -407,7 +407,7 @@ def expire_physical():
 
 
 def _expire_physical_backups():
-	scheme = frappe.db.get_value("Press Settings", "backup_rotation_scheme") or "FIFO"
+	scheme = frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
 	if scheme == "FIFO":
 		rotation = FIFO()
 	elif scheme == "Grandfather-father-son":
