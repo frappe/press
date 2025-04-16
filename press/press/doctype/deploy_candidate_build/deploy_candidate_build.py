@@ -74,7 +74,7 @@ class Status(Enum):
 
 	@classmethod
 	def intermediate(cls):
-		return [cls.PENDING.value, cls.RUNNING.value, cls.SCHEDULED.value, cls.PREPARING.value]
+		return [cls.PENDING.value, cls.RUNNING.value, cls.PREPARING.value]
 
 
 class ConfigFileTemplate(Enum):
@@ -1104,6 +1104,18 @@ class DeployCandidateBuild(Document):
 
 		self.build_directory = None
 		self.save()
+
+
+@frappe.whitelist()
+def stop_and_fail(dn: str):
+	build: DeployCandidateBuild = frappe.get_doc(
+		"Deploy Candidate Build",
+		dn,
+		for_update=True,
+	)
+
+	if build.status in Status.intermediate():
+		build._stop_and_fail()
 
 
 def is_build_job(job: Job) -> bool:

@@ -23,9 +23,12 @@ frappe.ui.form.on('Deploy Candidate Build', {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(label, () => {
 					if (label === 'Stop And Fail') {
-						frappe.call('press.api.deploy_candidate_build.stop_and_fail', {
-							dn: frm.doc.name,
-						});
+						frappe.call(
+							'press.press.doctype.deploy_candidate_build.deploy_candidate_build.stop_and_fail',
+							{
+								dn: frm.doc.name,
+							},
+						);
 					}
 					frm.call(method).then((r) => {
 						if (r.message.error) {
