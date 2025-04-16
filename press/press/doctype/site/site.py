@@ -7,12 +7,12 @@ import contextlib
 import json
 from collections import defaultdict
 from contextlib import suppress
+from datetime import datetime
 from functools import cached_property, wraps
 from typing import Any, Literal
 
 import dateutil.parser
 import frappe
-import frappe.data
 import frappe.utils
 import pytz
 import requests
@@ -347,6 +347,7 @@ class Site(Document, TagHelpers):
 		self.validate_site_config()
 		self.validate_auto_update_fields()
 		self.validate_site_plan()
+		self.validate_backup_times()
 
 	def before_insert(self):
 		if not self.bench and self.group:
@@ -507,6 +508,28 @@ class Site(Document, TagHelpers):
 						"support_included": 0,
 					},
 				)
+
+	def validate_backup_times(self):
+		if self.schedule_logical_backup_at_custom_time and len(self.logical_backup_times) == 0:
+			frappe.throw(
+				"You are trying to enable logical backup schedule at custom time, but you have not set any backup times for it."
+			)
+
+		if self.schedule_physical_backup_at_custom_time and len(self.physical_backup_times) == 0:
+			frappe.throw(
+				"You are trying to enable physical backup schedule at custom time, but you have not set any backup times for it."
+			)
+
+		selected_backup_hours = [
+			(frappe.utils.get_datetime(x.backup_time).hour) for x in self.logical_backup_times
+		] + [(frappe.utils.get_datetime(x.backup_time).hour) for x in self.physical_backup_times]
+
+		backup_hours = set()
+		for h in selected_backup_hours:
+			if h not in backup_hours:
+				backup_hours.add(h)
+			else:
+				frappe.throw(f"Multiple backups have been schedule at following hour > {h}:00:00")
 
 	def capture_signup_event(self, event: str):
 		team = frappe.get_doc("Team", self.team)
