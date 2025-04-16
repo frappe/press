@@ -1257,10 +1257,10 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_last_successful_candidate(self) -> "DeployCandidate":
 		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
 
-	def get_last_deploy_candidate(self):
+	def get_last_deploy_candidate_build(self):
 		try:
 			dc: "DeployCandidate" = frappe.get_last_doc(
-				"Deploy Candidate",
+				"Deploy Candidate Build",
 				{
 					"status": ["!=", "Draft"],
 					"group": self.name,
