@@ -668,12 +668,6 @@ export default {
 							},
 						},
 						{
-							label: 'Type',
-							fieldname: 'type',
-							width: '150px',
-							align: 'center',
-						},
-						{
 							label: 'Status',
 							fieldname: 'status',
 							width: '150px',
@@ -716,6 +710,15 @@ export default {
 						{
 							label: 'Offsite Backup',
 							fieldname: 'offsite',
+							width: 0.5,
+							type: 'Icon',
+							Icon(value) {
+								return value ? 'check' : '';
+							},
+						},
+						{
+							label: 'Physical Backup',
+							fieldname: 'physical',
 							width: 0.5,
 							type: 'Icon',
 							Icon(value) {

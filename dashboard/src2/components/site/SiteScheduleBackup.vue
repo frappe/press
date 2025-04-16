@@ -16,14 +16,21 @@
 		@close="resetValues"
 	>
 		<template #body-content>
-			<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-3">
+				<p
+					class="text-md text-base text-gray-800"
+					v-if="!this.$site?.doc?.allow_physical_backup_by_user"
+				>
+					Are you sure you want to backup your site ?
+				</p>
 				<AlertBanner
+					v-if="this.$site?.doc?.allow_physical_backup_by_user"
 					title="Backup can cause some downtime on your site. It depends on the size of your database."
 					type="info"
 					:showIcon="false"
 				>
 				</AlertBanner>
-				<div>
+				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
 					<FormControl
 						variant="outline"
 						type="checkbox"
@@ -33,37 +40,28 @@
 					</FormControl>
 				</div>
 
-				<FormControl
-					v-if="this.$site?.doc?.allow_physical_backup_by_user"
-					variant="outline"
-					type="select"
-					label="Backup Type"
-					v-model="selectedBackupType"
-					:options="[
-						{
-							label: 'Logical',
-							value: 'Logical',
-						},
-						{
-							label: 'Physical',
-							value: 'Physical',
-						},
-					]"
-				>
-				</FormControl>
+				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
+					<FormControl
+						variant="outline"
+						type="checkbox"
+						label="Physical Backup"
+						v-model="isPhysical"
+					>
+					</FormControl>
+				</div>
 
-				<div>
+				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
 					<FormControl
 						variant="outline"
 						type="checkbox"
 						label="Backup Public & Private Files"
 						v-model="includeFiles"
-						:disabled="selectedBackupType == 'Physical'"
+						:disabled="isPhysical"
 					>
 					</FormControl>
 
 					<AlertBanner
-						v-if="selectedBackupType == 'Physical'"
+						v-if="isPhysical"
 						class="mt-2"
 						title="Physical Backup can't backup your site's private and public files currently."
 						type="warning"
@@ -72,8 +70,6 @@
 					</AlertBanner>
 				</div>
 			</div>
-
-			<!-- {{ this.$site?.doc?.allow_physical_backup_by_user }} -->
 		</template>
 	</Dialog>
 </template>
@@ -92,14 +88,14 @@ export default {
 	data() {
 		return {
 			show: true,
-			selectedBackupType: 'Logical',
+			isPhysical: false,
 			includeFiles: true,
 			backupDatabase: true,
 		};
 	},
 	watch: {
-		selectedBackupType(newValue) {
-			if (newValue == 'Physical') {
+		isPhysical(newValue) {
+			if (newValue == true) {
 				this.includeFiles = false;
 			}
 		},
@@ -129,7 +125,7 @@ export default {
 			});
 			let site_backup_promise = this.$site.backup.submit({
 				with_files: this.includeFiles,
-				physical: this.selectedBackupType === 'Physical',
+				physical: isPhysical,
 			});
 			toast.promise(site_backup_promise, {
 				loading: 'Scheduling backup...',
