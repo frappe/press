@@ -1005,7 +1005,11 @@ class BaseServer(Document, TagHelpers):
 		update_server_tls_certifcate(self, certificate)
 
 	@frappe.whitelist()
-	def show_agent_password(self):
+	def show_agent_version(self) -> str:
+		return self.agent.get_version()["commit"]
+
+	@frappe.whitelist()
+	def show_agent_password(self) -> str:
 		return self.get_password("agent_password")
 
 	@property
