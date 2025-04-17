@@ -614,7 +614,6 @@
   },
   {
    "collapsible_depends_on": "eval: doc.schedule_logical_backup_at_custom_time",
-   "depends_on": "eval: !doc.skip_scheduled_backups",
    "fieldname": "logical_backup_section",
    "fieldtype": "Section Break",
    "label": "Logical Backup"
@@ -627,7 +626,6 @@
   },
   {
    "collapsible_depends_on": "eval: doc.schedule_physical_backup_at_custom_time",
-   "depends_on": "eval: !doc.skip_scheduled_backups",
    "fieldname": "physical_backup_section",
    "fieldtype": "Section Break",
    "label": "Physical Backup"
@@ -745,7 +743,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2025-04-16 12:14:32.384884",
+ "modified": "2025-04-17 12:06:50.364785",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
