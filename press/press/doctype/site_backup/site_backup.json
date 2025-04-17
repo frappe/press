@@ -297,7 +297,8 @@
    "default": "0",
    "fieldname": "deactivate_site_during_backup",
    "fieldtype": "Check",
-   "label": "Deactivate Site During Backup"
+   "label": "Deactivate Site During Backup",
+   "set_only_once": 1
   }
  ],
  "links": [
@@ -306,7 +307,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2025-04-16 12:00:24.839794",
+ "modified": "2025-04-17 10:57:09.359685",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
