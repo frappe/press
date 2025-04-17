@@ -63,17 +63,24 @@
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
 				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
 				<FormControl
-					v-if="!applyToAllBenches"
+					v-if="!applyToAllBenches && !applyToLatestDeploy"
 					v-model="applyToBench"
-					label="Select deploy"
+					label="Select bench"
 					type="select"
 					variant="outline"
 					:options="$resources.benches.data"
 				/>
 				<FormControl
-					label="Apply patch to all active deploys"
+					v-if="!applyToLatestDeploy"
+					label="Apply patch to all active benches"
 					type="checkbox"
 					v-model="applyToAllBenches"
+				/>
+				<FormControl
+					v-if="!applyToAllBenches"
+					label="Apply patch to all active benches from the latest deploy"
+					type="checkbox"
+					v-model="applyToLatestDeploy"
 				/>
 				<FormControl
 					label="Build assets after applying patch"
@@ -83,7 +90,12 @@
 			</div>
 		</template>
 		<template v-slot:actions>
-			<Button variant="solid" class="w-full" @click="applyPatch">
+			<Button
+				variant="solid"
+				class="w-full"
+				@click="applyPatch"
+				:loading="$resources.applyPatch.loading"
+			>
 				Apply Patch
 			</Button>
 		</template>
@@ -138,6 +150,7 @@ export default {
 			applyToApp: '',
 			applyToBench: '',
 			applyToAllBenches: false,
+			applyToLatestDeploy: false,
 		};
 	},
 	computed: {
@@ -171,9 +184,13 @@ export default {
 				return false;
 			}
 
-			if (!this.applyToAllBenches && !this.applyToBench) {
+			if (
+				!this.applyToAllBenches &&
+				!this.applyToBench &&
+				!this.applyToLatestDeploy
+			) {
 				this.error =
-					'Please select a deploy or check Apply patch to all active deploys.';
+					'Please select a deploy or check Apply patch to all active deploys or the latest deploy.';
 				return false;
 			}
 
@@ -215,6 +232,7 @@ export default {
 					build_assets: this.buildAssets,
 					patch_bench: this.applyToBench,
 					patch_all_benches: this.applyToAllBenches,
+					patch_latest_deploy: this.applyToLatestDeploy,
 				},
 			};
 
