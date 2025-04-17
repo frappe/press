@@ -260,8 +260,6 @@ class ProductTrialRequest(Document):
 				reference_doctype=self.doctype,
 				reference_name=self.name,
 			)
-			self.status = "Error"
-			self.save()
 
 	@dashboard_whitelist()
 	def get_login_sid(self):
