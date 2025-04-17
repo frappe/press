@@ -3375,8 +3375,7 @@ def process_add_domain_job_update(job):
 	if not records:
 		return
 
-	if job.status in ["Success", "Pending", "Running"]:
-		# we are optimistically updating the status to site created as the add domain job rarely fails
+	if job.status == "Success":
 		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 		if product_trial_request.status == "Site Created":
 			return
