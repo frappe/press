@@ -143,6 +143,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Show Agent Version'),
+				'show_agent_version',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Setup Standalone'),
 				'setup_standalone',
 				false,
