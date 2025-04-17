@@ -367,8 +367,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
-	def _mark_patch_as_not_applied(self):
-		frappe.db.set_value("App Patch", {"bench": self.name}, "status", "Not Applied")
+	def _mark_patch_as_archived(self):
+		frappe.db.set_value("App Patch", {"bench": self.name}, "status", "Archived")
 		frappe.db.commit()
 
 	@dashboard_whitelist()
@@ -384,7 +384,7 @@ class Bench(Document):
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
 		self.check_ongoing_job()
-		self._mark_patch_as_not_applied()
+		self._mark_patch_as_archived()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
