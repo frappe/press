@@ -54,6 +54,7 @@ class PhysicalBackupRestoration(Document):
 		disk_snapshot: DF.Link | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
+		is_failure_resolved: DF.Check
 		job: DF.Link | None
 		log_ansible_output: DF.Check
 		mount_point: DF.Data | None

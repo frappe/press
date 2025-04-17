@@ -316,6 +316,29 @@ def delete_expired_snapshots():
 	)
 	for snapshot in snapshots:
 		try:
+			# Ensure there is no Restoration which is using / can use this snapshot
+			if (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"disk_snapshot": snapshot,
+						"status": ["in", ["Pending", "Scheduled", "Running"]],
+					},
+				)
+				> 0
+			) or (
+				frappe.db.count(
+					"Physical Backup Restoration",
+					filters={
+						"disk_snapshot": snapshot,
+						"is_failure_resolved": False,
+						"status": "Failure",
+					},
+				)
+				> 0
+			):
+				continue
+
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
 		except Exception:
