@@ -190,7 +190,7 @@ export default {
 				!this.applyToLatestDeploy
 			) {
 				this.error =
-					'Please select a deploy or check Apply patch to all active deploys or the latest deploy.';
+					'Please select a bench or check Apply patch to all active benches';
 				return false;
 			}
 
