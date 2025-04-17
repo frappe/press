@@ -118,7 +118,7 @@ class ProductTrialRequest(Document):
 				"Team", self.team, ["name", "user", "country", "currency"], as_dict=True
 			)
 			team_user = frappe.db.get_value(
-				"User", team_details.user, ["first_name", "last_name", "email"], as_dict=True
+				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
 			account_request_geo_data = frappe.db.get_value(
 				"Account Request", self.account_request, "geo_location"
@@ -130,6 +130,7 @@ class ProductTrialRequest(Document):
 					"email": team_user.email,
 					"first_name": team_user.first_name,
 					"last_name": team_user.last_name,
+					"full_name": team_user.full_name,
 				}
 			), json.dumps(
 				{
