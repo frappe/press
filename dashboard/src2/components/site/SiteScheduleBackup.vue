@@ -8,7 +8,6 @@
 					loading: this.site?.backup?.loading,
 					variant: 'solid',
 					onClick: scheduleBackup,
-					disabled: backupDatabase == false,
 				},
 			],
 		}"
@@ -30,16 +29,6 @@
 					:showIcon="false"
 				>
 				</AlertBanner>
-				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
-					<FormControl
-						variant="outline"
-						type="checkbox"
-						label="Backup Database"
-						v-model="backupDatabase"
-					>
-					</FormControl>
-				</div>
-
 				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
 					<FormControl
 						variant="outline"
@@ -90,19 +79,12 @@ export default {
 			show: true,
 			isPhysical: false,
 			includeFiles: true,
-			backupDatabase: true,
 		};
 	},
 	watch: {
 		isPhysical(newValue) {
 			if (newValue == true) {
 				this.includeFiles = false;
-			}
-		},
-		backupDatabase(newValue) {
-			if (newValue == false) {
-				toast.info('Database backup is mandatory.');
-				setTimeout(() => (this.backupDatabase = true), 1000);
 			}
 		},
 	},
