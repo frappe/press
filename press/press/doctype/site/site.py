@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 from collections import defaultdict
 from contextlib import suppress
@@ -521,8 +520,8 @@ class Site(Document, TagHelpers):
 			)
 
 		selected_backup_hours = [
-			(frappe.utils.get_datetime(x.backup_time).hour) for x in self.logical_backup_times
-		] + [(frappe.utils.get_datetime(x.backup_time).hour) for x in self.physical_backup_times]
+			(frappe.utils.get_time(x.backup_time).hour) for x in self.logical_backup_times
+		] + [(frappe.utils.get_time(x.backup_time).hour) for x in self.physical_backup_times]
 
 		backup_hours = set()
 		for h in selected_backup_hours:
@@ -634,17 +633,7 @@ class Site(Document, TagHelpers):
 		self.check_duplicate_site()
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.standby_for_product or self.standby_for:
-			# if standby site, rename site and create first user for trial signup
-			create_user = self.get_user_details()
-			# update the subscription config while renaming the standby site
-			self.update_config_preview()
-			site_config = json.loads(self.config)
-			subscription_config = site_config.get("subscription", {})
-			job = agent.rename_site(self, new_name, create_user, config={"subscription": subscription_config})
-			self.flags.rename_site_agent_job_name = job.name
-		else:
-			agent.rename_site(self, new_name)
+		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
 		self.status = "Pending"
 		self.save()
@@ -868,7 +857,7 @@ class Site(Document, TagHelpers):
 
 			If `ignore_additional_system_user_creation` is set, don't create additional system user
 			"""
-			if (self.standby_for_product or self.standby_for) and not self.is_standby:
+			if (self.standby_for) and not self.is_standby:
 				user_details = self.get_user_details()
 				if self.flags.get("ignore_additional_system_user_creation", False):
 					user_details = None
@@ -1843,6 +1832,19 @@ class Site(Document, TagHelpers):
 		if analytics:
 			create_user_for_product_site(self.name, analytics)
 
+	def prefill_setup_wizard(self, system_settings_payload: dict, user_payload: dict):
+		"""Prefill setup wizard with the given payload.
+
+		:param payload: Payload to prefill setup wizard.
+		"""
+		if self.setup_wizard_complete or not system_settings_payload or not user_payload:
+			return
+
+		conn = self.get_connection_as_admin()
+		method = "frappe.desk.page.setup_wizard.setup_wizard.initialize_system_settings_and_user"
+		params = {"system_settings_data": system_settings_payload, "user_data": user_payload}
+		conn.post_api(method, params)
+
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -2303,35 +2305,11 @@ class Site(Document, TagHelpers):
 			)
 			user_first_name = user.first_name if (user and user.first_name) else ""
 			user_last_name = user.last_name if (user and user.last_name) else ""
-		payload = {
+		return {
 			"email": user_email,
 			"first_name": user_first_name or "",
 			"last_name": user_last_name or "",
 		}
-		"""
-		If the site is created for product trial,
-		we might have collected the password from end-user for his site
-		"""
-		if self.account_request and self.standby_for_product and not self.is_standby:
-			with contextlib.suppress(frappe.DoesNotExistError):
-				# fetch the product trial request
-				product_trial_request = frappe.get_doc(
-					"Product Trial Request",
-					{
-						"account_request": self.account_request,
-						"product_trial": self.standby_for_product,
-						"site": self.name,
-					},
-				)
-				setup_wizard_completion_mode = frappe.get_value(
-					"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
-				)
-				if setup_wizard_completion_mode == "manual":
-					password = product_trial_request.get_user_login_password_from_signup_details()
-					if password:
-						payload["password"] = password
-
-		return payload
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
@@ -3366,15 +3344,9 @@ def update_product_trial_request_status_based_on_site_status(site, is_site_activ
 		return
 	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if is_site_active:
-		mode = frappe.get_value(
-			"Product Trial", product_trial_request.product_trial, "setup_wizard_completion_mode"
-		)
-		if mode != "auto":
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
-			product_trial_request.save(ignore_permissions=True)
-		else:
-			product_trial_request.complete_setup_wizard()
+		product_trial_request.prefill_setup_wizard_data()
+		product_trial_request.status = "Site Created"
+		product_trial_request.save(ignore_permissions=True)
 	else:
 		product_trial_request.status = "Error"
 		product_trial_request.save(ignore_permissions=True)
@@ -3403,16 +3375,14 @@ def process_add_domain_job_update(job):
 	if not records:
 		return
 
-	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
-	if job.status == "Success":
-		if frappe.get_all(
-			"Agent Job",
-			filters={"site": job.site, "job_type": "Complete Setup Wizard", "status": ["!=", "Success"]},
-		):
-			product_trial_request.status = "Completing Setup Wizard"
-		else:
-			product_trial_request.status = "Site Created"
-			product_trial_request.site_creation_completed_on = now_datetime()
+	if job.status in ["Success", "Pending", "Running"]:
+		# we are optimistically updating the status to site created as the add domain job rarely fails
+		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+		if product_trial_request.status == "Site Created":
+			return
+
+		product_trial_request.status = "Site Created"
+		product_trial_request.site_creation_completed_on = now_datetime()
 
 		product_trial_request.save(ignore_permissions=True)
 

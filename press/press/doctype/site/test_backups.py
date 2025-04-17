@@ -142,7 +142,7 @@ class TestScheduledBackupJob(FrappeTestCase):
 		site.append(
 			"logical_backup_times",
 			{
-				"backup_time": "2021-01-01 00:00",
+				"backup_time": "00:00",
 			},
 		)
 		site.save()
@@ -163,7 +163,7 @@ class TestScheduledBackupJob(FrappeTestCase):
 		site.append(
 			"physical_backup_times",
 			{
-				"backup_time": "2021-01-01 00:00",
+				"backup_time": "00:00:00",
 			},
 		)
 		site.save()
@@ -184,19 +184,19 @@ class TestScheduledBackupJob(FrappeTestCase):
 		site.append(
 			"logical_backup_times",
 			{
-				"backup_time": "2021-01-01 01:00",
+				"backup_time": "01:00:00",
 			},
 		)
 		site.append(
 			"logical_backup_times",
 			{
-				"backup_time": "2021-01-01 05:00",
+				"backup_time": "05:00:00",
 			},
 		)
 		site.append(
 			"logical_backup_times",
 			{
-				"backup_time": "2022-01-01 12:00",
+				"backup_time": "12:00:00",
 			},
 		)
 		site.save()

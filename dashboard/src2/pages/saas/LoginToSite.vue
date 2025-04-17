@@ -176,8 +176,7 @@ export default {
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard' ||
-						doc.status == 'Adding Domain'
+						doc.status == 'Prefilling Setup Wizard'
 					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}

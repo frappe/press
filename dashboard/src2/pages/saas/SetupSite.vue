@@ -78,11 +78,6 @@
 							variant="outline"
 							class="mb-4"
 						/>
-						<SaaSSignupFields
-							v-if="saasProductSignupFields.length > 0"
-							:fields="saasProductSignupFields"
-							v-model="signupValues"
-						></SaaSSignupFields>
 						<ErrorMessage
 							class="mt-2"
 							:message="$resources.createSite?.error"
@@ -118,7 +113,6 @@
 import { toast } from 'vue-sonner';
 import { debounce } from 'frappe-ui';
 import LoginBox from '../../components/auth/LoginBox.vue';
-import SaaSSignupFields from '../../components/SaaSSignupFields.vue';
 import { validateSubdomain } from '../../utils/site';
 import { DashboardError } from '../../utils/error';
 
@@ -127,14 +121,12 @@ export default {
 	props: ['productId'],
 	components: {
 		LoginBox,
-		SaaSSignupFields,
 	},
 	data() {
 		return {
 			progressErrorCount: 0,
 			findingClosestServer: false,
 			closestCluster: null,
-			signupValues: {},
 			subdomain: '',
 		};
 	},
@@ -210,7 +202,6 @@ export default {
 						args: {
 							subdomain: this.subdomain,
 							cluster: this.closestCluster ?? 'Default',
-							signup_values: this.signupValues,
 						},
 					};
 				},
@@ -230,9 +221,6 @@ export default {
 	computed: {
 		saasProduct() {
 			return this.$resources.saasProduct.doc;
-		},
-		saasProductSignupFields() {
-			return this.saasProduct?.signup_fields ?? [];
 		},
 	},
 	methods: {
