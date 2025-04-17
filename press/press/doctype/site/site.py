@@ -521,8 +521,8 @@ class Site(Document, TagHelpers):
 			)
 
 		selected_backup_hours = [
-			(frappe.utils.get_datetime(x.backup_time).hour) for x in self.logical_backup_times
-		] + [(frappe.utils.get_datetime(x.backup_time).hour) for x in self.physical_backup_times]
+			(frappe.utils.get_time(x.backup_time).hour) for x in self.logical_backup_times
+		] + [(frappe.utils.get_time(x.backup_time).hour) for x in self.physical_backup_times]
 
 		backup_hours = set()
 		for h in selected_backup_hours:
