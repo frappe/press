@@ -107,7 +107,7 @@ export default {
 			});
 			let site_backup_promise = this.$site.backup.submit({
 				with_files: this.includeFiles,
-				physical: isPhysical,
+				physical: this.isPhysical,
 			});
 			toast.promise(site_backup_promise, {
 				loading: 'Scheduling backup...',
