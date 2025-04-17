@@ -4,7 +4,13 @@ import frappe
 def execute():
 	sites = frappe.get_all(
 		"Site",
-		filters={"status": "Active", "ifnull(backup_time, '')": ("!=", "")},
+		filters={
+			"status": [
+				"in",
+				["Active", "Updating", "Recovering", "Broken", "Inactive", "Pending", "Suspended"],
+			],
+			"ifnull(backup_time, '')": ("!=", ""),
+		},
 		fields=["name", "backup_time"],
 	)
 
