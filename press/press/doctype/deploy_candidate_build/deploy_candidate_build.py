@@ -1104,9 +1104,18 @@ class DeployCandidateBuild(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		try:
-			return self.create_deploy()
+			return dict(error=False, message=self.create_deploy())
 		except Exception:
 			log_error("Deploy Creation Error", doc=self)
+
+	@frappe.whitelist()
+	def redeploy(self, no_cache: bool = False):
+		deploy_candidate: DeployCandidate | None = self.candidate.get_duplicate_dc()
+		if not deploy_candidate:
+			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
+
+		deploy_candidate.build_and_deploy(no_cache=no_cache)
+		return dict(error=False, message=deploy_candidate.name)
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
@@ -1130,6 +1139,14 @@ def stop_and_fail(dn: str):
 
 	if build.status in Status.intermediate():
 		build._stop_and_fail()
+
+
+@frappe.whitelist()
+def fail_and_redeploy(dn: str):
+	stop_and_fail(dn)
+
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn)
+	build.redeploy()
 
 
 def is_build_job(job: Job) -> bool:

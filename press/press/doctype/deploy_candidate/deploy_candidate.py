@@ -214,20 +214,6 @@ class DeployCandidate(Document):
 		return dict(error=False, message=deploy_candidate_build.name)
 
 	@frappe.whitelist()
-	def fail_and_redeploy(self):
-		if (res := self.stop_and_fail()) and res["error"]:
-			return res
-		return self.redeploy()
-
-	@frappe.whitelist()
-	def redeploy(self, no_cache: bool = False):
-		if not (dc := self.get_duplicate_dc()):
-			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
-
-		dc.build_and_deploy(no_cache=no_cache)
-		return dict(error=False, message=dc.name)
-
-	@frappe.whitelist()
 	def schedule_build_and_deploy(
 		self,
 		run_now: bool = True,

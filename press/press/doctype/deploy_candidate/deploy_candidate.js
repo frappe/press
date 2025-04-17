@@ -9,57 +9,41 @@ frappe.ui.form.on('Deploy Candidate', {
 				filters: { release_group: doc.group },
 			};
 		};
-		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
-			set_handler(
-				frm,
-				'Complete',
-				'build',
-				{ no_push: false, no_build: false, no_cache: false },
-				'Build',
-			);
-			set_handler(
-				frm,
-				'Generate Context',
-				'build',
-				{ no_push: true, no_build: true, no_cache: false },
-				'Build',
-			);
-			set_handler(
-				frm,
-				'Without Cache',
-				'build',
-				{ no_push: false, no_build: false, no_cache: true },
-				'Build',
-			);
-			set_handler(
-				frm,
-				'Without Push',
-				'build',
-				{ no_push: true, no_build: false, no_cache: false },
-				'Build',
-			);
-			set_handler(frm, 'Redeploy', 'redeploy', { no_cache: false }, 'Deploy');
-			set_handler(
-				frm,
-				'Redeploy (No Cache)',
-				'redeploy',
-				{ no_cache: true },
-				'Deploy',
-			);
-			set_handler(
-				frm,
-				'Schedule Build and Deploy',
-				'schedule_build_and_deploy',
-				{ run_now: false },
-				'Deploy',
-			);
-		}
-
-		// Build already running
-		else {
-			set_handler(frm, 'Stop and Fail', 'stop_and_fail', {}, 'Build');
-			set_handler(frm, 'Fail and Redeploy', 'fail_and_redeploy', {}, 'Deploy');
-		}
+		set_handler(
+			frm,
+			'Complete',
+			'build',
+			{ no_push: false, no_build: false, no_cache: false },
+			'Build',
+		);
+		set_handler(
+			frm,
+			'Generate Context',
+			'build',
+			{ no_push: true, no_build: true, no_cache: false },
+			'Build',
+		);
+		set_handler(
+			frm,
+			'Without Cache',
+			'build',
+			{ no_push: false, no_build: false, no_cache: true },
+			'Build',
+		);
+		set_handler(
+			frm,
+			'Without Push',
+			'build',
+			{ no_push: true, no_build: false, no_cache: false },
+			'Build',
+		);
+		set_handler(
+			frm,
+			'Schedule Build and Deploy',
+			'schedule_build_and_deploy',
+			{ run_now: false },
+			'Deploy',
+		);
 	},
 });
 
