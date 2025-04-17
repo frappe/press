@@ -1686,7 +1686,7 @@ export default {
 									title: 'Login as Administrator',
 									message: `Are you sure you want to login as administrator on the site <b>${site.doc?.name}</b>?`,
 									fields:
-										$team.name !== site.doc.team
+										$team.name !== site.doc.team || $team.doc.is_desk_user
 											? [
 													{
 														label: 'Reason',
@@ -1696,7 +1696,10 @@ export default {
 												]
 											: [],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && $team.name !== site.doc.team) {
+										if (
+											!values.reason &&
+											($team.name !== site.doc.team || $team.doc.is_desk_user)
+										) {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin
