@@ -98,7 +98,6 @@ def create_test_site(
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
-	backup_time=None,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
@@ -137,7 +136,6 @@ def create_test_site(
 	site.update(kwargs)
 	site.insert()
 	site.db_set("creation", creation)
-	site.db_set("backup_time", backup_time)
 	site.reload()
 	return site
 

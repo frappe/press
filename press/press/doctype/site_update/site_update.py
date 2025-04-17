@@ -346,8 +346,10 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "status", "Running")
 
 	def create_physical_backup(self):
-		site = frappe.get_doc("Site", self.site)
-		frappe.db.set_value("Site Update", self.name, "site_backup", site.physical_backup().name)
+		site: Site = frappe.get_doc("Site", self.site)
+		frappe.db.set_value(
+			"Site Update", self.name, "site_backup", site.physical_backup(for_site_update=True).name
+		)
 
 	def have_past_updates_failed(self):
 		return frappe.db.exists(

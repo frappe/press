@@ -203,7 +203,7 @@ class BackupRecordCheck(Audit):
 			"status": "Active",
 			"creation": ("<=", datetime.combine(self.yesterday, datetime.min.time())),
 			"is_standby": False,
-			"skip_scheduled_backups": False,
+			"skip_scheduled_logical_backups": False,
 		}
 		if trial_plans:
 			filters.update({"plan": ("not in", trial_plans)})

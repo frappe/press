@@ -13,8 +13,10 @@
   "job",
   "files_availability",
   "physical",
+  "for_site_update",
   "with_files",
   "offsite",
+  "deactivate_site_during_backup",
   "data_7",
   "database_file",
   "database_url",
@@ -283,10 +285,29 @@
   {
    "fieldname": "column_break_obsx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.physical == 1",
+   "fieldname": "for_site_update",
+   "fieldtype": "Check",
+   "label": "For Site Update"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_backup",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Backup",
+   "set_only_once": 1
   }
  ],
- "links": [],
- "modified": "2025-02-06 13:21:10.061731",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-04-17 10:57:09.359685",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

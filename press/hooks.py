@@ -192,12 +192,14 @@ scheduler_events = {
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
+		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
-		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
+		"press.press.doctype.site.backups.schedule_logical_backups_for_sites_with_backup_time",
+		"press.press.doctype.site.backups.schedule_physical_backups_for_sites_with_backup_time",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
@@ -216,6 +218,7 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 		"press.press.doctype.press_webhook.press_webhook.auto_disable_high_delivery_failure_webhooks",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
@@ -235,6 +238,7 @@ scheduler_events = {
 		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
+			"press.press.doctype.site.backups.expire_physical",
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"10 0 * * *": [
@@ -259,7 +263,8 @@ scheduler_events = {
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
-			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site.backups.schedule_logical_backups",
+			"press.press.doctype.site.backups.schedule_physical_backups",
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
