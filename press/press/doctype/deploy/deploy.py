@@ -41,16 +41,6 @@ class Deploy(Document):
 	def after_insert(self):
 		self.create_benches()
 
-	# def get_server_platform(self, server: str) -> str:
-	# 	"""
-	# 	If the platform is not set we assume that the required platform image is x86_64
-	# 	"""
-	# 	virtual_machine_name = frappe.get_value("Server", server, "virtual_machine")
-	# 	if virtual_machine_name:
-	# 		virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
-	# 		return virtual_machine.platform
-	# 	return "x86_64"
-
 	def create_benches(self):
 		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		environment_variables = [
