@@ -293,9 +293,17 @@
   {
    "link_doctype": "Press Notification",
    "link_fieldname": "document_name"
+  },
+  {
+   "link_doctype": "Deploy",
+   "link_fieldname": "build"
+  },
+  {
+   "link_doctype": "Bench",
+   "link_fieldname": "build"
   }
  ],
- "modified": "2025-04-16 11:57:41.221194",
+ "modified": "2025-04-18 10:21:41.270984",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
