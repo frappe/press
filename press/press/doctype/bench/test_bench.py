@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -82,6 +83,7 @@ class TestBench(FrappeTestCase):
 			create_test_subscription(site.name, plan.name, site.team)
 		return Bench("Bench", bench)
 
+	@patch.object(Agent, "rebuild_bench", new=lambda x, y: "Triggered agent job")
 	def test_minimum_rebuild_memory(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=False)
 		bench_public = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=True)
@@ -106,18 +108,22 @@ class TestBench(FrappeTestCase):
 
 		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
 			# Low memory_max should not affect rebuild for dedicated servers
-			self.assertEqual(bench.has_rebuild_memory(), True)
+			self.assertEqual(bench.get_memory_info(), (True, high_prometheus_memory / (1024**3), 2))
+			self.assertEqual(bench.rebuild(), "Triggered agent job")
 
-		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
-			# Low memory_max should not rebuild for public servers
-			self.assertEqual(bench_public.has_rebuild_memory(), False)
+		with self.assertRaises(frappe.ValidationError):
+			# Raise on public servers
+			bench_public.rebuild()
 
 		bench.memory_max = high_memory_max
 		bench.save()
 
-		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory):
+		with patch.object(Bench, "get_free_memory", new=lambda x: low_prometheus_memeory), self.assertRaises(
+			frappe.ValidationError
+		):
 			# Should not rebuild due to low server mem
-			self.assertEqual(bench.has_rebuild_memory(), False)
+			self.assertEqual(bench.get_memory_info(), (True, low_prometheus_memeory / (1024**3), 2))
+			bench.rebuild()
 
 		bench.memory_max = high_memory_max
 		bench.save()
@@ -125,7 +131,8 @@ class TestBench(FrappeTestCase):
 		with patch.object(
 			Bench, "get_free_memory", new=lambda x: high_prometheus_memory
 		):  # Testing with 3GB from prometheus query
-			self.assertEqual(bench.has_rebuild_memory(), True)
+			self.assertEqual(bench.get_memory_info(), (True, high_prometheus_memory / (1024**3), 2))
+			self.assertEqual(bench.rebuild(), "Triggered agent job")
 
 	def test_workload_is_calculated_correctly(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)

@@ -43,7 +43,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -118,8 +117,9 @@ class Bench(Document):
 	@staticmethod
 	def get_list_query(query):
 		Bench = frappe.qb.DocType("Bench")
-
+		Server = frappe.qb.DocType("Server")
 		Site = frappe.qb.DocType("Site")
+
 		site_count = (
 			frappe.qb.from_(Site)
 			.select(frappe.query_builder.functions.Count("*"))
@@ -129,11 +129,17 @@ class Bench(Document):
 
 		benches = (
 			query.select(
-				Bench.is_ssh_proxy_setup, Bench.inplace_update_docker_image, site_count.as_("site_count")
+				Bench.is_ssh_proxy_setup,
+				Bench.inplace_update_docker_image,
+				site_count.as_("site_count"),
+				Server.public.as_("on_public_server"),
 			)
 			.where(Bench.status != "Archived")
+			.join(Server)
+			.on(Server.name == Bench.server)
 			.run(as_dict=1)
 		)
+
 		bench_names = [d.name for d in benches]
 		benches_with_patches = frappe.get_all(
 			"App Patch",
@@ -141,9 +147,11 @@ class Bench(Document):
 			filters={"bench": ["in", bench_names], "status": "Applied"},
 			pluck="bench",
 		)
+
 		for bench in benches:
 			bench.has_app_patch_applied = bench.name in benches_with_patches
 			bench.has_updated_inplace = bool(bench.inplace_update_docker_image)
+
 		return benches
 
 	def get_doc(self, doc):
@@ -614,37 +622,35 @@ class Bench(Document):
 	def get_free_memory(self):
 		return usage(self.server).get("free_memory")
 
-	def has_sufficient_memory_max(self, minimum_rebuild_memory: int) -> bool:
-		"""Check if the memory_max is sufficient in for rebuild in public servers"""
-		server: Server = frappe.get_cached_doc("Server", self.server)
-
-		if not server.public:
-			return True
-
-		memory_max_gb = self.memory_max / 1000  # Memory max stored in mb
-		return memory_max_gb > minimum_rebuild_memory
-
-	def has_rebuild_memory(self) -> bool:
+	def get_memory_info(self) -> tuple[bool, float, float]:
+		"""Returns a tuple: (is_info_available, free_memory_in_gb, required_memory_in_gb)"""
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
-		minimum_rebuild_memory = press_settings.minimum_rebuild_memory
+		required_memory_gb = press_settings.minimum_rebuild_memory
 
-		if not self.has_sufficient_memory_max(minimum_rebuild_memory):
-			return False
+		free_memory_bytes = self.get_free_memory()
+		if not free_memory_bytes:
+			return False, 0.0, required_memory_gb
 
-		free_memory = self.get_free_memory()
-
-		if not free_memory:
-			return True
-
-		free_memory /= 1024**3
-		return free_memory >= minimum_rebuild_memory
+		free_memory_gb = free_memory_bytes / (1024**3)
+		return True, free_memory_gb, required_memory_gb
 
 	@dashboard_whitelist()
 	def rebuild(self, force: bool = False):
-		if force or self.has_rebuild_memory():
+		is_public = frappe.get_cached_value("Server", self.server, "public")
+		if is_public:
+			frappe.throw("Bench rebuild is not allowed on public servers!")
+
+		has_info, free_memory_gb, required_memory_gb = self.get_memory_info()
+
+		if force or not has_info or free_memory_gb >= required_memory_gb:
 			return Agent(self.server).rebuild_bench(self)
 
-		frappe.throw("Provision more ram to allow bench rebuild!")
+		frappe.throw(
+			f"Insufficient memory for rebuild: {free_memory_gb:.2f} GB available, "
+			f"{required_memory_gb:.2f} GB required.",
+			frappe.ValidationError,
+		)
+
 		return None
 
 	@dashboard_whitelist()
