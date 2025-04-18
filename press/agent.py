@@ -952,12 +952,12 @@ class Agent:
 		if not agent_job:
 			raise
 
-		reason = status_code = None
+		status_code = getattr(result, "status_code", "Unknown")
 		with suppress(TypeError, ValueError):
 			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {status_code or "Unknown"}\n
+Status Code: {status_code}\n
 Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
