@@ -1185,7 +1185,10 @@ def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
 	frappe.db.add_index("Agent Job", ["reference_doctype", "reference_name"])
 	# We don't need modified index, it's harmful on constantly updating tables
-	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
+	if frappe.db.db_type == 'postgres':
+		frappe.db.sql_ddl('DROP INDEX IF EXISTS "modified_tabAgent_Job"')
+	else:
+		frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
 	frappe.db.add_index("Agent Job", ["creation"])
 
 
