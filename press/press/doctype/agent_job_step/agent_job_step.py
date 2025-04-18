@@ -31,5 +31,9 @@ class AgentJobStep(Document):
 
 def on_doctype_update():
 	# We don't need modified index, it's harmful on constantly updating tables
-	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job Step`")
+	if frappe.db.db_type == 'postgres':
+		frappe.db.sql_ddl('DROP INDEX IF EXISTS "modified_tabAgent_Job_Step"')
+    	else:
+		frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job Step`")
+	
 	frappe.db.add_index("Agent Job Step", ["creation"])
