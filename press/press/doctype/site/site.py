@@ -3556,6 +3556,7 @@ def process_reinstall_site_job_update(job):
 		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
+		frappe.db.set_value("Site", job.site, "database_name", None)
 
 
 def process_migrate_site_job_update(job):
@@ -3699,6 +3700,7 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
+			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
 
 
