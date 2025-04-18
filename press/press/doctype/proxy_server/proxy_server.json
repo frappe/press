@@ -45,6 +45,7 @@
   "root_public_key",
   "section_break_21",
   "domains",
+  "is_nginx_defer_reload_setup",
   "ssh_proxy_section",
   "ssh_certificate_authority",
   "column_break_26",
@@ -199,7 +200,8 @@
   },
   {
    "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Nginx"
   },
   {
    "fieldname": "domains",
@@ -421,10 +423,18 @@
    "fieldtype": "Int",
    "label": "Auto Add Storage Max",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "description": "If any agent job has skip_reload=True, reload is deferred and grouped to run later (<=2 min).",
+   "fieldname": "is_nginx_defer_reload_setup",
+   "fieldtype": "Check",
+   "label": "Is Nginx Defer Reload Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-12-26 13:20:05.120010",
+ "modified": "2025-04-18 13:53:15.907964",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
