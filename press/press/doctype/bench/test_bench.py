@@ -66,12 +66,14 @@ class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_bench_with_n_sites_with_cpu_time(self, n: int, x: float, bench: str | None = None) -> Bench:
+	def _create_bench_with_n_sites_with_cpu_time(
+		self, n: int, x: float, bench: str | None = None, public_server: bool = False
+	) -> Bench:
 		"""Creates new bench if None given."""
 		plan = create_test_plan("Site", cpu_time=x)
 
 		if not bench:
-			site = create_test_site()
+			site = create_test_site(public_server=public_server)
 			create_test_subscription(site.name, plan.name, site.team)  # map site with plan
 			bench = site.bench
 			n -= 1
@@ -81,7 +83,8 @@ class TestBench(FrappeTestCase):
 		return Bench("Bench", bench)
 
 	def test_minimum_rebuild_memory(self):
-		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=False)
+		bench_public = self._create_bench_with_n_sites_with_cpu_time(3, 5, public_server=True)
 		bench.memory_swap = 5000
 		bench.memory_high = 928
 
@@ -102,8 +105,12 @@ class TestBench(FrappeTestCase):
 		bench.save()
 
 		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
-			# Low memory_max should not rebuild
-			self.assertEqual(bench.has_rebuild_memory(), False)
+			# Low memory_max should not affect rebuild for dedicated servers
+			self.assertEqual(bench.has_rebuild_memory(), True)
+
+		with patch.object(Bench, "get_free_memory", new=lambda x: high_prometheus_memory):
+			# Low memory_max should not rebuild for public servers
+			self.assertEqual(bench_public.has_rebuild_memory(), False)
 
 		bench.memory_max = high_memory_max
 		bench.save()

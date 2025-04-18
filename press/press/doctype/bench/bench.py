@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
 	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.server.server import Server
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -612,11 +614,21 @@ class Bench(Document):
 	def get_free_memory(self):
 		return usage(self.server).get("free_memory")
 
-	def has_rebuild_memory(self) -> bool:
-		minimum_rebuild_memory = frappe.get_doc("Press Settings").minimum_rebuild_memory
-		memory_max = self.memory_max / 1000  # Memory max stored in mb
+	def has_sufficient_memory_max(self, minimum_rebuild_memory: int) -> bool:
+		"""Check if the memory_max is sufficient in for rebuild in public servers"""
+		server: Server = frappe.get_cached_doc("Server", self.server)
 
-		if memory_max < minimum_rebuild_memory:
+		if not server.public:
+			return True
+
+		memory_max_gb = self.memory_max / 1000  # Memory max stored in mb
+		return memory_max_gb > minimum_rebuild_memory
+
+	def has_rebuild_memory(self) -> bool:
+		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
+		minimum_rebuild_memory = press_settings.minimum_rebuild_memory
+
+		if not self.has_sufficient_memory_max(minimum_rebuild_memory):
 			return False
 
 		free_memory = self.get_free_memory()
