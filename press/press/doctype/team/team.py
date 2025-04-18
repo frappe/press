@@ -19,6 +19,7 @@ from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
 	get_stripe,
+	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
@@ -526,6 +527,9 @@ class Team(Document):
 		if frappe.flags.in_test:
 			return frappe.utils.getdate()
 
+		if is_frappe_auth_disabled():
+			return frappe.utils.getdate()
+
 		client = get_frappe_io_connection()
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
@@ -671,6 +675,9 @@ class Team(Document):
 
 	def update_billing_details_on_frappeio(self):
 		if frappe.flags.in_install:
+			return
+
+		if is_frappe_auth_disabled():
 			return
 
 		try:
@@ -983,6 +990,12 @@ class Team(Document):
 
 	def get_partner_level(self):
 		# fetch partner level from frappe.io
+		if frappe.flags.in_install:
+			return None
+
+		if is_frappe_auth_disabled():
+			return None
+
 		client = get_frappe_io_connection()
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
