@@ -1,6 +1,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import typing
 
@@ -13,7 +14,6 @@ from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Deploy(Document):
@@ -28,6 +28,7 @@ class Deploy(Document):
 		from press.press.doctype.deploy_bench.deploy_bench import DeployBench
 
 		benches: DF.Table[DeployBench]
+		build: DF.Link | None
 		candidate: DF.Link
 		group: DF.Link
 		staging: DF.Check
@@ -40,15 +41,15 @@ class Deploy(Document):
 	def after_insert(self):
 		self.create_benches()
 
-	def get_server_platform(self, server: str) -> str:
-		"""
-		If the platform is not set we assume that the required platform image is x86_64
-		"""
-		virtual_machine_name = frappe.get_value("Server", server, "virtual_machine")
-		if virtual_machine_name:
-			virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
-			return virtual_machine.platform
-		return "x86_64"
+	# def get_server_platform(self, server: str) -> str:
+	# 	"""
+	# 	If the platform is not set we assume that the required platform image is x86_64
+	# 	"""
+	# 	virtual_machine_name = frappe.get_value("Server", server, "virtual_machine")
+	# 	if virtual_machine_name:
+	# 		virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", virtual_machine_name)
+	# 		return virtual_machine.platform
+	# 	return "x86_64"
 
 	def create_benches(self):
 		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
@@ -66,16 +67,12 @@ class Deploy(Document):
 			for v in group.mounts
 		]
 		for bench in self.benches:
-			platform = self.get_server_platform(bench.server)
-			docker_image = frappe.db.get_value(
-				"Deploy Candidate Build",
-				{"deploy_candidate": self.candidate, "platform": platform},
-				"docker_image",
-			)
+			docker_image = frappe.get_value("Deploy Candidate Build", {"name": self.build}, "docker_image")
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
+					"build": self.build,
 					"docker_image": docker_image,
 					"group": self.group,
 					"candidate": self.candidate,
