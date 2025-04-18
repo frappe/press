@@ -3376,8 +3376,8 @@ def process_add_domain_job_update(job):
 	if not records:
 		return
 
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 	if job.status == "Success":
-		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
 		if product_trial_request.status == "Site Created":
 			return
 
