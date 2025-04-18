@@ -43,7 +43,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.press_settings.press_settings import PressSettings
-	from press.press.doctype.server.server import Server
 
 	SupervisorctlActions = Literal[
 		"start",
@@ -637,8 +636,8 @@ class Bench(Document):
 
 	@dashboard_whitelist()
 	def rebuild(self, force: bool = False):
-		server: Server = frappe.get_cached_doc("Server", self.server)
-		if server.public:
+		is_public = frappe.get_cached_value("Server", self.server, "public")
+		if is_public:
 			frappe.throw("Bench rebuild is not allowed on public servers!")
 
 		has_info, free_memory_gb, required_memory_gb = self.get_memory_info()
