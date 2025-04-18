@@ -1,0 +1,6 @@
+- name: Setup NGINX Defer Reload
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup nginx-defer-reload
+  args:
+    chdir: /home/frappe/agent
