@@ -18,6 +18,7 @@ class PartnerPaymentPayoutItem(Document):
 		amount: DF.Currency
 		amount_in_local_currency: DF.Currency
 		commission_amount: DF.Currency
+		exchange_rate: DF.Float
 		net_amount: DF.Currency
 		parent: DF.Data
 		parentfield: DF.Data

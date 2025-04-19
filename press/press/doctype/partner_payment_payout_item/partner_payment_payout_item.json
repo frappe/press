@@ -13,7 +13,8 @@
   "column_break_ayfd",
   "commission_amount",
   "amount_in_local_currency",
-  "net_amount"
+  "net_amount",
+  "exchange_rate"
  ],
  "fields": [
   {
@@ -49,6 +50,7 @@
   {
    "fieldname": "commission_amount",
    "fieldtype": "Currency",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Commission Amount"
@@ -56,6 +58,7 @@
   {
    "fieldname": "amount_in_local_currency",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Amount(LC)"
   },
   {
@@ -64,12 +67,18 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Net Amount"
+  },
+  {
+   "fetch_from": "transaction_id.exchange_rate",
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-20 14:16:33.396639",
+ "modified": "2025-03-26 09:07:18.191183",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Partner Payment Payout Item",

@@ -41,6 +41,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_nginx_defer_reload_setup: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -246,6 +247,24 @@ class ProxyServer(BaseServer):
 			self.status = "Broken"
 			log_error("Fail2ban Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def setup_nginx_defer_reload(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_defer_reload", queue="long", timeout=1200)
+
+	def _setup_nginx_defer_reload(self):
+		try:
+			ansible = Ansible(
+				playbook="agent_setup_nginx_defer_reload.yml",
+				server=self,
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.reload()
+				self.is_nginx_defer_reload_setup = True
+				self.save()
+		except Exception:
+			log_error("Nginx Defer Reload Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_proxysql(self):
