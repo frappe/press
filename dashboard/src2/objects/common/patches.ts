@@ -10,7 +10,7 @@ const statusTheme = {
 	Applied: 'green',
 	'Not Applied': 'gray',
 	'In Process': 'orange',
-	Failure: 'red'
+	Failure: 'red',
 };
 
 type Status = keyof typeof statusTheme;
@@ -25,15 +25,15 @@ export function getPatchesTab(forBench: boolean) {
 			experimental: true, // If removing this, uncheck App Patch doctype beta flag.
 			documentation: 'https://frappecloud.com/docs/benches/app-patches',
 			doctype: 'App Patch',
-			filters: res => ({ [forBench ? 'bench' : 'group']: res.name }),
+			filters: (res) => ({ [forBench ? 'bench' : 'group']: res.name }),
 			searchField: 'filename',
-			filterControls: r =>
+			filterControls: (r) =>
 				[
 					{
 						type: 'select',
 						label: 'Status',
 						fieldname: 'status',
-						options: ['', 'Not Applied', 'In Process', 'Failed', 'Applied']
+						options: ['', 'Not Applied', 'In Process', 'Failed', 'Applied'],
 					},
 					{
 						type: 'select',
@@ -42,22 +42,22 @@ export function getPatchesTab(forBench: boolean) {
 						class: !isMobile() ? 'w-24' : '',
 						options: [
 							'',
-							...new Set(r.listResource.data?.map(i => String(i.app)) || [])
-						]
-					}
+							...new Set(r.listResource.data?.map((i) => String(i.app)) || []),
+						],
+					},
 				] satisfies FilterField[],
 			columns: getPatchesTabColumns(forBench),
 			primaryAction({ listResource: apps, documentResource: doc }) {
 				return {
 					label: 'Apply Patch',
 					slots: {
-						prefix: icon('plus')
+						prefix: icon('plus'),
 					},
 					onClick() {
 						const group = doc.doctype === 'Bench' ? doc.doc.group : doc.name;
 
 						renderDialog(h(PatchAppDialog, { group: group, app: '' }));
-					}
+					},
 				};
 			},
 			rowActions({ row, listResource }) {
@@ -71,7 +71,7 @@ export function getPatchesTab(forBench: boolean) {
 								`${window.location.protocol}//${window.location.host}/app/app-patch/${row.name}`,
 								'_blank'
 							);
-						}
+						},
 					},
 					{
 						label: 'Apply Patch',
@@ -80,15 +80,15 @@ export function getPatchesTab(forBench: boolean) {
 							toast.promise(
 								listResource.runDocMethod.submit({
 									method: 'apply_patch',
-									name: String(row.name)
+									name: String(row.name),
 								}),
 								{
 									loading: 'Creating job to apply patch',
 									success: () => 'Patch apply in process',
-									error: () => 'Failed to apply patch'
+									error: () => 'Failed to apply patch',
 								}
 							);
-						}
+						},
 					},
 					{
 						label: 'Revert Patch',
@@ -97,15 +97,15 @@ export function getPatchesTab(forBench: boolean) {
 							toast.promise(
 								listResource.runDocMethod.submit({
 									method: 'revert_patch',
-									name: String(row.name)
+									name: String(row.name),
 								}),
 								{
 									loading: 'Creating job to revert patch',
 									success: () => 'Patch reversion in process',
-									error: () => 'Failed to revert patch'
+									error: () => 'Failed to revert patch',
 								}
 							);
-						}
+						},
 					},
 					{
 						label: 'Delete',
@@ -117,21 +117,21 @@ export function getPatchesTab(forBench: boolean) {
 								onSuccess: ({ hide }) => {
 									toast.promise(
 										listResource.delete.submit(row.name, {
-											onSuccess: () => hide()
+											onSuccess: () => hide(),
 										}),
 										{
 											loading: 'Deleting...',
 											success: () => 'Patch deleted',
-											error: () => 'Failed to delete patch'
+											error: () => 'Failed to delete patch',
 										}
 									);
-								}
+								},
 							});
-						}
-					}
+						},
+					},
 				];
-			}
-		}
+			},
+		},
 	} satisfies Tab;
 }
 
@@ -140,24 +140,24 @@ function getPatchesTabColumns(forBench: boolean) {
 		{
 			label: 'File Name',
 			fieldname: 'filename',
-			width: forBench ? '400px' : '300px'
+			width: forBench ? '400px' : '200px',
 		},
 		{
 			label: 'App',
 			fieldname: 'app',
-			width: 0.4
+			width: 0.4,
 		},
 		{
 			label: 'Status',
 			type: 'Badge',
 			fieldname: 'status',
-			theme: value => statusTheme[value as Status],
-			width: 0.4
+			theme: (value) => statusTheme[value as Status],
+			width: 0.4,
 		},
 		{
 			label: 'Bench',
 			fieldname: 'bench',
-			width: 0.8
+			width: 0.8,
 		},
 		{
 			label: 'Patch URL',
@@ -171,10 +171,10 @@ function getPatchesTabColumns(forBench: boolean) {
 				const url = new URL(value);
 				return url.hostname + url.pathname;
 			},
-			link: value => String(value)
-		}
+			link: (value) => String(value),
+		},
 	];
 
-	if (forBench) return columns.filter(f => f.fieldname !== 'bench');
+	if (forBench) return columns.filter((f) => f.fieldname !== 'bench');
 	return columns;
 }

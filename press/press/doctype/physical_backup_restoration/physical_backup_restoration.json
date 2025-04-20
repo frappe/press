@@ -21,9 +21,11 @@
   "destination_database",
   "destination_server",
   "section_break_gthb",
+  "deactivate_site_during_restoration",
   "restore_specific_tables",
   "tables_to_restore",
   "log_ansible_output",
+  "is_failure_resolved",
   "section_break_swxv",
   "start",
   "column_break_xqdd",
@@ -206,11 +208,28 @@
    "fieldname": "log_ansible_output",
    "fieldtype": "Check",
    "label": "Log Ansible Output"
+  },
+  {
+   "default": "0",
+   "fieldname": "deactivate_site_during_restoration",
+   "fieldtype": "Check",
+   "label": "Deactivate Site During Restoration"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_failure_resolved",
+   "fieldtype": "Check",
+   "label": "Is Failure Resolved"
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-03-15 12:40:21.147676",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2025-04-17 11:13:10.779531",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Physical Backup Restoration",
@@ -225,6 +244,28 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

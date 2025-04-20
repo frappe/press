@@ -20,14 +20,30 @@ def create_dns_record(doc, record_name=None):
 	if domain.generic_dns_provider:
 		return
 
+	proxy_server = frappe.get_value("Server", doc.server, "proxy_server")
 	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
+
 	if doc.cluster == domain.default_cluster and not is_standalone:
-		return
+		# Check if the cluster has multiple proxy servers
+		proxy_servers = frappe.get_all(
+			"Proxy Server",
+			{"cluster": doc.cluster, "status": "Active"},
+			pluck="name",
+		)
+		if len(proxy_servers) == 1 or (
+			len(proxy_servers) > 1 and domain.default_proxy_server == proxy_server
+		):
+			"""
+			If we have a single proxy server
+			Or, in case of multiple proxy server, the site is using the default proxy server
+
+			We can skip creating dns record
+			"""
+			return
 
 	if is_standalone:
 		_change_dns_record("UPSERT", domain, doc.server, record_name=record_name)
 	else:
-		proxy_server = frappe.get_value("Server", doc.server, "proxy_server")
 		_change_dns_record("UPSERT", domain, proxy_server, record_name=record_name)
 
 

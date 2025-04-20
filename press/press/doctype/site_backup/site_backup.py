@@ -18,6 +18,7 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 if TYPE_CHECKING:
 	from datetime import datetime
 
+	from apps.press.press.press.doctype.agent_job.agent_job import AgentJob
 	from apps.press.press.press.doctype.site_update.site_update import SiteUpdate
 	from apps.press.press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -39,7 +40,9 @@ class SiteBackup(Document):
 		database_size: DF.Data | None
 		database_snapshot: DF.Link | None
 		database_url: DF.Text | None
+		deactivate_site_during_backup: DF.Check
 		files_availability: DF.Literal["", "Available", "Unavailable"]
+		for_site_update: DF.Check
 		job: DF.Link | None
 		offsite: DF.Check
 		offsite_backup: DF.Code | None
@@ -80,23 +83,52 @@ class SiteBackup(Document):
 		"remote_private_file",
 		"remote_config_file",
 		"physical",
+		"database_snapshot",
 	)
 
 	@property
 	def database_server(self):
-		server = frappe.get_value("Site", self.site, "server")
-		return frappe.get_value("Server", server, "database_server")
+		return frappe.get_value("Server", self.server, "database_server")
+
+	@property
+	def server(self):
+		return frappe.get_cached_value("Site", self.site, "server")
 
 	@staticmethod
 	def get_list_query(query):
-		results = query.run(as_dict=True)
-		return [result for result in results if not result.get("physical")]
+		"""
+		Remove records with `Success` but files_availability is `Unavailable`
+		"""
+		sb = frappe.qb.DocType("Site Backup")
+		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
+		results = [
+			result
+			for result in query.run(as_dict=True)
+			if not (result.get("physical") and result.get("for_site_update"))
+		]
+
+		return [
+			{
+				**result,
+				"type": "Physical" if result.get("physical") else "Logical",
+				"ready_to_restore": True
+				if result.get("physical") == 0
+				else frappe.get_cached_value(
+					"Virtual Disk Snapshot", result.get("database_snapshot"), "status"
+				)
+				== "Completed",
+			}
+			for result in results
+		]
 
 	def validate(self):
 		if self.physical and self.with_files:
 			frappe.throw("Physical backups cannot be taken with files")
 		if self.physical and self.offsite:
 			frappe.throw("Physical and offsite logical backups cannot be taken together")
+
+		if self.deactivate_site_during_backup and not self.physical:
+			frappe.throw("Site deactivation should be used for physical backups only")
 
 	def before_insert(self):
 		if getattr(self, "force", False):
@@ -116,6 +148,15 @@ class SiteBackup(Document):
 			frappe.throw("Too many pending backups")
 
 		if self.physical:
+			# validate physical backup enabled on database server
+			if not bool(
+				frappe.utils.cint(
+					frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
+				)
+			):
+				frappe.throw(
+					"Physical backup is not enabled for this database server. Please reach out to support."
+				)
 			# Set some default values
 			site = frappe.get_doc("Site", self.site)
 			if not site.database_name:
@@ -127,6 +168,15 @@ class SiteBackup(Document):
 			self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def after_insert(self):
+		if self.deactivate_site_during_backup:
+			agent = Agent(self.server)
+			agent.deactivate_site(
+				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
+			)
+		else:
+			self.start_backup()
+
+	def start_backup(self):
 		if self.physical:
 			frappe.enqueue_doc(
 				doctype=self.doctype,
@@ -163,6 +213,16 @@ class SiteBackup(Document):
 				self.name,
 				method="_rollback_db_directory_permissions",
 				enqueue_after_commit=True,
+			)
+
+		if (
+			self.has_value_changed("status")
+			and self.status in ["Success", "Failure"]
+			and self.deactivate_site_during_backup
+		):
+			agent = Agent(self.server)
+			agent.activate_site(
+				frappe.get_doc("Site", self.site), reference_doctype=self.doctype, reference_name=self.name
 			)
 
 	def _rollback_db_directory_permissions(self):
@@ -398,6 +458,30 @@ def get_backup_bucket(cluster, region=False):
 	if region:
 		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
 	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+
+
+def process_deactivate_site_job_update(job: AgentJob):
+	if job.reference_doctype != "Site Backup":
+		return
+
+	if job.status not in ["Success", "Failure", "Delivery Failure"]:
+		return
+
+	status = {
+		"Success": "Success",
+		"Failure": "Failure",
+		"Delivery Failure": "Failure",
+	}[job.status]
+
+	if frappe.get_value("Site Backup", job.reference_name, "status") == status:
+		return
+
+	backup: SiteBackup = frappe.get_doc("Site Backup", job.reference_name)
+	if status == "Failure":
+		backup.status = "Failure"
+		backup.save()
+	elif status == "Success":
+		backup.start_backup()
 
 
 def on_doctype_update():

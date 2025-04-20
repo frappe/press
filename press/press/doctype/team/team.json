@@ -19,6 +19,7 @@
   "free_account",
   "via_erpnext",
   "enforce_2fa",
+  "extend_payment_due_suspension",
   "team_members_tab",
   "section_break_6",
   "team_members",
@@ -557,6 +558,13 @@
    "fieldname": "customers",
    "fieldtype": "Small Text",
    "label": "Customers"
+  },
+  {
+   "default": "0",
+   "fieldname": "extend_payment_due_suspension",
+   "fieldtype": "Check",
+   "label": "Extend Payment Due Suspension",
+   "read_only": 1
   }
  ],
  "links": [
@@ -614,9 +622,14 @@
    "group": "Billing",
    "link_doctype": "Stripe Payment Method",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Payment Due Extension",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2025-03-20 12:17:10.380522",
+ "modified": "2025-04-14 12:26:13.440918",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

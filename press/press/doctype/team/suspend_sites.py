@@ -70,9 +70,7 @@ def get_teams_with_unpaid_invoices():
 
 	plan = frappe.qb.DocType("Site Plan")
 	query = (
-		frappe.qb.from_(plan)
-		.select(plan.name)
-		.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+		frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 	).run(as_dict=True)
 	frappe_plans = [d.name for d in query]
 
@@ -90,6 +88,7 @@ def get_teams_with_unpaid_invoices():
 			(site.status).isin(["Active", "Inactive"])
 			& (team.enabled == 1)
 			& (team.free_account == 0)
+			& (team.extend_payment_due_suspension == 0)
 			& (invoice.status == "Unpaid")
 			& (invoice.docstatus < 2)
 			& (invoice.type == "Subscription")
@@ -102,7 +101,7 @@ def get_teams_with_unpaid_invoices():
 	)
 
 	first_day = get_first_day(today)
-	two_weeks = add_days(first_day, 14) # 15th day of the month
+	two_weeks = add_days(first_day, 14)  # 15th day of the month
 	if today < two_weeks:
 		query = query.where(team.erpnext_partner == 0)
 
