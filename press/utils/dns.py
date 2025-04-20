@@ -33,7 +33,12 @@ def create_dns_record(doc, record_name=None):
 		if len(proxy_servers) == 1 or (
 			len(proxy_servers) > 1 and domain.default_proxy_server == proxy_server
 		):
-			# Then, we dont need to create dns record for the site
+			"""
+			If we have a single proxy server
+			Or, in case of multiple proxy server, the site is using the default proxy server
+
+			We can skip creating dns record
+			"""
 			return
 
 	if is_standalone:
