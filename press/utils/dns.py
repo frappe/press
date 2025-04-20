@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import boto3
-import Cloudflare
+import cloudflare
 import frappe
 from frappe.core.utils import find
 
@@ -39,10 +39,6 @@ def _change_dns_record(method: str, domain: Document, proxy_server: str, record_
 	method: CREATE | DELETE | UPSERT
 	"""
 	try:
-		frappe.log_error(domain.generic_dns_provider)
-		
-		zones = client.list_hosted_zones_by_name()["HostedZones"]
-		
 		if domain.generic_dns_provider:
 			return
 		elif domain.dns_provider == "AWS Route 53":
@@ -51,6 +47,7 @@ def _change_dns_record(method: str, domain: Document, proxy_server: str, record_
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 			)
+			zones = client.list_hosted_zones_by_name()["HostedZones"]
 			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))["Id"]
 			client.change_resource_record_sets(
 				ChangeBatch={
@@ -69,8 +66,8 @@ def _change_dns_record(method: str, domain: Document, proxy_server: str, record_
 				HostedZoneId=hosted_zone,
 			)
 		elif domain.dns_provider == "Cloudflare":
-			cf = Cloudflare.Cloudflare()
-			
+			cf = cloudflare.Cloudflare()
+
 
 	except client.exceptions.InvalidChangeBatch as e:
 		# If we're attempting to DELETE and record is not found, ignore the error
