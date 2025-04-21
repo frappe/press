@@ -1068,8 +1068,10 @@ class DatabaseServer(BaseServer):
 		5 DB Users per GB of RAM
 
 		e.g. For 4GB of server, this will be 20
+
+		But, set lower bound of 50 connections
 		"""
-		return 5 * round(self.ram / 1024)
+		return max(50, 5 * round(self.ram / 1024))
 
 	@property
 	def ram_for_mariadb(self):
