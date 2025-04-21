@@ -181,7 +181,7 @@ class DatabaseServer(BaseServer):
 		}
 		doc.mariadb_variables_recommended_values = {
 			"innodb_buffer_pool_size": self.recommended_innodb_buffer_pool_size,
-			"max_connections": self.recommended_max_db_connections,
+			"max_connections": max(50, self.recommended_max_db_connections),
 		}
 		return doc
 
