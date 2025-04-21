@@ -1071,7 +1071,7 @@ class DatabaseServer(BaseServer):
 
 		But, set lower bound of 50 connections
 		"""
-		return max(50, 5 * round(self.ram / 1024))
+		return 5 * round(self.ram / 1024)
 
 	@property
 	def ram_for_mariadb(self):
@@ -1096,7 +1096,7 @@ class DatabaseServer(BaseServer):
 		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
 		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 
-		max_recommended_connections = self.recommended_max_db_connections
+		max_recommended_connections = max(50, self.recommended_max_db_connections)
 		# Check if we can add some extra connections
 		if self.recommended_innodb_buffer_pool_size < int(self.ram_for_mariadb * 0.65):
 			extra_connections = round(
