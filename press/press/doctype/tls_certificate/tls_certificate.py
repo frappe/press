@@ -427,7 +427,7 @@ class LetsEncrypt(BaseCA):
 	def _certbot_command(self):
 		# Use appropriate plugin (Route53 or cloudflare) depending
 		# on the value for DNS Provider.
-		domain = frappe.get_doc("Root Domain", self.domain)
+		domain = frappe.get_doc("Root Domain", self.domain[2:])
 
 		if self.wildcard or frappe.conf.developer_mode:
 			if domain.dns_provider == "AWS Route 53":
