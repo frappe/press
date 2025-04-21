@@ -52,6 +52,8 @@ frappe.ui.form.on('Bare Metal Host', {
 			[__('Setup VM Host'), 'setup_vm_host', true, frm.doc.is_server_setup && frm.doc.is_vm_host && !frm.doc.is_vm_host_setup],
 			[__('Setup NFS Server'), 'setup_nfs_server', true, frm.doc.is_server_setup && !frm.doc.is_nfs_server],
 			[__('Setup VM Host with NFS'), 'setup_vm_host_with_nfs', true, frm.doc.is_server_setup && frm.doc.is_vm_host && !frm.doc.is_vm_host_setup],
+			[__('Optimize NFS Server'), 'optimize_nfs_server', true, frm.doc.is_server_setup && frm.doc.is_nfs_server],
+			[__('Check NFS Connectivity'), 'check_nfs_connectivity', true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -82,6 +84,20 @@ frappe.ui.form.on('Bare Metal Host', {
 					__('Actions'),
 				);
 			}
+		});
+
+		// Add NFS status indicators
+		frm.dashboard.add_indicator(__("NFS Server: {0}", [__(frm.doc.is_nfs_server ? "Yes" : "No")]), frm.doc.is_nfs_server ? "green" : "gray");
+		frm.dashboard.add_indicator(__("NFS Client: {0}", [__(frm.doc.is_nfs_client ? "Yes" : "No")]), frm.doc.is_nfs_client ? "green" : "gray");
+	},
+
+	setup: function(frm) {
+		frm.set_query("monitoring_server", function() {
+			return {
+				filters: {
+					server_type: "Monitoring"
+				}
+			};
 		});
 	},
 });

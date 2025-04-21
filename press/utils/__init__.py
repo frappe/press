@@ -924,3 +924,39 @@ def validate_subdomain(subdomain: str):
 
 	if len(subdomain) < 5:
 		frappe.throw("Subdomain too short. Use 5 or more characters")
+
+
+def get_nfs_server():
+	"""
+	Get the NFS server IP to use for cluster storage
+	
+	This function implements a more intelligent selection of NFS servers:
+	1. First tries to get the NFS server from Press Settings
+	2. If not configured there, finds the least loaded NFS server
+	3. If no NFS servers are available, returns None
+	
+	Returns:
+		str: IP address of selected NFS server or None if not available
+	"""
+	# First try to get from settings
+	nfs_server = frappe.db.get_single_value("Press Settings", "nfs_server")
+	if nfs_server:
+		return nfs_server
+	
+	# Otherwise, try to find least loaded NFS server
+	nfs_servers = frappe.get_all(
+		"Bare Metal Host",
+		filters={
+			"status": "Active",
+			"is_nfs_server": 1
+		},
+		fields=["name", "ip", "hostname", "available_disk"]
+	)
+	
+	if not nfs_servers:
+		frappe.log_error("No NFS servers available", "NFS Server Selection")
+		return None
+		
+	# Find server with most available disk space
+	nfs_servers.sort(key=lambda x: x.get("available_disk", 0), reverse=True)
+	return nfs_servers[0].ip

@@ -1,0 +1,114 @@
+---
+- name: Check NFS Server Connectivity
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  
+  vars:
+    nfs_server_ip: "{{ nfs_server_ip }}"
+    test_ports:
+      - 111   # rpcbind
+      - 2049  # nfs
+      - 4045  # nlockmgr
+    temp_mount_point: "/tmp/nfs_test_mount"
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages
+      apt:
+        name:
+          - nfs-common
+          - net-tools
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Check if NFS server is responding to rpcinfo
+      command: "rpcinfo -p {{ nfs_server_ip }}"
+      register: rpcinfo_result
+      changed_when: false
+      failed_when: false
+
+    - name: Show rpcinfo result
+      debug:
+        var: rpcinfo_result.stdout_lines
+      when: rpcinfo_result.rc == 0
+
+    - name: Check TCP connectivity to NFS ports
+      command: "nc -zv -w 5 {{ nfs_server_ip }} {{ item }}"
+      with_items: "{{ test_ports }}"
+      register: tcp_test_result
+      changed_when: false
+      failed_when: false
+
+    - name: Display TCP connectivity results
+      debug:
+        msg: "Port {{ item.item }} is {{ 'open' if item.rc == 0 else 'closed' }}"
+      with_items: "{{ tcp_test_result.results }}"
+
+    - name: Create temporary mount point
+      file:
+        path: "{{ temp_mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if NFS server exports can be listed
+      command: "showmount -e {{ nfs_server_ip }}"
+      register: showmount_result
+      changed_when: false
+      failed_when: false
+
+    - name: Display showmount results
+      debug:
+        var: showmount_result.stdout_lines
+      when: showmount_result.rc == 0
+
+    - name: Try to mount NFS export temporarily
+      mount:
+        path: "{{ temp_mount_point }}"
+        src: "{{ nfs_server_ip }}:/exports/vm_storage"
+        fstype: nfs
+        opts: "ro,noatime,nodiratime,soft"
+        state: mounted
+      register: mount_result
+      failed_when: false
+
+    - name: Check file listing on mounted NFS
+      command: "ls -la {{ temp_mount_point }}"
+      register: ls_result
+      changed_when: false
+      failed_when: false
+      when: mount_result is success
+
+    - name: Display file listing
+      debug:
+        var: ls_result.stdout_lines
+      when: mount_result is success and ls_result.rc == 0
+
+    - name: Unmount NFS export
+      mount:
+        path: "{{ temp_mount_point }}"
+        state: unmounted
+      when: mount_result is success
+
+    - name: Remove temporary mount point
+      file:
+        path: "{{ temp_mount_point }}"
+        state: absent
+
+    - name: Set NFS connectivity status
+      set_fact:
+        nfs_connectivity: "{{ rpcinfo_result.rc == 0 and showmount_result.rc == 0 and mount_result is success }}"
+
+    - name: Display final connectivity status
+      debug:
+        msg: "NFS connectivity test {{ 'PASSED' if nfs_connectivity else 'FAILED' }}"
+
+    - name: Fail if NFS connectivity test fails
+      fail:
+        msg: "NFS connectivity test failed"
+      when: not nfs_connectivity 

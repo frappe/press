@@ -367,7 +367,7 @@ class BareMetalHost(BaseServer):
                 self.db_set("is_vm_host", 1)  # Mark as VM host
                 self.db_set("status", "Active")
                 frappe.msgprint("VM host setup completed successfully")
-                else:
+            else:
                 self.db_set("status", "Broken")
                 frappe.throw(f"VM host setup failed: {play.status}")
                 
@@ -504,6 +504,27 @@ class BareMetalHost(BaseServer):
                 }
             ])
         
+        # Add NFS specific actions for active hosts
+        if self.status == "Active":
+            if self.is_nfs_server:
+                actions.append({
+                    "action": "Optimize NFS Server",
+                    "description": "Optimize NFS server for better performance",
+                    "button_label": "Optimize NFS",
+                    "condition": self.is_nfs_server,
+                    "doc_method": "optimize_nfs_server",
+                    "group": "NFS Server Actions",
+                })
+            
+            actions.append({
+                "action": "Check NFS Connectivity",
+                "description": "Test NFS server connectivity",
+                "button_label": "Check NFS",
+                "condition": True,
+                "doc_method": "check_nfs_connectivity",
+                "group": "NFS Server Actions",
+            })
+        
         # Add server doctype and name to all actions
         for action in actions:
             action["server_doctype"] = self.doctype
@@ -592,7 +613,11 @@ class BareMetalHost(BaseServer):
                 port=self.ssh_port or 22,
                 variables={
                     "nfs_exports_directory": self.nfs_exports_directory,
-                    "configure_firewall": True
+                    "configure_firewall": True,
+                    "optimize_nfs": True,
+                    "nfs_rsize": 1048576,
+                    "nfs_wsize": 1048576,
+                    "nfs_threads": 16
                 }
             )
             play = ansible.run()
@@ -609,6 +634,102 @@ class BareMetalHost(BaseServer):
             self.db_set("status", "Broken")
             log_error("NFS Server Setup Exception", server=self.as_dict(), error=str(e))
             frappe.throw(f"NFS server setup failed: {str(e)}")
+
+    @frappe.whitelist()
+    def optimize_nfs_server(self):
+        """
+        Optimize NFS server for better performance
+        """
+        if not self.is_nfs_server:
+            frappe.throw("This host is not an NFS server. Please set it up as an NFS server first.")
+            
+        self.status = "Optimizing"
+        self.save()
+        frappe.enqueue_doc(self.doctype, self.name, "_optimize_nfs_server", queue="long", timeout=600)
+    
+    def _optimize_nfs_server(self):
+        """Run ansible playbook to optimize NFS server settings"""
+        try:
+            class ServerObj:
+                def __init__(self, doc):
+                    self.name = doc.name
+                    self.ip = doc.ip
+                    self.doctype = doc.doctype
+            
+            server_obj = ServerObj(self)
+            
+            ansible = Ansible(
+                playbook="nfs_server_optimize.yml",
+                server=server_obj,
+                user=self.ssh_user or "root",
+                port=self.ssh_port or 22,
+                variables={
+                    "nfs_exports_directory": self.nfs_exports_directory,
+                    "nfs_rsize": 1048576,
+                    "nfs_wsize": 1048576,
+                    "nfs_threads": 16,
+                    "nfs_async": True
+                }
+            )
+            play = ansible.run()
+            self.reload()
+            
+            if play.status == "Success":
+                self.db_set("status", "Active")
+                frappe.msgprint("NFS server optimized successfully")
+            else:
+                self.db_set("status", "Broken")
+                frappe.throw(f"NFS server optimization failed: {play.status}")
+                
+            return play
+        except Exception as e:
+            self.db_set("status", "Broken")
+            log_error("NFS Server Optimization Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"NFS server optimization failed: {str(e)}")
+            
+    @frappe.whitelist()
+    def check_nfs_connectivity(self):
+        """
+        Check NFS connectivity from client perspective
+        """
+        try:
+            class ServerObj:
+                def __init__(self, doc):
+                    self.name = doc.name
+                    self.ip = doc.ip
+                    self.doctype = doc.doctype
+            
+            server_obj = ServerObj(self)
+            
+            # Get NFS server IP to test connectivity
+            if self.is_nfs_server:
+                nfs_server_ip = self.ip
+            else:
+                nfs_server_ip = frappe.db.get_single_value("Press Settings", "nfs_server")
+                
+            if not nfs_server_ip:
+                frappe.throw("NFS server not configured")
+                
+            ansible = Ansible(
+                playbook="nfs_connectivity_check.yml",
+                server=server_obj,
+                user=self.ssh_user or "root",
+                port=self.ssh_port or 22,
+                variables={
+                    "nfs_server_ip": nfs_server_ip
+                }
+            )
+            play = ansible.run()
+            
+            if play.status == "Success":
+                frappe.msgprint("NFS connectivity check passed successfully")
+                return True
+            else:
+                frappe.msgprint(f"NFS connectivity check failed: {play.status}")
+                return False
+        except Exception as e:
+            log_error("NFS Connectivity Check Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"NFS connectivity check failed: {str(e)}")
 
     @frappe.whitelist()
     def setup_nfs_client(self):
@@ -641,6 +762,10 @@ class BareMetalHost(BaseServer):
                 port=self.ssh_port or 22,
                 variables={
                     "nfs_server": nfs_server,
+                    "nfs_mount_point": self.nfs_mount_point,
+                    "nfs_mount_options": "rw,sync,hard,intr,noatime,nodiratime,rsize=1048576,wsize=1048576,vers=4.2",
+                    "setup_automount": True,
+                    "configure_health_check": True
                 }
             )
             play = ansible.run()
@@ -649,8 +774,10 @@ class BareMetalHost(BaseServer):
                 self.is_nfs_client = True
                 self.save()
             return play
-        except Exception:
-            log_error("NFS Client Setup Exception", server=self.as_dict())
+        except Exception as e:
+            self.db_set("status", "Broken")
+            log_error("NFS Client Setup Exception", server=self.as_dict(), error=str(e))
+            frappe.throw(f"NFS client setup failed: {str(e)}")
 
     @frappe.whitelist()
     def setup_vm_host_with_nfs(self):

@@ -1,0 +1,90 @@
+---
+- name: Optimize NFS Server for Performance
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  
+  vars:
+    nfs_exports_directory: "{{ nfs_exports_directory | default('/exports/vm_storage') }}"
+    nfs_rsize: "{{ nfs_rsize | default(1048576) }}"
+    nfs_wsize: "{{ nfs_wsize | default(1048576) }}"
+    nfs_threads: "{{ nfs_threads | default(16) }}"
+    nfs_async: "{{ nfs_async | default(true) }}"
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Make sure NFS server is installed
+      apt:
+        name:
+          - nfs-kernel-server
+          - nfs-common
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Set NFS daemon thread count
+      lineinfile:
+        path: /etc/default/nfs-kernel-server
+        regexp: '^RPCNFSDCOUNT='
+        line: "RPCNFSDCOUNT={{ nfs_threads }}"
+        state: present
+        create: yes
+      register: nfs_threads_modified
+      when: ansible_os_family == "Debian"
+
+    - name: Configure NFS exports options
+      lineinfile:
+        path: /etc/exports
+        regexp: "^{{ nfs_exports_directory }}"
+        line: "{{ nfs_exports_directory }} *(rw,{% if nfs_async %}async{% else %}sync{% endif %},no_root_squash,no_subtree_check,no_wdelay)"
+        state: present
+        create: yes
+      register: nfs_exports_modified
+
+    - name: Optimize system settings for NFS
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      with_items:
+        - { key: 'net.core.rmem_max', value: '16777216' }
+        - { key: 'net.core.wmem_max', value: '16777216' }
+        - { key: 'net.ipv4.tcp_rmem', value: '4096 87380 16777216' }
+        - { key: 'net.ipv4.tcp_wmem', value: '4096 65536 16777216' }
+        - { key: 'vm.dirty_ratio', value: '15' }
+        - { key: 'vm.dirty_background_ratio', value: '5' }
+        - { key: 'net.core.netdev_max_backlog', value: '30000' }
+
+    - name: Set filesystem optimization for NFS exports
+      mount:
+        path: "{{ nfs_exports_directory }}"
+        src: "{{ ansible_mounts | selectattr('mount', 'equalto', nfs_exports_directory) | map(attribute='device') | first | default(omit) }}"
+        fstype: "{{ ansible_mounts | selectattr('mount', 'equalto', nfs_exports_directory) | map(attribute='fstype') | first | default(omit) }}"
+        opts: "defaults,noatime,nodiratime"
+        state: mounted
+      when: ansible_mounts | selectattr('mount', 'equalto', nfs_exports_directory) | list | length > 0
+      ignore_errors: yes
+
+    - name: Restart NFS server
+      systemd:
+        name: nfs-kernel-server
+        state: restarted
+      when: (nfs_threads_modified is defined and nfs_threads_modified.changed) or
+            (nfs_exports_modified is defined and nfs_exports_modified.changed)
+
+    - name: Check NFS server status
+      command: systemctl status nfs-kernel-server
+      register: nfs_status
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family == "Debian"
+
+    - name: Display NFS server status
+      debug:
+        var: nfs_status.stdout_lines
+      when: ansible_os_family == "Debian" 

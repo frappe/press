@@ -8,8 +8,120 @@
   vars:
     nfs_server_host: "{{ nfs_server | mandatory }}"
     nfs_server_export: "{{ nfs_export_path | default('/exports/vm_storage') }}"
-    nfs_mount_point: "{{ vm_storage_mount | default('/mnt/vm_storage') }}"
-    nfs_mount_options: "rw,sync,hard,intr"
+    nfs_mount_point: "{{ nfs_mount_point | default('/mnt/vm_storage') }}"
+    nfs_mount_options: "{{ nfs_mount_options | default('rw,sync,hard,intr,noatime,nodiratime,rsize=1048576,wsize=1048576,vers=4.2') }}"
+    setup_automount: "{{ setup_automount | default(true) }}"
+    configure_health_check: "{{ configure_health_check | default(true) }}"
   
-  roles:
-    - nfs_client 
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install NFS client packages
+      apt:
+        name:
+          - nfs-common
+          - autofs
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create NFS mount point
+      file:
+        path: "{{ nfs_mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount NFS share
+      mount:
+        path: "{{ nfs_mount_point }}"
+        src: "{{ nfs_server_host }}:{{ nfs_server_export }}"
+        fstype: nfs
+        opts: "{{ nfs_mount_options }}"
+        state: mounted
+        boot: yes
+      register: mount_result
+      
+    - name: Setup automount if enabled
+      block:
+        - name: Install autofs package
+          apt:
+            name: autofs
+            state: present
+          when: ansible_os_family == "Debian"
+          
+        - name: Configure autofs master file
+          lineinfile:
+            path: /etc/auto.master
+            line: "{{ nfs_mount_point }} /etc/auto.nfs --timeout=60"
+            state: present
+            create: yes
+          register: autofs_master_config
+          
+        - name: Configure autofs map file
+          lineinfile:
+            path: /etc/auto.nfs
+            line: "* {{ nfs_server_host }}:{{ nfs_server_export }}/$$ -{{ nfs_mount_options }}"
+            state: present
+            create: yes
+          register: autofs_map_config
+          
+        - name: Restart autofs service
+          systemd:
+            name: autofs
+            state: restarted
+            enabled: yes
+          when: autofs_master_config.changed or autofs_map_config.changed
+      when: setup_automount
+
+    - name: Configure health check if enabled
+      block:
+        - name: Create NFS health check script
+          copy:
+            dest: /usr/local/bin/check_nfs_mount.sh
+            content: |
+              #!/bin/bash
+              # NFS mount health check script
+              
+              MOUNT_POINT="{{ nfs_mount_point }}"
+              NFS_SERVER="{{ nfs_server_host }}"
+              
+              # Check if mount point exists
+              if [ ! -d "$MOUNT_POINT" ]; then
+                echo "ERROR: Mount point $MOUNT_POINT does not exist"
+                exit 1
+              fi
+              
+              # Check if NFS is mounted
+              if ! mount | grep -q "$MOUNT_POINT"; then
+                echo "ERROR: NFS is not mounted at $MOUNT_POINT"
+                mount -a
+                exit 1
+              fi
+              
+              # Check if mount is stale
+              if ! timeout 5 ls -la $MOUNT_POINT &>/dev/null; then
+                echo "ERROR: NFS mount is stale, attempting to remount"
+                umount -f $MOUNT_POINT
+                mount -a
+                exit 1
+              fi
+              
+              # Check if NFS server is reachable
+              if ! ping -c 1 $NFS_SERVER &>/dev/null; then
+                echo "WARNING: NFS server $NFS_SERVER is not reachable"
+                exit 1
+              fi
+              
+              echo "OK: NFS mount is healthy"
+              exit 0
+            mode: '0755'
+          
+        - name: Create NFS health check cron job
+          cron:
+            name: "NFS mount health check"
+            job: "/usr/local/bin/check_nfs_mount.sh >> /var/log/nfs_health.log 2>&1"
+            minute: "*/5"
+            state: present
+      when: configure_health_check 
