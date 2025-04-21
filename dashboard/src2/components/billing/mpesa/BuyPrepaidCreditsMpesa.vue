@@ -37,7 +37,7 @@
 				autocomplete="off"
 				class="mb-5"
 				type="string"
-				placeholder="e.g 78346"
+				placeholder="e.g A123456789A"
 			/>
 		</div>
 		<!-- Show amount after tax -->
@@ -124,6 +124,7 @@ export default {
 					exchange_rate: this.exchangeRate,
 				},
 				validate() {
+					const pattern = /^[A-Z]\d{9}[A-Z]$/;
 					if (this.amount < this.minimumAmount) {
 						throw new DashboardError(
 							`Amount is less than the minimum allowed: ${this.minimumAmount}`,
@@ -140,9 +141,10 @@ export default {
 						);
 					}
 					if (!this.taxIdInput) {
-						throw new DashboardError(
-							'Tax ID is required for payment.',
-						);
+						throw new DashboardError('Tax ID is required for payment.');
+					}
+					if (this.taxIdInput && !pattern.test(this.taxIdInput)) {
+						throw new DashboardError('Invalid Tax Id');
 					}
 				},
 				async onSuccess(data) {
