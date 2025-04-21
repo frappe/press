@@ -215,7 +215,7 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
-		"press.press.doctype.deploy_candidate.deploy_candidate.check_builds_status",
+		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
