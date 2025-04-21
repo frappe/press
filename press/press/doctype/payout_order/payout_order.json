@@ -31,7 +31,11 @@
   "net_total_usd",
   "currency_usd",
   "section_break_21",
-  "ignore_commission"
+  "ignore_commission",
+  "net_commission_inr",
+  "total_commission",
+  "column_break_aijp",
+  "net_commission_usd"
  ],
  "fields": [
   {
@@ -140,7 +144,8 @@
   },
   {
    "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Commission"
   },
   {
    "default": "0",
@@ -177,12 +182,31 @@
    "label": "Total Amount",
    "options": "recipient_currency",
    "read_only": 1
+  },
+  {
+   "fieldname": "net_commission_inr",
+   "fieldtype": "Currency",
+   "label": "Net Commission INR"
+  },
+  {
+   "fieldname": "total_commission",
+   "fieldtype": "Currency",
+   "label": "Total Commission"
+  },
+  {
+   "fieldname": "column_break_aijp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "net_commission_usd",
+   "fieldtype": "Currency",
+   "label": "Net Commission USD"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-20 10:23:23.836067",
+ "modified": "2025-04-21 17:44:34.416318",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

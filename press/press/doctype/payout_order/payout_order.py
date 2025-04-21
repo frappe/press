@@ -1,27 +1,28 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
-from datetime import date
 from itertools import groupby
-from typing import List
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 
-from press.press.doctype.invoice_item.invoice_item import InvoiceItem
-from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from datetime import date
+
+	from press.press.doctype.invoice_item.invoice_item import InvoiceItem
+	from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 
 class PayoutOrder(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
-	from typing import TYPE_CHECKING
-
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
 		currency_inr: DF.Data | None
@@ -31,6 +32,8 @@ class PayoutOrder(Document):
 		ignore_commission: DF.Check
 		items: DF.Table[PayoutOrderItem]
 		mode_of_payment: DF.Literal["Cash", "Credits", "Internal"]
+		net_commission_inr: DF.Currency
+		net_commission_usd: DF.Currency
 		net_total_inr: DF.Currency
 		net_total_usd: DF.Currency
 		notes: DF.SmallText | None
@@ -40,10 +43,11 @@ class PayoutOrder(Document):
 		status: DF.Literal["Draft", "Paid", "Commissioned"]
 		team: DF.Link
 		total_amount: DF.Currency
+		total_commission: DF.Currency
 		type: DF.Literal["Marketplace", "SaaS"]
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = (
 		"period_end",
 		"team",
 		"mode_of_payment",
@@ -52,18 +56,19 @@ class PayoutOrder(Document):
 		"status",
 		"total_amount",
 		"items",
-	]
+	)
 
 	@staticmethod
 	def get_list_query(query):
 		PayoutOrder = frappe.qb.DocType("Payout Order")
-		query = query.where((PayoutOrder.docstatus != 2))
-		return query
+		query = query.where(PayoutOrder.docstatus != 2)
+		return query  # noqa: RET504
 
 	def validate(self):
 		self.validate_items()
-		self.validate_net_totals()
-		self.compute_total_amount()
+		self.calculate_net_values()
+		self.calculate_total_values()
+		self.set_status()
 
 	def validate_items(self):
 		for row in self.items:
@@ -122,40 +127,46 @@ class PayoutOrder(Document):
 
 			app_payment.save(ignore_permissions=True)
 
-	def validate_net_totals(self):
+	def calculate_net_values(self):
 		self.net_total_usd = 0
 		self.net_total_inr = 0
+		self.net_commission_usd = 0
+		self.net_commission_inr = 0
 
 		for row in self.items:
 			if row.currency == "INR":
 				self.net_total_inr += row.net_amount
+				self.net_commission_inr += row.commission
 			else:
 				self.net_total_usd += row.net_amount
+				self.net_commission_usd += row.commission
 
-		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
-			self.status = "Commissioned"
-
-	def compute_total_amount(self):
+	def calculate_total_values(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
 		if self.recipient_currency == "USD":
 			inr_in_usd = 0
 			if self.net_total_inr > 0:
 				inr_in_usd = self.net_total_inr / exchange_rate
 			self.total_amount = self.net_total_usd + inr_in_usd
+
+			# calculate net commission
+			if self.net_commission_inr > 0:
+				self.total_commission = self.net_commission_usd + (self.net_commission_inr / exchange_rate)
 		elif self.recipient_currency == "INR":
 			self.total_amount = self.net_total_inr + (self.net_total_usd * exchange_rate)
+			self.total_commission = self.net_commission_inr + (self.net_commission_usd * exchange_rate)
+
+	def set_status(self):
+		if self.total_amount == 0 and self.total_commission > 0:
+			self.status = "Commissioned"
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
-			frappe.throw(
-				"Frappe Purchase Order is required before marking this cash payout as Paid"
-			)
+			frappe.throw("Frappe Purchase Order is required before marking this cash payout as Paid")
 		self.status = "Paid"
 
 
-def get_invoice_item_for_po_item(
-	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem | None:
+def get_invoice_item_for_po_item(invoice_name: str, payout_order_item: PayoutOrderItem) -> InvoiceItem | None:
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -184,20 +195,16 @@ def get_invoice_item_for_po_item(
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
 	period_start, period_end = (
-		(period_start, period_end)
-		if period_start and period_end
-		else get_current_period_boundaries()
+		(period_start, period_end) if period_start and period_end else get_current_period_boundaries()
 	)
-	items = get_unaccounted_marketplace_invoice_items()
+	invoice_items = get_unaccounted_marketplace_invoice_items()
 
 	# Group by teams
-	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
+	for app_team, items in groupby(invoice_items, key=lambda x: x["app_team"]):
 		try:
 			item_names = [i.name for i in items]
 
-			po_exists = frappe.db.exists(
-				"Payout Order", {"team": app_team, "period_end": period_end}
-			)
+			po_exists = frappe.db.exists("Payout Order", {"team": app_team, "period_end": period_end})
 
 			if not po_exists:
 				create_payout_order_from_invoice_item_names(
@@ -219,7 +226,7 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 				frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error("Payout Order Creation Error", team=app_team, invoice_items=items)
+			log_error("Payout Order Creation Error", team=app_team, invoice_items=item_names)
 
 
 def get_current_period_boundaries():
@@ -264,19 +271,17 @@ def get_unaccounted_marketplace_invoice_items():
 		.where(invoice.status == "Paid")
 		.where(invoice_item.document_type == "Marketplace App")
 		.where(invoice_item.has_marketplace_payout_completed == 0)
-		.select(
-			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
-		)
+		.select(invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team"))
 		.distinct()
 		.run(as_dict=True)
 	)
 
-	return items
+	return items  # noqa: RET504
 
 
 @frappe.whitelist()
 def create_payout_order_from_invoice_items(
-	invoice_items: List[InvoiceItem],
+	invoice_items: list[InvoiceItem],
 	team: str,
 	period_start: date,
 	period_end: date,
