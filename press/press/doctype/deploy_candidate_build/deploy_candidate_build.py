@@ -1252,6 +1252,117 @@ def run_scheduled_builds(max_builds: int = 5):
 			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
+def check_builds_status(
+	last_n_days=0,
+	last_n_hours=4,
+	stuck_threshold_in_hours=2,
+):
+	fail_or_retry_stuck_builds(
+		last_n_days=last_n_days,
+		last_n_hours=last_n_hours,
+		stuck_threshold_in_hours=stuck_threshold_in_hours,
+	)
+	correct_false_positives(
+		last_n_days=last_n_days,
+		last_n_hours=last_n_hours,
+	)
+	frappe.db.commit()
+
+
+def fail_or_retry_stuck_builds(
+	last_n_days=0,
+	last_n_hours=4,
+	stuck_threshold_in_hours=2,
+):
+	# Fails or retries builds builds from the `last_n_days` and `last_n_hours` that
+	# have not been updated for longer than `stuck_threshold_in_hours`.
+	result = frappe.db.sql(
+		"""
+	select dcb.name as name
+	from  `tabDeploy Candidate Build` as dcb
+	where  dcb.modified between now() - interval %s day - interval %s hour and now()
+	and    dcb.modified < now() - interval %s hour
+	and    dcb.status not in ('Draft', 'Failure', 'Success')
+	""",
+		(
+			last_n_days,
+			last_n_hours,
+			stuck_threshold_in_hours,
+		),
+	)
+
+	for (name,) in result:
+		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
+		dcb.manually_failed = True
+		dcb._stop_and_fail(False)
+		if can_retry_build(dcb.name, dcb.group, dcb.build_start):
+			dcb.schedule_build_retry()
+
+
+def can_retry_build(name: str, group: str, build_start: datetime):
+	# Can retry only if build was started today and
+	# if no builds were started after the current build.
+	if build_start.date().isoformat() != frappe.utils.today():
+		return False
+
+	result = frappe.db.count(
+		"Deploy Candidate Build",
+		filters={
+			"group": group,
+			"build_start": [">", build_start],
+			"name": ["!=", name],  # sanity filter
+		},
+	)
+
+	if isinstance(result, int):
+		return result == 0
+	return False
+
+
+def correct_false_positives(last_n_days=0, last_n_hours=1):
+	# Fails jobs non Failed jobs that have steps with Failure status
+	result = frappe.db.sql(
+		"""
+	with dcb as (
+		select dcb.name as name, dcb.status as status
+		from  `tabDeploy Candidate Build` as dcb
+		where  dcb.modified between now() - interval %s day - interval %s hour and now()
+		and    dcb.status != "Failure"
+	)
+	select dcb.name
+	from   dcb join `tabDeploy Candidate Build Step` as dcbs
+	on     dcb.name = dcbs.parent
+	where  dcbs.status = "Failure"
+	""",
+		(
+			last_n_days,
+			last_n_hours,
+		),
+	)
+
+	for (name,) in result:
+		correct_status(name)
+
+
+def correct_status(dcb_name: str):
+	dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dcb_name)
+	found_failed = False
+	for bs in dcb.build_steps:
+		if bs.status == "Failure":
+			found_failed = True
+			continue
+
+		if not found_failed:
+			continue
+
+		bs.status = "Pending"
+
+	if not found_failed:
+		return
+
+	dcb._stop_and_fail(False)
+
+
 def throw_no_build_server():
 	frappe.throw(
 		"Server not found to run builds. "
