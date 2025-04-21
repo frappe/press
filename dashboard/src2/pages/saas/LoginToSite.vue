@@ -222,12 +222,7 @@ export default {
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
-						onSuccess(data) {
-							const sid = data;
-							const redirectRoute =
-								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
-								'/desk';
-							const loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
+						onSuccess(loginURL) {
 							window.open(loginURL, '_blank');
 						},
 					},
