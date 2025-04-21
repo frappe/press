@@ -120,9 +120,14 @@ class ProductTrialRequest(Document):
 			team_user = frappe.db.get_value(
 				"User", team_details.user, ["first_name", "last_name", "full_name", "email"], as_dict=True
 			)
-			account_request_geo_data = frappe.db.get_value(
-				"Account Request", self.account_request, "geo_location"
-			)
+			if self.account_request:
+				account_request_geo_data = frappe.db.get_value(
+					"Account Request", self.account_request, "geo_location"
+				)
+			else:
+				account_request_geo_data = frappe.db.get_value(
+					"Account Request", {"email": team_user.email}, "geo_location"
+				)
 			timezone = frappe.parse_json(account_request_geo_data).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
