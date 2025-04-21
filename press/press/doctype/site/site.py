@@ -489,7 +489,7 @@ class Site(Document, TagHelpers):
 
 			# Don't allow free plan for non-system managers
 			if "System Manager" not in frappe.get_roles():
-				is_plan_free = plan.price_inr == 0 or plan.price_usd == 0
+				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not plan.dedicated_server_plan
 				if is_plan_free:
 					frappe.throw("You can't select a free plan!")
 
