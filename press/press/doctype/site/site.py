@@ -507,7 +507,7 @@ class Site(Document, TagHelpers):
 				)
 
 			# If site is on dedicated server, set unlimited plan
-			elif not is_dedicated_server_plan and not is_site_on_public_server:
+			elif not plan.dedicated_server_plan and not is_site_on_public_server:
 				self.subscription_plan = frappe.db.get_value(
 					"Site Plan",
 					{
