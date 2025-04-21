@@ -240,7 +240,7 @@ def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
 		certificate.name,
 		{
 			"status": "Failure",
-			"error": repr(e),
+			"error": str(e),
 			"retry_count": certificate.retry_count + 1,
 		},
 	)

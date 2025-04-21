@@ -59,6 +59,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup PySpy'),
+				'setup_pyspy',
+				false,
+				frm.doc.is_server_setup && !frm.doc.is_pyspy_setup,
+			],
+			[
 				__('Prepare Server'),
 				'prepare_server',
 				true,
@@ -139,6 +145,12 @@ frappe.ui.form.on('Server', {
 			[
 				__('Show Agent Password'),
 				'show_agent_password',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Show Agent Version'),
+				'show_agent_version',
 				false,
 				frm.doc.is_server_setup,
 			],

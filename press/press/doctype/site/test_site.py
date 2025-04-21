@@ -43,6 +43,7 @@ def create_test_bench(
 	server: str | None = None,
 	apps: list[dict] | None = None,
 	creation: datetime | None = None,
+	public_server: bool = False,
 ) -> "Bench":
 	"""
 	Create test Bench doc.
@@ -57,7 +58,7 @@ def create_test_bench(
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
-		server = create_test_server(proxy_server.name, database_server.name).name
+		server = create_test_server(proxy_server.name, database_server.name, public=public_server).name
 
 	if not group:
 		app = create_test_app()
@@ -98,7 +99,6 @@ def create_test_site(
 	remote_public_file=None,
 	remote_private_file=None,
 	remote_config_file=None,
-	backup_time=None,
 	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
@@ -109,7 +109,7 @@ def create_test_site(
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
-		bench = create_test_bench(server=server)
+		bench = create_test_bench(server=server, public_server=kwargs.get("public_server", False))
 	else:
 		bench = frappe.get_doc("Bench", bench)
 	group = frappe.get_doc("Release Group", bench.group)
@@ -137,7 +137,6 @@ def create_test_site(
 	site.update(kwargs)
 	site.insert()
 	site.db_set("creation", creation)
-	site.db_set("backup_time", backup_time)
 	site.reload()
 	return site
 

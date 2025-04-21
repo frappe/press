@@ -176,8 +176,7 @@ export default {
 				onSuccess(doc) {
 					if (
 						doc.status == 'Wait for Site' ||
-						doc.status == 'Completing Setup Wizard' ||
-						doc.status == 'Adding Domain'
+						doc.status == 'Prefilling Setup Wizard'
 					) {
 						this.$resources.siteRequest.getProgress.reload();
 					}
@@ -192,8 +191,20 @@ export default {
 							};
 						},
 						onSuccess: (data) => {
+							const currentStepMap = {
+								'Wait for Site': 'Creating your site',
+								'New Site': 'Creating your site',
+								'Prefilling Setup Wizard': 'Setting up your site',
+								'Update Site Configuration': 'Setting up your site',
+								'Enable Scheduler': 'Setting up your site',
+								'Bench Setup NGINX': 'Setting up your site',
+								'Reload NGINX': 'Setting up your site',
+							};
+
 							this.currentBuildStep =
-								data.current_step || this.currentBuildStep;
+								currentStepMap[data.current_step] ||
+								data.current_step ||
+								this.currentBuildStep;
 							this.progressCount += 1;
 
 							if (
@@ -211,12 +222,7 @@ export default {
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
-						onSuccess(data) {
-							const sid = data;
-							const redirectRoute =
-								this.$resources?.saasProduct?.doc?.redirect_to_after_login ??
-								'/desk';
-							const loginURL = `https://${this.$resources.siteRequest.doc.domain}${redirectRoute}?sid=${sid}`;
+						onSuccess(loginURL) {
 							window.open(loginURL, '_blank');
 						},
 					},
