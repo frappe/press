@@ -1845,6 +1845,7 @@ class Site(Document, TagHelpers):
 		method = "frappe.desk.page.setup_wizard.setup_wizard.initialize_system_settings_and_user"
 		params = {"system_settings_data": system_settings_payload, "user_data": user_payload}
 		conn.post_api(method, params)
+		self.db_set("additional_system_user_created", 1)
 
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
