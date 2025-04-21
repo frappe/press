@@ -3,10 +3,10 @@
 
 
 """
-- Take cognizance of deploy candidate bench and deploy as well (get_Deploy_bench_candidate).
-- For all deploy candidate make a deploy candidate build (create_deploy_candidate_build).
+- Take cognizance of deploy candidate bench and deploy as well (get_deploy_bench_candidate).
+- For all deploy candidate make a deploy candidate build copied all build fields into deploy candidate build (create_deploy_candidate_build).
 - Copy all build steps from deploy candidate to deploy candidate build (update_build_step_parent).
-
+- Copy deploy candidate build name to all deploy and bench associated with it (add_deploy_and_bench_to_build).
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 	return (
 		frappe.qb.from_(DeployCandidate)
 		.select(
-			(DeployCandidate.id).as_("deploy_candidate"),
+			(DeployCandidate.name).as_("deploy_candidate"),
 			(DeployCandidate.group).as_("deploy_candidate_group"),
 			(DeployCandidate.team).as_("deploy_candidate_team"),
 			(DeployCandidate.status).as_("deploy_candidate_status"),
@@ -68,7 +68,7 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 	"""Create deploy candidate build for each deploy candidate"""
 	deploy_candidate_build = frappe.new_doc(
 		"Deploy Candidate Build",
-		{
+		**{
 			"deploy_candidate": deploy_candidate["deploy_candidate"],
 			"group": deploy_candidate["deploy_candidate_group"],
 			"team": deploy_candidate["deploy_candidate_team"],
@@ -79,6 +79,7 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 			"docker_image": deploy_candidate["deploy_candidate_docker_image"],
 			"build_output": deploy_candidate["deploy_candidate_build_output"],
 			"build_error": deploy_candidate["deploy_candidate_build_error"],
+			"run_after_insert": False,
 		},
 	).insert(ignore_permissions=True)
 	return deploy_candidate_build.name
@@ -103,7 +104,7 @@ def add_deploy_and_bench_to_build(bench_name: str, deploy_name: str, deploy_cand
 	deploy = None
 
 	if bench_name:
-		bench = frappe.get_doc("Bench", bench)
+		bench = frappe.get_doc("Bench", bench_name)
 		bench.build = deploy_candidate_build_name
 		bench.save()
 
@@ -113,8 +114,9 @@ def add_deploy_and_bench_to_build(bench_name: str, deploy_name: str, deploy_cand
 		deploy.save()
 
 
-def main():
+def execute():
 	deploy_candidates_info = get_deploy_bench_candidate()
+	print("Number of deploy candidate builds before migration: ", {frappe.db.count("Deploy Candidate Build")})
 
 	for deploy_candidate_info in deploy_candidates_info:
 		deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
@@ -123,6 +125,5 @@ def main():
 			deploy_candidate_info["bench"], deploy_candidate_info["deploy"], deploy_candidate_build_name
 		)
 
-
-if __name__ == "__main__":
-	main()
+	frappe.db.commit()
+	print("Number of deploy candidate builds post migration: ", {frappe.db.count("Deploy Candidate Build")})
