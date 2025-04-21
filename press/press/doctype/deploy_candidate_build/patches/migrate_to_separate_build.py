@@ -55,6 +55,7 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 			(Bench.name).as_("bench"),
 			(Deploy.name).as_("deploy"),
 		)
+		.where(DeployCandidate.build_output.isnotnull())
 		.join(Bench)
 		.on(Bench.candidate == DeployCandidate.name)
 		.join(Deploy)
@@ -121,3 +122,7 @@ def main():
 		add_deploy_and_bench_to_build(
 			deploy_candidate_info["bench"], deploy_candidate_info["deploy"], deploy_candidate_build_name
 		)
+
+
+if __name__ == "__main__":
+	main()
