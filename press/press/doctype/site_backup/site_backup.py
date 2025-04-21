@@ -127,6 +127,9 @@ class SiteBackup(Document):
 		if self.physical and self.offsite:
 			frappe.throw("Physical and offsite logical backups cannot be taken together")
 
+		if self.deactivate_site_during_backup and not self.physical:
+			frappe.throw("Site deactivation should be used for physical backups only")
+
 	def before_insert(self):
 		if getattr(self, "force", False):
 			if self.physical:

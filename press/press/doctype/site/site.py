@@ -1012,7 +1012,8 @@ class Site(Document, TagHelpers):
 
 		if frappe.db.get_single_value("Press Settings", "disable_physical_backup"):
 			frappe.throw(_("Physical backup is disabled system wide. Please try again later."))
-		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=True)
+		# Site deactivation required only for physical backup
+		return self.backup(with_files=with_files, physical=physical, deactivate_site_during_backup=physical)
 
 	@frappe.whitelist()
 	def backup(
@@ -3375,9 +3376,8 @@ def process_add_domain_job_update(job):
 	if not records:
 		return
 
-	if job.status in ["Success", "Pending", "Running"]:
-		# we are optimistically updating the status to site created as the add domain job rarely fails
-		product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+	product_trial_request = frappe.get_doc("Product Trial Request", records[0].name, for_update=True)
+	if job.status == "Success":
 		if product_trial_request.status == "Site Created":
 			return
 
@@ -3556,6 +3556,7 @@ def process_reinstall_site_job_update(job):
 		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "setup_wizard_complete", 0)
+		frappe.db.set_value("Site", job.site, "database_name", None)
 
 
 def process_migrate_site_job_update(job):
@@ -3699,6 +3700,7 @@ def process_restore_tables_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
+			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
 
 

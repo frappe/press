@@ -825,8 +825,13 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def update_site_status(self, server, site, status, skip_reload=False):
-		data = {"status": status, "skip_reload": skip_reload}
+	def update_site_status(self, server: str, site: str, status, skip_reload=False):
+		extra_domains = frappe.get_all(
+			"Site Domain",
+			{"site": site, "tls_certificate": ("is", "not set"), "status": "Active", "domain": ("!=", site)},
+			pluck="domain",
+		)
+		data = {"status": status, "skip_reload": skip_reload, "extra_domains": extra_domains}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -952,12 +957,12 @@ class Agent:
 		if not agent_job:
 			raise
 
-		reason = status_code = None
+		status_code = getattr(result, "status_code", "Unknown")
 		with suppress(TypeError, ValueError):
 			reason = json.dumps(result.json(), indent=4, sort_keys=True) if result else None
 
 		message = f"""
-Status Code: {status_code or "Unknown"}\n
+Status Code: {status_code}\n
 Response: {reason or getattr(result, "text", "Unknown")}
 """
 		self.log_failure_reason(agent_job, message)
