@@ -96,12 +96,15 @@ def update_build_step_parent(deploy_candidate_name: str, deploy_candidate_build_
 	doc_updates = {}
 	build_steps = frappe.get_all(
 		"Deploy Candidate Build Step",
-		{"parent": deploy_candidate_name, "parenttype": "Deploy Candidate Build"},
+		{"parent": deploy_candidate_name},
 		pluck="name",
 	)
 
 	for build_step in build_steps:
-		doc_updates[build_step] = {"parent": deploy_candidate_build_name}
+		doc_updates[build_step] = {
+			"parent": deploy_candidate_build_name,
+			"parenttype": "Deploy Candidate Build",
+		}
 
 	frappe.db.bulk_update("Deploy Candidate Build Step", doc_updates)
 

@@ -1058,7 +1058,7 @@ class DeployCandidateBuild(Document):
 		self.pre_build()
 
 	def after_insert(self):
-		if self.status != Status.SCHEDULED.value:
+		if not frappe.flags.in_patch and self.status != Status.SCHEDULED.value:
 			self.set_status(Status.DRAFT)
 			self.pre_build()
 
