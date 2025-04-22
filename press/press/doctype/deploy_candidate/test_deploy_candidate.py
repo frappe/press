@@ -16,7 +16,6 @@ from press.press.doctype.app_release.test_app_release import create_test_app_rel
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -50,21 +49,6 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 	return group.create_deploy_candidate()
 
 
-def create_test_deploy_candidate_build(
-	deploy_candidate: ReleaseGroup, no_build: bool = False, no_push: bool = False, no_cache: bool = False
-) -> DeployCandidateBuild:
-	deploy_candidate_build: DeployCandidateBuild = frappe.get_doc(
-		{
-			"doctype": "Deploy Candidate Build",
-			"deploy_candidate": deploy_candidate.name,
-			"no_build": no_build,
-			"no_push": no_push,
-			"no_cache": no_cache,
-		}
-	)
-	return deploy_candidate_build
-
-
 @patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestDeployCandidate(unittest.TestCase):
@@ -77,7 +61,7 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.set_user("Administrator")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidateBuild, "_build", new=Mock())
+	@patch.object(DeployCandidate, "_build", new=Mock())
 	def test_if_new_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if new press admin team user can pre build
@@ -89,14 +73,13 @@ class TestDeployCandidate(unittest.TestCase):
 		group.db_set("team", self.team.name)
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
-		deploy_candidate_build = create_test_deploy_candidate_build(deploy_candidate, no_build=True)
 		try:
-			deploy_candidate_build.insert()
+			deploy_candidate.pre_build(method="_build", no_build=True)
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidateBuild, "_build", new=Mock())
+	@patch.object(DeployCandidate, "_build", new=Mock())
 	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
 		Test if old style press admin team can pre build
@@ -109,11 +92,22 @@ class TestDeployCandidate(unittest.TestCase):
 		frappe.rename_doc("Team", self.team.name, self.user)
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
-		deploy_candidate_build = create_test_deploy_candidate_build(deploy_candidate, no_build=True)
 		try:
-			deploy_candidate_build.insert()
+			deploy_candidate.pre_build(method="_build", no_build=True)
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_first_deploy_creates_draft_deploy_candidate(self, mock_enqueue_doc, mock_commit):
+		"""
+		Test if first deploy creates Deploy Candidate doc
+		"""
+		app = create_test_app()
+		source = create_test_app_source("Nightly", app)
+		create_test_app_release(source)
+		group = create_test_release_group([app])
+		candidate = group.create_deploy_candidate()
+		self.assertEqual(candidate.status, "Draft")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_empty_apps_creates_deploy_candidate_with_same_release(

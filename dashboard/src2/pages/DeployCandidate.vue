@@ -116,7 +116,7 @@ export default {
 		deploy() {
 			return {
 				type: 'document',
-				doctype: 'Deploy Candidate Build',
+				doctype: 'Deploy Candidate',
 				name: this.id,
 				transform: this.transformDeploy,
 			};
@@ -124,17 +124,12 @@ export default {
 		errors() {
 			return {
 				type: 'list',
-				cache: [
-					'Press Notification',
-					'Error',
-					'Deploy Candidate Build',
-					this.id,
-				],
+				cache: ['Press Notification', 'Error', 'Deploy Candidate', this.id],
 				doctype: 'Press Notification',
 				auto: true,
 				fields: ['title', 'name'],
 				filters: {
-					document_type: 'Deploy Candidate Build',
+					document_type: 'Deploy Candidate',
 					document_name: this.id,
 					is_actionable: true,
 					class: 'Error',
@@ -144,7 +139,7 @@ export default {
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Deploy Candidate Build', this.id);
+		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
 		this.$socket.on(`bench_deploy:${this.id}:steps`, (data) => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
 				this.$resources.deploy.doc.build_steps = this.transformDeploy({
@@ -163,7 +158,7 @@ export default {
 		});
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate Build', this.id);
+		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate', this.id);
 		this.$socket.off(`bench_deploy:${this.id}:steps`);
 	},
 	computed: {

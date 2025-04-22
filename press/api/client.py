@@ -79,7 +79,6 @@ ALLOWED_DOCTYPES = [
 	"Mpesa Payment Record",
 	"Partner Certificate",
 	"Partner Payment Payout",
-	"Deploy Candidate Build",
 ]
 
 ALLOWED_DOCTYPES_FOR_SUPPORT = [
