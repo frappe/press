@@ -48,6 +48,7 @@
   "erpnext_api_secret",
   "column_break_38",
   "frappeio_authentication_section",
+  "disable_frappe_auth",
   "frappe_url",
   "frappeio_api_key",
   "column_break_39",
@@ -1419,11 +1420,17 @@
    "fieldname": "max_failed_backup_attempts_in_a_day",
    "fieldtype": "Int",
    "label": "Max Failed Backup Attempts In A Day"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_frappe_auth",
+   "fieldtype": "Check",
+   "label": "Disable Frappe Auth"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-04-10 16:23:12.109443",
+ "modified": "2025-04-18 16:28:20.736910",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
