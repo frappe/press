@@ -451,7 +451,6 @@ class Team(Document):
 
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
-		self.validate_partnership_date()
 		self.set_notification_emails()
 
 		if (
@@ -462,20 +461,6 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
-	def validate_partnership_date(self):
-		if self.erpnext_partner or not self.partnership_date:
-			return
-
-		if partner_email := self.partner_email:
-			frappe_partnership_date = frappe.db.get_value(
-				"Team",
-				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
-				"frappe_partnership_date",
-			)
-			if frappe_partnership_date and frappe_partnership_date > frappe.utils.getdate(
-				self.partnership_date
-			):
-				frappe.throw("Partnership date cannot be less than the partnership date of the partner")
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
