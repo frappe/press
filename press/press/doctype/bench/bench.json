@@ -16,7 +16,6 @@
   "cluster",
   "deploy_section",
   "candidate",
-  "build",
   "resetting_bench",
   "last_inplace_update_failed",
   "column_break_gxqm",
@@ -366,17 +365,10 @@
    "fieldtype": "Check",
    "label": "Last In Place Update Failed",
    "read_only": 1
-  },
-  {
-   "fieldname": "build",
-   "fieldtype": "Link",
-   "label": "Build",
-   "options": "Deploy Candidate Build",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-04-18 10:14:16.109922",
+ "modified": "2024-10-07 11:05:42.340197",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -407,7 +399,6 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

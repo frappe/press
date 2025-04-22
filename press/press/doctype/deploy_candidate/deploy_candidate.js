@@ -3,47 +3,83 @@
 
 frappe.ui.form.on('Deploy Candidate', {
 	refresh: function (frm) {
+		frm.add_web_link(
+			`/dashboard/groups/${frm.doc.group}/deploys/${frm.doc.name}`,
+			'Visit Dashboard',
+		);
+
 		frm.fields_dict['apps'].grid.get_field('app').get_query = function (doc) {
 			return {
 				query: 'press.press.doctype.deploy_candidate.deploy_candidate.desk_app',
 				filters: { release_group: doc.group },
 			};
 		};
-		set_handler(
-			frm,
-			'Complete',
-			'build',
-			{ no_push: false, no_build: false, no_cache: false },
-			'Build',
-		);
-		set_handler(
-			frm,
-			'Generate Context',
-			'build',
-			{ no_push: true, no_build: true, no_cache: false },
-			'Build',
-		);
-		set_handler(
-			frm,
-			'Without Cache',
-			'build',
-			{ no_push: false, no_build: false, no_cache: true },
-			'Build',
-		);
-		set_handler(
-			frm,
-			'Without Push',
-			'build',
-			{ no_push: true, no_build: false, no_cache: false },
-			'Build',
-		);
-		set_handler(
-			frm,
-			'Schedule Build and Deploy',
-			'schedule_build_and_deploy',
-			{ run_now: false },
-			'Deploy',
-		);
+
+		if (frm.doc.status === 'Success') {
+			set_handler(frm, 'Deploy', 'deploy', {}, 'Deploy');
+		}
+
+		if (['Draft', 'Failure', 'Success'].includes(frm.doc.status)) {
+			set_handler(
+				frm,
+				'Complete',
+				'build',
+				{ no_push: false, no_build: false, no_cache: false },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Generate Context',
+				'build',
+				{ no_push: true, no_build: true, no_cache: false },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Without Cache',
+				'build',
+				{ no_push: false, no_build: false, no_cache: true },
+				'Build',
+			);
+			set_handler(
+				frm,
+				'Without Push',
+				'build',
+				{ no_push: true, no_build: false, no_cache: false },
+				'Build',
+			);
+			set_handler(frm, 'Redeploy', 'redeploy', { no_cache: false }, 'Deploy');
+			set_handler(
+				frm,
+				'Redeploy (No Cache)',
+				'redeploy',
+				{ no_cache: true },
+				'Deploy',
+			);
+			set_handler(
+				frm,
+				'Schedule Build and Deploy',
+				'schedule_build_and_deploy',
+				{ run_now: false },
+				'Deploy',
+			);
+		}
+
+		// Build already running
+		else {
+			set_handler(frm, 'Stop and Fail', 'stop_and_fail', {}, 'Build');
+			set_handler(frm, 'Fail and Redeploy', 'fail_and_redeploy', {}, 'Deploy');
+		}
+
+		if (frm.doc.status !== 'Draft') {
+			set_handler(
+				frm,
+				'Cleanup Directory',
+				'cleanup_build_directory',
+				{},
+				'Build',
+			);
+		}
 	},
 });
 
@@ -71,19 +107,6 @@ function get_handler(frm, method, args) {
 				indicator: 'green',
 				message: __(`Duplicate {0} created and redeploy triggered.`, [
 					`<a href="/app/deploy-candidate/${data?.message}">Deploy Candidate</a>`,
-				]),
-			});
-		}
-
-		if (
-			(method === 'build' || method === 'schedule_build_and_deploy') &&
-			data
-		) {
-			frappe.msgprint({
-				title: 'Deploy Candidate Build Created',
-				indicator: 'green',
-				message: __(`New {0} has been created`, [
-					`<a href="/app/deploy-candidate-build/${data.message}">Deploy Candidate Build</a>`,
 				]),
 			});
 		}

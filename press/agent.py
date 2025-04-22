@@ -1222,12 +1222,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return None
 
 	def run_build(self, data: dict):
-		reference_name = data.get("deploy_candidate_build")
+		reference_name = data.get("deploy_candidate")
 		return self.create_agent_job(
 			"Run Remote Builder",
 			"builder/build",
 			data=data,
-			reference_doctype="Deploy Candidate Build",
+			reference_doctype="Deploy Candidate",
 			reference_name=reference_name,
 		)
 

@@ -1,9 +1,7 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import annotations
-
-import typing
 
 import frappe
 from frappe.model.document import Document
@@ -11,9 +9,6 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
-
-if typing.TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 class Deploy(Document):
@@ -28,7 +23,6 @@ class Deploy(Document):
 		from press.press.doctype.deploy_bench.deploy_bench import DeployBench
 
 		benches: DF.Table[DeployBench]
-		build: DF.Link | None
 		candidate: DF.Link
 		group: DF.Link
 		staging: DF.Check
@@ -42,9 +36,9 @@ class Deploy(Document):
 		self.create_benches()
 
 	def create_benches(self):
-		deploy_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.candidate)
+		candidate = frappe.get_cached_doc("Deploy Candidate", self.candidate)
 		environment_variables = [
-			{"key": v.key, "value": v.value} for v in deploy_candidate.environment_variables
+			{"key": v.key, "value": v.value} for v in candidate.environment_variables
 		]
 
 		group = frappe.get_cached_doc("Release Group", self.group)
@@ -56,14 +50,12 @@ class Deploy(Document):
 			}
 			for v in group.mounts
 		]
+
 		for bench in self.benches:
-			docker_image = frappe.get_value("Deploy Candidate Build", {"name": self.build}, "docker_image")
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
 					"server": bench.server,
-					"build": self.build,
-					"docker_image": docker_image,
 					"group": self.group,
 					"candidate": self.candidate,
 					"workers": 1,

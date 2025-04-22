@@ -1,14 +1,13 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import annotations
-
 import re
 import typing
 from textwrap import dedent
-from typing import Protocol, TypedDict
+from typing import Optional, Protocol, TypedDict
 
 import frappe
+import frappe.utils
 
 from press.press.doctype.deploy_candidate.utils import (
 	BuildValidationError,
@@ -27,14 +26,16 @@ To handle an error:
 3. Update the details object with the correct values.
 """
 
-
-class Details(TypedDict):
-	title: str | None
-	message: str
-	traceback: str | None
-	is_actionable: bool
-	assistance_url: str | None
-
+Details = TypedDict(
+	"Details",
+	{
+		"title": Optional[str],
+		"message": str,
+		"traceback": Optional[str],
+		"is_actionable": bool,
+		"assistance_url": Optional[str],
+	},
+)
 
 # These strings are checked against the traceback or build_output
 MatchStrings = str | list[str]
@@ -46,7 +47,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -60,7 +60,8 @@ if typing.TYPE_CHECKING:
 			...
 
 	class WillFailChecker(Protocol):
-		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None: ...
+		def __call__(self, old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+			...
 
 	UserAddressableHandlerTuple = tuple[
 		MatchStrings,
@@ -230,7 +231,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 
 
 def create_build_failed_notification(
-	dc: "DeployCandidateBuild",
+	dc: "DeployCandidate",
 	exc: BaseException | None,
 ) -> bool:
 	"""
@@ -259,7 +260,9 @@ def create_build_failed_notification(
 	doc.insert()
 	frappe.db.commit()
 
-	frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": dc.team})
+	frappe.publish_realtime(
+		"press_notification", doctype="Press Notification", message={"team": dc.team}
+	)
 
 	return details["is_actionable"]
 
@@ -291,12 +294,12 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 			details["is_actionable"] = True
 			dc.error_key = get_error_key(strs)
 			break
-
-		details["title"] = default_title
-		details["message"] = default_message
-		details["traceback"] = tb
-		details["is_actionable"] = False
-		details["assistance_url"] = None
+		else:
+			details["title"] = default_title
+			details["message"] = default_message
+			details["traceback"] = tb
+			details["is_actionable"] = False
+			details["assistance_url"] = None
 
 	return details
 
@@ -343,7 +346,11 @@ def update_with_import_error(
 
 	details["title"] = "App installation failed due to invalid import"
 
-	lines = [line for line in dc.build_output.split("\n") if "ImportError: cannot import name" in line]
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ImportError: cannot import name" in line
+	]
 	invalid_import = None
 	if len(lines) > 1 and len(parts := lines[0].split("From")) > 1:
 		imported = parts[0].strip().split(" ")[-1][1:-1]
@@ -385,7 +392,11 @@ def update_with_module_not_found(
 
 	details["title"] = "App installation failed due to missing module"
 
-	lines = [line for line in dc.build_output.split("\n") if "ModuleNotFoundError: No module named" in line]
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ModuleNotFoundError: No module named" in line
+	]
 	missing_module = None
 	if len(lines) > 1:
 		missing_module = lines[0].split(" ")[-1][1:-1]
@@ -424,7 +435,11 @@ def update_with_dependency_not_found(
 
 	details["title"] = "App installation failed due to dependency not being found"
 
-	lines = [line for line in dc.build_output.split("\n") if "No matching distribution found for" in line]
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "No matching distribution found for" in line
+	]
 	missing_dep = None
 	if len(lines) > 1:
 		missing_dep = lines[0].split(" ")[-1]
@@ -589,7 +604,7 @@ def update_with_incompatible_node(
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
-	<p>{details["message"]}</p>
+	<p>{details['message']}</p>
 
 	<p><b>{app}</b> installation failed due to incompatible Node versions. {version}
 	Please set the correct Node Version on your Bench.</p>
@@ -604,7 +619,9 @@ def update_with_incompatible_node(
 	return True
 
 
-def check_incompatible_node(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_incompatible_node(
+	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
+) -> None:
 	old_node = old_dc.get_dependency_version("node")
 	new_node = new_dc.get_dependency_version("node")
 
@@ -638,7 +655,9 @@ def update_with_incompatible_python(
 	return True
 
 
-def check_incompatible_python(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_incompatible_python(
+	old_dc: "DeployCandidate", new_dc: "DeployCandidate"
+) -> None:
 	old_node = old_dc.get_dependency_version("python")
 	new_node = new_dc.get_dependency_version("python")
 
@@ -953,7 +972,6 @@ def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | No
 	for app in dc.apps:
 		if app.app == app_name:
 			return app
-	return None
 
 
 def fmt(message: str) -> str:
@@ -1001,16 +1019,14 @@ def get_ct_row(
 	match_value: str,
 	field: str,
 	ct_field: str,
-) -> Document | None:
+) -> Optional["Document"]:
 	ct = dc.get(field)
 	if not ct:
-		return None
+		return
 
 	for row in ct:
 		if row.get(ct_field) == match_value:
 			return row
-
-	return None
 
 
 def get_failed_step(dc: "DeployCandidate"):

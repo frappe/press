@@ -936,20 +936,20 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@cached_property
 	def last_dc_info(self) -> "LastDeployInfo | None":
-		DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
+		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (
-			frappe.qb.from_(DeployCandidateBuild)
-			.where(DeployCandidateBuild.group == self.name)
-			.select(DeployCandidateBuild.name, DeployCandidateBuild.status, DeployCandidateBuild.creation)
-			.orderby(DeployCandidateBuild.creation, order=frappe.qb.desc)
+			frappe.qb.from_(dc)
+			.where(dc.group == self.name)
+			.select(dc.name, dc.status, dc.creation)
+			.orderby(dc.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 
 		results = query.run(as_dict=True)
-		if results:
-			return results[0]
 
+		if len(results) > 0:
+			return results[0]
 		return None
 
 	@cached_property
@@ -957,12 +957,12 @@ class ReleaseGroup(Document, TagHelpers):
 		if not (name := (self.last_dc_info or {}).get("name")):
 			return []
 
-		Bench = frappe.qb.DocType("Bench")
+		b = frappe.qb.DocType("Bench")
 		query = (
-			frappe.qb.from_(Bench)
-			.where(Bench.candidate == name)
-			.select(Bench.name, Bench.status, Bench.creation)
-			.orderby(Bench.creation, order=frappe.qb.desc)
+			frappe.qb.from_(b)
+			.where(b.candidate == name)
+			.select(b.name, b.status, b.creation)
+			.orderby(b.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 		return query.run(as_dict=True)
@@ -1257,10 +1257,10 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_last_successful_candidate(self) -> "DeployCandidate":
 		return frappe.get_last_doc("Deploy Candidate", {"status": "Success", "group": self.name})
 
-	def get_last_deploy_candidate_build(self):
+	def get_last_deploy_candidate(self):
 		try:
 			dc: "DeployCandidate" = frappe.get_last_doc(
-				"Deploy Candidate Build",
+				"Deploy Candidate",
 				{
 					"status": ["!=", "Draft"],
 					"group": self.name,
