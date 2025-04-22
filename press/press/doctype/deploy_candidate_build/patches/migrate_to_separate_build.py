@@ -38,8 +38,9 @@ class CandidateInfo(typing.TypedDict):
 
 
 def get_deploy_bench_candidate() -> list[CandidateInfo]:
-	"""Fetch all deploy candidates and their corresponding bench and deploy"""
-	return (
+	"""Fetch all deploy candidates and their corresponding bench and deploy which don't have a build"""
+	without_build_candidates = []
+	deploy_candidates: list[CandidateInfo] = (
 		frappe.qb.from_(DeployCandidate)
 		.select(
 			(DeployCandidate.name).as_("deploy_candidate"),
@@ -52,15 +53,20 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 			(DeployCandidate.docker_image_tag).as_("deploy_candidate_docker_image_tag"),
 			(DeployCandidate.build_error).as_("deploy_candidate_build_error"),
 			(DeployCandidate.build_output).as_("deploy_candidate_build_output"),
-			(Bench.name).as_("bench"),
-			(Deploy.name).as_("deploy"),
 		)
-		.join(Bench)
-		.on(Bench.candidate == DeployCandidate.name)
-		.join(Deploy)
-		.on(Deploy.candidate == DeployCandidate.name)
+		.where(
+			DeployCandidate.status.notin(["Draft", "Scheduled"])
+		)  # We don't want to create a build for scheduled & draft deploy candidates
 		.run(as_dict=True)
 	)
+
+	for deploy_candidate in deploy_candidates:
+		if not frappe.get_value(
+			"Deploy Candidate Build", {"deploy_candidate": deploy_candidate["deploy_candidate"]}
+		):
+			without_build_candidates.append(deploy_candidate)
+
+	return without_build_candidates
 
 
 def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
@@ -81,6 +87,7 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 			"run_after_insert": False,
 		},
 	).insert(ignore_permissions=True)
+	add_build_to_deploy_and_bench(deploy_candidate["deploy_candidate"], deploy_candidate.name)
 	return deploy_candidate_build.name
 
 
@@ -88,7 +95,9 @@ def update_build_step_parent(deploy_candidate_name: str, deploy_candidate_build_
 	"""Copy build step parent to deploy candidate build"""
 	doc_updates = {}
 	build_steps = frappe.get_all(
-		"Deploy Candidate Build Step", {"parent": deploy_candidate_name}, pluck="name"
+		"Deploy Candidate Build Step",
+		{"parent": deploy_candidate_name, "parenttype": "Deploy Candidate Build"},
+		pluck="name",
 	)
 
 	for build_step in build_steps:
@@ -97,32 +106,17 @@ def update_build_step_parent(deploy_candidate_name: str, deploy_candidate_build_
 	frappe.db.bulk_update("Deploy Candidate Build Step", doc_updates)
 
 
-def add_deploy_and_bench_to_build(bench_name: str, deploy_name: str, deploy_candidate_build_name: str):
+def add_build_to_deploy_and_bench(deploy_candidate_name: str, deploy_candidate_build_name: str):
 	"""Add build to deploy and bench if they exist"""
-	bench = None
-	deploy = None
-
-	if bench_name:
-		bench = frappe.get_doc("Bench", bench_name)
-		bench.build = deploy_candidate_build_name
-		bench.save()
-
-	if deploy_name:
-		deploy = frappe.get_doc("Deploy", deploy_name)
-		deploy.build = deploy_candidate_build_name
-		deploy.save()
+	frappe.db.set_value("Deploy", {"candidate": deploy_candidate_name}, "build", deploy_candidate_build_name)
+	frappe.db.set_value("Bench", {"candidate": deploy_candidate_name}, "build", deploy_candidate_build_name)
 
 
 def execute():
 	deploy_candidates_info = get_deploy_bench_candidate()
-	print("Number of deploy candidate builds before migration: ", {frappe.db.count("Deploy Candidate Build")})
 
 	for deploy_candidate_info in deploy_candidates_info:
 		deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
 		update_build_step_parent(deploy_candidate_info["deploy_candidate"], deploy_candidate_build_name)
-		add_deploy_and_bench_to_build(
-			deploy_candidate_info["bench"], deploy_candidate_info["deploy"], deploy_candidate_build_name
-		)
 
 	frappe.db.commit()
-	print("Number of deploy candidate builds post migration: ", {frappe.db.count("Deploy Candidate Build")})
