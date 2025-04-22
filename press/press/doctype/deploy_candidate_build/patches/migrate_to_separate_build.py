@@ -160,7 +160,5 @@ def execute():
 			deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
 			update_build_step_parent(deploy_candidate_info["deploy_candidate"], deploy_candidate_build_name)
 
-		if is_valid_migration(deploy_candidates_info):
-			frappe.db.commit()
-		else:
+		if not is_valid_migration(deploy_candidates_info):
 			raise Exception("Migration Failed!")
