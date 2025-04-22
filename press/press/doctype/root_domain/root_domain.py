@@ -25,9 +25,10 @@ class RootDomain(Document):
 
 		aws_access_key_id: DF.Data | None
 		aws_secret_access_key: DF.Password | None
+		cf_api_token: DF.Password
+		cf_cred_path: DF.Data
 		default_cluster: DF.Link
-		default_proxy_server: DF.Link | None
-		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		dns_provider: DF.Literal["AWS Route 53", "Generic", "Cloudflare"]
 		team: DF.Link | None
 	# end: auto-generated types
 
