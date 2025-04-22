@@ -29,6 +29,8 @@
   "available_cpu",
   "available_memory",
   "available_disk",
+  "system_section",
+  "os_info",
   "nfs_section",
   "nfs_exports_directory",
   "nfs_mount_point",
@@ -108,6 +110,17 @@
    "read_only": 1
   },
   {
+   "fieldname": "system_section",
+   "fieldtype": "Section Break",
+   "label": "System Information"
+  },
+  {
+   "fieldname": "os_info",
+   "fieldtype": "Data",
+   "label": "Operating System",
+   "read_only": 1
+  },
+  {
    "fieldname": "nfs_section",
    "fieldtype": "Section Break",
    "label": "NFS Configuration",
@@ -166,19 +179,19 @@
    "fieldname": "total_cpu",
    "fieldtype": "Int",
    "label": "Total CPU",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "total_memory",
    "fieldtype": "Int",
    "label": "Total Memory (MB)",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "total_disk",
    "fieldtype": "Int",
    "label": "Total Disk (GB)",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "column_break_14",
@@ -187,17 +200,20 @@
   {
    "fieldname": "available_cpu",
    "fieldtype": "Int",
-   "label": "Available CPU"
+   "label": "Available CPU",
+   "reqd": 0
   },
   {
    "fieldname": "available_memory",
    "fieldtype": "Int",
-   "label": "Available Memory (MB)"
+   "label": "Available Memory (MB)",
+   "reqd": 0
   },
   {
    "fieldname": "available_disk",
    "fieldtype": "Int",
-   "label": "Available Disk (GB)"
+   "label": "Available Disk (GB)",
+   "reqd": 0
   },
   {
    "fieldname": "ssh_section",
@@ -213,7 +229,8 @@
   {
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP"
+   "label": "Private IP",
+   "reqd": 0
   },
   {
    "fieldname": "ssh_user",
@@ -236,7 +253,8 @@
   {
    "fieldname": "frappe_user_password",
    "fieldtype": "Password",
-   "label": "Frappe User Password"
+   "label": "Frappe User Password",
+   "reqd": 0
   },
   {
    "fieldname": "agent_password",

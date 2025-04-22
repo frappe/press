@@ -1,0 +1,88 @@
+---
+- name: Gather Facts from Bare Metal Host
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  
+  tasks:
+    - name: Collect system facts
+      setup:
+        gather_subset:
+          - hardware
+          - network
+          - virtual
+      register: host_facts
+    
+    - name: Collect CPU info
+      shell: lscpu
+      register: cpu_info
+      changed_when: false
+      
+    - name: Collect memory info
+      shell: free -m
+      register: memory_info
+      changed_when: false
+      
+    - name: Collect disk info
+      shell: df -h
+      register: disk_info
+      changed_when: false
+      
+    - name: Check for virtualization capability
+      shell: grep -E 'vmx|svm' /proc/cpuinfo
+      register: virt_capability
+      changed_when: false
+      failed_when: false
+      
+    - name: Check for KVM modules
+      shell: lsmod | grep kvm
+      register: kvm_modules
+      changed_when: false
+      failed_when: false
+      
+    - name: Check for NFS server capability
+      shell: command -v nfs-kernel-server || command -v nfs-utils
+      register: nfs_server_capability
+      changed_when: false
+      failed_when: false
+      
+    - name: Check if NFS server is running
+      shell: ps aux | grep -v grep | grep nfsd
+      register: nfs_server_running
+      changed_when: false
+      failed_when: false
+      
+    - name: Get active network interfaces
+      shell: ip -o addr show | grep 'inet ' | awk '{print $2 " " $4}'
+      register: network_interfaces
+      changed_when: false
+      failed_when: false
+      
+    - name: Debug system information
+      debug:
+        msg: 
+          - "CPU cores: {{ ansible_processor_vcpus }}"
+          - "Total memory (MB): {{ ansible_memtotal_mb }}"
+          - "Hostname: {{ ansible_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "VM capability: {{ 'Yes' if virt_capability.rc == 0 else 'No' }}"
+          - "KVM modules loaded: {{ 'Yes' if kvm_modules.rc == 0 else 'No' }}"
+          - "NFS server capability: {{ 'Yes' if nfs_server_capability.rc == 0 else 'No' }}"
+          - "NFS server running: {{ 'Yes' if nfs_server_running.rc == 0 else 'No' }}"
+    
+    - name: Set system facts in play_recap
+      set_fact:
+        ansible_facts:
+          ansible_processor_vcpus: "{{ ansible_processor_vcpus }}"
+          ansible_memtotal_mb: "{{ ansible_memtotal_mb }}"
+          ansible_hostname: "{{ ansible_hostname }}"
+          ansible_distribution: "{{ ansible_distribution }}"
+          ansible_distribution_version: "{{ ansible_distribution_version }}"
+          ansible_default_ipv4: "{{ ansible_default_ipv4 }}"
+          ansible_mounts: "{{ ansible_mounts }}"
+          vm_capability: "{{ virt_capability.rc == 0 }}"
+          kvm_modules_loaded: "{{ kvm_modules.rc == 0 }}"
+          nfs_server_capability: "{{ nfs_server_capability.rc == 0 }}"
+          nfs_server_running: "{{ nfs_server_running.rc == 0 }}"
+          network_interfaces: "{{ network_interfaces.stdout_lines | default([]) }}" 

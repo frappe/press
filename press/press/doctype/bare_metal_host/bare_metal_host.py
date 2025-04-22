@@ -11,6 +11,7 @@ from frappe.utils import get_url
 import re
 import requests
 from press.utils import log_error
+from press.utils.client import Client
 
 
 @frappe.whitelist()
@@ -77,60 +78,29 @@ class BareMetalHost(BaseServer):
         return None
 
     def validate(self):
-        self.initialize_resources()
+        # Only validate resources if they are already set
         if self.status == "Active":
             self.validate_resources()
-        # Remove problematic method calls that are causing errors
-        # if not self.is_new():
-        #     self.validate_api_url()
-        # self.validate_cloud_init_templates()
+        elif self.status == "Pending" or not self.status:
+            # For new hosts, we only need minimal validation
+            self._validate_minimal_fields()
 
-    def validate_api_url(self):
-        """
-        Validate the API URL for the host's agent.
-        i
-        For Active hosts, ensures the agent is properly accessible.
-        """
-        # This is a placeholder for future implementation
-        # Will validate the API URL for the host agent
-        pass
-
-    def validate_cloud_init_templates(self):
-        """
-        Validate any cloud-init templates associated with this host.
-        
-        This ensures proper configuration for VM provisioning when this host
-        is used as a VM provider.
-        """
-        # This is a placeholder for future implementation
-        # Will validate cloud-init templates for VM creation
-        pass
-
-    def initialize_resources(self):
-        """Initialize resource values if not set"""
-        # Convert all resource fields to integers to avoid comparison issues
-        self.total_cpu = int(self.total_cpu or 0)
-        self.total_memory = int(self.total_memory or 0)
-        self.total_disk = int(self.total_disk or 0)
-        
-        # Set available resources if not already set
-        if not self.available_cpu:
-            self.available_cpu = self.total_cpu
-        else:
-            self.available_cpu = int(self.available_cpu)
-            
-        if not self.available_memory:
-            self.available_memory = self.total_memory
-        else:
-            self.available_memory = int(self.available_memory)
-            
-        if not self.available_disk:
-            self.available_disk = self.total_disk
-        else:
-            self.available_disk = int(self.available_disk)
+    def _validate_minimal_fields(self):
+        """Ensure the minimal required fields for provisioning are set"""
+        if not self.hostname:
+            frappe.throw("Hostname is required")
+        if not self.ip:
+            frappe.throw("IP is required")
+        if not self.ssh_user:
+            frappe.throw("SSH User is required")
+        if not self.ssh_port:
+            frappe.throw("SSH Port is required")
 
     def validate_resources(self):
         """Validate resource configurations"""
+        # Initialize resources if not already set
+        self.initialize_resources()
+        
         # Validate total resources
         if not self.total_cpu or self.total_cpu <= 0:
             frappe.throw("Total CPU must be greater than 0")
@@ -154,6 +124,29 @@ class BareMetalHost(BaseServer):
             self.available_memory = 0
         if self.available_disk < 0:
             self.available_disk = 0
+
+    def initialize_resources(self):
+        """Initialize resource values if not set"""
+        # Convert all resource fields to integers to avoid comparison issues
+        self.total_cpu = int(self.total_cpu or 0)
+        self.total_memory = int(self.total_memory or 0)
+        self.total_disk = int(self.total_disk or 0)
+        
+        # Set available resources if not already set
+        if not self.available_cpu:
+            self.available_cpu = self.total_cpu
+        else:
+            self.available_cpu = int(self.available_cpu)
+            
+        if not self.available_memory:
+            self.available_memory = self.total_memory
+        else:
+            self.available_memory = int(self.available_memory)
+            
+        if not self.available_disk:
+            self.available_disk = self.total_disk
+        else:
+            self.available_disk = int(self.available_disk)
 
     def autoname(self):
         """Override to prevent domain appending for bare metal hosts"""
@@ -182,27 +175,182 @@ class BareMetalHost(BaseServer):
         return self._provision_host()
 
     def _provision_host(self):
-        """Run ansible playbook to provision the host with agent"""
-        # Create a server-like object with the properties Ansible needs
-        class ServerObj:
-            def __init__(self, doc):
-                self.name = doc.name
-                self.ip = doc.ip
-                self.doctype = doc.doctype
+        """Run ansible playbook to provision the host with agent and gather system information"""
+        # First, set status to Installing
+        self.db_set("status", "Installing")
         
-        server_obj = ServerObj(self)
-        
+        # Run the vm-host playbook to set up the agent
         ansible = Ansible(
-            playbook="agent.yml",
-            server=server_obj,  # Pass the server-like object
-            user=self.ssh_user or "root",
-            port=self.ssh_port or 22,
+            playbook="vm-host.yml",
+            server=self,
+            user=self.ssh_user,
+            port=self.ssh_port,
+            variables={},
         )
         play = ansible.run()
+        
+        # If the vm-host playbook succeeds, run the gather_facts playbook for detailed system info
         if play.status == "Success":
-            self.db_set("status", "Installing")
-            frappe.msgprint("Agent successfully installed on the host. The host is now being provisioned.")
+            try:
+                # Run gather_facts playbook for comprehensive system information
+                facts_ansible = Ansible(
+                    playbook="gather_facts.yml",
+                    server=self,
+                    user=self.ssh_user,
+                    port=self.ssh_port,
+                    variables={},
+                )
+                facts_play = facts_ansible.run()
+                
+                if facts_play.status == "Success" and hasattr(facts_play, 'play_recap'):
+                    # Extract system facts from ansible play_recap
+                    if hasattr(facts_play.play_recap, 'ansible_facts'):
+                        facts = facts_play.play_recap.ansible_facts
+                        
+                        # Update CPU info if available
+                        if facts.get('ansible_processor_vcpus'):
+                            self.db_set("total_cpu", int(facts.get('ansible_processor_vcpus')))
+                            self.db_set("available_cpu", int(facts.get('ansible_processor_vcpus')))
+                            
+                        # Update memory info if available
+                        if facts.get('ansible_memtotal_mb'):
+                            self.db_set("total_memory", int(facts.get('ansible_memtotal_mb')))
+                            self.db_set("available_memory", int(facts.get('ansible_memtotal_mb')))
+                            
+                        # Update OS info if available
+                        if facts.get('ansible_distribution') and facts.get('ansible_distribution_version'):
+                            os_info = f"{facts.get('ansible_distribution')} {facts.get('ansible_distribution_version')}"
+                            self.db_set("os_info", os_info)
+                            
+                        # Update IP info if available
+                        if facts.get('ansible_default_ipv4') and facts.get('ansible_default_ipv4').get('address'):
+                            # Only update private_ip if not already set
+                            if not self.private_ip:
+                                self.db_set("private_ip", facts.get('ansible_default_ipv4').get('address'))
+                                
+                        # Check for available disk if ansible_mounts is available
+                        if facts.get('ansible_mounts'):
+                            # Sum up the available space from all mount points
+                            total_available_gb = 0
+                            for mount in facts.get('ansible_mounts', []):
+                                if mount.get('size_available'):
+                                    # Convert bytes to GB
+                                    available_gb = mount.get('size_available') / (1024 * 1024 * 1024)
+                                    total_available_gb += available_gb
+                                    
+                            if total_available_gb > 0:
+                                self.db_set("available_disk", int(total_available_gb))
+                                # If total_disk isn't set yet, calculate from used + available
+                                if not self.total_disk:
+                                    total_used_gb = 0
+                                    for mount in facts.get('ansible_mounts', []):
+                                        if mount.get('size_total') and mount.get('size_available'):
+                                            used_gb = (mount.get('size_total') - mount.get('size_available')) / (1024 * 1024 * 1024)
+                                            total_used_gb += used_gb
+                                    
+                                    self.db_set("total_disk", int(total_available_gb + total_used_gb))
+                        
+                        # Check VM capabilities
+                        if facts.get('vm_capability') or facts.get('kvm_modules_loaded'):
+                            self.db_set("is_vm_host", 1)
+                            frappe.msgprint("VM/KVM capability detected. This host can be configured as a VM host.")
+                            
+                        # Check NFS server capabilities 
+                        if facts.get('nfs_server_capability'):
+                            frappe.msgprint("NFS server capability detected. This host can be configured as an NFS server.")
+                            
+                        # If NFS server is already running
+                        if facts.get('nfs_server_running'):
+                            self.db_set("is_nfs_server", 1)
+                            frappe.msgprint("NFS server detected as running on this host.")
+                            
+                        # Display network interfaces for reference
+                        if facts.get('network_interfaces'):
+                            interfaces_str = "\n".join(facts.get('network_interfaces', []))
+                            frappe.msgprint(f"Network interfaces detected:\n{interfaces_str}")
+            except Exception as e:
+                frappe.log_error(f"Error gathering advanced system information: {str(e)}", server=self.as_dict())
+                # Continue with basic info gathering even if advanced gathering fails
+                
+        # Retrieve basic system information as a fallback
+        self._retrieve_system_info()
+        
+        # Mark as active
+        self.db_set("status", "Active")
         return play
+    
+    def _retrieve_system_info(self):
+        """Retrieve comprehensive system information via SSH and update fields"""
+        try:
+            client = Client(self.name)
+            
+            # Get CPU count
+            cpu_count = client.execute("nproc --all", _raise=False)
+            if cpu_count and cpu_count.stdout:
+                self.db_set("total_cpu", int(cpu_count.stdout.strip()))
+                # Set available_cpu same as total_cpu initially
+                self.db_set("available_cpu", int(cpu_count.stdout.strip()))
+                
+            # Get memory in MB
+            memory_cmd = "free -m | awk '/^Mem:/ {print $2}'"
+            memory = client.execute(memory_cmd, _raise=False)
+            if memory and memory.stdout:
+                total_memory = int(memory.stdout.strip())
+                self.db_set("total_memory", total_memory)
+                # Set available_memory same as total_memory initially
+                self.db_set("available_memory", total_memory)
+                
+            # Get disk space in GB
+            disk_cmd = "df -BG --total | grep total | awk '{print $2}' | sed 's/G//'"
+            disk = client.execute(disk_cmd, _raise=False)
+            if disk and disk.stdout:
+                total_disk = int(float(disk.stdout.strip()))
+                self.db_set("total_disk", total_disk)
+                # Set available_disk same as total_disk initially
+                self.db_set("available_disk", total_disk)
+                
+            # Get OS information
+            os_cmd = "cat /etc/os-release | grep '^PRETTY_NAME' | cut -d'\"' -f2"
+            os_info = client.execute(os_cmd, _raise=False)
+            if os_info and os_info.stdout:
+                frappe.db.set_value("Bare Metal Host", self.name, "os_info", os_info.stdout.strip())
+                
+            # Get private IP if not already set
+            if not self.private_ip:
+                private_ip_cmd = "ip -4 addr show | grep -v '127.0.0.1' | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1 | head -n1"
+                private_ip = client.execute(private_ip_cmd, _raise=False)
+                if private_ip and private_ip.stdout:
+                    self.db_set("private_ip", private_ip.stdout.strip())
+                    
+            # Check if this system can be an NFS server
+            nfs_check = client.execute("command -v nfs-kernel-server || command -v nfs-utils", _raise=False)
+            if nfs_check and nfs_check.stdout:
+                # NFS server capability exists, check for exports directory
+                exports_dir = self.nfs_exports_directory or "/exports/vm_storage"
+                dir_check = client.execute(f"[ -d {exports_dir} ] && echo 'exists' || echo 'not found'", _raise=False)
+                if dir_check and dir_check.stdout and 'exists' in dir_check.stdout:
+                    # Directory exists, suggest this can be an NFS server
+                    frappe.msgprint(f"NFS exports directory found at {exports_dir}. This host can be configured as an NFS server.")
+            
+            # Check if this is already an NFS server
+            if not self.is_nfs_server:
+                nfs_proc = client.execute("ps aux | grep -v grep | grep nfsd", _raise=False)
+                if nfs_proc and nfs_proc.stdout and len(nfs_proc.stdout.strip()) > 0:
+                    frappe.msgprint("NFS server processes detected. This host appears to be running an NFS server.")
+                    
+            # Get VM capability
+            kvm_check = client.execute("lsmod | grep kvm", _raise=False)
+            if kvm_check and kvm_check.stdout and len(kvm_check.stdout.strip()) > 0:
+                # Host has KVM capability
+                self.db_set("is_vm_host", 1)
+                frappe.msgprint("KVM capability detected. This host can be configured as a VM host.")
+                
+            frappe.db.commit()
+            frappe.msgprint("System information retrieved successfully.")
+            
+        except Exception as e:
+            frappe.log_error(f"Error retrieving system information: {str(e)}", server=self.as_dict())
+            frappe.msgprint(f"Error retrieving system information: {str(e)}", indicator="red")
 
     @frappe.whitelist()
     def prepare_server(self):
