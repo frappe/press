@@ -33,11 +33,9 @@ class CandidateInfo(typing.TypedDict):
 	deploy_candidate_docker_image_tag: str
 	deploy_candidate_build_output: str
 	deploy_candidate_build_error: str
-	bench: str
-	deploy: str
 
 
-def get_deploy_bench_candidate() -> list[CandidateInfo]:
+def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
 	"""Fetch all deploy candidates and their corresponding bench and deploy which don't have a build"""
 	without_build_candidates = []
 	deploy_candidates: list[CandidateInfo] = (
@@ -54,6 +52,8 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 			(DeployCandidate.build_error).as_("deploy_candidate_build_error"),
 			(DeployCandidate.build_output).as_("deploy_candidate_build_output"),
 		)
+		.offset(offset)
+		.limit(limit)
 		.where(
 			DeployCandidate.status.notin(["Draft", "Scheduled"])
 		)  # We don't want to create a build for scheduled & draft deploy candidates
@@ -62,7 +62,8 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 
 	for deploy_candidate in deploy_candidates:
 		if not frappe.get_value(
-			"Deploy Candidate Build", {"deploy_candidate": deploy_candidate["deploy_candidate"]}
+			"Deploy Candidate Build",
+			{"deploy_candidate": deploy_candidate["deploy_candidate"]},
 		):
 			without_build_candidates.append(deploy_candidate)
 
@@ -115,11 +116,51 @@ def add_build_to_deploy_and_bench(deploy_candidate_name: str, deploy_candidate_b
 	frappe.db.set_value("Bench", {"candidate": deploy_candidate_name}, "build", deploy_candidate_build_name)
 
 
+def is_valid_migration(without_builds: list[CandidateInfo]) -> bool:
+	"""Check if the number of deploy candidate builds created is same as the number
+	of deploy candidate that did not have a deploy candidate build.
+	"""
+	is_valid = False
+	num_created_deploy_candidate_build = frappe.db.count(
+		"Deploy Candidate Build",
+		{"deploy_candidate": ("in", [candidate["deploy_candidate"] for candidate in without_builds])},
+	)
+
+	if len(without_builds) == num_created_deploy_candidate_build:
+		is_valid = True
+
+	return is_valid
+
+
+def paginate(total_items, chunk_size):
+	total_items += 1  # Inclusive range
+	chunk_size += 1  # Inclusive range
+	pages = []
+	start = 0
+	while start < total_items:
+		end = min(start + chunk_size - 1, total_items - 1)
+		pages.append((start, end))
+		start = end + 1
+	return pages
+
+
 def execute():
-	deploy_candidates_info = get_deploy_bench_candidate()
+	CHUNK_SIZE = 10_000
+	num_deploy_candidate_builds = frappe.db.count(
+		"Deploy Candidate", {"status": ("not in", ["Draft", "Scheduled"])}
+	)
+	pages = paginate(num_deploy_candidate_builds, CHUNK_SIZE)
+	total = len(pages)
 
-	for deploy_candidate_info in deploy_candidates_info:
-		deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
-		update_build_step_parent(deploy_candidate_info["deploy_candidate"], deploy_candidate_build_name)
+	for idx, (start, _) in enumerate(pages):
+		print(f"In step: {idx}/{total}")
+		deploy_candidates_info = get_deploy_bench_candidate(offset=start, limit=CHUNK_SIZE)
 
-	frappe.db.commit()
+		for deploy_candidate_info in deploy_candidates_info:
+			deploy_candidate_build_name = create_deploy_candidate_build(deploy_candidate_info)
+			update_build_step_parent(deploy_candidate_info["deploy_candidate"], deploy_candidate_build_name)
+
+		if is_valid_migration(deploy_candidates_info):
+			frappe.db.commit()
+		else:
+			raise Exception("Migration Failed!")
