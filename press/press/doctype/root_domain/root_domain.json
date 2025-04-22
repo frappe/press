@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "default_cluster",
+  "default_proxy_server",
   "team",
   "column_break_4",
   "dns_provider",
@@ -68,6 +69,12 @@
    "fieldtype": "Password",
    "label": "Cloudflare credentials path",
    "reqd": 1
+  },
+  {
+   "fieldname": "default_proxy_server",
+   "fieldtype": "Link",
+   "label": "Default Proxy Server",
+   "options": "Proxy Server"
   }
  ],
  "index_web_pages_for_search": 1,
