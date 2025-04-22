@@ -55,7 +55,6 @@ def get_deploy_bench_candidate() -> list[CandidateInfo]:
 			(Bench.name).as_("bench"),
 			(Deploy.name).as_("deploy"),
 		)
-		.where(DeployCandidate.build_output.isnotnull())
 		.join(Bench)
 		.on(Bench.candidate == DeployCandidate.name)
 		.join(Deploy)
