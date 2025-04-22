@@ -11,6 +11,7 @@
   "column_break_4",
   "dns_provider",
   "cf_cred_path",
+  "cf_api_token",
   "aws_access_key_id",
   "aws_secret_access_key"
  ],
@@ -60,6 +61,13 @@
    "fieldtype": "Data",
    "label": "Cloudflare credentials path",
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.dns_provider=='Cloudflare';",
+   "fieldname": "cf_api_token",
+   "fieldtype": "Password",
+   "label": "Cloudflare credentials path",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -95,7 +103,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2025-04-12 00:37:49.524860",
+ "modified": "2025-04-22 02:57:26.410414",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",
