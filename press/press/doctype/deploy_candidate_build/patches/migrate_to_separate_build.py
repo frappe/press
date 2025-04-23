@@ -85,7 +85,7 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 			"docker_image": deploy_candidate["deploy_candidate_docker_image"],
 			"build_output": deploy_candidate["deploy_candidate_build_output"],
 			"build_error": deploy_candidate["deploy_candidate_build_error"],
-			"run_after_insert": False,
+			"run_build": False,
 		},
 	).insert(ignore_permissions=True)
 	add_build_to_deploy_and_bench(deploy_candidate["deploy_candidate"], deploy_candidate.name)
@@ -138,11 +138,10 @@ def paginate(total_items, chunk_size):
 
 
 def execute():
-	CHUNK_SIZE = 100
+	CHUNK_SIZE = 1000
 	num_deploy_candidate_builds = frappe.db.count(
 		"Deploy Candidate", {"status": ("not in", ["Draft", "Scheduled"])}
 	)
-	num_deploy_candidate_builds = 1000
 	pages = paginate(num_deploy_candidate_builds, CHUNK_SIZE)
 	total = len(pages)
 	for idx, (start, _) in enumerate(pages):
