@@ -46,7 +46,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -230,7 +229,7 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 
 
 def create_build_failed_notification(
-	dc: "DeployCandidateBuild",
+	dc: "DeployCandidate",
 	exc: BaseException | None,
 ) -> bool:
 	"""
