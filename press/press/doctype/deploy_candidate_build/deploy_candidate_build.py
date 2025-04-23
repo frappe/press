@@ -19,7 +19,6 @@ import frappe
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
@@ -1062,11 +1061,6 @@ class DeployCandidateBuild(Document):
 			self.set_status(Status.DRAFT)
 			self.pre_build()
 
-	def autoname(self):
-		candidate_name = self.candidate.name[7:]
-		series = f"build-{candidate_name}-.######"
-		self.name = make_autoname(series)
-
 	def _stop_and_fail(self):
 		self.manually_failed = True
 		for job in get_background_jobs(self.doctype, self.name, status="started"):
@@ -1096,7 +1090,7 @@ class DeployCandidateBuild(Document):
 			{
 				"doctype": "Deploy",
 				"group": self.group,
-				"candidate": self.candidate.name,
+				"candidate": self.deploy_candidate,
 				"build": self.name,
 				"benches": [{"server": server} for server in servers],
 			}
