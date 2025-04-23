@@ -18,6 +18,7 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -37,6 +38,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
+@patch.object(DeployCandidateBuild, "pre_build", new=Mock())
 def create_test_bench(
 	user: str | None = None,
 	group: ReleaseGroup = None,
@@ -66,7 +68,7 @@ def create_test_bench(
 
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()
-	candidate.db_set("docker_image", frappe.mock("url"))
+	candidate.build()
 	bench = frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
@@ -78,6 +80,7 @@ def create_test_bench(
 			"apps": apps,
 			"candidate": candidate.name,
 			"server": server,
+			"docker_image": frappe.mock("url"),
 		}
 	).insert(ignore_if_duplicate=True)
 	bench.db_set("creation", creation)

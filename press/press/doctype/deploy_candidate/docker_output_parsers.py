@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import re
 import typing
+from typing import Literal
 
 import dockerfile
 import frappe
@@ -12,25 +15,21 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
-	from typing import Any, Generator, Optional, TypedDict
+	from typing import Any, Generator
 
-	from frappe.types import DF
-
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 		DeployCandidateBuildStep,
 	)
 
 	BuildOutput = list[str] | Generator[str, Any, None]
 	PushOutput = list[dict] | Generator[dict, Any, None]
-	IndexSplit = TypedDict(
-		"IndexSplit",
-		{
-			"index": int,
-			"line": str,
-			"is_unusual": bool,
-		},
-	)
+
+
+class IndexSplit(typing.TypedDict):
+	index: int
+	line: str
+	is_unusual: bool
 
 
 class DockerBuildOutputParser:
@@ -41,9 +40,9 @@ class DockerBuildOutputParser:
 	when agent is polled, and so output is looped N! times.
 	"""
 
-	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"
+	_steps_by_step_slug: dict[tuple[str, str], DeployCandidateBuildStep] | None
 
-	def __init__(self, dc: "DeployCandidate") -> None:
+	def __init__(self, dc: "DeployCandidateBuild") -> None:
 		self.dc = dc
 		self.last_updated = now_datetime()
 
@@ -57,9 +56,7 @@ class DockerBuildOutputParser:
 	@property
 	def steps_by_step_slug(self):
 		if not self._steps_by_step_slug:
-			self._steps_by_step_slug = {
-				(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps
-			}
+			self._steps_by_step_slug = {(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps}
 		return self._steps_by_step_slug
 
 	def parse_and_update(self, output: "BuildOutput"):
@@ -186,7 +183,7 @@ class DockerBuildOutputParser:
 
 		self.steps[index] = step
 
-	def _get_step_index_split(self, line: str) -> "Optional[IndexSplit]":
+	def _get_step_index_split(self, line: str) -> "IndexSplit | None":
 		splits = line.split(maxsplit=1)
 		keys = sorted(self.steps)
 		if len(splits) != 2 and len(keys) == 0:
@@ -241,7 +238,7 @@ class UploadStepUpdater:
 
 	_upload_step: "DeployCandidateBuildStep | None"
 
-	def __init__(self, dc: "DeployCandidate") -> None:
+	def __init__(self, dc: "DeployCandidateBuild") -> None:
 		self.dc = dc
 		self.output: list[dict] = []
 
@@ -278,7 +275,7 @@ class UploadStepUpdater:
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: 'Optional[DF.Literal["Success", "Failure"]]'):
+	def end(self, status: Literal["Success", "Failure"] | None):
 		if not self.upload_step:
 			return
 
