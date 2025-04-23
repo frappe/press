@@ -12,6 +12,7 @@ from press.utils import get_current_team
 
 if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class BenchUpdate(Document):
