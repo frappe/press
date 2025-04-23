@@ -802,7 +802,7 @@ class DeployCandidateBuild(Document):
 			self._generate_config_from_template(config_template)
 
 		self._generate_apps_txt()
-		self.candidate.generate_ssh_keys()
+		self.candidate.generate_ssh_keys(self.build_directory)
 
 	def _prepare_build(self):
 		if not self.no_cache:
