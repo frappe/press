@@ -1431,12 +1431,13 @@
   {
    "fieldname": "github_app_name",
    "fieldtype": "Data",
-   "label": "GitHub App Name"
+   "label": "GitHub App Name",
+   "read_only_depends_on": "eval: doc.github_app_id"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-04-23 06:28:11.680561",
+ "modified": "2025-04-23 06:36:56.879970",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
