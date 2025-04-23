@@ -134,6 +134,8 @@ class PayoutOrder(Document):
 
 		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
 			self.status = "Commissioned"
+		elif self.net_total_usd > 0 or self.net_total_inr > 0:
+			self.status = "Draft"
 
 	def compute_total_amount(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
