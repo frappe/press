@@ -134,7 +134,7 @@ class PayoutOrder(Document):
 
 		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
 			self.status = "Commissioned"
-		elif self.net_total_usd > 0 or self.net_total_inr > 0:
+		elif (self.net_total_usd > 0 or self.net_total_inr > 0) and not self.frappe_purchase_order:
 			self.status = "Draft"
 
 	def compute_total_amount(self):
