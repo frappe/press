@@ -564,6 +564,8 @@ class ReleaseGroup(Document, TagHelpers):
 		apps_to_update=None,
 		run_will_fail_check=False,
 	) -> "DeployCandidate | None":
+		# TODO change this back once pr is stable
+		run_will_fail_check = False
 		if not self.enabled:
 			return None
 
