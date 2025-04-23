@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
 	)
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -603,9 +604,9 @@ def update_with_incompatible_node(
 	return True
 
 
-def check_incompatible_node(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
-	old_node = old_dc.get_dependency_version("node")
-	new_node = new_dc.get_dependency_version("node")
+def check_incompatible_node(old_dc: "DeployCandidateBuild", new_dc: "DeployCandidateBuild") -> None:
+	old_node = old_dc.candidate.get_dependency_version("node")
+	new_node = new_dc.candidate.get_dependency_version("node")
 
 	if old_node != new_node:
 		return
@@ -921,7 +922,10 @@ def update_with_file_not_found(
 	return True
 
 
-def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> None:
+def check_if_app_updated(
+	old_dc: "DeployCandidateBuild",
+	new_dc: "DeployCandidateBuild",
+) -> None:
 	if not (failed_step := old_dc.get_first_step("status", "Failure")):
 		return
 
@@ -948,8 +952,8 @@ def check_if_app_updated(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -
 	)
 
 
-def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":
-	for app in dc.apps:
+def get_dc_app(dc: "DeployCandidateBuild", app_name: str) -> "DeployCandidateApp | None":
+	for app in dc.candidate.apps:
 		if app.app == app_name:
 			return app
 	return None
