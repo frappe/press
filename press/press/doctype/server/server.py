@@ -389,6 +389,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="nginx.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -560,6 +562,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="extend_ec2_volume.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
 			ansible.run()
@@ -884,6 +888,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="increase_swap.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"swap_size": swap_size,
 					"swap_file": swap_file_name,
@@ -924,6 +930,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="reset_swap.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"swap_size": swap_size,
 					"swap_file": "swap",
@@ -939,7 +947,12 @@ class BaseServer(Document, TagHelpers):
 
 	def _add_glass_file(self):
 		try:
-			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible = Ansible(
+				playbook="glass_file.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
 			ansible.run()
 		except Exception:
 			log_error("Add Glass File Exception", doc=self)
@@ -953,6 +966,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="mysqldump.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -967,6 +982,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="swappiness.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -980,6 +997,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="filebeat_update.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1029,6 +1048,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="configure_ssh_logging.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1172,6 +1193,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="mount.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={**self.get_mount_variables()},
 			)
 			play = ansible.run()
@@ -1225,6 +1248,8 @@ class BaseServer(Document, TagHelpers):
 			ansible = Ansible(
 				playbook="wait_for_cloud_init.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1318,6 +1343,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:
@@ -1345,6 +1372,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		ansible = Ansible(
 			playbook="fetch_frappe_public_key.yml",
 			server=primary,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
 		)
 		play = ansible.run()
 		if play.status == "Success":
@@ -1368,6 +1397,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible = Ansible(
 				playbook="copy.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"source": source,
 					"destination": destination,
@@ -1665,6 +1696,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="agent_sentry.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"agent_sentry_dsn": agent_sentry_dsn},
 			)
 			ansible.run()
@@ -1683,6 +1716,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="whitelist_ipaddress.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"ip_address": proxy_server_ip},
 			)
 			play = ansible.run()
@@ -1733,6 +1768,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="fail2ban.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -1781,6 +1818,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
@@ -1799,6 +1838,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={"primary_public_key": self.get_primary_frappe_public_key()},
 			)
 			play = ansible.run()
@@ -1819,6 +1860,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="server_exporters.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"private_ip": self.private_ip,
 					"monitoring_password": monitoring_password,
@@ -2026,6 +2069,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="server_memory_limits.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			ansible.run()
 		except Exception:

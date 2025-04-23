@@ -377,7 +377,6 @@
   },
   {
    "default": "root",
-   "depends_on": "eval:doc.is_self_hosted",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -569,7 +568,7 @@
   }
  ],
  "links": [],
- "modified": "2025-04-15 08:54:08.455782",
+ "modified": "2025-04-23 14:54:02.978648",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
