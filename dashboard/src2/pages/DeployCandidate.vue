@@ -22,7 +22,9 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
+				<h2 class="text-lg font-medium text-gray-900">
+					{{ deploy.deploy_candidate }}
+				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
 				<div class="ml-auto flex items-center space-x-2">
 					<Button
