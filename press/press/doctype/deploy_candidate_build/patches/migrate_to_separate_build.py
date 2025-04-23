@@ -154,3 +154,5 @@ def execute():
 
 		if not is_valid_migration(deploy_candidates_info):
 			raise Exception("Migration Failed!")
+
+		frappe.db.commit()
