@@ -128,7 +128,7 @@ class ProductTrialRequest(Document):
 				account_request_geo_data = frappe.db.get_value(
 					"Account Request", {"email": team_user.email}, "geo_location"
 				)
-			timezone = frappe.parse_json(account_request_geo_data).get("timezone", "Asia/Kolkata")
+			timezone = frappe.parse_json(account_request_geo_data or {}).get("timezone", "Asia/Kolkata")
 
 			return json.dumps(
 				{
