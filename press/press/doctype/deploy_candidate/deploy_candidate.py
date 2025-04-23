@@ -270,7 +270,7 @@ class DeployCandidate(Document):
 			stdout=subprocess.PIPE,
 			stderr=subprocess.STDOUT,
 			env=environment,
-			cwd=directory or self.build_directory,
+			cwd=directory,
 			universal_newlines=True,
 		)
 		yield from process.stdout
@@ -279,13 +279,13 @@ class DeployCandidate(Document):
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
 
-	def generate_ssh_keys(self):
+	def generate_ssh_keys(self, build_directory: str):
 		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
 		if not ca:
 			return
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
+		ssh_directory = os.path.join(build_directory, "config", "ssh")
 
 		self.generate_host_keys(ca, ssh_directory)
 		self.generate_user_keys(ca, ssh_directory)
