@@ -238,6 +238,7 @@
    "label": "SSH User"
   },
   {
+   "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
@@ -249,7 +250,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-04-23 07:05:55.704393",
+ "modified": "2025-04-23 15:29:42.125395",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

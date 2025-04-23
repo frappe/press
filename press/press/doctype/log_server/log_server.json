@@ -199,6 +199,7 @@
    "label": "SSH User"
   },
   {
+   "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
@@ -210,7 +211,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-04-23 07:03:53.612865",
+ "modified": "2025-04-23 15:31:55.323135",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",
