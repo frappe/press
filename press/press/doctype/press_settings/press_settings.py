@@ -89,6 +89,7 @@ class PressSettings(Document):
 		github_app_client_id: DF.Data | None
 		github_app_client_secret: DF.Data | None
 		github_app_id: DF.Data | None
+		github_app_name: DF.Data | None
 		github_app_private_key: DF.Code | None
 		github_app_public_link: DF.Data | None
 		github_pat_token: DF.Data | None
@@ -222,13 +223,13 @@ class PressSettings(Document):
 
 	@frappe.whitelist()
 	def get_github_app_manifest(self):
-		if frappe.conf.developer_mode:
+		if not self.github_app_name and frappe.conf.developer_mode:
 			app_name = f"Frappe Cloud {frappe.generate_hash(length=6).upper()}"
 		else:
-			app_name = "Frappe Cloud"
+			app_name = self.github_app_name or "Frappe Cloud"
 		return {
 			"name": app_name,
-			"url": "https://frappe.cloud",
+			"url": get_url(),
 			"hook_attributes": {"url": get_url("api/method/press.api.github.hook")},
 			"redirect_url": get_url("github/redirect"),
 			"description": "Managed Frappe Hosting",
