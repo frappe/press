@@ -205,6 +205,7 @@ class DeployCandidateBuild(Document):
 		pending_start: DF.Datetime | None
 		platform: DF.Data | None
 		retry_count: DF.Int
+		run_build: DF.Check
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal["Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"]
 		team: DF.Link
@@ -1058,7 +1059,7 @@ class DeployCandidateBuild(Document):
 		self.pre_build()
 
 	def after_insert(self):
-		if not frappe.flags.in_patch and self.status != Status.SCHEDULED.value:
+		if self.run_build and self.status != Status.SCHEDULED.value:
 			self.set_status(Status.DRAFT)
 			self.pre_build()
 

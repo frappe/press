@@ -16,6 +16,7 @@
   "no_cache",
   "no_push",
   "deploy_after_build",
+  "run_build",
   "scheduled_time",
   "section_break_bfxt",
   "build_steps",
@@ -277,6 +278,12 @@
    "fieldtype": "Data",
    "label": "Platform",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "run_build",
+   "fieldtype": "Check",
+   "label": "Run Build"
   }
  ],
  "grid_page_length": 50,
@@ -303,7 +310,7 @@
    "link_fieldname": "build"
   }
  ],
- "modified": "2025-04-18 10:21:41.270984",
+ "modified": "2025-04-23 20:06:53.132710",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
