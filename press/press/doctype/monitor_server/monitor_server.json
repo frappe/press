@@ -238,6 +238,7 @@
    "label": "SSH User"
   },
   {
+   "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"

@@ -205,6 +205,7 @@
    "label": "SSH User"
   },
   {
+   "default": "22",
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
@@ -216,7 +217,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-04-23 07:07:17.504321",
+ "modified": "2025-04-23 15:31:31.857916",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
