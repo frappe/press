@@ -41,7 +41,6 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
 from press.utils.jobs import get_background_jobs, stop_background_job
-from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
 	from rq.job import Job
@@ -1050,8 +1049,9 @@ class DeployCandidateBuild(Document):
 				docname=self.name,
 			)
 
-		if self.has_value_changed("status") and self.team != "Administrator":
-			create_webhook_event("Bench Deploy Status Update", self, self.team)
+		# TODO: remove
+		# if self.has_value_changed("status") and self.team != "Administrator":
+		# 	create_webhook_event("Bench Deploy Status Update", self, self.team)
 
 	def run_scheduled_build_and_deploy(self):
 		self.set_status(Status.DRAFT)
