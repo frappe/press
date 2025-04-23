@@ -57,6 +57,8 @@ class MonitorServer(BaseServer):
 		prometheus_username: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
@@ -120,6 +122,8 @@ class MonitorServer(BaseServer):
 			ansible = Ansible(
 				playbook="monitor.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"workers": 1,
@@ -200,6 +204,8 @@ class MonitorServer(BaseServer):
 			ansible = Ansible(
 				playbook="reconfigure_monitoring.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"monitoring_password": monitoring_password,
