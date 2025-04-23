@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-23 13:20:25.030627",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_ubnu",
+  "start",
+  "column_break_uvpj",
+  "end",
+  "source_section",
+  "repo",
+  "column_break_zkly",
+  "branch",
+  "column_break_xohd",
+  "commit_hash",
+  "section_break_xivh",
+  "app_server",
+  "database_server",
+  "proxy_server",
+  "exclude_self_hosted_servers",
+  "column_break_xsdu",
+  "restart_web_workers",
+  "restart_background_workers",
+  "restart_redis",
+  "column_break_ylpr",
+  "auto_rollback_changes",
+  "rollback_commit",
+  "section_break_whdl",
+  "servers"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "repo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Repo",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_zkly",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_xohd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "commit_hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Commit Hash",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_xivh",
+   "fieldtype": "Section Break",
+   "label": "Config"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_rollback_changes",
+   "fieldtype": "Check",
+   "label": "Auto Rollback Changes"
+  },
+  {
+   "fieldname": "rollback_commit",
+   "fieldtype": "Data",
+   "label": "Rollback Commit"
+  },
+  {
+   "fieldname": "column_break_xsdu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "restart_web_workers",
+   "fieldtype": "Check",
+   "label": "Restart Web Workers"
+  },
+  {
+   "default": "0",
+   "fieldname": "restart_background_workers",
+   "fieldtype": "Check",
+   "label": "Restart Background Workers"
+  },
+  {
+   "default": "0",
+   "fieldname": "restart_redis",
+   "fieldtype": "Check",
+   "label": "Restart Redis"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nRunning\nRollbacking\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ubnu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uvpj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "app_server",
+   "fieldtype": "Check",
+   "label": "App Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "database_server",
+   "fieldtype": "Check",
+   "label": "Database Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "proxy_server",
+   "fieldtype": "Check",
+   "label": "Proxy Server"
+  },
+  {
+   "fieldname": "column_break_ylpr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "exclude_self_hosted_servers",
+   "fieldtype": "Check",
+   "label": "Exclude Self Hosted Servers"
+  },
+  {
+   "fieldname": "section_break_whdl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Table",
+   "label": "Servers",
+   "options": "Agent Update Server"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-23 16:36:35.829216",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Update",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
