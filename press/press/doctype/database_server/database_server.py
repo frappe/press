@@ -50,6 +50,7 @@ class DatabaseServer(BaseServer):
 		binlog_retention_days: DF.Int
 		binlogs_removed: DF.Check
 		cluster: DF.Link | None
+		db_port: DF.Int
 		domain: DF.Link | None
 		enable_binlog_indexing: DF.Check
 		enable_physical_backup: DF.Check
@@ -651,6 +652,7 @@ class DatabaseServer(BaseServer):
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"allocator": self.memory_allocator.lower(),
+					"db_port": self.db_port or 3306,
 					"mariadb_root_password": config.mariadb_root_password,
 					"certificate_private_key": config.certificate.private_key,
 					"certificate_full_chain": config.certificate.full_chain,
@@ -763,6 +765,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
+					"db_port": self.db_port or 3306,
 					"secondary_root_public_key": secondary_root_public_key,
 				},
 			)
@@ -791,6 +794,7 @@ class DatabaseServer(BaseServer):
 					"primary_private_ip": primary.private_ip,
 					"primary_ssh_port": primary.ssh_port,
 					"private_ip": self.private_ip,
+					"db_port": self.db_port or 3306,
 				},
 			)
 			play = ansible.run()
@@ -960,6 +964,7 @@ class DatabaseServer(BaseServer):
 					"mariadb_old_root_password": old_password,
 					"mariadb_root_password": self.mariadb_root_password,
 					"private_ip": self.private_ip,
+					"db_port": self.db_port or 3306,
 				},
 			)
 			ansible.run()
@@ -1010,6 +1015,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"mariadb_root_password": self.mariadb_root_password,
 					"private_ip": self.private_ip,
+					"db_port": self.db_port or 3306,
 				},
 			)
 			ansible.run()
