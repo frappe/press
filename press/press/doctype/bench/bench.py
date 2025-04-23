@@ -71,6 +71,7 @@ class Bench(Document):
 		auto_scale_workers: DF.Check
 		background_workers: DF.Int
 		bench_config: DF.Code | None
+		build: DF.Link | None
 		candidate: DF.Link
 		cluster: DF.Link
 		config: DF.Code | None
@@ -243,7 +244,6 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		self.docker_image = candidate.docker_image
 
 		self.set_apps(candidate)
 
