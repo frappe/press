@@ -225,6 +225,7 @@ class DeployCandidateBuild(Document):
 		"group",
 		"retry_count",
 		"team",
+		"deploy_candidate",
 	)
 
 	@staticmethod
