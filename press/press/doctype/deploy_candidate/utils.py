@@ -171,7 +171,7 @@ def get_build_server_with_least_active_builds() -> str | None:
 
 def get_active_build_count_by_build_server():
 	build_servers = frappe.get_all(
-		"Deploy Candidate",
+		"Deploy Candidate Build",
 		fields=["build_server"],
 		filters={
 			"status": ["in", ["Running", "Preparing"]],
