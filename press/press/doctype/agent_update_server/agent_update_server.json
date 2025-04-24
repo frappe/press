@@ -8,12 +8,11 @@
  "field_order": [
   "server",
   "status",
-  "rollbacked",
   "start",
   "end",
   "current_commit",
-  "server_type",
-  "is_rollback_possible"
+  "rollback_commit",
+  "server_type"
  ],
  "fields": [
   {
@@ -25,19 +24,12 @@
    "reqd": 1
   },
   {
-   "default": "Pending",
+   "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped"
-  },
-  {
-   "default": "0",
-   "fieldname": "rollbacked",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Rollbacked"
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure\nSkipped\nRolledback"
   },
   {
    "fieldname": "start",
@@ -48,12 +40,12 @@
   {
    "fieldname": "end",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "End"
   },
   {
    "fieldname": "current_commit",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Current Commit"
   },
   {
@@ -64,16 +56,15 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_rollback_possible",
-   "fieldtype": "Check",
-   "label": "Is Rollback Possible"
+   "fieldname": "rollback_commit",
+   "fieldtype": "Data",
+   "label": "Rollback Commit"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-24 01:00:06.409838",
+ "modified": "2025-04-25 00:05:45.068123",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Update Server",

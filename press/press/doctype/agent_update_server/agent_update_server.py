@@ -18,15 +18,14 @@ class AgentUpdateServer(Document):
 
 		current_commit: DF.Data | None
 		end: DF.Datetime | None
-		is_rollback_possible: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		rollbacked: DF.Check
+		rollback_commit: DF.Data | None
 		server: DF.DynamicLink
 		server_type: DF.Literal["Server", "Database Server", "Proxy Server"]
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Running", "Success", "Failure", "Skipped"]
+		status: DF.Literal["Draft", "Pending", "Running", "Success", "Failure", "Skipped", "Rolledback"]
 	# end: auto-generated types
 
 	pass

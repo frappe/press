@@ -4,37 +4,37 @@
 frappe.ui.form.on('Agent Update', {
 	refresh(frm) {
 		[
-			[__('Build Plan'), 'create_execution_plan', true, true],
-
-
-        ].forEach(([label, method, confirm, condition]) => {
+			[
+				__('Build Plan'),
+				'create_execution_plan',
+				true,
+				doc.status === 'Draft' || doc.status === 'Planning',
+			],
+		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
-				frm.add_custom_button(
-					label,
-					() => {
-						if (confirm) {
-							frappe.confirm(
-								`Are you sure you want to ${label.toLowerCase()}?`,
-								() =>
-									frm.call(method).then((r) => {
-										if (r.message) {
-											frappe.msgprint(r.message);
-										} else {
-											frm.refresh();
-										}
-									}),
-							);
-						} else {
-							frm.call(method).then((r) => {
-								if (r.message) {
-									frappe.msgprint(r.message);
-								} else {
-									frm.refresh();
-								}
-							});
-						}
+				frm.add_custom_button(label, () => {
+					if (confirm) {
+						frappe.confirm(
+							`Are you sure you want to ${label.toLowerCase()}?`,
+							() =>
+								frm.call(method).then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									} else {
+										frm.refresh();
+									}
+								}),
+						);
+					} else {
+						frm.call(method).then((r) => {
+							if (r.message) {
+								frappe.msgprint(r.message);
+							} else {
+								frm.refresh();
+							}
+						});
 					}
-				);
+				});
 			}
 		});
 	},
