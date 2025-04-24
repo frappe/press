@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import time
 import typing
 
 import frappe
@@ -158,6 +159,7 @@ def execute():
 	)
 	for idx, (start, _) in enumerate(pages):
 		print(f"In step: {idx}/{total}")
+		start = time.time()
 		deploy_candidates_info = get_deploy_bench_candidate(
 			offset=start, limit=CHUNK_SIZE, existing_deploy_candidate_builds=existing_deploy_candidate_builds
 		)
@@ -168,5 +170,8 @@ def execute():
 
 		if not is_valid_migration(deploy_candidates_info):
 			raise Exception("Migration Failed!")
+
+		end = time.time()
+		print(f"Time taken: {end - start}s")
 
 		frappe.db.commit()
