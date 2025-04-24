@@ -1340,6 +1340,37 @@ def correct_false_positives(last_n_days=0, last_n_hours=1):
 		correct_status(name)
 
 
+def cleanup_build_directories():
+	# Cleanup Build Directories for Deploy Candidate Builds older than a day
+	dcs = frappe.get_all(
+		"Deploy Candidate Build",
+		{
+			"status": ("!=", "Draft"),
+			"build_directory": ("is", "set"),
+			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=100,
+	)
+	for dc in dcs:
+		doc: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dc)
+		try:
+			doc.cleanup_build_directory()
+			frappe.db.commit()
+		except Exception as e:
+			frappe.db.rollback()
+			log_error(title="Deploy Candidate Build Cleanup Error", exception=e, doc=doc)
+
+	# Delete all temporary files created by the build process
+	glob_path = os.path.join(tempfile.gettempdir(), f"{tempfile.gettempprefix()}*.tar.gz")
+	six_hours_ago = frappe.utils.add_to_date(None, hours=-6)
+	for file in glob.glob(glob_path):
+		# Use local time to compare timestamps
+		if os.stat(file).st_ctime < six_hours_ago.timestamp():
+			os.remove(file)
+
+
 def correct_status(dcb_name: str):
 	dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dcb_name)
 	found_failed = False

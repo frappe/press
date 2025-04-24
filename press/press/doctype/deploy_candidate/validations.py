@@ -213,13 +213,13 @@ def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
 
 
 def check_if_update_will_fail(rg: "ReleaseGroup", new_dc: "DeployCandidate"):
-	if not (old_dc := rg.get_last_deploy_candidate_build()):
+	if not (old_dcb := rg.get_last_deploy_candidate_build()):
 		return
 
-	if not old_dc.error_key:
+	if not old_dcb.error_key:
 		return
 
-	if not (checker := get_will_fail_checker(old_dc.error_key)):
+	if not (checker := get_will_fail_checker(old_dcb.error_key)):
 		return
 
-	checker(old_dc, new_dc)
+	checker(old_dcb, new_dc)
