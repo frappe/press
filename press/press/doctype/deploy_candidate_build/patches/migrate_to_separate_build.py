@@ -14,6 +14,7 @@ from __future__ import annotations
 import typing
 
 import frappe
+from frappe.query_builder import Order
 
 DeployCandidate = frappe.qb.DocType("Deploy Candidate")
 DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
@@ -37,7 +38,9 @@ class CandidateInfo(typing.TypedDict):
 
 def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
 	"""Fetch all deploy candidates and their corresponding bench and deploy which don't have a build"""
-	without_build_candidates = []
+	existing_deploy_candidate_builds = frappe.get_all(
+		"Deploy Candidate Build", distinct=True, pluck="deploy_candidate"
+	)
 	deploy_candidates: list[CandidateInfo] = (
 		frappe.qb.from_(DeployCandidate)
 		.select(
@@ -57,17 +60,12 @@ def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
 		.where(
 			DeployCandidate.status.notin(["Draft", "Scheduled"])
 		)  # We don't want to create a build for scheduled & draft deploy candidates
+		.where(DeployCandidate.name.notin(existing_deploy_candidate_builds))
+		.orderby(DeployCandidate.modified, order=Order.desc)
 		.run(as_dict=True)
 	)
 
-	for deploy_candidate in deploy_candidates:
-		if not frappe.get_value(
-			"Deploy Candidate Build",
-			{"deploy_candidate": deploy_candidate["deploy_candidate"]},
-		):
-			without_build_candidates.append(deploy_candidate)
-
-	return without_build_candidates
+	return deploy_candidates
 
 
 def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
@@ -88,24 +86,36 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 			"run_build": False,
 		},
 	).insert(ignore_permissions=True)
-	add_build_to_deploy_and_bench(deploy_candidate["deploy_candidate"], deploy_candidate.name)
+	add_build_to_deploy_and_bench(
+		deploy_candidate_name=deploy_candidate["deploy_candidate"],
+		deploy_candidate_build_name=deploy_candidate_build.name,
+	)
 	return deploy_candidate_build.name
 
 
 def update_build_step_parent(deploy_candidate_name: str, deploy_candidate_build_name: str):
 	"""Copy build step parent to deploy candidate build"""
+	if deploy_candidate_build_name is None:
+		raise Exception(f"Migration Failure Deploy Candidate Build: {deploy_candidate_build_name}")
+
 	frappe.db.sql(
-		f"UPDATE `tabDeploy Candidate Build Step` SET parent='{deploy_candidate_build_name}', parenttype='Deploy Candidate Build' WHERE parent='{deploy_candidate_name}' AND parenttype='Deploy Candidate'"
+		"UPDATE `tabDeploy Candidate Build Step` SET parent=%s, parenttype='Deploy Candidate Build' WHERE parent=%s AND parenttype='Deploy Candidate'",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 
 
 def add_build_to_deploy_and_bench(deploy_candidate_name: str, deploy_candidate_build_name: str):
 	"""Add build to deploy and bench if they exist"""
+	if deploy_candidate_build_name is None or deploy_candidate_name is None:
+		raise Exception(f"Migration failed: {deploy_candidate_build_name}:{deploy_candidate_name}")
+
 	frappe.db.sql(
-		f"UPDATE `tabDeploy` SET build='{deploy_candidate_build_name}' WHERE candidate='{deploy_candidate_name}'"
+		"UPDATE `tabDeploy` SET build=%s WHERE candidate=%s",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 	frappe.db.sql(
-		f"UPDATE `tabBench` SET build='{deploy_candidate_build_name}' WHERE candidate='{deploy_candidate_name}'"
+		"UPDATE `tabBench` SET build=%s WHERE candidate=%s",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 
 
