@@ -336,6 +336,7 @@ class DeployCandidate(Document):
 		with open(user_certificate_path) as f:
 			self.user_certificate = f.read()
 
+		self.save(ignore_permissions=True)
 		# Remove user key files
 		os.remove(user_private_key_path)
 		os.remove(user_public_key_path)
