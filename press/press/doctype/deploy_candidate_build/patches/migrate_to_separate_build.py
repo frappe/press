@@ -88,24 +88,36 @@ def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
 			"run_build": False,
 		},
 	).insert(ignore_permissions=True)
-	add_build_to_deploy_and_bench(deploy_candidate["deploy_candidate"], deploy_candidate.name)
+	add_build_to_deploy_and_bench(
+		deploy_candidate_name=deploy_candidate["deploy_candidate"],
+		deploy_candidate_build_name=deploy_candidate_build.name,
+	)
 	return deploy_candidate_build.name
 
 
 def update_build_step_parent(deploy_candidate_name: str, deploy_candidate_build_name: str):
 	"""Copy build step parent to deploy candidate build"""
+	if deploy_candidate_build_name is None:
+		raise Exception(f"Migration Failure Deploy Candidate Build: {deploy_candidate_build_name}")
+
 	frappe.db.sql(
-		f"UPDATE `tabDeploy Candidate Build Step` SET parent='{deploy_candidate_build_name}', parenttype='Deploy Candidate Build' WHERE parent='{deploy_candidate_name}' AND parenttype='Deploy Candidate'"
+		"UPDATE `tabDeploy Candidate Build Step` SET parent=%s, parenttype='Deploy Candidate Build' WHERE parent=%s AND parenttype='Deploy Candidate'",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 
 
 def add_build_to_deploy_and_bench(deploy_candidate_name: str, deploy_candidate_build_name: str):
 	"""Add build to deploy and bench if they exist"""
+	if deploy_candidate_build_name is None or deploy_candidate_name is None:
+		raise Exception(f"Migration failed: {deploy_candidate_build_name}:{deploy_candidate_name}")
+
 	frappe.db.sql(
-		f"UPDATE `tabDeploy` SET build='{deploy_candidate_build_name}' WHERE candidate='{deploy_candidate_name}'"
+		"UPDATE `tabDeploy` SET build=%s WHERE candidate=%s",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 	frappe.db.sql(
-		f"UPDATE `tabBench` SET build='{deploy_candidate_build_name}' WHERE candidate='{deploy_candidate_name}'"
+		"UPDATE `tabBench` SET build=%s WHERE candidate=%s",
+		(deploy_candidate_build_name, deploy_candidate_name),
 	)
 
 
