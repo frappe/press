@@ -14,6 +14,7 @@ from __future__ import annotations
 import typing
 
 import frappe
+from frappe.query_builder import Order
 
 DeployCandidate = frappe.qb.DocType("Deploy Candidate")
 DeployCandidateBuild = frappe.qb.DocType("Deploy Candidate Build")
@@ -37,7 +38,9 @@ class CandidateInfo(typing.TypedDict):
 
 def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
 	"""Fetch all deploy candidates and their corresponding bench and deploy which don't have a build"""
-	without_build_candidates = []
+	existing_deploy_candidate_builds = frappe.get_all(
+		"Deploy Candidate Build", distinct=True, pluck="deploy_candidate"
+	)
 	deploy_candidates: list[CandidateInfo] = (
 		frappe.qb.from_(DeployCandidate)
 		.select(
@@ -57,17 +60,12 @@ def get_deploy_bench_candidate(offset: int, limit: str) -> list[CandidateInfo]:
 		.where(
 			DeployCandidate.status.notin(["Draft", "Scheduled"])
 		)  # We don't want to create a build for scheduled & draft deploy candidates
+		.where(DeployCandidate.name.notin(existing_deploy_candidate_builds))
+		.orderby(DeployCandidate.modified, order=Order.desc)
 		.run(as_dict=True)
 	)
 
-	for deploy_candidate in deploy_candidates:
-		if not frappe.get_value(
-			"Deploy Candidate Build",
-			{"deploy_candidate": deploy_candidate["deploy_candidate"]},
-		):
-			without_build_candidates.append(deploy_candidate)
-
-	return without_build_candidates
+	return deploy_candidates
 
 
 def create_deploy_candidate_build(deploy_candidate: CandidateInfo) -> str:
