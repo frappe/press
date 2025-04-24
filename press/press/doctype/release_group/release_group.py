@@ -56,6 +56,7 @@ class LastDeployInfo(TypedDict):
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 
 
 class ReleaseGroup(Document, TagHelpers):
@@ -564,8 +565,6 @@ class ReleaseGroup(Document, TagHelpers):
 		apps_to_update=None,
 		run_will_fail_check=False,
 	) -> "DeployCandidate | None":
-		# TODO: Check failure once stable
-		run_will_fail_check = False
 		if not self.enabled:
 			return None
 
@@ -1261,7 +1260,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_last_deploy_candidate_build(self):
 		try:
-			dc: "DeployCandidate" = frappe.get_last_doc(
+			dc: "DeployCandidateBuild" = frappe.get_last_doc(
 				"Deploy Candidate Build",
 				{
 					"status": ["!=", "Draft"],
